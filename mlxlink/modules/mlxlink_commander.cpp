@@ -34,6 +34,7 @@
 
 #include "mlxlink_commander.h"
 #include "common/tools_time.h"
+#include "pci_library/PCILibrary.h"
 #include <sstream>
 
 using namespace mlxreg;
@@ -41,6 +42,122 @@ using namespace mlxreg;
 ModuleField::ModuleField(string uiName, string amberName, bool multiVal, bool perLane, bool requireDdm, bool supported) :
     uiName(uiName), amberName(amberName), multiVal(multiVal), perLane(perLane), requireDdm(requireDdm), supported(supported)
 {
+}
+
+void MlxlinkCommander::updateSysFsPath()
+{
+    if (_userInput._sysfsPath.empty())
+    {
+        // based on arch only asic0 is possible at the moment : "/sys/module/sx_core/asic0/module#/".
+        _userInput._sysfsPath = SW_CONTROLLED_MODULE_PATH + to_string(_moduleNumber);
+    }
+}
+
+// SetPCIDomain should not throw exceptions, even if failed to set domain.
+// we use try/catch to cover any unexpected errors.
+void MlxlinkCommander::initPCIDomain()
+{
+    try
+    {
+        PCILibrary::SetPCIDomain();
+    }
+    catch (const std::exception& exc)
+    {
+        MlxlinkRecord::printWar(
+          "Warning: Failed to set one or more PCI domains, use \"export MFT_PRINT_LOG=1\" to get more details.",
+          _jsonRoot);
+    }
+}
+
+void MlxlinkCommander::updatePortInfo()
+{
+     if (!_isHCA && ((!_userInput._portSpecified && _userInput._csvBer != "") ||
+                       (_userInput._showMultiPortInfo || _userInput._showMultiPortModuleInfo)))
+    {
+        findFirstValidPort();
+    }
+
+    // only init PCI domain for "--port_type PCIE --show_links" command.
+    if (_userInput._pcie && _userInput._links && _isHCA)
+    {
+        initPCIDomain();
+    }
+
+    labelToLocalPort();
+    validatePortType(_userInput._portType);
+    updateSwControlStatus();
+    updateNvlinkModeBStatus();
+    if (!_userInput._pcie)
+    {
+        checkValidFW();
+    }
+    if (!(_mf->tp == MST_PCICONF && (dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))))
+    {
+        getProductTechnology();
+    }
+    if (!_userInput._pcie)
+    {
+        _prbsTestMode = inPrbsTestMode();
+        if (!_isSwControled &&
+            (_userInput._networkCmds != 0 || _userInput._ddm || _userInput._dump || _userInput._write ||
+             _userInput._read || _userInput.isModuleConfigParamsProvided || _userInput.isPrbsSelProvided ||
+             _userInput._csvBer != ""))
+        {
+            getCableParams();
+        }
+        if (_isSwControled && _userInput._sysfsPath.empty())
+        {
+            updateSysFsPath();
+        }
+    }
+    else if (!_userInput._sendDpn)
+    {
+        initValidDPNList();
+    }
+    updateDPNDomain();
+}
+
+void MlxlinkCommander::checkIBDeviceCompatibility()
+{
+    if (_regLib->isIBDevice() &&
+        !_regLib->isAccessRegisterGMPSupported(MACCESS_REG_METHOD_GET))
+    {
+        MlxlinkRecord::printWar("Warning: AccessRegisterGMP Get() method is not supported.\n"
+                                "         mlxlink has limited functionality",
+                                _jsonRoot);
+    }
+}
+
+void MlxlinkCommander::init(bool warnIBDeviceCompatibility)
+{
+    MlxRegLib::isAccessRegisterSupported(_mf);
+
+    _mf = _mf;
+
+    _regLib =
+      new MlxRegLib(_mf, _extAdbFile, _useExtAdb);
+
+    _userInput = _userInput;
+
+    if (warnIBDeviceCompatibility)
+    {
+        checkIBDeviceCompatibility();
+    }
+
+    _gvmiAddress = _userInput._gvmiAddress;
+    _devID = _regLib->getDevId();
+    _isHCA = dm_dev_is_hca(_devID);
+    if (_isHCA)
+    {
+       _isDPNvSupported = checkDPNvSupport();
+       setPlaneIndex(_userInput.planeIndex);
+    }
+}
+
+MlxlinkCommander::MlxlinkCommander(mfile* mf, UserInput userInput) : MlxlinkCommander()
+{
+    _mf = mf;
+    _userInput = userInput;
 }
 
 MlxlinkCommander::MlxlinkCommander() : _userInput()

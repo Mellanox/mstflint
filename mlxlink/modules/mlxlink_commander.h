@@ -454,8 +454,14 @@ class MlxlinkCommander : public MlxlinkRegParser
 {
 public:
     MlxlinkCommander();
+    MlxlinkCommander(mfile* mf, UserInput userInput);
     virtual ~MlxlinkCommander();
 
+    void init(bool warnIBDeviceCompatibility = true);
+    void checkIBDeviceCompatibility();
+    void initPCIDomain();
+    void updatePortInfo();
+    void updateSysFsPath();
     void checkRegCmd();
     bool isBackplane();
     void validatePortToLC();
