@@ -2418,7 +2418,7 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkDownInfo()
         string receivedTs1Opcode = NA_FIELD_VALUE;
         if (!_isPortPCIE)
         {
-            sendLocalPrmReg(ACCESS_REG_PDDR, GET, "local_port=%d,page_select=%d", _localPort,
+            sendLocalPrmReg(ACCESS_REG_PDDR, REG_GET, "local_port=%d,page_select=%d", _localPort,
                             PDDR_MODULE_LINK_DOWN_INFO_PAGE);
 
             fields.push_back(AmberField("down_blame", _mlxlinkMaps->_downBlame[getFieldValue("down_blame")]));
@@ -2668,7 +2668,7 @@ void MlxlinkAmBerCollector::getPemiSnr(vector<AmberField>& fields, bool isGroupS
         AmberField::_dataValid = false;
     }
 
-    sendLocalPrmReg(ACCESS_REG_PEMI, GET, "local_port=%d,page_select=%d", _localPort, PEMI_GROUP_SEL_SNR_SAMPLES);
+    sendLocalPrmReg(ACCESS_REG_PEMI, REG_GET, "local_port=%d,page_select=%d", _localPort, PEMI_GROUP_SEL_SNR_SAMPLES);
 
     pushModulePerLaneField(fields, "snr_media_lane", 256, "");
     pushModulePerLaneField(fields, "snr_host_lane", 256, "");
@@ -2684,7 +2684,7 @@ void MlxlinkAmBerCollector::getPemiLaserMonitors(vector<AmberField>& fields, boo
     }
     string iccMonitor = NA_FIELD_VALUE, elsPowerConsumption = NA_FIELD_VALUE;
 
-    sendLocalPrmReg(ACCESS_REG_PEMI, GET, "local_port=%d,page_select=%d", _localPort,
+    sendLocalPrmReg(ACCESS_REG_PEMI, REG_GET, "local_port=%d,page_select=%d", _localPort,
                     PEMI_GROUP_SEL_LASER_MONITORS_SAMPLES);
 
     pushModulePerLaneField(fields, "laser_frequency_error_lane", 1, "");
@@ -2701,7 +2701,7 @@ void MlxlinkAmBerCollector::getPemiModuleStatus(vector<AmberField>& fields, bool
         AmberField::_dataValid = false;
     }
     string moduleSt = NA_FIELD_VALUE, oeTemp = NA_FIELD_VALUE, elsTemp = NA_FIELD_VALUE;
-    sendLocalPrmReg(ACCESS_REG_PEMI, GET, "local_port=%d,page_select=%d", _localPort,
+    sendLocalPrmReg(ACCESS_REG_PEMI, REG_GET, "local_port=%d,page_select=%d", _localPort,
                     PEMI_GROUP_SEL_MODULE_STATUS_SAMPLES);
 
     fields.push_back(AmberField("voltage_pemi", to_string((getLocalFieldValue("voltage") / 10.0))));
@@ -2731,7 +2731,7 @@ void MlxlinkAmBerCollector::getPemiPreFecBer(vector<AmberField>& fields, bool is
         AmberField::_dataValid = false;
     }
 
-    sendLocalPrmReg(ACCESS_REG_PEMI, GET, "local_port=%d,page_select=%d", _localPort,
+    sendLocalPrmReg(ACCESS_REG_PEMI, REG_GET, "local_port=%d,page_select=%d", _localPort,
                     PEMI_GROUP_SEL_PRE_FEC_BER_SAMPLES);
 
     fields.push_back(AmberField("pre_fec_ber_min_media", getLocalFieldStr("pre_fec_ber_min_media")));
@@ -2743,7 +2743,7 @@ void MlxlinkAmBerCollector::getPemiPreFecBer(vector<AmberField>& fields, bool is
     fields.push_back(AmberField("pre_fec_ber_val_media", getLocalFieldStr("pre_fec_ber_val_media")));
     fields.push_back(AmberField("pre_fec_ber_val_host", getLocalFieldStr("pre_fec_ber_val_host")));
 
-    sendLocalPrmReg(ACCESS_REG_PEMI, GET, "local_port=%d,page_select=%d", _localPort, PEMI_GROUP_SEL_PRE_FEC_BER_PROP);
+    sendLocalPrmReg(ACCESS_REG_PEMI, REG_GET, "local_port=%d,page_select=%d", _localPort, PEMI_GROUP_SEL_PRE_FEC_BER_PROP);
 
     fields.push_back(AmberField("pre_fec_ber_cap", getLocalFieldStr("pre_fec_ber_cap")));
 
@@ -2759,7 +2759,7 @@ void MlxlinkAmBerCollector::getMTMGFields(vector<AmberField>& fields)
 
     try
     {
-        sendPrmReg(ACCESS_REG_MTMG, GET);
+        sendPrmReg(ACCESS_REG_MTMG, REG_GET);
 
         thr1 = getLocalFieldStr("threshold_1");
         thr2 = getLocalFieldStr("threshold_2");
@@ -2778,7 +2778,7 @@ void MlxlinkAmBerCollector::getMTMGFields(vector<AmberField>& fields)
 
 void MlxlinkAmBerCollector::getMTMRFields(vector<AmberField>& fields)
 {
-    sendLocalPrmReg(ACCESS_REG_MTMR, GET, "module=%d", _moduleIndex);
+    sendLocalPrmReg(ACCESS_REG_MTMR, REG_GET, "module=%d", _moduleIndex);
 
     fields.push_back(AmberField("temp_thr_1_counter", getLocalFieldStr("thr_1_cnt")));
     fields.push_back(AmberField("temp_thr_2_counter", getLocalFieldStr("thr_2_cnt")));
@@ -2795,7 +2795,7 @@ vector<AmberField> MlxlinkAmBerCollector::getExtModuleStatus()
     {
         if (!_isPortPCIE)
         {
-            sendLocalPrmReg(ACCESS_REG_PEMI, GET, "local_port=%d,page_select=%d", _localPort, PEMI_GROUP_SEL_SNR_SAMPLES);
+            sendLocalPrmReg(ACCESS_REG_PEMI, REG_GET, "local_port=%d,page_select=%d", _localPort, PEMI_GROUP_SEL_SNR_SAMPLES);
 
             u_int32_t groupCapMask = getLocalFieldValue("group_cap_mask");
 
