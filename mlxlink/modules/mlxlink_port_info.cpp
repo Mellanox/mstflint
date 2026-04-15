@@ -47,7 +47,7 @@ MlxlinkPortInfo::~MlxlinkPortInfo() {}
 
 void MlxlinkPortInfo::init()
 {
-    sendPrmReg(ACCESS_REG_PPHCR, GET);
+    sendPrmReg(ACCESS_REG_PPHCR, REG_GET);
 
     if (!getFieldValue("active_hist_type"))
     {
@@ -64,7 +64,7 @@ void MlxlinkPortInfo::init()
 
 void MlxlinkPortInfo::updateBinsRange()
 {
-    sendPrmReg(ACCESS_REG_PPHCR, GET);
+    sendPrmReg(ACCESS_REG_PPHCR, REG_GET);
 
     for (u_int32_t binIdx = 0; binIdx < _numOfBins; ++binIdx)
     {
@@ -76,7 +76,7 @@ void MlxlinkPortInfo::updateBinsRange()
 
 void MlxlinkPortInfo::updateBinsErrorsCount()
 {
-    sendPrmReg(ACCESS_REG_PPCNT, GET, "grp=%d", PPCNT_HISTOGRAM_GROUP);
+    sendPrmReg(ACCESS_REG_PPCNT, REG_GET, "grp=%d", PPCNT_HISTOGRAM_GROUP);
 
     for (u_int32_t binIdx = 0; binIdx < _numOfBins; ++binIdx)
     {
@@ -116,5 +116,5 @@ void MlxlinkPortInfo::clearHistogram()
 {
     MlxlinkRecord::printCmdLine("Clearing Histogram Counters", _jsonRoot);
 
-    sendPrmReg(ACCESS_REG_PPCNT, GET, "grp=%d,clr=%d", PPCNT_HISTOGRAM_GROUP, 1);
+    sendPrmReg(ACCESS_REG_PPCNT, REG_GET, "grp=%d,clr=%d", PPCNT_HISTOGRAM_GROUP, 1);
 }

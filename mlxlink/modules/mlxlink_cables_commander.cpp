@@ -73,7 +73,7 @@ void MlxlinkCablesCommander::readMCIA(u_int32_t page,
                                       u_int8_t* data,
                                       u_int32_t i2cAddress)
 {
-    sendPrmReg(ACCESS_REG_MCIA, GET,
+    sendPrmReg(ACCESS_REG_MCIA, REG_GET,
                "module=%d,slot_index=%d,size=%d,page_number=%d,device_address=%d,i2c_device_address=%d", _moduleNumber,
                _slotIndex, size, page, offset, i2cAddress);
 
@@ -116,7 +116,7 @@ void MlxlinkCablesCommander::writeMCIA(u_int32_t page,
     }
     free(dwordData);
 
-    sendPrmReg(ACCESS_REG_MCIA, SET,
+    sendPrmReg(ACCESS_REG_MCIA, REG_SET,
                "module=%d,slot_index=%d,size=%d,page_number=%d,device_address=%d,i2c_device_address=%d%s",
                _moduleNumber, _slotIndex, size, page, offset, i2cAddress, dataCmd.c_str());
 }
@@ -187,7 +187,7 @@ void MlxlinkCablesCommander::getDdmValuesFromPddr()
 {
     if (!_swControlMode)
     {
-        sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d", PDDR_MODULE_INFO_PAGE);
+        sendPrmReg(ACCESS_REG_PDDR, REG_GET, "page_select=%d", PDDR_MODULE_INFO_PAGE);
 
         _cableDdm.channels = _numOfLanes;
         _cableDdm.temperature.val = getFieldValue("temperature") / 256;
@@ -1246,7 +1246,7 @@ void MlxlinkCablesCommander::getNumOfModuleLanes()
         // As a WA, use module_width for MEDIA and HOST lanes
         // TODO: use module_media_width once it be supported
         // if (_modulePrbsParams[MODULE_PRBS_SELECT] == "HOST") {
-        sendPrmReg(ACCESS_REG_PMTM, GET, "module=%d,slot_index=%d", _moduleNumber, _slotIndex);
+        sendPrmReg(ACCESS_REG_PMTM, REG_GET, "module=%d,slot_index=%d", _moduleNumber, _slotIndex);
 
         _numOfLanes = getFieldValue("module_width");
         //} else {
@@ -1263,7 +1263,7 @@ void MlxlinkCablesCommander::checkAndParsePMPTCap(ModuleAccess_t moduleAccess)
     bool regFaild = false;
     try
     {
-        sendPrmReg(ACCESS_REG_PMPT, GET, "module=%d,slot_index=%d,lane_mask=%d", _moduleNumber, _slotIndex, 1);
+        sendPrmReg(ACCESS_REG_PMPT, REG_GET, "module=%d,slot_index=%d,lane_mask=%d", _moduleNumber, _slotIndex, 1);
     }
     catch (MlxRegException& exc)
     {
@@ -1276,7 +1276,7 @@ void MlxlinkCablesCommander::checkAndParsePMPTCap(ModuleAccess_t moduleAccess)
     _prbsRate = getRateAdminFromStr(getFieldValue("lane_rate_cap"), _modulePrbsParams[ModulePrbs_t(MODULE_PRBS_RATE)]);
 
     // read the other PMPT caps according to the prbsRate
-    sendPrmReg(ACCESS_REG_PMPT, GET, "module=%d,slot_index=%d,host_media=%d,lane_mask=%d,ch_ge=%d,modulation=%d",
+    sendPrmReg(ACCESS_REG_PMPT, REG_GET, "module=%d,slot_index=%d,host_media=%d,lane_mask=%d,ch_ge=%d,modulation=%d",
                _moduleNumber, _slotIndex, _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST", 1, (u_int32_t)moduleAccess,
                _prbsRate >= MODULE_PRBS_LANE_RATE_HDR);
 
@@ -1294,7 +1294,7 @@ void MlxlinkCablesCommander::checkAndParsePMPTCap(ModuleAccess_t moduleAccess)
 
 u_int32_t MlxlinkCablesCommander::getPMPTStatus(ModuleAccess_t moduleAccess)
 {
-    sendPrmReg(ACCESS_REG_PMPT, GET, "module=%d,slot_index=%d,host_media=%d,lane_mask=%d,ch_ge=%d", _moduleNumber,
+    sendPrmReg(ACCESS_REG_PMPT, REG_GET, "module=%d,slot_index=%d,host_media=%d,lane_mask=%d,ch_ge=%d", _moduleNumber,
                _slotIndex, _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST", 1, (u_int32_t)moduleAccess);
 
     return getFieldValue("status");
@@ -1304,7 +1304,7 @@ void MlxlinkCablesCommander::sendPMPT(ModuleAccess_t moduleAccess)
 {
     checkAndParsePMPTCap(moduleAccess);
 
-    sendPrmReg(ACCESS_REG_PMPT, SET,
+    sendPrmReg(ACCESS_REG_PMPT, REG_SET,
                "module=%d,slot_index=%d,host_media=%d,lane_mask=%d,ch_ge=%d,e=%d,prbs_mode_admin=%d,lane_rate_admin=%d,"
                "invt_admin=%d,swap_admin=%d,le=%d,modulation=%d",
                _moduleNumber, _slotIndex, _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST",
@@ -1336,7 +1336,7 @@ void MlxlinkCablesCommander::enablePMPT(ModuleAccess_t moduleAccess)
 
 void MlxlinkCablesCommander::disablePMPT()
 {
-    sendPrmReg(ACCESS_REG_PMPT, SET, "module=%d,slot_index=%d,host_media=%d,lane_mask=%d", _moduleNumber, _slotIndex,
+    sendPrmReg(ACCESS_REG_PMPT, REG_SET, "module=%d,slot_index=%d,host_media=%d,lane_mask=%d", _moduleNumber, _slotIndex,
                _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST", 0xff);
 }
 
@@ -1365,7 +1365,7 @@ void MlxlinkCablesCommander::getPMPTConfiguration(ModuleAccess_t moduleAccess,
                                                   vector<string>& prbsInv,
                                                   vector<string>& prbsSwap)
 {
-    sendPrmReg(ACCESS_REG_PMPT, GET, "module=%d,slot_index=%d,host_media=%d,lane_mask=%d,ch_ge=%d", _moduleNumber,
+    sendPrmReg(ACCESS_REG_PMPT, REG_GET, "module=%d,slot_index=%d,host_media=%d,lane_mask=%d,ch_ge=%d", _moduleNumber,
                _slotIndex, _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST", 1, (u_int32_t)moduleAccess);
 
     u_int32_t index = (u_int32_t)pow(2.0, (double)getFieldValue("prbs_mode_admin"));
@@ -1389,7 +1389,7 @@ string MlxlinkCablesCommander::getPMPDLockStatus()
 
     for (u_int32_t lane = 0; lane < _numOfLanes; lane++)
     {
-        sendPrmReg(ACCESS_REG_PMPD, GET, "module=%d,slot_index=%d,host_media=%d,lane=%d", _moduleNumber, _slotIndex,
+        sendPrmReg(ACCESS_REG_PMPD, REG_GET, "module=%d,slot_index=%d,host_media=%d,lane=%d", _moduleNumber, _slotIndex,
                    _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST", lane);
 
         lockStatusStr += MlxlinkRecord::addSpaceForModulePrbs(_mlxlinkMaps->_modulePMPDStatus[getFieldValue("status")]);
@@ -1418,7 +1418,7 @@ void MlxlinkCablesCommander::showPrbsTestMode()
 
     try
     {
-        sendPrmReg(ACCESS_REG_PMPT, GET, "module=%d,slot_index=%d,host_media=%d,lane_mask=%d", _moduleNumber,
+        sendPrmReg(ACCESS_REG_PMPT, REG_GET, "module=%d,slot_index=%d,host_media=%d,lane_mask=%d", _moduleNumber,
                    _slotIndex, _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST", 1);
     }
     catch (MlxRegException& exc)
@@ -1458,7 +1458,7 @@ void MlxlinkCablesCommander::getPMPDInfo(vector<string>& traffic,
     bool skipSnrCap = false;
     for (u_int32_t lane = 0; lane < _numOfLanes; lane++)
     {
-        sendPrmReg(ACCESS_REG_PMPD, GET, "module=%d,slot_index=%d,host_media=%d,lane=%d", _moduleNumber, _slotIndex,
+        sendPrmReg(ACCESS_REG_PMPD, REG_GET, "module=%d,slot_index=%d,host_media=%d,lane=%d", _moduleNumber, _slotIndex,
                    _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST", lane);
 
         traficStr = to_string(add32BitTo64(getFieldValue("prbs_bits_high"), getFieldValue("prbs_bits_low")));
@@ -1523,7 +1523,7 @@ void MlxlinkCablesCommander::clearPrbsDiagInfo()
 {
     MlxlinkRecord::printCmdLine("Clearing PRBS Diagnostic Counters", _jsonRoot);
 
-    sendPrmReg(ACCESS_REG_PMPD, GET, "module=%d,slot_index=%d,host_media=%d,cl=%d", _moduleNumber, _slotIndex,
+    sendPrmReg(ACCESS_REG_PMPD, REG_GET, "module=%d,slot_index=%d,host_media=%d,cl=%d", _moduleNumber, _slotIndex,
                _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST", 1);
 }
 
@@ -1538,7 +1538,7 @@ void MlxlinkCablesCommander::showControlParams()
     float rxEmph = 0.0;
     if (!_isSwControled)
     {
-        sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d", PDDR_MODULE_INFO_PAGE);
+        sendPrmReg(ACCESS_REG_PDDR, REG_GET, "page_select=%d", PDDR_MODULE_INFO_PAGE);
 
         txEq = getFieldValue("cable_tx_equalization");
         rxEmph = (double)getFieldValue("cable_rx_emphasis");
@@ -1548,7 +1548,7 @@ void MlxlinkCablesCommander::showControlParams()
 
     bool isCmis = _cableIdentifier >= IDENTIFIER_SFP_DD;
 
-    sendPrmReg(ACCESS_REG_PMCR, GET);
+    sendPrmReg(ACCESS_REG_PMCR, REG_GET);
 
     if (isCmis)
     {
@@ -1673,7 +1673,7 @@ string MlxlinkCablesCommander::getPMCRCapValueStr(u_int32_t valueCap, ControlPar
 
 void MlxlinkCablesCommander::checkPMCRFieldsCap(vector<pair<ControlParam, string>>& params)
 {
-    sendPrmReg(ACCESS_REG_PMCR, GET);
+    sendPrmReg(ACCESS_REG_PMCR, REG_GET);
 
     // Check provided params exestance capability
     string fieldName = "";
@@ -1754,7 +1754,7 @@ void MlxlinkCablesCommander::setControlParams(vector<pair<ControlParam, string>>
         }
 
         pmcrFieldsRequest = deleteLastChar(pmcrFieldsRequest);
-        sendPrmReg(ACCESS_REG_PMCR, SET, pmcrFieldsRequest.c_str());
+        sendPrmReg(ACCESS_REG_PMCR, REG_SET, pmcrFieldsRequest.c_str());
     }
     catch (MlxRegException& exc)
     {
