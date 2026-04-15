@@ -73,10 +73,10 @@ public:
     class iterator
     {
     public:
-        using value_type = pair<string, string>;
+        using value_type = pair<const string, string>;
         using difference_type = std::ptrdiff_t;
-        using pointer = pair<string, string>*;
-        using reference = pair<string, string>&;
+        using pointer = value_type*;
+        using reference = value_type&;
         using iterator_category = bidirectional_iterator_tag;
 
         explicit iterator(LayoutItemAttrsMap& container, AttrsMap::iterator current, bool past_layout_specific = false);

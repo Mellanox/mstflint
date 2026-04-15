@@ -911,8 +911,7 @@ bool MlnxDev::InitDevFWParams(FwOperations::fw_ops_params_t& devFwParams)
         _log += _errMsg;
         return false;
     }
-    memset(devFwParams.mstHndl, 0, length);
-    strncpy(devFwParams.mstHndl, deviceName, length - 1);
+    memcpy(devFwParams.mstHndl, deviceName, length);
     devFwParams.forceLock = false;
     devFwParams.readOnly = false;
     devFwParams.numOfBanks = -1;
