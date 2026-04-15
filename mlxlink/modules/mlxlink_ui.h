@@ -76,9 +76,7 @@ protected:
     virtual void validatePlrParams();
     virtual void paramValidate();
     virtual void createMlxlinkCommander();
-    virtual void initRegAccessLib();
     virtual void initPortInfo();
-    virtual void initPCIDomain();
     virtual void updateSysFsPath(string& sysfsPath);
 
     void handlePortStr(UserInput& userInput, const string& portStr);
