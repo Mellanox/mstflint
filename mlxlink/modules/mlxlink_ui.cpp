@@ -34,7 +34,6 @@
 
 #include "mlxlink_ui.h"
 #include <mlxreg/mlxreg_lib/mlxreg_parser.h>
-#include <pci_library/PCILibrary.h>
 MlxlinkUi::MlxlinkUi() : CommandLineRequester(MLXLINK_EXEC " OPTIONS"), _cmdParser(MLXLINK_EXEC)
 {
     _mlxlinkCommander = nullptr;
@@ -51,36 +50,8 @@ MlxlinkUi::~MlxlinkUi()
 
 void MlxlinkUi::createMlxlinkCommander()
 {
-    _mlxlinkCommander = new MlxlinkCommander();
-}
-
-void MlxlinkUi::initRegAccessLib()
-{
-    MlxRegLib::isAccessRegisterSupported(_mf);
-
-    _mlxlinkCommander->_mf = _mf;
-
-    _mlxlinkCommander->_regLib =
-      new MlxRegLib(_mlxlinkCommander->_mf, _mlxlinkCommander->_extAdbFile, _mlxlinkCommander->_useExtAdb);
-
-    _mlxlinkCommander->_userInput = _userInput;
-
-    if (_mlxlinkCommander->_regLib->isIBDevice() &&
-        !_mlxlinkCommander->_regLib->isAccessRegisterGMPSupported(MACCESS_REG_METHOD_GET))
-    {
-        MlxlinkRecord::printWar("Warning: AccessRegisterGMP Get() method is not supported.\n"
-                                "         mlxlink has limited functionality",
-                                _mlxlinkCommander->_jsonRoot);
-    }
-
-    _mlxlinkCommander->_gvmiAddress = _userInput._gvmiAddress;
-    _mlxlinkCommander->_devID = _mlxlinkCommander->_regLib->getDevId();
-    _mlxlinkCommander->_isHCA = dm_dev_is_hca(_mlxlinkCommander->_devID);
-    if (_mlxlinkCommander->_isHCA)
-    {
-        _mlxlinkCommander->_isDPNvSupported = _mlxlinkCommander->checkDPNvSupport();
-        dynamic_cast<MlxlinkCommander*>(_mlxlinkCommander)->setPlaneIndex(_userInput.planeIndex);
-    }
+    _mlxlinkCommander = new MlxlinkCommander(_mf, _userInput);
+    _mlxlinkCommander->init();
 }
 
 bool MlxlinkUi::isSwitch()
@@ -98,57 +69,12 @@ void MlxlinkUi::updateSysFsPath(string& sysfsPath)
 }
 void MlxlinkUi::initPortInfo()
 {
-    if (isSwitch() && ((!_userInput._portSpecified && _userInput._csvBer != "") ||
-                       (_userInput._showMultiPortInfo || _userInput._showMultiPortModuleInfo)))
-    {
-        _mlxlinkCommander->findFirstValidPort();
-    }
-
-    // only init PCI domain for "--port_type PCIE --show_links" command.
-    if (_userInput._pcie && _userInput._links && !isSwitch())
-    {
-        initPCIDomain();
-    }
-
-    _mlxlinkCommander->labelToLocalPort();
-    _mlxlinkCommander->validatePortType(_userInput._portType);
-    _mlxlinkCommander->updateSwControlStatus();
-    _mlxlinkCommander->updateNvlinkModeBStatus();
-    if (!_userInput._pcie)
-    {
-        _mlxlinkCommander->checkValidFW();
-    }
-    if (!(_mlxlinkCommander->_mf->tp == MST_PCICONF && (dm_is_gpu(static_cast<dm_dev_id_t>(_mlxlinkCommander->_devID)))))
-    {
-        _mlxlinkCommander->getProductTechnology();
-    }
-    if (!_userInput._pcie)
-    {
-        _mlxlinkCommander->_prbsTestMode = _mlxlinkCommander->inPrbsTestMode();
-        if (!_mlxlinkCommander->_isSwControled &&
-            (_userInput._networkCmds != 0 || _userInput._ddm || _userInput._dump || _userInput._write ||
-             _userInput._read || _userInput.isModuleConfigParamsProvided || _userInput.isPrbsSelProvided ||
-             _userInput._csvBer != ""))
-        {
-            _mlxlinkCommander->getCableParams();
-        }
-        if (_mlxlinkCommander->_isSwControled && _userInput._sysfsPath.empty())
-        {
-            updateSysFsPath(_mlxlinkCommander->_userInput._sysfsPath);
-        }
-    }
-    else if (!_userInput._sendDpn)
-    {
-        _mlxlinkCommander->initValidDPNList();
-    }
-    _mlxlinkCommander->updateDPNDomain();
+    _mlxlinkCommander->updatePortInfo();
 }
 
 void MlxlinkUi::initMlxlinkCommander()
 {
     createMlxlinkCommander();
-
-    initRegAccessLib();
 
     initPortInfo();
 }
@@ -2493,20 +2419,4 @@ int MlxlinkUi::run(int argc, char** argv)
 
     cout << endl;
     return exit_code;
-}
-
-// SetPCIDomain should not throw exceptions, even if failed to set domain.
-// we use try/catch to cover any unexpected errors.
-void MlxlinkUi::initPCIDomain()
-{
-    try
-    {
-        PCILibrary::SetPCIDomain();
-    }
-    catch (const std::exception& exc)
-    {
-        MlxlinkRecord::printWar(
-          "Warning: Failed to set one or more PCI domains, use \"export MFT_PRINT_LOG=1\" to get more details.",
-          _mlxlinkCommander->_jsonRoot);
-    }
 }
