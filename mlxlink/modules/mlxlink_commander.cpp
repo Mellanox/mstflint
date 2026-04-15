@@ -228,6 +228,7 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _loopbackMode = 0;
     _fomStr = "";
     _rxRecoveryCountersCmd.setLineLen(RX_RECOVERY_COUNTERS_LINE_LEN);
+    _silentMode = false;
 }
 
 MlxlinkCommander::~MlxlinkCommander()
@@ -268,6 +269,37 @@ MlxlinkCommander::~MlxlinkCommander()
     {
         delete _mlxlinkMaps;
     }
+}
+
+void MlxlinkCommander::printOutput(const string& output)
+{
+    if (!_silentMode)
+    {
+        std::cout << output;
+    }
+}
+
+void MlxlinkCommander::printOutput(const MlxlinkCmdPrint& output)
+{
+    if (!_silentMode)
+    {
+        std::cout << output;
+    }
+}
+
+void MlxlinkCommander::setSilentMode()
+{
+    _silentMode = true;
+}
+
+bool MlxlinkCommander::errorObserved()
+{
+    return _allUnhandledErrors != "";
+}
+
+std::string MlxlinkCommander::getAllUnhandledErrors()
+{
+    return _allUnhandledErrors;
 }
 
 void MlxlinkCommander::validatePortType(const string& portTypeStr)
@@ -2061,7 +2093,7 @@ void MlxlinkCommander::showModuleInfo()
 
         prepareBerModuleInfo(valid, moduleInfoFields);
 
-        cout << _moduleInfoCmd;
+        printOutput(_moduleInfoCmd);
 
         if (oper_status != 1)
         {
@@ -2510,11 +2542,11 @@ void MlxlinkCommander::showPddr()
         }
         else if (!_userInput._showMultiPortInfo && !_userInput._showMultiPortModuleInfo)
         {
-            std::cout << _operatingInfoCmd;
-            std::cout << _portInfoCmd;
-            std::cout << _supportedInfoCmd;
-            std::cout << _troubInfoCmd;
-            std::cout << _toolInfoCmd;
+            printOutput(_operatingInfoCmd);
+            printOutput(_portInfoCmd);
+            printOutput(_supportedInfoCmd);
+            printOutput(_troubInfoCmd);
+            printOutput(_toolInfoCmd);
         }
     }
     catch (const std::exception& exc)
@@ -2714,7 +2746,7 @@ void MlxlinkCommander::showTestMode()
         setPrintVal(_testModeInfoCmd, "Test Mode FSM State", getTestModeFsmStateStr());
     }
 
-    cout << _testModeInfoCmd;
+    printOutput(_testModeInfoCmd);
 }
 
 int MlxlinkCommander::prbsModeToMask(const string& mode, bool isNvl6)
@@ -2915,7 +2947,7 @@ void MlxlinkCommander::showBer()
             setPrintVal(_berInfoCmd, "Link Error Recovery Counter", to_string(linkRecoveryCounter), ANSI_COLOR_RESET, true, _linkUP);
         }
 
-        cout << _berInfoCmd;
+        printOutput(_berInfoCmd);
     }
     catch (const std::exception& exc)
     {
@@ -2942,7 +2974,7 @@ void MlxlinkCommander::showTestModeBer()
     setPrintVal(_testModeBerInfoCmd, "PRBS Errors", getStringFromVector(errors));
     setPrintVal(_testModeBerInfoCmd, "PRBS BER", getFieldStr("raw_ber_coef") + "E-" + getFieldStr("raw_ber_magnitude"));
 
-    cout << _testModeBerInfoCmd;
+    printOutput(_testModeBerInfoCmd);
 }
 
 void MlxlinkCommander::getPcieNdrCounters(uint32_t flitActive)
@@ -3010,7 +3042,7 @@ void MlxlinkCommander::showMpcntPerformance(DPN& dpn)
         _allUnhandledErrors += string("Showing BER via MPCNT raised the following exception: ") + string(exc.what()) + string("\n");
     }
 
-    cout << _mpcntPerfInfCmd;
+    printOutput(_mpcntPerfInfCmd);
 }
 
 void MlxlinkCommander::checkPCIeValidity()
@@ -3269,7 +3301,7 @@ void MlxlinkCommander::showEye()
         {
             prepare5nmEyeInfo(numOfLanesToUse);
         }
-        cout << _eyeOpeningInfoCmd;
+        printOutput(_eyeOpeningInfoCmd);
     }
     catch (const std::exception& exc)
     {
@@ -3411,7 +3443,7 @@ void MlxlinkCommander::showFEC()
         }
         else
         {
-            cout << _fecCapInfoCmd;
+            printOutput(_fecCapInfoCmd);
         }
     }
     catch (const std::exception& exc)
@@ -3509,7 +3541,7 @@ void MlxlinkCommander::showSltp()
         if (!_linkUP && !_userInput._pcie && !_prbsTestMode)
         {
             setPrintVal(_sltpInfoCmd, "Serdes TX parameters", sltpHeader, ANSI_COLOR_RESET, true, false, true);
-            cout << _sltpInfoCmd;
+            printOutput(_sltpInfoCmd);
             return;
         }
         setPrintVal(_sltpInfoCmd, "Serdes TX parameters", sltpHeader, ANSI_COLOR_RESET, true, true, true);
@@ -3544,7 +3576,7 @@ void MlxlinkCommander::showSltp()
 
             setPrintVal(_sltpInfoCmd, "Lane " + to_string(lane), getStringFromVector(sltpLanes[lane]), ANSI_COLOR_RESET, true, valid, true);
         }
-        cout << _sltpInfoCmd;
+        printOutput(_sltpInfoCmd);
     }
     catch (const std::exception& exc)
     {
@@ -3662,7 +3694,7 @@ void MlxlinkCommander::showBkv()
 
         // Print title and table
         setPrintTitle(showBkvCmd, "BKV Groups Info", numGroups + 1);
-        cout << showBkvCmd;
+        printOutput(showBkvCmd);
         printMlxlinkTable(tableData, _mlxlinkMaps->_bkvGroupsTableHeader);
     }
     catch (const std::exception& exc)
@@ -3717,7 +3749,7 @@ void MlxlinkCommander::showBkvGroup(bool showEntries, u_int32_t entryFilter)
     value << "0x" << std::hex << setfill('0') << setw(1) << modeBRoleMask << " (" << getStrByMask(modeBRoleMask, _mlxlinkMaps->_PSCDModeBRoleMask2Str, ",") << ")";
     setPrintVal(showBkvGroupPropertiesCmd, "Mode B Role Mask", value.str(), ANSI_COLOR_RESET, true, true);
 
-    cout << showBkvGroupPropertiesCmd;
+    printOutput(showBkvGroupPropertiesCmd);
 
     if (showEntries)
     {
@@ -3779,7 +3811,7 @@ void MlxlinkCommander::showBkvGroup(bool showEntries, u_int32_t entryFilter)
         }
 
         setPrintTitle(showBkvGroupEntriesCmd, "BKV Group Entries", displayedEntries + 1);
-        cout << showBkvGroupEntriesCmd;
+        printOutput(showBkvGroupEntriesCmd);
         printMlxlinkTable(tableData, _mlxlinkMaps->_bkvGroupEntriesTableHeader);
     }
 }
@@ -3932,7 +3964,7 @@ void MlxlinkCommander::showDeviceData()
         setPrintVal(_showDeviceInfoCmd, "Revision", success ? getVendorRev(getFieldValue("revision")) : NA_FIELD_VALUE);
         setPrintVal(_showDeviceInfoCmd, "FW Version", getFwVersion());
 
-        cout << _showDeviceInfoCmd;
+        printOutput(_showDeviceInfoCmd);
 
         if (_isHCA)
         {
@@ -3974,7 +4006,7 @@ void MlxlinkCommander::showBerMonitorInfo()
         setPrintVal(_showBerMonitorInfo, "BER Monitor State", monitor_state);
         setPrintVal(_showBerMonitorInfo, "BER Monitor Type", monitor_type);
 
-        cout << _showBerMonitorInfo;
+        printOutput(_showBerMonitorInfo);
     }
     catch (const std::exception& exc)
     {
@@ -4006,7 +4038,7 @@ void MlxlinkCommander::showExternalPhy()
 
         setPrintVal(_extPhyInfoCmd, "Twisted Pair Force Mode", getStrByValue(getFieldValue("twisted_pair_force_mode"), _mlxlinkMaps->_pepcTwistedPairForceMode));
 
-        cout << _extPhyInfoCmd;
+        printOutput(_extPhyInfoCmd);
     }
     catch (const std::exception& exc)
     {
@@ -4135,7 +4167,7 @@ void MlxlinkCommander::showPcieLinks()
             setPrintVal(_validPcieLinks, "Link " + to_string(i + 1), dpnStr, ANSI_COLOR_RESET, localPort >= 0, true,
                         true);
         }
-        cout << _validPcieLinks;
+        printOutput(_validPcieLinks);
     }
     catch (const std::exception& exc)
     {
@@ -4212,7 +4244,7 @@ void MlxlinkCommander::showPcieState(DPN& dpn)
 
     pcieInfoCmd.toJsonFormat(_jsonRoot);
 
-    cout << pcieInfoCmd;
+    printOutput(pcieInfoCmd);
 }
 
 void MlxlinkCommander::collectAMBER()
@@ -4441,7 +4473,7 @@ void MlxlinkCommander::showTxGroupMapping()
         sprintf(title, "Ports Mapped to Group %d", _userInput._showGroup);
         setPrintVal(_portGroupMapping, title, ports, ANSI_COLOR_RESET, true, !_prbsTestMode && !ports.empty(), true);
 
-        cout << _portGroupMapping;
+        printOutput(_portGroupMapping);
     }
     catch (const std::exception& exc)
     {
@@ -6654,7 +6686,7 @@ void MlxlinkCommander::printOuptputVector(vector<MlxlinkCmdPrint>& cmdOut)
 {
     for (vector<MlxlinkCmdPrint>::iterator ptr = cmdOut.begin(); ptr < cmdOut.end(); ptr++)
     {
-        cout << *ptr;
+        printOutput(*ptr);
     }
 }
 
@@ -6772,7 +6804,7 @@ void MlxlinkCommander::readCableEEPROM()
     {
         initCablesCommander();
         MlxlinkCmdPrint bytesOutput = _cablesCommander->readFromEEPRM(_userInput._page, _userInput._offset, _userInput._len);
-        cout << bytesOutput;
+        printOutput(bytesOutput);
     }
     catch (MlxRegException& exc)
     {
@@ -7069,7 +7101,8 @@ void MlxlinkCommander::initPortInfo()
 
         if (_userInput.showFecHistogram)
         {
-            _portInfo->showHistogram();
+            MlxlinkCmdPrint histogram = _portInfo->showHistogram();
+            printOutput(histogram);
         }
         else if (_userInput.clearFecHistogram)
         {
@@ -7078,9 +7111,10 @@ void MlxlinkCommander::initPortInfo()
     }
     catch (MlxRegException& exc)
     {
-        _allUnhandledErrors += string("Providing FEC histogram cause the following"
-                                      " exception:\n") +
-                               string(exc.what()) + string("\n");
+        string errorMessage = string("Providing FEC histogram cause the following"
+                                     " exception:\n") +
+                                     string(exc.what()) + string("\n");
+        _allUnhandledErrors += errorMessage;
     }
 }
 
@@ -7281,7 +7315,7 @@ void MlxlinkCommander::showPlr()
     {
         throw MlxRegException("PLR is not supported for the current device!");
     }
-    cout << _plrInfoCmd;
+    printOutput(_plrInfoCmd);
 }
 
 void MlxlinkCommander::setPlr()
@@ -7419,7 +7453,7 @@ void MlxlinkCommander::showKr()
     {
         throw MlxRegException("KR is not supported for the current device!");
     }
-    cout << _krInfoCmd;
+    printOutput(_krInfoCmd);
 }
 
 void MlxlinkCommander::showRxRecoveryCounters()
@@ -7560,7 +7594,7 @@ void MlxlinkCommander::showRxRecoveryCounters()
     {
         throw MlxRegException("Showing rx recovery counters raised the following exception:\n" + string(exc.what()));
     }
-    cout << _rxRecoveryCountersCmd;
+    printOutput(_rxRecoveryCountersCmd);
 }
 
 void MlxlinkCommander::handlePhyRecovery()
@@ -7737,7 +7771,7 @@ void MlxlinkCommander::showPeriodicEq()
     {
         throw MlxRegException("Periodic EQ is not supported for the current device!\n" + string(exc.what()));
     }
-    cout << _periodicEqInfoCmd;
+    printOutput(_periodicEqInfoCmd);
 }
 
 void MlxlinkCommander::setPeriodicEq()
@@ -7770,7 +7804,7 @@ void MlxlinkCommander::setPeriodicEq()
 
 bool MlxlinkCommander::checkAllPortsDown()
 {
-    cout << "\nChecking all ports are down";
+    printOutput("\nChecking all ports are down");
     try
     {
         updateLocalPortGroup();
@@ -7783,7 +7817,7 @@ bool MlxlinkCommander::checkAllPortsDown()
                 return false;
             }
         }
-        cout << " DONE" << endl;
+        printOutput(" DONE\n");
         return true;
     }
     catch (const std::exception& exc)

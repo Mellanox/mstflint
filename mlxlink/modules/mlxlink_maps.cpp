@@ -1824,4 +1824,7 @@ MlxlinkMaps::MlxlinkMaps()
     initPprmRecoveryStatusMapping();
 }
 
-MlxlinkMaps::~MlxlinkMaps() {}
+MlxlinkMaps::~MlxlinkMaps()
+{
+    instance = nullptr;
+}
