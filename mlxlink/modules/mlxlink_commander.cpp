@@ -227,6 +227,7 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _groupOpcode = MONITOR_OPCODE;
     _loopbackMode = 0;
     _fomStr = "";
+    _attenuationTitle = "";
     _rxRecoveryCountersCmd.setLineLen(RX_RECOVERY_COUNTERS_LINE_LEN);
     _silentMode = false;
 }
@@ -1774,12 +1775,12 @@ void MlxlinkCommander::prepareStaticInfoSection(bool valid)
 void MlxlinkCommander::prepareAttenuationAndFwSection(bool valid)
 {
     string cableAttenuation = NA_FIELD_VALUE;
-    string attenuationTitle = "Attenuation (5g,7g,12g";
+    _attenuationTitle = "Attenuation (5g,7g,12g";
     bool passive = _cableMediaType == PASSIVE;
 
     if (_cmisCable)
     {
-        attenuationTitle += ",25g";
+        _attenuationTitle += ",25g";
     }
 
     if ((_cableIdentifier != IDENTIFIER_SFP) && (_cableIdentifier != IDENTIFIER_QSA))
@@ -1795,14 +1796,14 @@ void MlxlinkCommander::prepareAttenuationAndFwSection(bool valid)
             string attenuation53g = getFieldStr("cable_attenuation_53g");
             if (attenuation53g != "0")
             {
-                attenuationTitle += ",53g";
+                _attenuationTitle += ",53g";
                 cableAttenuation += "," + attenuation53g;
             }
         }
     }
-    attenuationTitle += ")[dB]";
+    _attenuationTitle += ")[dB]";
 
-    setPrintVal(_moduleInfoCmd, attenuationTitle, cableAttenuation, ANSI_COLOR_RESET, true, valid);
+    setPrintVal(_moduleInfoCmd, _attenuationTitle, cableAttenuation, ANSI_COLOR_RESET, true, valid);
     if (!_isSwControled)
     {
         setPrintVal(_moduleInfoCmd, "FW Version", getModuleFwVersion(passive, getFieldValue("fw_version")), ANSI_COLOR_RESET, true, valid);

@@ -147,6 +147,7 @@ public:
 
     vector<MlxlinkCmdPrint> getPagesToDump();
     vector<MlxlinkCmdPrint> getCableDDM();
+    cable_ddm_q_t& getCableDDMInfo();
     void writeToEEPROM(u_int16_t page, u_int16_t offset, vector<u_int8_t>& bytesToWrite);
     MlxlinkCmdPrint readFromEEPRM(u_int16_t page, u_int16_t offset, u_int16_t length);
 
@@ -157,6 +158,7 @@ public:
     void showControlParams();
     void setControlParams(vector<pair<ControlParam, string>>& params);
     void setSwControlMode();
+    float getTxBiasMultiplier();
 
     u_int32_t _moduleNumber;
     u_int32_t _slotIndex;
