@@ -600,7 +600,10 @@ public:
     virtual void prepareBerInfoEDR();
     virtual void getPcieNdrCounters(u_int32_t flitActive = 0);
     virtual vector<AmberField> getBerFields();
-
+    bool isRawPhysicalBERPerLaneSupported();
+    bool isEDRProduct();
+    bool isProtocolActiveIB();
+    bool isProtocolActiveETH();
     std::map<std::string, std::string> getPprt();
     std::map<std::string, std::string> getPptt();
 
