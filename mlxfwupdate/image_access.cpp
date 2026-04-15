@@ -760,8 +760,7 @@ void ImageAccess::parse_image_info_data(u_int8_t* image_info_data, PsidQueryItem
     fw_ver[0] = image_info.FW_VERSION.MAJOR;
     fw_ver[1] = image_info.FW_VERSION.MINOR;
     fw_ver[2] = image_info.FW_VERSION.SUBMINOR;
-    (strncpy(fw_branch, image_info.vsd, BRANCH_LEN));
-    fw_branch[BRANCH_LEN] = (char)0;
+    snprintf(fw_branch, sizeof(fw_branch), "%.*s", BRANCH_LEN, image_info.vsd);
     ImgVersion imgv;
     imgv.setVersion("FW", FW_VER_SIZE, fw_ver, fw_branch);
     query_item.imgVers.push_back(imgv);

@@ -498,7 +498,7 @@ void print_pci_info(dev_info* dev, int domain_needed, mfile* mf, int net_width)
     if (CheckifVfioPciDriverIsLoaded())
     {
         char vfio_dev[32];
-        snprintf(vfio_dev, sizeof(vfio_dev), "vfio-%s", dbdf);
+        snprintf(vfio_dev, sizeof(vfio_dev), "vfio-%.26s", dbdf);
         printf("%-18s", vfio_dev);
     }
     else

@@ -971,9 +971,9 @@ bool Flash::get_attr(ext_flash_attr_t& attr)
     if (_attr.type_str != NULL)
     {
         // we don't print the flash type in old devices
-        int type_str_len = strlen(_attr.type_str);
-        attr.type_str = strncpy(new char[type_str_len + 1], _attr.type_str, type_str_len);
-        attr.type_str[type_str_len] = '\0';
+        size_t type_str_len = strlen(_attr.type_str);
+        attr.type_str = strcpy(new char[type_str_len + 1], _attr.type_str);
+
     }
     attr.size = _attr.size;
     attr.sector_size = _attr.sector_size;

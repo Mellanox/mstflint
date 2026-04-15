@@ -4537,7 +4537,13 @@ bool fromFileToArray(string& fileName, vector<u_int8_t>& outputArray, unsigned i
         fclose(pFile);
         return false;
     }
-    fread(data, sizeof(char), input_length, pFile);
+    size_t rc = fread(data, sizeof(char), input_length, pFile);
+    if (rc != input_length)
+    {
+        delete[] data;
+        fclose(pFile);
+        return false;
+    }
     fclose(pFile);
     outputArray.resize(input_length / 2);
     for (size_t i = 0; i < input_length; i += 2)

@@ -868,21 +868,22 @@ void FwOperations::BackUpFwParams(fw_ops_params_t& fwParams)
     _fwParams.cx3FwAccess = fwParams.cx3FwAccess;
     _fwParams.errBuff = (char*)NULL;
     _fwParams.errBuffSize = 0;
-    _fwParams.fileHndl =
-      (fwParams.hndlType == FHT_FW_FILE && fwParams.fileHndl) ? strncpy((char*)(new char[(strlen(fwParams.fileHndl) + 1)]), fwParams.fileHndl, strlen(fwParams.fileHndl) + 1) : (char*)NULL;
+    _fwParams.fileHndl = (fwParams.hndlType == FHT_FW_FILE && fwParams.fileHndl) ?
+                           strcpy((char*)(new char[(strlen(fwParams.fileHndl) + 1)]), fwParams.fileHndl) :
+                           (char*)NULL;
     // no support for flash params
     _fwParams.flashParams = (flash_params_t*)NULL;
     _fwParams.forceLock = fwParams.forceLock;
     _fwParams.ignoreCacheRep = fwParams.ignoreCacheRep;
-    _fwParams.mstHndl =
-      (fwParams.hndlType == FHT_MST_DEV && fwParams.mstHndl) ? strncpy((char*)(new char[(strlen(fwParams.mstHndl) + 1)]), fwParams.mstHndl, strlen(fwParams.mstHndl) + 1) : (char*)NULL;
+    _fwParams.mstHndl = (fwParams.hndlType == FHT_MST_DEV && fwParams.mstHndl) ?
+                          strcpy((char*)(new char[(strlen(fwParams.mstHndl) + 1)]), fwParams.mstHndl) :
+                          (char*)NULL;
     _fwParams.noFlashVerify = fwParams.noFlashVerify;
     _fwParams.numOfBanks = fwParams.numOfBanks;
-    _fwParams.psid = fwParams.psid ? strncpy((char*)(new char[(strlen(fwParams.psid) + 1)]), fwParams.psid, strlen(fwParams.psid) + 1) : (char*)NULL;
+    _fwParams.psid =
+      fwParams.psid ? strcpy((char*)(new char[(strlen(fwParams.psid) + 1)]), fwParams.psid) : (char*)NULL;
     _fwParams.readOnly = fwParams.readOnly;
     _fwParams.shortErrors = fwParams.shortErrors;
-    _fwParams.uefiExtra = fwParams.uefiExtra;
-    _fwParams.uefiHndl = fwParams.uefiHndl;
     _fwParams.isCableFw = fwParams.isCableFw;
     _fwParams.ignoreCrcCheck = fwParams.ignoreCrcCheck;
 }
