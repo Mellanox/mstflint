@@ -35,10 +35,13 @@
 
 using namespace std;
 
-SystemConfiguration::SystemConfiguration() : name(""), relevantDevices(""), asicNumber(-1), parametersString("") {}
+SystemConfiguration::SystemConfiguration() :
+    name(""), configurationNameStr(""), description(""), relevantDevices(""), asicNumber(-1), parametersString("")
+{
+}
 
 SystemConfiguration::SystemConfiguration(int argc, char** argv, char** colNames) :
-    name(""), relevantDevices(""), asicNumber(-1), parametersString("")
+    name(""), configurationNameStr(""), description(""), relevantDevices(""), asicNumber(-1), parametersString("")
 {
     for (int i = 0; i < argc; i++)
     {
@@ -49,9 +52,17 @@ SystemConfiguration::SystemConfiguration(int argc, char** argv, char** colNames)
         string colName = colNames[i];
         string val = argv[i];
 
-        if (colName == "configuration_name")
+        if (colName == "conf_name")
         {
             name = val;
+        }
+        else if (colName == "configuration_name_str")
+        {
+            configurationNameStr = val;
+        }
+        else if (colName == "description")
+        {
+            description = val;
         }
         else if (colName == "relevant_devices")
         {

@@ -71,6 +71,10 @@
 #define NEXT_STR "Next Boot"
 #define DEFAULT_CURRENT_NOT_SUPPORTED_PREFIX "Device Firmware does not support reading "
 #define TLV_NAME_MAX_LENGTH 256
+/* Alignment with printSingleParam: prefix (diff+readOnly+"     "+fieldName) = 1+2+5+48 = 56; value columns wide
+ * enough for BYTES hex display (2 chars per byte), with 1 space between columns */
+static constexpr int CONFIG_TABLE_NAME_WIDTH = 56;
+static constexpr int CONFIG_TABLE_VALUE_WIDTH = (MLXCFG_BYTES_MAX_HEX_DISPLAY_BYTES * 2) + 1;
 #define EXIT_IF_RC_NOT_OK(rc) \
     if (rc != MLX_CFG_OK)     \
     {                         \
@@ -153,6 +157,7 @@ void initHandler()
 
 inline void copyVal(QueryOutputItem& o, const ParamView& p, QueryType qT)
 {
+    o.paramType = p.type;
     if (qT == QueryDefault)
     {
         o.defVal = p.val;
@@ -172,6 +177,7 @@ inline void copyVal(QueryOutputItem& o, const ParamView& p, QueryType qT)
 
 inline void copySet(QueryOutputItem& o, const ParamView& p)
 {
+    o.paramType = p.type;
     o.setVal = p.val;
     o.strSetVal = p.strVal;
 }
@@ -244,7 +250,7 @@ bool MlxCfg::askUser(const char* question, bool add_prefix, bool add_suffix, int
     return true;
 }
 
-void MlxCfg::rebootDevice(const string& device)
+mlxCfgStatus MlxCfg::rebootDevice(const string& device)
 {
     string question = "Do you want to reboot the device " + device + " now?";
     if (askUser(question.c_str(), true, true, 2))
@@ -255,8 +261,10 @@ void MlxCfg::rebootDevice(const string& device)
         if (rc != 0)
         {
             fprintf(stderr, "-E- Failed to reboot device (exit code: %d)\n", rc);
+            return MLX_CFG_ERROR;
         }
     }
+    return MLX_CFG_OK;
 }
 
 mlxCfgStatus MlxCfg::queryDevsCfg()
@@ -302,18 +310,10 @@ mlxCfgStatus MlxCfg::queryDevsCfg()
         }
         // printf("-D- num of dev: %d , 1st dev : %s\n", numOfDev, buf);
         dev_info* devPtr = dev;
-        char pcibuf[32] = {0};
 
         for (int i = 0; i < numOfDev; i++)
         {
-#ifdef __FREEBSD__
-            const char* device_name_ptrn = "pci%d:%d:%d:%d";
-#else
-            const char* device_name_ptrn = "%04x:%02x:%02x.%x";
-#endif
-            snprintf(pcibuf, 32, device_name_ptrn, devPtr->pci.domain, devPtr->pci.bus, devPtr->pci.dev,
-                     devPtr->pci.func);
-            if (queryDevCfg(devPtr->pci.conf_dev, pcibuf, i + 1))
+            if (queryDevCfg(devPtr->pci.conf_dev, i + 1))
             {
                 printErr();
                 shouldFail = true;
@@ -337,41 +337,52 @@ mlxCfgStatus MlxCfg::queryDevsCfg()
     return shouldFail ? MLX_CFG_ERROR : MLX_CFG_OK;
 }
 
-int MlxCfg::printValue(string strVal, u_int32_t val)
+int MlxCfg::printValue(string strVal, u_int32_t val, ParamType paramType)
 {
+    /* BYTES: long hex / Array summary is shown as-is; short strings (e.g. 0xNN) use normal str + (decimal). */
+    if (paramType == BYTES && !strVal.empty() && strVal.size() > 4)
+    {
+        return printf("%-*s", CONFIG_TABLE_VALUE_WIDTH, strVal.c_str());
+    }
     string s = numToStr(val);
     u_int32_t n = 0;
     if (strVal == "" || strVal == s || (strToNum(strVal, n, 10) && n == val))
     {
-        return printf("%-20u", val);
+        return printf("%-*u", CONFIG_TABLE_VALUE_WIDTH, val);
     }
     if (strVal.find("Array") == string::npos)
     {
         strVal += "(" + s + ")";
     }
-    return printf("%-20s", strVal.c_str());
+    return printf("%-*s", CONFIG_TABLE_VALUE_WIDTH, strVal.c_str());
 }
 
-int MlxCfg::printParam(string param, u_int32_t val)
+int MlxCfg::printParam(string param, u_int32_t val, ParamType paramType)
 {
     if (val == MLXCFG_UNKNOWN)
     {
-        return printf("%-20s", "N/A");
+        return printf("%-*s", CONFIG_TABLE_VALUE_WIDTH, "N/A");
     }
-    return printValue(param, val);
+    return printValue(param, val, paramType);
 }
 
-#define PRINT_SPACE_IF_NEEDED(width) \
-    if (width >= 20)                 \
-    {                                \
-        printf(" ");                 \
+#define PRINT_SPACE_IF_NEEDED(width)       \
+    if (width >= CONFIG_TABLE_VALUE_WIDTH) \
+    {                                      \
+        printf(" ");                       \
     }
 
-void MlxCfg::writeParamToJson(Json::Value& oJsonValue, string field, string param, u_int32_t val)
+void MlxCfg::writeParamToJson(Json::Value& oJsonValue, string field, string param, u_int32_t val, ParamType paramType)
 {
     if (val == MLXCFG_UNKNOWN)
     {
         oJsonValue[field] = "N/A";
+        return;
+    }
+
+    if (paramType == BYTES && !param.empty() && param.size() > 4)
+    {
+        oJsonValue[field] = param;
         return;
     }
 
@@ -400,7 +411,7 @@ mlxCfgStatus
     oJsonValue[deviceIndex]["tlv_configuration"][queryOutItem.mlxconfigName] = {};
     oJsonValue[deviceIndex]["tlv_configuration"][queryOutItem.mlxconfigName]["read_only"] = queryOutItem.isReadOnly;
     writeParamToJson(oJsonValue[deviceIndex]["tlv_configuration"][queryOutItem.mlxconfigName], "next_value",
-                     queryOutItem.strNextVal, queryOutItem.nextVal);
+                     queryOutItem.strNextVal, queryOutItem.nextVal, queryOutItem.paramType);
 
     if (showDefault || showCurrent)
     {
@@ -409,12 +420,12 @@ mlxCfgStatus
     if (showDefault)
     {
         writeParamToJson(oJsonValue[deviceIndex]["tlv_configuration"][queryOutItem.mlxconfigName], "default_value",
-                         queryOutItem.strDefVal, queryOutItem.defVal);
+                         queryOutItem.strDefVal, queryOutItem.defVal, queryOutItem.paramType);
     }
     if (showCurrent)
     {
         writeParamToJson(oJsonValue[deviceIndex]["tlv_configuration"][queryOutItem.mlxconfigName], "current_value",
-                         queryOutItem.strCurrVal, queryOutItem.currVal);
+                         queryOutItem.strCurrVal, queryOutItem.currVal, queryOutItem.paramType);
     }
     return MLX_CFG_OK;
 }
@@ -438,30 +449,30 @@ void MlxCfg::printSingleParam(const char* name, QueryOutputItem& queryOutItem, u
     {
         readOnly = "RO";
     }
-    printf("%s%s     %-44s", diff.c_str(), readOnly.c_str(), fieldName.c_str());
+    printf("%s%s     %-48s", diff.c_str(), readOnly.c_str(), fieldName.c_str());
 
     if (showDefault)
     {
-        width = printParam(queryOutItem.strDefVal, queryOutItem.defVal);
+        width = printParam(queryOutItem.strDefVal, queryOutItem.defVal, queryOutItem.paramType);
     }
     if (showCurrent)
     {
         PRINT_SPACE_IF_NEEDED(width)
-        width = printParam(queryOutItem.strCurrVal, queryOutItem.currVal);
+        width = printParam(queryOutItem.strCurrVal, queryOutItem.currVal, queryOutItem.paramType);
     }
     PRINT_SPACE_IF_NEEDED(width)
-    width = printParam(queryOutItem.strNextVal, queryOutItem.nextVal);
+    width = printParam(queryOutItem.strNextVal, queryOutItem.nextVal, queryOutItem.paramType);
 
     if (printNewCfg)
     {
         PRINT_SPACE_IF_NEEDED(width)
         if (queryOutItem.setVal == MLXCFG_UNKNOWN)
         {
-            printParam(queryOutItem.strNextVal, queryOutItem.nextVal);
+            printParam(queryOutItem.strNextVal, queryOutItem.nextVal, queryOutItem.paramType);
         }
         else
         {
-            printValue(queryOutItem.strSetVal, queryOutItem.setVal);
+            printValue(queryOutItem.strSetVal, queryOutItem.setVal, queryOutItem.paramType);
         }
     }
     printf("\n");
@@ -518,37 +529,27 @@ void MlxCfg::printOpening(mfile* mf, const char* dev, string deviceIndex, Json::
     }
 }
 
-void MlxCfg::printConfHeader(bool showDefualt, bool showNew, bool showCurrent)
+void MlxCfg::printConfHeader(bool showDefualt, bool showNew, bool showCurrent, bool labelNextAsDefault)
 {
     if (!_mlxParams.isJsonOutputRequested)
     {
-        // print configuration Header
+        const char* nextCol = labelNextAsDefault ? "Default" : NEXT_STR;
+        printf("%-*s", CONFIG_TABLE_NAME_WIDTH, "Configurations:");
         if (showDefualt)
         {
-            if (showCurrent)
-            {
-                printf("%-20s%44s%20s%18s", "Configurations:", "Default", "Current", NEXT_STR);
-            }
-            else
-            {
-                printf("%-20s%44s%18s", "Configurations:", "Default", NEXT_STR);
-            }
+            nextCol = NEXT_STR; // if we already show default then next should always show next boot
+            printf("%-*s ", CONFIG_TABLE_VALUE_WIDTH, "Default");
         }
-        else
+        if (showCurrent)
         {
-            if (showCurrent)
-            {
-                printf("%-20s%46s%18s", "Configurations:", "Current", NEXT_STR);
-            }
-            else
-            {
-                printf("%-20s%46s", "Configurations:", NEXT_STR);
-            }
+            printf("%-*s ", CONFIG_TABLE_VALUE_WIDTH, "Current");
         }
+        printf("%-*s", CONFIG_TABLE_VALUE_WIDTH, nextCol);
         if (showNew)
         {
-            printf("       %s", "New");
+            printf(" %-*s", CONFIG_TABLE_VALUE_WIDTH, "New");
         }
+        printf("\n");
     }
 }
 
@@ -695,11 +696,10 @@ void MlxCfg::removeContinuanceArray(std::vector<QueryOutputItem>& OutputItemOut,
 mlxCfgStatus MlxCfg::queryDevCfg(Commander* commander,
                                  const char* dev,
                                  bool isWriteOperation,
-                                 const char* pci,
                                  int devIndex,
-                                 bool printNewCfg)
+                                 bool printNewCfg,
+                                 bool labelNextAsDefault)
 {
-    (void)pci;
     std::vector<QueryOutputItem> output;
     std::vector<QueryOutputItem> newoutput;
     std::vector<ParamView> params, defaultParams, currentParams;
@@ -739,8 +739,7 @@ mlxCfgStatus MlxCfg::queryDevCfg(Commander* commander,
         showDefault = defaultSupported;
         showCurrent = currentSupported;
 
-        printConfHeader(showDefault, printNewCfg, showCurrent);
-        printf("\n");
+        printConfHeader(showDefault, printNewCfg, showCurrent, labelNextAsDefault);
 
         if (printNewCfg)
         {
@@ -861,7 +860,7 @@ mlxCfgStatus MlxCfg::queryDevCfg(Commander* commander,
     return failedToGetCfg ? MLX_CFG_ERROR : MLX_CFG_OK;
 }
 
-mlxCfgStatus MlxCfg::queryDevCfg(const char* dev, const char* pci, int devIndex, bool printNewCfg)
+mlxCfgStatus MlxCfg::queryDevCfg(const char* dev, int devIndex, bool printNewCfg)
 {
     bool isWriteOperation = false;
     Commander* commander = createCommander(string(dev), false, false);
@@ -870,7 +869,7 @@ mlxCfgStatus MlxCfg::queryDevCfg(const char* dev, const char* pci, int devIndex,
         return MLX_CFG_ERROR;
     }
 
-    mlxCfgStatus rc = queryDevCfg(commander, dev, isWriteOperation, pci, devIndex, printNewCfg);
+    mlxCfgStatus rc = queryDevCfg(commander, dev, isWriteOperation, devIndex, printNewCfg);
     delete commander;
     return rc;
 }
@@ -887,7 +886,7 @@ const char* MlxCfg::getConfigWarning(const string& mlx_config_name, const string
     return NULL;
 }
 
-mlxCfgStatus MlxCfg::updateDefaultParamsWithUserValues(std::vector<ParamView>& userParams,
+mlxCfgStatus MlxCfg::updateDefaultParamsWithUserValues(const std::vector<ParamView>& userParams,
                                                        std::vector<ParamView>& defaultParams)
 {
     mlxCfgStatus rc = MLX_CFG_OK;
@@ -900,7 +899,7 @@ mlxCfgStatus MlxCfg::updateDefaultParamsWithUserValues(std::vector<ParamView>& u
     }
 
     // add any missing default params to userParams
-    for (vector<ParamView>::iterator userParam = userParams.begin(); userParam != userParams.end(); ++userParam)
+    for (vector<ParamView>::const_iterator userParam = userParams.begin(); userParam != userParams.end(); ++userParam)
     {
         string parsedMlxconfigName = userParam->mlxconfigName;
         bool isArrayParam = false;
@@ -921,6 +920,13 @@ mlxCfgStatus MlxCfg::updateDefaultParamsWithUserValues(std::vector<ParamView>& u
         {
             defaultParams[mapIndex].arrayVal[index] = (*userParam).val;
         }
+        else if ((*userParam).type == BYTES && !(*userParam).arrayVal.empty())
+        {
+            for (size_t i = 0; i < (*userParam).arrayVal.size() && i < defaultParams[mapIndex].arrayVal.size(); i++)
+            {
+                defaultParams[mapIndex].arrayVal[i] = (*userParam).arrayVal[i];
+            }
+        }
         else
         {
             defaultParams[mapIndex].val = (*userParam).val;
@@ -930,38 +936,38 @@ mlxCfgStatus MlxCfg::updateDefaultParamsWithUserValues(std::vector<ParamView>& u
     return rc;
 }
 
-// Compare params vectors by mlxconfigName, regardless of order for example  userParams and paramsCurrent
-void MlxCfg::compareCurrentParamsVectors(const std::vector<ParamView>& currentVec,
-                                         const std::vector<ParamView>& OtherVec,
-                                         std::vector<ParamView>& paramMlxconfigNameDiffList)
+// Compare params vectors by mlxconfigName, regardless of order for example  userParams and paramsNext
+void MlxCfg::compareNextParamsVectors(const std::vector<ParamView>& nextVec,
+                                      const std::vector<ParamView>& OtherVec,
+                                      std::vector<ParamView>& paramMlxconfigNameDiffList)
 {
-    for (const ParamView& currentParam : currentVec)
+    for (const ParamView& nextParam : nextVec)
     {
         // skip read only params
-        if (currentParam.isReadOnlyParam)
+        if (nextParam.isReadOnlyParam)
         {
             continue;
         }
         for (const ParamView& otherParam : OtherVec)
         {
-            if (currentParam.mlxconfigName == otherParam.mlxconfigName)
+            if (nextParam.mlxconfigName == otherParam.mlxconfigName)
             {
-                if (currentParam.arrayVal.size() > 0)
+                if (nextParam.arrayVal.size() > 0)
                 {
-                    for (u_int32_t i = 0; i < currentParam.arrayVal.size(); i++)
+                    for (u_int32_t i = 0; i < nextParam.arrayVal.size(); i++)
                     {
-                        if (currentParam.arrayVal[i] != otherParam.arrayVal[i])
+                        if (nextParam.arrayVal[i] != otherParam.arrayVal[i])
                         {
-                            paramMlxconfigNameDiffList.push_back(currentParam);
+                            paramMlxconfigNameDiffList.push_back(nextParam);
                             break;
                         }
                     }
                 }
                 else
                 {
-                    if (currentParam.val != otherParam.val)
+                    if (nextParam.val != otherParam.val)
                     {
-                        paramMlxconfigNameDiffList.push_back(currentParam);
+                        paramMlxconfigNameDiffList.push_back(nextParam);
                     }
                 }
             }
@@ -971,25 +977,18 @@ void MlxCfg::compareCurrentParamsVectors(const std::vector<ParamView>& currentVe
 
 // This function is slow, it can take around 10-20 seconds to query all the parameters and then around 1 ms for the
 // rest.
-void MlxCfg::setDevCfgWithDefault(Commander* commander,
-                                  std::vector<ParamView>& alignCurrentToDefault,
-                                  std::vector<ParamView>& alignNextToCurrent)
+void MlxCfg::setDevCfgWithDefault(Commander* commander, std::vector<ParamView>& alignNextToDefault)
 {
     //  1 Query all
-    std::vector<ParamView> paramsCurrent = {};
     std::vector<ParamView> paramsDefault = {};
     std::vector<ParamView> paramsNext = {};
-    std::vector<ParamView> paramsCurrentToNext = {};
-
-    std::vector<string> currentFailedTLVs = {};
     std::vector<string> defaultFailedTLVs = {};
     std::vector<string> nextFailedTLVs = {};
 
-    commander->queryAll(paramsCurrent, currentFailedTLVs, QueryCurrent);
     commander->queryAll(paramsDefault, defaultFailedTLVs, QueryDefault);
     commander->queryAll(paramsNext, nextFailedTLVs, QueryNext);
 
-    // 2 merge paramsCurrent and _mlxParams.setParams
+    // 2 merge paramsDefault and _mlxParams.setParams
     std::vector<ParamView> userParams = _mlxParams.setParams;
     VECTOR_ITERATOR(ParamView, userParams, p)
     {
@@ -997,74 +996,70 @@ void MlxCfg::setDevCfgWithDefault(Commander* commander,
         commander->updateParamViewValue(*p, p->setVal, QueryNext);
     }
     updateDefaultParamsWithUserValues(userParams, paramsDefault);
+    // paramsDefault contains all the parameters with their default value,and the user requested value.
 
-    // 3 compare current with default
-    compareCurrentParamsVectors(paramsCurrent, paramsDefault, alignCurrentToDefault);
+    // 3 compare next with default
+    compareNextParamsVectors(paramsNext, paramsDefault, alignNextToDefault);
+    // alignNextToDefault now contain the parameters that needs to be invalidated or set.
 
-    // 4 compare current with next, only take params that are not going to be reset.
-    // compareCurrentParamsVectors(paramsCurrent, paramsNext, alignNextToCurrent);
-    compareCurrentParamsVectors(paramsCurrent, paramsNext, paramsCurrentToNext);
-    for (const ParamView& param : paramsCurrentToNext)
+    // 4 compare what user asked for (userParams) with next value, skip params that already have the same value
+    std::vector<ParamView> filteredSetParams = {};
+    for (const ParamView& userParam : userParams)
     {
-        if (!isParamViewInList(param, alignCurrentToDefault))
+        bool shouldSkip = false;
+        for (const ParamView& nextParam : paramsNext)
         {
-            alignNextToCurrent.push_back(param);
+            if (userParam.mlxconfigName == nextParam.mlxconfigName)
+            {
+                // Compare the value user wants to set with current next value
+                if (userParam.arrayVal.size() > 0)
+                {
+                    bool allSame = true;
+                    for (u_int32_t i = 0; i < userParam.arrayVal.size(); i++)
+                    {
+                        if (userParam.arrayVal[i] != nextParam.arrayVal[i])
+                        {
+                            allSame = false;
+                            break;
+                        }
+                    }
+                    shouldSkip = allSame;
+                }
+                else
+                {
+                    shouldSkip = (userParam.val == nextParam.val);
+                }
+                break;
+            }
+        }
+        if (!shouldSkip)
+        {
+            // Find original param in _mlxParams.setParams to preserve setVal
+            for (const ParamView& origParam : _mlxParams.setParams)
+            {
+                if (origParam.mlxconfigName == userParam.mlxconfigName)
+                {
+                    filteredSetParams.push_back(origParam);
+                    break;
+                }
+            }
+        }
+        else
+        {
+            cout << "Param " << userParam.mlxconfigName << " is not going to be set since value matches next value"
+                 << endl;
         }
     }
+
+    _mlxParams.setParams = filteredSetParams;
 }
 
 mlxCfgStatus MlxCfg::handlecompleteSetWithDefault(Commander* commander)
 {
-    std::vector<ParamView> alignCurrentToDefault = {};
-    std::vector<ParamView> alignNextToCurrent = {};
-    setDevCfgWithDefault(commander, alignCurrentToDefault, alignNextToCurrent);
-    bool userWantToAlign = false;
+    std::vector<ParamView> alignNextToDefault = {};
+    setDevCfgWithDefault(commander, alignNextToDefault);
 
-    if (alignNextToCurrent.size() > 0)
-    {
-        cout << "differences found between next boot value and current value on " << alignNextToCurrent.size()
-             << " parameters" << endl;
-        if (askUser("Do you want to align next boot value to current value?"))
-        {
-            userWantToAlign = true;
-            unordered_set<string> setParamsMlxconfigName;
-            for (const ParamView& p : _mlxParams.setParams)
-            {
-                setParamsMlxconfigName.insert(p.mlxconfigName);
-            }
-
-            // strip alignment arrays
-            std::vector<ParamView> alignNextToCurrentFlat = {};
-            for (const ParamView& pView : alignNextToCurrent)
-            {
-                if (pView.arrayVal.size() > 0)
-                {
-                    for (u_int32_t i = 0; i < pView.arrayVal.size(); i++)
-                    {
-                        ParamView pViewFlat = pView;
-                        pViewFlat.mlxconfigName = pViewFlat.mlxconfigName + "[" + numToStr(i) + "]";
-                        pViewFlat.setVal = numToStr(pView.arrayVal[i]);
-                        alignNextToCurrentFlat.push_back(pViewFlat);
-                    }
-                }
-                else
-                {
-                    alignNextToCurrentFlat.push_back(pView);
-                }
-            }
-
-            // make sure we don't add parameter that is already in the setParams
-            for (const ParamView& pView : alignNextToCurrentFlat)
-            {
-                if (!isParamViewInList(pView, _mlxParams.setParams))
-                {
-                    _mlxParams.setParams.push_back(pView);
-                }
-            }
-        }
-    }
-
-    if (alignCurrentToDefault.size() == 0 && !userWantToAlign)
+    if (alignNextToDefault.size() == 0 && !commander->checkPCIResetRequired())
     {
         cout << "Nothing to set" << endl;
         return MLX_CFG_OK_EXIT;
@@ -1078,18 +1073,15 @@ mlxCfgStatus MlxCfg::handlecompleteSetWithDefault(Commander* commander)
         return MLX_CFG_ABORTED;
     }
 
-    // invalidate each different TLV separately.
-    commander->invalidateCfg(alignCurrentToDefault);
+    commander->invalidateCfg(alignNextToDefault);
     return MLX_CFG_OK;
 }
 
-mlxCfgStatus MlxCfg::setDevCfgWithParams(Commander* commander, std::vector<ParamView>& setParams)
+mlxCfgStatus MlxCfg::setDevCfgWithParams(Commander* commander)
 {
-    bool isWriteOperation = true;
-
     // check if there is a set of DISABLE_SLOT_POWER
     // for mlx_config_name
-    for (vector<ParamView>::iterator p = setParams.begin(); p != setParams.end(); ++p)
+    for (vector<ParamView>::iterator p = _mlxParams.setParams.begin(); p != _mlxParams.setParams.end(); ++p)
     {
         const char* warning_msg = getConfigWarning(p->mlxconfigName, p->setVal);
         if (warning_msg)
@@ -1113,9 +1105,19 @@ mlxCfgStatus MlxCfg::setDevCfgWithParams(Commander* commander, std::vector<Param
             }
             return rc;
         }
+        if (_mlxParams.setParams.size() == 0)
+        {
+            // invalidated params and nothing else is required to be set.
+            printf("Done!\n");
+            const char* resetStr = commander->loadConfigurationGetStr();
+            printf("-I- %s\n", resetStr);
+            return MLX_CFG_OK;
+        }
     }
 
-    if (queryDevCfg(commander, _mlxParams.device.c_str(), isWriteOperation, NULL, 1, true) == MLX_CFG_ERROR_EXIT)
+    bool isWriteOperation = true;
+    if (queryDevCfg(commander, _mlxParams.device.c_str(), isWriteOperation, 1, true,
+                    _mlxParams.completeSetWithDefault) == MLX_CFG_ERROR_EXIT)
     {
         printErr();
         return MLX_CFG_ERROR;
@@ -1143,7 +1145,7 @@ mlxCfgStatus MlxCfg::setDevCfgWithParams(Commander* commander, std::vector<Param
     try
     {
         printf("Applying... ");
-        commander->setCfg(setParams, _mlxParams.force);
+        commander->setCfg(_mlxParams.setParams, _mlxParams.force);
         printf("Done!\n");
         const char* resetStr = commander->loadConfigurationGetStr();
         printf("-I- %s\n", resetStr);
@@ -1184,7 +1186,7 @@ mlxCfgStatus MlxCfg::setDevCfg()
         return MLX_CFG_ERROR;
     }
 
-    mlxCfgStatus rc = setDevCfgWithParams(commander, _mlxParams.setParams);
+    mlxCfgStatus rc = setDevCfgWithParams(commander);
     delete commander;
     return rc;
 }
@@ -2074,6 +2076,17 @@ mlxCfgStatus MlxCfg::endTokenSession()
 
 mlxCfgStatus MlxCfg::showSystemConf()
 {
+    if (isAggregatedDevice(_mlxParams.device))
+    {
+        std::vector<std::pair<std::string, int>> devList = getAggregatedDeviceList(_mlxParams.device);
+        if (devList.empty())
+        {
+            cerr << "-E- Failed to get device type, please use mst device" << endl;
+            return MLX_CFG_ERROR;
+        }
+        _mlxParams.device = devList[0].first;
+    }
+
     Commander* commander = createCommander(_mlxParams.device, false, true);
     if (!commander)
     {
@@ -2084,7 +2097,6 @@ mlxCfgStatus MlxCfg::showSystemConf()
     {
         const char* deviceName = getDeviceName(commander->mf());
 
-        // Show all configurations available for this device (already grouped by name)
         std::map<std::string, std::vector<std::shared_ptr<SystemConfiguration>>> configs =
           commander->getAllSystemConfigurations(deviceName);
 
@@ -2094,13 +2106,37 @@ mlxCfgStatus MlxCfg::showSystemConf()
             delete commander;
             return MLX_CFG_OK;
         }
-        cout << "System configurations available for " << deviceName << " devices:" << endl << endl;
+        cout << "System configurations available for " << deviceName << " devices:" << endl;
 
-        for (const auto& entry : configs)
+        GenericCommander* gc = static_cast<GenericCommander*>(commander);
+        MlxcfgDBManager* db = gc->getDbManager();
+        std::unordered_set<std::string> printed;
+
+        for (const auto& row : db->_fetchedConfigurations)
         {
-            cout << "Configuration name: " << entry.first << endl;
-            cout << "--------------------------------" << endl;
-            for (const auto& config : entry.second)
+            const auto it = configs.find(row->name);
+            if (it == configs.end())
+            {
+                continue;
+            }
+            if (!printed.insert(it->first).second)
+            {
+                continue;
+            }
+            const std::vector<std::shared_ptr<SystemConfiguration>>& configList = it->second;
+            if (configList.empty())
+            {
+                continue;
+            }
+            cout << endl;
+            const SystemConfiguration& firstConfig = *configList[0];
+            cout << "Configuration name: " << firstConfig.name << " - " << firstConfig.configurationNameStr << endl;
+            if (!firstConfig.description.empty())
+            {
+                cout << "Description:        " << firstConfig.description << endl;
+            }
+            cout << "----------------------------------------------------------------" << endl;
+            for (const auto& config : configList)
             {
                 cout << "\tASIC[" << config->asicNumber << "] Description: " << endl;
                 cout << "\t\t" << config->parametersString << endl;
@@ -2118,13 +2154,13 @@ mlxCfgStatus MlxCfg::showSystemConf()
     return MLX_CFG_OK;
 }
 
-bool isAggregatedDevice(const string& device)
+bool MlxCfg::isAggregatedDevice(const string& device)
 {
     return device.find("_pciconf_agg_") != string::npos;
 }
 
 // Returns list of (device_name, ga) pairs from an aggregated device file
-static std::vector<std::pair<std::string, int>> getAggregatedDeviceList(const std::string& aggregatedDevice)
+std::vector<std::pair<std::string, int>> MlxCfg::getAggregatedDeviceList(const std::string& aggregatedDevice)
 {
     std::vector<std::pair<std::string, int>> devices;
 
@@ -2290,7 +2326,11 @@ mlxCfgStatus MlxCfg::setSystemConf()
         // 6. if finished successfully, ask if user want to reboot each device now.
         for (const auto& devEntry : devList)
         {
-            rebootDevice(devEntry.first);
+            mlxCfgStatus rebootRc = rebootDevice(devEntry.first);
+            if (rebootRc != MLX_CFG_OK)
+            {
+                rc = rebootRc;
+            }
         }
     }
     else
@@ -2311,7 +2351,11 @@ mlxCfgStatus MlxCfg::setSystemConf()
         }
 
         // 6. ask if user want to reboot now.
-        rebootDevice(_mlxParams.device);
+        mlxCfgStatus rebootRc = rebootDevice(_mlxParams.device);
+        if (rebootRc != MLX_CFG_OK)
+        {
+            rc = rebootRc;
+        }
     }
     return rc;
 }
@@ -2371,7 +2415,7 @@ mlxCfgStatus MlxCfg::setSingleDeviceSystemConf(const std::string& mstDevicePath,
     }
 
     _mlxParams.setParams = setParams;
-    rc = setDevCfgWithParams(commander, _mlxParams.setParams);
+    rc = setDevCfgWithParams(commander);
     delete commander;
 
     _mlxParams.device = backupDeviceName;

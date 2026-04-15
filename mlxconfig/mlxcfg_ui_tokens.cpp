@@ -270,6 +270,10 @@ void MlxCfgToken::printHexArrayAsAscii(const u_int32_t arr[], int len)
         memcpy(byteArray, &arr[i], 4);
         for (j = 3; j >= 0; --j)
         {
+            if (byteArray[j] == '\0')
+            {
+                break;
+            }
             printf("%c", byteArray[j]);
         }
     }

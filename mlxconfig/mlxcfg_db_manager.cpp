@@ -42,6 +42,7 @@
 
 // #define NDEBUG //uncomment in order to disable asserts
 #include <assert.h>
+#include <algorithm>
 
 #include <ext_libs/sqlite/sqlite3.h>
 #include "mlxcfg_db_manager.h"
@@ -55,7 +56,7 @@
     "SELECT * FROM params"
 
 #define SQL_SELECT_ALL_CONFIGURATIONS \
-    "SELECT * FROM configurations"
+    "SELECT * FROM configurations ORDER BY rowid"
 
 MlxcfgDBManager::MlxcfgDBManager(string dbName, mfile* mf, bool useMaxPort) :
     _dbName(dbName), _db(NULL), _supportedVersion(0x0), _callBackErr(""), _isAllFetched(false), _paramSqlResult(NULL), _mf(mf), _useMaxPort(useMaxPort)
@@ -350,6 +351,22 @@ void MlxcfgDBManager::fillMapWithFetchedConfigurations()
     }
 }
 
+std::string MlxcfgDBManager::resolveConfigurationName(const std::string& name) const
+{
+    if (_configurationMap.count(name) > 0)
+    {
+        return name;
+    }
+    for (const auto& config : _fetchedConfigurations)
+    {
+        if (config->configurationNameStr == name)
+        {
+            return config->name;
+        }
+    }
+    return name;
+}
+
 void MlxcfgDBManager::getAllTLVs()
 {
     if (_isAllFetched)
@@ -366,7 +383,7 @@ void MlxcfgDBManager::getAllTLVs()
     // fetch from db all system configurations
     try
     {
-        execSQL(selectConfigurationCallBack, this, SQL_SELECT_ALL_CONFIGURATIONS);    
+        execSQL(selectConfigurationCallBack, this, SQL_SELECT_ALL_CONFIGURATIONS);
     }
     catch(const std::exception& e)
     {
@@ -577,12 +594,13 @@ inline bool MlxcfgDBManager::isDBFileExists(const std::string& name)
 
 std::shared_ptr<SystemConfiguration> MlxcfgDBManager::getConfiguration(const std::string& name, int32_t asicNumber, const std::string& deviceName)
 {
+    std::string resolvedName = resolveConfigurationName(name);
     std::vector<std::shared_ptr<SystemConfiguration>> configs = {};
-    if (_configurationMap.count(name) == 0)
+    if (_configurationMap.count(resolvedName) == 0)
     {
         return nullptr;
     }
-    for (const auto& config : _configurationMap[name])
+    for (const auto& config : _configurationMap[resolvedName])
     {
         if (config->asicNumber == asicNumber)
         {
@@ -608,19 +626,20 @@ std::shared_ptr<SystemConfiguration> MlxcfgDBManager::getConfiguration(const std
 
 std::vector<std::shared_ptr<SystemConfiguration>> MlxcfgDBManager::getConfigurationsByName(const std::string& name, const std::string& deviceName)
 {
+    std::string resolvedName = resolveConfigurationName(name);
     std::vector<std::shared_ptr<SystemConfiguration>> configs = {};
-    if (_configurationMap.count(name) == 0)
+    if (_configurationMap.count(resolvedName) == 0)
     {
         return configs;
     }
-    for (const auto& config : _configurationMap[name])
+    for (const auto& config : _configurationMap[resolvedName])
     {
         if (config->relevantDevices.find(deviceName) != string::npos)
         {
             configs.push_back(config);
         }
     }
-    if(_configurationMap[name].size() > 0 && configs.size() == 0)
+    if(_configurationMap[resolvedName].size() > 0 && configs.size() == 0)
     {
         throw MlxcfgException("Device '%s' does not support configuration named '%s'", deviceName.c_str(), name.c_str());
     }

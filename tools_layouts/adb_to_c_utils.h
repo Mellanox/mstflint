@@ -73,7 +73,7 @@ extern "C"
 
 /* MASK generate a bit mask S bits width */
 //#define ADB2C_MASK32(S)     ( ((u_int32_t) ~0L) >> (32-(S)) )
-#define ADB2C_MASK8(S) (((u_int8_t)~0) >> (8 - (S)))
+#define ADB2C_MASK8(S) ((u_int32_t)(((u_int8_t)~0) >> (8 - (S))))
 
 /* BITS generate a bit mask with bits O+S..O set (assumes 32 / 8 bit integer) */
 //#define ADB2C_BITS32(O,S)   ( ADB2C_MASK32(S) << (O) )

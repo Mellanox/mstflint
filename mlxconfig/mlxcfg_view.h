@@ -57,6 +57,9 @@ enum ParamType
     BYTES
 };
 
+/* BYTES params: show full hex in CLI/JSON up to this many bytes; larger fields use Array[0..n] summary. */
+static constexpr int MLXCFG_BYTES_MAX_HEX_DISPLAY_BYTES = 16;
+
 enum TLVClass
 {
     Global,

@@ -93,6 +93,7 @@ public:
     bool isDPUEnabled();
     bool shouldSkipPrepareReset();
     const char* loadConfigurationGetStr() override;
+    bool checkPCIResetRequired() override;
     void setRawCfg(std::vector<u_int32_t> rawTlvVec) override;
     std::vector<u_int32_t> getRawCfg(std::vector<u_int32_t> rawTlvVec) override;
     void dumpRawCfg(std::vector<u_int32_t> rawTlvVec, std::string& tlvDump) override;
@@ -104,6 +105,7 @@ public:
       getSystemConfigurationsByName(const std::string& name, const std::string& deviceName) override;
     std::map<std::string, std::vector<std::shared_ptr<SystemConfiguration>>>
       getAllSystemConfigurations(const std::string& deviceName) override;
+    MlxcfgDBManager* getDbManager() const { return _dbManager; }
     void queryConfigViews(std::vector<TLVConfView>& confs, const std::string& configName = "", QueryType qt = QueryNext);
 
     void

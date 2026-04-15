@@ -857,6 +857,14 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
         _mlxParams.systemConfName = argv[i];
         return MLX_CFG_OK;
     }
+    if (isAggregatedDevice(_mlxParams.device) &&
+        !(_mlxParams.cmd == Mc_SetSystemConf || _mlxParams.cmd == Mc_ValidateSystemConf ||
+          _mlxParams.cmd == Mc_ShowSystemConf))
+    {
+        return err(
+          true,
+          "aggregated device is only supported in show_system_conf, set_system_conf and validate_system_conf commands");
+    }
 
     try
     {
