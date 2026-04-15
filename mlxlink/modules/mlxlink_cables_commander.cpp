@@ -593,6 +593,11 @@ void MlxlinkCablesCommander::readCableDDMInfo()
     free(thresholdPage);
 }
 
+float MlxlinkCablesCommander::getTxBiasMultiplier()
+{
+    return _txBiasMultiplier;
+}
+
 // Preparing and formating DDM flags section
 void MlxlinkCablesCommander::setPrintDDMFlagsSection(MlxlinkCmdPrint& cmdPrint,
                                                      const ddm_threshold_t& flags,
@@ -756,6 +761,11 @@ vector<MlxlinkCmdPrint> MlxlinkCablesCommander::getCableDDM()
     readCableDDMInfo();
     prepareDDMOutput();
     return _cableDDMOutput;
+}
+
+cable_ddm_q_t& MlxlinkCablesCommander::getCableDDMInfo()
+{
+    return _cableDdm;
 }
 
 // Preparing pages to be dumped

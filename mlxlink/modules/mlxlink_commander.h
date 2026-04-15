@@ -825,6 +825,7 @@ public:
     MlxlinkPortInfo* _portInfo;
     MlxlinkAmBerCollector* _amberCollector;
     string _fomStr;
+    string _attenuationTitle;
     bool _silentMode;
 
 protected:
