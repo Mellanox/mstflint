@@ -76,13 +76,13 @@ public:
     virtual ~MlxlinkPortInfo();
 
     void init();
-    void showHistogram();
+    MlxlinkCmdPrint showHistogram();
     void clearHistogram();
-
+    
+    vector<HISTOGRAM_BIN> getBinsList();
     u_int32_t _fecActive;
 
 private:
-    u_int32_t getNumberOfBins();
     void updateBinsRange();
     void updateBinsErrorsCount();
 

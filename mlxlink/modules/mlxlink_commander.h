@@ -464,6 +464,8 @@ public:
     void updateSysFsPath();
     void checkRegCmd();
     bool isBackplane();
+    bool errorObserved();
+    std::string getAllUnhandledErrors();
     void validatePortToLC();
     virtual void validatePortType(const string& portTypeStr);
     void updatePortType();
@@ -636,6 +638,9 @@ public:
     void readCableEEPROM();
     void performModulePrbsCommands();
     void performControlParams();
+    void printOutput(const string& output);
+    void printOutput(const MlxlinkCmdPrint& output);
+    void setSilentMode();
 
     MlxlinkCmdPrint _toolInfoCmd;
     MlxlinkCmdPrint _operatingInfoCmd;
@@ -817,6 +822,7 @@ public:
     MlxlinkPortInfo* _portInfo;
     MlxlinkAmBerCollector* _amberCollector;
     string _fomStr;
+    bool _silentMode;
 
 protected:
     vector<AmberField> _ppcntFields;
