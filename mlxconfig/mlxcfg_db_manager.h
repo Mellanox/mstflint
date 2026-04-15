@@ -78,6 +78,8 @@ private:
     void fillMapWithFetchedTLVs(mfile* mf);
     void fillMapWithFetchedParams(mfile* mf);
     void fillMapWithFetchedConfigurations();
+    /** Resolve user input to conf_name: if name is conf_name use it; else match configurationNameStr. */
+    std::string resolveConfigurationName(const std::string& name) const;
 
 public:
     // public members

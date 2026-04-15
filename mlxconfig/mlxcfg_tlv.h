@@ -163,7 +163,6 @@ public:
     void checkRules(std::vector<std::shared_ptr<TLVConf>>, QueryType qt);
     void setOnDevice(mfile* mf);
     void getRuleTLVs(std::set<std::string>& result);
-    void parseParamValue(std::string, std::string, u_int32_t&, std::string&, u_int32_t index, QueryType qt);
     void unpack(u_int8_t* buff, QueryType qt);
     void genXMLTemplate(string& xmlTemplate, bool allAttrs, bool withVal, bool defaultAttrVal, bool confFormat = false);
     void genRaw(string& raw);

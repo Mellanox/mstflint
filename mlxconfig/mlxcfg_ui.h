@@ -101,6 +101,7 @@ typedef struct QueryOutputItem
     string strDefVal;
     u_int32_t setVal;
     string strSetVal;
+    ParamType paramType = BOOLEAN_TYPE;
 } QueryOutputItem;
 
 using namespace std;
@@ -191,7 +192,7 @@ private:
     void printVersion();
     void printUsage();
     void printOpening(mfile* mf, const char* dev, string deviceIndex, Json::Value& oJsonValue);
-    void printConfHeader(bool showDefualt, bool showNew, bool showCurrent);
+    void printConfHeader(bool showDefualt, bool showNew, bool showCurrent, bool labelNextAsDefault = false);
     mlxCfgStatus getNumberFromString(const char* str, u_int32_t& num);
     mlxCfgStatus parseArgs(int argc, char* argv[]);
     // Helper functions for parse args
@@ -212,26 +213,23 @@ private:
 
     // Query cmd
     mlxCfgStatus queryDevsCfg();
-    mlxCfgStatus
-      queryDevCfg(const char* dev, const char* pci = (const char*)NULL, int devIndex = 1, bool printNewCfg = false);
+    mlxCfgStatus queryDevCfg(const char* dev, int devIndex = 1, bool printNewCfg = false);
     mlxCfgStatus queryDevCfg(Commander* commander,
                              const char* dev,
                              bool isWriteOperation,
-                             const char* pci = (const char*)NULL,
                              int devIndex = 1,
-                             bool printNewCfg = false);
+                             bool printNewCfg = false,
+                             bool labelNextAsDefault = false);
 
     // Set cmd
     Commander* createCommander(const std::string& device, bool forceCreate, bool useMaxPort);
     mlxCfgStatus setDevCfg();
-    mlxCfgStatus setDevCfgWithParams(Commander* commander, std::vector<ParamView>& setParams);
-    void compareCurrentParamsVectors(const std::vector<ParamView>& ParamVec1,
-                                     const std::vector<ParamView>& ParamVec2,
-                                     std::vector<ParamView>& paramMlxconfigNameDiffList);
-    void setDevCfgWithDefault(Commander* commander,
-                              std::vector<ParamView>& alignCurrentToDefault,
-                              std::vector<ParamView>& alignNextToCurrent);
-    mlxCfgStatus updateDefaultParamsWithUserValues(std::vector<ParamView>& userParams,
+    mlxCfgStatus setDevCfgWithParams(Commander* commander);
+    void compareNextParamsVectors(const std::vector<ParamView>& ParamVec1,
+                                  const std::vector<ParamView>& ParamVec2,
+                                  std::vector<ParamView>& paramMlxconfigNameDiffList);
+    void setDevCfgWithDefault(Commander* commander, std::vector<ParamView>& alignNextToDefault);
+    mlxCfgStatus updateDefaultParamsWithUserValues(const std::vector<ParamView>& userParams,
                                                    std::vector<ParamView>& defaultParams);
     mlxCfgStatus handlecompleteSetWithDefault(Commander* commander);
     // reset Cmd
@@ -256,7 +254,7 @@ private:
     // write query output to json funtions
     mlxCfgStatus
       WriteSingleParam(QueryOutputItem& queryOutItem, string deviceIndex, u_int8_t verbose, Json::Value& oJsonValue);
-    void writeParamToJson(Json::Value& oJsonValue, string field, string param, u_int32_t val);
+    void writeParamToJson(Json::Value& oJsonValue, string field, string param, u_int32_t val, ParamType paramType);
 
     mlxCfgStatus genTLVsFile();
     mlxCfgStatus genXMLTemplate();
@@ -265,6 +263,7 @@ private:
     mlxCfgStatus XML2RawAux(bool isBin);
     mlxCfgStatus XML2Raw();
     mlxCfgStatus XML2Bin();
+
     mlxCfgStatus createConf();
     mlxCfgStatus apply();
 
@@ -275,6 +274,8 @@ private:
     mlxCfgStatus endTokenSession();
 
     // System configuration commands
+    static bool isAggregatedDevice(const string& device);
+    std::vector<std::pair<std::string, int>> getAggregatedDeviceList(const std::string& aggregatedDevice);
     mlxCfgStatus showSystemConf();
     mlxCfgStatus setSystemConf();
     mlxCfgStatus
@@ -286,12 +287,12 @@ private:
                                             std::vector<std::pair<std::string, int>>& devList);
 
     // static print functions
-    static int printParam(string param, u_int32_t val);
-    static int printValue(string strVal, u_int32_t val);
+    static int printParam(string param, u_int32_t val, ParamType paramType);
+    static int printValue(string strVal, u_int32_t val, ParamType paramType);
     static void printSingleParam(const char* name, QueryOutputItem& queryOutItem, u_int8_t verbose, bool printNewCfg);
 
     bool askUser(const char* question, bool add_prefix = true, bool add_suffix = true, int requiredYesLevel = 1);
-    void rebootDevice(const string& device);
+    mlxCfgStatus rebootDevice(const string& device);
     mlxCfgStatus err(bool report, const char* errMsg, ...);
     void printErr();
     // data members

@@ -46,7 +46,7 @@
 
 #include "../tools_layouts/adb_to_c_utils.h"
 #include "../common/compatibility.h"
-
+#include "mft_utils/mft_utils.h"
 #include "mlxcfg_param.h"
 #include "mlxcfg_utils.h"
 
@@ -390,14 +390,27 @@ void Param::getView(ParamView& paramView)
     paramView.rule = _rule;
     if (_arrayLength != 0 && _type != STRING)
     {
+        paramView.val = 0x0;
         string strVal = "Array[0..";
         strVal += numToStr(_arrayLength - 1) + "]";
         paramView.strVal = strVal;
-        paramView.val = 0x0;
         if (_type == BYTES)
         {
-            paramView.arrayVal = dynamic_pointer_cast<BytesArrayParamVal>(_value)->getIntVals();
-            paramView.strArrayVal = dynamic_pointer_cast<BytesArrayParamVal>(_value)->getStrVals();
+            auto bytesVal = dynamic_pointer_cast<BytesArrayParamVal>(_value);
+            paramView.arrayVal = bytesVal->getIntVals();
+            paramView.strArrayVal = bytesVal->getStrVals();
+            if (_arrayLength <= MLXCFG_BYTES_MAX_HEX_DISPLAY_BYTES)
+            {
+                string byteHex = bytesVal->getVal();
+                if (byteHex.empty())
+                {
+                    paramView.strVal = string((size_t)(_arrayLength * 2), '0');
+                }
+                else
+                {
+                    paramView.strVal = byteHex;
+                }
+            }
         }
         else
         {
@@ -853,6 +866,10 @@ void BinaryParamValue::setVal(string val)
     string tmpStr = val;
 
     trimHexString(val);
+    if (val.size() >= 2 && val[0] == '0' && (val[1] == 'x' || val[1] == 'X'))
+    {
+        val = val.substr(2);
+    }
 
     if (val.size() > 8)
     {
@@ -1237,6 +1254,47 @@ BytesArrayParamVal::BytesArrayParamVal(u_int32_t numOfBytes) : ParamValue(numOfB
 
 BytesArrayParamVal::~BytesArrayParamVal() {}
 
+void BytesArrayParamVal::parseValue(string strToParse, u_int32_t& val, string& strValue)
+{
+    strValue = strToParse;
+    BinaryParamValue::trimHexString(strValue);
+    if (strValue.size() >= 2 && strValue[0] == '0' && (strValue[1] == 'x' || strValue[1] == 'X'))
+    {
+        strValue = strValue.substr(2);
+    }
+    if (strValue.empty())
+    {
+        throw MlxcfgException("Empty value is not valid for BYTES parameters");
+    }
+    if (strValue.length() % 8)
+    {
+        throw MlxcfgException("Value is not Dword aligned");
+    }
+    if (strValue.length() / 2 > _bytes.size())
+    {
+        throw MlxcfgException("Value size %d bytes is larger than max size: %d bytes", (int)(strValue.length() / 2),
+                              (int)_bytes.size());
+    }
+    u_int32_t hexPos = 0;
+    string hexPair;
+    try
+    {
+        for (; hexPos < strValue.length(); hexPos += 2)
+        {
+            hexPair = strValue.substr(hexPos, 2);
+            (void)stoi(hexPair, nullptr, 16);
+        }
+    }
+    catch (exception& e)
+    {
+        (void)e;
+        throw MlxcfgException("Failed to convert value %s to a number, position %d in value %s", hexPair.c_str(),
+                              hexPos, strToParse.c_str());
+    }
+    val = 0;
+    mft_utils::to_uppercase(strValue);
+}
+
 void BytesArrayParamVal::setVal(string val)
 {
     BinaryParamValue::trimHexString(val);
@@ -1258,7 +1316,7 @@ void BytesArrayParamVal::setVal(string val)
     {
         for (; i < val.length(); i += 2)
         {
-            s = val.substr(i, 2); // every byte is 2 hex charecters
+            s = val.substr(i, 2); // every byte is 2 hex characters
             _bytes[i / 2] = stoi(s, nullptr, 16);
         }
     }

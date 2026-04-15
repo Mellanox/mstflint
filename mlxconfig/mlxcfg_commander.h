@@ -75,6 +75,7 @@ public:
     virtual void invalidateCfg(const std::string& configName) = 0;
     virtual void invalidateCfg(const std::vector<ParamView>& params) = 0;
     virtual const char* loadConfigurationGetStr() = 0;
+    virtual bool checkPCIResetRequired() = 0;
     virtual void setRawCfg(std::vector<u_int32_t> rawTlvVec) = 0;
     virtual std::vector<u_int32_t> getRawCfg(std::vector<u_int32_t> rawTlvVec) = 0;
     virtual void dumpRawCfg(std::vector<u_int32_t> rawTlvVec, std::string& tlvDump) = 0;
@@ -89,7 +90,7 @@ public:
     void setExtResourceType(bool extT) { _extResource = extT; }
     void setIgnoreWriteSupport(bool ignore) { _ignoreWriteSupport = ignore; }
     virtual void setHostFunctionParams(u_int8_t hostId, u_int8_t pfIndex, bool valid);
-    static string getDefaultDBName(bool isSwitch);
+    static string getDefaultDBName(bool isSwitchPrmDb);
     mfile* mf() { return _mf; }
     Commander(mfile* mf) : _mf(mf), _extResource(true), _isSwitch(false), _ignoreWriteSupport(false){};
     virtual ~Commander();

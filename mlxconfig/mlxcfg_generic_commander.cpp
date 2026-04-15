@@ -705,6 +705,10 @@ void GenericCommander::queryParamViews(vector<ParamView>& params, bool isWriteOp
     for (std::set<std::shared_ptr<TLVConf>>::iterator it = uniqueTLVs.begin(); it != uniqueTLVs.end(); ++it)
     {
         queryTLV(*it, pc, isWriteOperation, qt);
+        if (isWriteOperation && (*it)->_isReadOnly)
+        {
+            throw MlxcfgException("Operation is not supported (Read only TLV: %s)", (*it)->_name.c_str());
+        }
     }
 
     for (vector<ParamView>::iterator i = params.begin(); i != params.end(); ++i)
@@ -726,6 +730,7 @@ void GenericCommander::queryParamViews(vector<ParamView>& params, bool isWriteOp
                 (mlxconfigNameI + getArraySuffixByInterval(iIndex)) == mlxconfigNameJ)
             {
                 (*i).isReadOnlyParam = (*j).isReadOnlyParam;
+                (*i).type = (*j).type;
                 if (isIIndexed)
                 {
                     if (iIndex >= (*j).arrayVal.size() &&
@@ -742,9 +747,15 @@ void GenericCommander::queryParamViews(vector<ParamView>& params, bool isWriteOp
                 {
                     (*i).val = (*j).val;
                     (*i).strVal = (*j).strVal;
+                    (*i).arrayVal = (*j).arrayVal;
+                    (*i).strArrayVal = (*j).strArrayVal;
                     if (!arrayStrs[mlxconfigNameI].empty())
                     {
-                        (*i).strVal = arrayStrs[mlxconfigNameI];
+                        /* for large arrays or non BYTES arrays show Array[0..n] summary instead of the real value */
+                        if (!((*j).type == BYTES && (*j).arrayVal.size() <= MLXCFG_BYTES_MAX_HEX_DISPLAY_BYTES))
+                        {
+                            (*i).strVal = arrayStrs[mlxconfigNameI];
+                        }
                     }
                 }
                 found = true;
@@ -791,6 +802,9 @@ void GenericCommander::getCfg(ParamView& pv, QueryType qt)
         {
             pv.val = j->val;
             pv.strVal = j->strVal;
+            pv.type = j->type;
+            pv.arrayVal = j->arrayVal;
+            pv.strArrayVal = j->strArrayVal;
             break;
         }
     }
@@ -1068,6 +1082,28 @@ const char* GenericCommander::loadConfigurationGetStr()
     return "Please reboot machine to load new configurations.";
 }
 
+bool GenericCommander::checkPCIResetRequired()
+{
+    dm_dev_id_t deviceId = DeviceUnknown;
+    u_int32_t hwDevId = 0, hwRevId = 0;
+    struct reg_access_hca_mfrl_reg_ext mfrl;
+
+    if (dm_get_device_id(_mf, &deviceId, &hwDevId, &hwRevId))
+    {
+        throw MlxcfgException("Failed to identify the device");
+    }
+    memset(&mfrl, 0, sizeof(mfrl));
+
+    if (dm_is_5th_gen_hca(deviceId))
+    {
+        mft_signal_set_handling(1);
+        reg_access_mfrl(_mf, REG_ACCESS_METHOD_GET, &mfrl);
+        dealWithSignal();
+        return mfrl.pci_rescan_required;
+    }
+    return false;
+}
+
 void GenericCommander::setRawCfg(std::vector<u_int32_t> rawTlvVec)
 {
     RawCfgParams5thGen rawTlv;
@@ -1166,6 +1202,7 @@ void GenericCommander::backupCfgs(vector<BackupView>& views)
 void GenericCommander::updateParamViewValue(ParamView& p, string v, QueryType qt)
 {
     unsigned int index = 0;
+    bool isIndexed = isIndexedMlxconfigName(p.mlxconfigName);
     string mlxconfigName = p.mlxconfigName;
     std::shared_ptr<TLVConf> tlv = nullptr;
 
@@ -1181,7 +1218,50 @@ void GenericCommander::updateParamViewValue(ParamView& p, string v, QueryType qt
 
     p.port = tlv->_port;
     p._module = tlv->_module;
-    tlv->parseParamValue(mlxconfigName, v, p.val, p.strVal, index, qt);
+
+    std::shared_ptr<Param> param = tlv->findParamByMlxconfigName(mlxconfigName, qt);
+    if (!param)
+    {
+        param = tlv->findParamByMlxconfigName(getConfigNameWithSuffixByInterval(mlxconfigName, index), qt);
+    }
+    if (!param)
+    {
+        throw MlxcfgException("Unknown Parameter %s", mlxconfigName.c_str());
+    }
+
+    // BYTES is a single blob; indexes are not allowed
+    if (isIndexed && param->_type == BYTES)
+    {
+        throw MlxcfgException("Operation not supported for this type of parameters");
+    }
+    /* queryDevCfg runs this before queryParamViews; RO must be checked before parseValue or BYTES
+     * alignment errors mask "read only". */
+    if (!_ignoreWriteSupport)
+    {
+        if (!tlv->isFWSupported(_mf, false))
+        {
+            throw MlxcfgException("Unknown Parameter %s", mlxconfigName.c_str());
+        }
+        if (tlv->_isReadOnly)
+        {
+            throw MlxcfgException("Operation is not supported (Read only TLV: %s)", tlv->_name.c_str());
+        }
+    }
+    param->_value->parseValue(v, p.val, p.strVal);
+    p.type = param->_type;
+
+    if (param->_type == BINARY)
+    {
+        p.strVal = numToStr(p.val, true);
+    }
+    if (param->_type == BYTES && !p.strVal.empty())
+    {
+        p.arrayVal.clear();
+        for (size_t i = 0; i + 1 < p.strVal.size(); i += 2)
+        {
+            p.arrayVal.push_back((u_int32_t)stoi(p.strVal.substr(i, 2), nullptr, 16));
+        }
+    }
 }
 
 std::shared_ptr<SystemConfiguration>
@@ -1410,7 +1490,6 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector<std::shared_
         {
             throw MlxcfgException("The XML Fingerprint " XMLNS " is missing or incorrect");
         }
-
         currTlv = root->xmlChildrenNode;
         while (currTlv)
         {

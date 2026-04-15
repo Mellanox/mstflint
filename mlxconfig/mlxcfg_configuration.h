@@ -41,6 +41,8 @@ class SystemConfiguration
 {
 public:
     std::string name;
+    std::string configurationNameStr;
+    std::string description;
     std::string relevantDevices;
     int32_t asicNumber;
     std::string parametersString;

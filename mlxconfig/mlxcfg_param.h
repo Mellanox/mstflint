@@ -220,6 +220,7 @@ public:
     vector<string> getStrVals();
     void pack(u_int8_t* buff, u_int32_t offset) override;
     void unpack(u_int8_t* buff, u_int32_t offset) override;
+    void parseValue(string strToParse, u_int32_t& val, string& strValue) override;
     virtual std::shared_ptr<ParamValue> clone() const override;
 
     bool isEmpty;

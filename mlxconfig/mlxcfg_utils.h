@@ -207,6 +207,8 @@ bool getDeviceInformationString(mfile* mf, info_type_t op, vector<char>& infoStr
 
 Device_Type getDeviceTypeFromString(string inStr);
 
+string deviceTypeToString(Device_Type deviceType);
+
 string getTempFolder();
 void parseSystemConfName(const string& fullName, string& name, int& asic);
 

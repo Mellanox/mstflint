@@ -594,6 +594,21 @@ Device_Type getDeviceTypeFromString(string inStr)
         return Device_Type::UNSUPPORTED_DEVICE;
     }
 }
+string deviceTypeToString(Device_Type deviceType)
+{
+    switch (deviceType)
+    {
+        case Device_Type::Switch:
+            return "Switch";
+        case Device_Type::HCA:
+            return "HCA";
+        case Device_Type::Retimer:
+            return "Retimer";
+        case Device_Type::UNSUPPORTED_DEVICE:
+        default:
+            return "Unsupported";
+    }
+}
 
 MlxcfgException::MlxcfgException(const char* fmt, ...)
 {
