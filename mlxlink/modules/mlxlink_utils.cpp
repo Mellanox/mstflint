@@ -253,6 +253,14 @@ string NVLINKSupportedSpeeds2Str(u_int32_t mask)
     {
         maskStr += "328G_2X_MODE_B,";
     }
+    if (mask & NVLINK_SPEED_378G_2X_MODE_B)
+    {
+        maskStr += "378G_2X_MODE_B,";
+    }
+    if (mask & NVLINK_SPEED_345G_2X_MODE_B)
+    {
+        maskStr += "345G_2X_MODE_B,";
+    }
     if (mask & NVLINK_SPEED_200G_2X_MODE_A)
     {
         maskStr += "NDR,";
@@ -744,6 +752,14 @@ int ptysSpeedToMaskNVLINK(const string& speed)
     {
         return NVLINK_SPEED_328G_2X_MODE_B;
     }
+    if (speed == "378G_2X_MODE_B")
+    {
+        return NVLINK_SPEED_378G_2X_MODE_B;
+    }
+    if (speed == "345G_2X_MODE_B")
+    {
+        return NVLINK_SPEED_345G_2X_MODE_B;
+    }
     if (speed == "NDR")
     {
         return NVLINK_SPEED_200G_2X_MODE_A;
@@ -772,6 +788,14 @@ string convertSpeedToNVLINK(const string& speed)
     if (speed == "328G_2X_MODE_B")
     {
         return "328g_2x_mode_b";
+    }
+    if (speed == "378G_2X_MODE_B")
+    {
+        return "378g_2x_mode_b";
+    }
+    if (speed == "345G_2X_MODE_B")
+    {
+        return "345g_2x_mode_b";
     }
     if (speed == "NDR")
     {
@@ -803,7 +827,8 @@ bool isPAM4Speed(u_int32_t activeSpeed, u_int32_t protoActive, bool extended)
 
 bool checkNvl6ModeBSpeed(const string& speed)
 {
-    if (speed == "400G_2X_MODE_B" || speed == "360G_2X_MODE_B" || speed == "328G_2X_MODE_B")
+    if (speed == "400G_2X_MODE_B" || speed == "360G_2X_MODE_B" || speed == "328G_2X_MODE_B" ||
+        speed == "378G_2X_MODE_B" || speed == "345G_2X_MODE_B")
     {
         return true;
     }
@@ -813,7 +838,8 @@ bool checkNvl6ModeBSpeed(const string& speed)
 bool isNvlinkModeBSpeed(bool isNvl6, u_int32_t linkSpeed)
 {
     return (isNvl6 &&
-            (linkSpeed & (NVLINK_SPEED_400G_2X_MODE_B | NVLINK_SPEED_360G_2X_MODE_B | NVLINK_SPEED_328G_2X_MODE_B)));
+            (linkSpeed & (NVLINK_SPEED_400G_2X_MODE_B | NVLINK_SPEED_360G_2X_MODE_B | NVLINK_SPEED_328G_2X_MODE_B |
+                          NVLINK_SPEED_378G_2X_MODE_B | NVLINK_SPEED_345G_2X_MODE_B)));
 }
 
 string getStrByValue(u_int32_t flags, std::map<u_int32_t, std::string> map)
@@ -870,6 +896,38 @@ string getStrByMask(u_int32_t bitmask, std::map<u_int32_t, std::string> maskMap,
     }
 
     return bitMaskStr;
+}
+
+string mergePrbsLaneRateCapStrings(u_int32_t laneRateCap,
+                                   u_int32_t laneRateCapExt,
+                                   const map<u_int32_t, string>& capPrimary,
+                                   const map<u_int32_t, string>& capExt)
+{
+    const string sep = ", ";
+    string primaryStr = laneRateCap ? getStrByMask(laneRateCap, capPrimary, sep) : string("");
+    string extStr = laneRateCapExt ? getStrByMask(laneRateCapExt, capExt, sep) : string("");
+
+    if (primaryStr == NA_FIELD_VALUE)
+    {
+        primaryStr.clear();
+    }
+    if (extStr == NA_FIELD_VALUE)
+    {
+        extStr.clear();
+    }
+    if (primaryStr.empty() && extStr.empty())
+    {
+        return NA_FIELD_VALUE;
+    }
+    if (primaryStr.empty())
+    {
+        return extStr;
+    }
+    if (extStr.empty())
+    {
+        return primaryStr;
+    }
+    return primaryStr + sep + extStr;
 }
 
 bool checkPaosCmd(const string& paosCmd)

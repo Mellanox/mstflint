@@ -123,23 +123,39 @@ struct CAP_VALUE
     {
         capMask = 0;
         value = 0;
+        capExtMask = 0;
         name = "";
     }
-    CAP_VALUE(u_int32_t _cap, u_int32_t _val)
+    CAP_VALUE(u_int32_t _cap, u_int32_t _val, u_int32_t _capExt = 0)
     {
         capMask = _cap;
         value = _val;
+        capExtMask = _capExt;
         name = "";
     }
-    CAP_VALUE(string _name, u_int32_t _cap, u_int32_t _val)
+    CAP_VALUE(string _name, u_int32_t _cap, u_int32_t _val, u_int32_t _capExt = 0)
     {
         capMask = _cap;
         value = _val;
+        capExtMask = _capExt;
         name = _name;
     }
     u_int32_t capMask;
     u_int32_t value;
+    u_int32_t capExtMask;
     string name;
+
+    bool capSupported(u_int32_t devCapMask) const { return (devCapMask & capMask) != 0; }
+
+    bool capExtSupported(u_int32_t devCapExtMask) const { return (devCapExtMask & capExtMask) != 0; }
+
+    bool rateSupportedByCap(u_int32_t primaryMask, u_int32_t devCapMask, u_int32_t devCapExtMask) const
+    {
+        return (primaryMask & devCapMask) != 0 ||
+               (capExtMask != 0 && ((devCapExtMask & capExtMask) != 0));
+    }
+
+    bool anyCapSupported() const { return (capMask != 0 || capExtMask != 0); }
 };
 
 struct PRM_FIELD
@@ -261,6 +277,7 @@ public:
     std::map<u_int32_t, std::string> _prbsLaneRateList;
     std::map<std::string, CAP_VALUE> _prbsLaneRate;
     std::map<u_int32_t, std::string> _prbsLaneRateCap;
+    std::map<u_int32_t, std::string> _prbsLaneRateCapExt;
     std::map<u_int32_t, std::string> _prbsTuningType;
     std::map<u_int32_t, std::string> _prbsEStatus;
     std::map<u_int32_t, std::string> _prbsPStatus;
