@@ -130,19 +130,14 @@ class DriversSafetyCheckManager:
 
         self._logger.debug('_set_hot_reset_flow: sdm = {0}, devices_sd length = {1}'.format(sdm, len(self._devices_sd)))
 
-        # check if the device is a hidden nic
-        aux_dbdf = self.get_hidden_aux_device()
-        if aux_dbdf:
-            return HotResetFlow.HIDDEN_SOCKET_DIRECT
-
         if sdm == 1 and len(self._devices_sd) > 0:
             return HotResetFlow.SOCKET_DIRECT
-
-        if sdm == 1 and len(self._devices_sd) == 0:
-            # ask the user if they want to continue this flow when we found one link for the SD device
-            print("-W- Provided device is a socket direct device but we found one link for the SD device.")
-
-        return HotResetFlow.SINGLE_DEVICE
+        elif sdm == 1 and len(self._devices_sd) == 0:
+            return HotResetFlow.HIDDEN_SOCKET_DIRECT
+        elif sdm == 0:
+            return HotResetFlow.SINGLE_DEVICE
+        else:
+            return None
 
     def prepare_hot_reset_targets(self):
         """
@@ -631,7 +626,11 @@ class DriversSafetyCheckManager:
                 self._logger.debug('V3 numbers are identical, found aux device, dbdf: {0}, v3 number: {1}'.format(aux_dbdf, v3_aux_str))
                 break
 
-        self._logger.debug("aux_dbdf: {}".format(aux_dbdf))  # if device is not hidden nic then aux_dbdf will be None
+        
+        if not aux_dbdf:
+            raise RuntimeError("failed to find aux device both as hidden and as discovered")
+
+        self._logger.debug("aux_dbdf: {}".format(aux_dbdf))
         return aux_dbdf
 
     def check_binded_drivers(self):
@@ -661,8 +660,6 @@ class DriversSafetyCheckManager:
         if self._hot_reset_flow == HotResetFlow.HIDDEN_SOCKET_DIRECT:
             aux_pci_index = 1  # for hidden SD aux pci_index is always 1
             aux_dbdf = self.get_hidden_aux_device()
-            if not aux_dbdf:
-                raise RuntimeError("failed to find aux device both as hidden and as discovered")  # if we determined the device is hidden nic - we must locate its aux device
             self._logger.debug("DriversSafetyCheckManager: Auxiliary device DBDF: {}".format(aux_dbdf))
             forbidden_drivers += self.check_forbidden_drivers_on_hidden_device(aux_dbdf, aux_pci_index)
 
