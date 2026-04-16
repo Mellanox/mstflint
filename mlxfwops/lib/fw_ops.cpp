@@ -884,6 +884,8 @@ void FwOperations::BackUpFwParams(fw_ops_params_t& fwParams)
       fwParams.psid ? strcpy((char*)(new char[(strlen(fwParams.psid) + 1)]), fwParams.psid) : (char*)NULL;
     _fwParams.readOnly = fwParams.readOnly;
     _fwParams.shortErrors = fwParams.shortErrors;
+    _fwParams.uefiExtra = fwParams.uefiExtra;
+    _fwParams.uefiHndl = fwParams.uefiHndl;
     _fwParams.isCableFw = fwParams.isCableFw;
     _fwParams.ignoreCrcCheck = fwParams.ignoreCrcCheck;
 }
