@@ -46,37 +46,37 @@
 MlxCfgToken::MlxCfgToken(mfile* mf) : _mf(mf)
 {}
 
-FwCompsMgr::MDSRTokenType MlxCfgToken::GetTokenStatusType(string token)
+MlxCfgTokenStatusType MlxCfgToken::GetTokenStatusType(string token)
 {
-    FwCompsMgr::MDSRTokenType tokenType = FwCompsMgr::UNKNOWN_TOKEN;
+    MlxCfgTokenStatusType tokenType = McTokenStatusTypeUnknown;
 
     if (token == "CS")
     {
-        tokenType = FwCompsMgr::CS_TOKEN;
+        tokenType = McTokenStatusTypeCS;
     }
     else if (token == "DBG")
     {
-        tokenType = FwCompsMgr::DBG_FW_TOKEN;
+        tokenType = McTokenStatusTypeDBG;
     }
     else if (token == "FRC")
     {
-        tokenType = FwCompsMgr::FRC_TOKEN;
+        tokenType = McTokenStatusTypeFRC;
     }
     else if (token == "RMCS")
     {
-        tokenType = FwCompsMgr::RMCS_TOKEN;
+        tokenType = McTokenStatusTypeRMCS;
     }
     else if (token == "RMDT")
     {
-        tokenType = FwCompsMgr::RMDT_TOKEN;
+        tokenType = McTokenStatusTypeRMDT;
     }
     else if (token == "CRCS")
     {
-        tokenType = FwCompsMgr::CRCS_TOKEN;
+        tokenType = McTokenStatusTypeCRCS;
     }
     else if (token == "CRDT")
     {
-        tokenType = FwCompsMgr::CRDT_TOKEN;
+        tokenType = McTokenStatusTypeCRDT;
     }
 
     return tokenType;
@@ -152,31 +152,31 @@ string MlxCfgToken::getTokenString(MlxCfgTokenType token)
     return tokenStr;
 }
 
-string MlxCfgToken::getTokenString(FwCompsMgr::MDSRTokenType token)
+string MlxCfgToken::getTokenString(MlxCfgTokenStatusType token)
 {
     string tokenStr = "";
 
     switch (token)
     {
-        case FwCompsMgr::CS_TOKEN:
+        case McTokenStatusTypeCS:
             tokenStr = "CS";
             break;
-        case FwCompsMgr::DBG_FW_TOKEN:
+        case McTokenStatusTypeDBG:
             tokenStr = "DBG";
             break;
-        case FwCompsMgr::FRC_TOKEN:
+        case McTokenStatusTypeFRC:
             tokenStr = "FRC";
             break;
-        case FwCompsMgr::RMCS_TOKEN:
+        case McTokenStatusTypeRMCS:
             tokenStr = "RMCS";
             break;
-        case FwCompsMgr::RMDT_TOKEN:
+        case McTokenStatusTypeRMDT:
             tokenStr = "RMDT";
             break;
-        case FwCompsMgr::CRCS_TOKEN:
+        case McTokenStatusTypeCRCS:
             tokenStr = "CRCS";
             break;
-        case FwCompsMgr::CRDT_TOKEN:
+        case McTokenStatusTypeCRDT:
             tokenStr = "CRDT";
             break;
         default:
@@ -270,6 +270,10 @@ void MlxCfgToken::printHexArrayAsAscii(const u_int32_t arr[], int len)
         memcpy(byteArray, &arr[i], 4);
         for (j = 3; j >= 0; --j)
         {
+            if (byteArray[j] == '\0')
+            {
+                break;
+            }
             printf("%c", byteArray[j]);
         }
     }
@@ -329,7 +333,7 @@ void MlxCfgToken::runMDSR(mfile* mf, struct reg_access_switch_mdsr_reg_ext* mdsr
     }
 }
 
-void MlxCfgToken::QueryTokenSession(FwCompsMgr::MDSRTokenType token)
+void MlxCfgToken::QueryTokenSession(MlxCfgTokenStatusType token)
 {
     struct reg_access_switch_mdsr_reg_ext mdsr_reg;
     memset(&mdsr_reg, 0, sizeof(mdsr_reg));
@@ -406,7 +410,7 @@ void MlxCfgToken::processMDSRData(const struct reg_access_switch_mdsr_reg_ext& m
     }
 }
 
-void MlxCfgToken::EndTokenSession(FwCompsMgr::MDSRTokenType token)
+void MlxCfgToken::EndTokenSession(MlxCfgTokenStatusType token)
 {
     struct reg_access_switch_mdsr_reg_ext mdsr_reg;
     memset(&mdsr_reg, 0, sizeof(mdsr_reg));
