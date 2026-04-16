@@ -474,30 +474,30 @@ void tools_open_tlv_type_unpack(union tools_open_tlv_type *ptr_struct, const u_i
 void tools_open_tlv_type_print(const union tools_open_tlv_type *ptr_struct, FILE *fd, int indent_level)
 {
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "======== tools_open_tlv_type ========\n");
-
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "global:\n");
-	tools_open_global_type_print(&(ptr_struct->global), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "eswitch:\n");
-	tools_open_eswitch_type_print(&(ptr_struct->eswitch), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "per_host:\n");
-	tools_open_per_host_type_print(&(ptr_struct->per_host), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "bmc:\n");
-	tools_open_bmc_type_print(&(ptr_struct->bmc), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "per_port:\n");
-	tools_open_per_port_type_print(&(ptr_struct->per_port), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "per_module:\n");
-	tools_open_configuration_item_type_class_module_print(&(ptr_struct->per_module), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "host:\n");
-	tools_open_host_type_print(&(ptr_struct->host), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
+	//TODO fix field parsing
+	// fprintf(fd, "======== tools_open_tlv_type ========\n");
+	// adb2c_add_indentation(fd, indent_level);
+	// fprintf(fd, "global:\n");
+	// tools_open_global_type_print(&(ptr_struct->global), fd, indent_level + 1);
+	// adb2c_add_indentation(fd, indent_level);
+	// fprintf(fd, "eswitch:\n");
+	// tools_open_eswitch_type_print(&(ptr_struct->eswitch), fd, indent_level + 1);
+	// adb2c_add_indentation(fd, indent_level);
+	// fprintf(fd, "per_host:\n");
+	// tools_open_per_host_type_print(&(ptr_struct->per_host), fd, indent_level + 1);
+	// adb2c_add_indentation(fd, indent_level);
+	// fprintf(fd, "bmc:\n");
+	// tools_open_bmc_type_print(&(ptr_struct->bmc), fd, indent_level + 1);
+	// adb2c_add_indentation(fd, indent_level);
+	// fprintf(fd, "per_port:\n");
+	// tools_open_per_port_type_print(&(ptr_struct->per_port), fd, indent_level + 1);
+	// adb2c_add_indentation(fd, indent_level);
+	// fprintf(fd, "per_module:\n");
+	// tools_open_configuration_item_type_class_module_print(&(ptr_struct->per_module), fd, indent_level + 1);
+	// adb2c_add_indentation(fd, indent_level);
+	// fprintf(fd, "host:\n");
+	// tools_open_host_type_print(&(ptr_struct->host), fd, indent_level + 1);
+	// adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "tlv_type_dw:\n");
 	tools_open_tlv_type_dw_print(&(ptr_struct->tlv_type_dw), fd, indent_level + 1);
 }
@@ -1003,23 +1003,29 @@ void tools_open_mnvda_dump(const struct tools_open_mnvda *ptr_struct, FILE *fd)
 void tools_open_mnvdi_pack(const struct tools_open_mnvdi *ptr_struct, u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
+
 	offset = 0;
 	tools_open_nv_hdr_fifth_gen_pack(&(ptr_struct->nv_hdr), ptr_buff + offset / 8);	
 }
+
 void tools_open_mnvdi_unpack(struct tools_open_mnvdi *ptr_struct, const u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
+
 	offset = 0;
 	tools_open_nv_hdr_fifth_gen_unpack(&(ptr_struct->nv_hdr), ptr_buff + offset / 8);
 }
+
 void tools_open_mnvdi_print(const struct tools_open_mnvdi *ptr_struct, FILE *fd, int indent_level)
 {
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "======== tools_open_mnvdi ========\n");
+
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "nv_hdr:\n");
 	tools_open_nv_hdr_fifth_gen_print(&(ptr_struct->nv_hdr), fd, indent_level + 1);
 }
+
 unsigned int tools_open_mnvdi_size(void)
 {
 	return TOOLS_OPEN_MNVDI_SIZE;
