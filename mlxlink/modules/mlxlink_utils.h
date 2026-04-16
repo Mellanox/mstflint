@@ -167,6 +167,10 @@ int getBDFInt(const string& bdfStr);
 size_t LevStrMatch(const string& s1, const string& s2);
 string getStrByValue(u_int32_t flags, map<u_int32_t, string> map);
 string getStrByMask(u_int32_t bitmask, map<u_int32_t, string> maskMap, const string& fieldSeparator = ",");
+string mergePrbsLaneRateCapStrings(u_int32_t laneRateCap,
+                                   u_int32_t laneRateCapExt,
+                                   const map<u_int32_t, string>& capPrimary,
+                                   const map<u_int32_t, string>& capExt);
 string getStrByMaskFromPair(u_int32_t bitmask,
                             map<u_int32_t, pair<string, string>> maskMap,
                             const string& fieldSeparator = ",",
