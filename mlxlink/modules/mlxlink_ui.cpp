@@ -149,7 +149,7 @@ void MlxlinkUi::printSynopsisCommands()
       PTYS_FLAG_SHORT, PTYS_FLAG, "speeds",
       "Configure Speeds "
       "[XDR,NDR,HDR,EDR,FDR10,FDR,QDR,DDR,SDR,1600G_8X,800G_4X,400G_2X,200G_1X,800G_8X,400G_4X,200G_2X,100G_1X,400G_8X,200G_4X,100G_2X,"
-      "50G_1X,100G,100G_4X,50G,50G_2X,25G,40G,10G,2.5G,1G]");
+      "50G_1X,100G,100G_4X,50G,50G_2X,25G,40G,10G,2.5G,1G,NVLink-XDR_1X,NVLink-XDR_2X,400G_2X_MODE_B,360G_2X_MODE_B,328G_2X_MODE_B,378G_2X_MODE_B,345G_2X_MODE_B]");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PTYS_LINK_MODE_FORCE_FLAG_SHORT, PTYS_LINK_MODE_FORCE_FLAG, "",
                                  "Configure Link Mode Force (Disable AN)");
@@ -270,13 +270,15 @@ void MlxlinkUi::printSynopsisCommands()
       PPRT_RATE_FLAG_SHORT, PPRT_RATE_FLAG, "rx_lane_rate",
       "RX Lane Rate "
       "[XDR,NDR,HDR,EDR,FDR10,FDR,QDR,DDR,SDR,1600G_8X,800G_4X,400G_2X,200G_1X,800G_8X,400G_8X,200G_4X,100G_2X,50G_1X,100G,100G_4X,50G,50G_"
-      "2X,25G,40G,10G,2.5G,1G]  (Optional - Default 25G)");
+      "2X,25G,40G,10G,2.5G,1G,400G_2X_MODE_B,360G_2X_MODE_B,328G_2X_MODE_B,378G_2X_MODE_B,345G_2X_MODE_B]  "
+      "(Optional - Default 25G)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(
       PPTT_RATE_FLAG_SHORT, PPTT_RATE_FLAG, "tx_lane_rate",
       "TX Lane Rate "
       "[XDR,NDR,HDR,EDR,FDR10,FDR,QDR,DDR,SDR,1600G_8X,800G_4X,400G_2X,200G_1X,800G_8X,400G_8X,200G_4X,100G_2X,50G_1X,100G,100G_4X,50G,50G_"
-      "2X,25G,40G,10G,2.5G,1G]  (Optional - Default 25G)");
+      "2X,25G,40G,10G,2.5G,1G,400G_2X_MODE_B,360G_2X_MODE_B,328G_2X_MODE_B,378G_2X_MODE_B,345G_2X_MODE_B]  "
+      "(Optional - Default 25G)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PRBS_INVERT_TX_POL_FLAG_SHORT, PRBS_INVERT_TX_POL_FLAG, "",
                                  "PRBS TX polarity inversion (Optional - Default No Inversion)");

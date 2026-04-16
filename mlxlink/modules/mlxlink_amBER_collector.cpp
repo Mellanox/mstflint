@@ -2557,8 +2557,17 @@ void MlxlinkAmBerCollector::getTestModePrpsInfo(const string& prbsReg,
           getStrByValue(getFieldValue("prbs_mode_admin"), _mlxlinkMaps->_prbsModesList);
         params[PRBS_PARAMS_MODULATION][lane] =
           getStrByValue(getFieldValue("modulation"), _mlxlinkMaps->_prbsModulation);
-        params[PRBS_PARAMS_LANE_RATE_CAP][lane] =
-          getStrByMask(getFieldValue("lane_rate_cap"), _mlxlinkMaps->_prbsLaneRateCap);
+        u_int32_t laneRateCapVal = getFieldValue("lane_rate_cap");
+        u_int32_t laneRateCapExtVal = 0;
+        try
+        {
+            laneRateCapExtVal = getFieldValue("lane_rate_cap_ext");
+        }
+        catch (...)
+        {
+        }
+        params[PRBS_PARAMS_LANE_RATE_CAP][lane] = mergePrbsLaneRateCapStrings(
+          laneRateCapVal, laneRateCapExtVal, _mlxlinkMaps->_prbsLaneRateCap, _mlxlinkMaps->_prbsLaneRateCapExt);
         params[PRBS_PARAMS_LANE_RATE_ADMIN][lane] =
           getStrByValue(getFieldValue(laneRateStr), _mlxlinkMaps->_prbsLaneRateList);
     }

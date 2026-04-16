@@ -663,7 +663,7 @@ void MlxlinkCommander::updateNvlinkModeBStatus()
         sendPrmReg(ACCESS_REG_PTYS, REG_GET, "proto_mask=%d", PTYS_PROTO_MASK_NVLINK);
 
         u_int32_t extProtoNvlink = getFieldValue("ext_proto_nvlink");
-        if (extProtoNvlink == 0 || extProtoNvlink > NVLINK_SPEED_200G_2X_MODE_A)
+        if (extProtoNvlink == 0)
         {
             return;
         }
@@ -4780,11 +4780,25 @@ string MlxlinkCommander::getSupportedPrbsRates(u_int32_t modeSelector)
     sendPrmReg(regName, REG_GET, additionalFlags.c_str());
 
     u_int32_t capsMask = getFieldValue("lane_rate_cap");
+    u_int32_t capsMaskExt = 0;
+    try
+    {
+        capsMaskExt = getFieldValue("lane_rate_cap_ext");
+    }
+    catch (...)
+    {
+    }
+
     string modeCapStr = "";
 
     for (auto it = _mlxlinkMaps->_prbsLaneRate.begin(); it != _mlxlinkMaps->_prbsLaneRate.end(); it++)
     {
-        if (capsMask & (it->second).capMask)
+        const CAP_VALUE& capVal = it->second;
+        if (capVal.capSupported(capsMask))
+        {
+            modeCapStr += it->first + string(",");
+        }
+        if (capVal.capExtSupported(capsMaskExt))
         {
             modeCapStr += it->first + string(",");
         }
@@ -5479,13 +5493,26 @@ void MlxlinkCommander::checkPrbsRegsCap(const string& prbsReg, const string& lan
 
     sendPrmReg(prbsReg, REG_GET, additionalFlags.c_str());
 
-    bool invalidRateStr = !laneRate.empty() && !_mlxlinkMaps->_prbsLaneRate[laneRate].capMask;
+    u_int32_t laneRateCapMask = getFieldValue("lane_rate_cap");
+    u_int32_t laneRateCapMaskExt = 0;
+    try
+    {
+        laneRateCapMaskExt = getFieldValue("lane_rate_cap_ext");
+    }
+    catch (...)
+    {
+    }
 
-    u_int32_t laneRateCap = _mlxlinkMaps->_prbsLaneRate[laneRate].capMask ? _mlxlinkMaps->_prbsLaneRate[laneRate].capMask : (u_int32_t)LANE_RATE_EDR_CAP;
+    const CAP_VALUE& prbsLaneCap = _mlxlinkMaps->_prbsLaneRate[laneRate];
+    bool invalidRateStr = !laneRate.empty() && !prbsLaneCap.capMask && !prbsLaneCap.capExtMask;
+
+    u_int32_t laneRateCap = prbsLaneCap.capMask ? prbsLaneCap.capMask : (u_int32_t)LANE_RATE_EDR_CAP;
 
     string laneRateStr = laneRate.empty() ? "EDR/25G/50G/100G (25.78125 Gb/s)" : laneRate;
 
-    if (invalidRateStr || !(laneRateCap & getFieldValue("lane_rate_cap")))
+    const bool rateSupported = prbsLaneCap.rateSupportedByCap(laneRateCap, laneRateCapMask, laneRateCapMaskExt);
+
+    if (invalidRateStr || !rateSupported)
     {
         string errStr = "Device does not support lane rate " + laneRateStr + " in physical test mode.\n";
         string rxRates = getSupportedPrbsRates(PRBS_RX);
@@ -5720,8 +5747,13 @@ void MlxlinkCommander::sendPprtPptt(bool isNvl6)
 {
     bool perLaneConfig =
       (!_userInput._prbsLanesToSet.empty()) && (_userInput._prbsLanesToSet.size() != _numOfLanes) && !isNvl6;
-    u_int32_t rxRate = _mlxlinkMaps->_prbsLaneRate[_userInput._pprtRate].capMask ? _mlxlinkMaps->_prbsLaneRate[_userInput._pprtRate].value : (u_int32_t)PRBS_EDR;
-    u_int32_t txRate = _mlxlinkMaps->_prbsLaneRate[_userInput._ppttRate].capMask ? _mlxlinkMaps->_prbsLaneRate[_userInput._ppttRate].value : (u_int32_t)PRBS_EDR;
+    u_int32_t rxRate = (_mlxlinkMaps->_prbsLaneRate[_userInput._pprtRate].anyCapSupported()) ?
+                         _mlxlinkMaps->_prbsLaneRate[_userInput._pprtRate].value :
+                         (u_int32_t)PRBS_EDR;
+
+    u_int32_t txRate = (_mlxlinkMaps->_prbsLaneRate[_userInput._ppttRate].anyCapSupported()) ?
+                         _mlxlinkMaps->_prbsLaneRate[_userInput._ppttRate].value :
+                         (u_int32_t)PRBS_EDR;
 
     u_int32_t rxModulation = !_userInput._pprtModulation.empty() ? _mlxlinkMaps->_prbsModulationValue[_userInput._pprtModulation] : (u_int32_t)PRBS_MODULATION_DEFAULT;
     u_int32_t txModulation = !_userInput._ppttModulation.empty() ? _mlxlinkMaps->_prbsModulationValue[_userInput._ppttModulation] : (u_int32_t)PRBS_MODULATION_DEFAULT;

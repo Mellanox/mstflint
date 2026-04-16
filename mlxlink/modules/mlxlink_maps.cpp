@@ -425,6 +425,8 @@ void MlxlinkMaps::nvlinkSpeedMapping()
   _NVLINKSpeed2Str[NVLINK_SPEED_400G_2X_MODE_B] = SPEED_NVLINK_400G_2X_MODE_B;
   _NVLINKSpeed2Str[NVLINK_SPEED_360G_2X_MODE_B] = SPEED_NVLINK_360G_2X_MODE_B;
   _NVLINKSpeed2Str[NVLINK_SPEED_328G_2X_MODE_B] = SPEED_NVLINK_328G_2X_MODE_B;
+  _NVLINKSpeed2Str[NVLINK_SPEED_378G_2X_MODE_B] = SPEED_NVLINK_378G_2X_MODE_B;
+  _NVLINKSpeed2Str[NVLINK_SPEED_345G_2X_MODE_B] = SPEED_NVLINK_345G_2X_MODE_B;
   _NVLINKSpeed2Str[NVLINK_SPEED_200G_2X_MODE_A] = SPEED_NVLINK_NDR;
 }
 
@@ -548,6 +550,8 @@ void MlxlinkMaps::initPrbsMapping()
     _prbsLaneRateList[12] = "12.89G";
     _prbsLaneRateList[13] = "200G";
     _prbsLaneRateList[14] = "164G";
+    _prbsLaneRateList[15] = "189G";
+    _prbsLaneRateList[16] = "172.5G";
 
     // 1G
     _prbsLaneRate["1G"] = {LANE_RATE_1G_CAP, PRBS_1G};
@@ -610,6 +614,8 @@ void MlxlinkMaps::initPrbsMapping()
     _prbsLaneRate["400G_2X_MODE_B"] = {LANE_RATE_400G_2X_MODE_B_CAP, PRBS_400G_2X_MODE_B};
     _prbsLaneRate["360G_2X_MODE_B"] = {LANE_RATE_360G_2X_MODE_B_CAP, PRBS_360G_2X_MODE_B};
     _prbsLaneRate["328G_2X_MODE_B"] = {LANE_RATE_328G_2X_MODE_B_CAP, PRBS_328G_2X_MODE_B};
+    _prbsLaneRate["378G_2X_MODE_B"] = {LANE_RATE_378G_2X_MODE_B_CAP, PRBS_378G_2X_MODE_B};
+    _prbsLaneRate["345G_2X_MODE_B"] = {0, PRBS_345G_2X_MODE_B, LANE_RATE_345G_2X_MODE_B_CAP_EXT};
 
     _prbsRxTuningStatus[0] = "PRBS mode tuning was not performed.";
     _prbsRxTuningStatus[1] = "Performing PRBS mode tuning.";
@@ -633,6 +639,10 @@ void MlxlinkMaps::initPrbsMapping()
       _prbsLaneRateCap[LANE_RATE_360G_2X_MODE_B_CAP] = "NVL6/NVL7/360G_2x_mode_b/168p75G_1x_mode_b (90Gbd/180Gb/s)";
       _prbsLaneRateCap[LANE_RATE_400G_2X_MODE_B_CAP] = "NVL6/NVL7/400G_2x_mode_b/187p5_1x_mode_b (100Gbd/200Gb/s)";
       _prbsLaneRateCap[LANE_RATE_328G_2X_MODE_B_CAP] = "NVL6/NVL7/328G_2x_mode_b/153p75G_1x_mode_b (82Gbd/164Gb/s)";
+      _prbsLaneRateCap[LANE_RATE_378G_2X_MODE_B_CAP] = "NVL6/NVL7/378G_2x_mode_b/189G_1x_mode_b (94.5 Gbd/189 Gb/s)";
+
+      _prbsLaneRateCapExt[LANE_RATE_345G_2X_MODE_B_CAP_EXT] =
+        "NVL6/NVL7/345G_2x_mode_b/172p5G_1x_mode_b (86.25 Gbd/172.5 Gb/s)";
 
     _prbsLockStatus[0] = "Not locked";
     _prbsLockStatus[1] = "Locked";
@@ -895,6 +905,8 @@ void MlxlinkMaps::initPpttSpeedMapping()
     _ppttSpeedMapping[PRBS_400G_2X_MODE_B] = NVLINK_SPEED_400G_2X_MODE_B;
     _ppttSpeedMapping[PRBS_360G_2X_MODE_B] = NVLINK_SPEED_360G_2X_MODE_B;
     _ppttSpeedMapping[PRBS_328G_2X_MODE_B] = NVLINK_SPEED_328G_2X_MODE_B;
+    _ppttSpeedMapping[PRBS_378G_2X_MODE_B] = NVLINK_SPEED_378G_2X_MODE_B;
+    _ppttSpeedMapping[PRBS_345G_2X_MODE_B] = NVLINK_SPEED_345G_2X_MODE_B;
 }
 
 void MlxlinkMaps::cmisIbComlianceMapping()
