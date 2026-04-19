@@ -173,6 +173,13 @@ public:
     virtual ~Bluefield3FwOperationsSignatureManager() {}
 };
 
+class Bluefield4FwOperationsSignatureManager : public ConnectX9FwOperationsSignatureManager
+{
+public:
+    Bluefield4FwOperationsSignatureManager() : ConnectX9FwOperationsSignatureManager() {}
+    virtual ~Bluefield4FwOperationsSignatureManager() {}
+};
+
 class GearBoxSignatureManager : public AbstractSignatureManager
 {
 public:
