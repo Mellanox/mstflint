@@ -124,7 +124,7 @@ public:
     // virtual void print_type() {};
     virtual mfile* getMfileObj()
     {
-        mfile* mf = _ioAccess->is_flash() ? ((Flash*)_ioAccess)->getMfileObj() : (mfile*)NULL;
+        mfile* mf = (_ioAccess != nullptr && _ioAccess->is_flash()) ? ((Flash*)_ioAccess)->getMfileObj() : (mfile*)NULL;
         return mf;
     }
     virtual psid_utils::MinorPsidLockStatus queryMinorPsidLockStatus();
