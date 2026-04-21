@@ -45,7 +45,6 @@
 #include <memory>
 #include <stdexcept>
 #include <system_error>
-#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 
@@ -54,6 +53,11 @@
 #include <tools_layouts/reg_access_switch_layouts.h>
 #include "mlxcfg_ui.h"
 #include "mlxcfg_generic_commander.h"
+#include "mlxcfg_utils.h"
+#include "mft_utils/mft_utils.h"
+#include "common/tools_string.h"
+
+using nbu::mft::common::string_format;
 
 #define DISABLE_SLOT_POWER_LIMITER "DISABLE_SLOT_POWER_LIMITER"
 #define DISABLE_SLOT_POWER_LIMITER_WARN                                                                                \
@@ -1910,6 +1914,121 @@ mlxCfgStatus MlxCfg::createConf()
 #endif
 }
 
+std::unordered_map<string, vector<vector<u_int8_t>>> MlxCfg::GenerateConfigPerPsidMap(const vector<vector<u_int8_t>>& files) const
+{
+    std::unordered_map<string, vector<vector<u_int8_t>>> configsPerPsid;
+    string dbName = _mlxParams.dbName;
+    for (const auto& fileData : files)
+    {
+        try
+        {
+            GenericCommander commander(nullptr, dbName, _mlxParams.deviceType);
+            string psid = commander.GetTokenPSIDFromBin(fileData);
+            configsPerPsid[psid].push_back(fileData);
+        }
+        catch (MlxcfgException& e)
+        {
+            printf("-E- %s\n", e._err.c_str());
+            continue;
+        }
+    }
+    return configsPerPsid;
+}
+
+mlxCfgStatus MlxCfg::autoApply()
+{
+    vector<u_int32_t> buff;
+    vector<u_int8_t> bytesBuff;
+    vector<vector<u_int8_t>> files;
+    mlxCfgStatus rc = MLX_CFG_OK;
+    int numOfDevices = 0;
+    dev_info* devs = mdevices_info(MDEVS_TAVOR_CR, &numOfDevices);
+    if (devs == nullptr)
+    {
+        throw MlxcfgException("Failed to get device information");
+    }
+    if (numOfDevices == 0)
+    {
+        mdevices_info_destroy(devs, numOfDevices);
+        throw MlxcfgException("No devices found");
+    }
+
+    if (mft_utils::IsDirectory(_mlxParams.NVInputFile))
+    {
+        files = mft_utils::ReadBinaryFilesFromDirectory(_mlxParams.NVInputFile);
+    }
+    else
+    {
+        throw MlxcfgException("Input file is not a directory");
+    }
+
+    std::unordered_map<string, vector<vector<u_int8_t>>> tokensPerPsid = GenerateConfigPerPsidMap(files);
+    if (tokensPerPsid.empty())
+    {
+        mdevices_info_destroy(devs, numOfDevices);
+        throw MlxcfgException("No tokens found in the input file");
+    }
+    else
+    {
+        for (int deviceIndex = 0; deviceIndex < numOfDevices; deviceIndex++)
+        {
+            string deviceLog = string_format("device %s: ", devs[deviceIndex].dev_name);
+            try
+            {
+                std::unique_ptr<Commander> commander(
+                  Commander::create(devs[deviceIndex].dev_name, _mlxParams.dbName, true, _mlxParams.deviceType, false));
+                bool appliedToDevice = false;
+                struct reg_access_hca_mgir_ext gi;
+                memset(&gi, 0, sizeof(gi));
+
+                if (!GetMgir(commander->mf(), &gi))
+                {
+                    throw MlxcfgException("failed to get MGIR register");
+                }
+                string psid(reinterpret_cast<const char*>(gi.fw_info.psid), sizeof(gi.fw_info.psid));
+                while (!psid.empty() && psid.back() == '\0')
+                {
+                    psid.pop_back();
+                }
+                auto tokensBucket = tokensPerPsid.find(psid);
+                if (tokensBucket == tokensPerPsid.end())
+                {
+                    throw MlxcfgException("a token with PSID %s not found", psid.c_str());
+                }
+
+                for (const auto& token : tokensBucket->second)
+                {
+                    try
+                    {
+                        ScopedStdoutSilence scopedStdoutSilence;
+                        static_cast<GenericCommander*>(commander.get())->apply(token);
+                        appliedToDevice = true;
+                        deviceLog += "applied successfully";
+                        break;
+                    }
+                    catch (MlxcfgException& e)
+                    {
+                        //* may fail for multiple tokens with the same PSID
+                    }
+                }
+                if (!appliedToDevice)
+                {
+                    deviceLog += "failed to apply a token";
+                }
+            }
+            catch (exception& e)
+            {
+                deviceLog += string_format("%s", e.what());
+                rc = MLX_CFG_ERROR;
+            }
+            printf("%s.\n", deviceLog.c_str());
+        }
+    }
+    mdevices_info_destroy(devs, numOfDevices);
+
+    return rc;
+}
+
 mlxCfgStatus MlxCfg::apply()
 {
     vector<u_int32_t> buff;
@@ -2695,6 +2814,9 @@ mlxCfgStatus MlxCfg::execute(int argc, char* argv[])
             break;
         case Mc_Apply:
             rc = apply();
+            break;
+        case Mc_AutoApply:
+            rc = autoApply();
             break;
         case Mc_RemoteTokenKeepAlive:
             rc = remoteTokenKeepAlive();

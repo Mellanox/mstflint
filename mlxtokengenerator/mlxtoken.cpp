@@ -62,7 +62,7 @@ void MlxToken::LoadFromXMLFile(string filePath)
     }
     catch (const MlxTknGeneratorException& e)
     {
-        throw MlxTknGeneratorException("Failed while processing %s, %s", filePath.c_str(), e.what());
+        throw MlxTknGeneratorException(e._errCode, "Failed while processing, %s", e.what());
     }
 }
 
@@ -110,13 +110,18 @@ void MlxToken::Aggregate(const MlxToken& token)
 
 void MlxToken::Aggregate(const std::shared_ptr<TLVConf> tlvConf)
 {
+    vector<pair<shared_ptr<Param>, string>> assignments;
     for (auto param : tlvConf->_paramsNext)
     {
-        if (!param->getVal().empty() && std::isdigit(param->_name.back()))
+        if (!param->getVal().empty() && std::isdigit((unsigned char)param->_name.back()))
         {
             shared_ptr<Param> emptyParam = FindNextFreeSlot(tlvConf->_name, param->_name);
-            emptyParam->setVal(param->getVal(true));
+            assignments.push_back(make_pair(emptyParam, param->getVal(true)));
         }
+    }
+    for (const auto& a : assignments)
+    {
+        a.first->setVal(a.second);
     }
 }
 
@@ -135,7 +140,8 @@ shared_ptr<Param> MlxToken::FindNextFreeSlot(string tlvName, string paramName)
 
     if (emptyParam == tlv->_paramsNext.end())
     {
-        throw MlxTknGeneratorException("Couldn't find an empty field for %s, aggregated token is full.",
+        throw MlxTknGeneratorException(MlxTknGeneratorErrorCode::AggregatedTokenFull,
+                                       "Couldn't find an empty field for %s, aggregated token is full.",
                                        paramName.c_str());
     }
 
@@ -189,6 +195,17 @@ string MlxToken::ToXML()
     string tokenXML("");
     commander.genXMLFromTLVConf(_tlvs, tokenXML, false);
     return tokenXML;
+}
+
+string MlxToken::GetPSID()
+{
+    auto psidTLV = GetTlvConf("file_applicable_to");
+    auto psidParam = psidTLV->findParamByName("psid", QueryNext);
+    if (psidParam == nullptr)
+    {
+        throw MlxTknGeneratorException("Missing psid field in token");
+    }
+    return psidParam->getVal();
 }
 
 void MlxToken::VerifySharedTlvs(const MlxToken& token)

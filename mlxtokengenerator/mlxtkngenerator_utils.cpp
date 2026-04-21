@@ -32,6 +32,11 @@
 
 #include "mlxtkngenerator_utils.h"
 #include <fstream>
+#include <iomanip>
+#include <memory>
+#include <sstream>
+#include "mlxfwops/lib/mlxfwops_com.h"
+#include "mlxfwops/lib/fw_ops.h"
 
 vector<u_int8_t> ReadFromFile(string filename)
 {
@@ -45,4 +50,48 @@ vector<u_int8_t> ReadFromFile(string filename)
 
     // read the data:
     return vector<u_int8_t>((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+}
+
+string GetSafePsid(const string& psid)
+{
+    string safePsid = psid;
+    for (char& c : safePsid)
+    {
+        if (c == '/' || c == '\\')
+        {
+            c = '_';
+        }
+    }
+    if (safePsid.empty())
+    {
+        safePsid = "unknown_psid";
+    }
+    return safePsid;
+}
+
+
+DebugFwFileData GetDebugFwFileData(const string& filePath)
+{
+    char errBuff[1024];
+    fw_info_t fwQueryResult;
+    DebugFwFileData debugFwFileData;
+    debugFwFileData.filename = filePath;
+
+    unique_ptr<FwOperations> ops = unique_ptr<FwOperations>(
+        FwOperations::FwOperationsCreate((void*)filePath.c_str(), nullptr, nullptr, FHT_FW_FILE, errBuff, 1024));
+
+    if (ops == nullptr)
+    {
+        throw MlxTknGeneratorException("Failed to open the image.");
+    }
+    if (!ops->FwQuery(&fwQueryResult, false, false))
+    {
+        throw MlxTknGeneratorException("Failed to query the image.");
+    }
+
+    FwVersion image_version = FwOperations::createFwVersion(&fwQueryResult.fw_info);
+    debugFwFileData.debugFwVersion = image_version.get_primary_version("%x%x%04x", false);
+    debugFwFileData.psid = fwQueryResult.fw_info.psid;
+    
+    return debugFwFileData;
 }
