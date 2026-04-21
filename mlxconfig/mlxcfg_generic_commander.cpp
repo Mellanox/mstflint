@@ -1264,6 +1264,40 @@ void GenericCommander::updateParamViewValue(ParamView& p, string v, QueryType qt
     }
 }
 
+void GenericCommander::addTlvInstanceKeysForParam(const string& mlxconfigName, unordered_set<string>& keysOut)
+{
+    if (isIndexedMlxconfigName(mlxconfigName))
+    {
+        size_t p = mlxconfigName.find('[');
+        string base = mlxconfigName.substr(0, p);
+        if (!isContinuanceArray(base))
+        {
+            // Ordinary indexed array: one backing TLV for the whole parameter.
+            shared_ptr<TLVConf> tlv = _dbManager->getTLVByParamMlxconfigNameAndIndex(base, 0, _mf);
+            keysOut.insert(tlv->_name + "_P" + to_string(tlv->_port) + "_M" + to_string(tlv->_module));
+            return;
+        }
+        // Continuance array (e.g. SPLIT_PORT): each index can map to a different NV TLV (32_1, 64_33, ...).
+        string indexStr = parseIndexStr(mlxconfigName);
+        vector<u_int32_t> indexes;
+        extractIndexes(indexStr, indexes);
+        for (u_int32_t idx : indexes)
+        {
+            shared_ptr<TLVConf> tlv = _dbManager->getTLVByParamMlxconfigNameAndIndex(base, idx, _mf);
+            keysOut.insert(tlv->_name + "_P" + to_string(tlv->_port) + "_M" + to_string(tlv->_module));
+        }
+        return;
+    }
+    if (isContinuanceArray(mlxconfigName))
+    {
+        shared_ptr<TLVConf> tlv = _dbManager->getTLVByParamMlxconfigNameAndIndex(mlxconfigName, 1, _mf);
+        keysOut.insert(tlv->_name + "_P" + to_string(tlv->_port) + "_M" + to_string(tlv->_module));
+        return;
+    }
+    shared_ptr<TLVConf> tlv = _dbManager->getTLVByParamMlxconfigName(mlxconfigName, _mf);
+    keysOut.insert(tlv->_name + "_P" + to_string(tlv->_port) + "_M" + to_string(tlv->_module));
+}
+
 std::shared_ptr<SystemConfiguration>
   GenericCommander::getSystemConfiguration(const std::string& name, int32_t asicNumber, const std::string& deviceName)
 {
