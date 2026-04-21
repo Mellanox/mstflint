@@ -2589,7 +2589,7 @@ u_int8_t FwOperations::GetFwFormatFromHwDevID(u_int32_t hwDevId)
         return FS_FS3_GEN;
     }
     else if (hwDevId == CX5_HW_ID || hwDevId == CX6_HW_ID || hwDevId == CX6DX_HW_ID || hwDevId == CX6LX_HW_ID || hwDevId == CX7_HW_ID || hwDevId == BF_HW_ID || hwDevId == BF2_HW_ID ||
-             hwDevId == BF3_HW_ID || hwDevId == BF4_HW_ID || hwDevId == QUANTUM_HW_ID || hwDevId == QUANTUM2_HW_ID || hwDevId == SPECTRUM4_HW_ID || hwDevId == SPECTRUM3_HW_ID ||
+             hwDevId == BF3_HW_ID || hwDevId == QUANTUM_HW_ID || hwDevId == QUANTUM2_HW_ID || hwDevId == SPECTRUM4_HW_ID || hwDevId == SPECTRUM3_HW_ID ||
              hwDevId == SPECTRUM2_HW_ID || hwDevId == SPECTRUM5_HW_ID || hwDevId == GEARBOX_HW_ID || hwDevId == GB_MANAGER_HW_ID || hwDevId == ABIR_GB_HW_ID)
     {
         return FS_FS4_GEN;
@@ -2971,14 +2971,13 @@ life_cycle_t CRSpaceRegisters::getLifeCycle()
         case CT_CONNECTX7:
         case CT_QUANTUM2:
         case CT_BLUEFIELD3:
-        case CT_BLUEFIELD4:
         case CT_SPECTRUM4:
         case CT_SPECTRUM5:
-            lifeCycleAddress = 0xf0000;
-            firstBit = 4;
-            bitLen = 2;
+        lifeCycleAddress = 0xf0000;
+        firstBit = 4;
+        bitLen = 2;
             break;
-        case CT_SPECTRUM6:
+            case CT_SPECTRUM6:
             lifeCycleAddress = 0xf0000;
             firstBit = 16;
             bitLen = 5;
@@ -2987,6 +2986,7 @@ life_cycle_t CRSpaceRegisters::getLifeCycle()
         case CT_CONNECTX9:
         case CT_CONNECTX8_PURE_PCIE_SWITCH:
         case CT_CONNECTX9_PURE_PCIE_SWITCH:
+        case CT_BLUEFIELD4:
         case CT_QUANTUM3:
         case CT_NVLINK6_SWITCH:
         case CT_ARCUSE:

@@ -58,6 +58,7 @@ const u_int16_t CmisCdbAccess::CDB_WRITABLE_BYTES_PER_PAGE = 0x0080;
 const u_int16_t CmisCdbAccess::CDB_PAGE_INDEX_IN_ADDRESS = 0x0100;
 const u_int16_t CmisCdbAccess::CDB_PASSWORD_ENTRY_AREA_ADDRESS = 0x7A;
 const u_int16_t CmisCdbAccess::CDB_IMPLEMENTED_BANKS_ADDRESS = 0x018E;
+const u_int16_t CmisCdbAccess::CDB_OUI_ADDRESS = 0x0091;
 
 void CmisCdbAccess::CreateStatusMap()
 {
@@ -83,6 +84,7 @@ void CmisCdbAccess::CreateStatusMap()
 CmisCdbAccess::CmisCdbAccess(string mstDevName, mfile* mf, bool clearCompletionFlag) :
     _cableAccess(mstDevName.c_str(), mf),
     _cmisVersion(CMIS_UNKNOWN),
+    _oui(),
     _isBackgroundCommand(true),
     _isInitDone(false),
     _statusWaitingTimeMilliSec(1000),
@@ -113,6 +115,22 @@ CmisCdbAccess::CMISVersion CmisCdbAccess::ToCMISVersion(u_int8_t cmisVersionByte
     return cmisVersion;
 }
 
+bool CmisCdbAccess::IsOuiRequiringActivationWA() const
+{
+    static const vector<OUI> ouisRequiringActivationWa = {
+      OUI(vector<u_int8_t>({0x00, 0x09, 0x3a})), // Molex
+    };
+
+    for (size_t i = 0; i < ouisRequiringActivationWa.size(); ++i)
+    {
+        if (_oui == ouisRequiringActivationWa[i])
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 void CmisCdbAccess::InnerInit()
 {
     if (!_isInitDone)
@@ -132,6 +150,11 @@ void CmisCdbAccess::InnerInit()
         }
         u_int8_t cmis = (u_int8_t)(ReadDWord(CDB_CMIS_REVISION_ADDRESS) & 0xff);
         _cmisVersion = ToCMISVersion(cmis);
+
+        vector<u_int8_t> ouiBytes = ReadData(CDB_OUI_ADDRESS, OUI::OUI_SIZE, OTHER);
+        _oui = OUI(ouiBytes);
+        CDB_ACCESS_DPRINTF(("OUI: %02X %02X %02X\n", ouiBytes[0], ouiBytes[1], ouiBytes[2]));
+
         _isInitDone = true;
     }
 }

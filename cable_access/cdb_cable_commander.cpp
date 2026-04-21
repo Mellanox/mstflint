@@ -372,7 +372,7 @@ void FwManagementCdbCommander::ActivateImage()
 
     if (_fwMngCableAccess.IsActivationWANeeded())
     {
-        msleep(5000); // WA for Hydra - CDB 0h stuck in 0x82
+        msleep(5000); // CDB 0h stuck in 0x82
     }
     if (_modulePasswordSet)
     {

@@ -93,6 +93,10 @@ public:
         {
             return new Bluefield3FwOperationsSignatureManager();
         }
+        else if (deviceId == DeviceBlueField4)
+        {
+            return new Bluefield4FwOperationsSignatureManager();
+        }
         else if (deviceId == DeviceConnectX6LX)
         {
             return new ConnectX6LXFwOperationsSignatureManager();
@@ -152,6 +156,10 @@ public:
         else if (chip == CT_BLUEFIELD3)
         {
             return new Bluefield3FwOperationsSignatureManager();
+        }
+        else if (chip == CT_BLUEFIELD4)
+        {
+            return new Bluefield4FwOperationsSignatureManager();
         }
         else if (chip == CT_CONNECTX6LX)
         {
