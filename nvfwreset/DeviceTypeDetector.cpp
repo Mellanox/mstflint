@@ -159,9 +159,8 @@ void DeviceTypeDetector::AddSocketDirectDevices(const mfile* mf, std::vector<std
             continue;
         }
 
-        // Skip if the current device is the same as the user's device
         if (currentMF->dinfo->pci.domain == mf->dinfo->pci.domain && currentMF->dinfo->pci.bus == mf->dinfo->pci.bus &&
-            currentMF->dinfo->pci.dev == mf->dinfo->pci.dev && currentMF->dinfo->pci.func == mf->dinfo->pci.func)
+            currentMF->dinfo->pci.dev == mf->dinfo->pci.dev)
         {
             continue;
         }
