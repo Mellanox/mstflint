@@ -49,6 +49,7 @@ public:
     void Run(int argc, char** argv);
     void GenerateTokenXML();
     void AggregateTokensXML();
+    void AutoGenerateTokensXML();
 
 private:
     void InitCmdParser();
@@ -60,7 +61,8 @@ private:
     void ValidateDeviceType(mfile* mf, Device_Type deviceType);
 
     string GetDebugFwVersion(string filePath);
-    vector < TLVParamsData > GetDataForToken(MlxCfgTokenType tokenType, Device_Type deviceType, bool isNestedToken);
+    vector<TLVParamsData>
+      GetDataForToken(string device, MlxCfgTokenType tokenType, Device_Type deviceType, bool isNestedToken);
     vector < TLVParamsData > GetDataForToken(MlxCfgTokenType tokenType, string blobFile);
     void ValidateNewTlvType(u_int16_t actual, u_int16_t expected, const string& fieldName);
     bool IsGetMeasurementIndex50(const vector < u_int8_t >& tokenData);
@@ -76,10 +78,12 @@ private:
                                                         MlxCfgTokenType tokenType,
                                                         string debugFwVersion);
     vector < TLVParamsData > GetTokenDataFromQuery(string device, MlxCfgTokenType tokenType, Device_Type deviceType);
+    vector<string> AggregateLegacyTokenXmlStrings(const vector<string>& xmlStrings, bool isMultiAggregate = false);
 
     enum MlxTknGeneratorCmd {
         GenerateToken,
         AggregateTokens,
+        AutoGenerateTokens,
         Unknown
     };
 
@@ -98,6 +102,7 @@ private:
     static const char   NESTED_TOKEN_FLAG_SHORT;
     static const string DEBUG_FW_FILE_FLAG;
     static const char   DEBUG_FW_FILE_FLAG_SHORT;
+    static const string DEBUG_FW_DIR_FLAG;
     static const string NESTED_DEBUG_FW_FILE_FLAG;
     static const char   NESTED_DEBUG_FW_FILE_FLAG_SHORT;
     static const string OUTPUT_FILE_FLAG;
@@ -117,6 +122,7 @@ private:
     string             _outputFile;
     string             _tokensDir;
     string             _debugFwFile;
+    string             _debugFwDir;
     string             _debugFwNestedFile;
     string             _blobFile;
     MlxTknGeneratorCmd _command;

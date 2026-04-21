@@ -214,11 +214,27 @@ Device_Type getDeviceTypeFromString(string inStr);
 
 string deviceTypeToString(Device_Type deviceType);
 
+bool GetMgir(mfile* mf, struct reg_access_hca_mgir_ext* mgir);
+
 string getTempFolder();
 
 string resolveAggregatedDeviceFilePath(const string& aggregatedDevice);
 
 void parseSystemConfName(const string& fullName, string& name, int& asic);
+
+class ScopedStdoutSilence
+{
+public:
+    ScopedStdoutSilence();
+    ~ScopedStdoutSilence();
+
+    ScopedStdoutSilence(const ScopedStdoutSilence&) = delete;
+    ScopedStdoutSilence& operator=(const ScopedStdoutSilence&) = delete;
+
+private:
+    struct Impl;
+    Impl* _impl;
+};
 
 class MlxcfgException : public exception
 {

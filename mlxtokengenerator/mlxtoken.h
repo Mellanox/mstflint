@@ -58,6 +58,8 @@ public:
     void LoadFromParams(const vector<TLVParamsData>& paramsData);
     void SaveToXMLFile(string filePath);
     void Aggregate(const MlxToken& token);
+    virtual string ToXML();
+    string GetPSID();
 
 protected:
     MlxToken(Device_Type deviceType, string aggregatableTLV, vector<string> requiredTLVs);
@@ -65,7 +67,6 @@ protected:
     std::shared_ptr<TLVConf> GetTlvConf(string tlvName);
     const std::shared_ptr<TLVConf> GetTlvConf(string tlvName) const;
     void Aggregate(const std::shared_ptr<TLVConf> tlvConf);
-    virtual string ToXML();
     void AddTLV(string tlv) { _requiredTLVs.push_back(tlv); };
 
 private:
@@ -88,11 +89,12 @@ protected:
     {
     }
 
+    string ToXML() override;
+
 private:
     void DeleteEmptyParams(std::shared_ptr<TLVConf> tlvConf);
     void UpdateNumberOfEntries();
     void VerifyTokenContent() override;
-    string ToXML() override;
 
     static const u_int8_t _maxNumOfDeviceUniquePairs;
 };

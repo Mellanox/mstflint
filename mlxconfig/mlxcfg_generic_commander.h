@@ -77,6 +77,9 @@ private:
     // dependency, and rule TLV checks for the given TLV. RespectBlocklist honors
     // tlv->_forceDisallowed; All ignores it; None never bypasses.
     bool forceBypassForTLV(const std::shared_ptr<TLVConf>& tlv) const;
+    void ValidateAndGetTlvsAndCompIdLegacy(const vector<u_int8_t>& buff,
+                                           vector<std::shared_ptr<TLVConf>>& tlvs,
+                                           FwComponent::comps_ids_t& compsId);
 
 public:
     GenericCommander(mfile* mf, string& dbName, Device_Type deviceType = Device_Type::HCA, bool useMaxPort = false);
@@ -138,6 +141,7 @@ public:
               const string& privateKeyFile = "",
               const string& keyPairUUid = "");
     void apply(const vector<u_int8_t>& buff);
+    string GetTokenPSIDFromBin(const vector<u_int8_t>& buff);
 };
 
 class RawCfgParams5thGen : public ErrMsg
