@@ -1002,6 +1002,12 @@ void MlxCfg::setDevCfgWithDefault(Commander* commander, std::vector<ParamView>& 
     compareNextParamsVectors(paramsNext, paramsDefault, alignNextToDefault);
     // alignNextToDefault now contain the parameters that needs to be invalidated or set.
 
+    std::unordered_set<std::string> invalidatedTlvKeys;
+    for (const ParamView& alignParam : alignNextToDefault)
+    {
+        commander->addTlvInstanceKeysForParam(alignParam.mlxconfigName, invalidatedTlvKeys);
+    }
+
     // 4 compare what user asked for (userParams) with next value, skip params that already have the same value
     std::vector<ParamView> filteredSetParams = {};
     for (const ParamView& userParam : userParams)
@@ -1030,6 +1036,20 @@ void MlxCfg::setDevCfgWithDefault(Commander* commander, std::vector<ParamView>& 
                     shouldSkip = (userParam.val == nextParam.val);
                 }
                 break;
+            }
+        }
+        // Invalidate resets a whole TLV; we cant skip parameters on a TLV we invalidate.
+        if (shouldSkip && !invalidatedTlvKeys.empty())
+        {
+            std::unordered_set<std::string> userTlvKeys;
+            commander->addTlvInstanceKeysForParam(userParam.mlxconfigName, userTlvKeys);
+            for (const std::string& k : userTlvKeys)
+            {
+                if (invalidatedTlvKeys.count(k))
+                {
+                    shouldSkip = false;
+                    break;
+                }
             }
         }
         if (!shouldSkip)

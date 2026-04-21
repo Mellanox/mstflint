@@ -42,6 +42,7 @@
 
 #include <map>
 #include <memory>
+#include <unordered_set>
 #include <vector>
 #include "tools_dev_types.h"
 #include "mlxcfg_configuration.h"
@@ -81,6 +82,9 @@ public:
     virtual void dumpRawCfg(std::vector<u_int32_t> rawTlvVec, std::string& tlvDump) = 0;
     virtual void backupCfgs(vector<BackupView>& views) = 0;
     virtual void updateParamViewValue(ParamView&, std::string val, QueryType qt) = 0;
+    /* TLV instance keys for this mlxconfig token (matches invalidateCfg grouping).*/
+    virtual void addTlvInstanceKeysForParam(const std::string& mlxconfigName,
+                                            std::unordered_set<std::string>& keysOut) = 0;
     virtual std::shared_ptr<SystemConfiguration>
       getSystemConfiguration(const std::string& name, int32_t asicNumber, const std::string& deviceName) = 0;
     virtual std::vector<std::shared_ptr<SystemConfiguration>>
