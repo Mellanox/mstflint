@@ -575,13 +575,11 @@ void HotResetManager::ExecuteHotResetFlow()
                 << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(info.device_1.device) << "."
                 << std::dec << static_cast<int>(info.device_1.function);
     LOG.Info(device1_os.str());
-    /*
     int status = ioctl(_mf->fd, PCICONF_HOT_RESET, &info);
     if (status != 0)
     {
         throw mft_core::MftGeneralException(std::string("Failed to send Hot Reset, check dmesg for more details."));
     }
-*/
     // Sleep for 2 seconds after sending hot reset
     nbu::mft::common::mft_msleep(2000);
 
