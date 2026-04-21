@@ -36,6 +36,7 @@
 #define MLXCFG_UI_H_
 
 #include <string>
+#include <unordered_map>
 
 #include <compatibility.h>
 #include <mtcr.h>
@@ -78,6 +79,7 @@ typedef enum
     Mc_XML2Bin,
     Mc_CreateConf,
     Mc_Apply,
+    Mc_AutoApply,
     Mc_RemoteTokenKeepAlive,
     Mc_ChallengeRequest,
     Mc_TokenSupported,
@@ -266,6 +268,7 @@ private:
 
     mlxCfgStatus createConf();
     mlxCfgStatus apply();
+    mlxCfgStatus autoApply();
 
     mlxCfgStatus remoteTokenKeepAlive();
     mlxCfgStatus getChallenge();
@@ -295,6 +298,7 @@ private:
     mlxCfgStatus rebootDevice(const string& device);
     mlxCfgStatus err(bool report, const char* errMsg, ...);
     void printErr();
+    std::unordered_map<string, vector<vector<u_int8_t>>> GenerateConfigPerPsidMap(const vector<vector<u_int8_t>>& files) const;
     // data members
 
     MlxCfgParams _mlxParams;

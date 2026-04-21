@@ -41,6 +41,7 @@
 #if __cplusplus
 
 #include <string>
+#include <utility>
 #include <vector>
 #include <stdexcept>
 
@@ -56,6 +57,7 @@ bool strToNum(const string& str, u_int32_t& num, int base = 0);
 
 void splitCommaSperatedString(string str, vector<string>& strv);
 
+bool endsWith(const string& str, const string& suffix);
 void ltrim(string& str, const string& chars = "\t\n\v\f\r ");
 void rtrim(string& str, const string& chars = "\t\n\v\f\r ");
 void trim(string& str, const string& chars = "\t\n\v\f\r ");
@@ -83,10 +85,14 @@ vector<u_int8_t> ReadBinFile(string file);
 vector<u_int8_t> ReadFromFile(string filename);
 bool IsFileEmpty(const std::string& filePath, bool isBin);
 void WriteToBinFile(string filePath, const std::vector<u_int8_t>& buff);
+void WriteNamedFilesToDirectory(const string& dirPath, const vector<pair<string, string>>& files);
 
 bool ToVector(string& str, vector<u_int8_t>& vec);
 
 int IsDirectory(const string& path);
+void MkDirIfNotExists(const string& path);
+vector<string> GetListOfFiles(const string& dirPath);
+vector<vector<u_int8_t>> ReadBinaryFilesFromDirectory(const string& dirPath);
 std::vector<u_int32_t> Uuid2Dword(const std::string& uuid_str);
 
 } // namespace mft_utils
