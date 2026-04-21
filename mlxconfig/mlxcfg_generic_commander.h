@@ -99,6 +99,8 @@ public:
     void dumpRawCfg(std::vector<u_int32_t> rawTlvVec, std::string& tlvDump) override;
     void backupCfgs(vector<BackupView>& view) override;
     void updateParamViewValue(ParamView& p, std::string v, QueryType qt) override;
+    void addTlvInstanceKeysForParam(const std::string& mlxconfigName,
+                                    std::unordered_set<std::string>& keysOut) override;
     std::shared_ptr<SystemConfiguration>
       getSystemConfiguration(const std::string& name, int32_t asicNumber, const std::string& deviceName) override;
     std::vector<std::shared_ptr<SystemConfiguration>>
