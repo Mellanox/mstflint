@@ -4009,7 +4009,6 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
     mf->mpci_change = mpci_change_ul;
     dev_type = mtcr_parse_name(name, &force, &domain, &bus, &dev, &func);
 
-    int return_mf = 1;
     switch (dev_type)
     {
         case MST_DRIVER_CR:
@@ -4059,19 +4058,15 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
 #endif
 
         default:
-            return_mf = 0;
             break;
     }
 
-    if (return_mf)
-    {
 #ifdef CABLES_SUPPORT
         if (!is_cable_device(name))
         {
             return mf;
         }
 #endif
-    }
     
     if (dev_type == MST_ERROR)
     {
