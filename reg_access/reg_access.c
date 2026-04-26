@@ -116,6 +116,7 @@
 #define REG_ID_MRSV  0x9164
 #define REG_ID_MISOC 0x9026
 #define REG_ID_MPEIN 0x9050
+#define REG_ID_MRFV  0x906d
 
 
 /* For mstdump oob feature: */
@@ -873,4 +874,10 @@ reg_access_status_t reg_access_misoc(mfile* mf, reg_access_method_t method, stru
 reg_access_status_t reg_access_mpein(mfile* mf, reg_access_method_t method, struct reg_access_hca_mpein_reg_ext* mpein)
 {
     REG_ACCCESS(mf, method, REG_ID_MPEIN, mpein, mpein_reg_ext, reg_access_hca);
+}
+
+reg_access_status_t
+reg_access_mrfv_switch(mfile* mf, reg_access_method_t method, struct reg_access_switch_MRFV_ext* mrfv)
+{
+    REG_ACCCESS(mf, method, REG_ID_MRFV, mrfv, MRFV_ext, reg_access_switch);
 }
