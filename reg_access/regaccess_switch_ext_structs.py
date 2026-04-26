@@ -33,9 +33,9 @@
 
 
 ###############################################################################
-#    This file was generated at "2026-03-01 11:33:02"
+#    This file was generated at "2026-04-21 10:13:51"
 #    by:
-#      > /tmp/jenkins/workspace/automatic_prm_update@2/scripts/prm_update.py --project switch
+#      > prm_update.py --project Switch
 ###############################################################################
 
 import os
@@ -54,6 +54,7 @@ class MMAM_EXT(ctypes.Structure):
         ("module_type", ctypes.c_uint8)
     ]
 
+
 class MGPIR_HW_INFO_EXT(ctypes.Structure):
     _fields_ = [
         ("num_of_devices", ctypes.c_uint8),
@@ -70,10 +71,12 @@ class MGPIR_HW_INFO_EXT(ctypes.Structure):
         ("max_sub_modules_index", ctypes.c_uint8)
     ]
 
+
 class MGPIR_EXT(ctypes.Structure):
     _fields_ = [
         ("hw_info", MGPIR_HW_INFO_EXT)
     ]
+
 
 class MPIR_EXT(ctypes.Structure):
     _fields_ = [
@@ -98,6 +101,7 @@ class MPIR_EXT(ctypes.Structure):
         ("slot_cap", ctypes.c_uint8)
     ]
 
+
 class MDDQ_SLOT_INFO_EXT(ctypes.Structure):
     _fields_ = [
         ("active", ctypes.c_uint8),
@@ -108,6 +112,7 @@ class MDDQ_SLOT_INFO_EXT(ctypes.Structure):
         ("hw_revision", ctypes.c_uint16),
         ("card_type", ctypes.c_uint8)
     ]
+
 
 class MDDQ_DEVICE_INFO_EXT(ctypes.Structure):
     _fields_ = [
@@ -126,10 +131,12 @@ class MDDQ_DEVICE_INFO_EXT(ctypes.Structure):
         ("device_type_name", ctypes.c_uint8 * 8)
     ]
 
+
 class MDDQ_SLOT_NAME_EXT(ctypes.Structure):
     _fields_ = [
         ("slot_ascii_name", ctypes.c_uint8 * 20)
     ]
+
 
 class MDDQ_DATA_AUTO_EXT(ctypes.Union):
     _fields_ = [
@@ -137,6 +144,7 @@ class MDDQ_DATA_AUTO_EXT(ctypes.Union):
         ("mddq_device_info_ext", MDDQ_DEVICE_INFO_EXT),
         ("mddq_slot_name_ext", MDDQ_SLOT_NAME_EXT)
     ]
+
 
 class MDDQ_EXT(ctypes.Structure):
     _fields_ = [
@@ -150,6 +158,7 @@ class MDDQ_EXT(ctypes.Structure):
         ("data", MDDQ_DATA_AUTO_EXT)
     ]
 
+
 class MDSR_REG_EXT(ctypes.Structure):
     _fields_ = [
         ("status", ctypes.c_uint8),
@@ -160,22 +169,26 @@ class MDSR_REG_EXT(ctypes.Structure):
         ("time_left", ctypes.c_uint32)
     ]
 
+
 class MRSR_EXT(ctypes.Structure):
     _fields_ = [
         ("command", ctypes.c_uint8)
     ]
+
 
 class MFMC_REG_EXT(ctypes.Structure):
     _fields_ = [
         ("fs", ctypes.c_uint8),
         ("wrp_block_count", ctypes.c_uint8),
         ("block_size", ctypes.c_uint8),
+        ("hw_wp_gpio", ctypes.c_uint8),
         ("wrp_en", ctypes.c_uint8),
         ("sub_sector_protect_size", ctypes.c_uint8),
         ("sector_protect_size", ctypes.c_uint8),
         ("quad_en", ctypes.c_uint8),
         ("dummy_clock_cycles", ctypes.c_uint8)
     ]
+
 
 class MPEIN_REG_EXT(ctypes.Structure):
     _fields_ = [
@@ -205,4 +218,3 @@ class MPEIN_REG_EXT(ctypes.Structure):
         ("precode_active", ctypes.c_uint8),
         ("device_status", ctypes.c_uint16)
     ]
-
