@@ -33,7 +33,7 @@
 
 
 ###############################################################################
-#    This file was generated at "2026-01-07 11:57:16"
+#    This file was generated at "2026-04-21 06:58:17"
 #    by:
 #      > prm_update.py --project Nic
 ###############################################################################
@@ -187,7 +187,6 @@ class MGIR_HARDWARE_INFO_EXT(ctypes.Structure):
         ("pvs", ctypes.c_uint8),
         ("technology", ctypes.c_uint8),
         ("num_ports", ctypes.c_uint16),
-        ("ib_mad_gen", ctypes.c_uint8),
         ("hw_dev_id", ctypes.c_uint16),
         ("module_master_fw_default", ctypes.c_uint8),
         ("cpo_indication", ctypes.c_uint8),
@@ -217,6 +216,9 @@ class MGIR_FW_INFO_EXT(ctypes.Structure):
         ("day", ctypes.c_uint8),
         ("month", ctypes.c_uint8),
         ("hour", ctypes.c_uint16),
+        ("BKV_sub_minor", ctypes.c_uint8),
+        ("BKV_minor", ctypes.c_uint8),
+        ("BKV_major", ctypes.c_uint8),
         ("psid", ctypes.c_uint8 * 16),
         ("ini_file_version", ctypes.c_uint32),
         ("extended_major", ctypes.c_uint32),
@@ -374,9 +376,11 @@ class NIC_CAP_EXT_DPA_CAP(ctypes.Structure):
         ("max_num_dpa_eu_per_group", ctypes.c_uint16),
         ("dpa_perf_sample_type", ctypes.c_uint8),
         ("max_num_partition_vhca_id", ctypes.c_uint16),
+        ("dpa_eug_eu_share", ctypes.c_uint8),
         ("nic_dpa_self_host_app_mgmt", ctypes.c_uint8),
         ("dpa_partition_eug", ctypes.c_uint8),
-        ("process_perf_cnt", ctypes.c_uint8)
+        ("process_perf_cnt", ctypes.c_uint8),
+        ("dpa_self_host_app_action", ctypes.c_uint16)
     ]
 
 class NIC_CAP_EXT_DIAG_DATA_CAP(ctypes.Structure):

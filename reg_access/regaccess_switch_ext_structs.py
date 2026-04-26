@@ -33,7 +33,7 @@
 
 
 ###############################################################################
-#    This file was generated at "2025-12-21 15:54:42"
+#    This file was generated at "2026-04-15 11:04:25"
 #    by:
 #      > /tmp/jenkins/workspace/automatic_prm_update/scripts/prm_update.py --project switch
 ###############################################################################
@@ -65,6 +65,7 @@ class MGPIR_HW_INFO_EXT(ctypes.Structure):
         ("num_of_slots", ctypes.c_uint8),
         ("max_modules_per_slot", ctypes.c_uint8),
         ("num_of_resource_modules", ctypes.c_uint8),
+        ("total_num_of_module_i2c_bus", ctypes.c_uint8),
         ("num_lanes_per_sub_module", ctypes.c_uint8),
         ("max_sub_modules_index", ctypes.c_uint8)
     ]
