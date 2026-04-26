@@ -57,13 +57,11 @@ mstefuse_DEPENDENCIES = \
     $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
     $(top_builddir)/cmdif/libcmdif.la \
     $(top_builddir)/mft_utils/libmftutils.la \
-    $(top_builddir)/xz_utils/libxz_utils.la \
-    $(top_builddir)/ext_libs/minixz/libminixz.la \
     $(top_builddir)/mft_core/mft_core_utils/logger/liblogger.la \
     $(top_builddir)/mft_core/mft_core_utils/operating_system_api/lib_os_api.la \
     $(top_builddir)/mft_core/mft_core_utils/mft_exceptions/libmftexceptions.la \
     $(JSON_LIBS)
 
-mstefuse_LDADD = $(mstefuse_DEPENDENCIES) $(liblzma_LIBS) ${LDL}
+mstefuse_LDADD = $(mstefuse_DEPENDENCIES) ${LDL}
 
 mstefuse_LDFLAGS = -static
