@@ -294,10 +294,6 @@ struct reg_access_hca_mpein_reg_ext;
 reg_access_status_t
 reg_access_mpein(mfile* mf, reg_access_method_t method, struct reg_access_hca_mpein_reg_ext* mpein);
 
-struct reg_access_switch_MRFV_ext;
-reg_access_status_t
-reg_access_mrfv_switch(mfile* mf, reg_access_method_t method, struct reg_access_switch_MRFV_ext* mrfv);
-
 #ifdef __cplusplus
 }
 #endif

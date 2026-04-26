@@ -55,7 +55,6 @@
 #define REG_ID_MPEGC 0x9056
 #define REG_ID_MPIR 0x9059
 #define REG_ID_MROQ 0x902F
-#define REG_ID_MRFV 0x906d
 
 
 #endif

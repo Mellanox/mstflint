@@ -910,5 +910,4 @@ AC_OUTPUT( \
     mft_core/mft_core_utils/logger/Makefile \
     mft_core/mft_core_utils/operating_system_api/Makefile \
     mft_core/mft_core_utils/mft_exceptions/Makefile \
-    efuse_tool/Makefile \
  )
