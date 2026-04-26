@@ -56,13 +56,90 @@
 #include "common/tools_regex.h"
 using namespace std;
 #include <cstdlib>
+#include <fcntl.h>
 #ifdef __WIN__
 #include <direct.h>
 #include <sys/stat.h>
+#include <io.h>
 #else
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <unistd.h>
 #endif
+
+struct ScopedStdoutSilence::Impl
+{
+    int savedStdout = -1;
+    int nullFd = -1;
+};
+
+ScopedStdoutSilence::ScopedStdoutSilence() : _impl(new Impl())
+{
+    fflush(stdout);
+#ifdef __WIN__
+    _impl->savedStdout = _dup(_fileno(stdout));
+    if (_impl->savedStdout < 0)
+    {
+        return;
+    }
+    _impl->nullFd = _open("NUL", _O_WRONLY);
+    if (_impl->nullFd < 0)
+    {
+        return;
+    }
+    (void)_dup2(_impl->nullFd, _fileno(stdout));
+#else
+    _impl->savedStdout = dup(STDOUT_FILENO);
+    if (_impl->savedStdout < 0)
+    {
+        return;
+    }
+    _impl->nullFd = open("/dev/null", O_WRONLY);
+    if (_impl->nullFd < 0)
+    {
+        return;
+    }
+    (void)dup2(_impl->nullFd, STDOUT_FILENO);
+#endif
+}
+
+ScopedStdoutSilence::~ScopedStdoutSilence()
+{
+    if (_impl == nullptr)
+    {
+        return;
+    }
+    fflush(stdout);
+#ifdef __WIN__
+    if (_impl->savedStdout >= 0)
+    {
+        (void)_dup2(_impl->savedStdout, _fileno(stdout));
+    }
+    if (_impl->nullFd >= 0)
+    {
+        _close(_impl->nullFd);
+    }
+    if (_impl->savedStdout >= 0)
+    {
+        _close(_impl->savedStdout);
+    }
+#else
+    if (_impl->savedStdout >= 0)
+    {
+        (void)dup2(_impl->savedStdout, STDOUT_FILENO);
+    }
+    if (_impl->nullFd >= 0)
+    {
+        close(_impl->nullFd);
+    }
+    if (_impl->savedStdout >= 0)
+    {
+        close(_impl->savedStdout);
+    }
+#endif
+    delete _impl;
+    _impl = nullptr;
+}
 
 bool mlxcfg_is_debug_enabled()
 {
@@ -626,6 +703,18 @@ MlxcfgTLVNotFoundException::MlxcfgTLVNotFoundException(const char* cTLVName) :
     MlxcfgException("The TLV configuration %s was not found", cTLVName)
 {
 }
+
+bool GetMgir(mfile* mf, struct reg_access_hca_mgir_ext* mgir)
+{
+    reg_access_status_t reg_access_rc;
+    reg_access_rc = reg_access_mgir(mf, REG_ACCESS_METHOD_GET, mgir);
+    if (reg_access_rc != ME_OK)
+    {
+        return false;
+    }
+    return true;
+}
+
 void parseSystemConfName(const string& fullName, string& name, int& asic)
 {
     // Pattern: name[asic] or just name

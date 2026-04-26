@@ -95,6 +95,11 @@ void splitCommaSperatedString(string str, vector<string>& strv)
     }
 }
 
+bool endsWith(const string& str, const string& suffix)
+{
+    return str.size() >= suffix.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
+
 void ltrim(string& str, const string& chars)
 {
     str.erase(0, str.find_first_not_of(chars));
@@ -250,12 +255,36 @@ bool IsFileEmpty(const std::string& filePath, bool isBin)
      {
          throw runtime_error("Can not open " + filePath + ": " + string(strerror(errno)));
      }
-     if (fwrite(&buff[0], 1, buff.size(), fh) != buff.size())
+     if (!buff.empty())
      {
-         fclose(fh);
-         throw runtime_error("Failed to write to " + filePath + ": " + string(strerror(errno)));
+         if (fwrite(buff.data(), 1, buff.size(), fh) != buff.size())
+         {
+             fclose(fh);
+             throw runtime_error("Failed to write to " + filePath + ": " + string(strerror(errno)));
+         }
      }
      fclose(fh);
+}
+
+void WriteNamedFilesToDirectory(const string& dirPath, const vector<pair<string, string>>& files)
+{
+    MkDirIfNotExists(dirPath);
+#ifdef __WIN__
+    const string pathSep = "\\";
+#else
+    const string pathSep = "/";
+#endif
+    string baseDir = dirPath;
+    if (!baseDir.empty() && !endsWith(baseDir, pathSep))
+    {
+        baseDir += pathSep;
+    }
+    for (const auto& nameAndContent : files)
+    {
+        const string filePath = baseDir + nameAndContent.first;
+        const vector<u_int8_t> bytes(nameAndContent.second.begin(), nameAndContent.second.end());
+        WriteToBinFile(filePath, bytes);
+    }
 }
 
 vector<u_int8_t> ReadFromFile(string filename)
@@ -391,6 +420,16 @@ bool ToVector(string& str, vector<u_int8_t>& vec)
      }
      return true;
  }
+
+ vector<vector<u_int8_t>> ReadBinaryFilesFromDirectory(const string& dirPath)
+{
+    vector<vector<u_int8_t>> out;
+    for (const string& path : GetListOfFiles(dirPath))
+    {
+        out.push_back(ReadBinFile(path));
+    }
+    return out;
+}
  
  std::vector<u_int32_t> Uuid2Dword(const std::string& uuid_str)
  {
@@ -404,5 +443,65 @@ bool ToVector(string& str, vector<u_int8_t>& vec)
      }
      return uuid;
 }
+
+int IsDirectory(const string& path)
+{
+    int status;
+    struct stat st;
+
+    status = stat(path.c_str(), &st);
+    if (status != 0)
+    {
+        return 0;
+    }
+
+    return (S_ISDIR(st.st_mode));
+}
+
+void MkDirIfNotExists(const string& path)
+{
+    int rc;
+#ifdef __WIN__
+    rc = mkdir(path.c_str());
+#else
+    rc = mkdir(path.c_str(), 0777);
+#endif
+    if (rc != 0 && errno != EEXIST)
+    {
+        throw runtime_error("Failed to create directory '" + path + "': " + string(strerror(errno)));
+    }
+}
+
+vector<string> GetListOfFiles(const string& dirPath)
+{
+#ifdef __WIN__
+    const string separator = "\\";
+#else
+    const string separator = "/";
+#endif
+    const string CWD = ".";
+    const string PARENT = "..";
+    vector<string> files;
+    DIR* dir;
+    struct dirent* ent;
+
+    if ((dir = opendir(dirPath.c_str())) != NULL)
+    {
+        while ((ent = readdir(dir)) != NULL)
+        {
+            if (string(ent->d_name) != CWD && string(ent->d_name) != PARENT)
+            {
+                files.push_back(dirPath + separator + ent->d_name);
+            }
+        }
+        closedir(dir);
+    }
+    else
+    {
+        throw runtime_error("Failed to process " + dirPath + ": " + string(strerror(errno)));
+    }
+    return files;
+}
+
 
 } // namespace mft_utils

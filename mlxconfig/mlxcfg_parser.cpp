@@ -200,6 +200,7 @@ inline const char* cmdNVInputFileTag(mlxCfgCmd cmd, const char* def)
            (cmd == Mc_Raw2XML)                                              ? "Raw" :
            (cmd == Mc_GenXMLTemplate)                                       ? "TLVs" :
            (cmd == Mc_Apply)                                                ? "Configuration" :
+           (cmd == Mc_AutoApply)                                            ? "Configuration" :
                                                                               def;
 }
 
@@ -647,6 +648,11 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
             _mlxParams.cmd = Mc_Apply;
             break;
         }
+        else if (arg == "auto_apply")
+        {
+            _mlxParams.cmd = Mc_AutoApply;
+            break;
+        }
         else if (arg == "show_confs" || arg == "i")
         {
             _mlxParams.cmd = Mc_ShowConfs;
@@ -768,7 +774,17 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
         return extractNVOutputFile(argc - i, &(argv[i]));
     }
 
-    if (_mlxParams.cmd == Mc_Apply)
+    if (_mlxParams.cmd == Mc_AutoApply && _mlxParams.deviceType == UNSUPPORTED_DEVICE)
+    {
+        return err(true, "device type must be specified with auto_apply command");
+    }
+
+    if (_mlxParams.cmd == Mc_AutoApply && !_mlxParams.device.empty())
+    {
+        return err(true, "device must not be specified with auto_apply command");
+    }
+
+    if (_mlxParams.cmd == Mc_Apply || _mlxParams.cmd == Mc_AutoApply)
     {
         return extractNVInputFile(argc - i, &(argv[i]));
     }

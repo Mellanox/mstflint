@@ -2111,6 +2111,67 @@ void GenericCommander::createConf(const string& xml, vector<u_int32_t>& buff)
     buff.insert(buff.end(), tlvsBuff.begin(), tlvsBuff.end());
 }
 
+string GenericCommander::GetTokenPSIDFromBin(const vector<u_int8_t>& buff)
+{
+    vector<std::shared_ptr<TLVConf>> tlvs;
+    string psid = "";
+    FwComponent::comps_ids_t compsId = FwComponent::comps_ids_t::COMPID_UNKNOWN;
+    ValidateAndGetTlvsAndCompIdLegacy(buff, tlvs, compsId);
+    if (compsId != FwComponent::comps_ids_t::COMPID_CRCS_TOKEN && compsId != FwComponent::comps_ids_t::COMPID_CRDT_TOKEN)
+    {
+        throw MlxcfgException("Invalid Configuration file");
+    }
+
+    const auto tlvIt =
+      std::find_if(tlvs.begin(), tlvs.end(),
+                   [](const std::shared_ptr<TLVConf>& tlv) { return tlv && tlv->_name == "file_applicable_to"; });
+    if (tlvIt != tlvs.end())
+    {
+        std::shared_ptr<Param> psidParam = (*tlvIt)->findParamByName("psid", QueryNext);
+        if (psidParam && psidParam->_value)
+        {
+            psid = psidParam->getVal();
+        }
+        else
+        {
+            throw MlxcfgException("Missing psid field in the Configuration file");
+        }
+    }
+    else
+    {
+        throw MlxcfgException("Missing file_applicable_to tlv in the Configuration file");
+    }
+
+    return psid;
+}
+
+void GenericCommander::ValidateAndGetTlvsAndCompIdLegacy(const vector<u_int8_t>& buff, 
+                                                         vector<std::shared_ptr<TLVConf>>& tlvs,
+                                                         FwComponent::comps_ids_t& compsId)
+{
+    vector<u_int32_t> dwBuff;
+    size_t fingerPrintLength = strlen(BIN_FILE_FINGERPRINT);
+
+    // Check if there is a fingerprint:
+    if (buff.size() < fingerPrintLength)
+    {
+        throw MlxcfgException("Invalid Configuration file");
+    }
+    for (unsigned int i = 0; i < fingerPrintLength; i += 4)
+    {
+        if (buff[i] != BIN_FILE_FINGERPRINT[i])
+        {
+            throw MlxcfgException("Fingerprint is missing in the Configuration file");
+        }
+    }
+
+    dwBuff.resize((buff.size() - fingerPrintLength) >> 2);
+    memcpy(dwBuff.data(), buff.data() + fingerPrintLength, buff.size() - fingerPrintLength);
+    bin2TLVConfs(dwBuff, tlvs);
+
+    checkConfTlvs(tlvs, compsId);
+}
+
 void GenericCommander::apply(const vector<u_int8_t>& buff)
 {
     FwComponent comp;

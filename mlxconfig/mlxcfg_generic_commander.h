@@ -71,6 +71,9 @@ private:
     void printParamViews(FILE* f, vector<ParamView>& v);
     void genXMLTemplateAux(vector<string> tlvs, string& xmlTemplate, bool allAttrs, bool withVal, bool defaultAttrVal);
     void removeSignatureTlvs(vector<std::shared_ptr<TLVConf>>& tlvs);
+    void ValidateAndGetTlvsAndCompIdLegacy(const vector<u_int8_t>& buff,
+                                           vector<std::shared_ptr<TLVConf>>& tlvs,
+                                           FwComponent::comps_ids_t& compsId);
 
 public:
     GenericCommander(mfile* mf, string& dbName, Device_Type deviceType = Device_Type::HCA, bool useMaxPort = false);
@@ -132,6 +135,7 @@ public:
               const string& privateKeyFile = "",
               const string& keyPairUUid = "");
     void apply(const vector<u_int8_t>& buff);
+    string GetTokenPSIDFromBin(const vector<u_int8_t>& buff);
 };
 
 class RawCfgParams5thGen : public ErrMsg
