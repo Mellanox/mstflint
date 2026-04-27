@@ -46,9 +46,8 @@ MlxToken::MlxToken(Device_Type deviceType, string aggregatableTLV, vector<string
 {
 }
 
-void MlxToken::LoadFromXMLFile(string filePath)
+void MlxToken::LoadFromXMLFile(string xmlContent)
 {
-    vector<u_int8_t> token = ReadFromFile(filePath);
     string dbName = "";
     GenericCommander commander(nullptr, dbName, _deviceType);
 
@@ -56,7 +55,7 @@ void MlxToken::LoadFromXMLFile(string filePath)
 
     try
     {
-        commander.XML2TLVConf(string(token.begin(), token.end()), _tlvs);
+        commander.XML2TLVConf(xmlContent, _tlvs);
         VerifyTokenStructure();
         VerifyTokenContent();
     }
