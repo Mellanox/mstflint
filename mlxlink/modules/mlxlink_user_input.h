@@ -173,6 +173,9 @@ public:
     int _setGroup;
     int _showGroup;
     int _slrgTestIterations;
+    int _elsModule;
+    std::vector<int> _elsLaserIdxs;
+    string _elsOperation;
     vector<string> _labelPorts;
 
     string eyeSelect;

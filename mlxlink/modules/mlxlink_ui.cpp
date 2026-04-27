@@ -76,7 +76,12 @@ void MlxlinkUi::initMlxlinkCommander()
 {
     createMlxlinkCommander();
 
-    initPortInfo();
+    initRegAccessLib();
+
+    if (_userInput._elsModule == ELS_NO_MODULE_INDEX)
+    {
+        initPortInfo();
+    }
 }
 
 void MlxlinkUi::printSynopsisHeader()
@@ -1020,6 +1025,65 @@ void MlxlinkUi::validatePortInfoParams()
     }
 }
 
+void MlxlinkUi::validateElsParams()
+{
+    // If no ELS flags specified, nothing to validate
+    if (_userInput._elsModule == ELS_NO_MODULE_INDEX && _userInput._elsLaserIdxs.empty() &&
+        _userInput._elsOperation.empty())
+    {
+        return;
+    }
+
+    // All three ELS flags must be specified together
+    if (_userInput._elsModule == ELS_NO_MODULE_INDEX || _userInput._elsLaserIdxs.empty() ||
+        _userInput._elsOperation.empty())
+    {
+        throw MlxRegException("--" ELS_MODULE_FLAG ", --" ELS_LASER_FLAG " and --" ELS_OPERATION_FLAG
+                              " must be specified together");
+    }
+
+    // ELS flags cannot be combined with any other flags
+    if (_userInput._portSpecified)
+    {
+        throw MlxRegException("--" ELS_MODULE_FLAG " cannot be combined with -p (port) flag");
+    }
+    if (_sendRegFuncMap.size() != 1 || _sendRegFuncMap[0] != HANDLE_ELS_OPERATION)
+    {
+        throw MlxRegException("ELS operation flags cannot be combined with other flags");
+    }
+
+    // Validate laser indexes
+    int prevLaserIdx = -1;
+    for (int laserIdx : _userInput._elsLaserIdxs)
+    {
+        // Validate laser index is in valid range
+        if (laserIdx < 0 || laserIdx >= ELS_LASER_NUM)
+        {
+            throw MlxRegException("Invalid laser number: %d. Valid range is [0-%d]", laserIdx, ELS_LASER_NUM - 1);
+        }
+
+        // Validate no duplicate laser indices (assuming list is sorted)
+        if (laserIdx == prevLaserIdx)
+        {
+            throw MlxRegException("Duplicate laser number: %d", laserIdx);
+        }
+        prevLaserIdx = laserIdx;
+    }
+
+    // Validate operation value
+    if (!isValidElsOperation(_userInput._elsOperation))
+    {
+        throw MlxRegException("Invalid ELS operation '%s'. See --help for valid operations",
+                              _userInput._elsOperation.c_str());
+    }
+}
+
+bool MlxlinkUi::isValidElsOperation(const string& op)
+{
+    return (op == ELS_OPERATION_FIBER_CHECK_STR || op == ELS_OPERATION_LASER_TUNING_STR ||
+            op == ELS_OPERATION_LASER_WL_TUNING_STR || op == ELS_OPERATION_LASER_UP_STR);
+}
+
 void MlxlinkUi::validateMultiPortInfoParams()
 {
     if ((_userInput._showMultiPortInfo || _userInput._showMultiPortModuleInfo) && _userInput._portSpecified)
@@ -1204,6 +1268,7 @@ void MlxlinkUi::paramValidate()
     validateGradeScanParams();
     validateErrInjParams();
     validatePortInfoParams();
+    validateElsParams();
 }
 
 void MlxlinkUi::initCmdParser()
@@ -1364,6 +1429,11 @@ void MlxlinkUi::initCmdParser()
     AddOptions(PPHCR_FEC_HIST_FLAG, PPHCR_FEC_HIST_FLAG_SHORT, "", "Provide histogram of FEC errors");
     AddOptions(PPHCR_SHOW_FEC_HIST_FLAG, PPHCR_SHOW_FEC_HIST_FLAG_SHORT, "", "Show FEC errors histograms");
     AddOptions(PPHCR_CLEAR_HISTOGRAM_FLAG, PPHCR_CLEAR_HISTOGRAM_FLAG_SHORT, "", "Clears FEC errors histograms");
+    AddOptions(ELS_MODULE_FLAG, ELS_MODULE_FLAG_SHORT, "els module", "ELS module index for laser operations");
+    AddOptions(ELS_LASER_FLAG, ELS_LASER_FLAG_SHORT, "els lasers",
+               "Lasers to operate on (comma-separated) [0,1,2,3,4,5,6,7]");
+    AddOptions(ELS_OPERATION_FLAG, ELS_OPERATION_FLAG_SHORT, "els operation",
+               "ELS operation [FC(fiber_check)/LT(laser_tuning)/WLT(laser_wl_tuning)/UP(laser_up)]");
     AddOptions(PLANE_FLAG, PLANE_FLAG_SHORT, "plane", "plane index");
     AddOptions(SET_PRIMARY_FLAG, SET_PRIMARY_FLAG_SHORT, "", "Set primary port");
     AddOptions(SET_SECONDARY_FLAG, SET_SECONDARY_FLAG_SHORT, "", "Set secondary port");
@@ -1529,6 +1599,9 @@ void MlxlinkUi::commandsCaller()
             case SEND_PRECODING:
                 _mlxlinkCommander->setPrecoding();
                 break;
+            case HANDLE_ELS_OPERATION:
+                _mlxlinkCommander->handleElsOperation();
+                break;
             default:
                 break;
         }
@@ -1540,6 +1613,15 @@ void MlxlinkUi::addCmd(OPTION_TYPE option)
     if (!isIn(option, _sendRegFuncMap))
     {
         _sendRegFuncMap.push_back(option);
+    }
+}
+
+void MlxlinkUi::removeCmd(OPTION_TYPE option)
+{
+    auto it = std::find(_sendRegFuncMap.begin(), _sendRegFuncMap.end(), option);
+    if (it != _sendRegFuncMap.end())
+    {
+        _sendRegFuncMap.erase(it);
     }
 }
 
@@ -1590,6 +1672,25 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     else if (name == DEVICE_FLAG)
     {
         _userInput._device = value;
+        return PARSE_OK;
+    }
+    else if (name == ELS_MODULE_FLAG)
+    {
+        checkStrLength(value);
+        _userInput._elsModule = stoi(value, nullptr, 0);
+        return PARSE_OK;
+    }
+    else if (name == ELS_LASER_FLAG)
+    {
+        std::vector<string> laserParams = parseParamsFromLine(toUpperCase(value));
+        _userInput._elsLaserIdxs = _mlxlinkCommander->getElsLaserIdxsFromParams(laserParams);
+        return PARSE_OK;
+    }
+    else if (name == ELS_OPERATION_FLAG)
+    {
+        addCmd(HANDLE_ELS_OPERATION);
+        _userInput._elsOperation = toUpperCase(value);
+        _userInput._uniqueCmds++;
         return PARSE_OK;
     }
     else if (name == MODULE_INFO_FLAG)
@@ -2387,6 +2488,11 @@ int MlxlinkUi::run(int argc, char** argv)
         _userInput._secondSplitPort = _userInput._forceSplitValue;
     }
 
+    // Remove SHOW_PDDR command if ELS flags are specified
+    if (_userInput._elsModule != ELS_NO_MODULE_INDEX)
+    {
+        removeCmd(SHOW_PDDR);
+    }
     paramValidate();
 
     _mf = mopen(_userInput._device.c_str());

@@ -36,6 +36,7 @@
 #include "common/tools_time.h"
 #include "pci_library/PCILibrary.h"
 #include <sstream>
+#include <algorithm>
 
 using namespace mlxreg;
 
@@ -230,6 +231,8 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _attenuationTitle = "";
     _rxRecoveryCountersCmd.setLineLen(RX_RECOVERY_COUNTERS_LINE_LEN);
     _silentMode = false;
+    _elsOperationTimedOut = false;
+    _elsLaserMask = ELS_NO_LASER_MASK;
 }
 
 MlxlinkCommander::~MlxlinkCommander()
@@ -7228,6 +7231,11 @@ void MlxlinkCommander::prepareJsonOut()
     _krInfoCmd.toJsonFormat(_jsonRoot);
     _rxRecoveryCountersCmd.toJsonFormat(_jsonRoot);
     _periodicEqInfoCmd.toJsonFormat(_jsonRoot);
+    _elsOperationGeneralInfoCmd.toJsonFormat(_jsonRoot);
+    for (auto& laserInfoCmd : _elsOperationLaserInfoCmds)
+    {
+        laserInfoCmd.toJsonFormat(_jsonRoot);
+    }
 
     bool errorExist = _allUnhandledErrors != "";
     _jsonRoot[JSON_STATUS_SECTION][JSON_STATUS_CODE] = errorExist ? 1 : 0;
@@ -7947,5 +7955,178 @@ void MlxlinkCommander::configurePeqForAllPorts(bool brLanesCap)
     catch (const std::exception& exc)
     {
         throw MlxRegException("Setting Periodic EQ raised the following exception:\n" + string(exc.what()));
+    }
+}
+
+std::vector<int> MlxlinkCommander::getElsLaserIdxsFromParams(std::vector<string> laserParams)
+{
+    std::vector<int> laserIdxs;
+    u_int32_t laserNum = 0;
+
+    // Convert laser strings to integers
+    for (const auto& laserStr : laserParams)
+    {
+        mlxreg::RegAccessParser::strToUint32((char*)laserStr.c_str(), laserNum);
+        laserIdxs.push_back(laserNum);
+    }
+    std::sort(laserIdxs.begin(), laserIdxs.end()); // Sort the list
+    return laserIdxs;
+}
+
+u_int8_t MlxlinkCommander::getElsLaserMaskFromList(const std::vector<int>& laserIdxs)
+{
+    u_int8_t laserMask = 0;
+    for (int laserIdx : laserIdxs)
+    {
+        laserMask |= (1 << laserIdx);
+    }
+    return laserMask;
+}
+
+void MlxlinkCommander::handleElsOperation()
+{
+    // Verify module is plugged
+    u_int32_t moduleStatus;
+    try
+    {
+        sendPrmReg(ACCESS_REG_PMPE, GET, "slot_index=%d,module=%d", _slotIndex, _userInput._elsModule);
+        moduleStatus = getFieldValue("module_status");
+    }
+    catch (MlxRegException& exc)
+    {
+        throw MlxRegException("Failed to get ELS module status.");
+    }
+
+    if (moduleStatus != PMPE_MODULE_STATUS_PLUGGED_ENABLED)
+    {
+        throw MlxRegException("ELS module status is not plugged & enabled!");
+    }
+
+    _elsLaserMask = getElsLaserMaskFromList(_userInput._elsLaserIdxs);
+    // Write PMMP command to trigger ELS operation
+    try
+    {
+        sendPrmReg(ACCESS_REG_PMMP, SET, "slot_index=%d,module=%d,laser_mask=%d,set_laser_operation=%d", _slotIndex,
+                   _userInput._elsModule, _elsLaserMask, _mlxlinkMaps->_elsOperationToVal[_userInput._elsOperation]);
+    }
+    catch (MlxRegException& exc)
+    {
+        throw MlxRegException("Failed to start ELS operation. Please check the ELS module index and try again.");
+    }
+
+    MlxlinkRecord::printCmdLine(
+      "Starting ELS operation " +
+        _mlxlinkMaps->_elsValToOperation[_mlxlinkMaps->_elsOperationToVal[_userInput._elsOperation]],
+      _jsonRoot);
+    pollElsOperationCompletion();
+    showElsOperationResults();
+}
+
+void MlxlinkCommander::pollElsOperationCompletion()
+{
+    // Keep track of the status of each laser, initialized to in progress
+    std::map<int, int> operationStatus; // laser index -> operation status
+    for (int laserIdx : _userInput._elsLaserIdxs)
+    {
+        operationStatus[laserIdx] = PMLSE_OPER_STATUS_IN_PROGRESS;
+    }
+
+    // Poll for completion
+    for (int i = 0; i < ELS_POLLING_TIMEOUT; i++)
+    {
+        bool allDone = true; // Indicates if all lasers are finished
+        try
+        {
+            sendPrmReg(ACCESS_REG_PMLSE, GET, "module_index=%d", _userInput._elsModule);
+
+            for (int laserIdx : _userInput._elsLaserIdxs)
+            {
+                // Skip lasers that are already finished
+                if (operationStatus[laserIdx] != PMLSE_OPER_STATUS_IN_PROGRESS)
+                {
+                    continue;
+                }
+
+                // Check and update the laser status if needed
+                int status = getFieldValue("get_operation_status_laser" + to_string(laserIdx));
+                if (status != PMLSE_OPER_STATUS_IN_PROGRESS)
+                {
+                    operationStatus[laserIdx] = status;
+                }
+                else
+                {
+                    allDone = false;
+                }
+            }
+        }
+        catch (MlxRegException& exc)
+        {
+            allDone = false;
+        }
+
+        // Update progress bar
+        int progress = (i + 1) * PROGRESS_DONE / ELS_POLLING_TIMEOUT;
+        printProgressBar(progress, "Operation in progress -", "");
+
+        // If all lasers are finished, stop polling
+        if (allDone)
+        {
+            printProgressBar(PROGRESS_DONE, "Operation in progress -", "");
+            return;
+        }
+        msleep(1000); // sleep for 1 second before polling again
+    }
+
+    _elsOperationTimedOut = true; // if we got here, polling timed out
+}
+
+void MlxlinkCommander::showElsOperationResults()
+{
+    setPrintTitle(_elsOperationGeneralInfoCmd, "ELS Operation Results", ELS_OPERATION_INFO_BASE_LAST);
+
+    // If polling timed out, print a warning message
+    if (_elsOperationTimedOut)
+    {
+        MlxlinkRecord::printWar("Warning: Polling timeout reached. Some operations may still be in progress.",
+                                _jsonRoot);
+    }
+
+    try
+    {
+        sendPrmReg(ACCESS_REG_PMLSE, GET, "module_index=%d", _userInput._elsModule);
+        setPrintVal(_elsOperationGeneralInfoCmd, "Module Index", to_string(_userInput._elsModule));
+
+        stringstream laserMaskStr;
+        laserMaskStr << "0x" << std::hex << (int)_elsLaserMask;
+        setPrintVal(_elsOperationGeneralInfoCmd, "Laser Mask", laserMaskStr.str());
+
+        // Fetch operation bandwidth
+        u_int32_t bandwidth = getFieldValue("operation_bandwidth");
+        setPrintVal(_elsOperationGeneralInfoCmd, "Operation Bandwidth", to_string(bandwidth));
+
+        // Print the general operation information
+        cout << _elsOperationGeneralInfoCmd;
+
+        // Fetch per-laser operation and status
+        for (int laserIdx : _userInput._elsLaserIdxs)
+        {
+            MlxlinkCmdPrint laserInfoCmd;
+            setPrintTitle(laserInfoCmd, "Laser " + to_string(laserIdx), ELS_OPERATION_INFO_PER_LASER);
+
+            int laserOp = getFieldValue("laser" + to_string(laserIdx) + "_operation");
+            string laserOpStr = _mlxlinkMaps->_elsValToOperation[laserOp];
+            setPrintVal(laserInfoCmd, "Required Operation", laserOpStr);
+
+            int laserStatus = getFieldValue("get_operation_status_laser" + to_string(laserIdx));
+            string statusStr = _mlxlinkMaps->_pmlseOperStatusToStr[laserStatus];
+            setPrintVal(laserInfoCmd, "Operation Status", statusStr);
+
+            cout << laserInfoCmd;
+            _elsOperationLaserInfoCmds.push_back(laserInfoCmd);
+        }
+    }
+    catch (MlxRegException& exc)
+    {
+        throw MlxRegException("Failed to get ELS operation results.");
     }
 }

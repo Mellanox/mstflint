@@ -1806,6 +1806,40 @@ void MlxlinkMaps::initKrMapping()
     _krPrbsType[KR_PRBS_TYPE_PRBS31] = "PRBS31";
 }
 
+void MlxlinkMaps::initElsMapping()
+{
+    // ELS operation code to value mapping
+    _elsOperationToVal[ELS_OPERATION_NO_OPERATION_STR] = ELS_OPERATION_NO_OPERATION;
+    _elsOperationToVal[ELS_OPERATION_FIBER_CHECK_STR] = ELS_OPERATION_FIBER_CHECK;
+    _elsOperationToVal[ELS_OPERATION_LASER_TUNING_STR] = ELS_OPERATION_LASER_TUNING;
+    _elsOperationToVal[ELS_OPERATION_LASER_UP_STR] = ELS_OPERATION_LASER_UP;
+    _elsOperationToVal[ELS_OPERATION_FORCE_LASER_UP_STR] = ELS_OPERATION_FORCE_LASER_UP;
+    _elsOperationToVal[ELS_OPERATION_LASER_OFF_STR] = ELS_OPERATION_LASER_OFF;
+    _elsOperationToVal[ELS_OPERATION_LASER_FINE_TUNE_STR] = ELS_OPERATION_LASER_FINE_TUNE;
+    _elsOperationToVal[ELS_OPERATION_LASER_WL_TUNING_STR] = ELS_OPERATION_LASER_WL_TUNING;
+
+    // ELS operation value to string mapping
+    _elsValToOperation[ELS_OPERATION_NO_OPERATION] = "No Operation";
+    _elsValToOperation[ELS_OPERATION_FIBER_CHECK] = "Fiber Check";
+    _elsValToOperation[ELS_OPERATION_LASER_TUNING] = "Laser Tuning";
+    _elsValToOperation[ELS_OPERATION_LASER_UP] = "Laser Up";
+    _elsValToOperation[ELS_OPERATION_FORCE_LASER_UP] = "Force Laser Up";
+    _elsValToOperation[ELS_OPERATION_LASER_OFF] = "Laser Off";
+    _elsValToOperation[ELS_OPERATION_LASER_FINE_TUNE] = "Laser Fine Tune";
+    _elsValToOperation[ELS_OPERATION_LASER_WL_TUNING] = "Laser WL Tuning";
+
+    // PMLSE operation status to string mapping
+    _pmlseOperStatusToStr[PMLSE_OPER_STATUS_NO_OPERATION] = "No Operation";
+    _pmlseOperStatusToStr[PMLSE_OPER_STATUS_IN_PROGRESS] = "In Progress";
+    _pmlseOperStatusToStr[PMLSE_OPER_STATUS_SUCCESS] = "Success";
+    _pmlseOperStatusToStr[PMLSE_OPER_STATUS_FAILED] = "Failed";
+    _pmlseOperStatusToStr[PMLSE_OPER_STATUS_FAILED_FIBER_CHECK_NOT_DONE] = "Failed - Fiber Check Not Done";
+    _pmlseOperStatusToStr[PMLSE_OPER_STATUS_FAILED_NO_POWER_SETPOINT] = "Failed - No Power Setpoint";
+    _pmlseOperStatusToStr[PMLSE_OPER_STATUS_FAILED_LASER_FAILURE] = "Failed - Laser Failure";
+    _pmlseOperStatusToStr[PMLSE_OPER_STATUS_FAILED_OPERATION_ABORT] = "Failed - Operation Abort";
+    _pmlseOperStatusToStr[PMLSE_OPER_STATUS_FAILED_TIMEOUT] = "Failed - Timeout";
+}
+
 MlxlinkMaps::MlxlinkMaps()
 {
     initPublicStrings();

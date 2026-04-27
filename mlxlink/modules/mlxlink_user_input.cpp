@@ -138,6 +138,9 @@ UserInput::UserInput()
     _setGroup = -1;
     _showGroup = -1;
     _slrgTestIterations = -1;
+    _elsModule = ELS_NO_MODULE_INDEX;
+    _elsLaserIdxs = {};
+    _elsOperation = "";
     _linkTraining = "";
     _phyRecovery = "";
     _phyRecoveryType = "";

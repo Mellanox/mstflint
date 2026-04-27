@@ -247,6 +247,13 @@
 #define SET_TX_PRECODING_FLAG_SHORT ' '
 #define SET_RX_PRECODING_FLAG "set_rx_precoding"
 #define SET_RX_PRECODING_FLAG_SHORT ' '
+#define ELS_MODULE_FLAG "els_module"
+#define ELS_MODULE_FLAG_SHORT ' '
+#define ELS_LASER_FLAG "els_laser"
+#define ELS_LASER_FLAG_SHORT ' '
+#define ELS_OPERATION_FLAG "els_operation"
+#define ELS_OPERATION_FLAG_SHORT ' '
+
 
 //------------------------------------------------------------
 //        Mlxlink Cable info flags
@@ -430,6 +437,7 @@ enum OPTION_TYPE
     SEND_PRECODING,
 
     // Any new function's index should be added before FUNCTION_LAST in this enum
+    HANDLE_ELS_OPERATION,
     FUNCTION_LAST
 };
 
@@ -625,6 +633,13 @@ public:
     void printOuptputVector(vector<MlxlinkCmdPrint>& cmdOut);
     virtual void prepareJsonOut();
 
+    // ELS operation
+    std::vector<int> getElsLaserIdxsFromParams(std::vector<string> laserParams);
+    u_int8_t getElsLaserMaskFromList(const std::vector<int>& laserIdxs);
+    void handleElsOperation();
+    void pollElsOperationCompletion();
+    void showElsOperationResults();
+
     // Cable operation
     bool isPassiveQSFP();
     bool isSFP51Paging();
@@ -671,6 +686,8 @@ public:
     MlxlinkCmdPrint _krInfoCmd;
     MlxlinkCmdPrint _rxRecoveryCountersCmd;
     MlxlinkCmdPrint _periodicEqInfoCmd;
+    MlxlinkCmdPrint _elsOperationGeneralInfoCmd;
+    vector<MlxlinkCmdPrint> _elsOperationLaserInfoCmds;
 
     // Mlxlink config functions
     void clearCounters();
@@ -827,6 +844,8 @@ public:
     string _fomStr;
     string _attenuationTitle;
     bool _silentMode;
+    bool _elsOperationTimedOut;
+    u_int8_t _elsLaserMask;
 
 protected:
     vector<AmberField> _ppcntFields;

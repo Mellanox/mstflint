@@ -255,6 +255,7 @@ private:
     void initTableHeaders();
     void initPlrRejectModeMapping();
     void initKrMapping();
+    void initElsMapping();
 
 public:
     static MlxlinkMaps* getInstance();
@@ -409,6 +410,11 @@ public:
     std::vector<std::pair<std::string, u_int32_t>> _multiPortModuleInfoTableHeader;
     std::vector<std::pair<std::string, u_int32_t>> _bkvGroupsTableHeader;
     std::vector<std::pair<std::string, u_int32_t>> _bkvGroupEntriesTableHeader;
+
+    // ELS operation maps
+    std::map<std::string, u_int32_t> _elsOperationToVal;
+    std::map<u_int32_t, std::string> _elsValToOperation;
+    std::map<u_int32_t, std::string> _pmlseOperStatusToStr;
 
     string _sltpHeader;
     string _showErrorsTitle;
