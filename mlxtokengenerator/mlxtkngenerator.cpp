@@ -720,11 +720,16 @@ void MlxTknGenerator::AggregateTokensXML()
         throw MlxTknGeneratorException("Given tokens directory is empty.");
     }
 
-    token->LoadFromXMLFile(tokensXML.back());
+    vector<u_int8_t> binData = ReadFromFile(tokensXML.back());
+    string xmlContent(binData.begin(), binData.end());
+    token->LoadFromXMLFile(xmlContent);
     tokensXML.pop_back();
 
-    for (auto file : tokensXML) {
-        tokenForAggregation->LoadFromXMLFile(file);
+    for (auto file : tokensXML)
+    {
+        binData = ReadFromFile(file);
+        xmlContent = string(binData.begin(), binData.end());
+        tokenForAggregation->LoadFromXMLFile(xmlContent);
         token->Aggregate(*tokenForAggregation);
     }
 
