@@ -4020,6 +4020,8 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
         {
             return mf;
         }
+#else
+        return mf;
 #endif
     }
 
