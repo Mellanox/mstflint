@@ -249,7 +249,9 @@ void MlxlinkMaps::initFecAndLoopbackMapping()
     _fecPerSpeed.push_back(make_pair("XDR_1X", ""));
     _fecPerSpeed.push_back(make_pair("XDR_2X", ""));
     _fecPerSpeed.push_back(make_pair("400G_2X_MODE_B", ""));
+    _fecPerSpeed.push_back(make_pair("378G_2X_MODE_B", ""));
     _fecPerSpeed.push_back(make_pair("360G_2X_MODE_B", ""));
+    _fecPerSpeed.push_back(make_pair("345G_2X_MODE_B", ""));
     _fecPerSpeed.push_back(make_pair("328G_2X_MODE_B", ""));
 
     _fecPerSpeed.push_back(make_pair("1600G_8X", ""));

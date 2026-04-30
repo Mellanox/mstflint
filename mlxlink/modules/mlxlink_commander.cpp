@@ -6167,6 +6167,17 @@ void MlxlinkCommander::checkPplmCap()
             throw MlxRegException("\nFEC speed %s is not valid%s", uiSpeed.c_str(), validSpeeds.c_str());
         }
     }
+
+    if (_isNvlinkModeB || _isNvlinkModeA)
+    {
+        string nvlinkSpeed = convertSpeedToNVLINK(toUpperCase(speedFec));
+        if (nvlinkSpeed.empty())
+        {
+            throw MlxRegException("\nFEC speed %s is not valid", uiSpeed.c_str());
+        }
+        speedFec = toLowerCase(nvlinkSpeed);
+    }
+
     // Validate the FEC for the speed
     if (speedFec == "10g" || speedFec == "40g")
     {
