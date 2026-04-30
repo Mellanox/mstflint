@@ -781,21 +781,13 @@ string convertSpeedToNVLINK(const string& speed)
     {
         return "400g_2x_mode_b";
     }
-    if (speed == "360G_2X_MODE_B")
+    if (speed == "360G_2X_MODE_B" || speed == "378G_2X_MODE_B")
     {
         return "360g_2x_mode_b";
     }
-    if (speed == "328G_2X_MODE_B")
+    if (speed == "328G_2X_MODE_B" || speed == "345G_2X_MODE_B")
     {
         return "328g_2x_mode_b";
-    }
-    if (speed == "378G_2X_MODE_B")
-    {
-        return "378g_2x_mode_b";
-    }
-    if (speed == "345G_2X_MODE_B")
-    {
-        return "345g_2x_mode_b";
     }
     if (speed == "NDR")
     {
