@@ -4351,10 +4351,12 @@ int mclose_ul(mfile* mf)
                 close(ctx->res_fdlock);
             }
             free(ctx);
+            ctx = NULL;
         }
         if (mf->dev_name)
         {
             free(mf->dev_name);
+            mf->dev_name = NULL;   
         }
         if (mf->user_page_list.page_amount)
         {
