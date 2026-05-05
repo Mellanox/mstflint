@@ -410,6 +410,31 @@ int write_chunks(mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data)
                                  block_data[i + prefix_pad_size],
                                  verify_buffer[i]));
 
+                            // Print 4 dwords (16 bytes) starting from the dword before the error
+                            u_int32_t error_offset = addr + i;
+                            u_int32_t start_dword_offset = (error_offset & ~0x3) - 4;  // Align to dword, go back 1 dword
+                            if ((int32_t)start_dword_offset < 0 || start_dword_offset < addr) {
+                                start_dword_offset = addr;
+                            }
+
+                            u_int32_t bytes_to_print = 16;  // 4 dwords
+                            u_int32_t start_idx = start_dword_offset - addr;
+
+                            printf("Address range: 0x%08x - 0x%08x\n", start_dword_offset, start_dword_offset + bytes_to_print - 1);
+                            printf("expected (4 dwords): ");
+                            for (uint32_t j = start_idx; j < start_idx + bytes_to_print && j < data_size; j++)
+                            {
+                                printf("%02x ", block_data[j + prefix_pad_size]);
+                            }
+                            printf("\n");
+                            printf("actual   (4 dwords): ");
+                            for (uint32_t j = start_idx; j < start_idx + bytes_to_print && j < data_size; j++)
+                            {
+                                printf("%02x ", verify_buffer[j]);
+                            }
+                            printf("\n");
+                            fflush(stdout);
+
                             if (retries_counter >= retries_num) {
                                 return MFE_VERIFY_ERROR;
                             } else {
