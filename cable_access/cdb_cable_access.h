@@ -81,6 +81,21 @@ public:
     virtual ~UnknownStatusCdbAccessException() throw(){};
 };
 
+class OUI
+{
+public:
+    OUI() : _bytes() {}
+
+    explicit OUI(const vector<u_int8_t>& bytes) : _bytes(bytes) {}
+
+    bool operator==(const OUI& other) const { return _bytes == other._bytes; }
+
+    static const size_t OUI_SIZE = 3;
+
+private:
+    vector<u_int8_t> _bytes;
+};
+
 class CmisCdbAccess
 {
 public:
@@ -110,7 +125,7 @@ public:
     void SetBackgroundCommand() { _isBackgroundCommand = true; }
     void SetForegroundCommand() { _isBackgroundCommand = false; }
     virtual u_int32_t GetMaxPayloadSizeInBytes(PayloadMethod payloadMethod);
-    bool IsActivationWANeeded() { return _isIgnoreCompletionTimeOut; }
+    bool IsActivationWANeeded() { return _isIgnoreCompletionTimeOut || IsOuiRequiringActivationWA(); }
     void OverrideCommandCompletionWaitingTime(u_int32_t waitTime);
 
 protected:
@@ -144,12 +159,14 @@ protected:
     u_int8_t CalcChkCode(PayloadMethod payloadMethod, const std::vector<u_int8_t>& payload);
 
     CMISVersion ToCMISVersion(u_int8_t cmisVersionByte);
+    bool IsOuiRequiringActivationWA() const;
 
     static void CreateStatusMap();
 
     cableAccess _cableAccess;
     CdbCommandHeader _header;
     CMISVersion _cmisVersion;
+    OUI _oui;
     bool _isBackgroundCommand;
     bool _isInitDone;
     u_int32_t _statusWaitingTimeMilliSec;
@@ -172,6 +189,7 @@ protected:
     static const u_int16_t CDB_SUPPORT_ADVERTISEMENT_ADDRESS;
     static const u_int16_t CDB_PASSWORD_ENTRY_AREA_ADDRESS;
     static const u_int16_t CDB_IMPLEMENTED_BANKS_ADDRESS;
+    static const u_int16_t CDB_OUI_ADDRESS;
 };
 
 class FWManagementCdbAccess : public CmisCdbAccess
