@@ -586,7 +586,7 @@ void GenericCommander::filterByDependency(std::shared_ptr<TLVConf> cTLV,
 {
     for (size_t i = 0; i < dependencyTable.size(); i++)
     {
-        if ((checkDependency(cTLV, dependencyTable[i].second)) ||
+        if (_ignoreWriteSupport || (checkDependency(cTLV, dependencyTable[i].second)) ||
             (dependencyTable[i].second.empty() &&
              (!dependencyTable[i].first.rule.empty() || dependencyTable[i].first.supportedFromVersion > 0)) ||
             (!dependencyTable[i].first.arrayVal.empty()))
