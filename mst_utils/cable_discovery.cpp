@@ -123,11 +123,7 @@ int main(int argc, char* argv[])
             {
                 std::string cable_name = std::string(devs[i].dev_name) + "_" + CABLE_DEVICE_STR + std::to_string(num_ports);
                 mfile* cable_mf = mopen_adv(cable_name.c_str(), (MType)(MST_DEFAULT | MST_CABLE));
-                if (!cable_mf)
-                {
-                    mclose(mf);
-                }
-                else
+                if (cable_mf)
                 {
                     u_int32_t dev_type = 0;
                     mget_mdevs_type(cable_mf, &dev_type);
@@ -136,6 +132,7 @@ int main(int argc, char* argv[])
                         CreateCableDeviceFile(cable_name);
                         cable_count++;    
                     }
+                    mclose(cable_mf);
                 }
             }
         } 
