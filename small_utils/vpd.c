@@ -58,7 +58,10 @@ void print_field(char* key, char* val)
 {
     if (strcmp(key, "RV") == 0)
     {
-        return;
+        // RV holds the checksum byte (followed by RO-area padding).
+        // Print only the first byte as a hex value, to match mlxvpd output.
+        unsigned checksum_val = (unsigned)(*val) & 0xff;
+        printf("%s:      0x%02x\n", key, checksum_val);
     }
     else if (strlen(val))
     {
