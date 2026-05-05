@@ -3964,7 +3964,6 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
             {
                 goto open_failed;
             }
-            return mf;
             break;
 
         case MST_FWCTL_CONTROL_DRIVER:
@@ -3973,7 +3972,6 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
             {
                 goto open_failed;
             }
-            return mf;
             break;
 
         case MST_NVML:
@@ -3983,7 +3981,6 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
                 DBG_PRINTF("Failed to open GPU mst driver device");
                 goto open_failed;
             }
-            return mf;
             break;
 
 #ifdef ENABLE_VFIO
@@ -3993,7 +3990,6 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
             {
                 goto open_failed;
             }
-            return mf;
             break;
 #endif
 
@@ -4005,7 +4001,6 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
                 DBG_PRINTF("Failed to open I2C device: %s\n", name);
                 goto open_failed;
             }
-            return mf;
 #endif
 
         default:
