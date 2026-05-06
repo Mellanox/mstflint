@@ -4001,6 +4001,7 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
                 DBG_PRINTF("Failed to open I2C device: %s\n", name);
                 goto open_failed;
             }
+            break;
 #endif
 
         default:
