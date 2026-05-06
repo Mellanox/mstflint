@@ -93,6 +93,9 @@ int main(int argc, char* argv[])
     u_int32_t arr_size = 0;
     char* endptr;
     u_int8_t new_i2c_secondary = 0;
+    dm_dev_id_t dev_type = DeviceUnknown;
+    u_int32_t dev_id = 0;
+    u_int32_t chip_rev = 0;
     char device[MAX_DEV_LEN] = {0};
 #if defined(__linux__) || defined(__FreeBSD__)
     if (geteuid() != 0)
@@ -188,6 +191,12 @@ int main(int argc, char* argv[])
             mclose(mf);
             return 1;
         }
+    }
+    if (!dm_get_device_id(mf, &dev_type, &dev_id, &chip_rev) && dm_dev_is_cable(dev_type))
+    {
+        fprintf(stderr, "-E- mstdump is not supported for cable modules. Use mlxlink or mlxcables instead.\n");
+        mclose(mf);
+        return 1;
     }
     rc = CRD_OK;
     rc = crd_init(&context, mf, full, cause_addr, cause_off, NULL, "");
