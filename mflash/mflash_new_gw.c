@@ -308,6 +308,25 @@ int new_gw_int_spi_get_status_data(mflash* mfl, u_int8_t op_type, u_int32_t* sta
     rc = new_gw_exec_cmd_get(mfl, gw_cmd, &flash_data, 1, (u_int32_t*)NULL, "Read id");
     CHECK_RC(rc);
     DPRINTF(("new_gw_int_spi_get_status_data: op=%02x status=%08x\n", op_type, flash_data));
+
+    if (op_type == SFC_RDSR)
+    {
+        u_int32_t written_flash_cmd_without_busy = gw_cmd;
+
+        // this changes are applied to the flash gw right before writing it, so need to add before comapring. no need to
+        // set the busy as it will be unset when we read the flash data.
+        written_flash_cmd_without_busy = MERGE(written_flash_cmd_without_busy, 1, 31, 1); // lock
+        written_flash_cmd_without_busy =
+          MERGE(written_flash_cmd_without_busy, (u_int32_t)mfl->curr_bank, mfl->gw_chip_select_bit_offset, 1);
+        
+        if (written_flash_cmd_without_busy == flash_data)
+        {
+            printf("============================================================================\n");
+            printf("new_gw_int_spi_get_status_data: flash_data is the same as flash gw cmd!\n");
+            printf("============================================================================\n");
+        }
+    }
+
     *status = (flash_data >> 8 * (4 - bytes_num));
     DPRINTF(("new_gw_int_spi_get_status_data: after shift status=%08x\n", *status));
     return MFE_OK;
