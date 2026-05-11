@@ -38,6 +38,7 @@
  */
 
 #include <errno.h>
+#include <stdint.h>
 #include <tools_dev_types.h>
 #include "flint_io.h"
 
@@ -497,14 +498,15 @@ bool Flash::open(const char* device,
                  flash_params_t* flash_params,
                  int ignore_cashe_replacement,
                  bool advErr,
-                 int cx3_fw_access)
+                 int cx3_fw_access,
+                 int no_fw_ctrl)
 {
     // Open device
     int rc;
     _advErrors = advErr;
     _ignore_cache_replacement = ignore_cashe_replacement ? true : false;
     (void)read_only; // not used , avoid compiler warnings TODO: remove this var from function def
-    rc = mf_open_adv(&_mfl, device, num_of_banks, flash_params, ignore_cashe_replacement, cx3_fw_access);
+    rc = mf_open_adv(&_mfl, device, num_of_banks, flash_params, ignore_cashe_replacement, cx3_fw_access, no_fw_ctrl);
     // printf("device: %s , forceLock: %s , read only: %s, num of banks: %d, flash params is null: %s, ocr: %d, rc:
     // %d\n", 		device, force_lock? "true":"false", read_only?"true":"false", num_of_banks, flash_params?
     // "no":"yes",
@@ -513,11 +515,11 @@ bool Flash::open(const char* device,
 }
 
 ////////////////////////////////////////////////////////////////////////
-bool Flash::open(uefi_Dev_t* uefi_dev, uefi_dev_extra_t* uefi_extra, bool force_lock, bool advErr)
+bool Flash::open(uefi_Dev_t* uefi_dev, uefi_dev_extra_t* uefi_extra, bool force_lock, bool advErr, int no_fw_ctrl)
 {
     int rc;
     _advErrors = advErr;
-    rc = mf_open_uefi(&_mfl, uefi_dev, uefi_extra);
+    rc = mf_open_uefi(&_mfl, uefi_dev, uefi_extra, no_fw_ctrl);
     return open_com_checks("uefi", rc, force_lock);
 }
 
@@ -715,6 +717,14 @@ bool Flash::write(u_int32_t addr, void* data, int cnt, bool noerase)
     u_int32_t chunk_addr;
     u_int32_t chunk_size;
 
+    int rc =
+      mf_acquire_persistent_lock(_mfl); // acquire the lock before the write, if we're in LF then locking a way that
+                                        // prevents the lock from being released before the write is complete
+    if (rc != MFE_OK)
+    {
+        return errmsg("Failed to lock flash: %s", mf_err2str(rc));
+    }
+
     u_int32_t first_set;
     for (first_set = 0; ((sect_size >> first_set) & 1) == 0; first_set++)
         ;
@@ -753,10 +763,11 @@ bool Flash::write(u_int32_t addr, void* data, int cnt, bool noerase)
             mf_set_cpu_utilization(_mfl, _cpuPercent);
         }
         rc = mf_write(_mfl, phys_addr, chunk_size, p);
-        deal_with_signal();
+        deal_with_signal(_mfl);
 
         if (rc != MFE_OK)
         {
+            mf_release_persistent_lock(_mfl);
             if (rc == MFE_ICMD_BAD_PARAM || rc == MFE_REG_ACCESS_BAD_PARAM)
             {
                 return errmsg(
@@ -782,6 +793,11 @@ bool Flash::write(u_int32_t addr, void* data, int cnt, bool noerase)
         p += chunk_size;
     }
 
+    rc = mf_release_persistent_lock(_mfl); // release the lock only after the write is complete
+    if (rc != MFE_OK)
+    {
+        return errmsg("Failed to release flash lock: %s", mf_err2str(rc));
+    }
     return true;
 }
 
@@ -955,9 +971,9 @@ bool Flash::get_attr(ext_flash_attr_t& attr)
     if (_attr.type_str != NULL)
     {
         // we don't print the flash type in old devices
-        int type_str_len = strlen(_attr.type_str);
-        attr.type_str = strncpy(new char[type_str_len + 1], _attr.type_str, type_str_len);
-        attr.type_str[type_str_len] = '\0';
+        size_t type_str_len = strlen(_attr.type_str);
+        attr.type_str = strcpy(new char[type_str_len + 1], _attr.type_str);
+
     }
     attr.size = _attr.size;
     attr.sector_size = _attr.sector_size;
@@ -1151,13 +1167,22 @@ bool Flash::check_and_set_sector_num_field(std::string& param_val_str,
     if (rc)
     {
         char* endp;
-        u_int8_t sector_num_as_int = strtoul(sector_num.c_str(), &endp, 0); // convert given sectors number to integer
-        if (*endp != '\0')
+        errno = 0;
+        unsigned long sector_num_as_ulong =
+          strtoul(sector_num.c_str(), &endp, 0); // convert given sectors number to integer
+
+        if (*endp != '\0' || sector_num.empty())
         {
             err_msg = "bad argument (" + sector_num + "), only integer value is allowed.\n";
             rc = false;
         }
-        else if (!sector_num_as_int)
+        else if (errno == ERANGE || sector_num_as_ulong > UINT16_MAX)
+        {
+            err_msg =
+              "bad argument (" + sector_num + "), value out of range (max " + std::to_string(UINT16_MAX) + ").\n";
+            rc = false;
+        }
+        else if (!sector_num_as_ulong)
         {
             err_msg = "Invalid sectors number, Use \"Disabled\" instead.\n";
             rc = false;
@@ -1712,13 +1737,18 @@ bool Flash::restore_write_protect_info(write_protect_info_backup_t& protect_info
     return rc == MFE_OK;
 }
 
-void Flash::deal_with_signal()
+void Flash::deal_with_signal(mflash* mfl)
 {
 #ifndef UEFI_BUILD
     int sig;
     sig = mft_signal_is_fired();
     if (sig)
     {
+        if (mfl)
+        {
+            mf_release_persistent_lock(mfl);
+        }
+        
         // reset received signal
         mft_signal_set_fired(0);
         // retore prev handler

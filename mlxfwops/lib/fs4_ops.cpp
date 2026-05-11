@@ -1413,7 +1413,7 @@ bool Fs4Operations::IsSecurityVersionAccessible(chip_type_t chip_type)
             case CT_CONNECTX6DX:
             case CT_CONNECTX6LX:
             case CT_QUANTUM3:
-            case CT_NVLINK6_SWITCH_ASIC:
+            case CT_NVLINK6_SWITCH:
             case CT_CONNECTX8:
             case CT_CONNECTX8_PURE_PCIE_SWITCH:
             case CT_CONNECTX9:
@@ -3595,6 +3595,7 @@ bool Fs4Operations::isDTocSection(fs3_section_t sect_type, bool& isDtoc)
         case FS3_VPD_R0:
         case FS4_DIGITAL_CERT_RW:
         case FS4_CERT_CHAIN_0:
+        case FS4_CPO_CALIBRATION_DATA:
             isDtoc = true;
             break;
 
@@ -3888,9 +3889,9 @@ bool Fs4Operations::UpdateSection(void* new_info, fs3_section_t sect_type, bool,
         newSection.resize(IMAGE_LAYOUT_IMAGE_SIGNATURE_2_SIZE);
         memcpy(newSection.data(), sig.data(), IMAGE_LAYOUT_IMAGE_SIGNATURE_2_SIZE);
         u_int32_t sizeInItocEntry = curr_toc->toc_entry.size << 2;
-        if (sizeInItocEntry > IMAGE_LAYOUT_IMAGE_SIGNATURE_SIZE)
+        if (sizeInItocEntry > IMAGE_LAYOUT_IMAGE_SIGNATURE_2_SIZE)
         {
-            for (unsigned int l = 0; l < sizeInItocEntry - IMAGE_LAYOUT_IMAGE_SIGNATURE_SIZE; l++)
+            for (unsigned int l = 0; l < sizeInItocEntry - IMAGE_LAYOUT_IMAGE_SIGNATURE_2_SIZE; l++)
             {
                 newSection.push_back(0x0);
             }
@@ -3990,6 +3991,26 @@ bool Fs4Operations::WriteSection(struct fs4_toc_info* sectionToc, std::vector<u_
         }
     }
 
+    size_t oldSectionSize = sectionToc->toc_entry.size * 4;
+    if (newSectionData.size() > oldSectionSize)
+    {
+        if (getenv("ALLOW_OVERSIZED_SECTION") != NULL)
+        {
+            DPRINTF(("WriteSection: new section data size (0x%x) exceeds original size (0x%x), allowing (legacy)\n",
+                     (u_int32_t)newSectionData.size(), (u_int32_t)oldSectionSize));
+        }
+        else
+        {
+            return errmsg("new section data size (0x%x) exceeds original section size (0x%x bytes). ",
+                          (u_int32_t)newSectionData.size(), (u_int32_t)oldSectionSize);
+        }
+    }
+
+    if (oldSectionSize > newSectionData.size())
+    {
+        newSectionData.resize(oldSectionSize);
+    }
+
     if (!Fs4ReburnSection(newSectionAddr, sectionToc->toc_entry.size * 4, newSectionData, msg, callBackFunc))
     {
         return false;
@@ -4008,7 +4029,7 @@ bool Fs4Operations::WriteSection(struct fs4_toc_info* sectionToc, std::vector<u_
 
     if (!isDtoc)
     {
-        if (!UpdateSectionHashInHashesTable(newSectionAddr, sectionToc->toc_entry.size * 4, sectionType))
+        if (!UpdateSectionHashInHashesTable(newSectionAddr, oldSectionSize, sectionType))
         {
             return false;
         }
@@ -4516,7 +4537,13 @@ bool fromFileToArray(string& fileName, vector<u_int8_t>& outputArray, unsigned i
         fclose(pFile);
         return false;
     }
-    fread(data, sizeof(char), input_length, pFile);
+    size_t rc = fread(data, sizeof(char), input_length, pFile);
+    if (rc != input_length)
+    {
+        delete[] data;
+        fclose(pFile);
+        return false;
+    }
     fclose(pFile);
     outputArray.resize(input_length / 2);
     for (size_t i = 0; i < input_length; i += 2)

@@ -58,6 +58,13 @@ void CreateDirectoryIfNotExist(const std::string& poNewDirectory)
     }
 }
 
+void CreateCableDeviceFile(const std::string& cable_name)
+{
+    CreateDirectoryIfNotExist(MSTFLINT_DEV_DIR);
+    std::ofstream mstDeviceFile(MSTFLINT_DEV_DIR + cable_name, std::ios::out | std::ios::trunc);
+    mstDeviceFile.close();
+}
+
 int main(int argc, char* argv[])
 {
     dev_info   * devs = NULL;
@@ -77,62 +84,87 @@ int main(int argc, char* argv[])
 
     devs = mdevices_info_v(MDEVS_TAVOR, &device_count, 1);
 
-    if (!device_count || !devs) {
+    if (!device_count || !devs)
+    {
         std::cout << "No supported PCIe devices were found." << std::endl;
-        if (devs) {
+        if (devs)
+        {
             free(devs);
         }
     }
 
-    for (int i = 0; i < device_count; i++) {
+    for (int i = 0; i < device_count; i++)
+    {
         mfile* mf = mopen_adv(devs[i].dev_name, (MType)(MST_DEFAULT | MST_CABLE));
-        if (!mf) {
+        if (!mf)
+        {
             continue;
         }
 
         u_int32_t   hw_id = 0;
         u_int32_t   hw_rev = 0;
         dm_dev_id_t devid_type = DeviceUnknown;
-        if (dm_get_device_id(mf, &devid_type, &hw_id, &hw_rev) != GET_DEV_ID_SUCCESS) {
+        if (dm_get_device_id(mf, &devid_type, &hw_id, &hw_rev) != GET_DEV_ID_SUCCESS)
+        {
             mclose(mf);
             continue;
         }
 
-
-        if (dm_is_5th_gen_hca(devid_type) && !dm_is_bluefield(devid_type)) {
-            num_ports = 1;
-            if (checkModule(mf, num_ports) == -1) {
+        if (dm_is_5th_gen_hca(devid_type) && !dm_is_bluefield(devid_type))
+        {
+            const int fixed_num_ports = 1;
+            num_ports = checkModule(mf, fixed_num_ports);
+            if (num_ports == -1)
+            {
                 mclose(mf);
                 continue;
             }
-        } else if (dm_dev_is_switch(devid_type) && !dm_is_gpu(devid_type)) {
-            num_ports = dm_get_hw_ports_num(devid_type);
-        } else {
-            mclose(mf);
-            continue;
-        }
-
-        mclose(mf);
-
-        for (int port = 0; port < num_ports; port++) {
-            std::string cable_name = std::string(devs[i].dev_name) + "_" + CABLE_DEVICE_STR + std::to_string(port);
-            mfile     * cable_mf = mopen_adv(cable_name.c_str(), (MType)(MST_DEFAULT | MST_CABLE));
-            if (!cable_mf) {
-                continue;
-            } else {
-                CreateDirectoryIfNotExist(MSTFLINT_DEV_DIR);
-                std::ofstream mstDeviceFile(MSTFLINT_DEV_DIR + cable_name, std::ios::out | std::ios::trunc);
-                mstDeviceFile.close();
-                cable_count++;
+            else
+            {
+                std::string cable_name = std::string(devs[i].dev_name) + "_" + CABLE_DEVICE_STR + std::to_string(num_ports);
+                mfile* cable_mf = mopen_adv(cable_name.c_str(), (MType)(MST_DEFAULT | MST_CABLE));
+                if (cable_mf)
+                {
+                    u_int32_t dev_type = 0;
+                    mget_mdevs_type(cable_mf, &dev_type);
+                    if (dev_type == MST_CABLE)
+                    {
+                        CreateCableDeviceFile(cable_name);
+                        cable_count++;    
+                    }
+                    mclose(cable_mf);
+                }
             }
-
-            mclose(cable_mf);
+        } 
+        else if (dm_dev_is_switch(devid_type) && !dm_is_gpu(devid_type))
+        {
+            num_ports = dm_get_hw_ports_num(devid_type);
+            for (int port = 0; port < num_ports; port++)
+            {
+                std::string cable_name = std::string(devs[i].dev_name) + "_" + CABLE_DEVICE_STR + std::to_string(port);
+                mfile     * cable_mf = mopen_adv(cable_name.c_str(), (MType)(MST_DEFAULT | MST_CABLE));
+                if (!cable_mf)
+                {
+                    continue;
+                }
+                else
+                {
+                    CreateCableDeviceFile(cable_name);
+                    cable_count++;
+                }
+    
+                mclose(cable_mf);
+            }
         }
+        mclose(mf);
     }
 
-    if (cable_count == 0) {
+    if (cable_count == 0)
+    {
         std::cout << "No supported NVIDIA cables were found." << std::endl;
-    } else {
+    } 
+    else
+    {
         std::cout << "Added " << cable_count << " NVIDIA cable devices." << std::endl;
     }
 

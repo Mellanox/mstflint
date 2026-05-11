@@ -67,7 +67,7 @@
 #define SPECTRUM3_HW_ID 592
 #define QUANTUM2_HW_ID 599
 #define QUANTUM3_HW_ID 603
-#define NVLINK6_SWITCH_ASIC_HW_ID 632
+#define NVLINK6_SWITCH_HW_ID 632
 #define ARCUSE_HW_ID 45568
 #define SPECTRUM4_HW_ID 596
 #define SPECTRUM5_HW_ID 624
@@ -320,7 +320,8 @@ typedef enum security_mode_mask
     SMM_DBG_TOKEN = 0x1 << 6,
     SMM_CRYTO_TO_COMMISSIONING = 0x1 << 7,
     SMM_RMCS_TOKEN = 0x1 << 8,
-    SMM_RMDT_TOKEN = 0x1 << 9
+    SMM_RMDT_TOKEN = 0x1 << 9,
+    SMM_CRDT_TOKEN = 0x1 << 10
 } security_mode_mask_t;
 
 typedef enum security_mode
@@ -361,7 +362,7 @@ typedef enum chip_type
     CT_CONNECTX3,
     CT_QUANTUM2,
     CT_QUANTUM3,
-    CT_NVLINK6_SWITCH_ASIC,
+    CT_NVLINK6_SWITCH,
     CT_SPECTRUM4,
     CT_SPECTRUM5,
     CT_SPECTRUM6,

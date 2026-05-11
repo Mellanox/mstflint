@@ -32,6 +32,7 @@
  */
 
 #include <stdlib.h>
+#include <stdio.h>
 
 #include <algorithm>
 #include <vector>
@@ -143,7 +144,7 @@ const Fs3Operations::SectionInfo Fs3Operations::_fs3SectionsInfoArr[] = {
   {FS4_LC_INI_NV_DATA, "LC_INI_NV_DATA"},
   {FS4_CERT_CHAIN_0, "CERT_CHAIN_0"},
   {FS5_SECURITY_LOG, "SECURITY_LOG"},
-  {FS5_CPO_CALIBRATION_DATA, "CPO_CALIBRATION_DATA"},
+  {FS4_CPO_CALIBRATION_DATA, "CPO_CALIBRATION_DATA"},
   {FS4_DIGITAL_CACERT_RW, "DIGITAL_CACERT_RW"},
   {FS4_CERTIFICATE_CHAINS_1, "CERTIFICATE_CHAINS_1"},
   {FS4_CERTIFICATE_CHAINS_2, "CERTIFICATE_CHAINS_2"},
@@ -352,15 +353,17 @@ bool Fs3Operations::GetImageInfo(u_int8_t* buff)
         struct tools_open_image_info tools_image_info;
         memset(&tools_image_info, 0, sizeof(tools_image_info));
         tools_open_image_info_unpack(&tools_image_info, buff);
-        strncpy(_fs3ImgInfo.ext_info.name, tools_image_info.name, strlen(tools_image_info.name));
-        strncpy(_fs3ImgInfo.ext_info.description, tools_image_info.description, strlen(tools_image_info.description));
-        strncpy(_fs3ImgInfo.ext_info.prs_name, tools_image_info.prs_name, strlen(tools_image_info.prs_name));
+        snprintf(_fs3ImgInfo.ext_info.name, sizeof(_fs3ImgInfo.ext_info.name), "%s", tools_image_info.name);
+        snprintf(_fs3ImgInfo.ext_info.description, sizeof(_fs3ImgInfo.ext_info.description), "%s",
+                 tools_image_info.description);
+        snprintf(_fs3ImgInfo.ext_info.prs_name, sizeof(_fs3ImgInfo.ext_info.prs_name), "%s", tools_image_info.prs_name);
     }
     else if (image_info.minor_version == 3)
     {
-        strncpy(_fs3ImgInfo.ext_info.name, image_info.name, strlen(image_info.name));
-        strncpy(_fs3ImgInfo.ext_info.description, image_info.description, strlen(image_info.description));
-        strncpy(_fs3ImgInfo.ext_info.prs_name, image_info.prs_name, strlen(image_info.prs_name));
+        snprintf(_fs3ImgInfo.ext_info.name, sizeof(_fs3ImgInfo.ext_info.name), "%s", image_info.name);
+        snprintf(_fs3ImgInfo.ext_info.description, sizeof(_fs3ImgInfo.ext_info.description), "%s",
+                 image_info.description);
+        snprintf(_fs3ImgInfo.ext_info.prs_name, sizeof(_fs3ImgInfo.ext_info.prs_name), "%s", image_info.prs_name);
     }
 
     _fs3ImgInfo.ext_info.mcc_en = image_info.mcc_en;

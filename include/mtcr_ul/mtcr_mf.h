@@ -58,6 +58,7 @@ struct page_list_fbsd {
 /*  modified before each access to target I2C slave address */
 struct mfile_t {
     u_int16_t     hw_dev_id;
+    u_int16_t     pci_device_id;
     u_int16_t     rev_id;
     MType         tp; /*  type of driver */
     MType         orig_tp;
@@ -159,6 +160,7 @@ struct mfile_t {
     /* MFT core wrapper objects. */
     struct mft_core_wrapper mft_core_object;
     char                  * fwctl_env_var_debug;
+    int                     fwctl_fd;
     int                     is_remote;
     int                     is_zombiefish;
     int                     vsc_recovery_space_flash_control_vld;

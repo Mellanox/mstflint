@@ -3213,7 +3213,7 @@ static int check_zf_through_memory(mfile* mf)
     switch (mf->device_hw_id)
     {
         case DeviceQuantum3_HwId:
-        case DeviceNVLink6_Switch_ASIC_HwId:
+        case DeviceNVLink6_Switch_HwId:
             gis_address = 0x152080;
             break;
 
@@ -3277,7 +3277,7 @@ int is_zombiefish_device(mfile* mf)
         return 0;
     }
     if ((mf->device_hw_id != DeviceConnectX8_HwId) && (mf->device_hw_id != DeviceConnectX8_Pure_PCIe_Switch_HwId) && (mf->device_hw_id != DeviceQuantum3_HwId) &&
-        (mf->device_hw_id != DeviceConnectX9_HwId) && (mf->device_hw_id != DeviceNVLink6_Switch_ASIC_HwId) && (mf->device_hw_id != DeviceConnectX7_HwId) &&
+        (mf->device_hw_id != DeviceConnectX9_HwId) && (mf->device_hw_id != DeviceNVLink6_Switch_HwId) && (mf->device_hw_id != DeviceConnectX7_HwId) &&
         (mf->device_hw_id != DeviceBlueField3_HwId) && (mf->device_hw_id != DeviceConnectX9_Pure_PCIe_Switch_HwId))
     {
         return 0;
@@ -3301,6 +3301,15 @@ int is_zombiefish_device(mfile* mf)
 void set_fwctl_dev(char* fwctl_dev, u_int16_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func)
 {
     (void)fwctl_dev;
+    (void)domain;
+    (void)bus;
+    (void)dev;
+    (void)func;
+}
+
+void open_fwctl_dev(mfile* mf, u_int16_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func)
+{
+    (void)mf;
     (void)domain;
     (void)bus;
     (void)dev;

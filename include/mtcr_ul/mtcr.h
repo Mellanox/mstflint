@@ -51,6 +51,11 @@ extern "C"
 #define INITIALIZING_BIT_OFFSET_IN_VSC_RECOVERY_SPACE 0
 #define AUTHENTICATION_FAILURE                        0xffa6
 
+#define BLUEFIELD4_PCI_DEVICE_ID_CRYPTO_ENABLED 0xA2DD
+#define BLUEFIELD4_PCI_DEVICE_ID_CRYPTO_DISABLED 0xA2DE
+#define BLUEFIELD4_PCI_DEVICE_ID_NETWORK_CONTROLLER 0xA2DF
+#define BLUEFIELD4_PCI_DEVICE_ID_MANAGMENT_INTERFACE 0xc2d6
+
 typedef enum mtcr_access_method {
     MTCR_ACCESS_ERROR  = MST_ERROR,
     MTCR_ACCESS_MEMORY = MST_PCI,
@@ -211,6 +216,8 @@ int hot_reset(mfile* mf, int in_parallel,
               int device_2, int function_2);
 
 void set_fwctl_dev(char* fwctl_dev, u_int16_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func);
+
+void open_fwctl_dev(mfile* mf, u_int16_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func);
 
 #ifdef __cplusplus
 }

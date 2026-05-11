@@ -40,6 +40,8 @@
 #include "img_version.h"
 #include <string.h>
 #include <iostream>
+#include <algorithm>
+#include <set>
 #include <mfa.h>
 #include <mlxfwops.h>
 #include <pldm_pkg.h>
@@ -51,8 +53,94 @@
 #include <tools_layouts/connectx4_layouts.h>
 #endif
 #include "pldmlib/pldm_utils.h"
+#include <mlxarchive/mlxarchive_mfa2.h>
+
+#define ITOC_ASCII 0x49544f43
+#define TOC_HEADER_SIZE 0x20
+#define TOC_ENTRY_SIZE 0x20
 
 using namespace std;
+
+namespace
+{
+int compareMFA2Version(const mfa2::VersionExtension& lhs, const mfa2::VersionExtension& rhs)
+{
+    if (lhs.getMajor() != rhs.getMajor())
+    {
+        return lhs.getMajor() > rhs.getMajor() ? 1 : -1;
+    }
+    if (lhs.getMinor() != rhs.getMinor())
+    {
+        return lhs.getMinor() > rhs.getMinor() ? 1 : -1;
+    }
+    if (lhs.getSubMinor() != rhs.getSubMinor())
+    {
+        return lhs.getSubMinor() > rhs.getSubMinor() ? 1 : -1;
+    }
+    return 0;
+}
+
+bool selectMFA2Component(const mfa2::map_string_to_component& matchingComponentsMap,
+                         const string& selectorTag,
+                         u_int32_t& choice,
+                         string& resolvedTag)
+{
+    if (matchingComponentsMap.empty())
+    {
+        return false;
+    }
+
+    bool found = false;
+    const mfa2::VersionExtension* bestVersion = nullptr;
+    u_int32_t index = 0;
+    u_int32_t bestIndex = 0;
+    for (mfa2::map_string_to_component::const_iterator it = matchingComponentsMap.begin();
+         it != matchingComponentsMap.end(); ++it, ++index)
+    {
+        if (!selectorTag.empty())
+        {
+            if (it->first == selectorTag)
+            {
+                choice = index;
+                resolvedTag = it->first;
+                return true;
+            }
+            continue;
+        }
+
+        const mfa2::VersionExtension& currentVersion = it->second.getComponentDescriptor().getVersionExtension();
+        if (!found || compareMFA2Version(currentVersion, *bestVersion) > 0)
+        {
+            found = true;
+            bestVersion = &currentVersion;
+            bestIndex = index;
+            resolvedTag = it->first;
+        }
+    }
+
+    if (!selectorTag.empty())
+    {
+        return false;
+    }
+
+    choice = bestIndex;
+    return found;
+}
+
+void patchMFA2ImageSignature(vector<u_int8_t>& buf, u_int8_t majorVer)
+{
+    static const u_int8_t fs4_image_signature[] = {0x4D, 0x54, 0x46, 0x57, 0xAB, 0xCD, 0xEF, 0x00,
+                                                   0xFA, 0xDE, 0x12, 0x34, 0x56, 0x78, 0xDE, 0xAD};
+    static const u_int8_t fs3_image_signature[] = {0x4D, 0x54, 0x46, 0x57, 0x8C, 0xDF, 0xD0, 0x00,
+                                                   0xDE, 0xAD, 0x92, 0x70, 0x41, 0x54, 0xBE, 0xEF};
+    if (buf.size() < 16)
+    {
+        return;
+    }
+    const u_int8_t* sig = (majorVer >= 16) ? fs4_image_signature : fs3_image_signature;
+    memcpy(buf.data(), sig, 16);
+}
+} // namespace
 
 ImageAccess::ImageAccess(int compareFFV)
 {
@@ -90,7 +178,7 @@ bool ImageAccess::hasMFAs(string directory)
         fpath += "/";
         fpath += fl;
         rc = getFileSignature(fpath);
-        if ((rc == IMG_SIG_TYPE_BIN) || (rc == IMG_SIG_TYPE_MFA)) {
+        if (rc == IMG_SIG_TYPE_BIN || rc == IMG_SIG_TYPE_MFA || rc == IMG_SIG_TYPE_MFA2) {
             closedir(d);
             return true;
         }
@@ -202,8 +290,14 @@ int ImageAccess::queryPsid(const string&  fname,
     vector < u_int8_t > sect; /* to get fw configuration. */
     vector < u_int8_t > dest;
     bool isStripedImage = false;
+    int signature = getFileSignature(fname);
 
-    if (getFileSignature(fname) == IMG_SIG_TYPE_PLDM)
+    if (signature == IMG_SIG_TYPE_MFA2)
+    {
+        return queryPsidMfa2(fname, psid, selector_tag, image_type, ri);
+    }
+
+    if (signature == IMG_SIG_TYPE_PLDM)
     {
         res = getPldmImage(fname, psid);
         if (res != 1)
@@ -367,6 +461,51 @@ int ImageAccess::getImage(const string& fname,
         } else {
             res = -1;
         }
+    } else if (type == IMG_SIG_TYPE_MFA2) {
+        mfa2::MFA2* mfa2Pkg = mfa2::MFA2::LoadMFA2Package(fname);
+        if (mfa2Pkg == NULL) {
+            _errMsg = "Failed to open MFA2 file: " + fname;
+            _log += _errMsg;
+            res = -1;
+        } else {
+            u_int16_t fwVer[3] = {0xff, 0xff, 0xffff};
+            mfa2::map_string_to_component matchingComponentsMap =
+              mfa2Pkg->getMatchingComponents((char*)psid.c_str(), fwVer);
+            u_int32_t choice = 0;
+            string resolvedTag;
+            if (!selectMFA2Component(matchingComponentsMap, selector_tag, choice, resolvedTag)) {
+                _errMsg = "Failed to select matching component from MFA2 file: " + fname;
+                _log += _errMsg;
+                delete mfa2Pkg;
+                res = -1;
+            } else {
+                vector<u_int8_t> componentBuffer;
+                if (!mfa2Pkg->unzipComponent(matchingComponentsMap, choice, componentBuffer)) {
+                    _errMsg = "Failed to extract component from MFA2 file: " + fname;
+                    _log += _errMsg;
+                    delete mfa2Pkg;
+                    res = -1;
+                } else {
+                    mfa2::map_string_to_component::iterator itComp = matchingComponentsMap.begin();
+                    std::advance(itComp, choice);
+                    u_int8_t majorVer = itComp->second.getComponentDescriptor().getVersionExtension().getMajor();
+                    patchMFA2ImageSignature(componentBuffer, majorVer);
+                    u_int8_t* buf = (u_int8_t*)malloc(componentBuffer.size());
+                    if (buf == NULL) {
+                        _errMsg = "Memory allocation failure for image extracted from: " + fname;
+                        _log += _errMsg;
+                        delete mfa2Pkg;
+                        res = -1;
+                    } else {
+                        memcpy(buf, componentBuffer.data(), componentBuffer.size());
+                        *filebuf = buf;
+                        selector_tag = resolvedTag;
+                        res = componentBuffer.size();
+                        delete mfa2Pkg;
+                    }
+                }
+            }
+        }
     } else if (type == IMG_SIG_TYPE_BIN) {
         res = getImage(fname, filebuf);
     }
@@ -434,19 +573,19 @@ clean_up:
 int ImageAccess::getFileSignature(const string& fname)
 {
     static const int header_size = 16;
-    FILE           * fin;
+    FILE           * fin = NULL;
     char             tmpb[header_size];
     int              res = -2;
 
     do{
-        if (!(fin = fopen(fname.c_str(), "r"))) {
+        if (!(fin = fopen(fname.c_str(), "rb"))) {
             break;
         }
 
         if (1 > fread(tmpb, header_size, 1, fin)) {
             break;
         }
-        res = getBufferSignature((u_int8_t*)tmpb, 4);
+        res = getBufferSignature((u_int8_t*)tmpb, header_size);
     } while (0);
 
     if (fin) {
@@ -459,11 +598,13 @@ int ImageAccess::getBufferSignature(u_int8_t* buf, u_int32_t size)
 {
     int res = IMG_SIG_TYPE_UNKNOWN;
 
-    if (0 == memcmp(buf, "MTFW", 4)) {
+    if (size >= 4 && 0 == memcmp(buf, "MTFW", 4)) {
         res = IMG_SIG_TYPE_BIN;
-    } else if (0 == memcmp(buf, "MFAR", 4)) {
+    } else if (size >= 4 && 0 == memcmp(buf, "MFAR", 4)) {
         res = IMG_SIG_TYPE_MFA;
-    } else if (0 == memcmp(buf, PldmPkg::UUID, size)) {
+    } else if (size >= strlen(MFA2_FINGER_PRINT) && 0 == memcmp(buf, MFA2_FINGER_PRINT, strlen(MFA2_FINGER_PRINT))) {
+        res = IMG_SIG_TYPE_MFA2;
+    } else if (size >= 16 && 0 == memcmp(buf, PldmPkg::UUID, 16)) {
         res = IMG_SIG_TYPE_PLDM;
     }
 
@@ -603,9 +744,7 @@ int ImageAccess::get_mfa_content(const string& fname, vector < PsidQueryItem >& 
     mfa_close(mfa_d);
     return 0;
 }
-#define ITOC_ASCII              0x49544f43
-#define TOC_HEADER_SIZE         0x20
-#define TOC_ENTRY_SIZE          0x20
+
 #define FS3_DEFAULT_SECTOR_SIZE 0x1000
 
 void ImageAccess::parse_image_info_data(u_int8_t* image_info_data, PsidQueryItem& query_item)
@@ -621,8 +760,7 @@ void ImageAccess::parse_image_info_data(u_int8_t* image_info_data, PsidQueryItem
     fw_ver[0] = image_info.FW_VERSION.MAJOR;
     fw_ver[1] = image_info.FW_VERSION.MINOR;
     fw_ver[2] = image_info.FW_VERSION.SUBMINOR;
-    (strncpy(fw_branch, image_info.vsd, BRANCH_LEN));
-    fw_branch[BRANCH_LEN] = (char)0;
+    snprintf(fw_branch, sizeof(fw_branch), "%.*s", BRANCH_LEN, image_info.vsd);
     ImgVersion imgv;
     imgv.setVersion("FW", FW_VER_SIZE, fw_ver, fw_branch);
     query_item.imgVers.push_back(imgv);
@@ -712,6 +850,10 @@ int ImageAccess::get_file_content(const string& fname, vector < PsidQueryItem >&
         res = get_mfa_content(fname, riv);
         break;
 
+    case IMG_SIG_TYPE_MFA2:
+        res = get_mfa2_content(fname, riv);
+        break;
+
     case IMG_SIG_TYPE_PLDM:
         if (!loadPldmPkg(fname))
         {
@@ -736,6 +878,290 @@ string ImageAccess::getlastWarning()
 string ImageAccess::getLog()
 {
     return _log;
+}
+
+image_flow_type_t ImageAccess::DetermineFlow(const string& fname, const string& psid)
+{
+    mfa_desc* mfa_d = NULL;
+    int signature = getFileSignature(fname);
+    if (signature == IMG_SIG_TYPE_PLDM)
+    {
+        return PLDM_FLOW;
+    }
+    else if (signature == IMG_SIG_TYPE_MFA)
+    {
+        if (mfa_open_file(&mfa_d, (char*)fname.c_str()))
+        {
+            return UNKNOWN_FLOW;
+        }
+        mfa_close(mfa_d);
+        return BINARY_IN_MFA_FLOW;
+    }
+    else if (signature == IMG_SIG_TYPE_MFA2)
+    {
+        mfa2::MFA2* mfa2Pkg = mfa2::MFA2::LoadMFA2Package(fname);
+        if (mfa2Pkg == NULL)
+        {
+            _errMsg = "DetermineFlow: Failed to load MFA2 package from file: " + fname;
+            _log += _errMsg;
+            return UNKNOWN_FLOW;
+        }
+        u_int16_t fwVer[3] = {0xff, 0xff, 0xffff};
+        mfa2::map_string_to_component matchingComponentsMap =
+          mfa2Pkg->getMatchingComponents((char*)psid.c_str(), fwVer);
+        delete mfa2Pkg;
+        if (matchingComponentsMap.empty())
+        {
+            _errMsg = "DetermineFlow: No matching MFA2 components found for PSID: " + psid + " in file: " + fname;
+            _log += _errMsg;
+            return UNKNOWN_FLOW;
+        }
+        return MFA2_FLOW;
+    }
+    else if (signature == IMG_SIG_TYPE_BIN)
+    {
+        return BINARY_FLOW;
+    }
+    return UNKNOWN_FLOW;
+}
+
+int ImageAccess::fillQueryItemFromBuffer(const string& fname,
+                                         const string& psid,
+                                         const u_int8_t* imageData,
+                                         u_int32_t imageSize,
+                                         PsidQueryItem& ri)
+{
+    int res = 0;
+    fw_info_t img_query;
+    string iniName = "";
+    vector<u_int8_t> sect;
+    vector<u_int8_t> dest;
+    u_int8_t* alignedBuffer = NULL;
+    u_int32_t* supporteHwId = NULL;
+    u_int32_t supporteHwIdNum = 0;
+
+    ri.psid = psid;
+    ri.found = 0;
+    ri.url = fname;
+
+    alignedBuffer = (u_int8_t*)malloc(imageSize);
+    if (alignedBuffer == NULL)
+    {
+        _errMsg = "Memory allocation failure for image extracted from: " + fname;
+        _log += _errMsg;
+        return -1;
+    }
+    memcpy(alignedBuffer, imageData, imageSize);
+
+    if (!openImg(FHT_FW_BUFF, (char*)psid.c_str(), NULL, 0, (u_int32_t*)alignedBuffer, imageSize))
+    {
+        free(alignedBuffer);
+        return 0;
+    }
+
+    memset(&img_query, 0, sizeof(img_query));
+    if (!_imgFwOps->FwQuery(&img_query, true))
+    {
+        _errMsg = "Failed to query " + (string)_imgFwOps->err();
+        _log += _errMsg;
+        res = -1;
+        goto clean_up;
+    }
+
+    _imgFwOps->getSupporteHwId(&supporteHwId, supporteHwIdNum);
+    ri.found = 1;
+    ri.pns = strlen(img_query.fs3_info.name) ? img_query.fs3_info.name : "";
+    ri.description = strlen(img_query.fs3_info.description) ? img_query.fs3_info.description : "";
+    ri.devId = (supporteHwIdNum > 0) ? supporteHwId[0] : 0;
+    ri.revId = (ri.devId >> 16) & 0xffff;
+    ri.devId = ri.devId & 0xffff;
+    ri.isFailSafe = img_query.fw_info.is_failsafe;
+    if (_imgFwOps->FwGetSection(H_FW_CONF, sect))
+    {
+        if (!sect.empty())
+        {
+            if (unzipDataFile(sect, dest, "Fw Configuration"))
+            {
+                char* ptr = strstr((char*)&dest[0], "Name =");
+                int counter = 7;
+                while (ptr && *ptr != '\n' && *ptr != '\r')
+                {
+                    if (counter-- > 0)
+                    {
+                        ptr++;
+                        continue;
+                    }
+                    iniName += *ptr;
+                    ptr++;
+                }
+            }
+        }
+    }
+    ri.iniName = iniName;
+
+    if (!_compareFFV)
+    {
+        ImgVersion imgv;
+        imgv.setVersion("FW", 3, img_query.fw_info.fw_ver, img_query.fw_info.branch_ver);
+        ri.imgVers.push_back(imgv);
+    }
+    else
+    {
+        u_int16_t fwVer[4];
+        fwVer[0] = img_query.fw_info.fw_ver[0];
+        fwVer[1] = img_query.fw_info.fw_ver[1];
+        fwVer[2] = img_query.fw_info.fw_ver[2] / 100;
+        fwVer[3] = img_query.fw_info.fw_ver[2] % 100;
+        ImgVersion imgv;
+        imgv.setVersion("FW", 4, fwVer);
+        ri.imgVers.push_back(imgv);
+    }
+    for (int i = 0; i < img_query.fw_info.roms_info.num_of_exp_rom; i++)
+    {
+        ImgVersion imgVer;
+        const char* tpc = _imgFwOps->expRomType2Str(img_query.fw_info.roms_info.rom_info[i].exp_rom_product_id);
+        if (tpc == NULL)
+        {
+            tpc = "UNKNOWN_ROM";
+        }
+        int sz = img_query.fw_info.roms_info.rom_info[i].exp_rom_num_ver_fields;
+        imgVer.setVersion(tpc, sz, img_query.fw_info.roms_info.rom_info[i].exp_rom_ver);
+        ri.imgVers.push_back(imgVer);
+    }
+    res = ri.found;
+
+clean_up:
+    if (_imgFwOps != nullptr)
+    {
+        _imgFwOps->FwCleanUp();
+        delete _imgFwOps;
+        _imgFwOps = NULL;
+    }
+    return res;
+}
+
+int ImageAccess::queryPsidMfa2(const string& fname,
+                               const string& psid,
+                               string& selector_tag,
+                               int image_type,
+                               PsidQueryItem& ri)
+{
+    (void)image_type;
+    mfa2::MFA2* mfa2Pkg = mfa2::MFA2::LoadMFA2Package(fname);
+    if (mfa2Pkg == NULL)
+    {
+        _errMsg = "Failed to open MFA2 file: " + fname;
+        _log += _errMsg;
+        return -1;
+    }
+
+    u_int16_t fwVer[3] = {0xff, 0xff, 0xffff};
+    mfa2::map_string_to_component matchingComponentsMap =
+      mfa2Pkg->getMatchingComponents((char*)psid.c_str(), fwVer);
+    if (matchingComponentsMap.empty())
+    {
+        _errMsg = "queryPsidMfa2: No matching component found in MFA2 file for PSID: " + psid + " in file: " + fname;
+        _log += _errMsg;
+        delete mfa2Pkg;
+        return 0;
+    }
+
+    u_int32_t choice = 0;
+    string resolvedTag;
+    if (!selectMFA2Component(matchingComponentsMap, selector_tag, choice, resolvedTag))
+    {
+        _errMsg = "Failed to select matching component from MFA2 file: " + fname;
+        _log += _errMsg;
+        delete mfa2Pkg;
+        return -1;
+    }
+
+    vector<u_int8_t> componentBuffer;
+    if (!mfa2Pkg->unzipComponent(matchingComponentsMap, choice, componentBuffer))
+    {
+        _errMsg = "Failed to extract component from MFA2 file: " + fname;
+        _log += _errMsg;
+        delete mfa2Pkg;
+        return -1;
+    }
+
+    mfa2::map_string_to_component::iterator itComp = matchingComponentsMap.begin();
+    std::advance(itComp, choice);
+    u_int8_t majorVer = itComp->second.getComponentDescriptor().getVersionExtension().getMajor();
+    patchMFA2ImageSignature(componentBuffer, majorVer);
+
+    int res = fillQueryItemFromBuffer(fname, psid, componentBuffer.data(), componentBuffer.size(), ri);
+    if (res > 0)
+    {
+        ri.selector_tag = resolvedTag;
+    }
+    selector_tag = resolvedTag;
+    delete mfa2Pkg;
+    return res;
+}
+
+int ImageAccess::get_mfa2_content(const string& fname, vector<PsidQueryItem>& riv)
+{
+    int res = 0;
+    mfa2::MFA2* mfa2Pkg = mfa2::MFA2::LoadMFA2Package(fname);
+    if (mfa2Pkg == NULL)
+    {
+        _errMsg = "Failed to open MFA2 file: " + fname;
+        _log += _errMsg;
+        return -1;
+    }
+
+    std::set<string> processedPsids;
+    mfa2::PackageDescriptor packageDescriptor = mfa2Pkg->getPackageDescriptor();
+    u_int16_t devCount = packageDescriptor.getDeviceDescriptorsCount();
+    for (u_int16_t index = 0; index < devCount; index++)
+    {
+        mfa2::DeviceDescriptor devDescriptor = mfa2Pkg->getDeviceDescriptor(index);
+        string psid = devDescriptor.getPSIDExtension().getString();
+        if (processedPsids.find(psid) != processedPsids.end())
+        {
+            continue;
+        }
+        processedPsids.insert(psid);
+
+        u_int16_t fwVer[3] = {0xff, 0xff, 0xffff};
+        mfa2::map_string_to_component matchingComponentsMap =
+          mfa2Pkg->getMatchingComponents((char*)psid.c_str(), fwVer);
+        u_int32_t choice = 0;
+        for (mfa2::map_string_to_component::iterator it = matchingComponentsMap.begin();
+             it != matchingComponentsMap.end(); ++it, ++choice)
+        {
+            vector<u_int8_t> componentBuffer;
+            if (!mfa2Pkg->unzipComponent(matchingComponentsMap, choice, componentBuffer))
+            {
+                _errMsg = "Failed to extract component from MFA2 file: " + fname;
+                _log += _errMsg;
+                res = -1;
+                goto clean_up;
+            }
+
+            u_int8_t majorVer = it->second.getComponentDescriptor().getVersionExtension().getMajor();
+            patchMFA2ImageSignature(componentBuffer, majorVer);
+
+            PsidQueryItem item;
+            item.selector_tag = it->first;
+            int rc = fillQueryItemFromBuffer(fname, psid, componentBuffer.data(), componentBuffer.size(), item);
+            if (rc < 0)
+            {
+                res = rc;
+                goto clean_up;
+            }
+            if (rc == 1)
+            {
+                item.selector_tag = it->first;
+                riv.push_back(item);
+            }
+        }
+    }
+
+clean_up:
+    delete mfa2Pkg;
+    return res;
 }
 
 /**********************

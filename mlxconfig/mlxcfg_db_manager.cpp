@@ -42,6 +42,7 @@
 
 // #define NDEBUG //uncomment in order to disable asserts
 #include <assert.h>
+#include <algorithm>
 
 #include <ext_libs/sqlite/sqlite3.h>
 #include "mlxcfg_db_manager.h"
@@ -54,8 +55,11 @@
 #define SQL_SELECT_ALL_PARAMS \
     "SELECT * FROM params"
 
-MlxcfgDBManager::MlxcfgDBManager(string dbName, mfile* mf) :
-    _dbName(dbName), _db(NULL), _supportedVersion(0x0), _callBackErr(""), _isAllFetched(false), _paramSqlResult(NULL), _mf(mf)
+#define SQL_SELECT_ALL_CONFIGURATIONS \
+    "SELECT * FROM configurations ORDER BY rowid"
+
+MlxcfgDBManager::MlxcfgDBManager(string dbName, mfile* mf, bool useMaxPort) :
+    _dbName(dbName), _db(NULL), _supportedVersion(0x0), _callBackErr(""), _isAllFetched(false), _paramSqlResult(NULL), _mf(mf), _useMaxPort(useMaxPort)
 {
     openDB();
     getAllTLVs();
@@ -71,6 +75,10 @@ MlxcfgDBManager::~MlxcfgDBManager()
     {
         it->reset();
     }
+    for (std::vector<std::shared_ptr<SystemConfiguration>>::iterator it = _fetchedConfigurations.begin(); it != _fetchedConfigurations.end(); ++it)
+    {
+        it->reset();
+    }
     for (auto it = _tlvMap.begin(); it != _tlvMap.end(); ++it)
     {
         if (it->second)
@@ -79,6 +87,7 @@ MlxcfgDBManager::~MlxcfgDBManager()
         }
     }
     _tlvMap.clear();
+    _configurationMap.clear();
 
     if (!_db)
     {
@@ -205,13 +214,30 @@ int MlxcfgDBManager::selectParamCallBack(void* object, int argc, char** argv, ch
     return 0;
 }
 
+int MlxcfgDBManager::selectConfigurationCallBack(void* object, int argc, char** argv, char** azColName)
+{
+    MlxcfgDBManager* dbManager = reinterpret_cast<MlxcfgDBManager*>(object);
+
+    try
+    {
+        std::shared_ptr<SystemConfiguration> config = std::make_shared<SystemConfiguration>(argc, argv, azColName);
+        dbManager->_fetchedConfigurations.push_back(config);
+    }
+    catch (MlxcfgException& e)
+    {
+        dbManager->_callBackErr = e._err;
+        return SQLITE_ABORT;
+    }
+    return 0;
+}
+
 void MlxcfgDBManager::fillMapWithFetchedTLVs(mfile* mf)
 {
     for(size_t j = 0; j < _fetchedTLVs.size(); j++)
     {
         if(_fetchedTLVs[j]->isPortTargetClass())
         {
-            for(int k = 1; k <= TLVConf::getMaxPort(mf); k++)
+            for(int k = 1; k <= TLVConf::getMaxPort(mf, _useMaxPort); k++)
             {
                 std::shared_ptr<TLVConf> tlv = make_shared<TLVConf>(*_fetchedTLVs[j]);
                 tlv->_port = k;
@@ -253,7 +279,7 @@ void MlxcfgDBManager::fillMapWithFetchedParams(mfile* mf)
 
             if(_fetchedTLVs[j]->isPortTargetClass())
             {
-                for(int k = 1; k <= TLVConf::getMaxPort(mf); k++)
+                for(int k = 1; k <= TLVConf::getMaxPort(mf, _useMaxPort); k++)
                 {
                     std::shared_ptr<Param> pTemplate = make_shared<Param>(*_fetchedParams[i]);
                     pTemplate->_port = k;
@@ -317,6 +343,30 @@ void MlxcfgDBManager::fillMapWithFetchedParams(mfile* mf)
     }
 }
 
+void MlxcfgDBManager::fillMapWithFetchedConfigurations()
+{
+    for (const auto& config : _fetchedConfigurations)
+    {
+        _configurationMap[config->name].push_back(config);
+    }
+}
+
+std::string MlxcfgDBManager::resolveConfigurationName(const std::string& name) const
+{
+    if (_configurationMap.count(name) > 0)
+    {
+        return name;
+    }
+    for (const auto& config : _fetchedConfigurations)
+    {
+        if (config->configurationNameStr == name)
+        {
+            return config->name;
+        }
+    }
+    return name;
+}
+
 void MlxcfgDBManager::getAllTLVs()
 {
     if (_isAllFetched)
@@ -330,10 +380,22 @@ void MlxcfgDBManager::getAllTLVs()
     // fetch from db all params
     execSQL(selectParamCallBack, this, SQL_SELECT_ALL_PARAMS);
 
+    // fetch from db all system configurations
+    try
+    {
+        execSQL(selectConfigurationCallBack, this, SQL_SELECT_ALL_CONFIGURATIONS);
+    }
+    catch(const std::exception& e)
+    {
+
+    }
+
     fillMapWithFetchedTLVs(_mf);
 
     //the _tlvMap is now filled with all the tlvs including port and module duplicates,
     fillMapWithFetchedParams(_mf);
+
+    fillMapWithFetchedConfigurations();
 
     _isAllFetched = true;
 }
@@ -425,7 +487,7 @@ tuple<string, int> MlxcfgDBManager::splitMlxcfgNameAndPortOrModule(std::string m
     if (splitBy == PORT)
     {
         ending = (char*)"_P";
-        maxNum = TLVConf::getMaxPort(mf);
+        maxNum = TLVConf::getMaxPort(mf, false);
         minNum = 0;
     }
     else
@@ -529,3 +591,77 @@ inline bool MlxcfgDBManager::isDBFileExists(const std::string& name)
         return false;
     }
 }
+
+std::shared_ptr<SystemConfiguration> MlxcfgDBManager::getConfiguration(const std::string& name, int32_t asicNumber, const std::string& deviceName)
+{
+    std::string resolvedName = resolveConfigurationName(name);
+    std::vector<std::shared_ptr<SystemConfiguration>> configs = {};
+    if (_configurationMap.count(resolvedName) == 0)
+    {
+        return nullptr;
+    }
+    for (const auto& config : _configurationMap[resolvedName])
+    {
+        if (config->asicNumber == asicNumber)
+        {
+            configs.push_back(config);
+        }
+    }
+    //get all relevant configurations
+    for (const auto& config : configs)
+    {
+        //find the config that is relevant to the device
+        if (config->relevantDevices.find(deviceName) != string::npos)
+        {
+            return config;
+        }
+    }
+    //if no relevant configuration was found, throw an error
+    if(configs.size() > 0)
+    {
+        throw MlxcfgException("Device '%s' does not support configuration named '%s'", deviceName.c_str(), name.c_str());
+    }
+    return nullptr;
+}
+
+std::vector<std::shared_ptr<SystemConfiguration>> MlxcfgDBManager::getConfigurationsByName(const std::string& name, const std::string& deviceName)
+{
+    std::string resolvedName = resolveConfigurationName(name);
+    std::vector<std::shared_ptr<SystemConfiguration>> configs = {};
+    if (_configurationMap.count(resolvedName) == 0)
+    {
+        return configs;
+    }
+    for (const auto& config : _configurationMap[resolvedName])
+    {
+        if (config->relevantDevices.find(deviceName) != string::npos)
+        {
+            configs.push_back(config);
+        }
+    }
+    if(_configurationMap[resolvedName].size() > 0 && configs.size() == 0)
+    {
+        throw MlxcfgException("Device '%s' does not support configuration named '%s'", deviceName.c_str(), name.c_str());
+    }
+    return configs;
+}
+
+std::map<std::string, std::vector<std::shared_ptr<SystemConfiguration>>>
+  MlxcfgDBManager::getAllSystemConfigurations(const std::string& deviceName)
+{
+    std::map<std::string, std::vector<std::shared_ptr<SystemConfiguration>>> configs;
+    std::string searchName = deviceName + ",";
+
+    for (const auto& entry : _configurationMap)
+    {
+        for (const auto& config : entry.second)
+        {
+            if (config->relevantDevices.find(searchName) != std::string::npos)
+            {
+                configs[config->name].push_back(config);
+            }
+        }
+    }
+    return configs;
+}
+

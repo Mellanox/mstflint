@@ -44,10 +44,10 @@
 
 using namespace std;
 
-Commander* Commander::create(std::string device, std::string& dbName, bool forceCreate, Device_Type deviceType)
+Commander*
+  Commander::create(std::string device, std::string& dbName, bool forceCreate, Device_Type deviceType, bool useMaxPort)
 {
-    mfile* mf;
-    int rc;
+    mfile* mf = NULL;
     u_int32_t type = 0;
 
     mf = mopen_adv(device.c_str(), (MType)(MST_DEFAULT | MST_CABLE));
@@ -55,7 +55,7 @@ Commander* Commander::create(std::string device, std::string& dbName, bool force
     {
         throw MlxcfgException("Failed to open the device");
     }
-    rc = mget_mdevs_type(mf, &type);
+    int rc = mget_mdevs_type(mf, &type);
     if (rc)
     {
         throw MlxcfgException("Failed to get device type");
@@ -71,7 +71,7 @@ Commander* Commander::create(std::string device, std::string& dbName, bool force
     Commander* cmdr = NULL;
     try
     {
-        cmdr = create(mf, dbName, deviceType);
+        cmdr = create(mf, dbName, deviceType, useMaxPort);
     }
     catch (MlxcfgException& exp)
     {
@@ -82,7 +82,7 @@ Commander* Commander::create(std::string device, std::string& dbName, bool force
     return cmdr;
 }
 
-Commander* Commander::create(mfile* mf, std::string& dbName, Device_Type deviceType)
+Commander* Commander::create(mfile* mf, std::string& dbName, Device_Type deviceType, bool useMaxPort)
 {
     dm_dev_id_t deviceId = DeviceUnknown;
     u_int32_t hwDevId = 0, hwRevId = 0;
@@ -99,17 +99,31 @@ Commander* Commander::create(mfile* mf, std::string& dbName, Device_Type deviceT
 
     if (dm_dev_is_switch(deviceId)  || dm_is_5th_gen_hca(deviceId) || dm_dev_is_retimer(deviceId))
     {
+        // Determine actual device type from hardware
+        Device_Type actualDeviceType = dm_dev_is_switch(deviceId)  ? Device_Type::Switch :
+                                       dm_is_5th_gen_hca(deviceId) ? Device_Type::HCA :
+                                       dm_dev_is_retimer(deviceId) ? Device_Type::Retimer :
+                                                                     Device_Type::UNSUPPORTED_DEVICE;
+
+        // Validate if user specified a device type
+        if (deviceType != UNSUPPORTED_DEVICE && deviceType != actualDeviceType)
+        {
+            throw MlxcfgException("Device type mismatch, provided device is not a %s device",
+                                  deviceTypeToString(deviceType).c_str());
+        }
+
+        // Use actual device type if not specified
         if (deviceType == UNSUPPORTED_DEVICE)
         {
-            deviceType = dm_dev_is_switch(deviceId)  ? Device_Type::Switch :
-                         dm_is_5th_gen_hca(deviceId) ? Device_Type::HCA :
-                                                       Device_Type::UNSUPPORTED_DEVICE;
+            deviceType = actualDeviceType;
         }
         if (dbName.empty())
         { // take internal db file
-            dbName = getDefaultDBName(dm_dev_is_switch(deviceId));
+            bool isSwitchPrmDb =
+              (dm_dev_is_switch(deviceId) || dm_dev_is_cable(deviceId)); // linkx cables use the Switch PRM database
+            dbName = getDefaultDBName(isSwitchPrmDb);
         }
-        commander = new GenericCommander(mf, dbName, deviceType);
+        commander = new GenericCommander(mf, dbName, deviceType, useMaxPort);
     }
     else
     {
@@ -134,12 +148,12 @@ void Commander::setHostFunctionParams(u_int8_t hostId, u_int8_t pfIndex, bool va
     _userHostIdPfValid = valid;
 }
 
-string Commander::getDefaultDBName(bool isSwitch)
+string Commander::getDefaultDBName(bool isSwitchPrmDb)
 {
     const string dbDirName = "mlxconfig_dbs";
     const string hostDBName = "mlxconfig_host.db";
     const string switchDBName = "mlxconfig_switch.db";
-    const string dbFileName = isSwitch ? switchDBName : hostDBName;
+    const string dbFileName = isSwitchPrmDb ? switchDBName : hostDBName;
     string dbPathName = "";
 #ifdef __WIN__
     char execFilePathCStr[1024] = {0x0};
@@ -155,7 +169,7 @@ string Commander::getDefaultDBName(bool isSwitch)
     FILE* fd = fopen(confFile.c_str(), "r");
     if (!fd)
     {
-        throw MlxcfgException("Failed to open conf file : %s\n", confFile.c_str());
+        throw MlxcfgException("Failed to open conf file : %s (%d)\n", confFile.c_str(), __LINE__);
     }
     string prefix = "", dataPath = "";
     while ((fgets(line, 1024, fd)))

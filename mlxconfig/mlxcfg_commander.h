@@ -40,8 +40,12 @@
 #ifndef MLXCFG_COMMANDER_H_
 #define MLXCFG_COMMANDER_H_
 
+#include <map>
+#include <memory>
+#include <unordered_set>
 #include <vector>
 #include "tools_dev_types.h"
+#include "mlxcfg_configuration.h"
 #include "mlxcfg_view.h"
 #include "mlxcfg_utils.h"
 #include "mlxcfg_status.h"
@@ -52,10 +56,12 @@ public:
     static Commander* create(std::string device,
                              std::string& dbName,
                              bool forceCreate = false,
-                             Device_Type deviceType = Device_Type::HCA); // clients can force create skiping any support
-                                                                         // check, and move the responsebility to the
-                                                                         // client.
-    static Commander* create(mfile* mf, std::string& dbName, Device_Type deviceType = Device_Type::HCA);
+                             Device_Type deviceType = Device_Type::HCA,
+                             bool useMaxPort = false); // clients can force create skipping any
+                                                       // support check, and move the responsibility
+                                                       // to the client.
+    static Commander*
+      create(mfile* mf, std::string& dbName, Device_Type deviceType = Device_Type::HCA, bool useMaxPort = false);
     virtual void printLongDesc(FILE*) = 0;
     virtual void
       getGlobalCapabilities(bool& isDefaultSupported, bool& isCurrentSupported, bool& isPrivNvOtherHostSupported) = 0;
@@ -70,22 +76,34 @@ public:
     virtual void invalidateCfg(const std::string& configName) = 0;
     virtual void invalidateCfg(const std::vector<ParamView>& params) = 0;
     virtual const char* loadConfigurationGetStr() = 0;
+    virtual bool checkPCIResetRequired() = 0;
     virtual void setRawCfg(std::vector<u_int32_t> rawTlvVec) = 0;
     virtual std::vector<u_int32_t> getRawCfg(std::vector<u_int32_t> rawTlvVec) = 0;
     virtual void dumpRawCfg(std::vector<u_int32_t> rawTlvVec, std::string& tlvDump) = 0;
     virtual void backupCfgs(vector<BackupView>& views) = 0;
     virtual void updateParamViewValue(ParamView&, std::string val, QueryType qt) = 0;
+    /* TLV instance keys for this mlxconfig token (matches invalidateCfg grouping).*/
+    virtual void addTlvInstanceKeysForParam(const std::string& mlxconfigName,
+                                            std::unordered_set<std::string>& keysOut) = 0;
+    virtual std::shared_ptr<SystemConfiguration>
+      getSystemConfiguration(const std::string& name, int32_t asicNumber, const std::string& deviceName) = 0;
+    virtual std::vector<std::shared_ptr<SystemConfiguration>>
+      getSystemConfigurationsByName(const std::string& name, const std::string& deviceName) = 0;
+    virtual std::map<std::string, std::vector<std::shared_ptr<SystemConfiguration>>>
+      getAllSystemConfigurations(const std::string& deviceName) = 0;
     void setExtResourceType(bool extT) { _extResource = extT; }
+    void setIgnoreWriteSupport(bool ignore) { _ignoreWriteSupport = ignore; }
     virtual void setHostFunctionParams(u_int8_t hostId, u_int8_t pfIndex, bool valid);
-    static string getDefaultDBName(bool isSwitch);
+    static string getDefaultDBName(bool isSwitchPrmDb);
     mfile* mf() { return _mf; }
-    Commander(mfile* mf) : _mf(mf), _extResource(true), _isSwitch(false){};
+    Commander(mfile* mf) : _mf(mf), _extResource(true), _isSwitch(false), _ignoreWriteSupport(false){};
     virtual ~Commander();
 
 protected:
     mfile* _mf;
     bool _extResource;
     bool _isSwitch;
+    bool _ignoreWriteSupport;
     u_int8_t _userHostId = 0;
     u_int8_t _userPfIndex = 0;
     bool _userHostIdPfValid = false;

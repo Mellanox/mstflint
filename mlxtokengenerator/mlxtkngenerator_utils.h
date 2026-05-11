@@ -54,25 +54,57 @@
 
 using namespace std;
 
+struct DebugFwFileData
+{
+    string filename;
+    string psid;
+    string debugFwVersion;
+};
+
 vector<u_int8_t> ReadFromFile(string filename);
+string GetSafePsid(const string& psid);
+DebugFwFileData GetDebugFwFileData(const string& filename);
+
+enum class MlxTknGeneratorErrorCode : int
+{
+    Generic = 0,
+    AggregatedTokenFull = 1,
+};
 
 class MlxTknGeneratorException : public exception
 {
-public:
-    std::string _err;
-    MlxTknGeneratorException(const char* fmt, ...)
+private:
+    void initMessage(const char* fmt, va_list args)
     {
         const unsigned int max = 1024;
         char tmp[max];
-        va_list args;
-
-        va_start(args, fmt);
         vsnprintf(tmp, max, fmt, args);
-        va_end(args);
         _err = tmp;
     }
+
+public:
+    std::string _err;
+    MlxTknGeneratorErrorCode _errCode;
+
+    MlxTknGeneratorException(const char* fmt, ...) : _errCode(MlxTknGeneratorErrorCode::Generic)
+    {
+        va_list args;
+        va_start(args, fmt);
+        initMessage(fmt, args);
+        va_end(args);
+    }
+
+    MlxTknGeneratorException(MlxTknGeneratorErrorCode errCode, const char* fmt, ...) : _errCode(errCode)
+    {
+        va_list args;
+        va_start(args, fmt);
+        initMessage(fmt, args);
+        va_end(args);
+    }
+
     ~MlxTknGeneratorException() throw(){};
     virtual const char* what() const throw() { return _err.c_str(); }
+    int getErrorCode() const { return static_cast<int>(_errCode); }
 };
 
 #endif /* MLXTKNGNERATOR_UTILS_H_ */

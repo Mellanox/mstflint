@@ -132,7 +132,7 @@ string getFullString(u_int64_t intVal)
     }
     else
     {
-        strVal = "N/A";
+        strVal = NA_FIELD_VALUE;
     }
 
     return strVal;
@@ -229,6 +229,46 @@ string IBSupportedSpeeds2Str(u_int32_t mask)
     return deleteLastChar(maskStr);
 }
 
+string NVLINKSupportedSpeeds2Str(u_int32_t mask)
+{
+    string maskStr = "";
+
+    if (mask & NVLINK_SPEED_200G_1X_MODE_A)
+    {
+        maskStr += "XDR_1X,";
+    }
+    if (mask & NVLINK_SPEED_400G_2X_MODE_A)
+    {
+        maskStr += "XDR_2X,";
+    }
+    if (mask & NVLINK_SPEED_400G_2X_MODE_B)
+    {
+        maskStr += "400G_2X_MODE_B,";
+    }
+    if (mask & NVLINK_SPEED_360G_2X_MODE_B)
+    {
+        maskStr += "360G_2X_MODE_B,";
+    }
+    if (mask & NVLINK_SPEED_328G_2X_MODE_B)
+    {
+        maskStr += "328G_2X_MODE_B,";
+    }
+    if (mask & NVLINK_SPEED_378G_2X_MODE_B)
+    {
+        maskStr += "378G_2X_MODE_B,";
+    }
+    if (mask & NVLINK_SPEED_345G_2X_MODE_B)
+    {
+        maskStr += "345G_2X_MODE_B,";
+    }
+    if (mask & NVLINK_SPEED_200G_2X_MODE_A)
+    {
+        maskStr += "NDR,";
+    }
+
+    return deleteLastChar(maskStr);
+}
+
 string EthSupportedSpeeds2Str(u_int32_t int_mask)
 {
     string maskStr = "";
@@ -288,25 +328,21 @@ string EthSupportedSpeeds2Str(u_int32_t int_mask)
 string EthExtSupportedSpeeds2Str(u_int32_t int_mask)
 {
     string maskStr = "";
-    if (int_mask & ETH_LINK_SPEED_EXT_200GAUI_1)
+    if (int_mask & ETH_LINK_SPEED_EXT_1_6TAUI_8)
     {
-        maskStr += "200G_1X,";
-    }
-    if (int_mask & ETH_LINK_SPEED_EXT_400GAUI_2)
-    {
-        maskStr += "400G_2X,";
+        maskStr += "1600G_8X,";
     }
     if (int_mask & ETH_LINK_SPEED_EXT_800GAUI_4)
     {
         maskStr += "800G_4X,";
     }
-    if (int_mask & ETH_LINK_SPEED_EXT_1_6TAUI_8)
-    {
-        maskStr += "1600G_8X,";
-    }
     if (int_mask & ETH_LINK_SPEED_EXT_800GAUI_8)
     {
         maskStr += "800G_8X,";
+    }
+    if (int_mask & ETH_LINK_SPEED_EXT_400GAUI_2)
+    {
+        maskStr += "400G_2X,";
     }
     if (int_mask & ETH_LINK_SPEED_EXT_400GAUI_4)
     {
@@ -315,6 +351,10 @@ string EthExtSupportedSpeeds2Str(u_int32_t int_mask)
     if (int_mask & ETH_LINK_SPEED_EXT_400GAUI_8)
     {
         maskStr += "400G_8X,";
+    }
+    if (int_mask & ETH_LINK_SPEED_EXT_200GAUI_1)
+    {
+        maskStr += "200G_1X,";
     }
     if (int_mask & ETH_LINK_SPEED_EXT_200GAUI_2)
     {
@@ -380,9 +420,9 @@ string EthExtSupportedSpeeds2Str(u_int32_t int_mask)
     return deleteLastChar(maskStr);
 }
 
-string SupportedSpeeds2Str(u_int32_t proto_active, u_int32_t mask, bool extended, bool isXdrSlowActive)
+string SupportedSpeeds2Str(u_int32_t proto_active, u_int32_t mask, bool extended, bool isModeAsActive)
 {
-    if (isXdrSlowActive)
+    if (isModeAsActive)
     {
         return "NDR";
     }
@@ -390,6 +430,8 @@ string SupportedSpeeds2Str(u_int32_t proto_active, u_int32_t mask, bool extended
     {
         case IB:
             return IBSupportedSpeeds2Str(mask);
+        case NVLINK:
+            return NVLINKSupportedSpeeds2Str(mask);
         case ETH:
             if (extended)
             {
@@ -457,7 +499,7 @@ string getPowerClassStringValue(u_int32_t cableIdentifier, u_int32_t powerClass,
             }
             catch (const std::exception& e)
             {
-                return "N/A";
+                return NA_FIELD_VALUE;
             }
     }
 }
@@ -478,7 +520,7 @@ float getPowerClassValue(u_int32_t cableIdentifier, u_int32_t powerClass, Mlxlin
 
 string getPowerClassStr(MlxlinkMaps* mlxlinkMaps, u_int32_t cableIdentifier, u_int32_t powerClass)
 {
-    string powerClassStr = "N/A";
+    string powerClassStr = NA_FIELD_VALUE;
     string val = getPowerClassStringValue(cableIdentifier, powerClass, mlxlinkMaps);
 
     if (!val.empty())
@@ -491,7 +533,7 @@ string getPowerClassStr(MlxlinkMaps* mlxlinkMaps, u_int32_t cableIdentifier, u_i
 
 string getPowerClass(MlxlinkMaps* mlxlinkMaps, u_int32_t cableIdentifier, u_int32_t powerClass, u_int32_t maxPower)
 {
-    string powerClassStr = "N/A";
+    string powerClassStr = NA_FIELD_VALUE;
     float maxPowerValue = maxPower * 0.25;
     string val = getPowerClassStringValue(cableIdentifier, powerClass, mlxlinkMaps);
     float powerClassVal = getPowerClassValue(cableIdentifier, powerClass, mlxlinkMaps);
@@ -688,6 +730,80 @@ int ptysSpeedToMaskIB(const string& speed)
     return 0x0;
 }
 
+int ptysSpeedToMaskNVLINK(const string& speed)
+{
+    if (speed == "XDR_1X")
+    {
+        return NVLINK_SPEED_200G_1X_MODE_A;
+    }
+    if (speed == "XDR_2X")
+    {
+        return NVLINK_SPEED_400G_2X_MODE_A;
+    }
+    if (speed == "400G_2X_MODE_B")
+    {
+        return NVLINK_SPEED_400G_2X_MODE_B;
+    }
+    if (speed == "360G_2X_MODE_B")
+    {
+        return NVLINK_SPEED_360G_2X_MODE_B;
+    }
+    if (speed == "328G_2X_MODE_B")
+    {
+        return NVLINK_SPEED_328G_2X_MODE_B;
+    }
+    if (speed == "378G_2X_MODE_B")
+    {
+        return NVLINK_SPEED_378G_2X_MODE_B;
+    }
+    if (speed == "345G_2X_MODE_B")
+    {
+        return NVLINK_SPEED_345G_2X_MODE_B;
+    }
+    if (speed == "NDR")
+    {
+        return NVLINK_SPEED_200G_2X_MODE_A;
+    }
+    return 0x0;
+}
+
+string convertSpeedToNVLINK(const string& speed)
+{
+    if (speed == "XDR_1X")
+    {
+        return "200g_1x_mode_a";
+    }
+    if (speed == "XDR_2X")
+    {
+        return "400g_2x_mode_a";
+    }
+    if (speed == "400G_2X_MODE_B")
+    {
+        return "400g_2x_mode_b";
+    }
+    if (speed == "360G_2X_MODE_B")
+    {
+        return "360g_2x_mode_b";
+    }
+    if (speed == "328G_2X_MODE_B")
+    {
+        return "328g_2x_mode_b";
+    }
+    if (speed == "378G_2X_MODE_B")
+    {
+        return "378g_2x_mode_b";
+    }
+    if (speed == "345G_2X_MODE_B")
+    {
+        return "345g_2x_mode_b";
+    }
+    if (speed == "NDR")
+    {
+        return "200g_2x_mode_a";
+    }
+    return "";
+}
+
 bool isPAM4Speed(u_int32_t activeSpeed, u_int32_t protoActive, bool extended)
 {
     bool pam4Signal = false;
@@ -709,13 +825,30 @@ bool isPAM4Speed(u_int32_t activeSpeed, u_int32_t protoActive, bool extended)
     return pam4Signal;
 }
 
+bool checkNvl6ModeBSpeed(const string& speed)
+{
+    if (speed == "400G_2X_MODE_B" || speed == "360G_2X_MODE_B" || speed == "328G_2X_MODE_B" ||
+        speed == "378G_2X_MODE_B" || speed == "345G_2X_MODE_B")
+    {
+        return true;
+    }
+    return false;
+}
+
+bool isNvlinkModeBSpeed(bool isNvl6, u_int32_t linkSpeed)
+{
+    return (isNvl6 &&
+            (linkSpeed & (NVLINK_SPEED_400G_2X_MODE_B | NVLINK_SPEED_360G_2X_MODE_B | NVLINK_SPEED_328G_2X_MODE_B |
+                          NVLINK_SPEED_378G_2X_MODE_B | NVLINK_SPEED_345G_2X_MODE_B)));
+}
+
 string getStrByValue(u_int32_t flags, std::map<u_int32_t, std::string> map)
 {
     string flagsStr = map[flags];
 
     if (flagsStr.empty())
     {
-        flagsStr = "N/A";
+        flagsStr = NA_FIELD_VALUE;
     }
 
     return flagsStr;
@@ -759,10 +892,42 @@ string getStrByMask(u_int32_t bitmask, std::map<u_int32_t, std::string> maskMap,
     }
     else
     {
-        bitMaskStr = "N/A";
+        bitMaskStr = NA_FIELD_VALUE;
     }
 
     return bitMaskStr;
+}
+
+string mergePrbsLaneRateCapStrings(u_int32_t laneRateCap,
+                                   u_int32_t laneRateCapExt,
+                                   const map<u_int32_t, string>& capPrimary,
+                                   const map<u_int32_t, string>& capExt)
+{
+    const string sep = ", ";
+    string primaryStr = laneRateCap ? getStrByMask(laneRateCap, capPrimary, sep) : string("");
+    string extStr = laneRateCapExt ? getStrByMask(laneRateCapExt, capExt, sep) : string("");
+
+    if (primaryStr == NA_FIELD_VALUE)
+    {
+        primaryStr.clear();
+    }
+    if (extStr == NA_FIELD_VALUE)
+    {
+        extStr.clear();
+    }
+    if (primaryStr.empty() && extStr.empty())
+    {
+        return NA_FIELD_VALUE;
+    }
+    if (primaryStr.empty())
+    {
+        return extStr;
+    }
+    if (extStr.empty())
+    {
+        return primaryStr;
+    }
+    return primaryStr + sep + extStr;
 }
 
 bool checkPaosCmd(const string& paosCmd)
@@ -911,6 +1076,15 @@ bool checkLinkTrainingCmd(const string& linkTrainingCmd)
     return true;
 }
 
+bool checkConstantRoleCmd(const string& constantRole)
+{
+    if (constantRole != "EN" && constantRole != "DS")
+    {
+        return false;
+    }
+    return true;
+}
+
 bool checkTestMode(const string& testMode)
 {
     if (testMode != "Nominal" && testMode != "NOMINAL" && testMode != "CORNER" && testMode != "DRIFT" && testMode != "")
@@ -1045,7 +1219,7 @@ string getCableIdentifier(u_int32_t identifier)
             identifierStr = "DSFP";
             break;
         default:
-            identifierStr = "N/A";
+            identifierStr = NA_FIELD_VALUE;
     }
     return identifierStr;
 }
@@ -1179,7 +1353,7 @@ string getGroupStr(u_int32_t advancedOpcode)
 {
     if (advancedOpcode == 0 || advancedOpcode == 1023)
     {
-        return "N/A";
+        return NA_FIELD_VALUE;
     }
     else if (advancedOpcode < 1023)
     {
@@ -1270,7 +1444,7 @@ string pcieSpeedStr(u_int32_t linkSpeedActive)
     }
     else
     {
-        linkSpeedActiveStr = "N/A";
+        linkSpeedActiveStr = NA_FIELD_VALUE;
     }
     return linkSpeedActiveStr;
 }
@@ -1322,7 +1496,7 @@ string getCompliance(u_int32_t compliance, std::map<u_int32_t, std::string> comp
 
 string getModuleFwVersion(bool passive, u_int32_t moduleFWVer)
 {
-    string moduleFWVersion = "N/A";
+    string moduleFWVersion = NA_FIELD_VALUE;
     if (!passive)
     {
         u_int32_t moduleFWVerChip = (moduleFWVer & 0xFF000000) >> 24;
@@ -1351,7 +1525,7 @@ string getVendorRev(u_int32_t rev)
         }
         shift = shift >> 8;
     }
-    return (value != "") ? value : "N/A";
+    return (value != "") ? value : NA_FIELD_VALUE;
 }
 
 string getCableLengthStr(u_int32_t cableLength, bool cmisCable)
@@ -1443,6 +1617,17 @@ int readSigned(u_int32_t value, u_int32_t fieldSize)
     return value;
 }
 
+uint64_t unsignedToSigned(uint32_t rawValue, uint8_t width)
+{
+    uint64_t mask = (width >= 64) ? (uint64_t)(-1) : ((uint64_t)(1) << width) - 1;
+    uint64_t masked = rawValue & mask;
+    if (width > 0 && (masked >> (width - 1)) & 1)
+    {
+        return (uint64_t)(int64_t)(masked - ((uint64_t)(1) << width));
+    }
+    return masked;
+}
+
 int readSignedByte(u_int32_t value)
 {
     return readSigned(value, 8);
@@ -1458,7 +1643,7 @@ void setPrintVal(MlxlinkCmdPrint& mlxlinkCmdPrint,
                  bool colorKey)
 {
     mlxlinkCmdPrint.mlxlinkRecords[mlxlinkCmdPrint.lastInsertedRow].key = key;
-    mlxlinkCmdPrint.mlxlinkRecords[mlxlinkCmdPrint.lastInsertedRow].val = valid ? value : "N/A";
+    mlxlinkCmdPrint.mlxlinkRecords[mlxlinkCmdPrint.lastInsertedRow].val = valid ? value : NA_FIELD_VALUE;
     mlxlinkCmdPrint.mlxlinkRecords[mlxlinkCmdPrint.lastInsertedRow].color = color;
     mlxlinkCmdPrint.mlxlinkRecords[mlxlinkCmdPrint.lastInsertedRow].visible = print;
     mlxlinkCmdPrint.mlxlinkRecords[mlxlinkCmdPrint.lastInsertedRow].arrayValue = arrayValue;
@@ -1531,7 +1716,7 @@ bool isNRZSpeed(u_int32_t speed, u_int32_t protocol)
     return !isSpeed100GPerLane(speed, protocol) &&
            (isSpeed25GPerLane(speed, protocol) ||
             !(isSpeed50GPerLane(speed, protocol) || isSpeed100GPerLane(speed, protocol) ||
-              isSpeed200GPerLane(speed, protocol) || isSpeed25GPerLane(speed, protocol)));
+              isSpeed200GPerLane(speed, protocol) || isSpeed25GPerLane(speed, protocol) || (protocol == NVLINK)));
 }
 
 string linkWidthMaskToStr(u_int32_t width)
@@ -1559,7 +1744,7 @@ string linkWidthMaskToStr(u_int32_t width)
     }
     else
     {
-        widthStr = "N/A";
+        widthStr = NA_FIELD_VALUE;
     }
     return widthStr;
 }
@@ -1806,7 +1991,7 @@ void updateColumnWidthPopulateTable(std::vector<std::pair<std::string, u_int32_t
         throw std::out_of_range(
           string("Showing Multi Port Info Table raised the following exception: Location in vector is out of bounds"));
     }
-    if (isActive && valToAdd != "N/A")
+    if (isActive && valToAdd != NA_FIELD_VALUE)
     {
         tableData.push_back(valToAdd);
     }

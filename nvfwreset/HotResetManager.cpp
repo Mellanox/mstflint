@@ -485,6 +485,7 @@ bool HotResetManager::CheckIfDirectNic(uint8_t requesterPcieIndex)
             char upstreamDBDF[32] = {0};
             snprintf(upstreamDBDF, sizeof(upstreamDBDF), "%04x:%02x:%02x.0", domain, mpir.bus, mpir.device);
             _directNicUpstreamDBDF = upstreamDBDF;
+            _upstreamDBDFs.push_back(_directNicUpstreamDBDF);
             LOG.Info("HotResetManager::CheckIfDirectNic: direct nic device found: " + std::string(upstreamDBDF));
             return true;
         }
@@ -580,7 +581,6 @@ void HotResetManager::ExecuteHotResetFlow()
     {
         throw mft_core::MftGeneralException(std::string("Failed to send Hot Reset, check dmesg for more details."));
     }
-
     // Sleep for 2 seconds after sending hot reset
     nbu::mft::common::mft_msleep(2000);
 

@@ -197,7 +197,7 @@ std::vector<u_int32_t> _RegAccessParser_impl<dynamic>::genBuffKnown()
             throw MlxRegException("Can't find OP name: \"%s\"", unfound_op_name.c_str());
         }
         if (!unfound_name.empty())
-    {
+        {
             throw MlxRegException("Can't find field name: \"%s\"", unfound_name.c_str());
         }
     }
@@ -252,14 +252,28 @@ bool _RegAccessParser_impl<dynamic>::_on_traverse_update_buffer(const string& ca
                 throw MlxRegException("Field: %s is not an INDEX.", calculated_path.c_str());
             }
             else if (param_type == ParamType::OP && !instance->is_op())
-        {
+            {
                 throw MlxRegException("Field: %s is not an OP.", calculated_path.c_str());
             }
             else if (param_type == ParamType::DATA && !parser->_ignore_ro && instance->is_ro())
             {
                 throw MlxRegException("Field: %s is ReadOnly", calculated_path.c_str());
             }
-            parser->updateBuffer((uint32_t)calculated_offset, (uint32_t)instance->get_size(), value);
+            uint32_t field_size = (uint32_t)instance->get_size();
+            if (field_size == 0 || field_size > 32)
+            {
+                throw MlxRegException(
+                  "Field '%s' has invalid size: %d bits (must be 1-32)", calculated_path.c_str(), field_size);
+            }
+            if (field_size < 32 && value > ((1u << field_size) - 1))
+            {
+                throw MlxRegException("Value: 0x%x exceeds maximum value for field '%s' (%d bits, max: 0x%x)",
+                                      value,
+                                      calculated_path.c_str(),
+                                      field_size,
+                                      (1u << field_size) - 1);
+            }
+            parser->updateBuffer((uint32_t)calculated_offset, field_size, value);
             parser->_params_map.erase(key);
             break;
         }
@@ -267,13 +281,13 @@ bool _RegAccessParser_impl<dynamic>::_on_traverse_update_buffer(const string& ca
     return false; // continue traversal
 }
 /************************************
- * Function: parseData
+ * Function: parse_register_params
  ************************************/
 template<bool dynamic>
 void _RegAccessParser_impl<dynamic>::parse_register_params(const string& data, ParamType param_type)
 {
     if (data.empty())
-{
+    {
         return;
     }
 
@@ -289,7 +303,7 @@ void _RegAccessParser_impl<dynamic>::parse_register_params(const string& data, P
         if (_params_map.find(datName) != _params_map.end())
         {
             throw MlxRegException("Field: %s appears twice.", datName.c_str());
-    }
+        }
         _params_map[datName] = {param_type, uintVal};
     }
 }
@@ -352,6 +366,14 @@ void _RegAccessParser_impl<dynamic>::updateBufferUnknwon(std::vector<string> fie
         {
             throw MlxRegException("Invalid size: %d. max size = 32 (bits)", fieldSizeUint);
         }
+        // validate value fits within the field size
+        if (fieldSizeUint < 32 && fieldDataUint > ((1u << fieldSizeUint) - 1))
+        {
+            throw MlxRegException("Value: 0x%x exceeds maximum value for a %d-bit field (max: 0x%x)",
+                                  fieldDataUint,
+                                  fieldSizeUint,
+                                  (1u << fieldSizeUint) - 1);
+        }        
         // extract <address> <offset>
         string fieldLocStr = fieldPropVec[0];
         std::vector<std::string> fieldLocVec = strSplit(fieldLocStr, '.', true);
@@ -439,7 +461,9 @@ void _RegAccessParser_impl<dynamic>::strToUint32(char* str, u_int32_t& uint)
 }
 
 /************************************
- * Function: getFieldWithParents
+ * Function: is_in_path
+ * Description: Checks if partial path matches the end of full path.
+ * For example, "c.d" matches "a.b.c.d" but not "a.b.xc.d"
  ************************************/
 template<bool dynamic>
 bool _RegAccessParser_impl<dynamic>::is_in_path(const string& partial, const string& full)
@@ -454,7 +478,7 @@ bool _RegAccessParser_impl<dynamic>::on_traverse_get_field(const string& calcula
                                                            uint64_t calculated_value,
                                                            AdbInstance* instance,
                                                            void* context)
-    {
+{
     (void)calculated_value;
 
     FieldSearchContext* search_context = (FieldSearchContext*)context;
@@ -467,12 +491,12 @@ bool _RegAccessParser_impl<dynamic>::on_traverse_get_field(const string& calcula
         (requested_size == 0 || requested_size == instance->get_size() ||
          (offset_specified && requested_offset % 32 == calculated_offset % 32))) // TODO: remove the size and offset
                                                                                  // checks after fixing in mlxlink
-        {
+    {
         search_context->instance = instance;
-            return true;
-        }
-            return false;
-        }
+        return true; // found the field, stop the traversal
+    }
+    return false; // continue traversal
+}
 
 /************************************
  * Function: getField

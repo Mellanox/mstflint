@@ -902,6 +902,7 @@ int mtcr_fwctl_driver_mread4(mfile* mf, unsigned int offset, u_int32_t* value)
     else
     {
         FWCTL_DEBUG_PRINT(mf, "fwctl driver doesn't support VSEC access.\n")
+        errno = EOPNOTSUPP;
     }
 
     return rc;
@@ -914,6 +915,7 @@ int mtcr_fwctl_driver_mwrite4(mfile* mf, unsigned int offset, u_int32_t value)
     (void)value;
 
     FWCTL_DEBUG_PRINT(mf, "fwctl driver doesn't support VSEC access.\n")
+    errno = EOPNOTSUPP;
 
     return -1;
 }
@@ -926,6 +928,7 @@ static int fwctl_driver_mread4_block(mfile* mf, unsigned int offset, u_int32_t* 
     (void)length;
 
     FWCTL_DEBUG_PRINT(mf, "fwctl driver doesn't support VSEC access.\n")
+    errno = EOPNOTSUPP;
 
     return -1;
 }
@@ -938,6 +941,7 @@ static int fwctl_driver_mwrite4_block(mfile* mf, unsigned int offset, u_int32_t*
     (void)length;
 
     FWCTL_DEBUG_PRINT(mf, "fwctl driver doesn't support VSEC access.\n")
+    errno = EOPNOTSUPP;
 
     return -1;
 }
@@ -1580,6 +1584,55 @@ void set_fwctl_dev(char* fwctl_dev, u_int16_t domain, u_int8_t bus, u_int8_t dev
 
         if ((d == domain) && (b == bus) && (dv == dev) && (f == func)) {
             snprintf(fwctl_dev, DEV_NAME_SZ, "/dev/fwctl/%s", ent->d_name);
+            break;
+        }
+    }
+
+    closedir(dir);
+}
+
+void open_fwctl_dev(mfile* mf, u_int16_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func)
+{
+    DIR          * dir;
+    struct dirent* ent;
+    char           link_path[PATH_MAX];
+    char           resolved_path[PATH_MAX];
+    unsigned int   d, b, dv, f;
+
+    dir = opendir("/sys/class/fwctl");
+    if (!dir) {
+        return;
+    }
+
+    while ((ent = readdir(dir)) != NULL) {
+        if (ent->d_name[0] == '.') {
+            continue;
+        }
+
+        snprintf(link_path, sizeof(link_path), "/sys/class/fwctl/%s/device", ent->d_name);
+
+        if (!realpath(link_path, resolved_path)) {
+            continue;
+        }
+
+        char* pci_name = basename(resolved_path);
+        if (!pci_name) {
+            continue;
+        }
+
+        if (sscanf(pci_name, "%x:%x:%x.%x", &d, &b, &dv, &f) != 4) {
+            continue;
+        }
+
+        if ((d == domain) && (b == bus) && (dv == dev) && (f == func)) {
+            char fwctl_dev[DEV_NAME_SZ];
+            snprintf(fwctl_dev, DEV_NAME_SZ, "/dev/fwctl/%s", ent->d_name);
+            mf->fwctl_fd = open(fwctl_dev, O_RDWR | O_SYNC);
+            if (mf->fwctl_fd < 0) {
+                closedir(dir);
+                return;
+            }
+            mf->fwctl_env_var_debug = getenv(FWCTL_ENV_VAR_DEBUG);
             break;
         }
     }
@@ -2719,7 +2772,7 @@ static int mtcr_i2c_open(mfile* mf, const char* name)
 
 u_int32_t secured_devices[] = {
   DeviceConnectX7_HwId,          DeviceConnectX8_HwId, DeviceConnectX9_HwId, DeviceConnectX8_Pure_PCIe_Switch_HwId, DeviceQuantum2_HwId, DeviceQuantum3_HwId, DeviceConnectX9_Pure_PCIe_Switch_HwId,
-  DeviceNVLink6_Switch_ASIC_HwId};
+  DeviceNVLink6_Switch_HwId};
 
 #define SECURED_DEVICE_ID_TABLE_SIZE (sizeof(secured_devices) / sizeof(u_int32_t))
 
@@ -2752,7 +2805,7 @@ u_int32_t supported_device_ids[] = {DeviceConnectX3_HwId,
                                     DeviceQuantum_HwId,
                                     DeviceQuantum2_HwId,
                                     DeviceQuantum3_HwId,
-                                    DeviceNVLink6_Switch_ASIC_HwId,
+                                    DeviceNVLink6_Switch_HwId,
                                     DeviceArdbeg_HwId,
                                     DeviceBaritone_HwId,
                                     DeviceMenhit_HwId,
@@ -3172,7 +3225,10 @@ static long supported_dev_ids[] = {0x1003, /* Connect-X3 */
                                    0xa2d2, /* MT416842 Family BlueField integrated ConnectX-5 network controller */
                                    0xa2d6, /* MT42822 Family BlueField2 integrated ConnectX-6DX network controller */
                                    0xa2dc, /* MT43244 Family BlueField3 integrated ConnectX-7 network controller */
-                                   0xa2de, /* BF4 Family BlueField4 integrated ConnectX-8 network controller */
+                                   0xa2dd, // BF4 Family BlueField4 Crypto Enabled
+                                   0xa2de, // BF4 Family BlueField4 Crypto Disabled
+                                   0xa2df, // BF4 Family BlueField4 Network Controller
+                                   0xc2d6, // BF4 Family BlueField4 Management Interface
                                    0xcf70, /* Spectrum3 */
                                    0xcf80, /* Spectrum4 */
                                    0xcf82, /* Spectrum5 */
@@ -3184,6 +3240,7 @@ static long supported_dev_ids[] = {0x1003, /* Connect-X3 */
                                    0x2900, /* GB100 */
                                    0x3000, /* GR100 */
                                    0xd2f4, /* Sunbird */
+                                   0xd2f8, /* NVLink6_Switch */
                                    -1};
 
 static long live_fish_id_database[] = {0x191, 0x246, 0x249, 0x24b, 0x24d, 0x24e, 0x1F6, 0x1F8, 0x1FF, 0x247, 0x209, 0x20b, 0x20d, 0x20f, 0x211, 0x214, /* BlueField2 */
@@ -3929,6 +3986,7 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
         return NULL;
     }
     memset(mf, 0, sizeof(mfile));
+    mf->fwctl_fd = -1;
     mf->ul_ctx = malloc(sizeof(ul_ctx_t));
     if (!(mf->ul_ctx))
     {
@@ -3951,6 +4009,7 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
     mf->mpci_change = mpci_change_ul;
     dev_type = mtcr_parse_name(name, &force, &domain, &bus, &dev, &func);
 
+    int return_mf = 1;
     switch (dev_type)
     {
         case MST_DRIVER_CR:
@@ -3960,7 +4019,6 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
             {
                 goto open_failed;
             }
-            return mf;
             break;
 
         case MST_FWCTL_CONTROL_DRIVER:
@@ -3969,7 +4027,6 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
             {
                 goto open_failed;
             }
-            return mf;
             break;
 
         case MST_NVML:
@@ -3979,7 +4036,6 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
                 DBG_PRINTF("Failed to open GPU mst driver device");
                 goto open_failed;
             }
-            return mf;
             break;
 
 #ifdef ENABLE_VFIO
@@ -3989,7 +4045,6 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
             {
                 goto open_failed;
             }
-            return mf;
             break;
 #endif
 
@@ -4001,12 +4056,25 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
                 DBG_PRINTF("Failed to open I2C device: %s\n", name);
                 goto open_failed;
             }
-            return mf;
 #endif
 
         default:
+            return_mf = 0;
             break;
     }
+
+    if (return_mf)
+    {
+#ifdef CABLES_SUPPORT
+        if (!is_cable_device(name))
+        {
+            return mf;
+        }
+#else
+        return mf;
+#endif
+    }
+
     if (dev_type == MST_ERROR)
     {
         goto open_failed;
@@ -4271,7 +4339,11 @@ int init_dev_info_ul(mfile* mf, const char* dev_name, unsigned domain, unsigned 
             mf->dinfo->pci.net_devs[cnt] = NULL;
         }
     }
-
+    if (mf->dinfo && is_bluefield4_pci_device(mf->dinfo->pci.dev_id))
+    {
+        mf->pci_device_id = DeviceBlueField4_HwId;
+    }
+    
 cleanup:
     mdevices_info_destroy_ul(devs, devs_len);
     return ret;
@@ -4343,10 +4415,17 @@ int mclose_ul(mfile* mf)
                 close(ctx->res_fdlock);
             }
             free(ctx);
+            ctx = NULL;
+        }
+        if (mf->fwctl_fd > 0)
+        {
+            close(mf->fwctl_fd);
+            mf->fwctl_fd = -1;
         }
         if (mf->dev_name)
         {
             free(mf->dev_name);
+            mf->dev_name = NULL;   
         }
         if (mf->user_page_list.page_amount)
         {
@@ -4602,10 +4681,11 @@ int maccess_reg_ul(mfile* mf, u_int16_t reg_id, maccess_reg_method_t reg_method,
     }
 #endif
 
-    if (mf->tp == MST_FWCTL_CONTROL_DRIVER)
+    if (mf->tp == MST_FWCTL_CONTROL_DRIVER || (mf->fwctl_fd > 0))
     {
         int method = (reg_method == MACCESS_REG_METHOD_GET) ? FWCTL_METHOD_READ : FWCTL_METHOD_WRITE;
-        rc = fwctl_control_access_register(mf->fd, reg_data, reg_size, reg_id, method, reg_status, mf);
+        int fd = (mf->fwctl_fd > 0) ? mf->fwctl_fd : mf->fd;
+        rc = fwctl_control_access_register(fd, reg_data, reg_size, reg_id, method, reg_status, mf);
         return (*reg_status) ? *reg_status : rc;
     }
 
@@ -5239,7 +5319,7 @@ static int check_zf_through_memory(mfile* mf)
     switch (mf->device_hw_id)
     {
         case DeviceQuantum3_HwId:
-        case DeviceNVLink6_Switch_ASIC_HwId:
+        case DeviceNVLink6_Switch_HwId:
             gis_address = 0x152080;
             break;
 
@@ -5296,7 +5376,7 @@ int is_zombiefish_device(mfile* mf)
         return 0;
     }
     if ((mf->device_hw_id != DeviceConnectX8_HwId) && (mf->device_hw_id != DeviceConnectX8_Pure_PCIe_Switch_HwId) && (mf->device_hw_id != DeviceQuantum3_HwId) &&
-        (mf->device_hw_id != DeviceNVLink6_Switch_ASIC_HwId) && (mf->device_hw_id != DeviceConnectX9_HwId) && (mf->device_hw_id != DeviceNVLink6_Switch_ASIC_HwId) &&
+        (mf->device_hw_id != DeviceNVLink6_Switch_HwId) && (mf->device_hw_id != DeviceConnectX9_HwId) &&
         (mf->device_hw_id != DeviceConnectX7_HwId) && (mf->device_hw_id != DeviceBlueField3_HwId) && (mf->device_hw_id != DeviceConnectX9_Pure_PCIe_Switch_HwId) &&
         (mf->hw_dev_id != DeviceSpectrum6_HwId))
     {
@@ -5348,6 +5428,13 @@ int read_device_id(mfile* mf, u_int32_t* device_id)
         rc = 4;
     }
 
+    // For Bluefield4 device, the HW device ID is 0x224, but need to check the PCI device ID
+    if (mf->dinfo && is_bluefield4_pci_device(mf->dinfo->pci.dev_id))
+    {
+        // Use the HW device ID for JSON
+        mf->pci_device_id = DeviceBlueField4_HwId;
+    }
+    
     mf->hw_dev_id = (*device_id & 0xffff);
     DBG_PRINTF("MTCR:read_device_id: mf->hw_dev_id:0x%x\n", mf->hw_dev_id);
     return rc;

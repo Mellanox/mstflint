@@ -184,7 +184,7 @@ void MlxlinkEyeOpener::initWarMsgs()
 
 bool MlxlinkEyeOpener::isActiveGenSupported()
 {
-    sendPrmReg(ACCESS_REG_MPEIN, GET, "depth=%d,pcie_index=%d,node=%d", depth, pcieIndex, node);
+    sendPrmReg(ACCESS_REG_MPEIN, REG_GET, "depth=%d,pcie_index=%d,node=%d", depth, pcieIndex, node);
 
     return (getFieldValue("link_speed_active") >= GEN3);
 }
@@ -214,7 +214,7 @@ void MlxlinkEyeOpener::enableSlredGradeScan(u_int32_t lane, u_int32_t eye)
         fields += ",last_scan=1";
     }
 
-    sendPrmReg(ACCESS_REG_SLRED, SET, "en=%d,%s", 1, fields.c_str());
+    sendPrmReg(ACCESS_REG_SLRED, REG_SET, "en=%d,%s", 1, fields.c_str());
 }
 
 void MlxlinkEyeOpener::slredStopSignalHandler()
@@ -222,7 +222,7 @@ void MlxlinkEyeOpener::slredStopSignalHandler()
     if (mft_signal_is_fired())
     {
         string fields = prepareSlred(0, 0);
-        sendPrmReg(ACCESS_REG_SLRED, SET, "abort=%d,%s", 1, fields.c_str());
+        sendPrmReg(ACCESS_REG_SLRED, REG_SET, "abort=%d,%s", 1, fields.c_str());
 
         printf("\n\n");
         exit(1);
@@ -232,7 +232,7 @@ void MlxlinkEyeOpener::slredStopSignalHandler()
 void MlxlinkEyeOpener::getSlredMargin(u_int32_t iteration, u_int32_t lane, u_int32_t eye)
 {
     string fields = prepareSlred(lane, eye);
-    sendPrmReg(ACCESS_REG_SLRED, SET, fields.c_str());
+    sendPrmReg(ACCESS_REG_SLRED, REG_SET, fields.c_str());
     // put all margins in one vector for later calculations
     _measuredMargins.push_back(MarginInfo(lane, (_pnat != PNAT_PCIE && isPam4Speed) ? eye : 0, getFieldValue("margin"),
                                           getFieldValue("status"), getFieldValue("margin_version"), iteration));
@@ -242,7 +242,7 @@ void MlxlinkEyeOpener::getSlredMargin(u_int32_t iteration, u_int32_t lane, u_int
 u_int32_t MlxlinkEyeOpener::getSlredStatus(u_int32_t lane, u_int32_t eye)
 {
     string fields = prepareSlred(lane, eye);
-    sendPrmReg(ACCESS_REG_SLRED, GET, fields.c_str());
+    sendPrmReg(ACCESS_REG_SLRED, REG_GET, fields.c_str());
 
     return getFieldValue("status");
 }
@@ -250,7 +250,7 @@ u_int32_t MlxlinkEyeOpener::getSlredStatus(u_int32_t lane, u_int32_t eye)
 string MlxlinkEyeOpener::getSlredLaneSpeedStr(u_int32_t lane, u_int32_t eye)
 {
     string fields = prepareSlred(lane, eye);
-    sendPrmReg(ACCESS_REG_SLRED, GET, fields.c_str());
+    sendPrmReg(ACCESS_REG_SLRED, REG_GET, fields.c_str());
 
     return _laneSpeedMap[getFieldValue("lane_speed")];
 }
@@ -505,7 +505,7 @@ void MlxlinkEyeOpener::printMarginsSummary()
     }
     fprintf(MlxlinkRecord::stdOut, "\n");
     string finalMarginValue =
-      (finalMargin.value == 0 && finalMargin.version == 0) ? "N/A" : to_string(finalMargin.value);
+      (finalMargin.value == 0 && finalMargin.version == 0) ? NA_FIELD_VALUE : to_string(finalMargin.value);
     printField("Final margin", finalMarginValue);
 }
 

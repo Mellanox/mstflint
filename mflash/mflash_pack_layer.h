@@ -108,6 +108,7 @@ typedef void* trm_ctx;
 #define SPECTRUM3_HW_ID     0x250
 #define QUANTUM2_HW_ID      0x257
 #define QUANTUM3_HW_ID      0x25b
+#define NVLINK6_SWITCH_HW_ID 0x278
 #define SPECTRUM4_HW_ID     0x254
 #define SPECTRUM5_HW_ID     0x270
 #define SPECTRUM6_HW_ID     0x274
@@ -144,6 +145,7 @@ typedef void* trm_ctx;
 #define IS_BLUEFEILD4(dev_id)              ((dev_id) == BLUEFIELD4_HW_ID)
 #define IS_QUANTUM2(dev_id)                ((dev_id) == QUANTUM2_HW_ID)
 #define IS_QUANTUM3(dev_id)                ((dev_id) == QUANTUM3_HW_ID)
+#define IS_NVLINK6_SWITCH(dev_id)          ((dev_id) == NVLINK6_SWITCH_HW_ID)
 #define IS_SPECTRUM4(dev_id)               ((dev_id) == SPECTRUM4_HW_ID)
 #define IS_SPECTRUM5(dev_id)               ((dev_id) == SPECTRUM5_HW_ID)
 #define IS_SPECTRUM6(dev_id)               ((dev_id) == SPECTRUM6_HW_ID)
@@ -250,6 +252,7 @@ struct mflash {
 
     int curr_bank;
     int is_locked;
+    int unlock_blocked;
     int flash_prog_locked;
     int unlock_flash_prog_allowed;
     /* if writer_lock is set, semaphore should be freed only in mf_close()/disable_hw_access() */
@@ -337,7 +340,7 @@ enum CntxCrConstants {
     HCR_NEW_GW_CACHE_REPLACEMNT_EN_ADDR = 0xf0480,
     HCR_NEW_GW_GCM_EN_ADDR              = 0xf0440,
     /* 7th gen flash GW registers addresses */
-    // QTM3/QTM4:
+    // QTM3/NVLINK6:
     HCR_7GEN_QTM3_FLASH_GW_BASE_ADDR = 0x101000,
     HCR_7GEN_QTM3_FLASH_CMD          = HCR_7GEN_QTM3_FLASH_GW_BASE_ADDR,
     HCR_7GEN_QTM3_FLASH_DATA         = 0x101010,

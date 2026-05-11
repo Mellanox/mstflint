@@ -35,11 +35,14 @@
 #include "fw_version.h"
 #include "fs_comps_ops.h"
 #include "mft_utils/mft_utils.h"
+#include <compatibility.h>
+#include <reg_access/reg_access.h>
+#include "reg_access/mcam_capabilities.h"
+#include <tools_layouts/tools_open_layouts.h>
 #include "mlxdpa/certcontainerimp.h"
 
 #include <tools_utils.h>
 #include <bit_slice.h>
-#include "reg_access/mcam_capabilities.h"
 
 #include <vector>
 
@@ -326,14 +329,14 @@ bool FsCtrlOperations::FsIntQuery()
         extractFwVersion(_fwImgInfo.ext_info.roms_info.rom_info[i].exp_rom_ver, fwQuery.roms[i].version);
     }
 
-    strncpy(_fsCtrlImgInfo.name, fwQuery.name, NAME_LEN);
-    strncpy(_fsCtrlImgInfo.description, fwQuery.description, DESCRIPTION_LEN);
-    (strncpy(_fsCtrlImgInfo.deviceVsd, fwQuery.deviceVsd, sizeof(_fsCtrlImgInfo.deviceVsd)));
+    snprintf(_fsCtrlImgInfo.name, sizeof(_fsCtrlImgInfo.name), "%s", fwQuery.name);
+    snprintf(_fsCtrlImgInfo.description, sizeof(_fsCtrlImgInfo.description), "%s", fwQuery.description);
+    snprintf(_fsCtrlImgInfo.deviceVsd, sizeof(_fsCtrlImgInfo.deviceVsd), "%s", fwQuery.deviceVsd);
     if (FwType() == FIT_FS3)
     {
         memcpy(_fwImgInfo.ext_info.vsd, fwQuery.deviceVsd, VSD_LEN);
     }
-    (strncpy(_fsCtrlImgInfo.image_vsd, fwQuery.imageVsd, sizeof(_fsCtrlImgInfo.image_vsd)));
+    snprintf(_fsCtrlImgInfo.image_vsd, sizeof(_fsCtrlImgInfo.image_vsd), "%s", fwQuery.imageVsd);
 
     bool mpir_reg_supported = false;
     rc = isRegisterValidAccordingToMcamReg(mf, REG_ID_MPIR, &mpir_reg_supported);
@@ -910,7 +913,7 @@ bool FsCtrlOperations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams&
 bool FsCtrlOperations::isMultiAsicSystemComponent()
 {
     if (_hwDevId == QUANTUM3_HW_ID || _hwDevId == CX8_HW_ID || _hwDevId == CX8_PURE_PCIE_SWITCH_HW_ID || _hwDevId == CX9_HW_ID || _hwDevId == CX9_PURE_PCIE_SWITCH_HW_ID ||
-        _hwDevId == NVLINK6_SWITCH_ASIC_HW_ID)
+        _hwDevId == NVLINK6_SWITCH_HW_ID)
     {
         return true;
     }
@@ -1582,4 +1585,80 @@ bool FsCtrlOperations::getBFBComponentsVersions(std::map<std::string, std::strin
     DPRINTF(("Got NIC FW version: %s\n", name_to_version["BF3_NIC_FW"].c_str()));
 
     return true;
+}
+
+bool FsCtrlOperations::IsCRDTDebugSessionActive()
+{
+    return _fwCompsAccess->IsCRDTDebugSessionActive();
+}
+
+psid_utils::MinorPsidLockStatus FsCtrlOperations::queryMinorPsidLockStatus()
+{
+    constexpr uint32_t NV_MINOR_PSID_LOCK_TLV_TYPE = 0x210;
+    constexpr size_t NV_MINOR_PSID_LOCK_DATA_SIZE = 20;
+    constexpr size_t NV_MINOR_PSID_LOCK_PSID_OFFSET = 4;
+    static_assert(NV_MINOR_PSID_LOCK_DATA_SIZE >= NV_MINOR_PSID_LOCK_PSID_OFFSET + psid_utils::PSID_MAX_LEN,
+                  "NV_MINOR_PSID_LOCK_TLV data buffer too small to hold lock-bit dword + PSID");
+
+    psid_utils::MinorPsidLockStatus status;
+
+    mfile* mf = getMfileObj();
+    if (mf == nullptr)
+    {
+        DPRINTF(("queryMinorPsidLockStatus: mfile is null\n"));
+        return status;
+    }
+
+    struct reg_access_hca_mnvqc_reg_ext mnvqcTlv;
+    memset(&mnvqcTlv, 0, sizeof(mnvqcTlv));
+    mnvqcTlv.type = NV_MINOR_PSID_LOCK_TLV_TYPE;
+    DPRINTF(("queryMinorPsidLockStatus: read MNVQC type=0x%x\n", mnvqcTlv.type));
+
+    reg_access_status_t rc = reg_access_mnvqc(mf, REG_ACCESS_METHOD_GET, &mnvqcTlv);
+    if (rc != ME_OK)
+    {
+        DPRINTF(("queryMinorPsidLockStatus: MNVQC failed rc=%d type=0x%x\n", rc, mnvqcTlv.type));
+        return status;
+    }
+
+    status.featureSupported = mnvqcTlv.support_rd;
+    DPRINTF(("queryMinorPsidLockStatus: MNVQC ok support_rd=%d support_wr=%d ver=0x%x\n", mnvqcTlv.support_rd ? 1 : 0,
+             mnvqcTlv.support_wr ? 1 : 0, mnvqcTlv.version));
+    if (!status.featureSupported)
+    {
+        DPRINTF((
+          "queryMinorPsidLockStatus: minor PSID lock TLV not readable, PSID major-minor split feature not supported\n"));
+        return status;
+    }
+
+    struct tools_open_mnvda mnvdaTlv;
+    memset(&mnvdaTlv, 0, sizeof(mnvdaTlv));
+    mnvdaTlv.nv_hdr.length = NV_MINOR_PSID_LOCK_DATA_SIZE;
+    mnvdaTlv.nv_hdr.type.tlv_type_dw.tlv_type_dw = NV_MINOR_PSID_LOCK_TLV_TYPE;
+    DPRINTF(("queryMinorPsidLockStatus: read MNVDA type=0x%x len=%u\n", mnvdaTlv.nv_hdr.type.tlv_type_dw.tlv_type_dw,
+             mnvdaTlv.nv_hdr.length));
+
+    rc = reg_access_mnvda(mf, REG_ACCESS_METHOD_GET, &mnvdaTlv);
+    if (rc != ME_OK)
+    {
+        DPRINTF(("queryMinorPsidLockStatus: MNVDA failed rc=%d type=0x%x len=%u\n", rc,
+                 mnvdaTlv.nv_hdr.type.tlv_type_dw.tlv_type_dw, mnvdaTlv.nv_hdr.length));
+        status.featureSupported = false;
+        return status;
+    }
+
+    u_int32_t firstDword;
+    BYTES_TO_DWORD_BE(&firstDword, mnvdaTlv.data);
+    status.isLocked = EXTRACT(firstDword, 31, 1);
+    DPRINTF(("queryMinorPsidLockStatus: MNVDA ok dword=0x%08x lock=%u\n", firstDword, status.isLocked ? 1 : 0));
+
+    if (status.isLocked)
+    {
+        memcpy(status.lockedPsid, &mnvdaTlv.data[NV_MINOR_PSID_LOCK_PSID_OFFSET], psid_utils::PSID_MAX_LEN);
+        status.lockedPsid[psid_utils::PSID_MAX_LEN] = '\0';
+    }
+
+    DPRINTF(("queryMinorPsidLockStatus: result supported=%d locked=%d psid=%s\n", status.featureSupported ? 1 : 0,
+             status.isLocked ? 1 : 0, status.isLocked ? status.lockedPsid : "<none>"));
+    return status;
 }

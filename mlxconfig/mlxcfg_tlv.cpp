@@ -184,7 +184,7 @@ TLVConf::TLVConf(int columnsCount, char** dataRow, char** headerRow) :
     _isReadOnly = false;
 }
 
-int TLVConf::getMaxPort(mfile* mf)
+int TLVConf::getMaxPort(mfile* mf, bool forceMaxPort)
 {
     static int maxPort = 0;
     if (maxPort == 0)
@@ -193,13 +193,13 @@ int TLVConf::getMaxPort(mfile* mf)
         struct reg_access_hca_mgir_ext mgir;
         memset(&mgir, 0, sizeof(mgir));
         rc = reg_access_mgir(mf, REG_ACCESS_METHOD_GET, &mgir);
-        if (rc == ME_OK)
+        if (rc != ME_OK || forceMaxPort)
         {
-            maxPort = mgir.hw_info.num_ports;
+            maxPort = 8;
         }
         else
         {
-            maxPort = 8;
+            maxPort = mgir.hw_info.num_ports;
         }
     }
     return maxPort;
@@ -324,6 +324,10 @@ bool TLVConf::isFWSupported(mfile* mf, bool isWriteOperation)
         }
         if (!suppRead)
         {
+            if (mlxcfg_is_debug_enabled())
+            {
+                printf("Warning: TLV '%s' is not supported for read operation.\n", _name.c_str());
+            }
             return false;
         }
 
@@ -602,29 +606,6 @@ std::vector<std::shared_ptr<Param>>* TLVConf::getParams(QueryType qt)
     {
         throw MlxcfgException("Invalid query type");
     }
-}
-
-void TLVConf::parseParamValue(string paramMlxconfigName,
-                              string valToParse,
-                              u_int32_t& val,
-                              string& strVal,
-                              u_int32_t index,
-                              QueryType qt)
-{
-    std::shared_ptr<Param> p = NULL;
-    p = findParamByMlxconfigName(paramMlxconfigName, qt);
-
-    // not sure we should reach below code
-    if (!p)
-    {
-        p = findParamByMlxconfigName(getConfigNameWithSuffixByInterval(paramMlxconfigName, index), qt);
-    }
-
-    if (!p)
-    {
-        throw MlxcfgException("Unknown Parameter %s", paramMlxconfigName.c_str());
-    }
-    p->_value->parseValue(valToParse, val, strVal);
 }
 
 vector<pair<ParamView, string>> TLVConf::query(mfile* mf, QueryType qT)

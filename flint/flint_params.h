@@ -63,6 +63,7 @@ typedef enum
     SC_Smg,
     SC_Set_Vpd,
     SC_Set_Cert_Chain,
+    SC_Set_Cpo_Calibration_Data,
     SC_Sv,
     SC_Ri,
     SC_Dc,

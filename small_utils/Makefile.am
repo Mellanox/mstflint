@@ -112,6 +112,7 @@ bin_PROGRAMS += mstmget_temp
 mstmget_temp_SOURCES = mget_temp.c mget_temp.h
 mstmget_temp_DEPENDENCIES = $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
                			 $(top_builddir)/dev_mgt/libdev_mgt.la \
- 	                     $(top_builddir)/reg_access/libreg_access.la
+ 	                     $(top_builddir)/reg_access/libreg_access.la \
+ 	                     $(top_builddir)/tools_layouts/libtools_layouts.la
 mstmget_temp_LDADD = $(mstmget_temp_DEPENDENCIES) ${LDL}
 mstmget_temp_LDFLAGS = -static

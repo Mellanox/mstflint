@@ -36,6 +36,9 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <unordered_map>
+#include "common/tools_string.h"
+#include "mft_utils/mft_utils.h"
 #include "mlxfwops/lib/mlxfwops_com.h"
 #include "mlxfwops/lib/fw_ops.h"
 #include "mlxconfig/mlxcfg_utils.h"
@@ -57,6 +60,8 @@
 #define INDENT2 INDENT INDENT
 #define INDENT3 "\t\t"
 
+using nbu::mft::common::string_format;
+
 const string MlxTknGenerator::DEVICE_FLAG = "device";
 const char   MlxTknGenerator::DEVICE_FLAG_SHORT = 'd';
 const string MlxTknGenerator::HELP_FLAG = "help";
@@ -71,6 +76,7 @@ const string MlxTknGenerator::NESTED_TOKEN_FLAG = "nested_token";
 const char   MlxTknGenerator::NESTED_TOKEN_FLAG_SHORT = 'n';
 const string MlxTknGenerator::DEBUG_FW_FILE_FLAG = "debug_fw";
 const char   MlxTknGenerator::DEBUG_FW_FILE_FLAG_SHORT = 'f';
+const string MlxTknGenerator::DEBUG_FW_DIR_FLAG = "debug_fw_dir";
 const string MlxTknGenerator::NESTED_DEBUG_FW_FILE_FLAG = "nested_debug_fw";
 const char   MlxTknGenerator::NESTED_DEBUG_FW_FILE_FLAG_SHORT = 'e';
 const string MlxTknGenerator::OUTPUT_FILE_FLAG = "output_file";
@@ -165,7 +171,8 @@ u_int64_t FlipDWords(u_int64_t num)
 
 const map < string, MlxTknGenerator::MlxTknGeneratorCmd > MlxTknGenerator::_cmdStringToEnum = {
     {"generate_token", GenerateToken},
-    {"aggregate_tokens", AggregateTokens}
+    {"aggregate_tokens", AggregateTokens},
+    {"auto_generate_tokens", AutoGenerateTokens}
 };
 
 MlxTknGenerator::MlxTknGenerator() :
@@ -177,6 +184,7 @@ MlxTknGenerator::MlxTknGenerator() :
     _isNestedToken(false),
     _outputFile(),
     _tokensDir(),
+    _debugFwDir(),
     _command(Unknown),
     _i2cSecondaryAddr(0)
 {
@@ -189,24 +197,8 @@ MlxTknGenerator::~MlxTknGenerator()
 
 string MlxTknGenerator::GetDebugFwVersion(string filePath)
 {
-    char          errBuff[1024];
-    fw_info_t     fwQueryResult;
-    string        fwVersion;
-    FwOperations* ops =
-        FwOperations::FwOperationsCreate((void*)filePath.c_str(), nullptr, nullptr, FHT_FW_FILE, errBuff, 1024);
-
-    if (ops == nullptr) {
-        throw MlxTknGeneratorException("Failed to open the image.");
-    }
-    if (!ops->FwQuery(&fwQueryResult, false, false)) {
-        throw MlxTknGeneratorException("Failed to query the image.");
-    }
-
-    FwVersion image_version = FwOperations::createFwVersion(&fwQueryResult.fw_info);
-
-    fwVersion = image_version.get_primary_version("%x%x%04x", false);
-
-    return fwVersion;
+    DebugFwFileData debugFwFileData = GetDebugFwFileData(filePath);
+    return debugFwFileData.debugFwVersion;
 }
 
 vector < TLVParamsData >
@@ -433,14 +425,14 @@ vector < TLVParamsData > MlxTknGenerator::GetTokenDataFromChallenge(mfile * mf,
 }
 
 vector < TLVParamsData >
-MlxTknGenerator::GetDataForToken(MlxCfgTokenType tokenType, Device_Type deviceType, bool isNestedToken)
+MlxTknGenerator::GetDataForToken(string device, MlxCfgTokenType tokenType, Device_Type deviceType, bool isNestedToken)
 {
 #ifdef ENABLE_MST_DEV_I2C
     if (_i2cSecondaryAddr != -1) {
         set_force_i2c_address(_i2cSecondaryAddr);
     }
 #endif
-    mfile* mf = mopen_adv(_device.c_str(), (MType)(MST_DEFAULT | MST_CABLE));
+    mfile* mf = mopen_adv(device.c_str(), (MType)(MST_DEFAULT | MST_CABLE));
 
     if (mf == NULL) {
         throw MlxTknGeneratorException("Failed to open the device.");
@@ -449,7 +441,7 @@ MlxTknGenerator::GetDataForToken(MlxCfgTokenType tokenType, Device_Type deviceTy
 
     vector < TLVParamsData > tlvsConfsData;
     if ((tokenType == McTokenTypeCS) || (tokenType == McTokenTypeDBG)) {
-        tlvsConfsData = GetTokenDataFromQuery(_device, tokenType, deviceType);
+        tlvsConfsData = GetTokenDataFromQuery(device, tokenType, deviceType);
     } else {
         tlvsConfsData = GetTokenDataFromChallenge(mf, tokenType, isNestedToken);
     }
@@ -545,6 +537,106 @@ vector < TLVParamsData > MlxTknGenerator::GetDataForToken(MlxCfgTokenType tokenT
     return tlvsConfsData;
 }
 
+void MlxTknGenerator::AutoGenerateTokensXML()
+{
+    MLX_TOKEN_DPRINTF(("%s.\n", __FUNCTION__));
+    std::unordered_map<string, string> debugFwPsidToVersion;
+    unordered_map<string, vector<string>> tokensPerPsid;
+    vector<pair<string, string>> fileNamesAndContents;
+    string errors;
+
+    if (_tokenType == McTokenTypeCRDT)
+    {
+        vector<string> debugFwFiles;
+        if (_debugFwFile.empty())
+        {
+            debugFwFiles = mft_utils::GetListOfFiles(_debugFwDir);
+        }
+        else
+        {
+            debugFwFiles.push_back(_debugFwFile);
+        }
+        for (const auto& debugFwFile : debugFwFiles)
+        {
+            DebugFwFileData debugFwFileData = GetDebugFwFileData(debugFwFile);
+            const string& psid = debugFwFileData.psid;
+            if (!debugFwPsidToVersion.emplace(psid, debugFwFileData.debugFwVersion).second)
+            {
+                throw MlxTknGeneratorException(string_format("PSID %s appears in more than one debug fw file (duplicate file: %s)", 
+                    psid.c_str(), debugFwFile.c_str()).c_str());
+            }
+        }
+    }
+
+    int len = 0;
+    dev_info* devs = mdevices_info(MDEVS_TAVOR_CR, &len);
+    for (int i = 0; i < len; i++)
+    {
+        string debugFwVersion;
+        mfile* mf = mopen(devs[i].dev_name);
+        try
+        {
+            if (mf == NULL)
+            {
+                throw MlxTknGeneratorException("Failed to open the device.");
+            }
+            struct reg_access_switch_mtcq_reg_ext challenge = MlxCfgToken(mf).GetChallengeFromSwitchOrHCA(_tokenType);
+            if (_tokenType == McTokenTypeCRDT)
+            {
+                string psid = DWordToAscii(challenge.psid[0]) + DWordToAscii(challenge.psid[1]) +
+                              DWordToAscii(challenge.psid[2]) + DWordToAscii(challenge.psid[3]);
+                if (debugFwPsidToVersion.find(psid) == debugFwPsidToVersion.end())
+                {
+                    throw MlxTknGeneratorException(string_format("Debug fw version not found for psid: %s", psid.c_str()).c_str());
+                }
+                debugFwVersion = debugFwPsidToVersion[psid];
+            }
+
+            vector<TLVParamsData> tlvsConfsData = GetChallengeBasedTokenData(challenge, _tokenType, debugFwVersion);
+            shared_ptr<MlxToken> token = MlxTokenFactory::CreateToken(_tokenType, _deviceType);
+            token->LoadFromParams(tlvsConfsData);
+
+            string xmlToken = token->ToXML();
+            string psid = token->GetPSID();
+            tokensPerPsid[psid].push_back(xmlToken);
+        }
+        catch (const exception& e)
+        {
+            errors += string_format("Error for device: %s, error: %s.\n", devs[i].dev_name, e.what());
+        }
+        if (mf)
+        {
+            mclose(mf);
+        }
+    }
+    mdevices_info_destroy(devs, len);
+
+    for (const auto& tokenPerPsid : tokensPerPsid)
+    {
+        const string& psidKey = tokenPerPsid.first;
+        const vector<string>& xmls = tokenPerPsid.second;
+        try
+        {
+            MLX_TOKEN_DPRINTF(("aggregating %zu tokens for PSID %s\n", xmls.size(), psidKey.c_str()));
+            const vector<string> aggregatedTokens = AggregateLegacyTokenXmlStrings(xmls, true);
+            string safePsid = GetSafePsid(psidKey);
+            for (size_t i = 0; i < aggregatedTokens.size(); i++)
+            {
+                const string entryName = string_format("%s_%d.xml", safePsid.c_str(), i);
+                fileNamesAndContents.push_back(make_pair(entryName, aggregatedTokens[i]));
+            }
+        }
+        catch (const exception& e)
+        {
+            errors += string_format("Error aggregating tokens for PSID %s: %s.\n", psidKey.c_str(), e.what());
+        }
+    }
+
+    fileNamesAndContents.push_back(make_pair("errors.txt", errors));
+
+    mft_utils::WriteNamedFilesToDirectory(_outputFile, fileNamesAndContents);
+}
+
 void MlxTknGenerator::GenerateTokenXML()
 {
     MLX_TOKEN_DPRINTF(("%s.\n", __FUNCTION__));
@@ -559,7 +651,7 @@ void MlxTknGenerator::GenerateTokenXML()
         if (!_blobFile.empty()) {
             tlvsConfsData = GetDataForToken(_tokenType, _blobFile);
         } else {
-            tlvsConfsData = GetDataForToken(_tokenType, _deviceType, _isNestedToken);
+            tlvsConfsData = GetDataForToken(_device, _tokenType, _deviceType, _isNestedToken);
 
             if (_isNestedToken) {
                 vector < TLVParamsData > tlvsConfsDataNested;
@@ -585,6 +677,38 @@ void MlxTknGenerator::GenerateTokenXML()
     }
 }
 
+vector<string> MlxTknGenerator::AggregateLegacyTokenXmlStrings(const vector<string>& xmlStrings, bool isMultiAggregate)
+{
+    vector<string> chunks;
+    if (!xmlStrings.empty())
+    {
+        shared_ptr<MlxToken> current = MlxTokenFactory::CreateToken(_tokenType, _deviceType);
+        shared_ptr<MlxToken> other = MlxTokenFactory::CreateToken(_tokenType, _deviceType);
+
+        current->LoadFromXMLFile(xmlStrings[0]);
+        for (size_t i = 1; i < xmlStrings.size(); i++)
+        {
+            try
+            {
+                other->LoadFromXMLFile(xmlStrings[i]);
+                current->Aggregate(*other);
+            }
+            catch (MlxTknGeneratorException& e)
+            {
+                if (e._errCode != MlxTknGeneratorErrorCode::AggregatedTokenFull || !isMultiAggregate)
+                {
+                    throw;
+                }
+                chunks.push_back(current->ToXML());
+                current = MlxTokenFactory::CreateToken(_tokenType, _deviceType);
+                current->LoadFromXMLFile(xmlStrings[i]);
+            }
+        }
+        chunks.push_back(current->ToXML());
+    }
+    return chunks;
+}
+
 void MlxTknGenerator::AggregateTokensXML()
 {
     MLX_TOKEN_DPRINTF(("%s.\n", __FUNCTION__));
@@ -596,11 +720,16 @@ void MlxTknGenerator::AggregateTokensXML()
         throw MlxTknGeneratorException("Given tokens directory is empty.");
     }
 
-    token->LoadFromXMLFile(tokensXML.back());
+    vector<u_int8_t> binData = ReadFromFile(tokensXML.back());
+    string xmlContent(binData.begin(), binData.end());
+    token->LoadFromXMLFile(xmlContent);
     tokensXML.pop_back();
 
-    for (auto file : tokensXML) {
-        tokenForAggregation->LoadFromXMLFile(file);
+    for (auto file : tokensXML)
+    {
+        binData = ReadFromFile(file);
+        xmlContent = string(binData.begin(), binData.end());
+        tokenForAggregation->LoadFromXMLFile(xmlContent);
         token->Aggregate(*tokenForAggregation);
     }
 
@@ -626,6 +755,7 @@ void MlxTknGenerator::PrintHelp()
     printFlagLine(OUTPUT_FILE_FLAG, OUTPUT_FILE_FLAG_SHORT, "Path", "Path to output file");
     printFlagLine(TOKENS_DIR_FLAG, TOKENS_DIR_FLAG_SHORT, "Path", "Path to a directory of tokens for aggregation");
     printFlagLine(DEBUG_FW_FILE_FLAG, DEBUG_FW_FILE_FLAG_SHORT, "Path", "Path to debug fw file");
+    printFlagLine(DEBUG_FW_DIR_FLAG, '\0', "Path", "Path to debug fw directory");
     printFlagLine(
         NESTED_DEBUG_FW_FILE_FLAG, NESTED_DEBUG_FW_FILE_FLAG_SHORT, "Path", "Path to debug fw file for nested device");
     printFlagLine(CHALLENGE_BLOB_FLAG,
@@ -662,6 +792,7 @@ void MlxTknGenerator::InitCmdParser()
     AddOptions(OUTPUT_FILE_FLAG, OUTPUT_FILE_FLAG_SHORT, "Path", "Path to output file");
     AddOptions(TOKENS_DIR_FLAG, TOKENS_DIR_FLAG_SHORT, "Path", "Path to a directory of tokens for aggregation");
     AddOptions(DEBUG_FW_FILE_FLAG, DEBUG_FW_FILE_FLAG_SHORT, "Path", "Path to debug fw file");
+    AddOptions(DEBUG_FW_DIR_FLAG, '\0', "Path", "Path to debug fw directory");
     AddOptions(
         NESTED_DEBUG_FW_FILE_FLAG, NESTED_DEBUG_FW_FILE_FLAG_SHORT, "Path", "Path to debug fw file for nested device");
     AddOptions(CHALLENGE_BLOB_FLAG,
@@ -703,6 +834,9 @@ ParseStatus MlxTknGenerator::HandleOption(string name, string value)
         return PARSE_OK;
     } else if (name == DEBUG_FW_FILE_FLAG) {
         _debugFwFile = value;
+        return PARSE_OK;
+    } else if (name == DEBUG_FW_DIR_FLAG) {
+        _debugFwDir = value;
         return PARSE_OK;
     } else if (name == NESTED_DEBUG_FW_FILE_FLAG) {
         _debugFwNestedFile = value;
@@ -776,7 +910,27 @@ void MlxTknGenerator::ValidateDeviceType(mfile* mf, Device_Type deviceType)
 
 void MlxTknGenerator::ParamValidate()
 {
-    if (_command == GenerateToken) {
+    if (_command == AutoGenerateTokens)
+    {
+        if (_tokenType != McTokenTypeCRCS && _tokenType != McTokenTypeCRDT)
+        {
+            throw MlxTknGeneratorException("Token type must be CRCS or CRDT to auto generate tokens.");
+        }
+        if (_tokenType == McTokenTypeCRDT && (_debugFwDir.empty() && _debugFwFile.empty()))
+        {
+            throw MlxTknGeneratorException("Debug fw directory path or file must be specified to generate CRDT token.");
+        }
+        if (_deviceType == LinkX)
+        {
+            throw MlxTknGeneratorException("Auto generation of tokens is not supported for LinkX devices.");
+        }
+        if (_outputFile.empty())
+        {
+            throw MlxTknGeneratorException("Output file path must be specified to auto generate tokens.");
+        }
+    }
+    else if (_command == GenerateToken)
+    {
         if (_blobFile.empty() && _device.empty()) {
             throw MlxTknGeneratorException("A device or blob file must be specified to generate a token.");
         } else if (!_blobFile.empty() && !_device.empty()) {
@@ -803,7 +957,9 @@ void MlxTknGenerator::ParamValidate()
             throw MlxTknGeneratorException("%s token is unsupported for HCA devices.",
                                            MlxCfgToken::getTokenString(_tokenType).c_str());
         }
-    } else if (_command == AggregateTokens) {
+    } 
+    else if (_command == AggregateTokens)
+    {
         if (_tokensDir.empty()) {
             throw MlxTknGeneratorException("A directory of tokens for aggregation must be specified.");
         }
@@ -820,7 +976,9 @@ void MlxTknGenerator::ParamValidate()
             throw MlxTknGeneratorException("Aggregation is not supported for %s token on given device.",
                                            MlxCfgToken::getTokenString(_tokenType).c_str());
         }
-    } else if (_command == Unknown) {
+    } 
+    else if (_command == Unknown) 
+    {
         throw MlxTknGeneratorException("Please specify a command.");
     }
 }
@@ -853,15 +1011,17 @@ void MlxTknGenerator::Run(int argc, char** argv)
         return;
     }
 
-    switch (_command) {
+    switch (_command)
+    {
     case GenerateToken:
         GenerateTokenXML();
         break;
-
     case AggregateTokens:
         AggregateTokensXML();
         break;
-
+    case AutoGenerateTokens:
+        AutoGenerateTokensXML();
+        break;
     default:
         throw MlxTknGeneratorException("Unknown command code. %d", _command);
     }

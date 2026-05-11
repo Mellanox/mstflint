@@ -566,29 +566,33 @@ int mvpd_get_vpd_size(mfile* mf, int* size)
         return INTERNAL_PARAMS_ERROR;
     }
 
-    if (dm_dev_is_hca(dev_type) == true)
+    if (dm_dev_is_hca(dev_type) != true)
     {
-        for (mvpd_len = 0; mvpd_len < VPD_MAX_SIZE; mvpd_len += len)
-        {
-            res = my_vpd_read(mf, NULL, 0, buff, mvpd_len, 4);
-            if (res != MVPD_OK)
-            {
-                return res;
-            }
-            len = VPD_TAG_HEAD(buff) + VPD_TAG_LENGTH(buff);
-            if (VPD_TAG_NAME(buff) == VPD_TAG_END)
-            {
-                mvpd_len += len; // Ensure the final length includes the end tag
-                break;
-            }
-            if (VPD_TAG_NAME(buff) != VPD_TAG_ID && VPD_TAG_NAME(buff) != VPD_TAG_R && VPD_TAG_NAME(buff) != VPD_TAG_W)
-            {
-                syslog(3, "LIBMVPD: Unknown TAG %x in offset: %x !", VPD_TAG_NAME(buff), mvpd_len);
-                return MVPD_FORMAT_ERR;
-            }
-        }
-        *size = mvpd_len;
+        syslog(3, "LIBMVPD: Device is not an HCA, VPD size detection not supported.");
+        return MVPD_FORMAT_ERR;
     }
+
+    for (mvpd_len = 0; mvpd_len < VPD_MAX_SIZE; mvpd_len += len)
+    {
+        res = my_vpd_read(mf, NULL, 0, buff, mvpd_len, 4);
+        if (res != MVPD_OK)
+        {
+            return res;
+        }
+        len = VPD_TAG_HEAD(buff) + VPD_TAG_LENGTH(buff);
+        if (VPD_TAG_NAME(buff) == VPD_TAG_END)
+        {
+            mvpd_len += len; // Ensure the final length includes the end tag
+            break;
+        }
+        if (VPD_TAG_NAME(buff) != VPD_TAG_ID && VPD_TAG_NAME(buff) != VPD_TAG_R && VPD_TAG_NAME(buff) != VPD_TAG_W)
+        {
+            syslog(3, "LIBMVPD: Unknown TAG %x in offset: %x !", VPD_TAG_NAME(buff), mvpd_len);
+            return MVPD_FORMAT_ERR;
+        }
+    }
+
+    *size = mvpd_len;
 
     return 0;
 }

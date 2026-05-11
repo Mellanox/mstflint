@@ -52,6 +52,7 @@ try:
     import time
     import signal
     import abc
+    import json
     import mtcr
     import regaccess
     import tools_version
@@ -131,8 +132,9 @@ MLNX_DEVICES = [
     dict(name="Quantum-2", devid=0x257, status_config_not_done=(0x100010, 0)),
     dict(name="Quantum-3", devid=0x25b, status_config_not_done=(0x200010, 0)),
     dict(name="Quantum-3-RMA", devid=0x25c, status_config_not_done=(0x200010, 0)),
-    dict(name="NVLink6-Switch-ASIC", devid=0x278, status_config_not_done=(0x200010, 0)),
-    dict(name="Quantum-4-RMA", devid=0x279, status_config_not_done=(0x200010, 0)),
+    dict(name="NVLink6_Switch", devid=0x278, status_config_not_done=(0x200010, 0)),
+    dict(name="NVLink6_Switch-RMA", devid=0x279, status_config_not_done=(0x200010, 0)),
+    dict(name="NVLink7_Switch", devid=0x27c, status_config_not_done=(0x200010, 0)),
     dict(name="Spectrum", devid=0x249, status_config_not_done=(0x80010, 0)),
     dict(name="Spectrum-2", devid=0x24E, status_config_not_done=(0x100010, 0)),
     dict(name="Spectrum-3", devid=0x250, status_config_not_done=(0x100010, 0)),
@@ -169,6 +171,10 @@ MLXCONFIG = "mlxconfig"
 if IS_MSTFLINT:
     MLXCONFIG = "mstconfig"
 
+FLINT = "flint"
+if IS_MSTFLINT:
+    FLINT = "mstflint"
+
 PROG = 'mlxfwreset'
 if IS_MSTFLINT:
     PROG = 'mstfwreset'
@@ -178,7 +184,8 @@ TOOL_VERSION = "1.0.0"
 DESCRIPTION = textwrap.dedent('''\
 %s : The tool provides the following functionality in order to load new firmware:
     1. Query the device for the supported reset-level and reset-type
-    2. Perform reset operation on the device
+    2. Status: Query pending FW version and NVCONFIG changes to determine the required reset
+    3. Perform reset operation on the device
 ''' % PROG)
 # Adresses    [Base    offset  length]
 DEVID_ADDR = [0xf0014, 0, 16]
@@ -220,8 +227,7 @@ is_bluefield = False
 logger = None
 device_global = None
 
-pciModuleName = "mst_ppc_pci_reset.ko"
-pathToPciModuleDir = "/etc/mft/mlxfwreset"
+pciModuleName = "mst_ppc_pci_reset"
 
 SUPPORTED_DEVICES_WITH_SWITCHES = [
     "15b3", "10ee", "1af4"]  # 1af4 for Red Hat (virtio)
@@ -1067,22 +1073,6 @@ def isSwitchDevice(device):
         return True
     return False
 
-######################################################################
-# Description: Get All PCI Module Paths
-# OS Support : Linux
-######################################################################
-
-
-def getAllPciModulePaths():
-    global pciModuleName
-    global pathToPciModuleDir
-    paths = []
-    for f in os.listdir(pathToPciModuleDir):
-        if os.path.isdir(os.path.join(pathToPciModuleDir, f)):
-            p = os.path.join(pathToPciModuleDir, f, pciModuleName)
-            if os.path.isfile(p):
-                paths.append(p)
-    return paths
 
 ######################################################################
 # Description: Get PCI Module Path
@@ -1092,17 +1082,12 @@ def getAllPciModulePaths():
 
 def getPciModulePath():
     global pciModuleName
-    global pathToPciModuleDir
-    cmd = "uname -r"
-    (rc, unameOutput, _) = cmdExec(cmd)
+    get_ko_path_cmd = "modinfo -n %s" % pciModuleName
+    (rc, out, err) = cmdExec(get_ko_path_cmd)
     if rc != 0:
-        return (False, getAllPciModulePaths())
-    pathToModule = os.path.join(
-        pathToPciModuleDir, unameOutput.strip(), pciModuleName)
-    if os.path.isfile(pathToModule):
-        return (True, pathToModule)
-    else:
-        return (False, getAllPciModulePaths())
+        return (False, "Failed to locate %s path using 'modinfo -n %s', output: %s, error: %s"
+                % (pciModuleName, pciModuleName, out, err))
+    return (True, out.strip())
 
 ######################################################################
 # Description: Run PPC Pci Reset Module
@@ -1429,6 +1414,9 @@ def resetPciAddr(device, devicesSD, driverObj, cmdLineArgs):
                 else:
                     print(
                         "\n-W- DLL link is not active (PCI device {0})".format(root_pci_device.dbdf))
+
+        # According to PCI spec: Software must wait at least 100 ms after link training completes before sending configuration requests (Issue 4835753)
+        time.sleep(0.1)
 
         # Wait for FW (Iron) - Read devid
         MAX_WAIT_TIME = 2  # sec
@@ -2004,7 +1992,7 @@ def arm_reset(reset_level, reset_type, reset_sync, mrsi, mfrl):
             status = send_mrsi(mrsi)
 
 
-def post_reset_flow(driverObj, device, driverStat):
+def post_reset_flow(driverObj, device, driverStat, mst_restart_required=True):
     try:
         wait_for_fw_ready(device)
 
@@ -2021,7 +2009,8 @@ def post_reset_flow(driverObj, device, driverStat):
     logger.debug('UpdateUptimeAfterReset')
     FWResetStatusChecker.UpdateUptimeAfterReset()
 
-    CloseAndMstRestart()
+    if mst_restart_required:
+        CloseAndMstRestart()
 
 
 def hotResetflow(device, reset_level, reset_type, reset_sync, pci_reset_request_method, mfrl):
@@ -2045,7 +2034,7 @@ def hotResetflow(device, reset_level, reset_type, reset_sync, pci_reset_request_
     global drivers_safety_check_manager
     HotResetFlow.hot_reset(mfrl, DevDBDF, devicesSD, drivers_safety_check_manager, MstDevObj, RegAccessObj, logger)
 
-    post_reset_flow(driverObj, device, driverStat)
+    post_reset_flow(driverObj, device, driverStat, mst_restart_required=False)
     logger.debug('Hot reset flow completed successfully')
 
 ######################################################################
@@ -2088,12 +2077,14 @@ def execResLvl(device, reset_level, reset_type, reset_sync, pci_reset_request_me
 def map2DevPathAux(mstOutput, device):
     for l in mstOutput.split('\n'):
         lineList = l.split()
-        if device in lineList:
-            if len(lineList) > 2:
-                d = lineList[1]
-                if d == "NA":
-                    d = lineList[2]
-                return d
+        for field in lineList:
+            devices = field.split(',')  # When the RDMA device name contains a comma, for example: "mlx5_0,smi0".
+            if device in devices:
+                if len(lineList) > 2:
+                    d = lineList[1]
+                    if d == "NA":
+                        d = lineList[2]
+                    return d
     return None
 
 ######################################################################
@@ -2134,6 +2125,234 @@ def validate_args_for_unsupported_mroq(args):
         raise RuntimeError("sync: {0} is not supported. Check query for more info".format(args.reset_sync))
     if args.request_method is ResetReqMethod.HOT_RESET:
         raise RuntimeError("method: {0} is not supported. Check query for more info".format(ResetReqMethod.HOT_RESET))
+
+######################################################################
+# Description: Query pending FW version using flint
+######################################################################
+
+
+def status_pending_fw(device):
+    """
+    Query flint for the pending FW version.
+    Returns a dict with 'pending_fw_version' (str or None) and
+    'running_fw_version' (str or None).
+    If 'FW Version(Running)' exists in flint output, the 'FW Version'
+    field is the pending (image) version.
+    """
+    cmd = "%s -d %s q" % (FLINT, device)
+    (rc, stdout, stderr) = cmdExec(cmd)
+    if rc:
+        raise RuntimeError("Failed to query FW version using %s: %s" % (FLINT, stderr.strip()))
+
+    fw_version = None
+    running_fw_version = None
+
+    for line in stdout.strip().split('\n'):
+        line = line.strip()
+        if line.startswith("FW Version(Running):"):
+            running_fw_version = line.split(":", 1)[1].strip()
+        elif line.startswith("FW Version:"):
+            fw_version = line.split(":", 1)[1].strip()
+
+    if fw_version is None:
+        raise RuntimeError("Failed to determine the FW version")
+
+    # 'FW Version(Running)' appears in flint output whenever there is a pending image in flash,
+    # even if the version strings are identical (e.g. same version re-burned).
+    # When it is absent, FW is up to date and fw_version is the running version.
+    if running_fw_version is None:
+        running_fw_version = fw_version
+        pending_fw_version = None
+    else:
+        pending_fw_version = fw_version
+
+    return {
+        'fw_version': fw_version,
+        'running_fw_version': running_fw_version,
+        'pending_fw_version': pending_fw_version,
+    }
+
+
+######################################################################
+# Description: Query pending NVCONFIG parameters using mlxconfig
+######################################################################
+
+
+def status_pending_nvconfig(device):
+    """
+    Query mlxconfig for pending NVCONFIG parameter changes using JSON output.
+    Returns a list of dicts with param name, default, current, next_boot values
+    where current_value != next_value (i.e. a reboot-pending change).
+    """
+    json_file = "/tmp/mlxconfig_query_%d.json" % os.getpid()
+    cmd = "%s -d %s -j %s -e query" % (MLXCONFIG, device, json_file)
+    (rc, stdout, stderr) = cmdExec(cmd)
+    if rc:
+        raise RuntimeError("Failed to query NVCONFIG using %s: %s" % (MLXCONFIG, stderr.strip()))
+
+    try:
+        with open(json_file, 'r') as f:
+            data = json.load(f)
+    except Exception as e:
+        raise RuntimeError("Failed to parse mlxconfig JSON output from %s: %s" % (json_file, str(e)))
+    finally:
+        try:
+            os.remove(json_file)
+        except Exception:
+            pass
+
+    pending_params = []
+    for key, device_entry in data.items():
+        if not isinstance(device_entry, dict):
+            continue
+        tlv_config = device_entry.get("tlv_configuration", {})
+        if not isinstance(tlv_config, dict):
+            continue
+        for param_name, param_data in tlv_config.items():
+            if not isinstance(param_data, dict):
+                continue
+            current = str(param_data.get("current_value", ""))
+            next_boot = str(param_data.get("next_value", ""))
+            default = str(param_data.get("default_value", ""))
+            if current != next_boot:
+                pending_params.append({
+                    'name': param_name,
+                    'default': default,
+                    'current': current,
+                    'next_boot': next_boot,
+                })
+
+    return pending_params
+
+
+######################################################################
+# Description: Determine required reset type based on pending changes
+######################################################################
+
+
+def determine_required_reset(has_pending_fw, has_pending_nvconfig, mfrl, is_any_sync_supported, sync_2_only_supported):
+    """
+    Determine the required reset type based on pending FW and NVCONFIG changes.
+    Uses mfrl.default_reset_level() (same logic as 'query') to suggest the
+    minimal supported reset level, correctly accounting for sync availability.
+    Returns a dict with 'reset_needed' (bool), 'reset_type' (str), and 'reason' (list of str).
+    """
+    reasons = []
+    if has_pending_fw:
+        reasons.append("Pending FW update")
+    if has_pending_nvconfig:
+        reasons.append("Pending NVCONFIG parameter change")
+
+    if not reasons:
+        return {
+            'reset_needed': False,
+            'reset_type': "No reset required",
+            'reasons': [],
+        }
+
+    skip_pci_reset = is_any_sync_supported is None
+    try:
+        default_level = mfrl.default_reset_level(is_any_sync_supported, skip_pci_reset, sync_2_only_supported)
+        reset_type_str = "%s (Level %d)" % (CmdRegMfrl.reset_level_description(default_level), default_level)
+    except CmdNotSupported:
+        reset_type_str = "Full power cycle"
+
+    return {
+        'reset_needed': True,
+        'reset_type': reset_type_str,
+        'reasons': reasons,
+    }
+
+
+######################################################################
+# Description: Execute the "status" command
+######################################################################
+
+
+def status_command(device, mfrl, is_any_sync_supported, sync_2_only_supported, devid=None, mroq=None, is_pcie_switch=False, tool_owner_support=True, json_output=False):
+    """
+    Execute the 'status' command.
+    Queries pending FW version and pending NVCONFIG params, determines
+    what type of reset is required, and prints the result.
+    """
+    pci_rescan_required = mfrl.is_pci_rescan_required()
+
+    fw_info = status_pending_fw(device)
+
+    nvconfig_params = status_pending_nvconfig(device)
+
+    has_pending_fw = fw_info['pending_fw_version'] is not None
+    has_pending_nvconfig = len(nvconfig_params) > 0
+    reset_info = determine_required_reset(has_pending_fw, has_pending_nvconfig, mfrl, is_any_sync_supported, sync_2_only_supported)
+
+    if pci_rescan_required:
+        description_action = "PCI rescan is required"
+        command_required = "Reboot external host is required"
+        # command_required = "echo 1 > /sys/bus/pci/rescan" // Missing FW implementation.
+        reset_info['reset_needed'] = True
+        reset_info['reasons'].append("PCI rescan is required")
+    elif reset_info['reset_needed']:
+        description_action = reset_info['reset_type']
+        skip_pci_reset = is_any_sync_supported is None
+        try:
+            default_level = mfrl.default_reset_level(is_any_sync_supported, skip_pci_reset, sync_2_only_supported)
+            default_type = mfrl.default_reset_type()
+            if default_level == CmdRegMfrl.PCI_RESET:
+                default_sync = get_default_reset_sync(devid, default_level, mroq, is_pcie_switch, tool_owner_support)
+                if mroq is not None and mroq.mroq_is_supported():
+                    default_method = mroq.get_default_method(is_pcie_switch, tool_owner_support)
+                else:
+                    default_method = ResetReqMethod.LINK_DISABLE
+                command_required = "mlxfwreset -d %s reset --level %d --type %d --sync %d --method %d" % (
+                    device, default_level, default_type, default_sync, default_method)
+            else:
+                command_required = "mlxfwreset -d %s reset --level %d --type %d" % (
+                    device, default_level, default_type)
+        except CmdNotSupported:
+            raise RuntimeError("Failed to determine the reset parameters")
+    else:
+        description_action = "No action required"
+        command_required = None
+
+    if json_output:
+        result = {
+            'device': device,
+            'pending_fw_version': fw_info['pending_fw_version'] if fw_info['pending_fw_version'] is not None else "N/A (FW is up to date)",
+            'running_fw_version': fw_info['running_fw_version'] if fw_info['running_fw_version'] is not None else "N/A",
+            'pending_nvconfig_parameters': nvconfig_params if nvconfig_params else "N/A (No pending NVCONFIG parameters)",
+            'reset_needed': reset_info['reset_needed'],
+            'description_action': description_action,
+        }
+        if command_required is not None:
+            result['command_required'] = command_required if command_required is not None else "N/A (No command required)"
+        result['reasons'] = reset_info['reasons']
+        print(json.dumps(result, indent=2))
+    else:
+        print("Status for device: %s\n" % device)
+
+        if has_pending_fw:
+            print("Pending FW version : %s" % fw_info['pending_fw_version'])
+            print("Running FW version : %s" % fw_info['running_fw_version'])
+        else:
+            print("Pending FW version : N/A (FW is up to date)")
+            print("Running FW version : %s" % (fw_info['running_fw_version'] or "N/A"))
+
+        if has_pending_nvconfig:
+            print("\nPending NVCONFIG parameters:")
+            print("    %-40s %-12s %-12s %-12s" % ("Name", "Default", "Current", "Next Boot"))
+            for param in nvconfig_params:
+                print("    %-40s %-12s %-12s %-12s" % (
+                    param['name'], param['default'],
+                    param['current'], param['next_boot']))
+        else:
+            print("\nPending NVCONFIG parameters: N/A (No pending NVCONFIG parameters)")
+
+        print("\nDescription action : %s" % description_action)
+        if command_required:
+            print("Command required : %s" % command_required)
+        if reset_info['reasons']:
+            print("Reasons : %s" % ", ".join(reset_info['reasons']))
+
 
 ######################################################################
 # Description: provide host/nic reset flow
@@ -2296,6 +2515,15 @@ def reset_flow_host(device, args, command):
         if mcam.is_mrsi_supported():
             print(mrsi.query_text(is_bluefield))
 
+    elif command == "status":
+        if mroq.mroq_is_supported():
+            is_any_sync_supported = mroq.is_any_sync_supported(tool_owner_support)
+        else:
+            is_any_sync_supported = None
+        status_command(device, mfrl, is_any_sync_supported, sync_2_only_supported,
+                       devid=devid, mroq=mroq, is_pcie_switch=is_pcie_switch, tool_owner_support=tool_owner_support,
+                       json_output=args.json_output)
+
     elif command == "reset":
         if mroq.mroq_is_supported():
             is_any_sync_supported = mroq.is_any_sync_supported(tool_owner_support)
@@ -2305,13 +2533,17 @@ def reset_flow_host(device, args, command):
             skip_pci_reset = True
         reset_level = mfrl.default_reset_level(is_any_sync_supported, skip_pci_reset, sync_2_only_supported) if args.reset_level is None else args.reset_level
 
+        if mfrl.is_reset_type_supported(reset_type) is False:  # reset level and method's support is determined by the reset type, therfore we first need to check for reset type support
+            raise RuntimeError(
+                "Reset-type '{0}' is not supported in the current state of this device".format(reset_type))
+
         if reset_level != CmdRegMfrl.PCI_RESET and args.reset_sync is not None:
             print("-I- reset sync argument is ignored when reset level is not PCI_RESET")
 
         if reset_level is CmdRegMfrl.PCI_RESET:
             if mroq.mroq_is_supported():
                 is_any_sync_supported = mroq.is_any_sync_supported(True)  # update is_any_sync_supported with tool_owner_support=True since in reset we do not limit sync 0 for BF in linux (for debugging purposes)
-                
+
             if args.reset_sync is None:
                 reset_sync = get_default_reset_sync(devid, reset_level, mroq, is_pcie_switch, tool_owner_support)
             else:
@@ -2351,10 +2583,6 @@ def reset_flow_host(device, args, command):
         if reset_level is CmdRegMfrl.PCI_RESET and is_any_sync_supported is False:
             raise RuntimeError(
                 "Reset-level '{0}' is not supported in the current state of this device".format(reset_level))
-
-        if mfrl.is_reset_type_supported(reset_type) is False:
-            raise RuntimeError(
-                "Reset-type '{0}' is not supported in the current state of this device".format(reset_type))
 
         if args.reset_type and mfrl.is_reset_level_support_reset_type(reset_level) is False:
             raise RuntimeError(
@@ -2472,6 +2700,9 @@ def reset_flow_switch(device, args, command):
 
     if command == "query":
         raise RuntimeError("query is not supported for switch devices")
+
+    elif command == "status":
+        raise RuntimeError("status is not supported for switch devices")
 
     elif command == "reset":
         AskUser("Continue with reset", args.yes)
@@ -2655,13 +2886,19 @@ def main():
                                default=1.25,
                                help=argparse.SUPPRESS)
 
+    options_group.add_argument('--json',
+                               dest='json_output',
+                               help=':  Print output in JSON format (relevant for "status")',
+                               action="store_true")
+
     # command arguments
     command_group = parser.add_argument_group('Commands')
     command_group.add_argument('command',
                                nargs=1,
                                choices=["q", "query", "r",
-                                        "reset", "reset_fsm_register"],
-                               help=':  query: Query reset Level.\n reset: Execute reset.\n reset_fsm_register: Reset the fsm register.')
+                                        "reset", "reset_fsm_register",
+                                        "s", "status"],
+                               help=':  query: Query reset Level.\n status: Query pending FW and NVCONFIG changes.\n reset: Execute reset.\n reset_fsm_register: Reset the fsm register.')
     args = parser.parse_args()
 
     device = args.device
@@ -2674,6 +2911,8 @@ def main():
         command = "reset"
     elif command in ["q", "query"]:
         command = "query"
+    elif command in ["s", "status"]:
+        command = "status"
     elif command in ["reset_fsm_register"]:
         command = "reset_fsm_register"
 
@@ -2683,6 +2922,9 @@ def main():
     # Combine ignore lists from both --ignore_list and --ignore_file
     args.ignore_list = list(set(args.ignore_list + args.ignore_file))
     logger.debug("Ignore drivers: {0}".format(args.ignore_list))
+
+    if "fwctl" in device:
+        raise RuntimeError("mlxfwreset is not supported for fwctl devices")
 
     # Insert Flow here
     if isSwitchDevice(device):

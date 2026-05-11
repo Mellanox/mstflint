@@ -33,7 +33,11 @@
 #pragma once
 
 #include "reg_access/reg_access.h"
+#ifdef __cplusplus
 #include <cstring>
+#else
+#include <string.h>
+#endif
 
 #define MCAM_REG_GROUPS_AMOUNT 4
 
@@ -53,18 +57,27 @@ typedef enum
     MCAM_CAP_MAX // for validation
 } mcam_capability_t;
 
-// Helper function to validate capability range
-bool is_valid_mcam_capability(mcam_capability_t cap);
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
-// Helper function to check if a capability is supported according to MCAM register
-reg_access_status_t isCapabilitySupportedAccordingToMcamReg(mfile* mf,
-                                                            mcam_capability_t capability_number,
-                                                            bool dword_swap_needed,
-                                                            bool* is_capability_supported);
+    // Helper function to validate capability range
+    bool is_valid_mcam_capability(mcam_capability_t cap);
 
-// Helper function to get the right group index of a register - the registers are grouped into 4 groups in
-// MCAM.mng_access_reg_cap_mask
-reg_access_status_t getIndexOfRegGroup(unsigned int reg_id, int* idx);
+    // Helper function to check if a capability is supported according to MCAM register
+    reg_access_status_t isCapabilitySupportedAccordingToMcamReg(mfile* mf,
+                                                                mcam_capability_t capability_number,
+                                                                bool dword_swap_needed,
+                                                                bool* is_capability_supported);
 
-// Helper function to check if a register is supported according to MCAM register
-reg_access_status_t isRegisterValidAccordingToMcamReg(mfile* mf, unsigned int reg_id, bool* is_reg_valid);
+    // Helper function to get the right group index of a register - the registers are grouped into 4 groups in
+    // MCAM.mng_access_reg_cap_mask
+    reg_access_status_t getIndexOfRegGroup(unsigned int reg_id, int* idx);
+
+    // Helper function to check if a register is supported according to MCAM register
+    reg_access_status_t isRegisterValidAccordingToMcamReg(mfile* mf, unsigned int reg_id, bool* is_reg_valid);
+
+#ifdef __cplusplus
+}
+#endif

@@ -53,7 +53,7 @@ bool MlxlinkErrInjCommander::getUserConfirm(const string& msg)
 
 u_int16_t MlxlinkErrInjCommander::getMixerOffset(u_int32_t id)
 {
-    sendPrmReg(ACCESS_REG_PREI, GET);
+    sendPrmReg(ACCESS_REG_PREI, REG_GET);
 
     return getFieldValue("mixer_offset" + to_string(id));
 }
@@ -73,7 +73,7 @@ void MlxlinkErrInjCommander::setMixersOffset()
         mixer1 = (u_int16_t)_mixerOffset1;
     }
 
-    sendPrmReg(ACCESS_REG_PREI, SET, "mixer_offset0=%d,mixer_offset1=%d", mixer0, mixer1);
+    sendPrmReg(ACCESS_REG_PREI, REG_SET, "mixer_offset0=%d,mixer_offset1=%d", mixer0, mixer1);
 }
 
 void MlxlinkErrInjCommander::updateMixerOffsets()
@@ -118,7 +118,7 @@ string MlxlinkErrInjCommander::getPcieErrInjStatus(u_int32_t errorType)
 
 void MlxlinkErrInjCommander::showPcieErrInjState(const DPN& dpn)
 {
-    sendPrmReg(ACCESS_REG_MPEINJ, GET, "depth=%d,pcie_index=%d,node=%d,error_type=%d", dpn.depth, dpn.pcieIndex,
+    sendPrmReg(ACCESS_REG_MPEINJ, REG_GET, "depth=%d,pcie_index=%d,node=%d,error_type=%d", dpn.depth, dpn.pcieIndex,
                dpn.node, PCIE_ERR_TYPE_BAD_DLLP_LCRC);
 
     u_int32_t errType = getFieldValue("error_type");
@@ -346,7 +346,7 @@ void MlxlinkErrInjCommander::startPcieErrInj(const DPN& dpn,
 
     if (getUserConfirm("PCIe error injection might cause a PCIe bus failures or a system hang"))
     {
-        sendPrmReg(ACCESS_REG_MPEINJ, GET, "depth=%d,pcie_index=%d,node=%d", dpn.depth, dpn.pcieIndex, dpn.node);
+        sendPrmReg(ACCESS_REG_MPEINJ, REG_GET, "depth=%d,pcie_index=%d,node=%d", dpn.depth, dpn.pcieIndex, dpn.node);
         if (getFieldValue("error_type") && req.errorType != 0)
         {
             throw MlxRegException("There is a PCIe error injection process in progress!");
@@ -355,7 +355,7 @@ void MlxlinkErrInjCommander::startPcieErrInj(const DPN& dpn,
         {
             try
             {
-                sendPrmReg(ACCESS_REG_MPEINJ, SET,
+                sendPrmReg(ACCESS_REG_MPEINJ, REG_SET,
                            "depth=%d,pcie_index=%d,node=%d,error_type=%d,error_duration=%d,start_delay=%d,dest_bdf=%d,"
                            "error_params_0=%d,error_params_1=%d,error_params_2=%d,error_params_3=%d",
                            dpn.depth, dpn.pcieIndex, dpn.node, req.errorType, req.errorDuration, req.injectionDelay,

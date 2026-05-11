@@ -548,6 +548,15 @@ public:
     FlintStatus executeCommand();
 };
 
+class SetCpoCalibrationDataSubCommand : public SubCommand
+{
+private:
+public:
+    SetCpoCalibrationDataSubCommand();
+    ~SetCpoCalibrationDataSubCommand() {}
+    FlintStatus executeCommand();
+};
+
 class SetVpdSubCommand : public SubCommand
 {
 public:

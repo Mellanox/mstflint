@@ -1,6 +1,6 @@
 %{!?ibmadlib: %define ibmadlib libibmad-devel}
 %{!?name: %define name mstflint}
-%{!?version: %define version 4.35.0}
+%{!?version: %define version 4.36.0}
 %{!?release: %define release 1}
 %{!?buildtype: %define buildtype "native"}
 %{!?noinband: %define noinband 0}
@@ -142,6 +142,10 @@ MSTFLINT_VERSION_STR="%{name} %{version}-%{release}"
 
 %if %{buildtype} == "arm64"
     config_flags="$config_flags --host arm"
+%endif
+
+%if %{buildtype} == "s390x"
+    config_flags="$config_flags --host=s390x-linux-gnu"
 %endif
 
 %configure ${config_flags} MSTFLINT_VERSION_STR="${MSTFLINT_VERSION_STR}"

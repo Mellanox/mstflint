@@ -54,6 +54,8 @@
 #endif
 #define MAX_DEVFN 256
 #define BUF_MAX 4096
+#define MAX_NET_DEVS_DISPLAY 5
+#define MAX_PCI_INFO_LENGTH 16384
 
 #ifdef __FreeBSD__
 mfile* mopen_ul(const char* name)
@@ -261,31 +263,17 @@ int get_rdma_bond_dev(char* map_rdma, int map_rdma_size, char* net_dev_secondary
     }
     return 0;
 }
-int print_rdma_bond_dev(char* net_dev_secondary, char* net_dev_primary)
-{
-    char map_rdma[BUF_MAX];
-
-    if (get_rdma_bond_dev(map_rdma, sizeof(map_rdma), net_dev_secondary, net_dev_primary))
-    {
-        /* output the missing rdma_bond_device */
-        printf("%-16s", map_rdma);
-        return 1;
-    }
-    printf("%-16s", " ");
-    /* no secondary dev found */
-    return 0;
-}
 
 // Calculate the NET string length for a single device
 int calculate_net_string_length(dev_info* dev)
 {
-    int i;
     int length = 1;
 
     if (dev->pci.net_devs)
     {
         char map_eth[BUF_MAX];
-        for (i = 0; dev->pci.net_devs[i]; i++)
+        int i;
+        for (i = 0; dev->pci.net_devs[i] && i < MAX_NET_DEVS_DISPLAY; i++)
         {
             char* net_dev = map_eth_bond_name(dev->pci.net_devs[i], map_eth, sizeof(map_eth));
             if (net_dev == NULL)
@@ -293,7 +281,7 @@ int calculate_net_string_length(dev_info* dev)
                 net_dev = dev->pci.net_devs[i];
             }
             length += strlen("net-") + strlen(net_dev);
-            if (dev->pci.net_devs[i + 1])
+            if (dev->pci.net_devs[i + 1] && (i + 1) < MAX_NET_DEVS_DISPLAY)
             {
                 length += 1; // for comma
             }
@@ -443,8 +431,8 @@ void find_fwctl_device(dev_info* dev)
 
 void print_pci_info(dev_info* dev, int domain_needed, mfile* mf, int net_width)
 {
-    char dbdf[16384] = {0};
-    char fmt[16384] = {0};
+    char dbdf[MAX_PCI_INFO_LENGTH] = {0};
+    char fmt[MAX_PCI_INFO_LENGTH] = {0};
 
     /* Add PCI info */
     if (domain_needed)
@@ -459,15 +447,8 @@ void print_pci_info(dev_info* dev, int domain_needed, mfile* mf, int net_width)
     }
 
     int hasIB = fmt_ib_dev(dev, fmt);
-
-    if (hasIB)
-    {
-        printf("%-16s", fmt);
-    }
-    else
-    {
-        printf("%-16s", " ");
-    }
+    // Initialize the net_buf for seperating the net devices from the rdma bond device prints
+    char net_buf[MAX_PCI_INFO_LENGTH] = {0};
 
     /* Add NET devices info */
     if (dev->pci.net_devs)
@@ -476,29 +457,40 @@ void print_pci_info(dev_info* dev, int domain_needed, mfile* mf, int net_width)
         int last = 0;
         char map_eth[BUF_MAX];
         int done = 0;
-        for (j = 0; dev->pci.net_devs[j]; j++)
+        for (j = 0; dev->pci.net_devs[j] && j < MAX_NET_DEVS_DISPLAY; j++)
         {
             char* net_dev = map_eth_bond_name(dev->pci.net_devs[j], map_eth, sizeof(map_eth));
             if (net_dev == NULL)
             {
                 net_dev = dev->pci.net_devs[j];
             }
+            // If there its not IB device, check rdma bond device
             else if (hasIB == 0)
             {
-                hasIB = print_rdma_bond_dev(dev->pci.net_devs[j], net_dev);
+                char map_rdma[BUF_MAX];
+                if (get_rdma_bond_dev(map_rdma, sizeof(map_rdma), dev->pci.net_devs[j], net_dev))
+                {
+                    // If there is a rdma bond device, fill the fmt with the rdma bond device and set the IB device to 1
+                    snprintf(fmt, sizeof(fmt), "%s", map_rdma);
+                    hasIB = 1;
+                }
             }
-            last += snprintf(fmt + last, BUF_MAX, "net-%s", net_dev);
-            if (dev->pci.net_devs[j + 1])
+            last += snprintf(net_buf + last, sizeof(net_buf) - last, "net-%s", net_dev);
+            if (dev->pci.net_devs[j + 1] && (j + 1) < MAX_NET_DEVS_DISPLAY)
             {
-                last += sprintf(fmt + last, ",");
+                last += sprintf(net_buf + last, ",");
             }
         }
     }
     else
     {
-        sprintf(fmt, " ");
+        sprintf(net_buf, " ");
     }
-    printf("%-*s", net_width, fmt);
+
+    // Print the rdma details if it exists, otherwise print a space
+    printf("%-16s", hasIB ? fmt : " ");
+    // Print net devices info
+    printf("%-*s", net_width, net_buf);
 
     /* Add NUMA node */
     printf("%-6s", dev->pci.numa_node);
@@ -506,7 +498,7 @@ void print_pci_info(dev_info* dev, int domain_needed, mfile* mf, int net_width)
     if (CheckifVfioPciDriverIsLoaded())
     {
         char vfio_dev[32];
-        snprintf(vfio_dev, sizeof(vfio_dev), "vfio-%s", dbdf);
+        snprintf(vfio_dev, sizeof(vfio_dev), "vfio-%.26s", dbdf);
         printf("%-18s", vfio_dev);
     }
     else
@@ -760,7 +752,9 @@ int main(int argc, char** argv)
                     continue;
 #endif
                     snprintf(dev_type, 128, "NA");
-                } else {
+                }
+                else
+                {
                     snprintf(dev_type, 128, "%s(rev:%x)", dm_dev_type2str(dev_id), hw_rev);
                 }
                 /* printf("-D- CF: %s, CR: %s\n", devs[i].pci.conf_dev, devs[i].pci.cr_dev); */

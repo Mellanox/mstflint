@@ -89,6 +89,8 @@
      vector<CertContainerItem> GetCertContainer(CertContainerType type);
      CertContainerType ToContainerType(string type);
      void AddPadding(vector<u_int8_t>& bufStream);
+     vector<u_int8_t> CompressElf(vector<u_int8_t>& elfData);
+    u_int32_t DecompressElfSize(vector<u_int8_t>& elfData);
  
      void InitCmdParser();
      void PrintHelp();
@@ -134,6 +136,7 @@
      static const string APP_METADATA_FLAG;
      static const char APP_METADATA_FLAG_SHORT;
      static const string MANIFEST_FLAG;
+     static const string NO_COMPRESSION_FLAG;
  
      const u_int32_t ALIGNMENT = 4;
  
@@ -167,6 +170,7 @@
      string _dpaAppRemovalContainerPath;
      CertContainerType _certContainerType;
      MlxDpaCmd _command;
+     bool _noCompression;
  };
  
  #endif /* MLXDPA_H_ */

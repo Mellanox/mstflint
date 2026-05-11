@@ -81,9 +81,14 @@ string status2Color(u_int32_t status);
 string getLoopbackColor(u_int32_t loopbackMode);
 string getAnDisableColor(u_int32_t anDisable);
 string IBSupportedSpeeds2Str(u_int32_t mask);
+string NVLINKSupportedSpeeds2Str(u_int32_t mask);
 string EthSupportedSpeeds2Str(u_int32_t int_mask);
 string EthExtSupportedSpeeds2Str(u_int32_t int_mask);
-string SupportedSpeeds2Str(u_int32_t proto_active, u_int32_t mask, bool extended = false, bool isXdrSlowActive = false);
+string SupportedSpeeds2Str(u_int32_t proto_active, u_int32_t mask, bool extended = false, bool isModeAsActive = false);
+int ptysSpeedToMaskNVLINK(const string& speed);
+string convertSpeedToNVLINK(const string& speed);
+bool checkNvl6ModeBSpeed(const string& speed);
+bool isNvlinkModeBSpeed(bool isNvl6, u_int32_t linkSpeed);
 string getOui(u_int32_t oui);
 int getBitvalue(u_int32_t mask, int idx);
 string getMaxPowerStr(u_int32_t maxPower);
@@ -107,6 +112,7 @@ bool checkPrbsCmd(const string& prbsCmd);
 bool checkTestMode(const string& testMode);
 bool checkPhyRecoveryCmd(const string& phyRecoveryCmd);
 bool checkLinkTrainingCmd(const string& linkTrainingCmd);
+bool checkConstantRoleCmd(const string& constantRole);
 string FEC2Str(const string& fecShort, const string& speedStrG);
 string speedToFecSpeedStr(const string& speed, u_int32_t numOfLanes);
 PAOS_CMD paos_to_int(const string& cmd);
@@ -134,6 +140,7 @@ double mw_to_dbm(double x);
 string floatToStr(float num, int resolution = -1);
 int readSigned(u_int32_t value, u_int32_t fieldSize);
 int readSignedByte(u_int32_t value);
+uint64_t unsignedToSigned(uint32_t rawValue, uint8_t width);
 void setPrintTitle(MlxlinkCmdPrint& mlxlinkCmdPrint, string title, u_int32_t size, bool print = true);
 void setPrintVal(MlxlinkCmdPrint& mlxlinkCmdPrint,
                  string key,
@@ -160,6 +167,10 @@ int getBDFInt(const string& bdfStr);
 size_t LevStrMatch(const string& s1, const string& s2);
 string getStrByValue(u_int32_t flags, map<u_int32_t, string> map);
 string getStrByMask(u_int32_t bitmask, map<u_int32_t, string> maskMap, const string& fieldSeparator = ",");
+string mergePrbsLaneRateCapStrings(u_int32_t laneRateCap,
+                                   u_int32_t laneRateCapExt,
+                                   const map<u_int32_t, string>& capPrimary,
+                                   const map<u_int32_t, string>& capExt);
 string getStrByMaskFromPair(u_int32_t bitmask,
                             map<u_int32_t, pair<string, string>> maskMap,
                             const string& fieldSeparator = ",",

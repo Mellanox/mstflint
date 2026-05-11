@@ -57,12 +57,14 @@ except Exception as e:
 class OperationTerminated(Exception):
     pass
 
+
 class PcieDeviceType(Enum):
     UPSTREAM_PORT = 0x5
     DOWNSTREAM_PORT = 0x6
     ROOT_PORT = 0x4
     LEGACY_ENDPOINT = 0x1
     ENDPOINT = 0x0
+
 
 class DriversSafetyCheckManager:
     """
@@ -389,7 +391,7 @@ class DriversSafetyCheckManager:
         except RuntimeError as e:  # if we get this exception then the output of the command wasn't as expected meaning there is no port underneath the given downstream port
             self._logger.debug("Failed to get the PCIe device type for potential upstream DBDF: {}. Error: {}".format(potential_upstream_dbdf, e))
             return False
-    
+
     def get_forbidden_drivers_from_upstream_port(self, upstream_dbdf, dbd):
         """
         Get forbidden drivers by scanning PCI buses under an upstream port.
@@ -491,7 +493,7 @@ class DriversSafetyCheckManager:
 
             domain = dbdf.split(':')[0]
             if self.is_bridge(dbdf):
-                self._logger.debug("Device {} is an upstream port".format(dbdf))
+                self._logger.debug("Device {} is an upstream port".format(dbdf))  # in mst status we support only EPs or upstream ports
                 upstream_dbdf = dbdf
                 upstream_ports_amount += 1
             else:
@@ -530,6 +532,7 @@ class DriversSafetyCheckManager:
 
             if self._retrieve_data_only:
                 continue
+
             if drivers_scan_needed:
                 port_forbidden_drivers = self.get_forbidden_drivers_from_upstream_port(upstream_dbdf, get_device_without_function(dbdf))
                 forbidden_drivers.extend(port_forbidden_drivers)
@@ -561,7 +564,7 @@ class DriversSafetyCheckManager:
         drivers_scan_needed = False
         if self.is_upstream_port(upstream_dbdf):
             drivers_scan_needed = True
-        
+
         # Store upstream DBDF and PCIe index mapping
         if upstream_dbdf not in self._upstream_dbdfs:
             self._upstream_dbdfs.append(upstream_dbdf)
@@ -596,11 +599,16 @@ class DriversSafetyCheckManager:
         Get hidden devices.
 
         Returns:
-            str: The hidden aux device DBDF
+            str: The hidden aux device DBDF, or None if not a hidden socket-direct device.
         """
 
         aux_dbdf = None
-        v3_prime_str = self.get_V3_field_from_vpd(self._dev_dbdf)
+        try:
+            v3_prime_str = self.get_V3_field_from_vpd(self._dev_dbdf)
+        except HotResetError as e:
+            # Device has no [V3] in VPD -> not a hidden socket-direct pair; continue as single/SD flow
+            self._logger.debug("device {}: {}; treating as non-hidden.".format(self._dev_dbdf, e))
+            return None
         cmd = "lspci -D -d 15b3:2100"
         (rc, pci_list, stderr) = cmdExec(cmd)
         if rc:
@@ -618,6 +626,7 @@ class DriversSafetyCheckManager:
                 self._logger.debug('V3 numbers are identical, found aux device, dbdf: {0}, v3 number: {1}'.format(aux_dbdf, v3_aux_str))
                 break
 
+        
         if not aux_dbdf:
             raise RuntimeError("failed to find aux device both as hidden and as discovered")
 

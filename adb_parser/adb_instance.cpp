@@ -1676,12 +1676,12 @@ LayoutItemAttrsMap::iterator::iterator(LayoutItemAttrsMap& container,
 
 LayoutItemAttrsMap::iterator::reference LayoutItemAttrsMap::iterator::operator*() const
 {
-    return (reference)(*_current);
+    return *_current;
 }
 
 LayoutItemAttrsMap::iterator::pointer LayoutItemAttrsMap::iterator::operator->()
 {
-    return (pointer)(&(*_current));
+    return &(*_current);
 }
 
 void LayoutItemAttrsMap::iterator::advance_internal()

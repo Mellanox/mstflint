@@ -36,7 +36,7 @@
  
 
 /***
-         *** This file was generated at "2025-12-21 15:54:24"
+         *** This file was generated at "2026-04-15 11:04:12"
          *** by:
          ***    > [REDACTED]/adb2pack.py --input adb/prm/switch/ext/reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils
          ***/
@@ -49,6 +49,222 @@ extern "C" {
 #endif
 
 #include "adb_to_c_utils.h"
+/* Description -   */
+/* Size in bytes - 8 */
+struct reg_access_switch_MRFV_CVB_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - [Arcus2]: Index of LUT entry.
+
+[ArcusE]:
+CVB Voltage = -4 + 0.5 * cvb_data_index
+cvb_data_index valid values 0 .. 15
+Process Sigma <-> DVDD (mV)
+-4.0: 856.00
+-3.5: 847.75
+-3.0: 839.50
+-2.5: 831.25
+-2.0: 823.00
+-1.5: 814.75
+-1.0: 806.50
+-0.5: 798.25
+0 (nominal): 790.00
+0.5: 781.75
+1.0: 773.50
+1.5: 765.25
+2.0: 757.00
+2.5: 748.75
+3.0: 740.50
+3.5: 732.25
+4.0: 724.00
+Reserved when selector = 1 */
+	/* 0x0.0 - 0x0.4 */
+	/* access: RO */
+	u_int8_t cvb_data_index;
+	/* Description - [DWIP][Internal]
+Valid only if selector = 0.
+The minimum value of ISM cnt_out value, normalized by VDD value, which is used to determine the selected LUT entry index. */
+	/* 0x0.6 - 0x0.25 */
+	/* access: RO */
+	u_int32_t cnt_out;
+	/* Description - MSB bits of the TAV voltage */
+	/* 0x0.26 - 0x0.29 */
+	/* access: RO */
+	u_int8_t tav_cvb_voltage_msb;
+	/* Description - [DWIP] [Internal]
+Valid only if selector = 1.
+0: Fuses are valid.
+1: Fuses are invalid but LUT entry not located. */
+	/* 0x0.30 - 0x0.30 */
+	/* access: RO */
+	u_int8_t selector_cause;
+	/* Description - [Arcus]:
+0: cvb_data_index is valid
+1: cvb_voltage is valid
+
+
+[Arcus2]:
+0: cvb_data_index is valid, and cvb_voltage exposes the value in LUT.
+1: cvb_data_index is not valid, and cvb_voltage exposes values from fuses (if selector_cause = 0). */
+	/* 0x0.31 - 0x0.31 */
+	/* access: RO */
+	u_int8_t selector;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - CVB Voltage
+Returns required CVB voltage in mV.
+Reserved when selector = 0 */
+	/* 0x4.0 - 0x4.15 */
+	/* access: RO */
+	u_int16_t cvb_voltage;
+	/* Description - The voltage type of the cvb_voltage
+0: DVDD
+1: AVDD
+2: VDD */
+	/* 0x4.16 - 0x4.18 */
+	/* access: INDEX */
+	u_int8_t voltage_type;
+	/* Description - TAV CVB Voltage
+Returns required TAV CVB voltage in mV.
+Used in Retimer only.
+Value of 0 means not valid voltage, host should ignore this value.
+	*/
+	/* 0x4.20 - 0x4.31 */
+	/* access: RO */
+	u_int16_t tav_cvb_voltage;
+};
+
+/* Description -   */
+/* Size in bytes - 4 */
+struct reg_access_switch_MRFV_PVS_MAIN_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - VDD Main Data. "PVS" prefix in name exists due to historical reasons.
+Range 0.675 - 0.75
+Vdd = 750mV - (fuse value - 1)*5mV */
+	/* 0x0.0 - 0x0.6 */
+	/* access: RO */
+	u_int8_t pvs_main_data;
+};
+
+/* Description -   */
+/* Size in bytes - 4 */
+struct reg_access_switch_MRFV_PVS_TILE_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - VDD tile Data. PVS" prefix in name exists due to historical reasons.
+Range 0.675 - 0.72
+Vdd = 750mV - (fuse value - 1)*5mV */
+	/* 0x0.0 - 0x0.6 */
+	/* access: RO */
+	u_int8_t pvs_tile_data;
+};
+
+/* Description -   */
+/* Size in bytes - 12 */
+struct reg_access_switch_MRFV_RAW_AND_VALUE_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Raw Fuses Highest bit. Indicates the highest bit in raw_fuses field which is part of the fuse data.
+For example, if raw_fuses [15:0] contains the fuse data, this field's value is 15. */
+	/* 0x0.0 - 0x0.4 */
+	/* access: RO */
+	u_int8_t raw_fuses_highest_bit;
+	/* Description - Value valid.
+0: value_base and value_exponent are NOT valid.
+1: value_base and value_exponent are valid.
+
+For the following fuse_ids (assuming a valid instance_id is provided), the value is valid:
+11: raw_and_value_vdd.
+12: raw_and_value_pl_avdd.
+13: raw_and_value_pl_dvdd.
+14: raw_and_value_p_avdd.
+15: raw_and_value_p_dvdd.
+16: raw_and_value_dvdd_sg.
+	*/
+	/* 0x0.31 - 0x0.31 */
+	/* access: RO */
+	u_int8_t value_valid;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Raw fuses.
+Only the least significant <raw_fuses_width> bits are valid. */
+	/* 0x4.0 - 0x4.31 */
+	/* access: RO */
+	u_int32_t raw_fuses;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - The exponent part of the value.
+This field is signed, and negative values are represented using 2's complement. */
+	/* 0x8.0 - 0x8.5 */
+	/* access: RO */
+	u_int8_t value_exponent;
+	/* Description - The base part of the value.
+This field is signed, and negative values are represented using 2's complement.
+
+The value is:
+value_base x 10 ^ value_exponent.
+
+Units:
+Power: [W].
+Voltage: [V].
+Time: [Sec].
+Current: [A].
+Capacitance: [F]. */
+	/* 0x8.6 - 0x8.31 */
+	/* access: RO */
+	u_int32_t value_base;
+};
+
+/* Description -   */
+/* Size in bytes - 12 */
+struct reg_access_switch_MRFV_ULT_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.0 - 0x0.7 */
+	/* access: RO */
+	u_int8_t ult_lot_digit_1;
+	/* Description -  */
+	/* 0x0.8 - 0x0.15 */
+	/* access: RO */
+	u_int8_t ult_lot_digit_2;
+	/* Description -  */
+	/* 0x0.16 - 0x0.23 */
+	/* access: RO */
+	u_int8_t ult_lot_digit_3;
+	/* Description -  */
+	/* 0x0.24 - 0x0.31 */
+	/* access: RO */
+	u_int8_t ult_lot_digit_4;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description -  */
+	/* 0x4.0 - 0x4.7 */
+	/* access: RO */
+	u_int8_t ult_lot_digit_5;
+	/* Description -  */
+	/* 0x4.8 - 0x4.15 */
+	/* access: RO */
+	u_int8_t ult_lot_digit_6;
+	/* Description -  */
+	/* 0x4.16 - 0x4.23 */
+	/* access: RO */
+	u_int8_t ult_lot_digit_7;
+	/* Description -  */
+	/* 0x4.24 - 0x4.31 */
+	/* access: RO */
+	u_int8_t ult_lot_digit_8;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description -  */
+	/* 0x8.0 - 0x8.7 */
+	/* access: RO */
+	u_int8_t ult_y;
+	/* Description -  */
+	/* 0x8.8 - 0x8.15 */
+	/* access: RO */
+	u_int8_t ult_x;
+	/* Description -  */
+	/* 0x8.16 - 0x8.23 */
+	/* access: RO */
+	u_int8_t ult_wafer_number;
+	/* Description -  */
+	/* 0x8.29 - 0x8.31 */
+	/* access: RO */
+	u_int8_t ult_err_detection;
+};
+
 /* Description -   */
 /* Size in bytes - 260 */
 struct reg_access_switch_command_payload_ext {
@@ -227,6 +443,32 @@ struct reg_access_switch_prm_register_payload_ext {
 };
 
 /* Description -   */
+/* Size in bytes - 12 */
+union reg_access_switch_MRFV_data_auto_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.0 - 0x4.31 */
+	/* access: RW */
+	struct reg_access_switch_MRFV_CVB_ext MRFV_CVB_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x0.31 */
+	/* access: RW */
+	struct reg_access_switch_MRFV_PVS_MAIN_ext MRFV_PVS_MAIN_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x0.31 */
+	/* access: RW */
+	struct reg_access_switch_MRFV_PVS_TILE_ext MRFV_PVS_TILE_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x8.31 */
+	/* access: RW */
+	struct reg_access_switch_MRFV_RAW_AND_VALUE_ext MRFV_RAW_AND_VALUE_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x8.31 */
+	/* access: RW */
+	struct reg_access_switch_MRFV_ULT_ext MRFV_ULT_ext;
+};
+
+/* Description -   */
 /* Size in bytes - 4 */
 struct reg_access_switch_lane_2_module_mapping_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
@@ -246,7 +488,7 @@ In case of non modular system only slot_index = 0 is available. */
 1: lanes_8_15
 2: lanes_16_23
 3: lanes_24_31 */
-	/* 0x0.12 - 0x0.13 */
+	/* 0x0.12 - 0x0.15 */
 	/* access: RW */
 	u_int8_t sub_module;
 	/* Description - TX lane. 
@@ -336,8 +578,7 @@ For QM-3 CPO (Taipan), return the total num of ELS and OE_MCU together. First in
 0: No devices on system of that type.
 1: Gearbox 
 2: Tiles
-3: No Info Available
-4: XM */
+3: No Info Available */
 	/* 0x0.24 - 0x0.27 */
 	/* access: RO */
 	u_int8_t device_type;
@@ -367,6 +608,10 @@ Value of 0xff..ff means not valid.
 	/* 0x8.0 - 0x8.7 */
 	/* access: RO */
 	u_int8_t num_of_resource_modules;
+	/* Description - Total number of module i2c bus */
+	/* 0x8.8 - 0x8.15 */
+	/* access: RO */
+	u_int8_t total_num_of_module_i2c_bus;
 	/* Description - Maximum lane count per submodule */
 	/* 0x8.16 - 0x8.19 */
 	/* access: RO */
@@ -622,6 +867,69 @@ Reserved when module type is chip2chip or backplane. */
 };
 
 /* Description -   */
+/* Size in bytes - 64 */
+struct reg_access_switch_MRFV_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Fuse Index
+0: cvb - CVB Main Die, used for Retimer
+1: ULT - used for Retimer
+2: vdd_main_die - (used from SPC-4)
+3: vdd_tile_0 - (used from SPC-4)
+4: vdd_tile_1 - (used from SPC-4)
+5: vdd_tile_2 - (used from SPC-4)
+6: vdd_tile_3 - (used from SPC-4)
+7: vdd_tile_4 - (used from SPC-4)
+8: vdd_tile_5 - (used from SPC-4)
+9: vdd_tile_6 - (used from SPC-4)
+10: vdd_tile_7 - (used from SPC-4)
+[DWIP]:
+11: raw_and_value_vdd - Use instance_id for the specific instance. Valid on SPC6.
+12: raw_and_value_pl_avdd - Use instance_id for the specific instance. Valid on SPC6.
+13: raw_and_value_pl_dvdd - Use instance_id for the specific instance. Valid on SPC6.
+14: raw_and_value_p_avdd - Use instance_id for the specific instance. Valid on SPC6.
+15: raw_and_value_p_dvdd - Use instance_id for the specific instance. Valid on SPC6.
+16: raw_and_value_dvdd_sg - Use instance_id for the specific instance. Valid on SPC6.
+Other values reserved
+Reserved when fm = 1 */
+	/* 0x0.0 - 0x0.7 */
+	/* access: INDEX */
+	u_int8_t fuse_id;
+	/* Description - [DWIP]:
+Instance ID. For a fuse that has multiple instances, this field provides the Instance ID.
+For the common case where it's a single instance per asic, instance ID 0 denotes the main/die [0] instance, and subsequent instance ID X denotes the instance of tile [X-1] / die [X].
+For a given fuse_id, if an invalid instance_id is provided, BAD_PARAM is returned. */
+	/* 0x0.8 - 0x0.15 */
+	/* access: INDEX */
+	u_int8_t instance_id;
+	/* Description - Fuse Mismatch
+0: No fuse mismatch
+1: Fuse mismatch found
+2-3: Reserved */
+	/* 0x0.24 - 0x0.25 */
+	/* access: RO */
+	u_int8_t fm;
+	/* Description - Valid bit
+0: Fuse reading is not supported for this system
+1: Response is valid
+2-3: Reserved
+Reserved when fm = 1 */
+	/* 0x0.30 - 0x0.31 */
+	/* access: RO */
+	u_int8_t v;
+/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+	/* Description - Data
+See Table 735, "MRFV entry - CVB Layout," on page 1234
+See Table 737, "MRFV entry - ULT Layout," on page 1236
+See Table 739, "MRFV entry - VDD_MAIN Layout," on page 1237
+See Table 741, "MRFV entry - VDD_Tile Layout," on page 1238
+See Table 743, "MRFV entry - RAW_AND_VALUE Layout," on page 1239
+Reserved when fm = 1 */
+	/* 0x10.0 - 0x18.31 */
+	/* access: RO */
+	union reg_access_switch_MRFV_data_auto_ext data;
+};
+
+/* Description -   */
 /* Size in bytes - 16 */
 struct reg_access_switch_PPCR_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
@@ -780,15 +1088,15 @@ For query_type = 1,2,3 this field is neglected. */
 	/* access: INDEX */
 	u_int8_t query_index;
 	/* Description - If set, the data in the data field is valid and contain the information for the queried index. 
-Note: This field is not reflecting any validity of the data while accessing a non-existing query entity. Querying with an out of range index will lead to BAD_PARAM status of the register. */
+Note: This field is not reflecting any validity of the data while accessing a non-existing queryF entity. Querying with an out of range index will lead to BAD_PARAM status of the register. */
 	/* 0x8.31 - 0x8.31 */
 	/* access: RO */
 	u_int8_t data_valid;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - Properties of that field are based on query_type.
-For slot information query_type data - see Table 573, "MDDQ slot_info Layout," on page 1121
-For devices on slot query_type data - see Table 575, "MDDQ device_info Register Layout," on page 1122
-For slot name query_type data - see Table 577, "MDDQ slot_name Layout," on page 1124 */
+For slot information query_type data - see Table 579, "MDDQ slot_info Layout," on page 1106
+For devices on slot query_type data - see Table 581, "MDDQ device_info Register Layout," on page 1107
+For slot name query_type data - see Table 583, "MDDQ slot_name Layout," on page 1109 */
 	/* 0x10.0 - 0x2c.31 */
 	/* access: RO */
 	union reg_access_switch_mddq_data_auto_ext data;
@@ -823,9 +1131,9 @@ struct reg_access_switch_mddt_reg_ext {
 	u_int8_t read_size;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description - Payload
-For PRM Register type payload - See Table 565, "PRM Register Payload Layout," on page 1117
-For Command type payload - See Table 567, "Command Payload Layout," on page 1117
-For CrSpace type payload - See Table 569, "CrSpace access Payload Layout," on page 1118 */
+For PRM Register type payload - See Table 571, "PRM Register Payload Layout," on page 1102
+For Command type payload - See Table 573, "Command Payload Layout," on page 1102
+For CrSpace type payload - See Table 575, "CrSpace access Payload Layout," on page 1103 */
 	/* 0xc.0 - 0x10c.31 */
 	/* access: RW */
 	union reg_access_switch_mddt_reg_payload_auto_ext payload;
@@ -853,7 +1161,8 @@ Note: Status might be '0' even when debug query is not allowed and additional_in
 2: FW is not secured, debug session cannot be ended
 3: Fail - Debug end request cannot be accepted. 
 4: Fail - Host is not allowed to query debug session
-5: Debug session active */
+5: Debug session active
+6: Debug FW is running, cannot remove CRDT token */
 	/* 0x0.8 - 0x0.13 */
 	/* access: RO */
 	u_int8_t additional_info;
@@ -959,7 +1268,7 @@ Reserved if not supported by the device */
 /* Size in bytes - 160 */
 struct reg_access_switch_mgpir_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Hardware Information, see Table 583, "Hardware Info Layout," on page 1126 */
+	/* Description - Hardware Information, see Table 589, "Hardware Info Layout," on page 1111 */
 	/* 0x0.0 - 0x1c.31 */
 	/* access: RW */
 	struct reg_access_switch_mgpir_hw_info_ext hw_info;
@@ -1021,17 +1330,17 @@ struct reg_access_switch_mmta_reg_ext {
 	/* access: RO */
 	u_int32_t module_name_lo;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
-	/* Description - Temperature, see Table 547, "Module Temperature Layout," on page 1103 */
+	/* Description - Temperature, see Table 541, "Module Temperature Layout," on page 1079 */
 	/* 0xc.0 - 0x20.31 */
 	/* access: RW */
 	struct reg_access_switch_mmta_temprature_ext module_temperature;
 /*---------------- DWORD[9] (Offset 0x24) ----------------*/
-	/* Description - TEC Power, see Table 549, "Module TEC Power Layout," on page 1105 */
+	/* Description - TEC Power, see Table 543, "Module TEC Power Layout," on page 1081 */
 	/* 0x24.0 - 0x40.31 */
 	/* access: RW */
 	struct reg_access_switch_mmta_tec_power_ext module_tec_power;
 /*---------------- DWORD[17] (Offset 0x44) ----------------*/
-	/* Description - Second Temperature, see Table 547, "Module Temperature Layout," on page 1103.
+	/* Description - Second Temperature, see Table 541, "Module Temperature Layout," on page 1079.
 Note: When there is more than one Optical Engine:
 1) The "temperature" field shall be populated by the highest of the current OE temperatures.
 2) The "max_temperature" field shall be populated by the highest of any temperatures that had been measured, over all OEs.
@@ -1384,7 +1693,7 @@ struct reg_access_switch_mspmer_ext {
 0: Notification only. Prevention is disabled 
 1: Prevention is enabled
 
-In Spectrum-4 only, controlled by NV_SWITCH_PHY_SEC_CONF.pvpm. See Table 392, "NV_SWITCH_PHY_SEC_CONF Layout," on page 945 */
+In Spectrum-4 only, controlled by NV_SWITCH_PHY_SEC_CONF.pvpm. See Table 386, "NV_SWITCH_PHY_SEC_CONF Layout," on page 923 */
 	/* 0x4.24 - 0x4.24 */
 	/* access: RO */
 	u_int8_t prev_en;
@@ -1602,8 +1911,7 @@ MOLP provides the 16bit mirror header value */
 	/* access: INDEX */
 	u_int8_t local_port;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - Port split mapping for local_port.
-The position of this local port within each splitted port.
+	/* Description - The position of this local port within each split IPIL port.
 When no split: split_num should be 0
 When split to 2: split_num should be 0,1
 When split to 4: split_num should be 0   3
@@ -1613,7 +1921,7 @@ Split to 8 exists only for ETH */
 	/* access: RO */
 	u_int8_t split_num;
 	/* Description - Inter port in Label number.
-gives mapping of the basic port unit  inside the label (cage), From the lowest lanes of the module to the highest.
+Gives mapping of the basic port unit / MPO  inside the label (cage), From the lowest lanes of the module to the highest.
 e.g Label of 8x lanes, with 2 ipil
 ipil 1 - will be port mapped to lanes 1-4
 ipil 2 - will be port mapped to lanes 5-8
@@ -1621,32 +1929,26 @@ ipil 2 - will be port mapped to lanes 5-8
 When ipil_stat is 0 (no ipil): ipil_num should be 0.
 When ipil_stat is 1: ipil_num should be 1,2
 When ipil_stat is 2: ipil_num should be 1   4
-When ipil_stat is 3: ipil_num should be 1   8
-
-Spectrum: Only relevant value is 0. */
+When ipil_stat is 3: ipil_num should be 1   8 */
 	/* 0x4.8 - 0x4.11 */
 	/* access: RO */
 	u_int8_t ipil_num;
-	/* Description - Defines the IPIL split. The value is by how much to split each IPIL
-The local_port status is:
+	/* Description - Defines the split of each IPIL into local ports.
+
 0: no split
-1: split to 2
-2: split to 4
-3: split to 8
-
-
-Spectrum: Only relevant value is 0. */
+1: split to 2 local ports
+2: split to 4 local ports
+3: split to 8 local ports
+	*/
 	/* 0x4.16 - 0x4.19 */
 	/* access: RO */
 	u_int8_t split_stat;
 	/* Description - Inter port in Label status.
-Number of basic port units inside the label (cage).
+Number of inter port units / MPOs inside the label (cage). Determined strictly by the form factor.
 0: 1 inter port in label
 1: 2 inter port in label
 2: 4 inter port in label
-3: 8 inter port in label.
-
-Spectrum: Only relevant value is 0. */
+3: 8 inter port in label. */
 	/* 0x4.24 - 0x4.27 */
 	/* access: RO */
 	u_int8_t ipil_stat;
@@ -1702,7 +2004,6 @@ Spectrum: Only relevant value is 0. */
 1: ETH (for Eth devices)
 2: IB
 3: NVLink
-4: IBg2Eth
 Supported from Quantum-3 and above
 	*/
 	/* 0x10.0 - 0x10.2 */
@@ -1911,7 +2212,15 @@ Plane port index of the aggregated port. A value of 0 refers to the aggregated p
 	/* 0x8.0 - 0x8.7 */
 	/* access: RO */
 	u_int8_t ib_port;
-	/* Description - lane mask of active lanes on module */
+	/* Description - lane mask of active lanes on module
+Bit 0: Lane 0
+Bit 1: Lane 1
+Bit 2: Lane 2
+Bit 3: Lane 3
+Bit 4: Lane 4
+Bit 5: Lane 5
+Bit 6: Lane 6
+Bit 7: Lane 7 */
 	/* 0x8.8 - 0x8.15 */
 	/* access: RO */
 	u_int8_t module_lane_mask;
@@ -2203,6 +2512,10 @@ For all common pll's that are mapped to the port: [pll_index, pll_index+ 1, ... 
 	/* access: RO */
 	u_int8_t VL31_lane_map;
 /*---------------- DWORD[15] (Offset 0x3c) ----------------*/
+	/* Description - For SP5. Represent the fiber connector index on front panel */
+	/* 0x3c.16 - 0x3c.23 */
+	/* access: RO */
+	u_int8_t fiber_connector_index;
 	/* Description - Indicates start offset of rx_lane, tx_lane inside the modules lanes in 8x granularity. relevant for modules with more than 8 lanes. such as OE.
 0: lanes_0-7
 1: lanes_8_15
@@ -2253,7 +2566,22 @@ For all common pll's that are mapped to the port: [pll_index, pll_index+ 1, ... 
 	/* 0x44.10 - 0x44.15 */
 	/* access: RO */
 	u_int8_t els_index;
-	/* Description - Optical engine MCU index */
+	/* Description - Lane mask representing the active lanes associated with the local port as determined by the agreed link protocol during link up.
+0: N/A (not supported or link is down)
+Bit 0: Lane 0
+Bit 1: Lane 1
+Bit 2: Lane 2
+Bit 3: Lane 3
+Bit 4: Lane 4
+Bit 5: Lane 5
+Bit 6: Lane 6
+Bit 7: Lane 7
+
+Note: supported only if indication by PCAM.feature_group=1.bit 6. */
+	/* 0x44.16 - 0x44.23 */
+	/* access: RW */
+	u_int8_t active_module_lane_mask;
+	/* Description - Optical engine MCU index. If system has no MCU on the OE, this field represent the OE index. */
 	/* 0x44.24 - 0x44.30 */
 	/* access: RO */
 	u_int8_t oe_mcu_index;
@@ -2324,31 +2652,47 @@ union reg_access_switch_reg_access_switch_Nodes {
 	/* Description -  */
 	/* 0x0.0 - 0x2c.31 */
 	/* access: RW */
-	struct reg_access_switch_mspmer_ext mspmer_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x2c.31 */
-	/* access: RW */
-	struct reg_access_switch_mddq_ext mddq_ext;
-	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
-	/* access: RW */
-	struct reg_access_switch_pmaos_reg_ext pmaos_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x40c.31 */
-	/* access: RW */
-	struct reg_access_switch_icsr_ext icsr_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x8c.31 */
-	/* access: RW */
-	struct reg_access_switch_mmta_reg_ext mmta_reg_ext;
+	struct reg_access_switch_mpein_reg_ext mpein_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x44.31 */
 	/* access: RW */
 	struct reg_access_switch_pmdr_reg_ext pmdr_reg_ext;
 	/* Description -  */
+	/* 0x0.0 - 0x7c.31 */
+	/* access: RW */
+	struct reg_access_switch_msgi_ext msgi_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x9c.31 */
+	/* access: RW */
+	struct reg_access_switch_mgpir_ext mgpir_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x4.31 */
+	/* access: RW */
+	struct reg_access_switch_mrsr_ext mrsr_ext;
+	/* Description -  */
 	/* 0x0.0 - 0x14.31 */
 	/* access: RW */
-	struct reg_access_switch_icam_reg_ext icam_reg_ext;
+	struct reg_access_switch_pllp_reg_ext pllp_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x6c.31 */
+	/* access: RW */
+	struct reg_access_switch_mtcq_reg_ext mtcq_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0xc.31 */
+	/* access: RW */
+	struct reg_access_switch_MMAM_ext MMAM_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x5c.31 */
+	/* access: RW */
+	struct reg_access_switch_pguid_reg_ext pguid_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0xc.31 */
+	/* access: RW */
+	struct reg_access_switch_plib_reg_ext plib_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0xc.31 */
+	/* access: RW */
+	struct reg_access_switch_PPCR_ext PPCR_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x2c.31 */
 	/* access: RW */
@@ -2356,67 +2700,90 @@ union reg_access_switch_reg_access_switch_Nodes {
 	/* Description -  */
 	/* 0x0.0 - 0x14.31 */
 	/* access: RW */
-	struct reg_access_switch_pllp_reg_ext pllp_reg_ext;
+	struct reg_access_switch_icam_reg_ext icam_reg_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x18.31 */
+	/* 0x0.0 - 0x40c.31 */
 	/* access: RW */
-	struct reg_access_switch_mfmc_reg_ext mfmc_reg_ext;
+	struct reg_access_switch_icsr_ext icsr_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x2c.31 */
+	/* access: RW */
+	struct reg_access_switch_mspmer_ext mspmer_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x2c.31 */
+	/* access: RW */
+	struct reg_access_switch_mddq_ext mddq_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x8c.31 */
+	/* access: RW */
+	struct reg_access_switch_mmta_reg_ext mmta_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x10c.31 */
 	/* access: RW */
 	struct reg_access_switch_mddt_reg_ext mddt_reg_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x9c.31 */
+	/* 0x0.0 - 0x18.31 */
 	/* access: RW */
-	struct reg_access_switch_mgpir_ext mgpir_ext;
+	struct reg_access_switch_mfmc_reg_ext mfmc_reg_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x7c.31 */
+	/* 0x0.0 - 0xc.31 */
 	/* access: RW */
-	struct reg_access_switch_msgi_ext msgi_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x2c.31 */
-	/* access: RW */
-	struct reg_access_switch_mpein_reg_ext mpein_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x3c.31 */
-	/* access: RW */
-	struct reg_access_switch_pmlp_reg_ext pmlp_reg_ext;
+	struct reg_access_switch_pmaos_reg_ext pmaos_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0xc.31 */
 	/* access: RW */
 	struct reg_access_switch_mpir_ext mpir_ext;
 	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
+	/* 0x0.0 - 0x3c.31 */
 	/* access: RW */
-	struct reg_access_switch_plib_reg_ext plib_reg_ext;
+	struct reg_access_switch_pmlp_reg_ext pmlp_reg_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x5c.31 */
+	/* 0x0.0 - 0x3c.31 */
 	/* access: RW */
-	struct reg_access_switch_pguid_reg_ext pguid_reg_ext;
+	struct reg_access_switch_MRFV_ext MRFV_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x28.31 */
 	/* access: RW */
 	struct reg_access_switch_mkdc_reg_ext mkdc_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x4.31 */
-	/* access: RW */
-	struct reg_access_switch_mrsr_ext mrsr_ext;
-	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
-	/* access: RW */
-	struct reg_access_switch_MMAM_ext MMAM_ext;
-	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
-	/* access: RW */
-	struct reg_access_switch_PPCR_ext PPCR_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x6c.31 */
-	/* access: RW */
-	struct reg_access_switch_mtcq_reg_ext mtcq_reg_ext;
 };
 
 
 /*================= PACK/UNPACK/PRINT FUNCTIONS ======================*/
+/* MRFV_CVB_ext */
+void reg_access_switch_MRFV_CVB_ext_pack(const struct reg_access_switch_MRFV_CVB_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_MRFV_CVB_ext_unpack(struct reg_access_switch_MRFV_CVB_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_MRFV_CVB_ext_print(const struct reg_access_switch_MRFV_CVB_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_MRFV_CVB_ext_size(void);
+#define REG_ACCESS_SWITCH_MRFV_CVB_EXT_SIZE    (0x8)
+void reg_access_switch_MRFV_CVB_ext_dump(const struct reg_access_switch_MRFV_CVB_ext *ptr_struct, FILE *fd);
+/* MRFV_PVS_MAIN_ext */
+void reg_access_switch_MRFV_PVS_MAIN_ext_pack(const struct reg_access_switch_MRFV_PVS_MAIN_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_MRFV_PVS_MAIN_ext_unpack(struct reg_access_switch_MRFV_PVS_MAIN_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_MRFV_PVS_MAIN_ext_print(const struct reg_access_switch_MRFV_PVS_MAIN_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_MRFV_PVS_MAIN_ext_size(void);
+#define REG_ACCESS_SWITCH_MRFV_PVS_MAIN_EXT_SIZE    (0x4)
+void reg_access_switch_MRFV_PVS_MAIN_ext_dump(const struct reg_access_switch_MRFV_PVS_MAIN_ext *ptr_struct, FILE *fd);
+/* MRFV_PVS_TILE_ext */
+void reg_access_switch_MRFV_PVS_TILE_ext_pack(const struct reg_access_switch_MRFV_PVS_TILE_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_MRFV_PVS_TILE_ext_unpack(struct reg_access_switch_MRFV_PVS_TILE_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_MRFV_PVS_TILE_ext_print(const struct reg_access_switch_MRFV_PVS_TILE_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_MRFV_PVS_TILE_ext_size(void);
+#define REG_ACCESS_SWITCH_MRFV_PVS_TILE_EXT_SIZE    (0x4)
+void reg_access_switch_MRFV_PVS_TILE_ext_dump(const struct reg_access_switch_MRFV_PVS_TILE_ext *ptr_struct, FILE *fd);
+/* MRFV_RAW_AND_VALUE_ext */
+void reg_access_switch_MRFV_RAW_AND_VALUE_ext_pack(const struct reg_access_switch_MRFV_RAW_AND_VALUE_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_MRFV_RAW_AND_VALUE_ext_unpack(struct reg_access_switch_MRFV_RAW_AND_VALUE_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_MRFV_RAW_AND_VALUE_ext_print(const struct reg_access_switch_MRFV_RAW_AND_VALUE_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_MRFV_RAW_AND_VALUE_ext_size(void);
+#define REG_ACCESS_SWITCH_MRFV_RAW_AND_VALUE_EXT_SIZE    (0xc)
+void reg_access_switch_MRFV_RAW_AND_VALUE_ext_dump(const struct reg_access_switch_MRFV_RAW_AND_VALUE_ext *ptr_struct, FILE *fd);
+/* MRFV_ULT_ext */
+void reg_access_switch_MRFV_ULT_ext_pack(const struct reg_access_switch_MRFV_ULT_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_MRFV_ULT_ext_unpack(struct reg_access_switch_MRFV_ULT_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_MRFV_ULT_ext_print(const struct reg_access_switch_MRFV_ULT_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_MRFV_ULT_ext_size(void);
+#define REG_ACCESS_SWITCH_MRFV_ULT_EXT_SIZE    (0xc)
+void reg_access_switch_MRFV_ULT_ext_dump(const struct reg_access_switch_MRFV_ULT_ext *ptr_struct, FILE *fd);
 /* command_payload_ext */
 void reg_access_switch_command_payload_ext_pack(const struct reg_access_switch_command_payload_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_switch_command_payload_ext_unpack(struct reg_access_switch_command_payload_ext *ptr_struct, const u_int8_t *ptr_buff);
@@ -2459,6 +2826,13 @@ void reg_access_switch_prm_register_payload_ext_print(const struct reg_access_sw
 unsigned int reg_access_switch_prm_register_payload_ext_size(void);
 #define REG_ACCESS_SWITCH_PRM_REGISTER_PAYLOAD_EXT_SIZE    (0x104)
 void reg_access_switch_prm_register_payload_ext_dump(const struct reg_access_switch_prm_register_payload_ext *ptr_struct, FILE *fd);
+/* MRFV_data_auto_ext */
+void reg_access_switch_MRFV_data_auto_ext_pack(const union reg_access_switch_MRFV_data_auto_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_MRFV_data_auto_ext_unpack(union reg_access_switch_MRFV_data_auto_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_MRFV_data_auto_ext_print(const union reg_access_switch_MRFV_data_auto_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_MRFV_data_auto_ext_size(void);
+#define REG_ACCESS_SWITCH_MRFV_DATA_AUTO_EXT_SIZE    (0xc)
+void reg_access_switch_MRFV_data_auto_ext_dump(const union reg_access_switch_MRFV_data_auto_ext *ptr_struct, FILE *fd);
 /* lane_2_module_mapping_ext */
 void reg_access_switch_lane_2_module_mapping_ext_pack(const struct reg_access_switch_lane_2_module_mapping_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_switch_lane_2_module_mapping_ext_unpack(struct reg_access_switch_lane_2_module_mapping_ext *ptr_struct, const u_int8_t *ptr_buff);
@@ -2515,6 +2889,13 @@ void reg_access_switch_MMAM_ext_print(const struct reg_access_switch_MMAM_ext *p
 unsigned int reg_access_switch_MMAM_ext_size(void);
 #define REG_ACCESS_SWITCH_MMAM_EXT_SIZE    (0x10)
 void reg_access_switch_MMAM_ext_dump(const struct reg_access_switch_MMAM_ext *ptr_struct, FILE *fd);
+/* MRFV_ext */
+void reg_access_switch_MRFV_ext_pack(const struct reg_access_switch_MRFV_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_MRFV_ext_unpack(struct reg_access_switch_MRFV_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_MRFV_ext_print(const struct reg_access_switch_MRFV_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_MRFV_ext_size(void);
+#define REG_ACCESS_SWITCH_MRFV_EXT_SIZE    (0x40)
+void reg_access_switch_MRFV_ext_dump(const struct reg_access_switch_MRFV_ext *ptr_struct, FILE *fd);
 /* PPCR_ext */
 void reg_access_switch_PPCR_ext_pack(const struct reg_access_switch_PPCR_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_switch_PPCR_ext_unpack(struct reg_access_switch_PPCR_ext *ptr_struct, const u_int8_t *ptr_buff);

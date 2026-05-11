@@ -218,7 +218,7 @@ class MlnxDriverLinux(MlnxDriver):
         if is_up:
             self.logger.debug("driver {0}@{1} is up".format(driver_name, dbdf))
         return is_up
-    
+
     def driverStart(self):
         self.logger.info('MlnxDriverLinux driverStart()')
 

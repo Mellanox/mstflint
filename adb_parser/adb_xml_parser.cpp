@@ -542,7 +542,7 @@ bool AdbParser<e, T_OFFSET>::parse_size(const string& s,
     Regex::smatch match;
     static Regex::regex correctHEXExpr("^\\s*((0[xX])?[0-9A-Fa-f]*)(\\.([0-9]*))?\\s*$");
     if (!regex_match(s, match, correctHEXExpr))
-        {
+    {
         exception_raised = raiseException(allowMultipleExceptions,
                                           "Failed parsing " + tag_name + " " + attribute_name + ", " + s + "\", " +
                                             "invalid format, valid formats are: \"0xH.D\", \"D.D\", \"0xH\", \".D\".",
@@ -550,7 +550,7 @@ bool AdbParser<e, T_OFFSET>::parse_size(const string& s,
                                           ExceptionHolder::FATAL_EXCEPTION);
         res = static_cast<T_OFFSET>(-1);
         return false;
-        }
+    }
 
     auto num_bytes_str = match[1].str();
     Algorithm::to_lower(num_bytes_str);
@@ -558,15 +558,15 @@ bool AdbParser<e, T_OFFSET>::parse_size(const string& s,
     unsigned long long num_bytes = 0;
     unsigned long long num_bits = 0;
     if (num_bytes_str == "0x")
-        {
+    {
         if (adbParser->_enforceExtraChecks)
-                {
+        {
             exception_raised = raiseException(
               allowMultipleExceptions,
               "Invalid format of " + tag_name + "'s " + attribute_name + ", \"" + s + "\". 0x.D is an invalid format",
               ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
               ExceptionHolder::WARN_EXCEPTION);
-                }
+        }
         num_bytes_str = "0";
     }
 
@@ -574,30 +574,30 @@ bool AdbParser<e, T_OFFSET>::parse_size(const string& s,
     try
     {
         if (!num_bytes_str.empty())
-                {
+        {
             num_bytes = stoull(num_bytes_str, &end, 0);
             if (end != num_bytes_str.size())
-                    {
+            {
                 throw std::invalid_argument("");
-                    }
-                }
-                else
-                {
+            }
+        }
+        else
+        {
             num_bytes = 0;
         }
         if (!num_bits_str.empty())
         {
             num_bits = stoull(num_bits_str, &end, 10);
             if (end != num_bits_str.size())
-                    {
+            {
                 throw std::invalid_argument("");
-                    }
+            }
         }
         else
-                    {
+        {
             num_bits = 0;
-                    }
-                }
+        }
+    }
     catch (std::invalid_argument&)
     {
         exception_raised = raiseException(allowMultipleExceptions,
@@ -607,7 +607,7 @@ bool AdbParser<e, T_OFFSET>::parse_size(const string& s,
                                           ExceptionHolder::FATAL_EXCEPTION);
         res = static_cast<T_OFFSET>(-1);
         return false;
-        }
+    }
     catch (std::out_of_range&)
     {
         exception_raised =
@@ -618,7 +618,8 @@ bool AdbParser<e, T_OFFSET>::parse_size(const string& s,
         res = static_cast<T_OFFSET>(-1);
         return false;
     }
-    if (adbParser->_enforceExtraChecks)
+
+    if (adbParser->_enforceExtraChecks && !size_or_offset)
     {
         if (num_bytes % 4 != 0)
         {
@@ -796,32 +797,9 @@ void AdbParser<e, O>::includeAllFilesInDir(AdbParser* adbParser, string dirPath,
 template<bool e, typename O>
 bool AdbParser<e, O>::checkSpecialChars(string tagName)
 {
+    static Regex::regex validNameExpr("[_A-Za-z][_A-Za-z0-9]*(\\[[0-9]+\\])?$");
     Regex::smatch match;
-    static Regex::regex allowedCharsExpr("[^\\w\\[\\]]"); // only alphanumeric and square brackets are allowed
-    if (Regex::regex_search(tagName, match, allowedCharsExpr))
-    {
-        return false;
-    }
-    static Regex::regex checkArrayExpr("[\\[\\]]"); // this check if containing the array brackets
-    if (Regex::regex_search(tagName, match, checkArrayExpr))
-    {
-        static Regex::regex correctNameForArrayExpr("[_A-Za-z]\\w*\\[\\d+\\]$");
-        if (!Regex::regex_search(tagName, match, correctNameForArrayExpr))
-        { // check the name if correct the square brackets (array)
-            return false;
-        }
-    }
-    else
-    {
-        static Regex::regex correctNameNoneArrayExpr("[_A-Za-z]\\w*$");
-        if (!Regex::regex_search(tagName, match, correctNameNoneArrayExpr))
-        { // check the name if correct without the square brackets (not array)
-            return false;
-        }
-    }
-    return true;
-
-
+    return !tagName.empty() && Regex::regex_match(tagName, match, validNameExpr);
 }
 
 template<bool e, typename O>
@@ -879,7 +857,7 @@ void AdbParser<e, O>::startEnumElement(const XML_Char** atts, AdbParser<e, O>* a
             expFound = raiseException(allowMultipleExceptions,
                                       "Invalid character in enum name, in enum: \"" + tagName + "\"",
                                       ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                      ExceptionHolder::ERROR_EXCEPTION);
+                                      ExceptionHolder::WARN_EXCEPTION);
         }
     }
     if (tagName.empty() || value.empty())
@@ -1323,9 +1301,8 @@ void AdbParser<e, T_OFFSET>::startNodeElement(const XML_Char** atts,
                 raiseException(allowMultipleExceptions,
                                "Invalid character in node name, in Node: \"" + nodeName + "\"",
                                ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                               ExceptionHolder::ERROR_EXCEPTION);
+                               ExceptionHolder::WARN_EXCEPTION);
             }
-
         }
         string desc = descXmlToNative(attrValue(atts, "descr", override_attrs));
 
@@ -1394,6 +1371,7 @@ void AdbParser<e, T_OFFSET>::startFieldElement(const XML_Char** atts,
     bool invalid_size = false;
     bool invalid_offset = false;
     bool default_offset = false;
+
     if (!adbParser->_currentNode && !adbParser->skipNode)
     {
         expFound = raiseException(allowMultipleExceptions,
@@ -1447,18 +1425,18 @@ void AdbParser<e, T_OFFSET>::startFieldElement(const XML_Char** atts,
         }
         T_OFFSET field_offset = 0;
         if (!default_offset)
-            {
+        {
             expFound = expFound || !parse_size(offset, field_offset, adbParser, false, false);
-            }
+        }
         invalid_offset = field_offset == static_cast<T_OFFSET>(-1);
         if (adbParser->_enforceExtraChecks)
-            {
+        {
             if (!AdbParser::checkSpecialChars(fieldName))
             {
                 expFound = raiseException(allowMultipleExceptions,
                                           "Invalid character in field name, in Field: \"" + fieldName + "\"",
                                           ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                          ExceptionHolder::ERROR_EXCEPTION);
+                                          ExceptionHolder::WARN_EXCEPTION);
             }
             if (!expFound && adbParser->_currentNode->isUnion && !default_offset && field_offset != 0)
             {
@@ -1614,6 +1592,19 @@ void AdbParser<e, T_OFFSET>::startFieldElement(const XML_Char** atts,
             adbParser->_currentField->offset = offset + in_dword_offset;
         }
 
+        // Check that field doesn't extend beyond parent node's end
+        if (adbParser->_enforceGuiChecks && !expFound &&
+            adbParser->_currentField->offset + adbParser->_currentField->get_size() >
+              adbParser->_currentNode->get_size())
+        {
+            expFound = raiseException(allowMultipleExceptions,
+                                      "Node: " + adbParser->_currentNode->name + " size(" +
+                                        to_string(adbParser->_currentNode->get_size()) + ") - field (" +
+                                        adbParser->_currentField->name + ") continue over the node's end",
+                                      ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
+                                      ExceptionHolder::ERROR_EXCEPTION);
+        }
+
         // For DS alignment check
         adbParser->_currentNode->update_max_leaf(adbParser->_currentField);
 
@@ -1736,12 +1727,12 @@ void AdbParser<e, T_OFFSET>::startFieldElement(const XML_Char** atts,
                         for (const auto& entry : enum_entries)
                         {
                             if (!Regex::regex_match(entry, Regex::regex(adbParser->_enum_pattern)))
-                        {
-                            expFound =
-                              raiseException(allowMultipleExceptions,
-                                             "Illegal value: \"" + aValue + "\" for attribute: \"" + aName + "\" ",
-                                             "doesn't match the given attribute pattern, in file: \"" +
-                                               adbParser->_fileName + "\" line: " + to_string(lineNumber),
+                            {
+                                expFound =
+                                  raiseException(allowMultipleExceptions,
+                                                 "Illegal value: \"" + aValue + "\" for attribute: \"" + aName + "\" ",
+                                                 "doesn't match the given attribute pattern, in file: \"" +
+                                                   adbParser->_fileName + "\" line: " + to_string(lineNumber),
                                                  ExceptionHolder::ERROR_EXCEPTION);
                             }
                         }
@@ -2095,20 +2086,6 @@ void AdbParser<e, T_OFFSET>::endElement(void* _adbParser, const XML_Char* name)
                                     adbParser->_current_node_alignment);
                     }
                     prevField = field;
-                }
-            }
-            if (adbParser->_enforceGuiChecks && adbParser->_currentNode->fields.size() != 0)
-            {
-                // check the last field doesn't continue over the node's end
-                AdbField* last_field = adbParser->_currentNode->fields[adbParser->_currentNode->fields.size() - 1];
-                if (last_field->offset + last_field->get_size() > adbParser->_currentNode->get_size())
-                {
-                    raiseException(allowMultipleExceptions,
-                                   "Node: " + adbParser->_currentNode->name + " size(" +
-                                     to_string(adbParser->_currentNode->get_size()) + ") - last field (" +
-                                     last_field->name + ") continue over the node's end",
-                                   ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                   ExceptionHolder::ERROR_EXCEPTION);
                 }
             }
 

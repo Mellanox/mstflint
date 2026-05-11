@@ -73,11 +73,10 @@ protected:
     virtual void validatePeriodicEqParams();
     virtual void validateMultiPortInfoParams();
     virtual void validateBkvParams();
+    virtual void validatePlrParams();
     virtual void paramValidate();
     virtual void createMlxlinkCommander();
-    virtual void initRegAccessLib();
     virtual void initPortInfo();
-    virtual void initPCIDomain();
     virtual void updateSysFsPath(string& sysfsPath);
 
     void handlePortStr(UserInput& userInput, const string& portStr);
@@ -86,6 +85,7 @@ protected:
     std::map<u_int32_t, u_int32_t> getSltpParamsFromVector(const string& paramsLine);
     std::map<u_int32_t, bool> getprbsLanesFromParams(const string& paramsLine);
     void checkStrLength(const string& str);
+    void validateNonEmptyValue(const string& value, const string& flagName);
 
     CommandLineParser _cmdParser;
     std::vector<OPTION_TYPE> _sendRegFuncMap;

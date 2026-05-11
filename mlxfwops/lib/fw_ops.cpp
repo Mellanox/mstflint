@@ -38,6 +38,7 @@
 #include "flint_base.h"
 #include "flint_io.h"
 #include "fw_ops.h"
+#include "psid_utils.h"
 #include "fs5_ops.h"
 #include "fs4_ops.h"
 #include "fs3_ops.h"
@@ -573,7 +574,7 @@ bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase** ioAccessP, 
     else if (fwParams.hndlType == FHT_UEFI_DEV)
     {
         *ioAccessP = new Flash;
-        if (!(*ioAccessP)->open(fwParams.uefiHndl, &fwParams.uefiExtra, false, !fwParams.shortErrors))
+        if (!(*ioAccessP)->open(fwParams.uefiHndl, &fwParams.uefiExtra, false, !fwParams.shortErrors, fwParams.noFwCtrl))
         {
             WriteToErrBuff(fwParams.errBuff, (char*)(*ioAccessP)->err(), fwParams.errBuffSize);
             delete *ioAccessP;
@@ -583,7 +584,7 @@ bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase** ioAccessP, 
     else if (fwParams.hndlType == FHT_MST_DEV)
     {
         *ioAccessP = new Flash;
-        if (!(*ioAccessP)->open(fwParams.mstHndl, fwParams.forceLock, fwParams.readOnly, fwParams.numOfBanks, fwParams.flashParams, fwParams.ignoreCacheRep, !fwParams.shortErrors, fwParams.cx3FwAccess))
+        if (!(*ioAccessP)->open(fwParams.mstHndl, fwParams.forceLock, fwParams.readOnly, fwParams.numOfBanks, fwParams.flashParams, fwParams.ignoreCacheRep, !fwParams.shortErrors, fwParams.cx3FwAccess, fwParams.noFwCtrl))
         {
             // TODO: release memory here ?
             WriteToErrBuff(fwParams.errBuff, (char*)(*ioAccessP)->err(), fwParams.errBuffSize);
@@ -867,17 +868,20 @@ void FwOperations::BackUpFwParams(fw_ops_params_t& fwParams)
     _fwParams.cx3FwAccess = fwParams.cx3FwAccess;
     _fwParams.errBuff = (char*)NULL;
     _fwParams.errBuffSize = 0;
-    _fwParams.fileHndl =
-      (fwParams.hndlType == FHT_FW_FILE && fwParams.fileHndl) ? strncpy((char*)(new char[(strlen(fwParams.fileHndl) + 1)]), fwParams.fileHndl, strlen(fwParams.fileHndl) + 1) : (char*)NULL;
+    _fwParams.fileHndl = (fwParams.hndlType == FHT_FW_FILE && fwParams.fileHndl) ?
+                           strcpy((char*)(new char[(strlen(fwParams.fileHndl) + 1)]), fwParams.fileHndl) :
+                           (char*)NULL;
     // no support for flash params
     _fwParams.flashParams = (flash_params_t*)NULL;
     _fwParams.forceLock = fwParams.forceLock;
     _fwParams.ignoreCacheRep = fwParams.ignoreCacheRep;
-    _fwParams.mstHndl =
-      (fwParams.hndlType == FHT_MST_DEV && fwParams.mstHndl) ? strncpy((char*)(new char[(strlen(fwParams.mstHndl) + 1)]), fwParams.mstHndl, strlen(fwParams.mstHndl) + 1) : (char*)NULL;
+    _fwParams.mstHndl = (fwParams.hndlType == FHT_MST_DEV && fwParams.mstHndl) ?
+                          strcpy((char*)(new char[(strlen(fwParams.mstHndl) + 1)]), fwParams.mstHndl) :
+                          (char*)NULL;
     _fwParams.noFlashVerify = fwParams.noFlashVerify;
     _fwParams.numOfBanks = fwParams.numOfBanks;
-    _fwParams.psid = fwParams.psid ? strncpy((char*)(new char[(strlen(fwParams.psid) + 1)]), fwParams.psid, strlen(fwParams.psid) + 1) : (char*)NULL;
+    _fwParams.psid =
+      fwParams.psid ? strcpy((char*)(new char[(strlen(fwParams.psid) + 1)]), fwParams.psid) : (char*)NULL;
     _fwParams.readOnly = fwParams.readOnly;
     _fwParams.shortErrors = fwParams.shortErrors;
     _fwParams.uefiExtra = fwParams.uefiExtra;
@@ -1437,7 +1441,7 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
   {"Spectrum3", SPECTRUM3_HW_ID, CT_SPECTRUM3, CFT_SWITCH, 0, {53104, 0}, {{UNKNOWN_BIN, {0}}}},
   {"Quantum2", QUANTUM2_HW_ID, CT_QUANTUM2, CFT_SWITCH, 0, {54002, 0}, {{UNKNOWN_BIN, {0}}}},
   {"Quantum3", QUANTUM3_HW_ID, CT_QUANTUM3, CFT_SWITCH, 0, {54004, 0}, {{UNKNOWN_BIN, {0}}}},
-  {"NVLink6_Switch_ASIC", NVLINK6_SWITCH_ASIC_HW_ID, CT_NVLINK6_SWITCH_ASIC, CFT_SWITCH, 0, {54008, 0}, {{UNKNOWN_BIN, {0}}}},
+  {"NVLink6_Switch", NVLINK6_SWITCH_HW_ID, CT_NVLINK6_SWITCH, CFT_SWITCH, 0, {54008, 0}, {{UNKNOWN_BIN, {0}}}},
   {"Spectrum4", SPECTRUM4_HW_ID, CT_SPECTRUM4, CFT_SWITCH, 0, {53120, 0}, {{UNKNOWN_BIN, {0}}}},
   {"Spectrum5", SPECTRUM5_HW_ID, CT_SPECTRUM5, CFT_SWITCH, 0, {53122, 0}, {{UNKNOWN_BIN, {0}}}},
   {"Spectrum6", SPECTRUM6_HW_ID, CT_SPECTRUM6, CFT_SWITCH, 0, {53124, 0}, {{UNKNOWN_BIN, {0}}}},
@@ -1477,7 +1481,7 @@ const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
   {"Spectrum3 A0", SPECTRUM3_HW_ID, 0x00},
   {"Quantum2 A0", QUANTUM2_HW_ID, 0x00},
   {"Quantum3 A0", QUANTUM3_HW_ID, 0x00},
-  {"NVLink6_Switch_ASIC A0", NVLINK6_SWITCH_ASIC_HW_ID, 0x00},
+  {"NVLink6_Switch A0", NVLINK6_SWITCH_HW_ID, 0x00},
   {"Spectrum4 A0", SPECTRUM4_HW_ID, 0x00},
   {"Spectrum5 A0", SPECTRUM5_HW_ID, 0x00},
   {"Spectrum6 A0", SPECTRUM6_HW_ID, 0x00},
@@ -1657,15 +1661,32 @@ bool FwOperations::FwSetPrint(PrintCallBack PrintFunc)
     return true;
 }
 
+psid_utils::MinorPsidLockStatus FwOperations::queryMinorPsidLockStatus()
+{
+    return psid_utils::MinorPsidLockStatus();
+}
+
 bool FwOperations::CheckPSID(FwOperations& imageOps, u_int8_t allow_psid_change)
 {
-    if (!allow_psid_change)
+    if (allow_psid_change)
     {
-        if (strncmp(_fwImgInfo.ext_info.psid, imageOps._fwImgInfo.ext_info.psid, PSID_LEN))
-        {
-            return errmsg(MLXFW_PSID_MISMATCH_ERR, "Image PSID is %s, it cannot be burnt into current device (PSID: %s)", imageOps._fwImgInfo.ext_info.psid, _fwImgInfo.ext_info.psid);
-        }
+        return true;
     }
+
+    const char* devPsid = _fwImgInfo.ext_info.psid;
+    const char* imgPsid = imageOps._fwImgInfo.ext_info.psid;
+
+    psid_utils::MinorPsidLockStatus lockStatus = queryMinorPsidLockStatus();
+    psid_utils::PsidValidator validator(devPsid, imgPsid, lockStatus);
+
+    psid_utils::PsidCompatibilityStatus compatibilityStatus = validator.checkCompatibility();
+
+    if (compatibilityStatus != psid_utils::PsidCompatibilityStatus::ALLOWED)
+    {
+        std::string errMsg = validator.statusToString(compatibilityStatus);
+        return errmsg(MLXFW_PSID_MISMATCH_ERR, "%s", errMsg.c_str());
+    }
+
     return true;
 }
 
@@ -2098,7 +2119,7 @@ void FwOperations::SetDevFlags(chip_type_t chipType, u_int32_t devType, fw_img_t
     ibDev = (fwType == FIT_FS3 && chipType != CT_SPECTRUM) || (chipType == CT_CONNECTX && !CntxEthOnly(devType));
     ethDev = (chipType == CT_CONNECTX) || (chipType == CT_CONNECTX4) || (chipType == CT_CONNECTX4_LX) || (chipType == CT_CONNECTX5) || (chipType == CT_CONNECTX6) || (chipType == CT_CONNECTX6DX) ||
              (chipType == CT_CONNECTX6LX) || (chipType == CT_SPECTRUM) || (chipType == CT_SPECTRUM2) || (chipType == CT_SPECTRUM3) || (chipType == CT_CONNECTX7) || (chipType == CT_QUANTUM2) ||
-             (chipType == CT_QUANTUM3) || (chipType == CT_NVLINK6_SWITCH_ASIC) || (chipType == CT_SPECTRUM4) || (chipType == CT_SPECTRUM5) || (chipType == CT_SPECTRUM6) ||
+             (chipType == CT_QUANTUM3) || (chipType == CT_NVLINK6_SWITCH) || (chipType == CT_SPECTRUM4) || (chipType == CT_SPECTRUM5) || (chipType == CT_SPECTRUM6) ||
              (chipType == CT_BLUEFIELD) || (chipType == CT_BLUEFIELD2) || (chipType == CT_BLUEFIELD3) || (chipType == CT_CONNECTX8) || (chipType == CT_CONNECTX8_PURE_PCIE_SWITCH) ||
              (chipType == CT_CONNECTX9) || (chipType == CT_CONNECTX9_PURE_PCIE_SWITCH) || (chipType == CT_BLUEFIELD4);
 
@@ -2344,6 +2365,11 @@ bool FwOperations::IsEncryptionSupported()
     return errmsg("IsEncryptionSupported not supported.");
 }
 
+bool FwOperations::IsCRDTDebugSessionActive()
+{
+    return errmsg("IsCRDTDebugSessionActive is not supported");
+}
+
 bool FwOperations::FwBurnAdvanced(std::vector<u_int8_t> imageOps4MData, ExtBurnParams& burnParams, FwComponent::comps_ids_t ComponentId)
 {
     (void)imageOps4MData;
@@ -2431,6 +2457,12 @@ bool FwOperations::UpdateSection(void* new_info, fs3_section_t sect_type, bool i
     (void)callBackFunc;
     return errmsg("UpdateSection not supported.");
 }
+
+bool FwOperations::UpdateSection(fs3_section_t, std::vector<u_int8_t>&, const char*, PrintCallBack)
+{
+    return errmsg("UpdateSection not supported.");
+}
+
 bool FwOperations::FwQueryTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer, bool queryRunning)
 {
     (void)timestamp;
@@ -2557,13 +2589,13 @@ u_int8_t FwOperations::GetFwFormatFromHwDevID(u_int32_t hwDevId)
         return FS_FS3_GEN;
     }
     else if (hwDevId == CX5_HW_ID || hwDevId == CX6_HW_ID || hwDevId == CX6DX_HW_ID || hwDevId == CX6LX_HW_ID || hwDevId == CX7_HW_ID || hwDevId == BF_HW_ID || hwDevId == BF2_HW_ID ||
-             hwDevId == BF3_HW_ID || hwDevId == BF4_HW_ID || hwDevId == QUANTUM_HW_ID || hwDevId == QUANTUM2_HW_ID || hwDevId == SPECTRUM4_HW_ID || hwDevId == SPECTRUM3_HW_ID ||
+             hwDevId == BF3_HW_ID || hwDevId == QUANTUM_HW_ID || hwDevId == QUANTUM2_HW_ID || hwDevId == SPECTRUM4_HW_ID || hwDevId == SPECTRUM3_HW_ID ||
              hwDevId == SPECTRUM2_HW_ID || hwDevId == SPECTRUM5_HW_ID || hwDevId == GEARBOX_HW_ID || hwDevId == GB_MANAGER_HW_ID || hwDevId == ABIR_GB_HW_ID)
     {
         return FS_FS4_GEN;
     }
     else if ((hwDevId == QUANTUM3_HW_ID) || (hwDevId == CX8_HW_ID) || (hwDevId == CX8_PURE_PCIE_SWITCH_HW_ID) || (hwDevId == BF4_HW_ID) || (hwDevId == ARCUSE_HW_ID) || (hwDevId == CX9_HW_ID) ||
-             (hwDevId == CX9_PURE_PCIE_SWITCH_HW_ID) || (hwDevId == NVLINK6_SWITCH_ASIC_HW_ID))
+             (hwDevId == CX9_PURE_PCIE_SWITCH_HW_ID) || (hwDevId == NVLINK6_SWITCH_HW_ID))
     {
         return FS_FS5_GEN;
     }
@@ -2877,7 +2909,7 @@ bool FwOperations::IsExtendedGuidNumSupported()
         case SPECTRUM5_HW_ID:
         case SPECTRUM6_HW_ID:
         case QUANTUM3_HW_ID:
-        case NVLINK6_SWITCH_ASIC_HW_ID:
+        case NVLINK6_SWITCH_HW_ID:
             isSupported = true;
             break;
         default:
@@ -2939,14 +2971,13 @@ life_cycle_t CRSpaceRegisters::getLifeCycle()
         case CT_CONNECTX7:
         case CT_QUANTUM2:
         case CT_BLUEFIELD3:
-        case CT_BLUEFIELD4:
         case CT_SPECTRUM4:
         case CT_SPECTRUM5:
-            lifeCycleAddress = 0xf0000;
-            firstBit = 4;
-            bitLen = 2;
+        lifeCycleAddress = 0xf0000;
+        firstBit = 4;
+        bitLen = 2;
             break;
-        case CT_SPECTRUM6:
+            case CT_SPECTRUM6:
             lifeCycleAddress = 0xf0000;
             firstBit = 16;
             bitLen = 5;
@@ -2955,8 +2986,9 @@ life_cycle_t CRSpaceRegisters::getLifeCycle()
         case CT_CONNECTX9:
         case CT_CONNECTX8_PURE_PCIE_SWITCH:
         case CT_CONNECTX9_PURE_PCIE_SWITCH:
+        case CT_BLUEFIELD4:
         case CT_QUANTUM3:
-        case CT_NVLINK6_SWITCH_ASIC:
+        case CT_NVLINK6_SWITCH:
         case CT_ARCUSE:
             lifeCycleAddress = 0xf0000;
             firstBit = 16;
@@ -3013,7 +3045,7 @@ int CRSpaceRegisters::getGlobalImageStatus()
             break;
         case CT_QUANTUM2:
         case CT_QUANTUM3:
-        case CT_NVLINK6_SWITCH_ASIC:
+        case CT_NVLINK6_SWITCH:
             global_image_status_address = 0x152080;
             break;
         case CT_SPECTRUM4:
@@ -3041,7 +3073,7 @@ u_int32_t CRSpaceRegisters::getSecurityVersion()
     {
         case CT_QUANTUM2:
         case CT_QUANTUM3:
-        case CT_NVLINK6_SWITCH_ASIC:
+        case CT_NVLINK6_SWITCH:
             rollbackMSB = getRegister(0xf3248);
             rollbackLSB = getRegister(0xf324c);
             minimalSecurityVersion = getConsecutiveBits(getRegister(0xf3238), 3, 8);

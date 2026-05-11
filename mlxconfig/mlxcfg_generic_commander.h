@@ -71,9 +71,12 @@ private:
     void printParamViews(FILE* f, vector<ParamView>& v);
     void genXMLTemplateAux(vector<string> tlvs, string& xmlTemplate, bool allAttrs, bool withVal, bool defaultAttrVal);
     void removeSignatureTlvs(vector<std::shared_ptr<TLVConf>>& tlvs);
+    void ValidateAndGetTlvsAndCompIdLegacy(const vector<u_int8_t>& buff,
+                                           vector<std::shared_ptr<TLVConf>>& tlvs,
+                                           FwComponent::comps_ids_t& compsId);
 
 public:
-    GenericCommander(mfile* mf, string& dbName, Device_Type deviceType = Device_Type::HCA);
+    GenericCommander(mfile* mf, string& dbName, Device_Type deviceType = Device_Type::HCA, bool useMaxPort = false);
     ~GenericCommander() override;
     void printLongDesc(FILE*) override;
     void setHostFunctionParams(u_int8_t hostId, u_int8_t pfIndex, bool valid) override;
@@ -93,11 +96,21 @@ public:
     bool isDPUEnabled();
     bool shouldSkipPrepareReset();
     const char* loadConfigurationGetStr() override;
+    bool checkPCIResetRequired() override;
     void setRawCfg(std::vector<u_int32_t> rawTlvVec) override;
     std::vector<u_int32_t> getRawCfg(std::vector<u_int32_t> rawTlvVec) override;
     void dumpRawCfg(std::vector<u_int32_t> rawTlvVec, std::string& tlvDump) override;
     void backupCfgs(vector<BackupView>& view) override;
     void updateParamViewValue(ParamView& p, std::string v, QueryType qt) override;
+    void addTlvInstanceKeysForParam(const std::string& mlxconfigName,
+                                    std::unordered_set<std::string>& keysOut) override;
+    std::shared_ptr<SystemConfiguration>
+      getSystemConfiguration(const std::string& name, int32_t asicNumber, const std::string& deviceName) override;
+    std::vector<std::shared_ptr<SystemConfiguration>>
+      getSystemConfigurationsByName(const std::string& name, const std::string& deviceName) override;
+    std::map<std::string, std::vector<std::shared_ptr<SystemConfiguration>>>
+      getAllSystemConfigurations(const std::string& deviceName) override;
+    MlxcfgDBManager* getDbManager() const { return _dbManager; }
     void queryConfigViews(std::vector<TLVConfView>& confs, const std::string& configName = "", QueryType qt = QueryNext);
 
     void
@@ -122,6 +135,7 @@ public:
               const string& privateKeyFile = "",
               const string& keyPairUUid = "");
     void apply(const vector<u_int8_t>& buff);
+    string GetTokenPSIDFromBin(const vector<u_int8_t>& buff);
 };
 
 class RawCfgParams5thGen : public ErrMsg
