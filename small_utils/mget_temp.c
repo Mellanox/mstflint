@@ -55,6 +55,7 @@ void print_help()
     printf("-h             : print this help message\n");
     printf("-d <dev>       : mst device name\n");
     printf("-v             : print a table of all thermal diode data\n");
+    printf("-z             : print a table of all thermal zones\n");
     printf("--precision <unit> : temperature display resolution for module sensors\n");
     printf("                     Valid values: 0: 0.125°C (default) | 1: 1/256°C (high precision)\n");
     printf("--no-modules   : do not read or display module sensors\n");
@@ -124,6 +125,45 @@ int include_mmta_in_max_temp(td_data_mmta* mmta_data, int mmta_sensors_read, int
     return max_temp;
 }
 
+static void print_zones_table(td_fw_zone_data_t* zones, int count)
+{
+    int i;
+    printf("%-5s %-12s %s\n", "#", "zone", "max_temp");
+    for (i = 0; i < count; i++)
+    {
+        printf("%-5d %-12s %d\n", i + 1, zones[i].name, (int)zones[i].max_temp);
+    }
+}
+
+int handle_zones_request(mfile* mf, bool unsupported_is_warning)
+{
+    td_fw_zone_data_t* zones = NULL;
+    int count = 0;
+    td_fw_result_t trc;
+
+    if (td_fw_get_tile_count(mf) == 0)
+    {
+        fprintf(stderr, "%s Thermal zones not supported on this device.\n", unsupported_is_warning ? "-W-" : "-E-");
+        return unsupported_is_warning ? 0 : 1;
+    }
+    trc = td_fw_read_all_zones(mf, &zones, &count);
+    if (trc != TDFW_SUCCESS)
+    {
+        fprintf(stderr, "-E- Failed to read zones: %s\n", td_fw_err_str);
+        td_fw_release_zones_data(zones);
+        return 1;
+    }
+    if (count == 0)
+    {
+        fprintf(stderr, "%s Thermal zones not supported on this device.\n", unsupported_is_warning ? "-W-" : "-E-");
+        td_fw_release_zones_data(zones);
+        return unsupported_is_warning ? 0 : 1;
+    }
+    print_zones_table(zones, count);
+    td_fw_release_zones_data(zones);
+    return 0;
+}
+
 void display_internal_sensors_verbose(td_data_fw* data, bool mmta_supported, int* row_num)
 {
     if (mmta_supported)
@@ -156,8 +196,10 @@ int parseAndRun(int argc, char** argv)
     td_temp_unit_t requested_unit = TD_FW_TEMP_UNIT_0_125C;
     char* dev_name = NULL;
     char device[MAX_DEV_LEN] = {0};
+    bool zones_request = false;
     int ai;
     int i, j;
+    int final_rc = 0;
     dm_dev_id_t dev_id = DeviceUnknown;
     u_int32_t hw_dev_id = 0;
     u_int32_t hw_rev_id = 0;
@@ -181,6 +223,11 @@ int parseAndRun(int argc, char** argv)
         else if (strcmp(argv[ai], "-v") == 0)
         {
             print_all_termal_diode = 1;
+            ai += 1;
+        }
+        else if (strcmp(argv[ai], "-z") == 0)
+        {
+            zones_request = true;
             ai += 1;
         }
         else if (strcmp(argv[ai], "--precision") == 0)
@@ -259,6 +306,14 @@ int parseAndRun(int argc, char** argv)
         }
     }
 
+    /* -z alone: skip diode/MMTA reads. */
+    if (zones_request && !print_all_termal_diode)
+    {
+        int zrc = handle_zones_request(mf, /*unsupported_is_warning=*/false);
+        mclose(mf);
+        return zrc;
+    }
+
     /* read and copy out diode data*/
 
     rc = td_fw_read_diodes(mf, TD_FW_ALL_DIODES, &diodes_read, &data);
@@ -272,7 +327,8 @@ int parseAndRun(int argc, char** argv)
     mmta_modules_read = read_mmta_sensors(mf, requested_unit, &mmta_data, &mmta_supported, no_modules);
     if (mmta_modules_read == -1)
     {
-        fprintf(stderr, "Failed to read MMTA module sensors (%s)\n", td_fw_err_str);
+        fprintf(stderr, "Failed to read module sensors (%s)\n", td_fw_err_str);
+        td_fw_release_data(data);
         mclose(mf);
         exit(1);
     }
@@ -297,15 +353,21 @@ int parseAndRun(int argc, char** argv)
             display_mmta_sensor_verbose(&mmta_data[i], decimals, &j);
             printf("\n");
         }
+
+        if (zones_request)
+        {
+            printf("\n--------------------------------------------------------------------------------------\n\n");
+            final_rc = handle_zones_request(mf, /*unsupported_is_warning=*/true);
+        }
     }
     else
     {
         /* non-verbose */
-        int max_temp = -10000; /* if anything below this is a valid measurement we're in trouble... */
+        int max_temp = TD_FW_INVALID_TEMP; /* if anything below this is a valid measurement we're in trouble... */
         for (i = 0; i < diodes_read; i++)
         { /* find maximum temperature */
             /* check if its temperature is greater than the maximum encountered up to now */
-            if (data[i].temp != TD_FW_INVALID_TEMP && data[i].temp > max_temp)
+            if (data[i].temp > TD_FW_INVALID_TEMP && data[i].temp > max_temp)
             {
                 max_temp = data[i].temp;
             }
@@ -319,7 +381,7 @@ int parseAndRun(int argc, char** argv)
     td_fw_release_mmta_data(mmta_data);
     td_fw_release_data(data);
     mclose(mf);
-    return 0;
+    return final_rc;
 }
 
 int main(int argc, char** argv)
