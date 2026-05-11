@@ -156,7 +156,7 @@ UNSUPPORTED_PSIDS_PER_DEV_ID = {
     0x218: ["MT_0000001121", "MT_0000001181", "MT_0000001122", "MT_0000001182", "OMN0000000006"]  # Canoe
 }
 
-BLUEFIELD_DEVICES = ['BlueField2', 'BlueField3']
+BLUEFIELD_DEVICES = ['BlueField2', 'BlueField3', 'BlueField4']
 PCIE_SWITCH_DEVICES_ALL = BLUEFIELD_DEVICES + ['ConnectX7', 'ConnectX8', 'ConnectX9', 'ConnectX10']
 
 IS_MSTFLINT = os.path.basename(__file__) == "mstfwreset.py"
@@ -2257,7 +2257,7 @@ def reset_flow_host(device, args, command):
 
     print("")
     devDict = getDeviceDict(devid)
-    if devDict['name'] in ['BlueField2', 'BlueField3']:
+    if devDict['name'] in BLUEFIELD_DEVICES:
         global is_bluefield
         is_bluefield = True
     reset_type = mfrl.default_reset_type() if args.reset_type is None else args.reset_type
@@ -2418,6 +2418,7 @@ def reset_flow_host(device, args, command):
         execResLvl(device, reset_level,
                    reset_type, reset_sync, pci_reset_request_method, args, mfrl, mrsi)
         if FWResetStatusChecker.GetStatus() == FirmwareResetStatusChecker.FirmwareResetStatusFailed:
+            logger.debug("Uptime before reset: {0}, Uptime after reset: {1}".format(FWResetStatusChecker._UptimeBeforeReset, FWResetStatusChecker._UptimeAfterReset))
             reset_fsm_register()
             print("-E- Firmware reset failed, retry operation or reboot machine.")
             return 1
