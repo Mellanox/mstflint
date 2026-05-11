@@ -1607,7 +1607,8 @@ def assert_supported_psid(devid):
         psid = RegAccessObj.getPSID()
         logger.debug("{0} devid with PSID: {1}".format(devid, psid))
         if psid in UNSUPPORTED_PSIDS_PER_DEV_ID[devid]:
-            raise Exception("Device {0} with PSID {1} is not supported by this tool".format(getDeviceDict(devid)['name'], psid))
+            logger.debug("Device {0} with PSID {1} is not supported by this tool".format(getDeviceDict(devid)['name'], psid))
+            raise Exception("No reset level is supported")
 
 ######################################################################
 # Description: Send MFRL to FW in Multihost setup
@@ -2193,8 +2194,6 @@ def reset_flow_host(device, args, command):
     mcam = CmdRegMcam(RegAccessObj)
     mrsi = CmdRegMrsi(RegAccessObj)
 
-    assert_supported_psid(devid)
-
     logger.info('Check if device is livefish')
     DevMgtObj = dev_mgt.DevMgt(MstDevObj)  # check if device is in livefish
     if DevMgtObj.isLivefishMode() == 1:
@@ -2281,10 +2280,14 @@ def reset_flow_host(device, args, command):
     is_pcie_switch = is_pcie_switch_device(devid)
     sync_2_only_supported = False
     if mroq.mroq_is_supported():
+        if not mfrl.is_any_reset_level_supported(mroq.is_any_sync_supported(tool_owner_support)):
+            raise RuntimeError("No reset level is supported")
         sync_2_only_supported = mroq.is_sync2_only_supported(tool_owner_support)
         if sync_2_only_supported:
             logger.debug("Sync 2 is the only supported sync, will not be the default.")
 
+    assert_supported_psid(devid)  # leaving for BWC, to be removed
+    
     if command == "query":
         if mroq.mroq_is_supported():
             print("The following query is relevant only for reset-type {}:\n".format(reset_type))

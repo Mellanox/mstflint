@@ -255,6 +255,14 @@ class CmdRegMfrl():
         else:
             return False
 
+    def is_any_reset_level_supported(self, is_any_sync_supported):
+        for reset_level_ii in self._reset_levels:
+            if self.is_reset_level_supported(reset_level_ii['level']):
+                if reset_level_ii['level'] == CmdRegMfrl.PCI_RESET and is_any_sync_supported is False:  # PCI reset is considered supported only if any sync is supported
+                    continue
+                return True
+        return False
+
     def default_reset_level(self, is_any_sync_supported, skip_pci_reset, sync_2_only_supported):
         'Return the default reset-level (minimal supported reset-level)'
         for reset_level_ii, is_default in CmdRegMfrl.reset_levels_default():
