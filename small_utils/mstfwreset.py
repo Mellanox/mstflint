@@ -156,7 +156,7 @@ UNSUPPORTED_PSIDS_PER_DEV_ID = {
     0x218: ["MT_0000001121", "MT_0000001181", "MT_0000001122", "MT_0000001182", "OMN0000000006"]  # Canoe
 }
 
-BLUEFIELD_DEVICES = ['BlueField2', 'BlueField3']
+BLUEFIELD_DEVICES = ['BlueField2', 'BlueField3', 'BlueField4']
 PCIE_SWITCH_DEVICES_ALL = BLUEFIELD_DEVICES + ['ConnectX7', 'ConnectX8', 'ConnectX9', 'ConnectX10']
 
 IS_MSTFLINT = os.path.basename(__file__) == "mstfwreset.py"
@@ -1602,12 +1602,17 @@ def is_pcie_switch_device(devid, reg_access_obj=None):
     return res
 
 
-def assert_supported_psid(devid):
+def assert_supported_psid(devid, mfrl, mroq, tool_owner_support):
     if devid in UNSUPPORTED_PSIDS_PER_DEV_ID:
         psid = RegAccessObj.getPSID()
         logger.debug("{0} devid with PSID: {1}".format(devid, psid))
         if psid in UNSUPPORTED_PSIDS_PER_DEV_ID[devid]:
-            raise Exception("Device {0} with PSID {1} is not supported by this tool".format(getDeviceDict(devid)['name'], psid))
+            logger.debug("Device {0} with PSID {1} (CX7 canoe)".format(getDeviceDict(devid)['name'], psid))
+            mfrl.disable_unsupported_reset_levels()
+            mroq.disable_all_syncs()
+
+            if mroq.mroq_is_supported() and not mfrl.is_any_reset_level_supported(mroq.is_any_sync_supported(tool_owner_support)):
+                raise RuntimeError("No reset level is supported")
 
 ######################################################################
 # Description: Send MFRL to FW in Multihost setup
@@ -2193,8 +2198,6 @@ def reset_flow_host(device, args, command):
     mcam = CmdRegMcam(RegAccessObj)
     mrsi = CmdRegMrsi(RegAccessObj)
 
-    assert_supported_psid(devid)
-
     logger.info('Check if device is livefish')
     DevMgtObj = dev_mgt.DevMgt(MstDevObj)  # check if device is in livefish
     if DevMgtObj.isLivefishMode() == 1:
@@ -2258,7 +2261,7 @@ def reset_flow_host(device, args, command):
 
     print("")
     devDict = getDeviceDict(devid)
-    if devDict['name'] in ['BlueField2', 'BlueField3']:
+    if devDict['name'] in BLUEFIELD_DEVICES:
         global is_bluefield
         is_bluefield = True
     reset_type = mfrl.default_reset_type() if args.reset_type is None else args.reset_type
@@ -2281,10 +2284,14 @@ def reset_flow_host(device, args, command):
     is_pcie_switch = is_pcie_switch_device(devid)
     sync_2_only_supported = False
     if mroq.mroq_is_supported():
+        if not mfrl.is_any_reset_level_supported(mroq.is_any_sync_supported(tool_owner_support)):
+            raise RuntimeError("No reset level is supported")
         sync_2_only_supported = mroq.is_sync2_only_supported(tool_owner_support)
         if sync_2_only_supported:
             logger.debug("Sync 2 is the only supported sync, will not be the default.")
 
+    assert_supported_psid(devid)  # leaving for BWC, to be removed
+    
     if command == "query":
         if mroq.mroq_is_supported():
             print("The following query is relevant only for reset-type {}:\n".format(reset_type))
@@ -2415,6 +2422,7 @@ def reset_flow_host(device, args, command):
         execResLvl(device, reset_level,
                    reset_type, reset_sync, pci_reset_request_method, args, mfrl, mrsi)
         if FWResetStatusChecker.GetStatus() == FirmwareResetStatusChecker.FirmwareResetStatusFailed:
+            logger.debug("Uptime before reset: {0}, Uptime after reset: {1}".format(FWResetStatusChecker._UptimeBeforeReset, FWResetStatusChecker._UptimeAfterReset))
             reset_fsm_register()
             print("-E- Firmware reset failed, retry operation or reboot machine.")
             return 1

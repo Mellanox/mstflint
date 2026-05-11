@@ -93,6 +93,8 @@ bool Fs5Operations::ParseHwPointers(VerifyCallBack verifyCallBackFunc)
     _itoc_ptr = hwPointers.toc_ptr.ptr;
     _tools_ptr = hwPointers.tools_ptr.ptr;
     _image_info_section_ptr = hwPointers.image_info_section_pointer.ptr;
+    _issu_notch_ptr = hwPointers.issu_notch_pointer.ptr;
+    _issu_main_uid_ptr = hwPointers.issu_main_uid_pointer.ptr;
     _hashes_table_ptr = hwPointers.ncore_hashes_pointer.ptr;
     _ncore_bch_ptr = hwPointers.ncore_bch_pointer.ptr;
     _is_hw_ptrs_initialized = true;

@@ -193,7 +193,12 @@ class CmdRegMfrl():
         skip_pci_reset = False
         if is_any_sync_supported is None:
             skip_pci_reset = True
-        default_reset_level = self.default_reset_level(is_any_sync_supported, skip_pci_reset, sync_2_only_supported)
+        try:
+            default_reset_level = self.default_reset_level(is_any_sync_supported, skip_pci_reset, sync_2_only_supported)
+        except CmdNotSupported as e:
+            self.logger.debug("No default reset-level found")
+            default_reset_level = None
+
         result = "Reset-levels:\n"
         for reset_level_ii in self._reset_levels:
             level = reset_level_ii['level']
@@ -201,6 +206,7 @@ class CmdRegMfrl():
 
             if reset_level_ii['level'] is CmdRegMfrl.PCI_RESET and is_any_sync_supported is False:
                 supported = "Not Supported"
+                default = ""
             else:
                 supported = "Supported" if reset_level_ii['supported'] else "Not Supported"
                 default = "(default)" if reset_level_ii["level"] == default_reset_level else ""
@@ -249,6 +255,14 @@ class CmdRegMfrl():
         else:
             return False
 
+    def is_any_reset_level_supported(self, is_any_sync_supported):
+        for reset_level_ii in self._reset_levels:
+            if self.is_reset_level_supported(reset_level_ii['level']):
+                if reset_level_ii['level'] == CmdRegMfrl.PCI_RESET and is_any_sync_supported is False:  # PCI reset is considered supported only if any sync is supported
+                    continue
+                return True
+        return False
+
     def default_reset_level(self, is_any_sync_supported, skip_pci_reset, sync_2_only_supported):
         'Return the default reset-level (minimal supported reset-level)'
         for reset_level_ii, is_default in CmdRegMfrl.reset_levels_default():
@@ -258,7 +272,7 @@ class CmdRegMfrl():
                 continue
             if self.is_reset_level_supported(reset_level_ii) and is_default:
                 return reset_level_ii
-        raise CmdNotSupported("There is no supported reset-level")
+        raise CmdNotSupported("There is no default reset-level")
 
     def default_reset_type(self):
         'Return the default reset-type'
@@ -343,3 +357,13 @@ class CmdRegMfrl():
             raise CmdNotSupported('Failed to send MFRL! reset-type {0} is not supported!'.format(reset_type))
 
         self._write_reg(reset_level_2_send, reset_type_2_send, reset_sync, pci_reset_request_method)
+
+    def disable_unsupported_reset_levels(self):
+        """
+        Force disable all reset levels except PCI_RESET (3) and WARM_REBOOT (4)
+        """
+        for reset_level_ii in self._reset_levels:
+            if reset_level_ii['level'] not in [self.PCI_RESET, self.WARM_REBOOT]:
+                if reset_level_ii['supported']:
+                    self.logger.debug("Disabled reset level {0}".format(reset_level_ii['level']))
+                reset_level_ii['supported'] = False

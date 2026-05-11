@@ -167,7 +167,10 @@ const Fs3Operations::SectionInfo Fs3Operations::_fs3SectionsInfoArr[] = {
   {FS4_STRN_IRON, "STRN_IRON"},
   {FS4_STRN_TILE, "STRN_TILE"},
   {FS4_MAIN_DATA, "MAIN_DATA"},
-  {FS4_HASHES_TABLE, "HASHES_TABLE"}};
+  {FS4_HASHES_TABLE, "HASHES_TABLE"},
+  {FS4_ISSU_NOTCH_CONFIG, "ISSU_NOTCH_CONFIG"},
+  {FS4_ISSU_MAIN_UID, "ISSU_MAIN_UID"},
+  {FS4_TILE_UID, "TILE_UID"}};
 
 bool Fs3Operations::Fs3UpdateImgCache(u_int8_t* buff, u_int32_t addr, u_int32_t size)
 {

@@ -259,3 +259,12 @@ class CmdRegMroq():
                     break
 
         return reset_sync
+
+    def disable_all_syncs(self):
+        """
+        Force disable all sync options
+        """
+        if self._mroq_is_supported:
+            if self._pci_sync_for_fw_update_start != 0:
+                self._logger.debug("Disabled all sync options in MROQ")
+            self._pci_sync_for_fw_update_start = 0
