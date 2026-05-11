@@ -1602,13 +1602,17 @@ def is_pcie_switch_device(devid, reg_access_obj=None):
     return res
 
 
-def assert_supported_psid(devid):
+def assert_supported_psid(devid, mfrl, mroq, tool_owner_support):
     if devid in UNSUPPORTED_PSIDS_PER_DEV_ID:
         psid = RegAccessObj.getPSID()
         logger.debug("{0} devid with PSID: {1}".format(devid, psid))
         if psid in UNSUPPORTED_PSIDS_PER_DEV_ID[devid]:
-            logger.debug("Device {0} with PSID {1} is not supported by this tool".format(getDeviceDict(devid)['name'], psid))
-            raise Exception("No reset level is supported")
+            logger.debug("Device {0} with PSID {1} (CX7 canoe)".format(getDeviceDict(devid)['name'], psid))
+            mfrl.disable_unsupported_reset_levels()
+            mroq.disable_all_syncs()
+
+            if mroq.mroq_is_supported() and not mfrl.is_any_reset_level_supported(mroq.is_any_sync_supported(tool_owner_support)):
+                raise RuntimeError("No reset level is supported")
 
 ######################################################################
 # Description: Send MFRL to FW in Multihost setup

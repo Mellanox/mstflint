@@ -357,3 +357,13 @@ class CmdRegMfrl():
             raise CmdNotSupported('Failed to send MFRL! reset-type {0} is not supported!'.format(reset_type))
 
         self._write_reg(reset_level_2_send, reset_type_2_send, reset_sync, pci_reset_request_method)
+
+    def disable_unsupported_reset_levels(self):
+        """
+        Force disable all reset levels except PCI_RESET (3) and WARM_REBOOT (4)
+        """
+        for reset_level_ii in self._reset_levels:
+            if reset_level_ii['level'] not in [self.PCI_RESET, self.WARM_REBOOT]:
+                if reset_level_ii['supported']:
+                    self.logger.debug("Disabled reset level {0}".format(reset_level_ii['level']))
+                reset_level_ii['supported'] = False
