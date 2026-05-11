@@ -256,7 +256,7 @@ struct fs5_image_layout_hw_pointers_gilboa {
 /*---------------- DWORD[22] (Offset 0x58) ----------------*/
 	/* Description -  */
 	/* 0x58.0 - 0x5c.31 */
-	struct fs5_image_layout_hw_pointer_entry image_signature_pointer;
+	struct fs5_image_layout_hw_pointer_entry issu_notch_pointer;
 /*---------------- DWORD[24] (Offset 0x60) ----------------*/
 	/* Description -  */
 	/* 0x60.0 - 0x64.31 */
@@ -264,7 +264,7 @@ struct fs5_image_layout_hw_pointers_gilboa {
 /*---------------- DWORD[26] (Offset 0x68) ----------------*/
 	/* Description -  */
 	/* 0x68.0 - 0x6c.31 */
-	struct fs5_image_layout_hw_pointer_entry fw_security_version_pointer;
+	struct fs5_image_layout_hw_pointer_entry issu_main_uid_pointer;
 /*---------------- DWORD[28] (Offset 0x70) ----------------*/
 	/* Description -  */
 	/* 0x70.0 - 0x74.31 */

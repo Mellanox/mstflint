@@ -62,6 +62,8 @@ public:
         _boot2_ptr(0),
         _itoc_ptr(0),
         _tools_ptr(0),
+        _issu_notch_ptr(0),
+        _issu_main_uid_ptr(0),
         _digest_mdk_ptr(0),
         _digest_recovery_key_ptr(0),
         _public_key_ptr(0),
@@ -186,6 +188,8 @@ protected:
     u_int32_t _image_info_section_ptr;
     u_int32_t _hashes_table_ptr;
     Fs4ImgInfo _fs4ImgInfo;
+    u_int32_t _issu_notch_ptr;
+    u_int32_t _issu_main_uid_ptr;
 
     virtual bool IsValidGapImageSize(u_int32_t imageGapSize);
     bool GetEncryptedImageSizeFromImageInfo(u_int32_t* imageSize);
