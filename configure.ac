@@ -608,6 +608,9 @@ AS_IF([test "x$enable_all_static" = "xyes"],
     ]
 )
 
+AS_IF([if test "x$enable_static" = "xno"],
+    [AC_MSG_ERROR([--disable-static is not supported for this project])])
+
 AC_SUBST(TOOLS_CRYPTO)
 AM_CONDITIONAL(ENABLE_OPENSSL, [test "x$enable_openssl" = "xyes"])
 AM_CONDITIONAL(ENABLE_CS, [test  "x$enable_cs" = "xyes" || test "x$enable_openssl" = "xyes"])
