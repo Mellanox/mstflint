@@ -163,8 +163,12 @@
 #define PMAOS_FLAG_SHORT ' '
 #define PTYS_FLAG "speeds"
 #define PTYS_FLAG_SHORT 's'
-#define PPLR_FLAG "loopback"
-#define PPLR_FLAG_SHORT 'l'
+#define LOOPBACK_FLAG "loopback"
+#define LOOPBACK_FLAG_SHORT 'l'
+#define PMLR_SIDE_FLAG "side"
+#define PMLR_SIDE_FLAG_SHORT ' '
+#define PMLR_STATE_FLAG "state"
+#define PMLR_STATE_FLAG_SHORT ' '
 #define PPLM_FLAG "fec"
 #define PPLM_FLAG_SHORT 'k'
 #define FEC_SPEED_FLAG "fec_speed"
@@ -406,7 +410,7 @@ enum OPTION_TYPE
     SEND_PMAOS,
     SEND_PTYS,
     SEND_PPLM,
-    SEND_PPLR,
+    HANDLE_LOOPBACK,
     SEND_PRBS,
     SEND_SLTP,
     SEND_CLEAR_COUNTERS,
@@ -684,7 +688,8 @@ public:
     void sendPtys();
     virtual void sendPplm();
     virtual void sendSltp();
-    void sendPplr();
+    void sendLoopback();
+    void sendPmlr();
     void sendPepc();
     void setTxGroupMapping();
     void handleRxErrInj();

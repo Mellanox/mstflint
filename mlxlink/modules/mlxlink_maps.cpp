@@ -278,11 +278,11 @@ void MlxlinkMaps::initFecAndLoopbackMapping()
     _fecPerSpeed.push_back(make_pair("25G", ""));
     _fecPerSpeed.push_back(make_pair("10G", ""));
 
-    _loopbackModeList[LOOPBACK_MODE_NO] = make_pair("NO", "No Loopback");
-    _loopbackModeList[LOOPBACK_MODE_REMOTE] = make_pair("RM", "PHY Remote Loopback");
-    _loopbackModeList[LOOPBACK_MODE_LOCAL] = make_pair("PH", "PHY Local Loopback");
-    _loopbackModeList[LOOPBACK_MODE_EXTERNAL] = make_pair("EX", "External Local Loopback");
-    _loopbackModeList[LOOPBACK_MODE_LL] = make_pair("LL", "Link Layer Local Loopback");
+    _loopbackModeList[LOOPBACK_MODE_NO] = make_pair(LOOPBACK_NO_STR, NO_LOOPBACK);
+    _loopbackModeList[LOOPBACK_MODE_REMOTE] = make_pair(LOOPBACK_RM_STR, PHY_REMOTE_LOOPBACK);
+    _loopbackModeList[LOOPBACK_MODE_LOCAL] = make_pair(LOOPBACK_PH_STR, PHY_LOCAL_LOOPBACK);
+    _loopbackModeList[LOOPBACK_MODE_EXTERNAL] = make_pair(LOOPBACK_EX_STR, EXTERNAL_LOOPBACK);
+    _loopbackModeList[LOOPBACK_MODE_LL] = make_pair(LOOPBACK_LL_STR, LINK_LAYER_LOOPBACK);
 }
 
 void MlxlinkMaps::ethSpeedMapping()

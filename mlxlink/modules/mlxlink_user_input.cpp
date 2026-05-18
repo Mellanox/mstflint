@@ -116,7 +116,9 @@ UserInput::UserInput()
     _pmaosCmd = "";
     _pplmFec = "";
     _speedFec = "";
-    _pplrLB = "";
+    _loopbackMode = "";
+    _pmlrSide = "";
+    _pmlrState = "";
     _prbsMode = "";
     _pprtMode = "PRBS31";
     _ppttMode = "PRBS31";

@@ -74,6 +74,7 @@
 #define ACCESS_REG_PPHCR "PPHCR"
 #define ACCESS_REG_PPLL "PPLL"
 #define ACCESS_REG_PPLM "PPLM"
+#define ACCESS_REG_PMLR "PMLR"
 #define ACCESS_REG_PPLR "PPLR"
 #define ACCESS_REG_PPRT "PPRT"
 #define ACCESS_REG_PPSLS "PPSLS"
@@ -1827,6 +1828,27 @@ enum LOOPBACK_MODE
     LOOPBACK_MODE_LL = 0x80
 };
 
+enum PMLR_LB_EN
+{
+    PMLR_LB_DISABLE = 0x0,
+    PMLR_LB_INPUT = 0x1,
+    PMLR_LB_OUTPUT = 0x2
+};
+
+enum PMLR_LB_CAP
+{
+    PMLR_LB_CAP_HOST_AND_MEDIA = 0x1,
+    PMLR_LB_CAP_PER_LANE = 0x2,
+    PMLR_LB_CAP_OUTPUT = 0x4,
+    PMLR_LB_CAP_INPUT = 0x8
+};
+
+enum PMLR_HOST_MEDIA
+{
+    PMLR_SIDE_MEDIA = 0,
+    PMLR_SIDE_HOST = 1
+};
+
 enum AN_DISABLE
 {
     AN_DISABLE_NORMAL = 0,
@@ -2451,6 +2473,21 @@ const char* const EXTERNAL_LOOPBACK = "External Local Loopback";
 const char* const LINK_LAYER_LOOPBACK = "Link Layer Local Loopback";
 const char* const NEAR_END_ANALOG_LOOPBACK = "Near End Analog Loopback";
 const char* const NEAR_END_DIGITAL_LOOPBACK = "Near End Digital Loopback";
+
+// Loopback mode mnemonic strings (used on the command line)
+const char* const LOOPBACK_NO_STR = "NO";
+const char* const LOOPBACK_RM_STR = "RM";
+const char* const LOOPBACK_PH_STR = "PH";
+const char* const LOOPBACK_EX_STR = "EX";
+const char* const LOOPBACK_LL_STR = "LL";
+const char* const LOOPBACK_TRAN_STR = "TRAN";
+
+// Transceiver loopback mode strings
+const char* const PMLR_SIDE_HOST_STR = "HOST";
+const char* const PMLR_SIDE_MEDIA_STR = "MEDIA";
+const char* const PMLR_STATE_INPUT_STR = "INPUT";
+const char* const PMLR_STATE_OUTPUT_STR = "OUTPUT";
+const char* const PMLR_STATE_DISABLE_STR = "DISABLE";
 
 // Auto negotiation string constants
 const char* const AUTO_NEGOTIATION_ON = "ON";

@@ -6617,13 +6617,13 @@ void MlxlinkCommander::checkPplrCap()
     }
 
     u_int32_t loopBackCap = getFieldValue("lb_cap");
-    u_int32_t loopBackVal = getLoopbackMode(_userInput._pplrLB);
+    u_int32_t loopBackVal = getLoopbackMode(_userInput._loopbackMode);
     if (loopBackVal != LOOPBACK_MODE_NO)
     {
-        if (!(loopBackCap & getLoopbackMode(_userInput._pplrLB)))
+        if (!(loopBackCap & getLoopbackMode(_userInput._loopbackMode)))
         {
             string supportedLoopbacks = getLoopbackStr(loopBackCap);
-            throw MlxRegException("\n%s Loopback configuration is not supported, supported Loopback configurations are [%s]", _userInput._pplrLB.c_str(), supportedLoopbacks.c_str());
+            throw MlxRegException("\n%s Loopback configuration is not supported, supported Loopback configurations are [%s]", _userInput._loopbackMode.c_str(), supportedLoopbacks.c_str());
         }
     }
     if (loopBackVal == LOOPBACK_MODE_REMOTE && _productTechnology < PRODUCT_7NM)
@@ -6637,8 +6637,14 @@ void MlxlinkCommander::checkPplrCap()
     }
 }
 
-void MlxlinkCommander::sendPplr()
+void MlxlinkCommander::sendLoopback()
 {
+    if (_userInput._loopbackMode == LOOPBACK_TRAN_STR)
+    {
+        sendPmlr();
+        return;
+    }
+
     string lbLinkModeIdx = "";
     try
     {
@@ -6649,12 +6655,87 @@ void MlxlinkCommander::sendPplr()
             checkPplrCap();
         }
 
-        sendPrmReg(ACCESS_REG_PPLR, REG_SET, "lb_en=%d%s", getLoopbackMode(_userInput._pplrLB), lbLinkModeIdx.c_str());
+        sendPrmReg(ACCESS_REG_PPLR, REG_SET, "lb_en=%d%s",
+                   getLoopbackMode(_userInput._loopbackMode), lbLinkModeIdx.c_str());
     }
     catch (const std::exception& exc)
     {
         _allUnhandledErrors += string("Sending PPLR (Configuring port loopback) raised the following exception: ") +
                                string(exc.what()) + string("\n");
+    }
+}
+
+void MlxlinkCommander::sendPmlr()
+{
+    try
+    {
+        MlxlinkRecord::printCmdLine("Configuring Transceiver Loopback", _jsonRoot);
+
+        if (_userInput._pmlrSide.empty() || _userInput._pmlrState.empty())
+        {
+            throw MlxRegException("--" LOOPBACK_FLAG " " + string(LOOPBACK_TRAN_STR) +
+                                  " requires --" PMLR_SIDE_FLAG " [host|media] and --" PMLR_STATE_FLAG
+                                  " [input|output|disable]");
+        }
+
+        u_int32_t hostMedia = 0;
+        if (_userInput._pmlrSide == PMLR_SIDE_HOST_STR)
+        {
+            hostMedia = PMLR_SIDE_HOST;
+        }
+        else if (_userInput._pmlrSide == PMLR_SIDE_MEDIA_STR)
+        {
+            hostMedia = PMLR_SIDE_MEDIA;
+        }
+        else
+        {
+            throw MlxRegException("Invalid --" PMLR_SIDE_FLAG " value: %s, supported values are [host|media]",
+                                  _userInput._pmlrSide.c_str());
+        }
+
+        u_int32_t lbEn = 0;
+        u_int32_t lbCapBitRequired = 0;
+        if (_userInput._pmlrState == PMLR_STATE_INPUT_STR)
+        {
+            lbEn = PMLR_LB_INPUT;
+            lbCapBitRequired = PMLR_LB_CAP_INPUT;
+        }
+        else if (_userInput._pmlrState == PMLR_STATE_OUTPUT_STR)
+        {
+            lbEn = PMLR_LB_OUTPUT;
+            lbCapBitRequired = PMLR_LB_CAP_OUTPUT;
+        }
+        else if (_userInput._pmlrState == PMLR_STATE_DISABLE_STR)
+        {
+            lbEn = PMLR_LB_DISABLE;
+        }
+        else
+        {
+            throw MlxRegException("Invalid --" PMLR_STATE_FLAG
+                                  " value: %s, supported values are [input|output|disable]",
+                                  _userInput._pmlrState.c_str());
+        }
+
+        sendPrmReg(ACCESS_REG_PMLR, REG_GET, "slot_index=%d,host_media=%d,lane_mask=%d", _slotIndex, hostMedia, 1);
+
+        if (lbCapBitRequired != 0)
+        {
+            u_int32_t lbCap = getFieldValue("lb_cap");
+            if (!(lbCap & lbCapBitRequired))
+            {
+                throw MlxRegException("Transceiver loopback %s not supported on %s side (lb_cap=0x%x)",
+                                      _userInput._pmlrState.c_str(), _userInput._pmlrSide.c_str(), lbCap);
+            }
+        }
+
+        sendPrmReg(ACCESS_REG_PMLR, REG_SET, "slot_index=%d,host_media=%d,lane_mask=%d,lb_en=%d", _slotIndex, hostMedia,
+                   0xff, lbEn);
+    }
+    catch (const std::exception& exc)
+    {
+        _allUnhandledErrors +=
+          string("Sending PMLR (Configuring transceiver loopback) raised the following exception: ") +
+          string(exc.what()) + string("\n");
     }
 }
 

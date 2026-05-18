@@ -157,9 +157,16 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(PTYS_LINK_MODE_FORCE_FLAG_SHORT, PTYS_LINK_MODE_FORCE_FLAG, "",
                                  "Configure Link Mode Force (Disable AN)");
     MlxlinkRecord::printFlagLine(
-      PPLR_FLAG_SHORT, PPLR_FLAG, "loopback",
+      LOOPBACK_FLAG_SHORT, LOOPBACK_FLAG, "loopback",
       "Configure Loopback Mode [NO(no loopback)/RM(phy remote Rx-to-Tx loopback)/PH(internal phy Tx-to-Rx "
-      "loopback)/EX(external loopback connector needed)/LL(link layer local loopback)]");
+      "loopback)/EX(external loopback connector needed)/LL(link layer local loopback)/"
+      "TRAN(transceiver-level loopback, requires --side and --state)]");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(PMLR_SIDE_FLAG_SHORT, PMLR_SIDE_FLAG, "side",
+                                 "Transceiver loopback side selector (only with -l TRAN) [host|media]");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(PMLR_STATE_FLAG_SHORT, PMLR_STATE_FLAG, "state",
+                                 "Transceiver loopback state (only with -l TRAN) [input|output|disable]");
     MlxlinkRecord::printFlagLine(
       PPLM_FLAG_SHORT, PPLM_FLAG, "fec_override",
       "Configure FEC [AU(Auto)/NF(No-FEC)/FC(FireCode "
@@ -661,6 +668,20 @@ void MlxlinkUi::validateGeneralCmdsParams()
     if (!isIn(SEND_PPLM, _sendRegFuncMap) && _userInput._speedFec != "")
     {
         throw MlxRegException("The --fec_speed flag is valid only with --fec flag");
+    }
+    bool transceiverLoopback =
+      isIn(HANDLE_LOOPBACK, _sendRegFuncMap) && _userInput._loopbackMode == LOOPBACK_TRAN_STR;
+    if (!transceiverLoopback && (!_userInput._pmlrSide.empty() || !_userInput._pmlrState.empty()))
+    {
+        throw MlxRegException("The --" PMLR_SIDE_FLAG " and --" PMLR_STATE_FLAG
+                              " flags are valid only with --" LOOPBACK_FLAG " " +
+                              string(LOOPBACK_TRAN_STR));
+    }
+    if (transceiverLoopback && (_userInput._pmlrSide.empty() || _userInput._pmlrState.empty()))
+    {
+        throw MlxRegException("--" LOOPBACK_FLAG " " + string(LOOPBACK_TRAN_STR) +
+                              " requires --" PMLR_SIDE_FLAG " [host|media] and --" PMLR_STATE_FLAG
+                              " [input|output|disable]");
     }
     if (isIn(SEND_SLTP, _sendRegFuncMap))
     {
@@ -1300,7 +1321,11 @@ void MlxlinkUi::initCmdParser()
     AddOptions(PTYS_LINK_MODE_FORCE_FLAG, PTYS_LINK_MODE_FORCE_FLAG_SHORT, "", "Set Link Mode Force");
     AddOptions(PPLM_FLAG, PPLM_FLAG_SHORT, "PPLM", "Send PPLM");
     AddOptions(FEC_SPEED_FLAG, FEC_SPEED_FLAG_SHORT, "FECSPEED", "Send PPLM with Speed");
-    AddOptions(PPLR_FLAG, PPLR_FLAG_SHORT, "PPLR", "Send PPLR");
+    AddOptions(LOOPBACK_FLAG, LOOPBACK_FLAG_SHORT, "LoopBack", "Get into LoopBack Mode");
+    AddOptions(PMLR_SIDE_FLAG, PMLR_SIDE_FLAG_SHORT, "side",
+               "Transceiver loopback side selector (only with -l TRAN) [host|media]");
+    AddOptions(PMLR_STATE_FLAG, PMLR_STATE_FLAG_SHORT, "state",
+               "Transceiver loopback state (only with -l TRAN) [input|output|disable]");
     AddOptions(BER_COLLECT_FLAG, BER_COLLECT_FLAG_SHORT, "BERCollectFile", "BER Collection csv file");
     AddOptions(AMBER_COLLECT_FLAG, AMBER_COLLECT_FLAG_SHORT, "AMBERCollectFile", "AMBER Collection csv file");
     AddOptions(BER_LIMIT_FLAG, BER_LIMIT_FLAG_SHORT, "Mode", "Test Mode of Ber Collect (Nominal/Corner/Drift)");
@@ -1471,8 +1496,8 @@ void MlxlinkUi::commandsCaller()
             case SEND_PPLM:
                 _mlxlinkCommander->sendPplm();
                 break;
-            case SEND_PPLR:
-                _mlxlinkCommander->sendPplr();
+            case HANDLE_LOOPBACK:
+                _mlxlinkCommander->sendLoopback();
                 break;
             case SEND_PHY_RECOVERY:
                 _mlxlinkCommander->handlePhyRecovery();
@@ -1928,11 +1953,21 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _userInput._speedFec = toLowerCase(value);
         return PARSE_OK;
     }
-    else if (name == PPLR_FLAG)
+    else if (name == LOOPBACK_FLAG)
     {
-        addCmd(SEND_PPLR);
-        _userInput._pplrLB = toUpperCase(value);
+        addCmd(HANDLE_LOOPBACK);
+        _userInput._loopbackMode = toUpperCase(value);
         _userInput._uniqueCmds++;
+        return PARSE_OK;
+    }
+    else if (name == PMLR_SIDE_FLAG)
+    {
+        _userInput._pmlrSide = toUpperCase(value);
+        return PARSE_OK;
+    }
+    else if (name == PMLR_STATE_FLAG)
+    {
+        _userInput._pmlrState = toUpperCase(value);
         return PARSE_OK;
     }
     else if (name == PHY_RECOVERY_FLAG)

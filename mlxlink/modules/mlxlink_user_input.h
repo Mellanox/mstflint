@@ -115,7 +115,9 @@ public:
     string _pmaosCmd;
     string _pplmFec;
     string _speedFec;
-    string _pplrLB;
+    string _loopbackMode;
+    string _pmlrSide;
+    string _pmlrState;
     string _prbsMode;
     string _pprtMode;
     string _ppttMode;
