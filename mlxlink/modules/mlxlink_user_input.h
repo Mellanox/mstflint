@@ -100,6 +100,7 @@ public:
     bool laneSpecified;
     bool autoCsvName;
     bool _showMultiPortInfo;
+    bool _allPorts;
     bool _showMultiPortModuleInfo;
     bool _showPlr;
     bool _setPlr;

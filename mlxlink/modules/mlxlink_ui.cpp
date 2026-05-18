@@ -143,6 +143,9 @@ void MlxlinkUi::printSynopsisCommands()
     printf(IDENT "COMMANDS:\n");
     MlxlinkRecord::printFlagLine(PAOS_FLAG_SHORT, PAOS_FLAG, "port_state",
                                  "Configure Port State [UP(up)/DN(down)/TG(toggle)]");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(ALL_PORTS_FLAG_SHORT, ALL_PORTS_FLAG, "",
+                                 "Apply --port_state to all ports (only with --port_state)");
     MlxlinkRecord::printFlagLine(PMAOS_FLAG_SHORT, PMAOS_FLAG, "module_state",
                                 "Configure Module State [UP(up)/DN(down)/TG(toggle)]");
     MlxlinkRecord::printFlagLine(
@@ -551,7 +554,16 @@ void MlxlinkUi::validateMandatoryParams()
     }
     if ((_userInput._labelPort == 0) && (_userInput._portType != "PCIE"))
     {
-        throw MlxRegException("Please provide a valid port number");
+        if (_userInput._allPorts)
+        {
+            // --all iterates over every label port, default to port 1 so the initial
+            // labelToLocalPort() in updatePortInfo() succeeds before iteration.
+            _userInput._labelPort = 1;
+        }
+        else
+        {
+            throw MlxRegException("Please provide a valid port number");
+        }
     }
 }
 
@@ -625,6 +637,22 @@ void MlxlinkUi::validateGeneralCmdsParams()
     if (isIn(SEND_PAOS, _sendRegFuncMap) && !checkPaosCmd(_userInput._paosCmd))
     {
         throw MlxRegException("Please provide a valid paos command [UP(up)/DN(down)/TG(toggle)]");
+    }
+    if (_userInput._allPorts)
+    {
+        if (!isIn(SEND_PAOS, _sendRegFuncMap))
+        {
+            throw MlxRegException("The --" ALL_PORTS_FLAG " flag can only be used with --" PAOS_FLAG " (-a)");
+        }
+        if (_userInput._portSpecified)
+        {
+            // Commander is not created yet at this stage, so use a local jsonRoot.
+            Json::Value warnJsonRoot;
+            MlxlinkRecord::printWar(
+              "--" ALL_PORTS_FLAG " is set; ignoring -" + string(1, LABEL_PORT_FLAG_SHORT) + "/--" LABEL_PORT_FLAG,
+              warnJsonRoot);
+            _userInput._portSpecified = false;
+        }
     }
     if (isIn(SEND_PMAOS, _sendRegFuncMap) && !checkPmaosCmd(_userInput._pmaosCmd))
     {
@@ -1266,6 +1294,7 @@ void MlxlinkUi::initCmdParser()
     AddOptions(SET_RX_PRECODING_FLAG, SET_RX_PRECODING_FLAG_SHORT, "EN|DS", "Set RX Precoding (EN=Enable, DS=Disable)");
     AddOptions(FEC_DATA_FLAG, FEC_DATA_FLAG_SHORT, "", "FEC Data");
     AddOptions(PAOS_FLAG, PAOS_FLAG_SHORT, "PAOS", "Send PAOS");
+    AddOptions(ALL_PORTS_FLAG, ALL_PORTS_FLAG_SHORT, "", "Apply --port_state to all ports of the device");
     AddOptions(PMAOS_FLAG, PMAOS_FLAG_SHORT, "PMAOS", "Send PMAOS");
     AddOptions(PTYS_FLAG, PTYS_FLAG_SHORT, "PTYS", "Send PTYS");
     AddOptions(PTYS_LINK_MODE_FORCE_FLAG, PTYS_LINK_MODE_FORCE_FLAG_SHORT, "", "Set Link Mode Force");
@@ -1866,6 +1895,11 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         addCmd(SEND_PAOS);
         _userInput._paosCmd = toUpperCase(value);
         _userInput._uniqueCmds++;
+        return PARSE_OK;
+    }
+    else if (name == ALL_PORTS_FLAG)
+    {
+        _userInput._allPorts = true;
         return PARSE_OK;
     }
     else if (name == PMAOS_FLAG)

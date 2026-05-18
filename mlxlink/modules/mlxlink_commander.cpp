@@ -230,6 +230,7 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _attenuationTitle = "";
     _rxRecoveryCountersCmd.setLineLen(RX_RECOVERY_COUNTERS_LINE_LEN);
     _silentMode = false;
+    _allPortsCurrentLabelStr = "";
 }
 
 MlxlinkCommander::~MlxlinkCommander()
@@ -5184,7 +5185,7 @@ void MlxlinkCommander::sendPmaosToggle()
     }
 }
 
-void MlxlinkCommander::sendPaos()
+void MlxlinkCommander::sendPaosOnce()
 {
     try
     {
@@ -5214,9 +5215,47 @@ void MlxlinkCommander::sendPaos()
     }
 }
 
+void MlxlinkCommander::sendPaos()
+{
+    if (!_userInput._allPorts || _isHCA)
+    {
+        sendPaosOnce();
+        return;
+    }
+
+    if (paos_to_int(_userInput._paosCmd) == TG)
+    {
+        string warMsg = "Toggling all ports on the device may disrupt active links "
+                        "(including the link this command runs over) and reset port state on every port.";
+        MlxlinkRecord::printWar(warMsg, _jsonRoot);
+        if (!askUser("Do you want to continue", _userInput.force))
+        {
+            throw MlxRegException("Operation canceled by user");
+        }
+    }
+
+    updateLocalPortGroup();
+    for (const auto& portInfo : _localPortsPerGroup)
+    {
+        _localPort = portInfo.localPort;
+        _allPortsCurrentLabelStr = getLabelPortString(portInfo);
+        try
+        {
+            sendPaosOnce();
+        }
+        catch (const std::exception& exc)
+        {
+            _allUnhandledErrors +=
+              string("Port ") + to_string(portInfo.labelPort) + string(": ") + string(exc.what()) + string("\n");
+        }
+    }
+    _allPortsCurrentLabelStr = "";
+}
+
 void MlxlinkCommander::sendPaosDown(bool toggleCommand)
 {
-    MlxlinkRecord::printCmdLine("Configuring Port State (Down)", _jsonRoot);
+    string suffix = _allPortsCurrentLabelStr.empty() ? "" : " - Port " + _allPortsCurrentLabelStr;
+    MlxlinkRecord::printCmdLine("Configuring Port State (Down)" + suffix, _jsonRoot);
 
     bool forceDown = isForceDownSupported();
     // try to force down the port
@@ -5253,7 +5292,8 @@ void MlxlinkCommander::sendPaosDown(bool toggleCommand)
 
 void MlxlinkCommander::sendPaosUP()
 {
-    MlxlinkRecord::printCmdLine("Configuring Port State (Up)", _jsonRoot);
+    string suffix = _allPortsCurrentLabelStr.empty() ? "" : " - Port " + _allPortsCurrentLabelStr;
+    MlxlinkRecord::printCmdLine("Configuring Port State (Up)" + suffix, _jsonRoot);
     sendPaosCmd(PAOS_UP);
 }
 

@@ -101,6 +101,7 @@ UserInput::UserInput()
     _write = false;
     _read = false;
     _showMultiPortInfo = false;
+    _allPorts = false;
     _showMultiPortModuleInfo = false;
     _showPlr = false;
     _setPlr = false;

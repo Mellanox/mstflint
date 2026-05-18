@@ -157,6 +157,8 @@
 
 #define PAOS_FLAG "port_state"
 #define PAOS_FLAG_SHORT 'a'
+#define ALL_PORTS_FLAG "all"
+#define ALL_PORTS_FLAG_SHORT ' '
 #define PMAOS_FLAG "module_state"
 #define PMAOS_FLAG_SHORT ' '
 #define PTYS_FLAG "speeds"
@@ -675,6 +677,7 @@ public:
     // Mlxlink config functions
     void clearCounters();
     void sendPaos();
+    void sendPaosOnce();
     void sendPmaos();
     virtual void handlePrbs();
     virtual void handlePrbsSWControlledChecks();
@@ -815,6 +818,7 @@ public:
     bool _isNvlinkModeB;
     u_int32_t _priOrSec;
     std::vector<PortGroup> _localPortsPerGroup;
+    string _allPortsCurrentLabelStr;
     std::vector<DPN> _validDpns;
     string _allUnhandledErrors;
     Json::Value _jsonRoot;
