@@ -2290,7 +2290,7 @@ def reset_flow_host(device, args, command):
         if sync_2_only_supported:
             logger.debug("Sync 2 is the only supported sync, will not be the default.")
 
-    assert_supported_psid(devid)  # leaving for BWC, to be removed
+    assert_supported_psid(devid, mfrl, mroq, tool_owner_support)  # leaving for BWC, to be removed
     
     if command == "query":
         if mroq.mroq_is_supported():
