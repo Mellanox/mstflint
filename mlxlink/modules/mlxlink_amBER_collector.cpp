@@ -1683,9 +1683,15 @@ void MlxlinkAmBerCollector::getEthComplianceCodes(u_int32_t cableTechnology,
     {
         ethComplianceStr =
           ethComplianceCode ? getCompliance(ethComplianceCode, _mlxlinkMaps->_cableComplianceQsfp, true) : NA_FIELD_VALUE;
-        extComplianceStr = (extEthComplianceCode & QSFP_ETHERNET_COMPLIANCE_CODE_EXT) ?
-                             _mlxlinkMaps->_cableComplianceExt[extEthComplianceCode] :
-                             NA_FIELD_VALUE;
+        extComplianceStr = NA_FIELD_VALUE;
+        if (ethComplianceCode & QSFP_ETHERNET_COMPLIANCE_CODE_EXT)
+        {
+            auto extIt = _mlxlinkMaps->_cableComplianceExt.find(extEthComplianceCode);
+            if (extIt != _mlxlinkMaps->_cableComplianceExt.end())
+            {
+                extComplianceStr = extIt->second;
+            }
+        }
     }
     if (_isSfpCable)
     {
