@@ -2429,7 +2429,7 @@ def reset_flow_host(device, args, command):
         else:
             if is_bluefield and reset_level is CmdRegMfrl.IMMEDIATE_RESET:
                 print("Embedded CPU reset/shutdown operation completed")
-            else:
+            elif reset_level is not CmdRegMfrl.WARM_REBOOT:  # usually the reboot command is performed too fast so we don't get here, but in case it's too slow -> avoid this print to not confuse the user
                 print("-I- FW was loaded successfully.")
     elif command == "reset_fsm_register":
         reset_fsm_register()
