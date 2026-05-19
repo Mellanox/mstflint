@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <vector>
 #include <sstream>
-
+#include <stdexcept>
 #include "cable_access.h"
 #include "mtcr_cables.h"
 #include "mtcr_ul/mtcr_ul_com.h"
@@ -97,6 +97,32 @@ int send_pmaos(mfile* mf, int state, bool verbose)
     }
     mf->tp = tmp_tp;
     switch_access_funcs(mf);
+    return ret;
+}
+
+int is_secondary(mfile* mf, bool* isSecondary)
+{
+    MCABLES_ERROR ret = MCABLES_OK;
+
+    cable_ctx* ctx = (cable_ctx*)(mf->cable_ctx);
+    if (!ctx)
+    {
+        return MCABLES_ACCESS_ERROR;
+    }
+    MType tmp_tp = mf->tp;
+    mf->tp = ctx->src_tp;
+    switch_access_funcs(mf);
+    struct reg_access_switch_pmaos_reg_ext pmaos;
+    memset(&pmaos, 0, sizeof(pmaos));
+    pmaos.module = ctx->port;
+    if (reg_access_pmaos(mf, REG_ACCESS_METHOD_GET, &pmaos))
+    {
+        printf("-E- Failed to get the module state from the cable\n");
+        ret = MCABLES_REG_FAILED;
+    }
+    mf->tp = tmp_tp;
+    switch_access_funcs(mf);
+    *isSecondary = (pmaos.secondary != 0);
     return ret;
 }
 
@@ -329,5 +355,15 @@ bool cableAccess::resetCable()
         return resetCableModule(false);
     }
     return false;
+}
+
+bool cableAccess::isSecondary()
+{
+    bool isSecondary = false;
+    if (is_secondary(_mf, &isSecondary) != MCABLES_OK)
+    {
+        throw std::runtime_error("Failed to get the module state from the cable");
+    }
+    return isSecondary;
 }
 
