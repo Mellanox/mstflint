@@ -288,6 +288,7 @@
     string getLastErrMsg();
     void setBurnFlow(bool isBurnFlow);
     bool resetCable();
+    bool isSecondary();
  
  private:
     bool resetCableModule(bool verbose);
