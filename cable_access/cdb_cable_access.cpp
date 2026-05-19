@@ -571,6 +571,10 @@ void FWManagementCdbAccess::Init(vector<u_int8_t> password)
         vector<u_int8_t> data(sizeof(fwMngfeatures), 0);
 
         CmisCdbAccess::Init();
+        if (_cableAccess.isSecondary())
+        {
+            throw CmisCdbAccessException("Firmware management is not supported on secondary cables, please use primary cable.");
+        }
         if (!password.empty())
         {
             EnterPassword(password);
