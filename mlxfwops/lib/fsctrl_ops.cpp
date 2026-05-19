@@ -422,6 +422,16 @@ void FsCtrlOperations::ExtractSwitchFWVersion(const fwInfoT& fwQuery)
 
 bool FsCtrlOperations::FwReactivateImage()
 {
+    psid_utils::MinorPsidLockStatus lockStatus = queryMinorPsidLockStatus();
+    if (lockStatus.isLocked)
+    {
+        if (strncmp(_fwImgInfo.ext_info.psid, lockStatus.lockedPsid, psid_utils::PSID_MAX_LEN) != 0)
+        {
+            return errmsg(MLXFW_IMAGE_REACTIVATION_PSID_MISMATCH,
+                          "Image reactivation blocked - device PSID (%s) does not match locked PSID (%s)",
+                          _fwImgInfo.ext_info.psid, lockStatus.lockedPsid);
+        }
+    }
     if (!_fwCompsAccess->fwReactivateImage())
     {
         fw_comps_error_t errCode = _fwCompsAccess->getLastError();
