@@ -45,7 +45,7 @@
 #include <string.h>
 #include "image_access.h"
 #include "mvpd/mvpd.h"
-#include "pldmlib/pldm_utils.h"
+#include "pldm_utils/pldm_utils.h"
 
 #if !defined(__WIN__) && !defined(__FreeBSD__)
 #include <sys/socket.h>

@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2004-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# Copyright (c) 2004-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -32,17 +32,18 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 USER_DIR = $(top_srcdir)
-AM_CPPFLAGS = -I. -I$(USER_DIR)/common
+AM_CPPFLAGS = -I. -I$(USER_DIR) -I$(USER_DIR)/common $(JSON_CFLAGS)
 
 AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe  $(COMPILER_FPIC) -DPLDMLIB_EXPORT
 
 noinst_LTLIBRARIES = libpldm.la
 
 libpldm_la_SOURCES = \
-    pldm_utils.cpp pldm_utils.h\
     pldm_buff.cpp pldm_buff.h\
     pldm_record_descriptor.cpp pldm_record_descriptor.h\
     pldm_dev_id_record.cpp pldm_dev_id_record.h\
     pldm_component_image.cpp pldm_component_image.h\
     pldm_pkg_hdr.cpp pldm_pkg_hdr.h\
     pldm_pkg.cpp pldm_pkg.h
+
+libpldm_la_LIBADD = $(top_builddir)/pldm_utils/libpldm_utils.la
