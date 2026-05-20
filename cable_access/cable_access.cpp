@@ -7,6 +7,7 @@
 #include "cable_access.h"
 #include "mtcr_cables.h"
 #include "mtcr_ul/mtcr_ul_com.h"
+#include "mtcr_ul/mtcr_common.h"
 #include "tools_layouts/reg_access_switch_layouts.h"
 #include "tools_layouts/reg_access_hca_layouts.h"
 #include "reg_access/reg_access.h"
@@ -362,7 +363,7 @@ bool cableAccess::isSecondary()
     bool isSecondary = false;
     if (is_secondary(_mf, &isSecondary) != MCABLES_OK)
     {
-        throw std::runtime_error("Failed to get the module state from the cable");
+        DBG_PRINTF("-W- Failed to get the secondary status of the cable\n");
     }
     return isSecondary;
 }
