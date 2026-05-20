@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (c) 2020-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -44,7 +44,7 @@
 
 #include "pldm_buff.h"
 #include "pldm_pkg_hdr.h"
-#include "pldm_utils.h"
+#include "pldm_utils/pldm_utils.h"
 #include "pldm_record_descriptor.h"
 
 class PldmDevIdRecord;

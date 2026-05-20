@@ -42,7 +42,7 @@
 #include "psid_query_item.h"
 #include "mlxfwmanager_common.h"
 #include "mlnx_dev.h"
-#include "pldmlib/pldm_utils.h"
+#include "pldm_utils/pldm_utils.h"
 #include "pldmlib/pldm_pkg.h"
 
 using namespace std;

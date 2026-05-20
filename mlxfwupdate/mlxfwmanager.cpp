@@ -48,7 +48,7 @@
 #include <cstdarg>
 #include <cstdio>
 
-#include "pldmlib/pldm_utils.h"
+#include "pldm_utils/pldm_utils.h"
 
 #define TUPLE_POS_COMPID 0
 #define TUPLE_POS_BUFF_PTR 1

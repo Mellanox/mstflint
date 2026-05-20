@@ -1,4 +1,5 @@
-# Copyright (c) 2023-2026 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#--
+# Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -27,15 +28,15 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+#--
 
-SUBDIRS = $(NVML_DIR) mft_core ext_libs $(TOOLS_CRYPTO) tools_layouts common $(VFIO_DRIVER_DIR) ${MTCR_CONF_DIR} mtcr_py $(MAD_IFC) $(XZ_UTILS_DIR) reg_access cmdif dev_mgt pci_library mft_utils $(CABLE_ACCESS_DIR) tools_res_mgmt mvpd mflash fw_comps_mgr libmfa pldm_utils pldmlib cmdparser mlxconfig $(NVFWRESET_DIR) $(DPA) mlxfwops $(FW_MGR_TOOLS) $(PLDM_PKG_GEN) mlxtokengenerator flint small_utils mst_utils mstdump ${ADABE_TOOLS} tracers resourcetools
+# Makefile.am -- Process this file with automake to produce Makefile.in
+USER_DIR = $(top_srcdir)
+AM_CPPFLAGS = -I. -I$(USER_DIR) -I$(USER_DIR)/common $(JSON_CFLAGS)
 
-DIST_SUBDIRS = tracers
+AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC)
 
-man_MANS = man/mstflint.1 man/mstconfig.1 man/mstmcra.1 man/mstmread.1 man/mstmwrite.1 man/mstmtserver.1 man/mstregdump.1 man/mstvpd.1 man/mstprivhost.1 man/mstarchive.1 man/mstreg.1 man/mstfwtrace.1 man/mstlink.1 man/mstcongestion.1 man/mstfwmanager.1 man/mstfwreset.1 man/mstresourcedump.1
+noinst_LTLIBRARIES = libpldm_utils.la
 
-EXTRA_DIST = \
-	mstflint.spec \
-	tools_git_sha \
-	debian \
-	$(man_MANS)
+libpldm_utils_la_SOURCES = \
+    pldm_utils.cpp pldm_utils.h
