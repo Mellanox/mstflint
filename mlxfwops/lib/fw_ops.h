@@ -752,6 +752,7 @@ private:
     static u_int8_t CheckFwFormat(FBase& f, bool getFwFormatFromImg = false, u_int16_t swDevId = 0);
     static bool GetImageFormatVersion(FBase& f, u_int32_t boot_version_offset, u_int8_t& image_format_version);
     static u_int8_t IsPLDM(FBase& f);
+    static bool IsPLDMHeader(const u_int8_t* data);
     static u_int8_t IsFS4OrFS5Image(FBase& f, u_int32_t* found_images);
     static u_int8_t IsFS3OrFS2Image(FBase& f, u_int32_t* found_images);
     static u_int8_t IsCableImage(FBase& f);

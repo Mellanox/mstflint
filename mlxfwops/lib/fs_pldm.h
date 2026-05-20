@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED
+ * Copyright (c) 2013-2026 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -41,7 +41,7 @@
 #include "fw_ops.h"
 #endif
 #include "pldmlib/pldm_pkg.h"
-#include "pldmlib/pldm_utils.h"
+#include "pldm_utils/pldm_utils.h"
 
 #ifdef __WIN__
 

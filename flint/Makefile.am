@@ -1,4 +1,4 @@
-# Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2023-2026 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -38,7 +38,8 @@ AM_CPPFLAGS = \
     -I$(top_srcdir)/include/mtcr_ul \
     -I$(top_srcdir)/mflash \
     -I$(top_srcdir)/mft_utils \
-    -I$(top_srcdir)/tools_layouts
+    -I$(top_srcdir)/tools_layouts \
+    $(JSON_CFLAGS)
 
 bin_PROGRAMS = mstflint
 
@@ -79,7 +80,7 @@ mstflint_DEPENDENCIES += \
      $(top_builddir)/reg_access/libreg_access.la \
      $(top_builddir)/${MTCR_CONF_DIR}/.libs/libmtcr_ul.a
 
-LDADD_mstflint = ${LDL}
+LDADD_mstflint = ${LDL} $(JSON_LIBS)
 
 mstflint_LDFLAGS = -static
 

@@ -9,6 +9,7 @@
 %{!?nopenssl: %define nopenssl 0}
 %{!?enablexml2: %define enablexml2 0}
 %{!?enabledpa: %define enabledpa 0}
+%{!?enablepldmpkggen: %define enablepldmpkggen 0}
 %{!?enablefwmgr: %define enablefwmgr 0}
 %{!?enableadbgenerictools: %define enableadbgenerictools 1}
 %{!?enablecables: %define enablecables 0}
@@ -63,6 +64,11 @@ BuildRequires: %{libcurl_devel_lib}
 BuildRequires: %{libxml2_devel_lib}
 %endif
 
+%if "%{enablepldmpkggen}" == "1"
+BuildRequires: %{libcurl_devel_lib}
+BuildRequires: xz-devel
+%endif
+
 BuildRequires: zlib-devel %{ibmadlib}
 
 %description
@@ -94,6 +100,10 @@ MSTFLINT_VERSION_STR="%{name} %{version}-%{release}"
 
 %if %{enabledpa}
    config_flags="$config_flags --enable-dpa"
+%endif
+
+%if %{enablepldmpkggen}
+   config_flags="$config_flags --enable-pldm-pkg-gen"
 %endif
 
 %if %{enablexml2}
@@ -196,6 +206,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 %if %{enabledpa}
  %{_bindir}/mstdpa
+%endif
+%if %{enablepldmpkggen}
+ %{_bindir}/mstpldm_pkg_gen
 %endif
 %if %{enableadbgenerictools}
  %{_bindir}/mstreg

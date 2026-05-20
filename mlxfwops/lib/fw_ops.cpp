@@ -34,6 +34,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <algorithm>
 
 #include "flint_base.h"
 #include "flint_io.h"
@@ -48,7 +49,7 @@
 #include "fs_comps_factory.h"
 #include "dev_mgt/tools_dev_types.h"
 #include "pldmlib/pldm_pkg.h"
-#include "pldmlib/pldm_utils.h"
+#include "pldm_utils/pldm_utils.h"
 
 #ifdef CABLES_SUPP
 #include "cablefw_ops.h"
@@ -111,7 +112,7 @@ int FwOperations::getFileSignature(const char* fname)
     {
         res = IMG_SIG_TYPE_MFA;
     }
-    if (std::memcmp(tmpb, expectedHeaderIdentifier, sizeof(expectedHeaderIdentifier)) == 0)
+    if (IsPLDMHeader(tmpb))
     {
         res = IMG_SIG_TYPE_PLDM;
     }
@@ -702,11 +703,26 @@ u_int8_t FwOperations::IsPLDM(FBase& f)
     static const u_int32_t PLDM_HEADER_IDENTIFIER_LENGTH = 16;
     u_int8_t data[PLDM_HEADER_IDENTIFIER_LENGTH] = {0};
     f.read(0, data, PLDM_HEADER_IDENTIFIER_LENGTH, false, NULL);
-    if (!strncmp((const char*)data, (const char*)expectedHeaderIdentifier, PLDM_HEADER_IDENTIFIER_LENGTH))
+    if (IsPLDMHeader(data))
     {
         return FS_PLDM_1_0;
     }
     return FS_UNKNOWN_IMG;
+}
+
+bool FwOperations::IsPLDMHeader(const u_int8_t* data)
+{
+    static const size_t PLDM_HEADER_IDENTIFIER_LENGTH = 16;
+    for (const auto& entry : PACKAGE_HEADER_FORMAT_REVISION_MAP)
+    {
+        const std::vector<u_int8_t>& identifier = entry.second;
+        if (identifier.size() == PLDM_HEADER_IDENTIFIER_LENGTH &&
+            std::equal(identifier.begin(), identifier.end(), data))
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 u_int8_t FwOperations::CheckFwFormat(FBase& f, bool getFwFormatFromImg, u_int16_t swDevId)
