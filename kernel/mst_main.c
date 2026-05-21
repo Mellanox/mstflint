@@ -2335,8 +2335,8 @@ static int __init mst_init(void)
         if (!dev)
         {
             mst_err("failed to mst_device_create\n");
+            continue; /* PCICONF creation failed, no point creating a PCIMEM device */
         }
-        continue; /* PCICONF creation failed, no point creating a PCIMEM device */
 
         /*
          * for livefish devices we only allocate PCICONF
