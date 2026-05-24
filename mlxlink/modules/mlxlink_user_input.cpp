@@ -92,6 +92,8 @@ UserInput::UserInput()
     _txPolicy = false;
     _advancedMode = false;
     _portSpecified = false;
+    _multiPortSpecified = false;
+    _multiPortsList = {};
     _splitProvided = false;
     _secondSplitProvided = false;
     _forceSplit = false;

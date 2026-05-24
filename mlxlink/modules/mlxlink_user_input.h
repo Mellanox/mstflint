@@ -84,6 +84,8 @@ public:
     bool _txPolicy;
     bool _advancedMode;
     bool _portSpecified;
+    bool _multiPortSpecified;
+    std::vector<std::string> _multiPortsList;
     bool _splitProvided;
     bool _secondSplitProvided;
     bool _forceSplit;

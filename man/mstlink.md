@@ -26,7 +26,7 @@ mstlink, - manual page for mstlink, mstflint 4.13.1, built on Sep 11
     \<device\> : Perform operation for a specified mst device
 
   - **-p** |-\-port  
-    \<port\_number\> : Port Number
+    \<port\_number\_or\_list\> : Port Number, or a comma-separated list of ports (e.g. 1,2,3). A list is currently supported only with **-a**/-\-port\_state.
 
   - **-\-port\_type**  
     \<port\_type\> : Port Type \[NETWORK(Default)/PCIE\]
@@ -159,6 +159,8 @@ mstlink, - manual page for mstlink, mstflint 4.13.1, built on Sep 11
   - Configure Port State:
     
     mstlink **-d** \<device\> **-p** \<port\_number\> **-\-port\_state** UP
+    
+    mstlink **-d** \<device\> **-p** 1,2,3 **-\-port\_state** DN
 
   - Configure Port Speeds:
     

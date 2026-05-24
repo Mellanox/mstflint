@@ -5211,12 +5211,77 @@ void MlxlinkCommander::sendPaosOnce()
     }
     catch (const std::exception& exc)
     {
-        _allUnhandledErrors += string("Sending PAOS raised the following exception: ") + string(exc.what()) + string("\n");
+        string suffix = _allPortsCurrentLabelStr.empty() ? "" : " (Port " + _allPortsCurrentLabelStr + ")";
+        _allUnhandledErrors += string("Sending PAOS") + suffix + string(" raised the following exception: ") +
+                               string(exc.what()) + string("\n");
     }
 }
 
 void MlxlinkCommander::sendPaos()
 {
+    if (_userInput._multiPortSpecified)
+    {
+        if (_isHCA)
+        {
+            throw MlxRegException("A port list passed via -" + string(1, LABEL_PORT_FLAG_SHORT) +
+                                  "/--" LABEL_PORT_FLAG " is not supported on HCA devices");
+        }
+
+        vector<string> validPorts;
+        for (const auto& portStr : _userInput._multiPortsList)
+        {
+            try
+            {
+                _userInput._splitProvided = false;
+                _userInput._secondSplitProvided = false;
+                handlePortStr(portStr);
+                labelToLocalPort();
+                validPorts.push_back(portStr);
+            }
+            catch (const std::exception& exc)
+            {
+                _allUnhandledErrors += string("Sending PAOS (Port ") + portStr +
+                                       string(") raised the following exception: ") + string(exc.what()) + string("\n");
+            }
+        }
+
+        if (validPorts.empty())
+        {
+            return;
+        }
+
+        if (paos_to_int(_userInput._paosCmd) == TG)
+        {
+            string warMsg = "Toggling the selected ports may disrupt active links "
+                            "(including the link this command runs over) and reset port state on every selected port.";
+            MlxlinkRecord::printWar(warMsg, _jsonRoot);
+            if (!askUser("Do you want to continue", _userInput.force))
+            {
+                throw MlxRegException("Operation canceled by user");
+            }
+        }
+
+        for (const auto& portStr : validPorts)
+        {
+            try
+            {
+                _userInput._splitProvided = false;
+                _userInput._secondSplitProvided = false;
+                handlePortStr(portStr);
+                labelToLocalPort();
+                _allPortsCurrentLabelStr = portStr;
+                sendPaosOnce();
+            }
+            catch (const std::exception& exc)
+            {
+                _allUnhandledErrors += string("Sending PAOS (Port ") + portStr +
+                                       string(") raised the following exception: ") + string(exc.what()) + string("\n");
+            }
+        }
+        _allPortsCurrentLabelStr = "";
+        return;
+    }
+
     if (!_userInput._allPorts || _isHCA)
     {
         sendPaosOnce();

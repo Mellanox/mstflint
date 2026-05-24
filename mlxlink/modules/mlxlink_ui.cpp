@@ -651,6 +651,12 @@ void MlxlinkUi::validateGeneralCmdsParams()
         {
             throw MlxRegException("The --" ALL_PORTS_FLAG " flag can only be used with --" PAOS_FLAG " (-a)");
         }
+        if (_userInput._multiPortSpecified)
+        {
+            throw MlxRegException("The -" + string(1, LABEL_PORT_FLAG_SHORT) +
+                                  "/--" LABEL_PORT_FLAG " port list and --" ALL_PORTS_FLAG
+                                  " options are mutually exclusive");
+        }
         if (_userInput._portSpecified)
         {
             // Commander is not created yet at this stage, so use a local jsonRoot.
@@ -660,6 +666,24 @@ void MlxlinkUi::validateGeneralCmdsParams()
               warnJsonRoot);
             _userInput._portSpecified = false;
         }
+    }
+    if (_userInput._multiPortSpecified)
+    {
+        if (!isIn(SEND_PAOS, _sendRegFuncMap))
+        {
+            throw MlxRegException("A port list passed via -" + string(1, LABEL_PORT_FLAG_SHORT) +
+                                  "/--" LABEL_PORT_FLAG " is currently supported only with --" PAOS_FLAG " (-a)");
+        }
+        for (auto opt : _sendRegFuncMap)
+        {
+            if (opt != SEND_PAOS && opt != SHOW_PDDR)
+            {
+                throw MlxRegException("A port list passed via -" + string(1, LABEL_PORT_FLAG_SHORT) +
+                                      "/--" LABEL_PORT_FLAG " is currently supported only with --" PAOS_FLAG " (-a)");
+            }
+        }
+        // Drop the default SHOW_PDDR action so the multi-port run focuses on PAOS only.
+        removeCmd(SHOW_PDDR);
     }
     if (isIn(SEND_PMAOS, _sendRegFuncMap) && !checkPmaosCmd(_userInput._pmaosCmd))
     {
@@ -1137,6 +1161,10 @@ void MlxlinkUi::strToInt32(char* str, u_int32_t& value)
 
 std::vector<string> MlxlinkUi::parseParamsFromLine(const string& paramsLine)
 {
+    if (!paramsLine.empty() && (paramsLine.front() == ',' || paramsLine.back() == ','))
+    {
+        throw MlxRegException("Wrong input format");
+    }
     std::vector<string> paramVector;
     string param;
     stringstream stream(paramsLine);
@@ -1264,7 +1292,9 @@ void MlxlinkUi::initCmdParser()
     AddOptions(DEPTH_FLAG, DEPTH_FLAG_SHORT, "depth", "depth");
     AddOptions(PCIE_INDEX_FLAG, PCIE_INDEX_FLAG_SHORT, "pcie_index", "PCIe Index");
     AddOptions(NODE_FLAG, NODE_FLAG_SHORT, "node", "node");
-    AddOptions(LABEL_PORT_FLAG, LABEL_PORT_FLAG_SHORT, "LabelPort", "Label Port");
+    AddOptions(LABEL_PORT_FLAG, LABEL_PORT_FLAG_SHORT, "LabelPort",
+               "Label Port (single port e.g. 3/2, or comma-separated list e.g. 1,2,3 - "
+               "list currently supported only with --" PAOS_FLAG " (-a))");
     AddOptions(PCIE_LINKS_FLAG, PCIE_LINKS_FLAG_SHORT, "", "Show valid PCIe links");
     AddOptions(EXTENDED_PCIE_FLAG, EXTENDED_PCIE_FLAG_SHORT, "", "Show extended PCIe link info");
     AddOptions(BER_FLAG, BER_FLAG_SHORT, "", "Show BER Info");
@@ -1597,6 +1627,15 @@ void MlxlinkUi::addCmd(OPTION_TYPE option)
     }
 }
 
+void MlxlinkUi::removeCmd(OPTION_TYPE option)
+{
+    auto it = std::find(_sendRegFuncMap.begin(), _sendRegFuncMap.end(), option);
+    if (it != _sendRegFuncMap.end())
+    {
+        _sendRegFuncMap.erase(it);
+    }
+}
+
 ParseStatus MlxlinkUi::HandleOption(string name, string value)
 {
     addCmd(SHOW_PDDR);
@@ -1871,8 +1910,21 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     }
     else if (name == LABEL_PORT_FLAG)
     {
-        checkStrLength(value);
-        handlePortStr(_userInput, value);
+        if (value.find(',') != string::npos)
+        {
+            _userInput._multiPortsList = parseParamsFromLine(value);
+            for (const auto& p : _userInput._multiPortsList)
+            {
+                checkStrLength(p);
+            }
+            _userInput._multiPortSpecified = true;
+            handlePortStr(_userInput, _userInput._multiPortsList.front());
+        }
+        else
+        {
+            checkStrLength(value);
+            handlePortStr(_userInput, value);
+        }
         return PARSE_OK;
     }
     else if (name == DEPTH_FLAG)

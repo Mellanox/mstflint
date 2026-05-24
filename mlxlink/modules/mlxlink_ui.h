@@ -49,6 +49,7 @@ public:
 
 protected:
     virtual void addCmd(OPTION_TYPE option);
+    virtual void removeCmd(OPTION_TYPE option);
     ParseStatus HandleOption(string name, string value);
     virtual void printSynopsisHeader();
     virtual void printSynopsisQueries();

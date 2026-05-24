@@ -21,7 +21,7 @@ OPTIONS
 <device>               : Perform operation for a specified mst device
 .TP
 \fB\-p\fR |\-\-port
-<port_number>          : Port Number
+<port_number_or_list>  : Port Number, or a comma-separated list of ports (e.g. 1,2,3). A list is currently supported only with \fB\-a\fR/\-\-port_state.
 .TP
 \fB\-\-port_type\fR
 <port_type>            : Port Type [NETWORK(Default)/PCIE]
@@ -148,6 +148,8 @@ Configure Port State
 :
 .IP
 mstlink \fB\-d\fR <device> \fB\-p\fR <port_number> \fB\-\-port_state\fR UP
+.IP
+mstlink \fB\-d\fR <device> \fB\-p\fR 1,2,3 \fB\-\-port_state\fR DN
 .TP
 Configure Port Speeds
 :
