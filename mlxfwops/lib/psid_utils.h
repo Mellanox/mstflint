@@ -71,6 +71,8 @@ struct MinorPsidLockStatus
     char lockedPsid[PSID_MAX_LEN + 1] = {};
 };
 
+MLXFWOP_API bool areMajorCompatible(const char* devicePsid, const char* imagePsid);
+
 class MLXFWOP_API PsidValidator
 {
 public:
