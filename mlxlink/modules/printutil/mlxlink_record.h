@@ -66,6 +66,7 @@
 #define HEADER_FEC_INFO "FEC Capability Info"
 #define HEADER_PLR_INFO "PLR Info"
 #define HEADER_KR_INFO "KR Info"
+#define HEADER_HOST_CLASS_INFO "Host Class Info"
 #define HEADER_RX_RECOVERY_COUNTERS "Rx Recovery Counters"
 #define HEADER_PERIODIC_EQ "PEQ info"
 
@@ -134,6 +135,7 @@ enum STATUS_DDM_FLAGS_TYPE
 #define MODULE_PMPD_INFO_LAST 6
 #define PLR_INFO_LAST 9
 #define KR_INFO_LAST 5
+#define HOST_CLASS_INFO_LAST 2
 #define RX_RECOVERY_COUNTERS_LAST 14
 #define PERIODIC_EQ_INFO_LAST 2
 

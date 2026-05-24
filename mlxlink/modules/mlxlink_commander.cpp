@@ -7423,6 +7423,7 @@ void MlxlinkCommander::prepareJsonOut()
     _portGroupMapping.toJsonFormat(_jsonRoot);
     _plrInfoCmd.toJsonFormat(_jsonRoot);
     _krInfoCmd.toJsonFormat(_jsonRoot);
+    _hostClassCmd.toJsonFormat(_jsonRoot);
     _rxRecoveryCountersCmd.toJsonFormat(_jsonRoot);
     _periodicEqInfoCmd.toJsonFormat(_jsonRoot);
 
@@ -7703,6 +7704,24 @@ void MlxlinkCommander::showKr()
         throw MlxRegException("KR is not supported for the current device!");
     }
     printOutput(_krInfoCmd);
+}
+
+void MlxlinkCommander::showHostClass()
+{
+    try
+    {
+        sendPrmReg(ACCESS_REG_PDDR, REG_GET, "page_select=%d", PDDR_OPERATIONAL_INFO_PAGE);
+        setPrintTitle(_hostClassCmd, HEADER_HOST_CLASS_INFO, HOST_CLASS_INFO_LAST);
+        setPrintVal(_hostClassCmd, "Local Host Class",
+                    getStrByValue(getFieldValue("local_host_class"), _mlxlinkMaps->_hostClass));
+        setPrintVal(_hostClassCmd, "Remote Host Class",
+                    getStrByValue(getFieldValue("remote_host_class"), _mlxlinkMaps->_hostClass));
+    }
+    catch (MlxRegException& exc)
+    {
+        throw MlxRegException("Host Class is not supported for the current device!");
+    }
+    printOutput(_hostClassCmd);
 }
 
 void MlxlinkCommander::showRxRecoveryCounters()

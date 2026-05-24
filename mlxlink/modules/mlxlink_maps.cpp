@@ -1948,6 +1948,19 @@ void MlxlinkMaps::initKrMapping()
     _krPrbsType[KR_PRBS_TYPE_PRBS31] = "PRBS31";
 }
 
+void MlxlinkMaps::initHostClassMapping()
+{
+    _hostClass[HOST_CLASS_UNSPECIFIED] = "Unspecified";
+    _hostClass[HOST_CLASS_HN] = "Host Nominal (HN) [4.45 to 13.95 dB]";
+    _hostClass[HOST_CLASS_HL] = "Host Low (HL) [4.45 to 8.95 dB]";
+    _hostClass[HOST_CLASS_HH] = "Host High (HH) [4.55 to 18.5 dB]";
+    // Per PRM, values 4-7 are reserved
+    _hostClass[4] = "Reserved";
+    _hostClass[5] = "Reserved";
+    _hostClass[6] = "Reserved";
+    _hostClass[7] = "Reserved";
+}
+
 MlxlinkMaps::MlxlinkMaps()
 {
     initPublicStrings();
@@ -1974,6 +1987,7 @@ MlxlinkMaps::MlxlinkMaps()
     initTableHeaders();
     initPlrRejectModeMapping();
     initKrMapping();
+    initHostClassMapping();
     initPprmOperationRecoveryMapping();
     initPprmRecoveryStatusMapping();
 }

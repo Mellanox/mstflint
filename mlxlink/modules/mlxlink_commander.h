@@ -125,6 +125,8 @@
 #define PLR_TX_CRC_FLAG_SHORT ' '
 #define KR_INFO_FLAG "show_kr"
 #define KR_INFO_FLAG_SHORT ' '
+#define HOST_CLASS_FLAG "show_host_class"
+#define HOST_CLASS_FLAG_SHORT ' '
 #define RX_RECOVERY_COUNTERS_FLAG "show_rx_recovery_counters"
 #define RX_RECOVERY_COUNTERS_FLAG_SHORT ' '
 #define BKV_GROUPS_FLAG "show_bkv_groups"
@@ -427,6 +429,7 @@ enum OPTION_TYPE
     SHOW_PLR,
     SET_PLR,
     SHOW_KR,
+    SHOW_HOST_CLASS,
     SHOW_RX_RECOVERY_COUNTERS,
     SEND_PHY_RECOVERY,
     SEND_LINK_TRAINING,
@@ -550,6 +553,7 @@ public:
     void showPlr();
     void setPlr();
     void showKr();
+    void showHostClass();
     void showRxRecoveryCounters();
     void showPeriodicEq();
     void setPeriodicEq();
@@ -675,6 +679,7 @@ public:
     MlxlinkCmdPrint _portGroupMapping;
     MlxlinkCmdPrint _plrInfoCmd;
     MlxlinkCmdPrint _krInfoCmd;
+    MlxlinkCmdPrint _hostClassCmd;
     MlxlinkCmdPrint _rxRecoveryCountersCmd;
     MlxlinkCmdPrint _periodicEqInfoCmd;
 

@@ -109,6 +109,7 @@ void MlxlinkUi::printSynopsisQueries()
     MlxlinkRecord::printFlagLine(PCIE_LINKS_FLAG_SHORT, PCIE_LINKS_FLAG, "", "Show valid PCIe links (PCIE only)");
     MlxlinkRecord::printFlagLine(PLR_INFO_FLAG_SHORT, PLR_INFO_FLAG, "", "Show PLR Info");
     MlxlinkRecord::printFlagLine(KR_INFO_FLAG_SHORT, KR_INFO_FLAG, "", "Show KR Info");
+    MlxlinkRecord::printFlagLine(HOST_CLASS_FLAG_SHORT, HOST_CLASS_FLAG, "", "Show Host Class Info");
     MlxlinkRecord::printFlagLine(MODULE_INFO_FLAG_SHORT, MODULE_INFO_FLAG, "", "Show Module Info");
     MlxlinkRecord::printFlagLine(BER_FLAG_SHORT, BER_FLAG, "", "Show Physical Counters and BER Info");
     MlxlinkRecord::printFlagLine(EYE_OPENING_FLAG_SHORT, EYE_OPENING_FLAG, "", "Show Eye Opening Info");
@@ -1319,6 +1320,7 @@ void MlxlinkUi::initCmdParser()
     AddOptions(PLR_TX_CRC_FLAG, PLR_TX_CRC_FLAG_SHORT, "PLR_TX_CRC",
                "TX CRC over PLR: 0/DS(disable), 1/EN(enable) (Optional)");
     AddOptions(KR_INFO_FLAG, KR_INFO_FLAG_SHORT, "", "Show KR Info");
+    AddOptions(HOST_CLASS_FLAG, HOST_CLASS_FLAG_SHORT, "", "Show Host Class Info");
     AddOptions(PERIODIC_EQ_FLAG, PERIODIC_EQ_FLAG_SHORT, "", "Show Link PEQ (Periodic Equalization) Info");
     AddOptions(RX_RECOVERY_COUNTERS_FLAG, RX_RECOVERY_COUNTERS_FLAG_SHORT, "", "Show Rx Recovery Counters");
     AddOptions(LINK_TRAINING_FLAG, LINK_TRAINING_FLAG_SHORT, "Mode", "Enable/Disable/Enable_Extra Link Training");
@@ -1598,6 +1600,9 @@ void MlxlinkUi::commandsCaller()
             case SHOW_KR:
                 _mlxlinkCommander->showKr();
                 break;
+            case SHOW_HOST_CLASS:
+                _mlxlinkCommander->showHostClass();
+                break;
             case SHOW_RX_RECOVERY_COUNTERS:
                 _mlxlinkCommander->showRxRecoveryCounters();
                 break;
@@ -1747,6 +1752,11 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     {
         addCmd(SHOW_KR);
         _userInput._showKr = true;
+        return PARSE_OK;
+    }
+    else if (name == HOST_CLASS_FLAG)
+    {
+        addCmd(SHOW_HOST_CLASS);
         return PARSE_OK;
     }
     else if (name == RX_RECOVERY_COUNTERS_FLAG)
