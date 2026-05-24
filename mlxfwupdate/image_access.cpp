@@ -228,7 +228,7 @@ int ImageAccess::queryPsid(const string&  fname,
     }
 
     if (!psid.compare(img_query.fw_info.psid) ||
-        (signature == IMG_SIG_TYPE_BIN && psid_utils::areMajorCompatible(psid.c_str(), img_query.fw_info.psid))) {
+        (getFileSignature(fname) == IMG_SIG_TYPE_BIN && psid_utils::areMajorCompatible(psid.c_str(), img_query.fw_info.psid))) {
         u_int32_t* supporteHwId;
         u_int32_t  supporteHwIdNum;
         _imgFwOps->getSupporteHwId(&supporteHwId, supporteHwIdNum);
