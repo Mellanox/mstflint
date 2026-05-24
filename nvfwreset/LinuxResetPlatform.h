@@ -35,6 +35,8 @@
 #define LINUX_RESET_PLATFORM_H
 
 #include <map>
+#include <utility>
+#include <vector>
 #include "ResetPlatformInterface.h"
 #include "CommonResetPlatform.h"
 #include "HotResetManager.h"
@@ -60,8 +62,11 @@ public:
 private:
     HotResetManager _hotResetManager;
     std::unique_ptr<OperatingSystemAPI> _operatingSystemAPI;
-    void ToggleNicDriver(const std::string& asicDBDFTarget, bool unbind);
-    bool IsNicDriverBound(const std::string& asicDBDFTarget);
+    // List of (dbdf, driver_name) pairs that were bound before reset and need to be re-bound afterwards
+    std::vector<std::pair<std::string, std::string>> _driversDbdfToRebind;
+    void ToggleNicDriver(const std::string& dbdf, const std::string& driverName, bool unbind);
+    bool IsNicDriverBound(const std::string& dbdf);
+    std::vector<std::pair<std::string, std::string>> DiscoverBoundDrivers();
 };
 
 #endif // LINUX_RESET_PLATFORM_H

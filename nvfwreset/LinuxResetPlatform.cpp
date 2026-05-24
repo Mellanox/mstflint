@@ -35,6 +35,8 @@
 #include <sstream>
 #include <map>
 #include <fstream>
+#include <algorithm>
+#include <utility>
 #include <string.h>
 #include "LinuxResetPlatform.h"
 #include "mft_core/mft_core_utils/mft_exceptions/MftGeneralException.h"
@@ -47,7 +49,11 @@
 
 namespace Filesystem = mstflint::common::filesystem;
 using namespace mft_core;
-const std::string PCI_DRIVERS_PATH = "/sys/bus/pci/drivers/mlx5_core";
+const std::string PCI_DRIVERS_PATH = "/sys/bus/pci/drivers";
+// Mellanox drivers that are allowed to be unbound/bound as part of the reset flow
+static const std::vector<std::string> MLNX_DRIVERS = {"mlx5_core", "rshim_pcie", "nvme"};
+// White-listed non-Mellanox drivers (e.g. PCIe port driver on parent bridges)
+static const std::vector<std::string> WHITE_LIST_DRIVERS = {"pcieport"};
 
 LinuxResetPlatform::LinuxResetPlatform(mfile* mf,
                                        const ResetFlowParameters& resetParams,
@@ -60,40 +66,113 @@ LinuxResetPlatform::LinuxResetPlatform(mfile* mf,
 
 LinuxResetPlatform::~LinuxResetPlatform() {}
 
-bool LinuxResetPlatform::IsNicDriverBound(const std::string& asicDBDFTarget)
+bool LinuxResetPlatform::IsNicDriverBound(const std::string& dbdf)
 {
-    std::string driverLink = std::string("/sys/bus/pci/devices/") + asicDBDFTarget + "/driver";
+    std::string driverLink = std::string("/sys/bus/pci/devices/") + dbdf + "/driver";
 
     return Filesystem::exists(Filesystem::path(driverLink));
 }
 
-void LinuxResetPlatform::ToggleNicDriver(const std::string& asicDBDFTarget, bool unbind)
+// Scan /sys/bus/pci/drivers/<driver_name>/ for every entry whose filename shares the
+// DBD (domain:bus:device) prefix with one of the asic DBDF targets. This mirrors the
+// python logic in MlnxDriverLinux (mlxfwreset_mlnxdriver.py) that iterates over all
+// PCI functions currently bound to any driver (not only the target function). Every
+// matched (dbdf, driver_name) pair will later need to be unbound before the reset and
+// re-bound afterwards.
+std::vector<std::pair<std::string, std::string>> LinuxResetPlatform::DiscoverBoundDrivers()
 {
-    const std::string sysfsPath = std::string(PCI_DRIVERS_PATH) + (unbind ? "/unbind" : "/bind");
+    std::vector<std::pair<std::string, std::string>> driversDbdf;
 
-    LOG.Info("Writing '" + asicDBDFTarget + "' to " + sysfsPath);
+    Filesystem::path driversDir(PCI_DRIVERS_PATH);
+    if (!Filesystem::exists(driversDir))
+    {
+        throw MftGeneralException("path " + PCI_DRIVERS_PATH + " doesn't exist!");
+    }
+
+    // Build the list of DBD prefixes (dbdf without the function number) from the asic targets
+    std::vector<std::string> dbdPrefixes;
+    dbdPrefixes.reserve(_asicDBDFTargets.size());
+    for (const auto& asicDBDFTarget : _asicDBDFTargets)
+    {
+        const auto dotPos = asicDBDFTarget.find('.');
+        dbdPrefixes.push_back(dotPos == std::string::npos ? asicDBDFTarget : asicDBDFTarget.substr(0, dotPos));
+    }
+
+    for (const auto& driverEntry : Filesystem::directory_iterator(driversDir))
+    {
+        if (!Filesystem::is_directory(driverEntry.path()))
+        {
+            continue;
+        }
+
+        const std::string driverName = driverEntry.path().filename().string();
+
+        for (const auto& deviceEntry : Filesystem::directory_iterator(driverEntry.path()))
+        {
+            const std::string dbdf = deviceEntry.path().filename().string();
+
+            bool matches = false;
+            for (const auto& dbd : dbdPrefixes)
+            {
+                if (!dbd.empty() && dbdf.compare(0, dbd.size(), dbd) == 0)
+                {
+                    matches = true;
+                    break;
+                }
+            }
+            if (!matches)
+            {
+                continue;
+            }
+
+            const bool isMlnx = std::find(MLNX_DRIVERS.begin(), MLNX_DRIVERS.end(), driverName) != MLNX_DRIVERS.end();
+            const bool isWhiteListed =
+                std::find(WHITE_LIST_DRIVERS.begin(), WHITE_LIST_DRIVERS.end(), driverName) != WHITE_LIST_DRIVERS.end();
+            if (!isMlnx && !isWhiteListed)
+            {
+                std::ostringstream errMsg;
+                errMsg << "nvfwreset doesn't support 3rd party driver (" << driverName
+                       << ") bound to " << dbdf
+                       << "! Please stop the driver manually and resume operation with --skip_driver";
+                throw MftGeneralException(errMsg.str());
+            }
+
+            LOG.Info("Discovered bound driver '" + driverName + "' on " + dbdf);
+            driversDbdf.emplace_back(dbdf, driverName);
+        }
+    }
+
+    std::sort(driversDbdf.begin(), driversDbdf.end());
+    return driversDbdf;
+}
+
+void LinuxResetPlatform::ToggleNicDriver(const std::string& dbdf, const std::string& driverName, bool unbind)
+{
+    const std::string sysfsPath = PCI_DRIVERS_PATH + "/" + driverName + (unbind ? "/unbind" : "/bind");
+
+    LOG.Info("Writing '" + dbdf + "' to " + sysfsPath);
 
     std::ofstream outFile(sysfsPath);
     if (!outFile.is_open())
     {
         std::ostringstream errMsg;
-        errMsg << "Failed to open " << sysfsPath << " for " << (unbind ? "unbinding" : "binding")
-               << " Asic DBDF target driver. errno=" << errno << " (" << strerror(errno) << ")";
+        errMsg << "Failed to open " << sysfsPath << " for " << (unbind ? "unbinding" : "binding") << " driver '"
+               << driverName << "' on " << dbdf << ". errno=" << errno << " (" << strerror(errno) << ")";
         throw MftGeneralException(errMsg.str());
     }
 
-    outFile << asicDBDFTarget;
+    outFile << dbdf;
     if (!outFile.good())
     {
         std::ostringstream errMsg;
-        errMsg << "Failed to write Asic DBDF target '" << asicDBDFTarget << "' to " << sysfsPath << ". errno=" << errno
-               << " (" << strerror(errno) << ")";
+        errMsg << "Failed to write DBDF '" << dbdf << "' to " << sysfsPath << ". errno=" << errno << " ("
+               << strerror(errno) << ")";
         throw MftGeneralException(errMsg.str());
     }
 
     outFile.close();
 
-    LOG.Info("LinuxResetPlatform::ToggleNicDriver: Asic DBDF target driver " +
+    LOG.Info("LinuxResetPlatform::ToggleNicDriver: driver '" + driverName + "' on " + dbdf + " " +
              std::string(unbind ? "unbound" : "bound") + " successfully");
 }
 
@@ -101,22 +180,32 @@ void LinuxResetPlatform::StopNicDriver()
 {
     PrintStartResetFlowMessage(ResetFlowStep::StopNicDriver);
     LOG.Debug("LinuxResetPlatform::StopNicDriver");
-    bool unbind = true;
-    for (const auto& asicDBDFTarget : _asicDBDFTargets)
+
+    // Discover every (dbdf, driver_name) currently bound for the target DBDs.
+    // Validation of 3rd-party drivers happens inside DiscoverBoundDrivers so that
+    // we fail fast before unbinding anything.
+    _driversDbdfToRebind = DiscoverBoundDrivers();
+
+    if (_driversDbdfToRebind.empty())
     {
-        // Check if the driver path exists
-        if (IsNicDriverBound(asicDBDFTarget))
+        LOG.Info("No bound drivers found for asic DBDF targets, nothing to unbind");
+    }
+
+    const bool unbind = true;
+    for (const auto& dbdfDriver : _driversDbdfToRebind)
+    {
+        const std::string& dbdf = dbdfDriver.first;
+        const std::string& driverName = dbdfDriver.second;
+        if (IsNicDriverBound(dbdf))
         {
-            LOG.Info("Asic DBDF target driver is bound: " + asicDBDFTarget);
-            _nicDriverState[asicDBDFTarget] = NicDriverState::WAS_BOUND;
-            ToggleNicDriver(asicDBDFTarget, unbind);
+            ToggleNicDriver(dbdf, driverName, unbind);
         }
         else
         {
-            LOG.Info("Asic DBDF target driver is unbound: " + asicDBDFTarget);
-            _nicDriverState[asicDBDFTarget] = NicDriverState::WAS_UNBOUND;
+            LOG.Info("Driver '" + driverName + "' on " + dbdf + " is already unbound, skipping");
         }
     }
+
     PrintEndResetFlowMessage();
 }
 
@@ -124,14 +213,20 @@ void LinuxResetPlatform::StartNicDriver()
 {
     PrintStartResetFlowMessage(ResetFlowStep::StartNicDriver);
     LOG.Debug("LinuxResetPlatform::StartNicDriver");
-    for (const auto& asicDBDFTarget : _asicDBDFTargets)
+
+    const bool unbind = false;
+    for (const auto& dbdfDriver : _driversDbdfToRebind)
     {
-        if (_nicDriverState[asicDBDFTarget] == NicDriverState::WAS_BOUND)
+        const std::string& dbdf = dbdfDriver.first;
+        const std::string& driverName = dbdfDriver.second;
+        if (IsNicDriverBound(dbdf))
         {
-            bool unbind = false;
-            ToggleNicDriver(asicDBDFTarget, unbind);
+            LOG.Info("Driver '" + driverName + "' on " + dbdf + " is already bound, skipping");
+            continue;
         }
+        ToggleNicDriver(dbdf, driverName, unbind);
     }
+
     PrintEndResetFlowMessage();
 }
 
