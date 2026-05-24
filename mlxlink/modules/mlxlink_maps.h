@@ -255,6 +255,7 @@ private:
     void initTableHeaders();
     void initPlrRejectModeMapping();
     void initKrMapping();
+    void initHostClassMapping();
 
 public:
     static MlxlinkMaps* getInstance();
@@ -328,6 +329,7 @@ public:
     std::map<u_int32_t, std::string> _plrMarginThMaskToStr;
     std::map<u_int32_t, std::string> _krExtOper;
     std::map<u_int32_t, std::string> _krPrbsType;
+    std::map<u_int32_t, std::string> _hostClass;
     std::map<u_int32_t, pair<string, string>> _fecModeMask;
     std::vector<pair<string, string>> _fecPerSpeed;
     std::map<u_int32_t, pair<string, string>> _loopbackModeList;
