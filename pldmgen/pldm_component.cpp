@@ -163,7 +163,7 @@
      }
      if (!_imgOps->FwExtract4MBImage(extractedImage, true))
      {
-         throw PLDMException("Failed to extract fw data.");
+        throw PLDMException("Failed to extract fw data: %s", _imgOps->err());
      }
  
      string tmpFile = createTempFile();
