@@ -33,7 +33,7 @@
 
 
 ###############################################################################
-#    This file was generated at "2026-04-28 06:49:54"
+#    This file was generated at "2026-05-18 14:57:27"
 #    by:
 #      > prm_update.py --project Nic
 ###############################################################################
@@ -376,6 +376,7 @@ class NIC_CAP_EXT_DPA_CAP(ctypes.Structure):
         ("max_num_dpa_eu_per_group", ctypes.c_uint16),
         ("dpa_perf_sample_type", ctypes.c_uint8),
         ("max_num_partition_vhca_id", ctypes.c_uint16),
+        ("dpa_dispatch_low_latency", ctypes.c_uint8),
         ("dpa_eug_eu_share", ctypes.c_uint8),
         ("nic_dpa_self_host_app_mgmt", ctypes.c_uint8),
         ("dpa_partition_eug", ctypes.c_uint8),
