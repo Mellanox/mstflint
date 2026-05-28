@@ -311,10 +311,13 @@ int main(int argc, char** argv)
     }
     if (!strcmp("-", name))
     {
-        if (fread(d, VPD_MAX_SIZE, 1, stdin) != 1)
+        ssize_t nbytes = read(STDIN_FILENO, d, VPD_MAX_SIZE);
+
+        if (nbytes <= 0)
         {
             return 3;
         }
+        mvpd_len = (int)nbytes;
     }
     else
     {
