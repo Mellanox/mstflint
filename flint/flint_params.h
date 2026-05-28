@@ -207,6 +207,7 @@ public:
     string cert_uuid;
     bool skip_if_same;
     bool pending;
+    bool package_info;
 };
 
 #endif

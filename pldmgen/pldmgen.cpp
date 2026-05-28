@@ -57,6 +57,13 @@
      }
      printf("-I- PLDM fwpkg File %s generated successfully.\n", params->_output_file.c_str());
  }
+
+void disableCustomPsid(std::unique_ptr<CmdLineParams>& params)
+{
+    PLDM::DisableCustomPsid(params->_input_file, params->_output_file, params->_psid);
+    printf("-I- Wrote %s with custom PSID disabled,PSID minor digits were set to the generic value.\n",
+            params->_output_file.c_str());
+}
  
  int Main(int argc, char* argv[])
  {
@@ -80,6 +87,10 @@
          else if (pldmgenCmdParser._parsedParams->_cmd == GEN_PLDM_PACKAGE)
          {
              genPldmPackage(pldmgenCmdParser._parsedParams);
+         }
+         else if (pldmgenCmdParser._parsedParams->_cmd == DISABLE_CUSTOM_PSID)
+         {
+             disableCustomPsid(pldmgenCmdParser._parsedParams);
          }
          else
          {

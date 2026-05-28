@@ -87,6 +87,10 @@
      {
          _parsedParams->_cmd = GEN_PLDM_PACKAGE;
      }
+     else if (command == "disable_custom_psid")
+     {
+         _parsedParams->_cmd = DISABLE_CUSTOM_PSID;
+     }
      else
      {
          cout << "Unknown command: " << command << endl;
@@ -119,6 +123,10 @@
      else if (name == "keep_descriptors_order" || name == "kdo")
      {
          _parsedParams->_keepDescriptorsOrder = true;
+     }
+     else if (name == "psid")
+     {
+         _parsedParams->_psid = value;
      }
      else if (name == "help" || name == "h")
      {
@@ -156,8 +164,11 @@
      AddOptions("rc", ' ', "", "short for reuse_components");
      AddOptions("keep_descriptors_order", ' ', "", "Keep descriptors in the order from cookbook definition");
      AddOptions("kdo", ' ', "", "short for keep_descriptors_order");
+     AddOptions("psid", ' ', "<psid>", "PSID of the FD to edit (required only when the package has multiple FDs)");
      AddOptionalSectionData("COMMANDS SUMMARY", "gen_empty_cookbook", "Generates an empty cookbook");
      AddOptionalSectionData("COMMANDS SUMMARY", "gen_pldm_package", "Generates a PLDM package");
+     AddOptionalSectionData("COMMANDS SUMMARY", "disable_custom_psid",
+                            "Zero the last 2 bytes (minor) of the PSID in an existing PLDM package");
  }
  
  /************************************
@@ -165,20 +176,22 @@
   ************************************/
  void PldmgenCmdLineParser::printUsage()
  {
-     printf("%s", _cmdParser.GetUsage().c_str());
+    printf("%s", _cmdParser.GetUsage().c_str());
  
-     printf("TEMPLATES\n");
+    printf("TEMPLATES\n");
     printf(IDENT
            "mstpldm_pkg_gen --output_file/-o <output> --components/-c 2 --device_records/-d 4 gen_empty_cookbook \n");
-     printf(
+    printf(
        IDENT
        "mstpldm_pkg_gen --cookbook_definition/-cd <cookbook_def.json> --output_file/-o <output> gen_empty_cookbook \n");
  
     printf(IDENT "mstpldm_pkg_gen --input_file/-i <input cookbook> --output_file/-o <output_pldm> gen_pldm_package \n");
- 
-     printf("\n");
-     printf("EXAMPLES\n");
+    printf(IDENT "mstpldm_pkg_gen --input_file/-i <input.fwpkg> --output_file/-o <output.fwpkg> "
+        "[--psid <CURRENT_PSID>] disable_custom_psid \n");
+
+    printf("\n");
+    printf("EXAMPLES\n");
     printf(IDENT "mstpldm_pkg_gen --cd cookbook_def.json -o cookbook.json gen_empty_cookbook\n");
     printf(IDENT "mstpldm_pkg_gen -i cookbook.json -o pldm.fwpkg gen_pldm_package\n");
+    printf(IDENT "mstpldm_pkg_gen -i in.fwpkg -o out.fwpkg disable_custom_psid\n");
  }
- 

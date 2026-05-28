@@ -22,7 +22,8 @@
      _deviceRecordCount(0),
      _cookbookDefinition(""),
      _reuseComponents(false),
-     _keepDescriptorsOrder(false)
+     _keepDescriptorsOrder(false),
+     _psid("")
  {
  }
  
@@ -64,4 +65,21 @@
              throw PLDMException("Invalid arguments for gen_pldm_package. --output_file must be specified.");
          }
      }
+     else if (_cmd == DISABLE_CUSTOM_PSID)
+     {
+         if (_input_file.empty())
+         {
+             throw PLDMException("Invalid arguments for disable_custom_psid. --input_file must be specified.");
+         }
+         else if (_output_file.empty())
+         {
+             throw PLDMException("Invalid arguments for disable_custom_psid. --output_file must be specified.");
+         }
+         else if (!_cookbookDefinition.empty())
+         {
+             throw PLDMException(
+               "Invalid arguments for disable_custom_psid. --cookbook_definition is not supported for disable_custom_psid.");
+         }
+     }
  }
+ 

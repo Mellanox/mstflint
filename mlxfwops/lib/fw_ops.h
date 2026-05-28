@@ -290,7 +290,6 @@ public:
     bool restoreWriteProtectInfo();
     
     void GetFwParams(fw_ops_params_t&);
-    void getSupporteHwId(u_int32_t** supportedHwId, u_int32_t& supportedHwIdNum);
 
     static FwVersion createFwVersion(const fw_info_com_t*);
     static FwVersion createFwVersion(u_int16_t fw_ver0, u_int16_t fw_ver1, u_int16_t fw_ver2);
@@ -313,6 +312,7 @@ public:
     virtual bool ChangeSecureHostState(bool disable, u_int64_t key);
     virtual bool IsComponentSupported(FwComponent::comps_ids_t component);
     virtual bool getBFBComponentsVersions(std::map<std::string, std::string>& name_to_version, bool pending);
+    void getSupportedHwId(u_int32_t** supportedHwId, u_int32_t& supportedHwIdNum);
     
 #ifndef UEFI_BUILD
     static bool CheckPemKeySize(const string privPemFileStr, u_int32_t& keySize);
@@ -704,6 +704,8 @@ protected:
     bool TestAndSetTimeStamp(FwOperations* imageOps);
     virtual bool VerifyBranchFormat(const char* vsdString);
     virtual bool GetDtocAddress(u_int32_t& dTocAddress);
+    virtual bool IsVmodSupported();
+    static bool IsPLDM(const string& pldmFile);
 
     // Protected Members
     FBase* _ioAccess;
