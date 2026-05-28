@@ -1,50 +1,51 @@
 /*
- * Copyright (c) 2020-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
- *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * OpenIB.org BSD license below:
- *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
- *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- *
- * pldm_buff.cpp
- *
- *  Created on: Feb 27, 2019
- *      Author: Samer Deeb
- */
+* Copyright (c) 2020-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+*
+* This software is available to you under a choice of one of two
+* licenses.  You may choose to be licensed under the terms of the GNU
+* General Public License (GPL) Version 2, available from the file
+* COPYING in the main directory of this source tree, or the
+* OpenIB.org BSD license below:
+*
+*     Redistribution and use in source and binary forms, with or
+*     without modification, are permitted provided that the following
+*     conditions are met:
+*
+*      - Redistributions of source code must retain the above
+*        copyright notice, this list of conditions and the following
+*        disclaimer.
+*
+*      - Redistributions in binary form must reproduce the above
+*        copyright notice, this list of conditions and the following
+*        disclaimer in the documentation and/or other materials
+*        provided with the distribution.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+* BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+* ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
+*
+* pldm_buff.cpp
+*
+*  Created on: Feb 27, 2019
+*      Author: Samer Deeb
+*/
+
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <string>
 
-#include <compatibility.h>
+#include "common/compatibility.h"
 
 #include "pldm_buff.h"
 
-PldmBuffer::PldmBuffer() : m_buff(NULL), m_pos(0), m_size(0) {}
+PldmBuffer::PldmBuffer() : m_fname(""), m_buff(NULL), m_pos(0), m_size(0) {}
 
 PldmBuffer::~PldmBuffer()
 {
@@ -53,13 +54,26 @@ PldmBuffer::~PldmBuffer()
 
 void PldmBuffer::reset()
 {
-    if (m_buff)
+    if (m_buff != NULL)
     {
         delete[] m_buff;
-        m_buff = NULL;
     }
+    m_fname = "";
+    m_buff = NULL;
     m_pos = 0;
     m_size = 0;
+}
+
+void PldmBuffer::loadBuffer(u_int8_t* data, size_t size)
+{
+    // Clean up existing buffer if it exists
+    reset();
+
+    // Allocate new memory
+    m_buff = new u_int8_t[size];
+    memcpy(m_buff, data, size);
+    m_size = static_cast<long>(size);
+    m_pos = 0;
 }
 
 bool PldmBuffer::loadFile(const std::string& fname)
@@ -91,11 +105,16 @@ bool PldmBuffer::loadFile(const std::string& fname)
         return false;
     }
 
-    // Read file contents into buffer
-    size_t read_size = fread(m_buff, m_size, 1, fp);
-    fclose(fp);
+    m_fname = fname;
 
-    return (read_size == (size_t)m_size);
+    // Read file contents into buffer
+    size_t read_size = fread(m_buff, 1, m_size, fp);
+    fclose(fp);
+    if (read_size == (size_t)m_size)
+    {
+        return true;
+    }
+    return false;
 }
 
 void PldmBuffer::read(u_int8_t& val)
@@ -132,6 +151,11 @@ void PldmBuffer::read(u_int8_t* arr, size_t arr_size)
     m_pos += arr_size;
 }
 
+std::string PldmBuffer::getFname() const
+{
+    return m_fname;
+}
+
 int PldmBuffer::seek(long offset, int whence)
 {
     long new_pos = -1;
@@ -160,4 +184,39 @@ int PldmBuffer::seek(long offset, int whence)
 long PldmBuffer::tell()
 {
     return m_pos;
+}
+
+bool PldmBuffer::writeAt(size_t offset, const u_int8_t* data, size_t len)
+{
+    if (m_buff == NULL || data == NULL)
+    {
+        return false;
+    }
+    size_t size = (m_size < 0) ? 0 : (size_t)m_size;
+    if (offset > size)
+    {
+        return false;
+    }
+    if (len > size - offset)
+    {
+        return false;
+    }
+    memcpy(m_buff + offset, data, len);
+    return true;
+}
+
+bool PldmBuffer::saveFile(const std::string& fname) const
+{
+    if (m_buff == NULL || m_size <= 0)
+    {
+        return false;
+    }
+    FILE* fp = fopen(fname.c_str(), "wb");
+    if (!fp)
+    {
+        return false;
+    }
+    size_t written = fwrite(m_buff, 1, m_size, fp);
+    fclose(fp);
+    return written == (size_t)m_size;
 }

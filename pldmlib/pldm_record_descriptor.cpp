@@ -1,54 +1,19 @@
-/*
- * Copyright (c) 2020-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
- *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * OpenIB.org BSD license below:
- *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
- *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- *
- * pldm_buff.cpp
- *
- *  Created on: Feb 27, 2019
- *      Author: Samer Deeb
- */
-
-#include <stdlib.h>
 #include <stdio.h>
 #include <string>
+#include <algorithm>
+#include <vector>
 
 #include "pldm_buff.h"
 #include "pldm_record_descriptor.h"
 
 PldmRecordDescriptor::PldmRecordDescriptor() :
+    bufferOffset(0),
     descriptorType(0),
     descriptorLength(0),
     descriptorData(NULL),
     vendorDefinedType(VendorDefinedType::NOT_VENDOR_DEFINED),
-    vendorDefinedValue(""),
-    apsku(0)
+    vendorDefinedStringValue(""),
+    vendorDefinedNumericValue(0)
 {
 }
 
@@ -62,6 +27,7 @@ PldmRecordDescriptor::~PldmRecordDescriptor()
 
 bool PldmRecordDescriptor::unpack(PldmBuffer& buff)
 {
+    bufferOffset = buff.tell();
     buff.read(descriptorType);
     buff.read(descriptorLength);
     if (descriptorLength)
@@ -91,18 +57,23 @@ bool PldmRecordDescriptor::extractVendorDefined()
         vendoreDefinedPtr += prefixlen;
         if (descriptorName == "PSID")
         {
-            vendorDefinedValue = std::string(reinterpret_cast<const char*>(vendoreDefinedPtr));
+            vendorDefinedStringValue = std::string(reinterpret_cast<const char*>(vendoreDefinedPtr));
             vendorDefinedType = VendorDefinedType::PSID;
         }
         else if (descriptorName == "recovery")
         {
-            vendorDefinedValue = std::string(reinterpret_cast<const char*>(vendoreDefinedPtr));
+            vendorDefinedStringValue = std::string(reinterpret_cast<const char*>(vendoreDefinedPtr));
             vendorDefinedType = VendorDefinedType::RECOVERY;
         }
         else if (descriptorName == "APSKU")
         {
-            apsku = __cpu_to_le32(*reinterpret_cast<u_int32_t*>(vendoreDefinedPtr));
+            vendorDefinedNumericValue = __cpu_to_le32(*reinterpret_cast<u_int32_t*>(vendoreDefinedPtr));
             vendorDefinedType = VendorDefinedType::APSKU;
+        }
+        else if (descriptorName == "GLACIERDSD")
+        {
+            vendorDefinedNumericValue = __cpu_to_le32(*reinterpret_cast<u_int32_t*>(vendoreDefinedPtr));
+            vendorDefinedType = VendorDefinedType::GLACIERDSD;
         }
         else
         {
@@ -112,44 +83,170 @@ bool PldmRecordDescriptor::extractVendorDefined()
     return true;
 }
 
-void PldmRecordDescriptor::print(FILE* fp)
+bool PldmRecordDescriptor::IsStringVendorDefinedType(const PldmRecordDescriptor::VendorDefinedType type) const
 {
-    fprintf(fp, "descriptorType: 0x%X ", descriptorType);
-    fprintf(fp, "descriptorLength: 0x%X ", descriptorLength);
-    fprintf(fp, "data: %s\n", getDescription().c_str());
+    static const std::vector<VendorDefinedType> stringTypes = {
+      VendorDefinedType::PSID,
+      VendorDefinedType::RECOVERY,
+    };
+    return std::find(stringTypes.begin(), stringTypes.end(), type) != stringTypes.end();
 }
 
-std::string PldmRecordDescriptor::getDescription() const
+bool PldmRecordDescriptor::IsNumericVendorDefinedType(const PldmRecordDescriptor::VendorDefinedType type) const
 {
-    char description[256] = {'\0'};
+    static const std::vector<VendorDefinedType> numericTypes = {
+      VendorDefinedType::APSKU,
+      VendorDefinedType::GLACIERDSD,
+    };
+    return std::find(numericTypes.begin(), numericTypes.end(), type) != numericTypes.end();
+}
+
+std::string PldmRecordDescriptor::GetVendorDefinedValue(const VendorDefinedType type) const
+{
+    if (IsStringVendorDefinedType(type))
+    {
+        return vendorDefinedStringValue;
+    }
+    else if (IsNumericVendorDefinedType(type))
+    {
+        return std::to_string(vendorDefinedNumericValue);
+    }
+    return "";
+}
+
+u_int16_t PldmRecordDescriptor::getValueOffset() const
+{
+    // Vendor-defined descriptors carry an inline metadata prefix before the value:
+    //   descriptorData[0]      : title-string-type (1 byte, e.g. 0x01 = ASCII)
+    //   descriptorData[1]      : title-string-len  (1 byte, length of the title that follows)
+    //   descriptorData[2..2+N-1]: title-string     (N bytes, e.g. "PSID")
+    //   descriptorData[2+N..]  : the actual value bytes
+    // Non-vendor-defined descriptors have no prefix; the value is the whole descriptorData.
+    if (descriptorData == NULL || descriptorType != Vendor_Defined || descriptorLength < 2)
+    {
+        return 0;
+    }
+    // +2 accounts for the two fixed header bytes (title-string-type + title-string-len);
+    // descriptorData[1] holds the title-string length, so the total prefix to skip is 2 + that.
+    size_t valueOffset = (size_t)2 + descriptorData[1];
+    if (valueOffset > descriptorLength)
+    {
+        return 0;
+    }
+    return (u_int16_t)valueOffset;
+}
+
+u_int8_t* PldmRecordDescriptor::getMutableValue()
+{
+    if (descriptorData == NULL)
+    {
+        return NULL;
+    }
+    u_int16_t valueOffset = getValueOffset();
+    if (valueOffset == 0)
+    {
+        return NULL;
+    }
+    return descriptorData + valueOffset;
+}
+
+u_int16_t PldmRecordDescriptor::getValueLength() const
+{
+    u_int16_t offset = getValueOffset();
+    if (offset == 0 || offset > descriptorLength)
+    {
+        return 0;
+    }
+    return (u_int16_t)(descriptorLength - offset);
+}
+
+bool PldmRecordDescriptor::pack(PldmBuffer& buff) const
+{
+    if (descriptorData == NULL || bufferOffset < 0)
+    {
+        return false;
+    }
+    size_t off = (size_t)bufferOffset;
+
+    u_int16_t typeLE = __cpu_to_le16(descriptorType);
+    if (!buff.writeAt(off, (const u_int8_t*)&typeLE, sizeof(typeLE)))
+    {
+        return false;
+    }
+    off += sizeof(typeLE);
+
+    u_int16_t lenLE = __cpu_to_le16(descriptorLength);
+    if (!buff.writeAt(off, (const u_int8_t*)&lenLE, sizeof(lenLE)))
+    {
+        return false;
+    }
+    off += sizeof(lenLE);
+
+    if (descriptorLength == 0)
+    {
+        return true;
+    }
+    return buff.writeAt(off, descriptorData, descriptorLength);
+}
+
+void PldmRecordDescriptor::printFormatted() const
+{
+    const int LABEL_WIDTH = 26;
     switch (descriptorType)
     {
         case PCI_Vendor_ID:
-            sprintf(description, "PCI Vendor ID: 0x%02x%02x", descriptorData[1], descriptorData[0]);
+            printf("%-*s0x%02x%02x\n", LABEL_WIDTH, "PCI Vendor ID:", descriptorData[1], descriptorData[0]);
+            break;
+        case IANA_Enterprise_ID:
+            printf("%-*s0x%02x%02x\n", LABEL_WIDTH, "IANA Enterprise ID:", descriptorData[1], descriptorData[0]);
+            break;
+        case FD_UUID:
+            printf("%-*s%s\n", LABEL_WIDTH, "FD UUID:", descriptorData);
+            break;
+        case PnP_Vendor_ID:
+            printf("%-*s0x%02x%02x\n", LABEL_WIDTH, "PnP Vendor ID:", descriptorData[1], descriptorData[0]);
+            break;
+        case ACPI_Vendor_ID:
+            printf("%-*s0x%02x%02x\n", LABEL_WIDTH, "ACPI Vendor ID:", descriptorData[1], descriptorData[0]);
             break;
         case PCI_Device_ID:
-            sprintf(description, "PCI Device ID: 0x%02x%02x", descriptorData[1], descriptorData[0]);
+            printf("%-*s0x%02x%02x\n", LABEL_WIDTH, "PCI Device ID:", descriptorData[1], descriptorData[0]);
             break;
         case PCI_Subsystem_Vendor_ID:
-            sprintf(description, "PCI Subsystem Vendor ID: 0x%02x%02x", descriptorData[1], descriptorData[0]);
+            printf("%-*s0x%02x%02x\n", LABEL_WIDTH, "PCI Subsystem Vendor ID:", descriptorData[1], descriptorData[0]);
             break;
         case PCI_Subsystem_ID:
-            sprintf(description, "PCI Subsystem ID: 0x%02x%02x", descriptorData[1], descriptorData[0]);
+            printf("%-*s0x%02x%02x\n", LABEL_WIDTH, "PCI Subsystem ID:", descriptorData[1], descriptorData[0]);
+            break;
+        case PCI_Revision_ID:
+            printf("%-*s0x%02x%02x\n", LABEL_WIDTH, "PCI Revision ID:", descriptorData[1], descriptorData[0]);
+            break;
+        case PnP_Product_ID:
+            printf("%-*s0x%02x%02x\n", LABEL_WIDTH, "PnP Product ID:", descriptorData[1], descriptorData[0]);
+            break;
+        case ACPI_Product_ID:
+            printf("%-*s0x%02x%02x\n", LABEL_WIDTH, "ACPI Product ID:", descriptorData[1], descriptorData[0]);
             break;
         case Vendor_Defined:
             if (vendorDefinedType == VendorDefinedType::PSID)
             {
-                sprintf(description, "PSID: %s", vendorDefinedValue.c_str());
+                printf("%-*s%s\n", LABEL_WIDTH, "PSID:", vendorDefinedStringValue.c_str());
             }
             else if (vendorDefinedType == VendorDefinedType::RECOVERY)
             {
-                sprintf(description, "RECOVERY: %s", vendorDefinedValue.c_str());
+                printf("%-*s%s\n", LABEL_WIDTH, "RECOVERY:", vendorDefinedStringValue.c_str());
             }
             else if (vendorDefinedType == VendorDefinedType::APSKU)
             {
-                sprintf(description, "APSKU: 0x%08X", apsku);
+                printf("%-*s0x%08X\n", LABEL_WIDTH, "APSKU:", vendorDefinedNumericValue);
+            }
+            else if (vendorDefinedType == VendorDefinedType::GLACIERDSD)
+            {
+                printf("%-*s0x%08X\n", LABEL_WIDTH, "GLACIERDSD:", vendorDefinedNumericValue);
             }
             break;
+        default:
+            printf("%-*s0x%04X\n", LABEL_WIDTH, "Unknown:", descriptorType);
+            break;
     }
-    return description;
 }

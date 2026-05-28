@@ -350,3 +350,18 @@ std::string ToLower(const std::string& str)
     std::transform(lowerStr.begin(), lowerStr.end(), lowerStr.begin(), ::tolower);
     return lowerStr;
 }
+
+u_int32_t pldm_crc32(const u_int8_t* data, size_t len)
+{
+    u_int32_t crc = 0xFFFFFFFF;
+    for (size_t i = 0; i < len; i++)
+    {
+        crc ^= data[i];
+        for (int j = 0; j < 8; j++)
+        {
+            u_int32_t mask = -(crc & 1);
+            crc = (crc >> 1) ^ (0xEDB88320 & mask);
+        }
+    }
+    return ~crc;
+}

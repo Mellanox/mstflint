@@ -21,6 +21,7 @@
      MISSING_RUN_MODE,
      GEN_EMPTY_COOKBOOK,
      GEN_PLDM_PACKAGE,
+     DISABLE_CUSTOM_PSID,
  };
  
  class CmdLineParams
@@ -34,7 +35,8 @@
      string _cookbookDefinition;
      bool _reuseComponents;
      bool _keepDescriptorsOrder;
- 
+     string _psid;
+     
      CmdLineParams();
      virtual ~CmdLineParams() = default;
      void validateInputParams();

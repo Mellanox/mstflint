@@ -1,47 +1,46 @@
 /*
- * Copyright (c) 2020-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
- *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * OpenIB.org BSD license below:
- *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
- *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- *
- * pldm_buff.cpp
- *
- *  Created on: Feb 27, 2019
- *      Author: Samer Deeb
- */
+* Copyright (c) 2020-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+*
+* This software is available to you under a choice of one of two
+* licenses.  You may choose to be licensed under the terms of the GNU
+* General Public License (GPL) Version 2, available from the file
+* COPYING in the main directory of this source tree, or the
+* OpenIB.org BSD license below:
+*
+*     Redistribution and use in source and binary forms, with or
+*     without modification, are permitted provided that the following
+*     conditions are met:
+*
+*      - Redistributions of source code must retain the above
+*        copyright notice, this list of conditions and the following
+*        disclaimer.
+*
+*      - Redistributions in binary form must reproduce the above
+*        copyright notice, this list of conditions and the following
+*        disclaimer in the documentation and/or other materials
+*        provided with the distribution.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+* BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+* ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
+*
+* pldm_buff.cpp
+*
+*  Created on: Feb 27, 2019
+*      Author: Samer Deeb
+*/
 
-#include <stdlib.h>
 #include <stdio.h>
-#include <errno.h>
 #include <string>
 
 #include "pldm_buff.h"
 #include "pldm_component_image.h"
+#include "pldm_utils/pldm_utils.h"
 
 PldmComponenetImage::PldmComponenetImage() :
     componentClassification(0),
@@ -93,16 +92,11 @@ bool PldmComponenetImage::readComponentData(PldmBuffer& buff)
     return true;
 }
 
-void PldmComponenetImage::print(FILE* fp)
+void PldmComponenetImage::printFormatted() const
 {
-    fprintf(fp, "componentClassification: 0x%X\n", componentClassification);
-    fprintf(fp, "componentIdentifier: 0x%X\n", componentIdentifier);
-    fprintf(fp, "componentComparisonStamp: 0x%X\n", componentComparisonStamp);
-    fprintf(fp, "componentOptions: 0x%X\n", componentOptions);
-    fprintf(fp, "requestedComponentActivationMethod: 0x%X\n", requestedComponentActivationMethod);
-    fprintf(fp, "componentLocationOffset: 0x%X\n", componentLocationOffset);
-    fprintf(fp, "componentSize: 0x%X\n", componentSize);
-    fprintf(fp, "componentVersionStringType: 0x%X\n", componentVersionStringType);
-    fprintf(fp, "componentVersionStringLength: 0x%X\n", componentVersionStringLength);
-    fprintf(fp, "componentVersionString: %s\n", componentVersionString.c_str());
+    ComponentIdentifier identifier = static_cast<ComponentIdentifier>(componentIdentifier);
+    std::string componentName;
+    ComponentIdentifierToStringValue(identifier, ComponentField::Name, componentName);
+    std::string label = componentName + " Version:";
+    printf("  %-24s%s\n", label.c_str(), componentVersionString.c_str());
 }

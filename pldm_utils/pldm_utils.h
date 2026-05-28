@@ -94,6 +94,7 @@ bool ValidSizeAndFormat(const std::string& number, const u_int8_t size);
 bool readFromFile(const std::string& fname, std::string& content);
 bool WriteToFile(const std::string& fname, const std::string& content);
 bool WriteToFile(const std::string& fname, const std::vector<u_int8_t>& buff);
+u_int32_t pldm_crc32(const u_int8_t* data, size_t len);
 
 void dumpUInt8(std::vector<u_int8_t>& buff, u_int8_t val);
 void dumpUInt16(std::vector<u_int8_t>& buff, u_int16_t val);
