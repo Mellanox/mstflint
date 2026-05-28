@@ -22,6 +22,10 @@
  #include "pldm_utils/pldm_utils.h"
  #include "pldm_time.h"
  #include "pldm_descriptor.h"
+ #include "pldmlib/pldm_buff.h"
+ #include "pldmlib/pldm_pkg.h"
+ #include "pldmlib/pldm_dev_id_record.h"
+ #include "pldmlib/pldm_record_descriptor.h"
  
  #define PACKAGE_VERSION_STR "Package Version"
  #define PACKAGE_HEADER_FORMAT_REVISION_STR "Package Header Format Revision"
@@ -456,3 +460,57 @@
          throw PLDMException("Cannot write to file %s", fname.c_str());
      }
  }
+
+void PLDM::DisableCustomPsid(const string& inputFile, const string& outputFile, const string& psid)
+{
+    PldmBuffer buff;
+    if (!buff.loadFile(inputFile))
+    {
+        throw PLDMException("Failed to load input file: %s", inputFile.c_str());
+    }
+    PldmPkg pkg;
+    if (!pkg.unpack(buff))
+    {
+        throw PLDMException("Failed to parse PLDM package from: %s", inputFile.c_str());
+    }
+
+    // if psid emty the first FD will be taken
+    PldmDevIdRecord* rec = pkg.findRecordByPsid(psid);
+    if (rec == NULL)
+    {
+        throw PLDMException("PSID '%s' not found in package.", psid.c_str());
+    }
+    PldmRecordDescriptor* psidDesc = rec->findVendorDefinedDescriptor(PldmRecordDescriptor::VendorDefinedType::PSID);
+    if (psidDesc == NULL)
+    {
+        throw PLDMException("No PSID descriptor in selected device record.");
+    }
+
+    // Position of the "minor" digit within the PSID value buffer (from start of value).
+    // Per PSID-format spec from architecture: bytes [5] and [6] are the minor digits.
+    const size_t PSID_MINOR_OFFSET = 5;
+
+    u_int16_t valueLen = psidDesc->getValueLength();
+    u_int8_t* value = psidDesc->getMutableValue();
+    if (value == NULL || valueLen == 0 || PSID_MINOR_OFFSET + 1 >= valueLen)
+    {
+        throw PLDMException("PSID value too short (length=%u) for minor edit at offset %zu.", (unsigned)valueLen,
+                            PSID_MINOR_OFFSET);
+    }
+    // Zero the two minor digits.
+    value[PSID_MINOR_OFFSET] = '0';
+    value[PSID_MINOR_OFFSET + 1] = '0';
+
+    if (!psidDesc->pack(buff))
+    {
+        throw PLDMException("Failed to pack modified PSID descriptor back into buffer.");
+    }
+    if (!pkg.recomputeHeaderChecksum(buff))
+    {
+        throw PLDMException("Failed to recompute package header checksum.");
+    }
+    if (!buff.saveFile(outputFile))
+    {
+        throw PLDMException("Failed to write output file: %s", outputFile.c_str());
+    }
+}

@@ -1277,34 +1277,38 @@ void FwCompsMgr::GenerateHandle()
     }
 }
 
-const char* CompNames[] = {"NO_COMPONENT 1",
-                           "COMPID_BOOT_IMG",
-                           "COMPID_RUNTIME_IMG",
-                           "COMPID_USER_NVCONFIG",
-                           "COMPID_OEM_NVCONFIG",
-                           "COMPID_MLNX_NVCONFIG",
-                           "COMPID_CS_TOKEN",
-                           "COMPID_DBG_TOKEN",
-                           "COMPID_DEV_INFO",
-                           "NO_COMPONENT 2",
-                           "COMPID_GEARBOX",
-                           "COMPID_CONGESTION_CONTROL",
-                           "COMPID_LINKX_PROPERTIES",
-                           "COMPID_CRYPTO_TO_COMMISSIONING",
-                           "COMPID_RMCS_TOKEN",
-                           "COMPID_RMDT_TOKEN",
-                           "COMPID_CRCS_TOKEN",
-                           "COMPID_CRDT_TOKEN",
-                           "COMPID_CLOCK_SYNC_EEPROM",
-                           "NO_COMPONENT 3",
-                           "NO_COMPONENT 4",
-                           "COMPID_DIGITAL_CACERT_CHAIN",
-                           "COMPID_DIGITAL_CACERT_REMOVAL",
-                           "COMPID_DIGITAL_CACERT_CHAIN_REMOVAL",
-                           "NO_COMPONENT 4",
-                           "COMPID_LINKX_ELS",
-                           "COMPID_DPA_COMPONENT",
-                           "COMPID_DPA_COMPONENT_REMOVAL"};
+const char* CompNames[] = {"NO_COMPONENT 1",                      // 0x0
+                           "COMPID_BOOT_IMG",                     // 0x1
+                           "COMPID_RUNTIME_IMG",                  // 0x2
+                           "COMPID_USER_NVCONFIG",                // 0x3
+                           "COMPID_OEM_NVCONFIG",                 // 0x4
+                           "COMPID_MLNX_NVCONFIG",                // 0x5
+                           "COMPID_CS_TOKEN",                     // 0x6
+                           "COMPID_DBG_TOKEN",                    // 0x7
+                           "COMPID_DEV_INFO",                     // 0x8
+                           "NO_COMPONENT 2",                      // 0x9
+                           "COMPID_GEARBOX",                      // 0xA
+                           "COMPID_CONGESTION_CONTROL",           // 0xB
+                           "COMPID_LINKX_PROPERTIES",             // 0xC
+                           "COMPID_CRYPTO_TO_COMMISSIONING",      // 0xD
+                           "COMPID_RMCS_TOKEN",                   // 0xE
+                           "COMPID_RMDT_TOKEN",                   // 0xF
+                           "COMPID_CRCS_TOKEN",                   // 0x10
+                           "COMPID_CRDT_TOKEN",                   // 0x11
+                           "COMPID_CLOCK_SYNC_EEPROM",            // 0x12
+                           "NO_COMPONENT 3",                      // 0x13
+                           "NO_COMPONENT 4",                      // 0x14
+                           "COMPID_DIGITAL_CACERT",               // 0x15
+                           "COMPID_DIGITAL_CACERT_CHAIN",         // 0x16
+                           "COMPID_DIGITAL_CACERT_REMOVAL",       // 0x17
+                           "COMPID_DIGITAL_CACERT_CHAIN_REMOVAL", // 0x18
+                           "NO_COMPONENT 5",                      // 0x19
+                           "COMPID_LINKX_ELS",                    // 0x1A
+                           "COMPID_BFB",                          // 0x1B
+                           "COMPID_DPA_COMPONENT",                // 0x1C
+                           "COMPID_DPA_COMPONENT_REMOVAL",        // 0x1D
+                           "COMPID_MTDT_TOKEN",                   // 0x1E
+                           "COMPID_CPO_VMOD_FW"};                 // 0x1F
 
 bool FwCompsMgr::RefreshComponentsStatus(comp_status_st* ComponentStatus)
 {
@@ -1753,6 +1757,12 @@ const char* FwComponent::getCompIdStr(comps_ids_t compId)
  
          case DPA_COMPONENT_REMOVAL:
              return "DPA_COMPONENT_REMOVAL";
+
+         case COMPID_MTDT_TOKEN:
+             return "COMPID_MTDT_TOKEN";
+
+         case COMPID_CPO_VMOD_FW:
+             return "COMPID_CPO_VMOD_FW";
  
     default:
         return "UNKNOWN_COMPONENT";

@@ -34,8 +34,7 @@
  *  Created on: Feb 27, 2019
  *      Author: Samer Deeb
  */
-
-#include <stdlib.h>
+ 
 #include <stdio.h>
 #include <string>
 #include <vector>
@@ -43,15 +42,12 @@
 #include <cstring>
 
 #include "pldm_buff.h"
-#include "pldm_pkg_hdr.h"
 #include "pldm_dev_id_record.h"
 #include "pldm_component_image.h"
 #include "pldm_pkg.h"
+#include "pldm_utils/pldm_utils.h"
 
-const u_int8_t PldmPkg::UUID[] = {0xF0, 0x18, 0x87, 0x8C, 0xCB, 0x7D, 0x49, 0x43,
-                                  0x98, 0x00, 0xA0, 0x2F, 0x05, 0x9A, 0xCA, 0x02};
-
-PldmPkg::PldmPkg() : deviceIDRecordCount(0), componentImageCount(0) {}
+PldmPkg::PldmPkg() : deviceIDRecordCount(0), componentImageCount(0), packageHeaderChecksum(0) {}
 
 PldmPkg::~PldmPkg()
 {
@@ -70,6 +66,7 @@ void PldmPkg::reset()
         delete componentImages.back();
         componentImages.pop_back();
     }
+    psidRecordMap.clear();
     deviceIDRecordCount = 0;
     componentImageCount = 0;
     packageHeader.reset();
@@ -77,6 +74,7 @@ void PldmPkg::reset()
 
 bool PldmPkg::unpack(PldmBuffer& buff)
 {
+    reset();
     if (!packageHeader.unpack(buff))
     {
         return false;
@@ -93,10 +91,13 @@ bool PldmPkg::unpack(PldmBuffer& buff)
             return false;
         }
         deviceIDRecords.push_back(deviceIDRecord);
-        psidImageMap[deviceIDRecord->GetVendorDefinedValue(PldmRecordDescriptor::VendorDefinedType::PSID)] =
-          deviceIDRecord->getComponentImageIndex();
-        psidComponentsMap[deviceIDRecord->GetVendorDefinedValue(PldmRecordDescriptor::VendorDefinedType::PSID)] =
-          deviceIDRecord->getComponentsIndexes();
+        std::string psid = deviceIDRecord->GetVendorDefinedValue(PldmRecordDescriptor::VendorDefinedType::PSID);
+        psidRecordMap[psid] = deviceIDRecord;
+    }
+    // downstream device record support is added in revision 3 and above
+    if (packageHeader.getPackageHeaderFormatRevision() >= FIRST_REVISION_SUPPORTED_DOWNSTREAM_DEVICES)
+    {
+        buff.read(downstreamDeviceRecordCount);
     }
     buff.read(componentImageCount);
     for (u_int8_t i = 0; i < componentImageCount; i++)
@@ -109,34 +110,51 @@ bool PldmPkg::unpack(PldmBuffer& buff)
     return true;
 }
 
-void PldmPkg::print(FILE* fp)
+bool PldmPkg::isComponentInPackage(const std::string& psid, const std::string& componentName) const
 {
-    fprintf(fp, "packageHeader:\n");
-    packageHeader.print(fp);
-    fprintf(fp, "deviceIDRecordCount: 0x%X\n", deviceIDRecordCount);
-    u_int8_t i;
-    for (i = 0; i < deviceIDRecordCount; i++)
+    PldmDevIdRecord* rec = findRecordByPsid(psid);
+    if (rec == NULL)
     {
-        fprintf(fp, "deviceIDRecords[%d]:\n", i);
-        deviceIDRecords[i]->print(fp);
+        return false;
     }
-    fprintf(fp, "componentImageCount: 0x%X\n", componentImageCount);
-    for (i = 0; i < componentImageCount; i++)
+    std::vector<u_int8_t> componentsIndexes = rec->getComponentsIndexes();
+
+    ComponentIdentifier componentIdentifier;
+    StringToComponentIdentifier(componentName, componentIdentifier);
+
+    for (u_int8_t i = 0; i < componentsIndexes.size(); i++)
     {
-        fprintf(fp, "componentImages[%d]:\n", i);
-        componentImages[i]->print(fp);
+        if (componentsIndexes[i] == 0)
+        {
+            continue;
+        }
+        PldmComponenetImage* ComponentImage = getComponentByIndex(i);
+        ComponentIdentifier currentComponentIdentifier =
+        static_cast<ComponentIdentifier>(ComponentImage->getComponentIdentifier());
+        std::string currentComponentName;
+        ComponentIdentifierToStringValue(currentComponentIdentifier, ComponentField::Name, currentComponentName);
+        if (currentComponentName == componentName ||
+            (isNicFwComponent(currentComponentIdentifier) &&
+            isNicFwComponent(componentIdentifier))) // 2 components for nic image FW, NIC_FW
+        {
+            return true;
+        }
     }
-    fprintf(fp, "packageHeaderChecksum: 0x%X\n", packageHeaderChecksum);
+    return false;
 }
 
 const PldmComponenetImage* PldmPkg::getImageByPsid(const std::string& psid) const
 {
-    PsidImageMap::const_iterator it = psidImageMap.find(psid);
-    if (it == psidImageMap.end())
+    PldmDevIdRecord* rec = findRecordByPsid(psid);
+    if (rec == NULL)
+    {
         return NULL;
-    int location = it->second;
+    }
+    int location = rec->getComponentImageIndex();
     if (location == -1 || location >= componentImageCount)
+    {
         return NULL;
+    }
     return componentImages[location];
 }
 
@@ -157,7 +175,7 @@ bool PldmPkg::getPldmDescriptorByPsid(std::string psid, u_int16_t type, u_int16_
 }
 
 std::string PldmPkg::getPldmVendorDefinedDescriptorByPsid(std::string psid,
-    PldmRecordDescriptor::VendorDefinedType type) const
+                                                        PldmRecordDescriptor::VendorDefinedType type) const
 {
     std::string descriptor = "";
     for (auto devIdRec : deviceIDRecords)
@@ -171,9 +189,12 @@ std::string PldmPkg::getPldmVendorDefinedDescriptorByPsid(std::string psid,
     }
     return descriptor;
 }
-
 bool PldmPkg::isPsidInPldm(std::string psid) const
 {
+    if (psid.empty())
+    {
+        return true;
+    }
     bool found = false;
     for (auto devIdRec : deviceIDRecords)
     {
@@ -186,9 +207,9 @@ bool PldmPkg::isPsidInPldm(std::string psid) const
 }
 
 bool PldmPkg::getComponentDataByPsid(ComponentIdentifier compIdentifier,
-                                     std::string psid,
-                                     u_int8_t** buff,
-                                     u_int32_t& buffSize)
+                                    std::string psid,
+                                    u_int8_t** buff,
+                                    u_int32_t& buffSize)
 {
     bool found = false;
     for (auto devIdRec : deviceIDRecords)
@@ -208,7 +229,7 @@ bool PldmPkg::getComponentDataByPsid(ComponentIdentifier compIdentifier,
 
                 PldmComponenetImage* ComponentImage = getComponentByIndex(i);
                 ComponentIdentifier identifier =
-                  static_cast<ComponentIdentifier>(ComponentImage->getComponentIdentifier());
+                static_cast<ComponentIdentifier>(ComponentImage->getComponentIdentifier());
                 if (identifier == compIdentifier ||
                     (isNicFwComponent(compIdentifier) && isNicFwComponent(identifier))) // 2 components for nic image
                                                                                         // FW, NIC_FW
@@ -231,4 +252,41 @@ bool PldmPkg::getComponentDataByPsid(ComponentIdentifier compIdentifier,
         }
     }
     return found;
+}
+
+PldmDevIdRecord* PldmPkg::findRecordByPsid(const std::string& psid) const
+{
+    if (deviceIDRecords.empty())
+    {
+        return NULL;
+    }
+    if (psid.empty())
+    {
+        return deviceIDRecords[0];
+    }
+    PsidRecordMap::const_iterator it = psidRecordMap.find(psid);
+    return (it == psidRecordMap.end()) ? NULL : it->second;
+}
+
+bool PldmPkg::recomputeHeaderChecksum(PldmBuffer& buff) const
+{
+    u_int16_t headerSize = packageHeader.getPackageHeaderSize();
+    if (headerSize < sizeof(u_int32_t))
+    {
+        return false;
+    }
+    size_t bufSize = buff.size();
+    if ((size_t)headerSize > bufSize)
+    {
+        return false;
+    }
+    // CRC is the last dword of the header; packageHeaderSize includes it.
+    size_t checksumOffset = (size_t)headerSize - sizeof(u_int32_t);
+    if (checksumOffset > bufSize)
+    {
+        return false;
+    }
+    u_int32_t newCrc = pldm_crc32(buff.data(), checksumOffset);
+    u_int32_t le = __cpu_to_le32(newCrc);
+    return buff.writeAt(checksumOffset, (const u_int8_t*)&le, sizeof(le));
 }

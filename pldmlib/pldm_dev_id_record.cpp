@@ -35,7 +35,6 @@
  *      Author: Samer Deeb
  */
 
-#include <stdlib.h>
 #include <stdio.h>
 #include <string>
 #include <vector>
@@ -104,30 +103,6 @@ bool PldmDevIdRecord::unpack(PldmBuffer& buff)
     return true;
 }
 
-void PldmDevIdRecord::print(FILE* fp)
-{
-    fprintf(fp, "recordLength: 0x%X\n", recordLength);
-    fprintf(fp, "descriptorCount: 0x%X\n", descriptorCount);
-    fprintf(fp, "deviceUpdateOptionFlags: 0x%X\n", deviceUpdateOptionFlags);
-    fprintf(fp, "componentImageSetVersionStringType: 0x%X\n", componentImageSetVersionStringType);
-    fprintf(fp, "componentImageSetVersionStringLength: 0x%X\n", componentImageSetVersionStringLength);
-    fprintf(fp, "firmwareDevicePackageDataLength: 0x%X\n", firmwareDevicePackageDataLength);
-    if (componentBitmapBitLength)
-    {
-        u_int8_t applicableComponentsLen = componentBitmapBitLength / 8;
-        for (u_int8_t i = 0; i < applicableComponentsLen; i++)
-        {
-            fprintf(fp, "applicableComponents[%d]: 0x%X\n", i, applicableComponents[i]);
-        }
-    }
-    fprintf(fp, "componentImageSetVersionString: %s\n", componentImageSetVersionString.c_str());
-    for (u_int8_t i = 0; i < descriptorCount; i++)
-    {
-        fprintf(fp, "recordDescriptors[%d]:\n", i);
-        recordDescriptors[i]->print(fp);
-    }
-}
-
 // return the first component in devRecord - using only for pldmlib_test.
 int PldmDevIdRecord::getComponentImageIndex() const
 {
@@ -172,29 +147,20 @@ std::vector<u_int8_t> PldmDevIdRecord::getComponentsIndexes() const
 
 std::string PldmDevIdRecord::GetVendorDefinedValue(PldmRecordDescriptor::VendorDefinedType type) const
 {
-    std::string vendorDefinedValue = "";
-    auto it =
-      std::find_if(recordDescriptors.begin(), recordDescriptors.end(),
-                   [&](PldmRecordDescriptor* descriptor) { return descriptor->GetVendorDefinedType() == type; });
-    if (it != recordDescriptors.end())
-    {
-        vendorDefinedValue = (*it)->GetVendorDefinedValue();
-    }
-    return vendorDefinedValue;
+    PldmRecordDescriptor* desc = findVendorDefinedDescriptor(type);
+    return desc ? desc->GetVendorDefinedValue(type) : std::string();
 }
 
-std::string PldmDevIdRecord::getDescription() const
+PldmRecordDescriptor* PldmDevIdRecord::findVendorDefinedDescriptor(PldmRecordDescriptor::VendorDefinedType type) const
 {
-    std::string description;
-    for (u_int8_t i = 0; i < descriptorCount - 1; i++)
+    for (PldmRecordDescriptor* desc : recordDescriptors)
     {
-        description += (recordDescriptors[i]->getDescription() + ", ");
+        if (desc->GetVendorDefinedType() == type)
+        {
+            return desc;
+        }
     }
-    if (descriptorCount > 0)
-    {
-        description += recordDescriptors[descriptorCount - 1]->getDescription();
-    }
-    return description;
+    return NULL;
 }
 
 bool PldmDevIdRecord::getDescriptor(u_int16_t type, u_int16_t& descriptor) const
@@ -205,7 +171,7 @@ bool PldmDevIdRecord::getDescriptor(u_int16_t type, u_int16_t& descriptor) const
         if (type == recordDescriptors[i]->getDescriptorType())
         {
             descriptor =
-              (recordDescriptors[i]->getDescriptorData()[1] << 8) | recordDescriptors[i]->getDescriptorData()[0];
+            (recordDescriptors[i]->getDescriptorData()[1] << 8) | recordDescriptors[i]->getDescriptorData()[0];
             found = true;
         }
     }

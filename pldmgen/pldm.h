@@ -39,6 +39,8 @@
                                                bool reuseComponents,
                                                const std::string& fname,
                                                bool keepDescriptorsOrder = false);
+     static void DisableCustomPsid(const std::string& inputFile, const std::string& outputFile, const std::string& psid);
+
  
  private:
      static std::string FindComponentNameByIdentifier(const std::string& identifier, const Json::Value& components);

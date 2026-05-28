@@ -325,7 +325,7 @@ int ImageAccess::queryPsid(const string&  fname,
         (signature == IMG_SIG_TYPE_BIN && psid_utils::areMajorCompatible(psid.c_str(), img_query.fw_info.psid))) {
         u_int32_t* supporteHwId;
         u_int32_t  supporteHwIdNum;
-        _imgFwOps->getSupporteHwId(&supporteHwId, supporteHwIdNum);
+        _imgFwOps->getSupportedHwId(&supporteHwId, supporteHwIdNum);
         ri.found = 1;
         ri.url = fname;
         ri.pns = "";
@@ -606,8 +606,10 @@ int ImageAccess::getBufferSignature(u_int8_t* buf, u_int32_t size)
         res = IMG_SIG_TYPE_MFA;
     } else if (size >= strlen(MFA2_FINGER_PRINT) && 0 == memcmp(buf, MFA2_FINGER_PRINT, strlen(MFA2_FINGER_PRINT))) {
         res = IMG_SIG_TYPE_MFA2;
-    } else if (size >= 16 && 0 == memcmp(buf, PldmPkg::UUID, 16)) {
-        res = IMG_SIG_TYPE_PLDM;
+    } else if ((size >= headerFormatRevision1.size() && 0 == memcmp(buf, headerFormatRevision1.data(), headerFormatRevision1.size())) ||
+    (size >= headerFormatRevision3.size() && 0 == memcmp(buf, headerFormatRevision3.data(), headerFormatRevision3.size())))
+    {
+    res = IMG_SIG_TYPE_PLDM;
     }
 
     return res;
@@ -970,7 +972,7 @@ int ImageAccess::fillQueryItemFromBuffer(const string& fname,
         goto clean_up;
     }
 
-    _imgFwOps->getSupporteHwId(&supporteHwId, supporteHwIdNum);
+    _imgFwOps->getSupportedHwId(&supporteHwId, supporteHwIdNum);
     ri.found = 1;
     ri.pns = strlen(img_query.fs3_info.name) ? img_query.fs3_info.name : "";
     ri.description = strlen(img_query.fs3_info.description) ? img_query.fs3_info.description : "";

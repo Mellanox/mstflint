@@ -252,6 +252,7 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("", "component_type", 1));
     _flags.push_back(new Flag("", "pending", 0));
     _flags.push_back(new Flag("", "skip_if_same", 0));
+    _flags.push_back(new Flag("", "package_info", 0));
 }
 
 FlagMetaData::~FlagMetaData()
@@ -769,6 +770,12 @@ void Flint::initCmdParser()
                "Make the burn process burn two images on flash (previously default algorithm). Current default"
                " failsafe burn process burns a single image (in alternating locations).\n"
                "Commands affected: burn");
+    
+    AddOptions("package_info",
+               ' ',
+               "",
+               "Show full PLDM fwpkg package information.\n"
+               "Commands affected: query");
 
     AddOptions("striped_image",
                ' ',
@@ -1487,6 +1494,10 @@ ParseStatus Flint::HandleOption(string name, string value)
     else if (name == "pending")
     {
         _flintParams.pending = true;
+    }
+    else if (name == "package_info")
+    {
+        _flintParams.package_info = true;
     }
     else
     {

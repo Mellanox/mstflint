@@ -60,12 +60,20 @@ class MLXFWOP_API FsPldmOperations : public FwOperations
 public:
     FsPldmOperations(FBase* ioAccess) : FwOperations(ioAccess) {}
     virtual ~FsPldmOperations() {}
-    u_int8_t FwType() override { return FIT_PLDM_1_0; }
+    u_int8_t FwType() override { return FIT_PLDM; }
     bool FwInit() override;
     bool LoadPldmPackage();
     bool GetImageSize(u_int32_t* image_size) override;
     bool FwReadData(void* image, u_int32_t* image_size, bool verbose = false) override;
     FwComponent::comps_ids_t ToCompId(string componentName);
+    bool FwOperationsCreate(const char* requestedPsid,
+                            const string& componentType,
+                            FwOperations** newImageOps,
+                            mfile* deviceMfile = NULL);
+    bool IsComponentInPackage(const string& psid, const string& componentName);
+    string GetFirstSupportedComponent(const string& psid);
+
+    void PrintInfo();
     // Unsupported functionality
     bool FwQuery(fw_info_t* fwInfo, bool, bool, bool, bool, bool) override;
     bool FwVerify(VerifyCallBack verifyCallBackFunc,
@@ -98,7 +106,7 @@ public:
     bool FwShiftDevData(PrintCallBack progressFunc = (PrintCallBack)NULL) override;
     const char* FwGetResetRecommandationStr() override;
     bool FwCalcMD5(u_int8_t md5sum[16]) override;
-    bool GetPldmComponentData(string component, string psid, u_int8_t** buff, u_int32_t& buffSize);
+    bool GetPldmComponentDataByPsid(string component, string psid, u_int8_t** buff, u_int32_t& buffSize);
     bool GetPldmDescriptor(string psid, u_int16_t type, u_int16_t& descriptor);
     string GetPldmVendorDefinedDescriptor(string psid, PldmRecordDescriptor::VendorDefinedType type);
     bool CreateFwOpsImage(u_int32_t* buff,
@@ -107,7 +115,13 @@ public:
                           u_int16_t swDevId,
                           bool isStripedImage);
 
+    static const vector<string> SupportedComponents;
+    static bool
+      GetComponentData(const string& pldmFile, const vector<ComponentIdentifier>& components, vector<u_int32_t>& buff);
+
 private:
+    void PrintDeviceRecord(PldmDevIdRecord* devIdRec, int index);
+    void PrintComponents(PldmDevIdRecord* devIdRec);
     string _pldmFile;
     PldmPkg _pkg;
     bool Unsupported(const string& msg)
