@@ -470,8 +470,6 @@ int ImageAccess::getBufferSignature(u_int8_t* buf, u_int32_t size)
         res = IMG_SIG_TYPE_BIN;
     } else if (0 == memcmp(buf, "MFAR", 4)) {
         res = IMG_SIG_TYPE_MFA;
-    } else if (size >= strlen(MFA2_FINGER_PRINT) && 0 == memcmp(buf, MFA2_FINGER_PRINT, strlen(MFA2_FINGER_PRINT))) {
-        res = IMG_SIG_TYPE_MFA2;
     } else if ((size >= headerFormatRevision1.size() && 0 == memcmp(buf, headerFormatRevision1.data(), headerFormatRevision1.size())) ||
     (size >= headerFormatRevision3.size() && 0 == memcmp(buf, headerFormatRevision3.data(), headerFormatRevision3.size())))
     {
