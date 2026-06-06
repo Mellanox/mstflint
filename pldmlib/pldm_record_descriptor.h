@@ -38,8 +38,8 @@
 #ifndef _PLDM_RECORD_DESCRIPTOR_HDR_
 #define _PLDM_RECORD_DESCRIPTOR_HDR_
 
-
-
+#include <vector>
+#include <algorithm>
 
 class PldmRecordDescriptor
 {
@@ -50,30 +50,41 @@ public:
         PSID = 0x0001,
         APSKU = 0x0002,
         RECOVERY = 0x0003,
+        GLACIERDSD = 0x0004,
     };
-    
+
     PldmRecordDescriptor();
     virtual ~PldmRecordDescriptor();
 
     bool unpack(PldmBuffer& buff);
-    void print(FILE* fp);
+    void printFormatted() const;
 
-    const std::string& GetVendorDefinedValue() const { return vendorDefinedValue; }
     VendorDefinedType GetVendorDefinedType() const { return vendorDefinedType; }
+    std::string GetVendorDefinedValue(const VendorDefinedType type) const;
     u_int16_t getDescriptorLength() const { return descriptorLength; }
     const u_int8_t* getDescriptorData() const { return descriptorData; }
-    std::string getDescription() const;
     u_int16_t getDescriptorType() const { return descriptorType; }
 
+    u_int8_t* getMutableValue();
+    u_int16_t getValueLength() const;
+    bool pack(PldmBuffer& buff) const;
+
 private:
+    long bufferOffset;
     u_int16_t descriptorType;
     u_int16_t descriptorLength;
     u_int8_t* descriptorData;
 
-    VendorDefinedType vendorDefinedType;
-    std::string vendorDefinedValue;
-    u_int32_t apsku;
+    u_int16_t getValueOffset() const;
 
+    VendorDefinedType vendorDefinedType;
+    std::string vendorDefinedStringValue;
+    u_int32_t vendorDefinedNumericValue;
+
+    const std::string& GetVendorDefinedStringValue() const { return vendorDefinedStringValue; }
+    u_int32_t GetVendorDefinedNumericValue() const { return vendorDefinedNumericValue; }
+    bool IsStringVendorDefinedType(const PldmRecordDescriptor::VendorDefinedType type) const;
+    bool IsNumericVendorDefinedType(const PldmRecordDescriptor::VendorDefinedType type) const;
     bool extractVendorDefined();
     enum
     {

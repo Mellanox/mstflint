@@ -52,7 +52,119 @@
 #define MAX_NUM_OF_DIODES 160    // To fit the max number of diodes for the new generation (16 and 7nm)
 #define MAX_SENSORS_PER_MODULE 2 // ELS + OE
 
+/* Thermal zone virtual sensors (FW spec): MTMP sensor_index 512..541, i=1, ig=0.
+ * TODO: generalize for future devices that expose zones with a different layout. */
+#define ZONE_BASE_SENSOR_INDEX 512
+#define ZONE_MAIN_COUNT 6
+#define ZONE_PER_TILE_COUNT 3
+
+/* Convert raw 16-bit MTMP/MMTA temperature to Celsius, honoring the unit. */
+static float _raw_temp_to_celsius(u_int16_t raw_temp, td_temp_unit_t unit)
+{
+    int16_t signed_temp = (int16_t)raw_temp;
+    if (unit == TD_FW_TEMP_UNIT_1_256C)
+    {
+        return signed_temp / 256.0f;
+    }
+    return signed_temp * 0.125f;
+}
+
 char td_fw_err_str[TD_FW_MAX_ERR_LEN] = "General error";
+
+/* MTMP_GET keyed on (granularity, asic_index, sensor_index, i=1).
+ * granularity = 0 legacy single-die; 1 main perim; 2 + asic_index tile. */
+static reg_access_status_t _mtmp_read(mfile* mf,
+                                      u_int8_t granularity,
+                                      u_int8_t asic_index,
+                                      u_int16_t sensor_index,
+                                      struct reg_access_hca_mtmp_ext* mtmp_out)
+{
+    memset(mtmp_out, 0, sizeof(*mtmp_out));
+    mtmp_out->i = 1;
+    mtmp_out->ig = granularity;
+    mtmp_out->asic_index = asic_index;
+    mtmp_out->sensor_index = sensor_index;
+    return reg_access_mtmp(mf, REG_ACCESS_METHOD_GET, mtmp_out);
+}
+
+/* Decode MTMP sensor_name (hi 4 bytes + lo 4 bytes, big-endian on wire) into dst[9]. */
+static void _decode_sensor_name(u_int32_t name_hi, u_int32_t name_lo, char dst[9])
+{
+    u_int32_t hi_be = __cpu_to_be32(name_hi);
+    u_int32_t lo_be = __cpu_to_be32(name_lo);
+    memcpy(dst, &hi_be, 4);
+    memcpy(dst + 4, &lo_be, 4);
+    dst[8] = '\0';
+}
+
+int td_fw_get_tile_count(mfile* mf)
+{
+    /* Reads tile count from MTEIM.cap_num_of_tile.
+     * Returns 0 (no zones) for single-die / NIC / read failure. */
+    struct reg_access_hca_mteim_reg_ext mteim;
+    if (!mf)
+    {
+        return 0;
+    }
+    memset(&mteim, 0, sizeof(mteim));
+    if (reg_access_mteim(mf, REG_ACCESS_METHOD_GET, &mteim) != ME_OK)
+    {
+        return 0;
+    }
+    return (int)mteim.cap_num_of_tile;
+}
+
+td_fw_result_t td_fw_read_all_zones(mfile* mf, td_fw_zone_data_t** zones_out, int* count_out)
+{
+    int tile_count;
+    int total;
+    int i;
+    int valid;
+    td_fw_zone_data_t* zones;
+
+    if (!mf || !zones_out || !count_out)
+    {
+        return TDFWE_INV_ARG;
+    }
+    *zones_out = NULL;
+    *count_out = 0;
+
+    tile_count = td_fw_get_tile_count(mf);
+    total = ZONE_MAIN_COUNT + tile_count * ZONE_PER_TILE_COUNT;
+    zones = (td_fw_zone_data_t*)malloc(sizeof(*zones) * total);
+    if (!zones)
+    {
+        snprintf(td_fw_err_str, TD_FW_MAX_ERR_LEN, "memory allocation failed in td_fw_read_all_zones");
+        return TDFWE_MEM_ALLOC_FAIL;
+    }
+    memset(zones, 0, sizeof(*zones) * total);
+
+    /* Zone virtual sensors are contiguous from ZONE_BASE_SENSOR_INDEX: 6 main, then 3 per tile.
+     * Each sensor carries its label in sensor_name. Failed reads are dropped silently. */
+    valid = 0;
+    for (i = 0; i < total; i++)
+    {
+        struct reg_access_hca_mtmp_ext mtmp;
+        reg_access_status_t rc =
+          _mtmp_read(mf, /*granularity=*/0, /*asic_index=*/0, (u_int16_t)(ZONE_BASE_SENSOR_INDEX + i), &mtmp);
+        if (rc != ME_OK)
+        {
+            continue;
+        }
+        zones[valid].max_temp = _raw_temp_to_celsius(mtmp.temperature, TD_FW_TEMP_UNIT_0_125C);
+        _decode_sensor_name(mtmp.sensor_name_hi, mtmp.sensor_name_lo, zones[valid].name);
+        valid++;
+    }
+
+    *zones_out = zones;
+    *count_out = valid;
+    return TDFW_SUCCESS;
+}
+
+void td_fw_release_zones_data(td_fw_zone_data_t* zones_p)
+{
+    free(zones_p);
+}
 
 const char* _diode_idx_to_str(int diode_idx)
 {
@@ -147,17 +259,6 @@ td_fw_result_t td_fw_get_diode_cnt(mfile* mf, int* diode_cnt)
     return TDFW_SUCCESS;
 }
 
-/* Convert MMTA raw temperature to Celsius */
-static float _mmta_temp_to_celsius(u_int16_t raw_temp, td_temp_unit_t unit)
-{
-    int16_t signed_temp = (int16_t)raw_temp;
-    if (unit == TD_FW_TEMP_UNIT_1_256C)
-    {
-        return signed_temp / 256.0f;
-    }
-    return signed_temp * 0.125f;
-}
-
 /* Helper to populate a single MMTA sensor entry (ELS, OE, or TEC) */
 static void _populate_mmta_entry(td_data_mmta* entry,
                                  int module_idx,
@@ -214,7 +315,7 @@ td_fw_result_t
     reg_access_status_t mgpir_rc = reg_access_mgpir_switch_ext(mf, REG_ACCESS_METHOD_GET, &mgpir);
     if (mgpir_rc != ME_OK)
     {
-        snprintf(td_fw_err_str, TD_FW_MAX_ERR_LEN, "Failed to read module count from MGPIR");
+        snprintf(td_fw_err_str, TD_FW_MAX_ERR_LEN, "Failed to read module count: %s", reg_access_err2str(mgpir_rc));
         return TDFWE_REG_ACCESS_ERR;
     }
 
@@ -230,7 +331,7 @@ td_fw_result_t
     data = (td_data_mmta*)malloc(num_modules * 3 * sizeof(td_data_mmta));
     if (!data)
     {
-        snprintf(td_fw_err_str, TD_FW_MAX_ERR_LEN, "Failed to allocate memory for MMTA sensors");
+        snprintf(td_fw_err_str, TD_FW_MAX_ERR_LEN, "Failed to allocate memory for module sensors");
         return TDFWE_MEM_ALLOC_FAIL;
     }
     memset(data, 0, num_modules * 3 * sizeof(td_data_mmta));
@@ -265,7 +366,7 @@ td_fw_result_t
             }
             else
             {
-                snprintf(td_fw_err_str, TD_FW_MAX_ERR_LEN, "Failed to read MMTA for module %d: %s", module_idx,
+                snprintf(td_fw_err_str, TD_FW_MAX_ERR_LEN, "Failed to read module %d: %s", module_idx,
                          reg_access_err2str(rc));
                 free(data);
                 *sensors_read = 0;
@@ -278,10 +379,10 @@ td_fw_result_t
         {
             td_temp_unit_t els_unit =
               mmta.module_temperature.temp_unit ? TD_FW_TEMP_UNIT_1_256C : TD_FW_TEMP_UNIT_0_125C;
-            float temp = _mmta_temp_to_celsius(mmta.module_temperature.temperature, els_unit);
-            float max_temp = _mmta_temp_to_celsius(mmta.module_temperature.max_temperature, els_unit);
-            float thresh_hi = _mmta_temp_to_celsius(mmta.module_temperature.temperature_warning_high, els_unit);
-            float thresh_lo = _mmta_temp_to_celsius(mmta.module_temperature.temperature_warning_low, els_unit);
+            float temp = _raw_temp_to_celsius(mmta.module_temperature.temperature, els_unit);
+            float max_temp = _raw_temp_to_celsius(mmta.module_temperature.max_temperature, els_unit);
+            float thresh_hi = _raw_temp_to_celsius(mmta.module_temperature.temperature_warning_high, els_unit);
+            float thresh_lo = _raw_temp_to_celsius(mmta.module_temperature.temperature_warning_low, els_unit);
 
             _populate_mmta_entry(&data[sensor_count++], module_idx, TD_MMTA_SENSOR_ELS, els_unit, temp, max_temp,
                                  thresh_hi, thresh_lo);
@@ -291,10 +392,10 @@ td_fw_result_t
         {
             td_temp_unit_t oe_unit =
               mmta.module_second_temperature.temp_unit ? TD_FW_TEMP_UNIT_1_256C : TD_FW_TEMP_UNIT_0_125C;
-            float temp = _mmta_temp_to_celsius(mmta.module_second_temperature.temperature, oe_unit);
-            float max_temp = _mmta_temp_to_celsius(mmta.module_second_temperature.max_temperature, oe_unit);
-            float thresh_hi = _mmta_temp_to_celsius(mmta.module_second_temperature.temperature_warning_high, oe_unit);
-            float thresh_lo = _mmta_temp_to_celsius(mmta.module_second_temperature.temperature_warning_low, oe_unit);
+            float temp = _raw_temp_to_celsius(mmta.module_second_temperature.temperature, oe_unit);
+            float max_temp = _raw_temp_to_celsius(mmta.module_second_temperature.max_temperature, oe_unit);
+            float thresh_hi = _raw_temp_to_celsius(mmta.module_second_temperature.temperature_warning_high, oe_unit);
+            float thresh_lo = _raw_temp_to_celsius(mmta.module_second_temperature.temperature_warning_low, oe_unit);
 
             _populate_mmta_entry(&data[sensor_count++], module_idx, TD_MMTA_SENSOR_OE, oe_unit, temp, max_temp,
                                  thresh_hi, thresh_lo);
@@ -306,7 +407,7 @@ td_fw_result_t
             float max_power = mmta.module_tec_power.max_tec_power;
 
             td_temp_unit_t tec_unit = mmta.module_tec_power.temp_unit ? TD_FW_TEMP_UNIT_1_256C : TD_FW_TEMP_UNIT_0_125C;
-            float setpoint = _mmta_temp_to_celsius(mmta.module_tec_power.set_point_temperature, tec_unit);
+            float setpoint = _raw_temp_to_celsius(mmta.module_tec_power.set_point_temperature, tec_unit);
 
             _populate_mmta_entry(&data[sensor_count++], module_idx, TD_MMTA_SENSOR_TEC, tec_unit, power, max_power,
                                  setpoint, TD_FW_INVALID_TEMP);

@@ -1,4 +1,4 @@
-# Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2023-2026 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,7 +28,7 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-SUBDIRS = $(NVML_DIR) mft_core ext_libs $(TOOLS_CRYPTO) tools_layouts common $(VFIO_DRIVER_DIR) ${MTCR_CONF_DIR} mtcr_py $(MAD_IFC) $(XZ_UTILS_DIR) reg_access cmdif dev_mgt pci_library mft_utils $(CABLE_ACCESS_DIR) tools_res_mgmt mvpd mflash fw_comps_mgr libmfa pldmlib cmdparser mlxconfig $(NVFWRESET_DIR) $(DPA) mlxfwops $(FW_MGR_TOOLS) mlxtokengenerator flint small_utils mst_utils mstdump ${ADABE_TOOLS} tracers resourcetools
+SUBDIRS = $(NVML_DIR) mft_core ext_libs $(TOOLS_CRYPTO) tools_layouts common $(VFIO_DRIVER_DIR) ${MTCR_CONF_DIR} mtcr_py $(MAD_IFC) $(XZ_UTILS_DIR) reg_access cmdif dev_mgt pci_library mft_utils $(CABLE_ACCESS_DIR) tools_res_mgmt mvpd mflash fw_comps_mgr libmfa pldm_utils pldmlib cmdparser mlxconfig $(NVFWRESET_DIR) $(DPA) mlxfwops $(FW_MGR_TOOLS) $(PLDM_PKG_GEN) mlxtokengenerator flint small_utils mst_utils mstdump ${ADABE_TOOLS} tracers resourcetools
 
 DIST_SUBDIRS = tracers
 

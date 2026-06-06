@@ -34,6 +34,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <algorithm>
+#include <fstream>
 
 #include "flint_base.h"
 #include "flint_io.h"
@@ -48,7 +50,7 @@
 #include "fs_comps_factory.h"
 #include "dev_mgt/tools_dev_types.h"
 #include "pldmlib/pldm_pkg.h"
-#include "pldmlib/pldm_utils.h"
+#include "pldm_utils/pldm_utils.h"
 
 #ifdef CABLES_SUPP
 #include "cablefw_ops.h"
@@ -90,7 +92,7 @@ int FwOperations::getFileSignature(const char* fname)
         // abit ugly , need to establish a correct ret val
         return IMG_SIG_OPEN_FILE_FAILED;
     }
-    if (!fgets((char*)tmpb, sizeof(tmpb), fin))
+    if (fread(tmpb, 1, sizeof(tmpb) - 1, fin) == 0)
     {
         fclose(fin);
         return IMG_SIG_OPEN_FILE_FAILED;
@@ -111,7 +113,7 @@ int FwOperations::getFileSignature(const char* fname)
     {
         res = IMG_SIG_TYPE_MFA;
     }
-    if (std::memcmp(tmpb, expectedHeaderIdentifier, sizeof(expectedHeaderIdentifier)) == 0)
+    if (IsPLDMHeader(tmpb))
     {
         res = IMG_SIG_TYPE_PLDM;
     }
@@ -265,12 +267,6 @@ void FwOperations::FwInitCom()
 void FwOperations::GetFwParams(fw_ops_params_t& fwParams)
 {
     fwParams = _fwParams;
-}
-
-void FwOperations::getSupporteHwId(u_int32_t** supportedHwId, u_int32_t& supportedHwIdNum)
-{
-    *supportedHwId = _fwImgInfo.supportedHwId;
-    supportedHwIdNum = _fwImgInfo.supportedHwIdNum;
 }
 
 bool FwOperations::CheckBoot2(u_int32_t beg, u_int32_t offs, u_int32_t& next, bool fullRead, const char* pref, VerifyCallBack verifyCallBackFunc)
@@ -702,11 +698,36 @@ u_int8_t FwOperations::IsPLDM(FBase& f)
     static const u_int32_t PLDM_HEADER_IDENTIFIER_LENGTH = 16;
     u_int8_t data[PLDM_HEADER_IDENTIFIER_LENGTH] = {0};
     f.read(0, data, PLDM_HEADER_IDENTIFIER_LENGTH, false, NULL);
-    if (!strncmp((const char*)data, (const char*)expectedHeaderIdentifier, PLDM_HEADER_IDENTIFIER_LENGTH))
+    if (IsPLDMHeader(data))
     {
         return FS_PLDM_1_0;
     }
     return FS_UNKNOWN_IMG;
+}
+
+bool FwOperations::IsPLDM(const string& pldmFile)
+{
+    std::ifstream ifs(pldmFile.c_str(), std::ios::in | std::ios::binary);
+    if (ifs.fail())
+    {
+        return false;
+    }
+    u_int8_t header[16] = {0};
+    ifs.read(reinterpret_cast<char*>(header), sizeof(header));
+    return IsPLDMHeader(header);
+}
+
+bool FwOperations::IsPLDMHeader(const u_int8_t* data)
+{
+    for (const auto& entry : PACKAGE_HEADER_FORMAT_REVISION_MAP)
+    {
+        const std::vector<u_int8_t>& identifier = entry.second;
+        if (std::equal(identifier.begin(), identifier.end(), data))
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 u_int8_t FwOperations::CheckFwFormat(FBase& f, bool getFwFormatFromImg, u_int16_t swDevId)
@@ -846,7 +867,7 @@ bool FwOperations::imageDevOperationsCreate(fw_ops_params_t& devParams, fw_ops_p
         *imgFwOps = NULL;
         return false;
     }
-    if (imgQuery.fs3_info.security_mode == SM_NONE && ignoreSecurityAttributes == false && (*imgFwOps)->FwType() != FIT_COMPS && (*imgFwOps)->FwType() != FIT_PLDM_1_0)
+    if (imgQuery.fs3_info.security_mode == SM_NONE && ignoreSecurityAttributes == false && (*imgFwOps)->FwType() != FIT_COMPS && (*imgFwOps)->FwType() != FIT_PLDM)
     {
         devParams.noFwCtrl = true;
     }
@@ -2836,6 +2857,12 @@ bool FwOperations::VerifyBranchFormat(const char* vsdString)
     return false;
 }
 
+void FwOperations::getSupportedHwId(u_int32_t** supportedHwId, u_int32_t& supportedHwIdNum)
+{
+    *supportedHwId = _fwImgInfo.supportedHwId;
+    supportedHwIdNum = _fwImgInfo.supportedHwIdNum;
+}
+
 bool FwOperations::GetDtocAddress(u_int32_t&)
 {
     return errmsg("GetDtocAddress not supported.");
@@ -2849,6 +2876,11 @@ bool FwOperations::PrintQuery()
 bool FwOperations::IsLifeCycleAccessible(chip_type_t)
 {
     return errmsg("IsLifeCycleAccessible not supported.");
+}
+
+bool FwOperations::IsVmodSupported()
+{
+    return errmsg("IsVmodSupported is not supported");
 }
 
 bool FwOperations::IsSecurityVersionViolated(u_int32_t)

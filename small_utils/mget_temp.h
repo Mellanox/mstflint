@@ -88,4 +88,15 @@ void display_mmta_sensor_verbose(td_data_mmta* sensor, int decimals, int* row_nu
 int include_mmta_in_max_temp(td_data_mmta* mmta_data, int mmta_modules_read, int current_max);
 void display_internal_sensors_verbose(td_data_fw* data, bool mmta_supported, int* row_num);
 
+/* Print all thermal zones to stdout.
+ *
+ * Capability handling:
+ *   - On unsupported devices, always prints a one-line note to stderr.
+ *   - If unsupported_is_warning is false (bare -z), returns 1 (the user got nothing they asked for).
+ *   - If unsupported_is_warning is true (composed paths like -v -z), returns 0 — the verbose
+ *     section already ran; missing zones is a non-fatal capability gap.
+ *
+ * Read failures always print to stderr and return 1, regardless of unsupported_is_warning. */
+int handle_zones_request(mfile* mf, bool unsupported_is_warning);
+
 #endif /* MGET_TEMP_H */

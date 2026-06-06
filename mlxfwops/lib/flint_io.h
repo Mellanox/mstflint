@@ -275,8 +275,7 @@ class MLXFWOP_API FImage : public FBase
 public:
     FImage() : FBase(false), _fname(0), _isFile(false), _len(0), _buf() {}
     virtual ~FImage() { close(); }
-
-    u_int32_t* getBuf();
+    u_int32_t* getBuf(bool keepFileAccess = false);
     u_int32_t getBufLength() { return _len; }
     virtual bool open(const char* fname, bool read_only = false, bool advErr = true);
     using FBase::open;
@@ -361,6 +360,8 @@ public:
         return (mflash*)NULL;
     }
     virtual bool is_fifth_gen() { return false; }
+    virtual const char* get_fname() { return _fname; }
+    virtual bool is_file() { return _isFile; }
 
 protected:
     const char* _fname;
@@ -379,9 +380,8 @@ public:
     FPldm() : FImage() {}
     virtual ~FPldm() { close(); }
     virtual bool open(const char* fname, bool read_only, bool advErr);
-    virtual const char* get_fname() { return _fname; }
+    using FImage::open;
 };
-
 //
 // Flash access (R/W)
 //

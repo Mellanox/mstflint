@@ -84,6 +84,8 @@ public:
     bool _txPolicy;
     bool _advancedMode;
     bool _portSpecified;
+    bool _multiPortSpecified;
+    std::vector<std::string> _multiPortsList;
     bool _splitProvided;
     bool _secondSplitProvided;
     bool _forceSplit;
@@ -100,6 +102,7 @@ public:
     bool laneSpecified;
     bool autoCsvName;
     bool _showMultiPortInfo;
+    bool _allPorts;
     bool _showMultiPortModuleInfo;
     bool _showPlr;
     bool _setPlr;
@@ -114,7 +117,9 @@ public:
     string _pmaosCmd;
     string _pplmFec;
     string _speedFec;
-    string _pplrLB;
+    string _loopbackMode;
+    string _pmlrSide;
+    string _pmlrState;
     string _prbsMode;
     string _pprtMode;
     string _ppttMode;

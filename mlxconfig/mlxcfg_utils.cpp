@@ -470,12 +470,7 @@ bool isContinuanceArray(const string& mlxconfigName)
 
 bool isIndexedStartFromOneSupported(const string& mlxconfigName)
 {
-#if defined(MST_UL)
-    (void)mlxconfigName;
-    return false;
-#else
     return mlxconfigName == "SPLIT_PORT";
-#endif
 }
 
 void parseIndexedMlxconfigName(const string& indexedMlxconfigName, string& mlxconfigName, u_int32_t& index)
@@ -539,10 +534,6 @@ bool isIndexedMlxconfigName(const string& mlxconfigName)
 
 string getArraySuffix(const string& mlxconfigName)
 {
-#if defined(MST_UL)
-    (void)mlxconfigName;
-    return "";
-#else
     static const mstflint::common::regex::regex EXP_PATTERN("(_[0-9]{2}_[0-9]+)");
     string suffix = "";
     mstflint::common::regex::smatch match;
@@ -553,7 +544,6 @@ string getArraySuffix(const string& mlxconfigName)
     }
 
     return suffix;
-#endif
 }
 
 string getArrayPrefix(const string& mlxconfigName)

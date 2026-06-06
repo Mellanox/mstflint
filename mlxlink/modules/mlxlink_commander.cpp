@@ -230,6 +230,7 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _attenuationTitle = "";
     _rxRecoveryCountersCmd.setLineLen(RX_RECOVERY_COUNTERS_LINE_LEN);
     _silentMode = false;
+    _allPortsCurrentLabelStr = "";
 }
 
 MlxlinkCommander::~MlxlinkCommander()
@@ -5184,7 +5185,7 @@ void MlxlinkCommander::sendPmaosToggle()
     }
 }
 
-void MlxlinkCommander::sendPaos()
+void MlxlinkCommander::sendPaosOnce()
 {
     try
     {
@@ -5210,13 +5211,116 @@ void MlxlinkCommander::sendPaos()
     }
     catch (const std::exception& exc)
     {
-        _allUnhandledErrors += string("Sending PAOS raised the following exception: ") + string(exc.what()) + string("\n");
+        string suffix = _allPortsCurrentLabelStr.empty() ? "" : " (Port " + _allPortsCurrentLabelStr + ")";
+        _allUnhandledErrors += string("Sending PAOS") + suffix + string(" raised the following exception: ") +
+                               string(exc.what()) + string("\n");
     }
+}
+
+void MlxlinkCommander::sendPaos()
+{
+    if (_userInput._multiPortSpecified)
+    {
+        if (_isHCA)
+        {
+            throw MlxRegException("A port list passed via -" + string(1, LABEL_PORT_FLAG_SHORT) +
+                                  "/--" LABEL_PORT_FLAG " is not supported on HCA devices");
+        }
+
+        vector<string> validPorts;
+        for (const auto& portStr : _userInput._multiPortsList)
+        {
+            try
+            {
+                _userInput._splitProvided = false;
+                _userInput._secondSplitProvided = false;
+                handlePortStr(portStr);
+                labelToLocalPort();
+                validPorts.push_back(portStr);
+            }
+            catch (const std::exception& exc)
+            {
+                _allUnhandledErrors += string("Sending PAOS (Port ") + portStr +
+                                       string(") raised the following exception: ") + string(exc.what()) + string("\n");
+            }
+        }
+
+        if (validPorts.empty())
+        {
+            return;
+        }
+
+        if (paos_to_int(_userInput._paosCmd) == TG)
+        {
+            string warMsg = "Toggling the selected ports may disrupt active links "
+                            "(including the link this command runs over) and reset port state on every selected port.";
+            MlxlinkRecord::printWar(warMsg, _jsonRoot);
+            if (!askUser("Do you want to continue", _userInput.force))
+            {
+                throw MlxRegException("Operation canceled by user");
+            }
+        }
+
+        for (const auto& portStr : validPorts)
+        {
+            try
+            {
+                _userInput._splitProvided = false;
+                _userInput._secondSplitProvided = false;
+                handlePortStr(portStr);
+                labelToLocalPort();
+                _allPortsCurrentLabelStr = portStr;
+                sendPaosOnce();
+            }
+            catch (const std::exception& exc)
+            {
+                _allUnhandledErrors += string("Sending PAOS (Port ") + portStr +
+                                       string(") raised the following exception: ") + string(exc.what()) + string("\n");
+            }
+        }
+        _allPortsCurrentLabelStr = "";
+        return;
+    }
+
+    if (!_userInput._allPorts || _isHCA)
+    {
+        sendPaosOnce();
+        return;
+    }
+
+    if (paos_to_int(_userInput._paosCmd) == TG)
+    {
+        string warMsg = "Toggling all ports on the device may disrupt active links "
+                        "(including the link this command runs over) and reset port state on every port.";
+        MlxlinkRecord::printWar(warMsg, _jsonRoot);
+        if (!askUser("Do you want to continue", _userInput.force))
+        {
+            throw MlxRegException("Operation canceled by user");
+        }
+    }
+
+    updateLocalPortGroup();
+    for (const auto& portInfo : _localPortsPerGroup)
+    {
+        _localPort = portInfo.localPort;
+        _allPortsCurrentLabelStr = getLabelPortString(portInfo);
+        try
+        {
+            sendPaosOnce();
+        }
+        catch (const std::exception& exc)
+        {
+            _allUnhandledErrors +=
+              string("Port ") + to_string(portInfo.labelPort) + string(": ") + string(exc.what()) + string("\n");
+        }
+    }
+    _allPortsCurrentLabelStr = "";
 }
 
 void MlxlinkCommander::sendPaosDown(bool toggleCommand)
 {
-    MlxlinkRecord::printCmdLine("Configuring Port State (Down)", _jsonRoot);
+    string suffix = _allPortsCurrentLabelStr.empty() ? "" : " - Port " + _allPortsCurrentLabelStr;
+    MlxlinkRecord::printCmdLine("Configuring Port State (Down)" + suffix, _jsonRoot);
 
     bool forceDown = isForceDownSupported();
     // try to force down the port
@@ -5253,7 +5357,8 @@ void MlxlinkCommander::sendPaosDown(bool toggleCommand)
 
 void MlxlinkCommander::sendPaosUP()
 {
-    MlxlinkRecord::printCmdLine("Configuring Port State (Up)", _jsonRoot);
+    string suffix = _allPortsCurrentLabelStr.empty() ? "" : " - Port " + _allPortsCurrentLabelStr;
+    MlxlinkRecord::printCmdLine("Configuring Port State (Up)" + suffix, _jsonRoot);
     sendPaosCmd(PAOS_UP);
 }
 
@@ -6167,6 +6272,17 @@ void MlxlinkCommander::checkPplmCap()
             throw MlxRegException("\nFEC speed %s is not valid%s", uiSpeed.c_str(), validSpeeds.c_str());
         }
     }
+
+    if (_isNvlinkModeB || _isNvlinkModeA)
+    {
+        string nvlinkSpeed = convertSpeedToNVLINK(toUpperCase(speedFec));
+        if (nvlinkSpeed.empty())
+        {
+            throw MlxRegException("\nFEC speed %s is not valid", uiSpeed.c_str());
+        }
+        speedFec = toLowerCase(nvlinkSpeed);
+    }
+
     // Validate the FEC for the speed
     if (speedFec == "10g" || speedFec == "40g")
     {
@@ -6566,13 +6682,13 @@ void MlxlinkCommander::checkPplrCap()
     }
 
     u_int32_t loopBackCap = getFieldValue("lb_cap");
-    u_int32_t loopBackVal = getLoopbackMode(_userInput._pplrLB);
+    u_int32_t loopBackVal = getLoopbackMode(_userInput._loopbackMode);
     if (loopBackVal != LOOPBACK_MODE_NO)
     {
-        if (!(loopBackCap & getLoopbackMode(_userInput._pplrLB)))
+        if (!(loopBackCap & getLoopbackMode(_userInput._loopbackMode)))
         {
             string supportedLoopbacks = getLoopbackStr(loopBackCap);
-            throw MlxRegException("\n%s Loopback configuration is not supported, supported Loopback configurations are [%s]", _userInput._pplrLB.c_str(), supportedLoopbacks.c_str());
+            throw MlxRegException("\n%s Loopback configuration is not supported, supported Loopback configurations are [%s]", _userInput._loopbackMode.c_str(), supportedLoopbacks.c_str());
         }
     }
     if (loopBackVal == LOOPBACK_MODE_REMOTE && _productTechnology < PRODUCT_7NM)
@@ -6586,8 +6702,14 @@ void MlxlinkCommander::checkPplrCap()
     }
 }
 
-void MlxlinkCommander::sendPplr()
+void MlxlinkCommander::sendLoopback()
 {
+    if (_userInput._loopbackMode == LOOPBACK_TRAN_STR)
+    {
+        sendPmlr();
+        return;
+    }
+
     string lbLinkModeIdx = "";
     try
     {
@@ -6598,12 +6720,87 @@ void MlxlinkCommander::sendPplr()
             checkPplrCap();
         }
 
-        sendPrmReg(ACCESS_REG_PPLR, REG_SET, "lb_en=%d%s", getLoopbackMode(_userInput._pplrLB), lbLinkModeIdx.c_str());
+        sendPrmReg(ACCESS_REG_PPLR, REG_SET, "lb_en=%d%s",
+                   getLoopbackMode(_userInput._loopbackMode), lbLinkModeIdx.c_str());
     }
     catch (const std::exception& exc)
     {
         _allUnhandledErrors += string("Sending PPLR (Configuring port loopback) raised the following exception: ") +
                                string(exc.what()) + string("\n");
+    }
+}
+
+void MlxlinkCommander::sendPmlr()
+{
+    try
+    {
+        MlxlinkRecord::printCmdLine("Configuring Transceiver Loopback", _jsonRoot);
+
+        if (_userInput._pmlrSide.empty() || _userInput._pmlrState.empty())
+        {
+            throw MlxRegException("--" LOOPBACK_FLAG " " + string(LOOPBACK_TRAN_STR) +
+                                  " requires --" PMLR_SIDE_FLAG " [host|media] and --" PMLR_STATE_FLAG
+                                  " [input|output|disable]");
+        }
+
+        u_int32_t hostMedia = 0;
+        if (_userInput._pmlrSide == PMLR_SIDE_HOST_STR)
+        {
+            hostMedia = PMLR_SIDE_HOST;
+        }
+        else if (_userInput._pmlrSide == PMLR_SIDE_MEDIA_STR)
+        {
+            hostMedia = PMLR_SIDE_MEDIA;
+        }
+        else
+        {
+            throw MlxRegException("Invalid --" PMLR_SIDE_FLAG " value: %s, supported values are [host|media]",
+                                  _userInput._pmlrSide.c_str());
+        }
+
+        u_int32_t lbEn = 0;
+        u_int32_t lbCapBitRequired = 0;
+        if (_userInput._pmlrState == PMLR_STATE_INPUT_STR)
+        {
+            lbEn = PMLR_LB_INPUT;
+            lbCapBitRequired = PMLR_LB_CAP_INPUT;
+        }
+        else if (_userInput._pmlrState == PMLR_STATE_OUTPUT_STR)
+        {
+            lbEn = PMLR_LB_OUTPUT;
+            lbCapBitRequired = PMLR_LB_CAP_OUTPUT;
+        }
+        else if (_userInput._pmlrState == PMLR_STATE_DISABLE_STR)
+        {
+            lbEn = PMLR_LB_DISABLE;
+        }
+        else
+        {
+            throw MlxRegException("Invalid --" PMLR_STATE_FLAG
+                                  " value: %s, supported values are [input|output|disable]",
+                                  _userInput._pmlrState.c_str());
+        }
+
+        sendPrmReg(ACCESS_REG_PMLR, REG_GET, "slot_index=%d,host_media=%d,lane_mask=%d", _slotIndex, hostMedia, 1);
+
+        if (lbCapBitRequired != 0)
+        {
+            u_int32_t lbCap = getFieldValue("lb_cap");
+            if (!(lbCap & lbCapBitRequired))
+            {
+                throw MlxRegException("Transceiver loopback %s not supported on %s side (lb_cap=0x%x)",
+                                      _userInput._pmlrState.c_str(), _userInput._pmlrSide.c_str(), lbCap);
+            }
+        }
+
+        sendPrmReg(ACCESS_REG_PMLR, REG_SET, "slot_index=%d,host_media=%d,lane_mask=%d,lb_en=%d", _slotIndex, hostMedia,
+                   0xff, lbEn);
+    }
+    catch (const std::exception& exc)
+    {
+        _allUnhandledErrors +=
+          string("Sending PMLR (Configuring transceiver loopback) raised the following exception: ") +
+          string(exc.what()) + string("\n");
     }
 }
 
@@ -7226,6 +7423,7 @@ void MlxlinkCommander::prepareJsonOut()
     _portGroupMapping.toJsonFormat(_jsonRoot);
     _plrInfoCmd.toJsonFormat(_jsonRoot);
     _krInfoCmd.toJsonFormat(_jsonRoot);
+    _hostClassCmd.toJsonFormat(_jsonRoot);
     _rxRecoveryCountersCmd.toJsonFormat(_jsonRoot);
     _periodicEqInfoCmd.toJsonFormat(_jsonRoot);
 
@@ -7506,6 +7704,24 @@ void MlxlinkCommander::showKr()
         throw MlxRegException("KR is not supported for the current device!");
     }
     printOutput(_krInfoCmd);
+}
+
+void MlxlinkCommander::showHostClass()
+{
+    try
+    {
+        sendPrmReg(ACCESS_REG_PDDR, REG_GET, "page_select=%d", PDDR_OPERATIONAL_INFO_PAGE);
+        setPrintTitle(_hostClassCmd, HEADER_HOST_CLASS_INFO, HOST_CLASS_INFO_LAST);
+        setPrintVal(_hostClassCmd, "Local Host Class",
+                    getStrByValue(getFieldValue("local_host_class"), _mlxlinkMaps->_hostClass));
+        setPrintVal(_hostClassCmd, "Remote Host Class",
+                    getStrByValue(getFieldValue("remote_host_class"), _mlxlinkMaps->_hostClass));
+    }
+    catch (MlxRegException& exc)
+    {
+        throw MlxRegException("Host Class is not supported for the current device!");
+    }
+    printOutput(_hostClassCmd);
 }
 
 void MlxlinkCommander::showRxRecoveryCounters()

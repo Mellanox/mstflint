@@ -125,6 +125,8 @@
 #define PLR_TX_CRC_FLAG_SHORT ' '
 #define KR_INFO_FLAG "show_kr"
 #define KR_INFO_FLAG_SHORT ' '
+#define HOST_CLASS_FLAG "show_host_class"
+#define HOST_CLASS_FLAG_SHORT ' '
 #define RX_RECOVERY_COUNTERS_FLAG "show_rx_recovery_counters"
 #define RX_RECOVERY_COUNTERS_FLAG_SHORT ' '
 #define BKV_GROUPS_FLAG "show_bkv_groups"
@@ -157,12 +159,18 @@
 
 #define PAOS_FLAG "port_state"
 #define PAOS_FLAG_SHORT 'a'
+#define ALL_PORTS_FLAG "all"
+#define ALL_PORTS_FLAG_SHORT ' '
 #define PMAOS_FLAG "module_state"
 #define PMAOS_FLAG_SHORT ' '
 #define PTYS_FLAG "speeds"
 #define PTYS_FLAG_SHORT 's'
-#define PPLR_FLAG "loopback"
-#define PPLR_FLAG_SHORT 'l'
+#define LOOPBACK_FLAG "loopback"
+#define LOOPBACK_FLAG_SHORT 'l'
+#define PMLR_SIDE_FLAG "side"
+#define PMLR_SIDE_FLAG_SHORT ' '
+#define PMLR_STATE_FLAG "state"
+#define PMLR_STATE_FLAG_SHORT ' '
 #define PPLM_FLAG "fec"
 #define PPLM_FLAG_SHORT 'k'
 #define FEC_SPEED_FLAG "fec_speed"
@@ -404,7 +412,7 @@ enum OPTION_TYPE
     SEND_PMAOS,
     SEND_PTYS,
     SEND_PPLM,
-    SEND_PPLR,
+    HANDLE_LOOPBACK,
     SEND_PRBS,
     SEND_SLTP,
     SEND_CLEAR_COUNTERS,
@@ -421,6 +429,7 @@ enum OPTION_TYPE
     SHOW_PLR,
     SET_PLR,
     SHOW_KR,
+    SHOW_HOST_CLASS,
     SHOW_RX_RECOVERY_COUNTERS,
     SEND_PHY_RECOVERY,
     SEND_LINK_TRAINING,
@@ -544,6 +553,7 @@ public:
     void showPlr();
     void setPlr();
     void showKr();
+    void showHostClass();
     void showRxRecoveryCounters();
     void showPeriodicEq();
     void setPeriodicEq();
@@ -669,19 +679,22 @@ public:
     MlxlinkCmdPrint _portGroupMapping;
     MlxlinkCmdPrint _plrInfoCmd;
     MlxlinkCmdPrint _krInfoCmd;
+    MlxlinkCmdPrint _hostClassCmd;
     MlxlinkCmdPrint _rxRecoveryCountersCmd;
     MlxlinkCmdPrint _periodicEqInfoCmd;
 
     // Mlxlink config functions
     void clearCounters();
     void sendPaos();
+    void sendPaosOnce();
     void sendPmaos();
     virtual void handlePrbs();
     virtual void handlePrbsSWControlledChecks();
     void sendPtys();
     virtual void sendPplm();
     virtual void sendSltp();
-    void sendPplr();
+    void sendLoopback();
+    void sendPmlr();
     void sendPepc();
     void setTxGroupMapping();
     void handleRxErrInj();
@@ -815,6 +828,7 @@ public:
     bool _isNvlinkModeB;
     u_int32_t _priOrSec;
     std::vector<PortGroup> _localPortsPerGroup;
+    string _allPortsCurrentLabelStr;
     std::vector<DPN> _validDpns;
     string _allUnhandledErrors;
     Json::Value _jsonRoot;

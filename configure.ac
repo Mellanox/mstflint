@@ -1,4 +1,4 @@
-# Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,7 +28,7 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-AC_INIT(mstflint, 4.36.0, akiselman-org@exchange.nvidia.com)
+AC_INIT(mstflint, 4.37.0, akiselman-org@exchange.nvidia.com)
 
 AC_DEFINE_UNQUOTED([PROJECT], ["mstflint"], [Firmware Burning and Diagnostics Tools for NVIDIA network devices.])
 AC_SUBST([PROJECT])
@@ -124,6 +124,7 @@ ADABE_TOOLS=""
 ADABE_DBS=""
 ADABE_DBS_EXTRA_DIST=""
 DPA=""
+PLDM_PKG_GEN=""
 
 COMPILER_FPIC="-fPIC"
 AC_SUBST(COMPILER_FPIC)
@@ -259,7 +260,16 @@ AC_ARG_ENABLE(dpa,
 )
 AC_MSG_RESULT($enable_dpa)
 
-if test "x$enable_fw_mgr" = "xyes" || test "x$enable_adb_generic_tools" = "xyes" || test "x$enable_dpa" = "xyes"; then
+# mstpldm_pkg_gen
+AC_MSG_CHECKING(--enable-pldm-pkg-gen argument)
+AC_ARG_ENABLE(pldm-pkg-gen,
+    AS_HELP_STRING([--enable-pldm-pkg-gen], [enable compilation of the mstpldm_pkg_gen tool, requires curl/lzma [default=disabled]]),
+    [enable_pldm_pkg_gen="$enableval"],
+    [enable_pldm_pkg_gen="no"]
+)
+AC_MSG_RESULT($enable_pldm_pkg_gen)
+
+if test "x$enable_fw_mgr" = "xyes" || test "x$enable_adb_generic_tools" = "xyes" || test "x$enable_dpa" = "xyes" || test "x$enable_pldm_pkg_gen" = "xyes"; then
     AC_ARG_WITH([liblzma], AS_HELP_STRING([--with-liblzma=PATH], [use liblzma from the specified PATH]),
         [
             liblzma_dir="$withval"
@@ -283,6 +293,32 @@ if test "x$enable_fw_mgr" = "xyes" || test "x$enable_adb_generic_tools" = "xyes"
     AC_MSG_NOTICE([liblzma CFLAGS:'$liblzma_CFLAGS' LIBS:'$liblzma_LIBS'])
     AC_SUBST(liblzma_CFLAGS)
     AC_SUBST(liblzma_LIBS)
+fi
+
+if test "x$enable_pldm_pkg_gen" = "xyes" && test "x$enable_fw_mgr" != "xyes"; then
+    AC_ARG_WITH([libcurl], AS_HELP_STRING([--with-libcurl=PATH], [use libcurl from the specified PATH]),
+        [
+            libcurl_dir="$withval"
+            AC_MSG_NOTICE([Using libcurl from $libcurl_dir])
+            libcurl_CFLAGS="-I$libcurl_dir/include"
+            libcurl_LIBS="-L$libcurl_dir/lib -lcurl"
+        ],
+        [
+            AC_MSG_NOTICE([Looking for libcurl headers and libraries])
+            PKG_CHECK_MODULES([libcurl], [libcurl], [],
+                [
+                    AC_MSG_NOTICE([Looking for libcurl headers and libraries manually])
+                    AC_CHECK_HEADERS([curl/curl.h], [], [AC_MSG_ERROR([missed libcurl headers])])
+                    AC_CHECK_LIB([curl], [curl_easy_init], [], [AC_MSG_ERROR([libcurl not found])])
+                    libcurl_CFLAGS=""
+                    libcurl_LIBS="-lcurl"
+                ]
+            )
+        ]
+    )
+    AC_MSG_NOTICE([libcurl CFLAGS:'$libcurl_CFLAGS' LIBS:'$libcurl_LIBS'])
+    AC_SUBST(libcurl_CFLAGS)
+    AC_SUBST(libcurl_LIBS)
 fi
 
 
@@ -771,6 +807,16 @@ AM_CONDITIONAL(ENABLE_DPA, [test "x$enable_dpa" = "xyes" ])
 
 AC_SUBST(DPA)
 
+AS_IF([test "x$enable_pldm_pkg_gen" = "xyes"],
+    [
+        AC_CONFIG_FILES(pldmgen/Makefile)
+        PLDM_PKG_GEN="pldmgen"
+    ]
+)
+
+AM_CONDITIONAL(ENABLE_PLDM_PKG_GEN, [test "x$enable_pldm_pkg_gen" = "xyes"])
+AC_SUBST(PLDM_PKG_GEN)
+
 if [ test "x$enable_openssl" = "xno" ] && \
     [ test "x$enable_dpa" = "xyes" ] ; then
     AC_MSG_ERROR([--enable-dpa cannot be used with --disabled-openssl.])
@@ -798,7 +844,7 @@ AS_IF([test "x$enable_adb_generic_tools" = "xyes"], [
 
 AM_CONDITIONAL([ADB_GENERIC_TOOLS_ENABLED], [test "x$enable_adb_generic_tools" = "xyes"])
 
-AS_IF([test "x$enable_fw_mgr" = "xyes" || test "x$enable_adb_generic_tools" = "xyes" || test "x$enable_dpa" = "xyes"],
+AS_IF([test "x$enable_fw_mgr" = "xyes" || test "x$enable_adb_generic_tools" = "xyes" || test "x$enable_dpa" = "xyes" || test "x$enable_pldm_pkg_gen" = "xyes"],
     [
         AC_CONFIG_FILES(xz_utils/Makefile)
         XZ_UTILS_DIR="xz_utils"
@@ -895,6 +941,7 @@ AC_OUTPUT( \
     mstdump/mstdump_dbs/Makefile \
     mtcr_py/Makefile \
     mvpd/Makefile \
+    pldm_utils/Makefile \
     pldmlib/Makefile \
     reg_access/Makefile \
     resourcetools/Makefile \

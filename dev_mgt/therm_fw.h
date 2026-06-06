@@ -92,6 +92,24 @@ extern "C"
         TDFWW_DIODE_IDX_NO_EXIST = -3  /* the specific diode index doesnt exist on the device */ //V
     } td_fw_result_t;
 
+    /* Thermal zones: 6 on main + 3 per tile (tile count from MTEIM).
+     * FW provides the label in MTMP sensor_name (e.g. "main_Z1", "tile2_Z3"). */
+    typedef struct
+    {
+        char name[9];   /* FW-provided sensor_name (8 chars + null) */
+        float max_temp; /* Celsius */
+    } td_fw_zone_data_t;
+
+    /* Number of tile dies (0 = single-die / zones unsupported). Reads MTEIM.cap_num_of_tile. */
+    int td_fw_get_tile_count(mfile* mf);
+
+    /* Read every zone (up to 6 main + 3 per tile). Allocates *zones_out (free with
+     * td_fw_release_zones_data). Per-zone read failures are dropped silently — *count_out
+     * reflects only successfully-read zones, so every returned entry has valid name + temp. */
+    td_fw_result_t td_fw_read_all_zones(mfile* mf, td_fw_zone_data_t** zones_out, int* count_out);
+
+    void td_fw_release_zones_data(td_fw_zone_data_t* zones_p);
+
     typedef enum
     {
         

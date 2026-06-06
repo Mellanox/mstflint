@@ -92,6 +92,8 @@ UserInput::UserInput()
     _txPolicy = false;
     _advancedMode = false;
     _portSpecified = false;
+    _multiPortSpecified = false;
+    _multiPortsList = {};
     _splitProvided = false;
     _secondSplitProvided = false;
     _forceSplit = false;
@@ -101,6 +103,7 @@ UserInput::UserInput()
     _write = false;
     _read = false;
     _showMultiPortInfo = false;
+    _allPorts = false;
     _showMultiPortModuleInfo = false;
     _showPlr = false;
     _setPlr = false;
@@ -115,7 +118,9 @@ UserInput::UserInput()
     _pmaosCmd = "";
     _pplmFec = "";
     _speedFec = "";
-    _pplrLB = "";
+    _loopbackMode = "";
+    _pmlrSide = "";
+    _pmlrState = "";
     _prbsMode = "";
     _pprtMode = "PRBS31";
     _ppttMode = "PRBS31";

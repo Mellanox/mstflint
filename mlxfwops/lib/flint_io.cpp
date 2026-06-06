@@ -175,7 +175,7 @@ void FImage::close()
 } // FImage::close
 
 /////////////////////////////////////////////////////////////////////////
-u_int32_t* FImage::getBuf()
+u_int32_t* FImage::getBuf(bool keepFileAccess)
 {
     if (_isFile)
     {
@@ -204,7 +204,10 @@ u_int32_t* FImage::getBuf()
                 goto cleanup;
             }
         }
-        _isFile = false;
+        if (!keepFileAccess)
+        {
+            _isFile = false;
+        }
         retBuf = (u_int32_t*)_buf.data();
     cleanup:
         fclose(fh);

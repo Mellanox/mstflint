@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2023-2026 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -40,6 +40,8 @@ libcommon_la_SOURCES = \
     tools_algorithm.h \
     tools_filesystem.cpp \
     tools_filesystem.h \
+    tools_json.cpp \
+    tools_json.h \
     tools_regex.cpp \
     tools_regex.h \
     tools_time.h \
