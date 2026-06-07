@@ -1454,7 +1454,7 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
   {"BlueField", BF_HW_ID, CT_BLUEFIELD, CFT_HCA, 0, {41680, 41681, 41682, 0}, {{UNKNOWN_BIN, {0}}}},
   {"BlueField2", BF2_HW_ID, CT_BLUEFIELD2, CFT_HCA, 0, {41684, 41685, 41686, 0}, {{UNKNOWN_BIN, {0}}}},
   {"BlueField3", BF3_HW_ID, CT_BLUEFIELD3, CFT_HCA, 0, {41690, 41691, 41692, 0}, {{UNKNOWN_BIN, {0}}}},
-  {"BlueField4", BF4_HW_ID, CT_BLUEFIELD4, CFT_HCA, 0, {41694, 0}, {{UNKNOWN_BIN, {0}}}},
+  {"BlueField4", BF4_HW_ID, CT_BLUEFIELD4, CFT_HCA, 0, {41693, 41694, 41695, 0}, {{UNKNOWN_BIN, {0}}}},
   {"Spectrum", SPECTRUM_HW_ID, CT_SPECTRUM, CFT_SWITCH, 0, {52100, 0}, {{UNKNOWN_BIN, {0}}}},
   {"Switch_IB2", SWITCH_IB2_HW_ID, CT_SWITCH_IB2, CFT_SWITCH, 0, {53000, 0}, {{UNKNOWN_BIN, {0}}}},
   {"Quantum", QUANTUM_HW_ID, CT_QUANTUM, CFT_SWITCH, 0, {54000, 0}, {{UNKNOWN_BIN, {0}}}},

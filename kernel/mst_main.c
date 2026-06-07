@@ -159,7 +159,7 @@ LIST_HEAD(mst_devices);
 #define LF_BLUEFIELD_PCI_ID 0x211
 #define LF_BLUEFIELD2_PCI_ID 0x214
 #define LF_BLUEFIELD3_PCI_ID 0x21c
-#define LF_BLUEFIELD4_PCI_ID 0x220
+#define LF_BLUEFIELD4_PCI_ID 0x224
 
 static struct pci_device_id mst_livefish_pci_table[] = {{PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, LF_SPECTRUM_PCI_ID)},
                                                         {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, LF_SWITCHIB2_PCI_ID)},

@@ -157,7 +157,7 @@ extern "C"
         DeviceBlueField_HwId = 0x211,
         DeviceBlueField2_HwId = 0x214,
         DeviceBlueField3_HwId = 0x21c,
-        DeviceBlueField4_HwId = 0x220,
+        DeviceBlueField4_HwId = 0x224,
         DeviceSwitchIB2_HwId = 0x24b,
         DeviceCableQSFP_HwId = 0x0d,
         DeviceCableQSFPaging_HwId = 0x11,
