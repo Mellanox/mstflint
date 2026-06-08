@@ -440,7 +440,7 @@ clean_up:
 
 int ImageAccess::getFileSignature(const string& fname)
 {
-    static const int header_size = 16;
+    static const u_int32_t header_size = 16;
     FILE           * fin;
     char             tmpb[header_size];
     int              res = -2;
@@ -453,7 +453,7 @@ int ImageAccess::getFileSignature(const string& fname)
         if (1 > fread(tmpb, header_size, 1, fin)) {
             break;
         }
-        res = getBufferSignature((u_int8_t*)tmpb, 4);
+        res = getBufferSignature((u_int8_t*)tmpb, header_size);
     } while (0);
 
     if (fin) {
@@ -753,7 +753,7 @@ string ImageAccess::getLog()
 bool ImageAccess::loadPldmPkg(const string& fname)
 {
     _pldm_buff.reset();
-    if (_pldm_buff.loadFile(fname))
+    if (!_pldm_buff.loadFile(fname))
     {
         return false;
     }
