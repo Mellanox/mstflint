@@ -574,7 +574,7 @@ clean_up:
 
 int ImageAccess::getFileSignature(const string& fname)
 {
-    static const int header_size = 16;
+    static const u_int32_t header_size = 16;
     FILE           * fin = NULL;
     char             tmpb[header_size];
     int              res = -2;
@@ -1174,7 +1174,7 @@ clean_up:
 bool ImageAccess::loadPldmPkg(const string& fname)
 {
     _pldm_buff.reset();
-    if (_pldm_buff.loadFile(fname))
+    if (!_pldm_buff.loadFile(fname))
     {
         return false;
     }
