@@ -1,0 +1,18 @@
+{
+    "0x1e": {
+        "general_info": {
+            "device_name": "CableCMIS",
+            "device_type": "Cable",
+            "vendor": "NVIDIA",
+            "hw_rev_id": 0
+        },
+        "cable_info": {
+            "cable_type": "CMIS"
+        },
+        "devmon_info": {
+          "market_name": "",
+          "project_name": "cable_cmis",
+          "hw_rev_id": 0
+        }
+    }
+}

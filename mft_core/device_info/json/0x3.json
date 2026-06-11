@@ -1,0 +1,18 @@
+{
+    "0x3": {
+        "general_info": {
+            "device_name": "CableSFP",
+            "device_type": "Cable",
+            "vendor": "Mellanox",
+            "hw_rev_id": 1
+        },
+        "cable_info": {
+            "cable_type": "SFP"
+        },
+        "devmon_info": {
+          "market_name": "",
+          "project_name": "cable_sfp",
+          "hw_rev_id": 1
+        }
+    }
+}
