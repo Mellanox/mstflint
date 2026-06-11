@@ -1,0 +1,74 @@
+{
+  "0x1f7": {
+    "general_info": {
+      "device_name": "ConnectX3Pro",
+      "device_short_name": "cx3pro",
+      "fw_name": "Bental",
+      "device_type": "NIC",
+      "fw_major": 0,
+      "image_layout_format": "fs2",
+      "pci_device_id_list": [
+        4103
+      ],
+      "vendor": "Mellanox",
+      "device_family": "MT27520",
+      "is_secured": false,
+      "supports_eth": true,
+      "supports_ib": true,
+      "ports_num": 2,
+      "series": "ConnectX",
+      "series_index": 1
+    },
+    "dump_tools_info": {
+      "number_of_clusters": 0,
+      "pcie_uc_supported": false,
+      "phy_uc_supported": false,
+      "sx_dump_supported": false,
+      "rx_dump_supported": false,
+      "valid_cluster_indexes": 4,
+      "cmas_context_node_name": "tpt_cmas_context",
+      "hw_sxdc_valid_field_name": "valid",
+      "srq_node": "RQPC",
+      "srq_valid_field": "line3.qp_number",
+      "cq_node": "CQC",
+      "cq_valid_field": "line1.cqn",
+      "ignore_steering_last_qp_field": false
+    },
+    "tracers_info": {
+      "ptr_chunk_size": 32,
+      "fifo_events_in_row": 2,
+      "fifo_size": 128,
+      "ts_id": 0,
+      "g_event_ts_offs": 0,
+      "g_event_ts_size": 7,
+      "g_event_lost_bit_offs": 7,
+      "g_event_data_offs": 8,
+      "g_event_data_size": 48,
+      "g_event_id_offs": 56,
+      "g_event_id_size": 8,
+      "g_event_unrel_bit_offs": 55,
+      "mkey_path": "",
+      "supports_dynamic_db": false,
+      "fw_str_db_signature_exists": false,
+      "maxMainIrisc": 0,
+      "maxAPU": 0,
+      "maxNumOfTiles": 0,
+      "maxIriscPerTile": 0,
+      "IriscStartAddr": 0,
+      "IriscStep": 0,
+      "TileStart": 0,
+      "TileStep": 0,
+      "ApuStartAddr": 0,
+      "ApuStep": 0,
+      "ApuMaxNumOfSteps": 0,
+      "supportPhyUc": 0,
+      "is_dynamic_device_without_irisc_id": false,
+      "support_nvrisc": false
+    },
+    "devmon_info": {
+      "market_name": "DeviceConnectX3Pro",
+      "project_name": "bental_hermon",
+      "hw_rev_id": -1
+    }
+  }
+}

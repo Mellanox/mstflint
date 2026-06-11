@@ -1,0 +1,25 @@
+{
+  "0x256": {
+    "general_info": {
+      "device_name": "AbirGearBox",
+      "device_type": "Gearbox",
+      "fw_major": 21,
+      "image_layout_format": "fs4",
+      "pci_device_id_list": [],
+      "vendor": "Mellanox",
+      "device_family": "",
+      "is_secured": false,
+      "supports_eth": true,
+      "supports_ib": false,
+      "ports_num": 128
+    },
+    "dump_tools_info": {
+      "number_of_clusters": 32
+    },
+    "devmon_info": {
+      "market_name": "LinkXAbirGearboxRetimer",
+      "project_name": "abir_gb",
+      "hw_rev_id": -1
+    }
+  }
+}

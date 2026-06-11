@@ -1,0 +1,13 @@
+{
+    "0x71": {
+        "general_info": {
+            "device_name": "Baritone Mirrored",
+            "device_type": "LinkX",
+            "vendor": "Mellanox"
+        },
+        "linkx_info": {
+            "i2c_secondary" : 95,
+            "addr_width" : 2
+        }
+    }
+}

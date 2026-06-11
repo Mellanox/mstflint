@@ -30,4 +30,4 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-SUBDIRS = mft_core_utils
+SUBDIRS = mft_core_utils device_info

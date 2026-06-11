@@ -39,3 +39,4 @@ libtool
 /small_utils/mstvpd
 /stamp-h1
 /tracers/fwtrace/mstfwtrace
+/mft_core/device_info/generated/

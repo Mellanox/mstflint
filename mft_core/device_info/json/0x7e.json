@@ -1,0 +1,13 @@
+{
+    "0x7e": {
+        "general_info": {
+            "device_name": "Ardbeg Revision 1",
+            "device_type": "LinkX",
+            "vendor": "Mellanox"
+        },
+        "linkx_info": {
+            "i2c_secondary" : 102,
+            "addr_width" : 2
+        }
+    }
+}
