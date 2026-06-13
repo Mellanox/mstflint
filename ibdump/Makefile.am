@@ -1,4 +1,5 @@
-# Copyright (c) 2023-2026 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#--
+# Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -27,15 +28,33 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+#--
 
-SUBDIRS = $(NVML_DIR) mft_core ext_libs $(TOOLS_CRYPTO) tools_layouts common $(VFIO_DRIVER_DIR) ${MTCR_CONF_DIR} mtcr_py $(MAD_IFC) $(XZ_UTILS_DIR) reg_access cmdif dev_mgt pci_library mft_utils $(CABLE_ACCESS_DIR) tools_res_mgmt mvpd mflash fw_comps_mgr libmfa pldm_utils pldmlib cmdparser mlxconfig $(NVFWRESET_DIR) $(DPA) mlxfwops $(FW_MGR_TOOLS) $(PLDM_PKG_GEN) mlxtokengenerator flint small_utils mst_utils mstdump ${ADABE_TOOLS} tracers resourcetools $(IBDUMP_DIR)
+# Override automake's default -I. -I$(srcdir) to avoid picking up the
+# Windows-only inttypes.h / stdint.h stubs that live in this directory.
+DEFAULT_INCLUDES = -I$(top_builddir)
+AM_CPPFLAGS = \
+    -I$(top_srcdir) \
+    -I$(top_srcdir)/include/mtcr_ul \
+    -I$(top_srcdir)/cmdif \
+    -I$(top_srcdir)/tools_layouts \
+    -I$(top_srcdir)/common
 
-DIST_SUBDIRS = tracers
+AM_CFLAGS = -W -Wall -g -MP -MD -DWITH_MSTFLINT -DMST_UL $(COMPILER_FPIC) \
+    -DPACKAGE_VERSION_STR=\"$(PACKAGE_VERSION)\"
 
-man_MANS = man/mstflint.1 man/mstconfig.1 man/mstmcra.1 man/mstmread.1 man/mstmwrite.1 man/mstmtserver.1 man/mstregdump.1 man/mstvpd.1 man/mstprivhost.1 man/mstarchive.1 man/mstreg.1 man/mstfwtrace.1 man/mstlink.1 man/mstcongestion.1 man/mstfwmanager.1 man/mstfwreset.1 man/mstresourcedump.1
+bin_SCRIPTS = vpi_tcpdump
+bin_PROGRAMS = ibdump
+ibdump_SOURCES = ibdump.c
+ibdump_DEPENDENCIES = \
+    $(top_builddir)/cmdif/libcmdif.la \
+    $(top_builddir)/dev_mgt/libdev_mgt.la \
+    $(top_builddir)/reg_access/libreg_access.la \
+    $(top_builddir)/tools_layouts/libtools_layouts.la \
+    $(top_builddir)/$(MTCR_CONF_DIR)/libmtcr_ul.la
 
-EXTRA_DIST = \
-	mstflint.spec \
-	tools_git_sha \
-	debian \
-	$(man_MANS)
+ibdump_LDADD = \
+    $(ibdump_DEPENDENCIES) \
+    -libverbs \
+    -lpthread \
+    $(LDL)
