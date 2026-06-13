@@ -745,9 +745,7 @@ AC_SUBST(MSTFLINT_VERSION_STR)
 AC_DEFINE([MSTFLINT_VERSION_STR], [], [The MSTFLINT version])
 AC_DEFINE_UNQUOTED(MSTFLINT_VERSION_STR, "$MSTFLINT_VERSION_STR")
 
-AS_IF([test "x$enable_cs" = "xyes" || test "x$enable_openssl" = "xyes"],
-    [AC_CONFIG_FILES(tools_crypto/Makefile)]
-)
+AC_CONFIG_FILES(tools_crypto/Makefile)
 
 AM_CONDITIONAL(ENABLE_NVFWRESET, [test "x$OS" != "xFreeBSD" && test "x$enable_nvfwreset" = "xyes" ])
 
@@ -771,6 +769,25 @@ else
     AC_SUBST(enable_nvfwreset)
     AC_SUBST(NVFWRESET_DIR)
 fi
+
+# ibdump
+IBDUMP_DIR=""
+AC_MSG_CHECKING(--with-ibdump argument)
+AC_ARG_WITH(ibdump,
+    AS_HELP_STRING([--with-ibdump], [enable compilation of ibdump, requires libibverbs [default=disabled]]),
+    [with_ibdump="$withval"],
+    [with_ibdump="no"]
+)
+AC_MSG_RESULT($with_ibdump)
+if test "x$with_ibdump" = "xyes"; then
+    AC_CHECK_HEADER(infiniband/verbs.h, [],
+        AC_MSG_ERROR([cannot find infiniband/verbs.h (omit --with-ibdump to remove this dependency).])
+    )
+    AC_CONFIG_FILES(ibdump/Makefile)
+    IBDUMP_DIR="ibdump"
+fi
+AM_CONDITIONAL(ENABLE_IBDUMP, [test "x$with_ibdump" = "xyes"])
+AC_SUBST(IBDUMP_DIR)
 
 AS_IF([test "x$enable_openssl" = "xyes"],
     [
