@@ -1992,6 +1992,19 @@ def execute_driver_sync_reset(mfrl, reset_level, reset_type, pci_reset_request_m
     try:
         send_reset_cmd_to_fw(mfrl, reset_level, reset_type, SyncOwner.DRIVER, pci_reset_request_method)
     except regaccess.RegAccException as e:
+        logger.debug('{0}'.format(e))
+        error_msg = None
+        try:
+            reset_state = mfrl.get_reset_state()
+            if reset_state in CmdRegMfrl.RESET_STATE_ERRORS:
+                error_msg = CmdRegMfrl.RESET_STATE_ERRORS[reset_state]
+        except Exception as err:
+            logger.debug('failed to get reset state: {0}'.format(err))  # we'll continue to check MGIR uptime as best effort to verify the reset happened
+
+        if error_msg:
+            print("Failed")
+            raise Exception(error_msg)
+
         logger.debug('UpdateUptimeAfterReset')
         FWResetStatusChecker.UpdateUptimeAfterReset()
         if FWResetStatusChecker.GetStatus() == FirmwareResetStatusChecker.FirmwareResetStatusFailed:
@@ -2019,23 +2032,35 @@ def execute_driver_sync_reset(mfrl, reset_level, reset_type, pci_reset_request_m
 def execute_driver_sync_reset_bf(mfrl, reset_level, reset_type, pci_reset_request_method):
     logger.debug('UpdateUptimeBeforeReset')
     FWResetStatusChecker.UpdateUptimeBeforeReset()
+    dtor_result = RegAccessObj.getDTOR()
+    # The maximum reset time for HCA or BF2/3 in NIC mode is PCI_SYNC_UPDATE_TO + PCIE_TOGGLE_TO (probably 4 seconds)
+    sync_reset_TO = get_timeout_in_miliseconds(dtor_result, "PCI_SYNC_UPDATE_TO")
+    toggle_TO = get_timeout_in_miliseconds(dtor_result, "PCIE_TOGGLE_TO")
     try:
         mfrl_error = None
-        dtor_result = RegAccessObj.getDTOR()
-        # The maximum reset time for HCA or BF2/3 in NIC mode is PCI_SYNC_UPDATE_TO + PCIE_TOGGLE_TO (probably 4 seconds)
-        sync_reset_TO = get_timeout_in_miliseconds(dtor_result, "PCI_SYNC_UPDATE_TO")
-        toggle_TO = get_timeout_in_miliseconds(dtor_result, "PCIE_TOGGLE_TO")
+        error_msg = None
         send_reset_cmd_to_fw(mfrl, reset_level, reset_type, SyncOwner.DRIVER, pci_reset_request_method)
 
     except regaccess.RegAccException as e:
+        logger.debug('{0}'.format(e))
         mfrl_error = str(e)
+
+        # best effort to check if driver nack was sent and this is why sending mfrl failed
+        reset_state = mfrl.get_reset_state()
+        if reset_state in CmdRegMfrl.RESET_STATE_ERRORS:
+            error_msg = CmdRegMfrl.RESET_STATE_ERRORS[reset_state]
     except Exception as e:
         raise e
     finally:
+        if error_msg:
+            print("Failed")
+            raise Exception(error_msg)
+        logger.debug('Sleeping for {0} seconds (before checking uptime)'.format((sync_reset_TO + toggle_TO) / 1000))
         time.sleep((sync_reset_TO + toggle_TO) / 1000)
         logger.debug('UpdateUptimeAfterReset')
         FWResetStatusChecker.UpdateUptimeAfterReset()
         if FWResetStatusChecker.GetStatus() == FirmwareResetStatusChecker.FirmwareResetStatusFailed:
+            logger.debug('mfrl_error is {0}'.format(mfrl_error))
             if mfrl_error and "Method not supported" in mfrl_error:
                 raise Exception(mfrl_error)
             monitor_uptime(dtor_result)
