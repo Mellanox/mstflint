@@ -221,6 +221,7 @@ SkipMstRestart = False
 SkipMultihostSync = False
 is_pcie_switch_reboot = False
 is_bluefield = False
+is_bluefield4 = False
 logger = None
 device_global = None
 
@@ -2108,11 +2109,19 @@ def arm_reset(reset_level, reset_type, reset_sync, mrsi, mfrl):
         logger.debug('EMBEDDED_CPU_OS_SHUTDOWN timeout = {0}'.format(timeout))
         start_time = time.time()
         status = send_mrsi(mrsi)
-        while status != CmdRegMrsi.LOW_POWER_STANDBY:
-            error_msg = "The ARM side has not started running (the ecos field is in state {0})".format(status)
-            logger.debug('ecos status {0}'.format(status))
+        arm_shutdown_value = CmdRegMrsi.LOW_POWER_STANDBY
+        if is_bluefield4:
+            arm_shutdown_value = CmdRegMrsi.LOW_POWER_STANDBY_BF4
+        logger.debug('is_bluefield4: {0}, arm_shutdown_value: {1}. Start polling on ecos field to check if the ARM side has shutdown'.format(is_bluefield4, arm_shutdown_value))
+        prev_status = None
+        while status != arm_shutdown_value:
+            error_msg = "The ARM side has not shutdown (the ecos field is in state {0})".format(status)
+            if prev_status is None or prev_status != status:
+                logger.debug('ecos status {0}'.format(status))
+                prev_status = status
             mlxfwreset_utils.check_if_elapsed_time(start_time, timeout, error_msg)
             status = send_mrsi(mrsi)
+        logger.debug('ecos status after polling: {0}'.format(status))
 
 
 def post_reset_flow(driverObj, device, driverStat, mst_restart_required=True):
@@ -2585,6 +2594,9 @@ def reset_flow_host(device, args, command):
     if devDict['name'] in BLUEFIELD_DEVICES:
         global is_bluefield
         is_bluefield = True
+    if devDict['name'] == "BlueField4":
+        global is_bluefield4
+        is_bluefield4 = True
     reset_type = mfrl.default_reset_type() if args.reset_type is None else args.reset_type
 
     mst_driver_is_loaded = False
