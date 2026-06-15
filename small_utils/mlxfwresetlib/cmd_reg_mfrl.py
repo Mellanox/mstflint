@@ -367,3 +367,10 @@ class CmdRegMfrl():
                 if reset_level_ii['supported']:
                     self.logger.debug("Disabled reset level {0}".format(reset_level_ii['level']))
                 reset_level_ii['supported'] = False
+
+    def get_reset_state(self):
+        """
+        Send MFRL GET and return the current reset_state field
+        """
+        self.read()
+        return self._reset_state
