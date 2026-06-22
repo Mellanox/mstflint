@@ -87,6 +87,7 @@
  const string MlxDpa::CERT_UUID_FLAG = "cert_uuid";
  const string MlxDpa::DPA_APP_UUID_FLAG = "dpa_app_uuid";
  const string MlxDpa::REMOVE_ALL_CERTS_FLAG = "remove_all_certs";
+ const string MlxDpa::REMOVE_ALL_DPA_APPS_FLAG = "remove_all_dpa_apps";
  const string MlxDpa::CERT_CONTAINER_FLAG = "cert_container";
  const string MlxDpa::DPA_APP_REMOVAL_CONTAINER_FLAG = "dpa_app_removal_container";
  const string MlxDpa::CERT_CONTAINER_TYPE_FLAG = "cert_container_type";
@@ -137,6 +138,7 @@
      _dpaAppUUID{0, 0, 0, 0},
      _removeAllCertsSpecified(false),
      _removeAllCerts(false),
+     _removeAllDpaApps(false),
      _certContainerPath(""),
      _dpaAppRemovalContainerPath(""),
      _certContainerType(CertContainerType::UnknownType),
@@ -183,6 +185,8 @@
      printFlagLine(DPA_APP_UUID_FLAG, ' ', "UUID", "Time base UUID generated right before signing");
      printFlagLine(REMOVE_ALL_CERTS_FLAG, ' ', "",
                    "Remove all CA Certificates, provide with the sign_cert_remove command");
+     printFlagLine(REMOVE_ALL_DPA_APPS_FLAG, ' ', "",
+                   "Remove all DPA apps from device, provide with the create_dpa_app_removal command");
      printFlagLine(DPA_APP_REMOVAL_CONTAINER_FLAG, ' ', "Path", "Path to a dpa app removal container to sign");
      printFlagLine(CERT_CONTAINER_FLAG, ' ', "Path", "Path to a certificate container to sign");
      printFlagLine(CERT_CONTAINER_TYPE_FLAG, ' ', "Add/Remove", "Type of certificate container to create");
@@ -265,6 +269,10 @@
        "mstdpa --dpa_app_uuid 7c0ab0fc-082e-11ee-bd9d-e43d1a1f06ae -o /tmp/dpa_app_removal_container.bin --life_cycle_priority OEM create_dpa_app_removal");
      printf(
        INDENT2 "%-52s: %s\n",
+       "Create remove all DPA apps container",
+       "mstdpa --remove_all_dpa_apps -o /tmp/dpa_app_removal_container.bin --life_cycle_priority OEM create_dpa_app_removal");
+     printf(
+       INDENT2 "%-52s: %s\n",
        "Sign Dpa app removal container",
        "mstdpa --dpa_app_removal_container /tmp/dpa_app_removal_container.bin --keypair_uuid 3c8f46b2-159f-11ee-9ac4-e43d1a1f06ae -p /tmp/p_key.pem"
        "-o /tmp/signed_dpa_app_removal_container.bin --life_cycle_priority OEM sign_dpa_app_removal");
@@ -290,6 +298,7 @@
      AddOptions(CERT_UUID_FLAG, ' ', "<uuid>", "RFC-4122 compliant time-based UUID.");
      AddOptions(DPA_APP_UUID_FLAG, ' ', "<uuid>", "RFC-4122 compliant time-based UUID.");
      AddOptions(REMOVE_ALL_CERTS_FLAG, ' ', "", "Remove all CA Certificates.");
+     AddOptions(REMOVE_ALL_DPA_APPS_FLAG, ' ', "", "Remove all DPA apps from device.");
      AddOptions(DPA_APP_REMOVAL_CONTAINER_FLAG, ' ', "<path>", "dpa app removal container to sign.");
      AddOptions(CERT_CONTAINER_FLAG, ' ', "<path>", "Certificate container to sign.");
      AddOptions(CERT_CONTAINER_TYPE_FLAG, ' ', "<Add/Remove>", "Type of certificate container to create.");
@@ -429,6 +438,11 @@
          {
              throw MlxDpaException("remove_all_certs can be provided only with containter type \"remove\".");
          }
+         return PARSE_OK;
+     }
+     else if (name == REMOVE_ALL_DPA_APPS_FLAG)
+     {
+         _removeAllDpaApps = true;
          return PARSE_OK;
      }
      else if (name == NO_COMPRESSION_FLAG)
@@ -594,9 +608,13 @@
          {
              throw MlxDpaException("Output file path must be specified to create dpa app removal container.");
          }
-         if (!_dpaAppUUIDSpecified)
+         if (_dpaAppUUIDSpecified && _removeAllDpaApps)
          {
-             throw MlxDpaException("dpa app uuid must be specified to create dpa app removal container.");
+             throw MlxDpaException("--dpa_app_uuid and --remove_all_dpa_apps are mutually exclusive.");
+         }
+         if (!_dpaAppUUIDSpecified && !_removeAllDpaApps)
+         {
+             throw MlxDpaException("dpa app uuid must be specified or --remove_all_dpa_apps flag must be set.");
          }
      }
      else if (_command == CreateDPACertContainer)
@@ -820,7 +838,7 @@ vector<CertContainerItem> MlxDpa::GetCertContainer(CertContainerType type)
  
      const string X = SINGLE_APP_DPA_FINGERPRINT;
  
-     DpaAppRemoveMetadata dpaAppRemovalMetadata(_dpaAppUUID, _keypairUUID);
+     DpaAppRemoveMetadata dpaAppRemovalMetadata(_dpaAppUUID, _keypairUUID, _removeAllDpaApps);
      vector<u_int8_t> serializedMetadata = dpaAppRemovalMetadata.Serialize();
      DpaAppStructHeader headerDpaAppRemovalMetadata(_priority, DpaAppStructHeader::StructType::DPA_APP_REMOVE_METADATA,
                                                     serializedMetadata.size());
@@ -870,7 +888,8 @@ void MlxDpa::CreateCertContainer()
  
      if (dpaRemoveContainer.size() < SINGLE_APP_DPA_FINGERPRINT.size() + DpaAppStructHeader::HEADER_SIZE_NO_AUTH +
                                        DpaAppRemoveMetadata::KEY_PAIR_UUID_SIZE +
-                                       DpaAppRemoveMetadata::DPA_APP_UUID_SIZE + DpaAppRemoveMetadata::RESERVED_SIZE)
+                                       DpaAppRemoveMetadata::DPA_APP_UUID_SIZE +
+                                       DpaAppRemoveMetadata::REMOVE_ALL_FLAG_SIZE + DpaAppRemoveMetadata::RESERVED_SIZE)
      {
          throw MlxDpaException("Invalid dpa app removal container.");
      }
