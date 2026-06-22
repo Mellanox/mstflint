@@ -588,6 +588,7 @@ public:
     void updateNvlinkModeBStatus();
     u_int32_t getNumberOfPorts();
     bool checkDPNvSupport();
+    bool checkPcieMgmtSupport();
     void prepareBerModuleInfo(bool valid, const vector<AmberField>& moduleInfoFields);
     void pushSnrModuleInfoFields(bool valid);
     void runningVersion();
@@ -822,6 +823,7 @@ public:
     bool _isGboxPort;
     bool _isSwControled;
     bool _isSwControledStandAlone;
+    bool _pcieMgmtSupported;
     bool _ignoreIbFECCheck;
     bool _isNVLINK;
     bool _isNvlinkModeA;

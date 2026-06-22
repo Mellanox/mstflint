@@ -93,12 +93,13 @@ void MlxlinkUi::printSynopsisHeader()
                                  "Perform operation for a specified mst device");
     MlxlinkRecord::printFlagLine(LABEL_PORT_FLAG_SHORT, LABEL_PORT_FLAG, "port_number", "Port Number");
     MlxlinkRecord::printFlagLine(PORT_TYPE_FLAG_SHORT, PORT_TYPE_FLAG, "port_type",
-                                 "Port Type [NETWORK(Default)/PCIE]");
+                                 "Port Type [NETWORK(Default)/PCIE] (PCIE on HCA/CPU/Switches with PCIe management)");
     MlxlinkRecord::printFlagLine(DEPTH_FLAG_SHORT, DEPTH_FLAG, "depth",
-                                 "depth level of the DUT of some hierarchy (PCIE only)");
+                                 "depth level of the DUT of some hierarchy (with --" PORT_TYPE_FLAG " PCIE)");
     MlxlinkRecord::printFlagLine(PCIE_INDEX_FLAG_SHORT, PCIE_INDEX_FLAG, "pcie_index",
-                                 "PCIe index number (Internal domain index) (PCIE only)");
-    MlxlinkRecord::printFlagLine(NODE_FLAG_SHORT, NODE_FLAG, "node", "the node within each depth (PCIE only)");
+                                 "PCIe index number (Internal domain index) (with --" PORT_TYPE_FLAG " PCIE)");
+    MlxlinkRecord::printFlagLine(NODE_FLAG_SHORT, NODE_FLAG, "node",
+                                 "the node within each depth (with --" PORT_TYPE_FLAG " PCIE)");
     MlxlinkRecord::printFlagLine(PRINT_JSON_OUTPUT_FLAG_SHORT, PRINT_JSON_OUTPUT_FLAG, "",
                                  "Print the output in json format");
 }
@@ -106,7 +107,8 @@ void MlxlinkUi::printSynopsisHeader()
 void MlxlinkUi::printSynopsisQueries()
 {
     printf(IDENT "QUERIES:\n");
-    MlxlinkRecord::printFlagLine(PCIE_LINKS_FLAG_SHORT, PCIE_LINKS_FLAG, "", "Show valid PCIe links (PCIE only)");
+    MlxlinkRecord::printFlagLine(PCIE_LINKS_FLAG_SHORT, PCIE_LINKS_FLAG, "",
+                                 "Show valid PCIe links (with --" PORT_TYPE_FLAG " PCIE)");
     MlxlinkRecord::printFlagLine(PLR_INFO_FLAG_SHORT, PLR_INFO_FLAG, "", "Show PLR Info");
     MlxlinkRecord::printFlagLine(KR_INFO_FLAG_SHORT, KR_INFO_FLAG, "", "Show KR Info");
     MlxlinkRecord::printFlagLine(HOST_CLASS_FLAG_SHORT, HOST_CLASS_FLAG, "", "Show Host Class Info");
@@ -447,7 +449,7 @@ void MlxlinkUi::printSynopsisCommands()
                                  "Show mixer offset 0 and mixer offset 1");
 
     MlxlinkRecord::printFlagLine(MPEINJ_PCIE_ERR_INJ_FLAG_SHORT, MPEINJ_PCIE_ERR_INJ_FLAG, "",
-                                 "Start/show PCIe error injection");
+                                 "Start/show PCIe error injection (HCA only)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(MPEINJ_ERR_TYPE_FLAG_SHORT, MPEINJ_ERR_TYPE_FLAG, "type",
                                  "PCIe error type [ABORT(0),BAD_DLLP_LCRC(1),BAD_TLP_LCRC(2),BAD_TLP_ECRC(3),"

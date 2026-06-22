@@ -232,16 +232,16 @@ void MlxlinkAmBerCollector::init()
     {
         _isPortPCIE = (_pnat == PNAT_PCIE);
 
-        resetLocalParser(ACCESS_REG_PMDR);
-        updateField("local_port", _localPort);
-        sendRegister(ACCESS_REG_PMDR, MACCESS_REG_METHOD_GET);
-
-        _isMCMSysValid = getFieldValue("mcm_tile_valid");
-        _isGBSysValid = getFieldValue("gb_valid");
-        _pllGroup = getFieldValue("pll_index");
-
         if (!_isPortPCIE)
         {
+            resetLocalParser(ACCESS_REG_PMDR);
+            updateField("local_port", _localPort);
+            sendRegister(ACCESS_REG_PMDR, MACCESS_REG_METHOD_GET);
+
+            _isMCMSysValid = getFieldValue("mcm_tile_valid");
+            _isGBSysValid = getFieldValue("gb_valid");
+            _pllGroup = getFieldValue("pll_index");
+
             resetLocalParser(ACCESS_REG_PDDR);
             updateField("local_port", _localPort);
             updateField("page_select", PDDR_OPERATIONAL_INFO_PAGE);
