@@ -286,7 +286,9 @@ void MlxlinkAmBerCollector::init()
                     }
                     else
                     {
-                        _numOfLanes = linkSpeedActive.empty() ? 0 : checkNvl6ModeBSpeed(linkSpeedActive) ? 2 : 1;
+                        _numOfLanes = linkSpeedActive.empty()                                  ? 0 :
+                                      checkNvl6ModeBSpeed(linkSpeedActive) || _isModeAsActive ? 2 :
+                                                                                                 1;
                     }
                 }
                 else
