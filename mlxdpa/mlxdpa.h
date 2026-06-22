@@ -124,6 +124,7 @@
      static const string CERT_UUID_FLAG;
      static const string DPA_APP_UUID_FLAG;
      static const string REMOVE_ALL_CERTS_FLAG;
+     static const string REMOVE_ALL_DPA_APPS_FLAG;
      static const string CERT_CONTAINER_FLAG;
      static const string CERT_CONTAINER_TYPE_FLAG;
      static const string DPA_APP_REMOVAL_CONTAINER_FLAG;
@@ -166,6 +167,7 @@
      u_int32_t _dpaAppUUID[4];
      bool _removeAllCertsSpecified;
      bool _removeAllCerts;
+     bool _removeAllDpaApps;
      string _certContainerPath;
      string _dpaAppRemovalContainerPath;
      CertContainerType _certContainerType;
