@@ -78,7 +78,7 @@ void MlxlinkCommander::updatePortInfo()
     }
 
     // only init PCI domain for "--port_type PCIE --show_links" command.
-    if (_userInput._pcie && _userInput._links && _isHCA)
+    if (_userInput._pcie && _userInput._links && _pcieMgmtSupported)
     {
         initPCIDomain();
     }
@@ -152,6 +152,11 @@ void MlxlinkCommander::init(bool warnIBDeviceCompatibility)
        _isDPNvSupported = checkDPNvSupport();
        setPlaneIndex(_userInput.planeIndex);
     }
+
+    if (_userInput._pcie && !(dm_is_gpu(static_cast<dm_dev_id_t>(_devID)) && _mf->tp != MST_PCICONF))
+    {
+        _pcieMgmtSupported = checkPcieMgmtSupport();
+    }
 }
 
 MlxlinkCommander::MlxlinkCommander(mfile* mf, UserInput userInput) : MlxlinkCommander()
@@ -205,6 +210,7 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _isGboxPort = false;
     _isSwControled = false;
     _isSwControledStandAlone = false;
+    _pcieMgmtSupported = false;
     _ignoreIbFECCheck = true;
     _isNVLINK = false;
     _isNvlinkModeA = false;
@@ -748,7 +754,7 @@ void MlxlinkCommander::labelToLocalPort()
 {
     _pnat = _userInput._pcie ? PNAT_PCIE : PNAT_LOCAL;
 
-    if ((_isHCA || (_mf->tp == MST_PCICONF && dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))) && _userInput._pcie)
+    if (_userInput._pcie && _pcieMgmtSupported)
     {
         _dpn.depth = _userInput._depth;
         _dpn.pcieIndex = _userInput._pcieIndex;
@@ -2053,6 +2059,27 @@ bool MlxlinkCommander::checkDPNvSupport()
     }
     catch (...)
     {
+    }
+    return false;
+}
+
+bool MlxlinkCommander::checkPcieMgmtSupport()
+{
+    if (_isHCA)
+    {
+        return true;
+    }
+
+    for (u_int32_t pcieIndex = 0; pcieIndex < MAX_NUM_OF_HOST_SWITCH; pcieIndex++)
+    {
+        try
+        {
+            sendPrmReg(ACCESS_REG_MPEIN, REG_GET, "depth=%d,pcie_index=%u,node=%d", 0, pcieIndex, 0);
+            return true;
+        }
+        catch (...)
+        {
+        }
     }
     return false;
 }
@@ -3539,7 +3566,7 @@ void MlxlinkCommander::showSltp()
         std::vector<std::vector<string>> ppttLanes(numOfLanesToUse, std::vector<string>());
         map<u_int32_t, u_int32_t> ppttSpeeds = _mlxlinkMaps->_ppttSpeedMapping;
 
-        if (_protoActive == ETH && !_isHCA)
+        if (_protoActive == ETH && !_isHCA && !_userInput._pcie)
         {
             // according to prm, all lanes show be configured to the same speed
             sendPrmReg(ACCESS_REG_PPTT, REG_GET, "lane=%d", 0);
