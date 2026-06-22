@@ -42,9 +42,6 @@ dnl Checks for programs
 AC_PROG_CC
 AC_PROG_CXX
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
-AC_PATH_PROG([PYTHON3],[python3])
-AS_IF([test -z "$PYTHON3"],[AC_MSG_ERROR([python3 is required to generate the device properties data maps])])
-AC_SUBST([PYTHON3])
 LT_INIT
 AC_CONFIG_HEADERS(config.h)
 
@@ -985,5 +982,4 @@ AC_OUTPUT( \
     mft_core/mft_core_utils/logger/Makefile \
     mft_core/mft_core_utils/operating_system_api/Makefile \
     mft_core/mft_core_utils/mft_exceptions/Makefile \
-    mft_core/device_info/Makefile \
  )
