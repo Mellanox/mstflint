@@ -633,6 +633,7 @@ public:
     bool getResult(std::map<std::string, float> errors_vector, float raw_ber_limit, int link_down);
     string getDevicePN();
     virtual string getFwVersion();
+    string getBKVVersion();
     void printOuptputVector(vector<MlxlinkCmdPrint>& cmdOut);
     virtual void prepareJsonOut();
 
