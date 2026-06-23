@@ -13,6 +13,7 @@
  #include "pldm.h"
 
  #include <algorithm>
+ #include <cstdio>
  #include <fstream>
  
  #include <json/reader.h>
@@ -461,8 +462,52 @@
      }
  }
 
-void PLDM::DisableCustomPsid(const string& inputFile, const string& outputFile, const string& psid)
+// Write `count` bytes into the selected record's vendor-defined descriptor of `type` at `offset`,
+// then repack it into the buffer.
+static bool setVendorDescriptorBytes(PldmDevIdRecord* rec,
+                                     PldmRecordDescriptor::VendorDefinedType type,
+                                     size_t offset,
+                                     const u_int8_t* bytes,
+                                     size_t count,
+                                     PldmBuffer& buff)
 {
+    PldmRecordDescriptor* desc = rec->findVendorDefinedDescriptor(type);
+    if (desc == NULL)
+    {
+        return false;
+    }
+    u_int8_t* value = desc->getMutableValue();
+    if (value == NULL || desc->getValueLength() < offset + count)
+    {
+        return false;
+    }
+    for (size_t i = 0; i < count; i++)
+    {
+        value[offset + i] = bytes[i];
+    }
+    if (!desc->pack(buff))
+    {
+        throw PLDMException("Failed to pack modified descriptor back into buffer.");
+    }
+    return true;
+}
+
+void PLDM::DisableCustomPsid(const string& inputFile,
+                             const string& outputFile,
+                             const string& psid,
+                             const string& minorVersion)
+{
+    // Convert the validated minor value to a single byte; both the PSID (ASCII) and the
+    // APSKU (numeric) edits use this one byte.
+    u_int32_t minorNum = 0;
+    if (!mft_utils::strToNum(minorVersion, minorNum, 16) || minorNum > 0xFF)
+    {
+        throw PLDMException("Invalid minor version '%s'; expected a hex byte (00-FF).", minorVersion.c_str());
+    }
+    u_int8_t minorByte = (u_int8_t)minorNum;
+    char minorHex[3];
+    snprintf(minorHex, sizeof(minorHex), "%02X", minorByte);
+
     PldmBuffer buff;
     if (!buff.loadFile(inputFile))
     {
@@ -480,31 +525,27 @@ void PLDM::DisableCustomPsid(const string& inputFile, const string& outputFile, 
     {
         throw PLDMException("PSID '%s' not found in package.", psid.c_str());
     }
-    PldmRecordDescriptor* psidDesc = rec->findVendorDefinedDescriptor(PldmRecordDescriptor::VendorDefinedType::PSID);
-    if (psidDesc == NULL)
-    {
-        throw PLDMException("No PSID descriptor in selected device record.");
-    }
 
-    // Position of the "minor" digit within the PSID value buffer (from start of value).
+    // Set the PSID minor digits (uppercase ASCII hex of the chosen byte).
     // Per PSID-format spec from architecture: bytes [5] and [6] are the minor digits.
     const size_t PSID_MINOR_OFFSET = 5;
-
-    u_int16_t valueLen = psidDesc->getValueLength();
-    u_int8_t* value = psidDesc->getMutableValue();
-    if (value == NULL || valueLen == 0 || PSID_MINOR_OFFSET + 1 >= valueLen)
+    // Convert the minor version to two bytes (ASCII hex of the chosen byte)
+    u_int8_t psidMinor[2] = {(u_int8_t)minorHex[0], (u_int8_t)minorHex[1]};
+    if (!setVendorDescriptorBytes(rec, PldmRecordDescriptor::VendorDefinedType::PSID, PSID_MINOR_OFFSET, psidMinor, 2,
+                                  buff))
     {
-        throw PLDMException("PSID value too short (length=%u) for minor edit at offset %zu.", (unsigned)valueLen,
-                            PSID_MINOR_OFFSET);
+        throw PLDMException("No PSID descriptor in selected record, or PSID value too short for minor edit.");
     }
-    // Zero the two minor digits.
-    value[PSID_MINOR_OFFSET] = '0';
-    value[PSID_MINOR_OFFSET + 1] = '0';
 
-    if (!psidDesc->pack(buff))
+    // Keep the APSKU descriptor's minor byte consistent. APSKU is stored little-endian, so its
+    // most-significant byte (offset 3) tracks the PSID minor. An absent/short APSKU is skipped.
+    const size_t APSKU_MINOR_BYTE_OFFSET = 3;
+    if (!setVendorDescriptorBytes(rec, PldmRecordDescriptor::VendorDefinedType::APSKU, APSKU_MINOR_BYTE_OFFSET,
+                                  &minorByte, 1, buff))
     {
-        throw PLDMException("Failed to pack modified PSID descriptor back into buffer.");
+        printf("-I- APSKU descriptor absent or too short in selected record; APSKU byte not updated.\n");
     }
+
     if (!pkg.recomputeHeaderChecksum(buff))
     {
         throw PLDMException("Failed to recompute package header checksum.");
