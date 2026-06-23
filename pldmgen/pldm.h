@@ -39,7 +39,10 @@
                                                bool reuseComponents,
                                                const std::string& fname,
                                                bool keepDescriptorsOrder = false);
-     static void DisableCustomPsid(const std::string& inputFile, const std::string& outputFile, const std::string& psid);
+     static void DisableCustomPsid(const std::string& inputFile,
+                                  const std::string& outputFile,
+                                  const std::string& psid,
+                                  const std::string& minorVersion);
 
  
  private:
