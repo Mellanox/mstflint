@@ -121,8 +121,9 @@
      static const string KEYPAIR_UUID_FLAG;
      static const string CERT_UUID_FLAG;
      static const string DPA_APP_UUID_FLAG;
-     static const string REMOVE_ALL_CERTS_FLAG;
-     static const string CERT_CONTAINER_FLAG;
+    static const string REMOVE_ALL_CERTS_FLAG;
+    static const string REMOVE_ALL_DPA_APPS_FLAG;
+    static const string CERT_CONTAINER_FLAG;
      static const string CERT_CONTAINER_TYPE_FLAG;
      static const string DPA_APP_REMOVAL_CONTAINER_FLAG;
      static const string SIGN_DPA_APPS;
@@ -161,9 +162,10 @@
      u_int32_t _keypairUUID[4];
      u_int32_t _certUUID[4];
      u_int32_t _dpaAppUUID[4];
-     bool _removeAllCertsSpecified;
-     bool _removeAllCerts;
-     string _certContainerPath;
+    bool _removeAllCertsSpecified;
+    bool _removeAllCerts;
+    bool _removeAllDpaApps;
+    string _certContainerPath;
      string _dpaAppRemovalContainerPath;
      CertContainerType _certContainerType;
      MlxDpaCmd _command;
