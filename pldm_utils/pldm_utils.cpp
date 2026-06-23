@@ -25,9 +25,6 @@
 using namespace std;
 // If a new component is added, update the Confluence page as well:
 // https://nvidia.atlassian.net/wiki/spaces/SW/pages/3064486398/PLDM+fwpkg+Generation
-vector<string> components_names = {"FW",      "NIC_FW", "ARM_Capsule",  "BF3BMC_PLDM",  "BFB", "BF3BMC_CEC_PLDM",
-                                   "FW_SPC6", "VMOD",   "OEM_NVCONFIG", "MLNX_NVCONFIG"};
-
 struct ComponentInfo
 {
     string name;
@@ -57,10 +54,19 @@ const std::vector<ComponentInfo> components_list = {
   {"OEM_NVCONFIG", ComponentIdentifier::Identifier_OEM_NVCONFIG_Comp, ComponentClassification::Configuration,
    REQUESTED_COMPONENT_ACTIVATION_MODE_VALUE_DEFAULT, COMPONENT_OPTIONS_VALUE_DEFAULT},
   {"MLNX_NVCONFIG", ComponentIdentifier::Identifier_MLNX_NVCONFIG_Comp, ComponentClassification::Configuration,
-   REQUESTED_COMPONENT_ACTIVATION_MODE_VALUE_DEFAULT, COMPONENT_OPTIONS_VALUE_DEFAULT}};
+   REQUESTED_COMPONENT_ACTIVATION_MODE_VALUE_DEFAULT, COMPONENT_OPTIONS_VALUE_DEFAULT},
+  {"DIGITAL_CACERT_REMOVAL", ComponentIdentifier::Identifier_DIGITAL_CACERT_REMOVAL_Comp,
+   ComponentClassification::Instrumentation, REQUESTED_COMPONENT_ACTIVATION_MODE_VALUE_DEFAULT,
+   COMPONENT_OPTIONS_VALUE_DEFAULT},
+  {"DIGITAL_CACERT_CHAIN_REMOVAL", ComponentIdentifier::Identifier_DIGITAL_CACERT_CHAIN_REMOVAL_Comp,
+   ComponentClassification::Instrumentation, REQUESTED_COMPONENT_ACTIVATION_MODE_VALUE_DEFAULT,
+   COMPONENT_OPTIONS_VALUE_DEFAULT},
+  {"DPA_COMPONENT_REMOVAL", ComponentIdentifier::Identifier_DPA_COMPONENT_REMOVAL_Comp,
+   ComponentClassification::Instrumentation, REQUESTED_COMPONENT_ACTIVATION_MODE_VALUE_DEFAULT,
+   COMPONENT_OPTIONS_VALUE_DEFAULT}};
 
 string NumToStr(u_int32_t num)
-{
+{ 
     stringstream ss;
     ss << num;
     return ss.str();
@@ -334,11 +340,11 @@ PLDMException::PLDMException(const char* fmt, ...)
 
 std::string ValidAndNormalizeComponentIdentifier(const string& identifier)
 {
-    for (const auto& component : components_names)
+    for (const auto& component : components_list)
     {
-        if (ToLower(component) == ToLower(identifier))
+        if (ToLower(component.name) == ToLower(identifier))
         {
-            return component;
+            return component.name;
         }
     }
     throw PLDMException("Invalid component: %s", identifier.c_str());
