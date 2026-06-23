@@ -49,22 +49,25 @@ using namespace std;
 class DpaAppRemoveMetadata
 {
 public:
-    DpaAppRemoveMetadata(u_int32_t dpaAppUUID[4], u_int32_t keypairUUID[4]);
+    DpaAppRemoveMetadata(u_int32_t dpaAppUUID[4], u_int32_t keypairUUID[4], bool removeAll = false);
     virtual ~DpaAppRemoveMetadata() {}
 
     vector<u_int8_t> Serialize();
     void Deserialize(vector<u_int8_t> buf);
     u_int16_t GetSize() { return METADATA_SIZE; };
     DpaAppStructHeader::StructType GetType() { return DpaAppStructHeader::StructType::DPA_APP_REMOVE_METADATA; };
+    bool IsRemoveAll() { return _removeAll != 0; }
     static const u_int32_t KEY_PAIR_UUID_SIZE = 16;
     static const u_int32_t DPA_APP_UUID_SIZE = 16;
-    static const u_int32_t RESERVED_SIZE = 4;
+    static const u_int32_t REMOVE_ALL_FLAG_SIZE = 1;
+    static const u_int32_t RESERVED_SIZE = 3;
+    static const u_int32_t REMOVE_ALL_OFFSET = KEY_PAIR_UUID_SIZE + DPA_APP_UUID_SIZE;
 
 private:
     const u_int16_t METADATA_SIZE = 0x24;
     u_int32_t _dpaAppUUID[4];
     u_int32_t _keypairUUID[4];
-    u_int32_t _reserved;
+    u_int8_t _removeAll;
 };
 
 class DpaAppRemoveSignature
