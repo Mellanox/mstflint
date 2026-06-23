@@ -46,6 +46,7 @@ enum class ComponentClassification : u_int16_t
     SwBundle = 0x000D,
     Firmware = 0x000A,
     Configuration = 0x0003,
+    Instrumentation = 0x0005,
     DownstreamDevice = 0xFFFF
 };
 
@@ -74,6 +75,9 @@ enum class ComponentIdentifier
     Identifier_ARM_Capsule_Comp = 0x3020,
     Identifier_BFB_Comp = 0x3030,
     Identifier_VMOD_Comp = 0xE005,
+    Identifier_DIGITAL_CACERT_REMOVAL_Comp = 0x0017,
+    Identifier_DIGITAL_CACERT_CHAIN_REMOVAL_Comp = 0x0018,
+    Identifier_DPA_COMPONENT_REMOVAL_Comp = 0x301D,
     Identifier_General = 0xffff
 };
 
