@@ -128,6 +128,10 @@
      {
          _parsedParams->_psid = value;
      }
+     else if (name == "minor_version")
+     {
+         _parsedParams->_minorVersion = value;
+     }
      else if (name == "help" || name == "h")
      {
          printUsage();
@@ -165,10 +169,13 @@
      AddOptions("keep_descriptors_order", ' ', "", "Keep descriptors in the order from cookbook definition");
      AddOptions("kdo", ' ', "", "short for keep_descriptors_order");
      AddOptions("psid", ' ', "<psid>", "PSID of the FD to edit (required only when the package has multiple FDs)");
+     AddOptions("minor_version", ' ', "<XX>",
+                "Minor byte (2 hex digits, e.g. 1A or 0x1A) to set in the PSID and matching APSKU byte; default 00");
      AddOptionalSectionData("COMMANDS SUMMARY", "gen_empty_cookbook", "Generates an empty cookbook");
      AddOptionalSectionData("COMMANDS SUMMARY", "gen_pldm_package", "Generates a PLDM package");
-     AddOptionalSectionData("COMMANDS SUMMARY", "disable_custom_psid",
-                            "Zero the last 2 bytes (minor) of the PSID in an existing PLDM package");
+     AddOptionalSectionData(
+       "COMMANDS SUMMARY", "disable_custom_psid",
+       "Set the PSID minor digits and matching APSKU byte in an existing PLDM package (default 00)");
  }
  
  /************************************
@@ -187,7 +194,7 @@
  
     printf(IDENT "mstpldm_pkg_gen --input_file/-i <input cookbook> --output_file/-o <output_pldm> gen_pldm_package \n");
     printf(IDENT "mstpldm_pkg_gen --input_file/-i <input.fwpkg> --output_file/-o <output.fwpkg> "
-        "[--psid <CURRENT_PSID>] disable_custom_psid \n");
+        "[--psid <CURRENT_PSID>] [--minor_version <XX>] disable_custom_psid \n");
 
     printf("\n");
     printf("EXAMPLES\n");

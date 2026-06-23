@@ -23,7 +23,8 @@
      _cookbookDefinition(""),
      _reuseComponents(false),
      _keepDescriptorsOrder(false),
-     _psid("")
+     _psid(""),
+     _minorVersion("00")
  {
  }
  
@@ -79,6 +80,11 @@
          {
              throw PLDMException(
                "Invalid arguments for disable_custom_psid. --cookbook_definition is not supported for disable_custom_psid.");
+         }
+         else if (!ValidSizeAndFormat(_minorVersion, 1))
+         {
+             throw PLDMException("Invalid --minor_version '%s'; expected a hex byte (e.g. 1A or 0x1A).",
+                                 _minorVersion.c_str());
          }
      }
  }
