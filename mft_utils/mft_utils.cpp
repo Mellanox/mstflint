@@ -65,6 +65,8 @@ bool strToNum(const string& str, u_int32_t& num, int base)
 {
     char* endp;
     char* numStr = strcpy(new char[str.size() + 1], str.c_str());
+    // clear errno
+    errno = 0;
     num = strtoul(numStr, &endp, base);
     if (*endp)
     {

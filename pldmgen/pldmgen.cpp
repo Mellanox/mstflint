@@ -60,9 +60,9 @@
 
 void disableCustomPsid(std::unique_ptr<CmdLineParams>& params)
 {
-    PLDM::DisableCustomPsid(params->_input_file, params->_output_file, params->_psid);
-    printf("-I- Wrote %s with custom PSID disabled,PSID minor digits were set to the generic value.\n",
-            params->_output_file.c_str());
+    PLDM::DisableCustomPsid(params->_input_file, params->_output_file, params->_psid, params->_minorVersion);
+    printf("-I- Wrote %s: PSID minor digit (and APSKU byte if present) set to %s.\n", params->_output_file.c_str(),
+           params->_minorVersion.c_str());
 }
  
  int Main(int argc, char* argv[])

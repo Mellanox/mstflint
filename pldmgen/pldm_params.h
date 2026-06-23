@@ -36,7 +36,8 @@
      bool _reuseComponents;
      bool _keepDescriptorsOrder;
      string _psid;
-     
+     string _minorVersion;
+
      CmdLineParams();
      virtual ~CmdLineParams() = default;
      void validateInputParams();
