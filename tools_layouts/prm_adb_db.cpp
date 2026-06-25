@@ -84,10 +84,9 @@ string PrmAdbDB::getDefaultDBName(dm_dev_id_t devID)
     return getDefaultDBName(adbType);
 }
 
-string PrmAdbDB::getDefaultDBName(PrmAdbType_t adbType)
+string PrmAdbDB::getDefaultDBName(PrmAdbType_t adbType, const string& dbFileName)
 {
     const string dbDirName = "prm_dbs";
-    const string dbFileName = "register_access_table.adb";
     string adbTypeStr;
     switch (adbType)
     {

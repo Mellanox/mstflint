@@ -30,7 +30,7 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-SUBDIRS = mlxreg_lib scripts
+SUBDIRS = mlxreg_lib scripts $(MLXREG_SDK_DIR)
 
 AM_CPPFLAGS = \
     -I$(srcdir) \

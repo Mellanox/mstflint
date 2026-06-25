@@ -73,6 +73,7 @@ default_en_rdmem="no"
 default_en_nvml="no"
 default_en_vfio="no"
 default_en_i2c="no"
+default_en_mstflint_sdk="no"
 OFED_VERSION_CHK=0
 KERNEL_BUILD_CHK=0
 
@@ -571,6 +572,49 @@ if test "x$enable_i2c" = "xyes"; then
     CFLAGS="$CFLAGS -DENABLE_MST_DEV_I2C"
 fi
 AM_CONDITIONAL(ENABLE_MST_DEV_I2C, [ test "x$enable_i2c" = "xyes" ])
+##
+
+# Enable mstflint SDK:
+AC_MSG_CHECKING(--enable-mstflint-sdk argument)
+AC_ARG_ENABLE(mstflint-sdk,
+    AS_HELP_STRING([--enable-mstflint-sdk], [build the mstflint SDK shared library libmstflint_sdk.so (Linux only), requires --enable-adb-generic-tools]),
+    [enable_mstflint_sdk="$enableval"],
+    [enable_mstflint_sdk="$default_en_mstflint_sdk"]
+)
+AC_MSG_RESULT($enable_mstflint_sdk)
+MSTFLINT_SDK_DIR=""
+HCA_CAP_DIR=""
+MLXREG_SDK_DIR=""
+DEVICE_DIR=""
+LOAD_SHARED_LIB_DIR=""
+if test "x$enable_mstflint_sdk" = "xyes"; then
+    if test "x$enable_adb_generic_tools" != "xyes"; then
+        AC_MSG_ERROR([--enable-mstflint-sdk requires --enable-adb-generic-tools.])
+    fi
+    CXXFLAGS="$CXXFLAGS -DMFT_SDK_EXTERNAL -DMFT_SDK_STANDALONE_BUILD"
+    CFLAGS="$CFLAGS -DMFT_SDK_EXTERNAL -DMFT_SDK_STANDALONE_BUILD"
+    MSTFLINT_SDK_DIR="mft_sdk"
+    HCA_CAP_DIR="hca_capabilities"
+    MLXREG_SDK_DIR="mlxreg_sdk"
+    DEVICE_DIR="device"
+    AC_CONFIG_FILES(mft_sdk/Makefile)
+    AC_CONFIG_FILES(hca_capabilities/Makefile)
+    AC_CONFIG_FILES(mlxreg/mlxreg_sdk/Makefile)
+    AC_CONFIG_FILES(mft_core/device/Makefile)
+    # NVML-backed GPU discovery is pulled in only when NVML is enabled; the SDK
+    # source gates its use of it on ENABLE_NVML to keep the build self-consistent.
+    if test "x$enable_nvml" = "xyes"; then
+        LOAD_SHARED_LIB_DIR="load_shared_library"
+        AC_CONFIG_FILES(mft_core/device/nvml/Makefile)
+        AC_CONFIG_FILES(mft_core/mft_core_utils/load_shared_library/Makefile)
+    fi
+fi
+AC_SUBST(MSTFLINT_SDK_DIR)
+AC_SUBST(HCA_CAP_DIR)
+AC_SUBST(MLXREG_SDK_DIR)
+AC_SUBST(DEVICE_DIR)
+AC_SUBST(LOAD_SHARED_LIB_DIR)
+AM_CONDITIONAL(ENABLE_MSTFLINT_SDK, [ test "x$enable_mstflint_sdk" = "xyes" ])
 ##
 
 AC_MSG_CHECKING(--enable-cs argument)

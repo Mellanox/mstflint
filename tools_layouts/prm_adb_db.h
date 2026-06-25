@@ -60,7 +60,8 @@ public:
     static std::string prm_adb_db_trim(const std::string& s);
     static std::string prm_adb_db_rtrim(const std::string& s);
     static std::string prm_adb_db_ltrim(const std::string& s);
-    static std::string getDefaultDBName(PrmAdbType_t adbType);
+    static std::string getDefaultDBName(PrmAdbType_t adbType,
+                                        const std::string& dbFileName = "register_access_table.adb");
     static std::string getDefaultDBName(dm_dev_id_t devID);
 };
 

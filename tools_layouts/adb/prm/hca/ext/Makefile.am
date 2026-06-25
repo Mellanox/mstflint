@@ -33,4 +33,4 @@
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
 docdir = $(pkgdatadir)/prm_dbs/hca/ext
-dist_doc_DATA = register_access_table.adb
+dist_doc_DATA = register_access_table.adb hca_cap_table.adb

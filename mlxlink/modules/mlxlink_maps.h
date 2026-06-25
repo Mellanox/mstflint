@@ -45,6 +45,7 @@
 #include <vector>
 #include <mlxreg/mlxreg_lib/mlxreg_lib.h>
 #include <mlxreg/mlxreg_lib/mlxreg_parser.h>
+#include "mft_sdk/mft_sdk_telemetry_types.h"
 #include "mlxlink_user_input.h"
 #include "printutil/mlxlink_cmd_print.h"
 #include "mlxlink_enums.h"
@@ -256,6 +257,20 @@ private:
     void initPlrRejectModeMapping();
     void initKrMapping();
     void initHostClassMapping();
+    void initSDKMappings();
+    void initSdkOperationalInfoStateMapping();
+    void initSdkOperationalInfoPhysicalStateMapping();
+    void initSdkOperationalInfoLoopbackModeMapping();
+    void initSdkOperationalInfoAutoNegotiationMapping();
+    void initSdkOperationalInfoSpeedMapping();
+    void initSdkOperationalInfoFecMapping();
+    void initSdkCableTechnologyMapping();
+    void initSdkIdentifierMapping();
+    void initSdkCableTypeMapping();
+    void initSdkOuiMapping();
+    void initSdkModuleStateMapping();
+    void initSdkRxPowerTypeMapping();
+    void initSdkErrorCodeResponseMapping();
 
 public:
     static MlxlinkMaps* getInstance();
@@ -277,6 +292,21 @@ public:
     std::map<std::string, u_int32_t> _prbsModulationValue;
     std::map<u_int32_t, std::string> _prbsLaneRateList;
     std::map<std::string, CAP_VALUE> _prbsLaneRate;
+
+    // SDK Mappings (telemetry)
+    std::map<std::string, OperationalInfoState> _operationalInfoState;
+    std::map<std::string, OperationalInfoPhysicalState> _operationalInfoPhysicalState;
+    std::map<std::string, OperationalInfoLoopbackMode> _operationalInfoLoopbackMode;
+    std::map<std::string, OperationalInfoAutoNegotiation> _operationalInfoAutoNegotiation;
+    std::map<std::string, OperationalInfoSpeed> _operationalInfoSpeed;
+    std::map<std::string, OperationalInfoFec> _operationalInfoFec;
+    std::map<std::string, ModuleInfoCableTechnology> _cableTechnologySdk;
+    std::map<std::string, ModuleInfoIdentifier> _identifierSdk;
+    std::map<std::string, ModuleInfoCableType> _cableTypeSdk;
+    std::map<std::string, ModuleInfoOui> _ouiSdk;
+    std::map<std::string, ModuleInfoModuleState> _moduleStateSdk;
+    std::map<std::string, ModuleInfoRxPowerType> _rxPowerTypeSdk;
+    std::map<std::string, ModuleInfoErrorCodeResponse> _errorCodeResponseSdk;
     std::map<u_int32_t, std::string> _prbsLaneRateCap;
     std::map<u_int32_t, std::string> _prbsLaneRateCapExt;
     std::map<u_int32_t, std::string> _prbsTuningType;

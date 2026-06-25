@@ -165,6 +165,21 @@ MlxlinkCommander::MlxlinkCommander(mfile* mf, UserInput userInput) : MlxlinkComm
     _userInput = userInput;
 }
 
+void MlxlinkCommander::openDevice(const std::string& mstDeviceName)
+{
+    _mf = mopen(mstDeviceName.c_str());
+    if (!_mf)
+    {
+        throw MlxRegException("Failed to open device: " + mstDeviceName);
+    }
+}
+
+MlxlinkCommander::MlxlinkCommander(const std::string& mstDeviceName) : MlxlinkCommander()
+{
+    openDevice(mstDeviceName);
+    init(false);
+}
+
 MlxlinkCommander::MlxlinkCommander() : _userInput()
 {
     _extAdbFile = "";

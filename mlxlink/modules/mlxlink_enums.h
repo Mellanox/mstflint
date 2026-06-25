@@ -33,6 +33,8 @@
 #ifndef MLXLINK_ENUMS_H
 #define MLXLINK_ENUMS_H
 
+#include "mlxlink_fields.h"
+
 // Common definitions
 #define AMBER_VERSION "7.1"
 #define NA_FIELD_VALUE "N/A"
