@@ -311,6 +311,7 @@ public:
     virtual bool GetSecureHostState(u_int8_t& state);
     virtual bool ChangeSecureHostState(bool disable, u_int64_t key);
     virtual bool IsComponentSupported(FwComponent::comps_ids_t component);
+    static bool IsPLDM(const string& pldmFile);
     virtual bool getBFBComponentsVersions(std::map<std::string, std::string>& name_to_version, bool pending);
     void getSupportedHwId(u_int32_t** supportedHwId, u_int32_t& supportedHwIdNum);
     
@@ -705,7 +706,6 @@ protected:
     virtual bool VerifyBranchFormat(const char* vsdString);
     virtual bool GetDtocAddress(u_int32_t& dTocAddress);
     virtual bool IsVmodSupported();
-    static bool IsPLDM(const string& pldmFile);
 
     // Protected Members
     FBase* _ioAccess;

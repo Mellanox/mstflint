@@ -54,6 +54,12 @@
 #include <tools_layouts/reg_access_switch_layouts.h>
 #include "mlxcfg_ui.h"
 #include "mlxcfg_generic_commander.h"
+#include "mlxcfg_utils.h"
+#include "mft_utils/mft_utils.h"
+#include "common/tools_string.h"
+#include "mlxfwops/lib/fs_pldm.h"
+
+using nbu::mft::common::string_format;
 
 #define DISABLE_SLOT_POWER_LIMITER "DISABLE_SLOT_POWER_LIMITER"
 #define DISABLE_SLOT_POWER_LIMITER_WARN                                                                                \
@@ -1582,6 +1588,17 @@ mlxCfgStatus MlxCfg::readBinFile(string fileName, vector<u_int32_t>& buff)
 
 mlxCfgStatus MlxCfg::readNVInputFile(vector<u_int32_t>& buff)
 {
+    if (FwOperations::IsPLDM(_mlxParams.NVInputFile))
+    {
+        if (FsPldmOperations::GetComponentData(
+              _mlxParams.NVInputFile,
+              {ComponentIdentifier::Identifier_OEM_NVCONFIG_Comp, ComponentIdentifier::Identifier_MLNX_NVCONFIG_Comp},
+              buff))
+        {
+            return MLX_CFG_OK;
+        }
+        return err(true, "Failed to read PLDM file: %s", _mlxParams.NVInputFile.c_str());
+    }
     return readBinFile(_mlxParams.NVInputFile, buff);
 }
 
