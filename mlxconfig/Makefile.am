@@ -44,6 +44,9 @@ AM_CPPFLAGS = \
     -I$(top_srcdir)/dev_mgt \
     -I$(top_srcdir)/cmdif \
     -I$(top_srcdir)/tools_res_mgmt \
+    -I$(top_srcdir)/mflash \
+    -I$(top_srcdir)/mlxfwops/lib \
+    -I$(top_srcdir)/pldmlib \
     $(libxml2_CFLAGS) \
     $(openssl_CFLAGS)
 
@@ -89,6 +92,14 @@ libmlxcfg_la_LIBADD = $(libmlxcfg_la_DEPENDENCIES) ${LDL}
 
 mstconfig_DEPENDENCIES = \
     libmlxcfg.la \
+    $(top_builddir)/mlxfwops/lib/libmlxfwops.a \
+    $(top_builddir)/pldmlib/libpldm.la \
+    $(top_builddir)/pldm_utils/libpldm_utils.la \
+    $(top_builddir)/libmfa/libmfa.la \
+    $(top_builddir)/xz_utils/libxz_utils.la \
+    $(top_builddir)/ext_libs/minixz/libminixz.la \
+    $(top_builddir)/mflash/libmflash.la \
+    $(top_builddir)/tools_crypto/libtools_crypto.a \
     $(top_builddir)/mft_utils/libmftutils.la \
     $(top_builddir)/cmdif/libcmdif.la \
     $(top_builddir)/reg_access/libreg_access.la \
@@ -125,6 +136,10 @@ mstconfig_LDADD += $(top_builddir)/mlxsign_lib/libmlxsign.la $(openssl_LIBS)
 libmlxcfg_la_LIBADD += $(top_builddir)/mlxsign_lib/libmlxsign.la $(openssl_LIBS)
 else
 AM_CXXFLAGS += -DNO_OPEN_SSL
+endif
+
+if ENABLE_DPA
+mstconfig_DEPENDENCIES += $(top_builddir)/mlxdpa/libmstdpa.a
 endif
 
 mstconfig_SOURCES =  mlxcfg_ui.h mlxcfg_parser.cpp mlxcfg_ui.cpp
