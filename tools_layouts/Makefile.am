@@ -41,7 +41,7 @@ noinst_LTLIBRARIES = libadb_utils.la libtools_layouts.la libmlxarchive_layouts.l
 
 toolslayoutsincludedir = $(includedir)/mstflint/tools_layouts/
 
-toolslayoutsinclude_HEADERS = icmd_layouts.h icmd_hca_layouts.h adb_to_c_utils.h
+toolslayoutsinclude_HEADERS = icmd_layouts.h icmd_hca_layouts.h adb_to_c_utils.h hca_cap_types_enums.h
 libadb_utils_la_SOURCES = adb_to_c_utils.c
 
 libtools_layouts_la_SOURCES = prm_adb_db.cpp prm_adb_db.h \

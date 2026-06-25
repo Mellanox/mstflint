@@ -469,6 +469,8 @@ class MlxlinkCommander : public MlxlinkRegParser
 public:
     MlxlinkCommander();
     MlxlinkCommander(mfile* mf, UserInput userInput);
+    MlxlinkCommander(const std::string& mstDeviceName);
+    void openDevice(const std::string& mstDeviceName);
     virtual ~MlxlinkCommander();
 
     void init(bool warnIBDeviceCompatibility = true);

@@ -1,4 +1,4 @@
-# Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -30,4 +30,19 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-SUBDIRS = operating_system_api logger mft_exceptions $(LOAD_SHARED_LIB_DIR)
+AM_CPPFLAGS = \
+    -I$(srcdir) \
+    -I$(top_srcdir) \
+    -I$(top_srcdir)/include/mtcr_ul
+
+AM_CPPFLAGS += $(nvml_CFLAGS)
+
+AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC)
+
+noinst_LTLIBRARIES = libnvml_discovery.la
+
+libnvml_discovery_la_SOURCES = \
+    NvmlDiscoveryLib.cpp \
+    NvmlDiscoveryLib.h \
+    NvmlLibWrapper.cpp \
+    NvmlLibWrapper.h

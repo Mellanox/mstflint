@@ -268,4 +268,67 @@ struct mlx5_ifc_access_register_in_bits {
 	u8         register_data[][0x20];
 };
 
+/* HCA capability query/set layouts (ported from MFT for the mstflint SDK). */
+#define MLX5_HCA_CAP_SIZE 0x8000
+
+union mlx5_ifc_hca_cap_union_bits {
+	u8         reserved_at_0[MLX5_HCA_CAP_SIZE];
+};
+
+struct mlx5_ifc_query_hca_cap_out_bits {
+	u8         status[0x8];
+	u8         reserved_at_8[0x18];
+
+	u8         syndrome[0x20];
+
+	u8         reserved_at_40[0x40];
+
+	union mlx5_ifc_hca_cap_union_bits capability;
+};
+
+struct mlx5_ifc_query_hca_cap_in_bits {
+	u8         opcode[0x10];
+	u8         reserved_at_10[0x10];
+
+	u8         reserved_at_20[0x10];
+	u8         op_mod[0x10];
+
+	u8         other_function[0x1];
+	u8         ec_vf_function[0x1];
+	u8         reserved_at_42[0x1];
+	u8         function_id_type[0x1];
+	u8         reserved_at_44[0xc];
+	u8         function_id[0x10];
+
+	u8         reserved_at_60[0x20];
+};
+
+struct mlx5_ifc_set_hca_cap_out_bits {
+	u8         status[0x8];
+	u8         reserved_at_8[0x18];
+
+	u8         syndrome[0x20];
+
+	u8         reserved_at_40[0x40];
+};
+
+struct mlx5_ifc_set_hca_cap_in_bits {
+	u8         opcode[0x10];
+	u8         reserved_at_10[0x10];
+
+	u8         reserved_at_20[0x10];
+	u8         op_mod[0x10];
+
+	u8         other_function[0x1];
+	u8         ec_vf_function[0x1];
+	u8         reserved_at_42[0x1];
+	u8         function_id_type[0x1];
+	u8         reserved_at_44[0xc];
+	u8         function_id[0x10];
+
+	u8         reserved_at_60[0x20];
+
+	union mlx5_ifc_hca_cap_union_bits capability;
+};
+
 #endif /* MLX5_IFC_USER_SPACE_STUB_H */
