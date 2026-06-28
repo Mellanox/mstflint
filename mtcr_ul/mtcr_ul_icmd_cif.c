@@ -58,7 +58,7 @@
 
 /* _DEBUG_MODE   // un-comment this to enable debug prints */
 
-#define ICMD_DEFAULT_TIMEOUT 5120
+#define ICMD_DEFAULT_TIMEOUT 10000
 #define STAT_CFG_NOT_DONE_ADDR_CIB 0xb0004
 #define STAT_CFG_NOT_DONE_ADDR_CX4 0xb0004
 #define STAT_CFG_NOT_DONE_ADDR_SW_IB 0x80010
@@ -504,20 +504,29 @@ static int set_and_poll_on_busy_bit(mfile* mf, int enhanced, int busy_bit_offset
 
     /* set sleep time if needed */
     int icmd_sleep = set_sleep();
-    int icmd_timeout = set_icmd_timeout();
-
+    int timeout_ms = set_icmd_timeout();
+    struct timespec ts_start = {0, 0}, ts_now = {0, 0};
+    if (clock_gettime(CLOCK_MONOTONIC, &ts_start) == -1)
+    {
+        return ME_ICMD_STATUS_EXECUTE_TO;
+    }
     /* wait for command to execute */
     i = 0;
     wait = 1;
     do
     {
-        if (++i > icmd_timeout)
+        long elapsed_ms;
+        if (clock_gettime(CLOCK_MONOTONIC, &ts_now) != 0)
         {
-            /* this number of iterations should take ~~30sec, which is the defined command t/o */
-            DBG_PRINTF("Execution timed-out\n");
             return ME_ICMD_STATUS_EXECUTE_TO;
         }
-
+        elapsed_ms = (ts_now.tv_sec - ts_start.tv_sec) * 1000 + (ts_now.tv_nsec - ts_start.tv_nsec) / 1000000;
+        if (elapsed_ms > timeout_ms)
+        {
+            DBG_PRINTF("Execution timed-out after %ld ms\n", elapsed_ms);
+            return ME_ICMD_STATUS_EXECUTE_TO;
+        }
+        i++;
         if ((i < 100) || (i % 100 == 0))
         {
             DBG_PRINTF("Waiting for busy-bit to clear (iteration #%d)...\n", i);
@@ -547,14 +556,17 @@ static int set_and_poll_on_busy_bit(mfile* mf, int enhanced, int busy_bit_offset
         {
             if (!enhanced)
             {
-                if (i > 5)
+                if (i <= 5)
                 {
-                    /* after some iteration put sleeps between busy-wait */
-                    msleep(wait); /* don't hog the cpu with busy-wait */
-                    if (wait < 8)
-                    {
-                        wait *= 2; /* exponential backoff - up-to 8ms between polls */
-                    }
+                    mft_usleep(10);
+                }
+                else if (i <= 64)
+                {
+                    mft_usleep(100);
+                }
+                else
+                {
+                    mft_usleep(1000);
                 }
             }
             else
