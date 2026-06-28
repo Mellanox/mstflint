@@ -159,6 +159,8 @@ public:
     void setControlParams(vector<pair<ControlParam, string>>& params);
     void showModuleCapabilities();
     void showModuleInfo();
+    string getTransceiverLoopbackCapStr();
+    string getTransceiverLoopbackStr();
     void setModulePrecoding(const string& side, bool setTx, bool txEnable, bool setRx, bool rxEnable);
     void setSwControlMode();
     float getTxBiasMultiplier();

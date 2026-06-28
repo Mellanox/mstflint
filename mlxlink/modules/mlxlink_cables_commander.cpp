@@ -1776,7 +1776,7 @@ void MlxlinkCablesCommander::setControlParams(vector<pair<ControlParam, string>>
 void MlxlinkCablesCommander::showModuleCapabilities()
 {
     MlxlinkCmdPrint moduleCapOutput = MlxlinkCmdPrint();
-    setPrintTitle(moduleCapOutput, "Module Capabilities", 2);
+    setPrintTitle(moduleCapOutput, "Module Capabilities", MODULE_CAPABILITIES_INFO_LAST);
 
     sendPrmReg(ACCESS_REG_PMCR, REG_GET);
 
@@ -1786,6 +1786,8 @@ void MlxlinkCablesCommander::showModuleCapabilities()
     setPrintVal(moduleCapOutput, "Host Precoding Capability", hostCap);
     setPrintVal(moduleCapOutput, "Line Precoding Capability", lineCap);
 
+    setPrintVal(moduleCapOutput, "Transceiver Level Loopback", getTransceiverLoopbackCapStr());
+
     moduleCapOutput.toJsonFormat(_jsonRoot);
     cout << moduleCapOutput;
 }
@@ -1793,7 +1795,7 @@ void MlxlinkCablesCommander::showModuleCapabilities()
 void MlxlinkCablesCommander::showModuleInfo()
 {
     MlxlinkCmdPrint moduleInfoOutput = MlxlinkCmdPrint();
-    setPrintTitle(moduleInfoOutput, "Module Info", 4);
+    setPrintTitle(moduleInfoOutput, "Module Info", MODULE_PRECODING_INFO_LAST);
 
     sendPrmReg(ACCESS_REG_PMCR, REG_GET);
 
@@ -1812,8 +1814,67 @@ void MlxlinkCablesCommander::showModuleInfo()
         setPrintVal(moduleInfoOutput, it->first, status);
     }
 
+    setPrintVal(moduleInfoOutput, "Transceiver Level Loopback", getTransceiverLoopbackStr());
+
     moduleInfoOutput.toJsonFormat(_jsonRoot);
     cout << moduleInfoOutput;
+}
+
+string MlxlinkCablesCommander::getTransceiverLoopbackCapStr()
+{
+    string lbCapStr = "Not Supported";
+
+    try
+    {
+        sendPrmReg(ACCESS_REG_PMLR, REG_GET, "slot_index=%d,host_media=%d,lane_mask=%d", _slotIndex, PMLR_SIDE_HOST,
+                   PMLR_READ_LANE_MASK);
+
+        u_int32_t lbCap = getFieldValue("lb_cap");
+        if (lbCap)
+        {
+            lbCapStr = getStrByMask(lbCap, _mlxlinkMaps->_pmlrLoopbackCapMask, ", ");
+        }
+    }
+    catch (MlxRegException& exc)
+    {
+        // Transceiver loopback is not supported by the current FW/module; keep the default.
+    }
+
+    return lbCapStr;
+}
+
+string MlxlinkCablesCommander::getTransceiverLoopbackStr()
+{
+    string lbEnStr = "Not Supported";
+
+    try
+    {
+        sendPrmReg(ACCESS_REG_PMLR, REG_GET, "slot_index=%d,host_media=%d,lane_mask=%d", _slotIndex, PMLR_SIDE_HOST,
+                   PMLR_READ_LANE_MASK);
+        u_int32_t hostLbCap = getFieldValue("lb_cap");
+        u_int32_t hostLbEn = getFieldValue("lb_en");
+
+        sendPrmReg(ACCESS_REG_PMLR, REG_GET, "slot_index=%d,host_media=%d,lane_mask=%d", _slotIndex, PMLR_SIDE_MEDIA,
+                   PMLR_READ_LANE_MASK);
+        u_int32_t mediaLbCap = getFieldValue("lb_cap");
+        u_int32_t mediaLbEn = getFieldValue("lb_en");
+
+        if (hostLbCap || mediaLbCap)
+        {
+            map<u_int32_t, string>& lbEnMap = _mlxlinkMaps->_pmlrLoopbackEn;
+            map<u_int32_t, string>::iterator hostIt = lbEnMap.find(hostLbEn);
+            map<u_int32_t, string>::iterator mediaIt = lbEnMap.find(mediaLbEn);
+            string hostStr = (hostIt != lbEnMap.end()) ? hostIt->second : NA_FIELD_VALUE;
+            string mediaStr = (mediaIt != lbEnMap.end()) ? mediaIt->second : NA_FIELD_VALUE;
+            lbEnStr = "Host: " + hostStr + ", Media: " + mediaStr;
+        }
+    }
+    catch (MlxRegException& exc)
+    {
+        // Transceiver loopback is not supported by the current FW/module; keep the default.
+    }
+
+    return lbEnStr;
 }
 
 void MlxlinkCablesCommander::setModulePrecoding(const string& side, bool setTx, bool txEnable, bool setRx, bool rxEnable)

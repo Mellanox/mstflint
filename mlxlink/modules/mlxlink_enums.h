@@ -1851,6 +1851,12 @@ enum PMLR_HOST_MEDIA
     PMLR_SIDE_HOST = 1
 };
 
+// PMLR reads require exactly one lane bit set in lane_mask.
+enum PMLR_LANE_MASK
+{
+    PMLR_READ_LANE_MASK = 0x1
+};
+
 enum AN_DISABLE
 {
     AN_DISABLE_NORMAL = 0,
