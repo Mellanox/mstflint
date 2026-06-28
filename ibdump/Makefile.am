@@ -57,4 +57,5 @@ ibdump_LDADD = \
     $(ibdump_DEPENDENCIES) \
     -libverbs \
     -lpthread \
-    $(LDL)
+    $(LDL) \
+    -lm
