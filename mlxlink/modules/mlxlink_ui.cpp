@@ -75,6 +75,7 @@ void MlxlinkUi::initPortInfo()
 void MlxlinkUi::initMlxlinkCommander()
 {
     createMlxlinkCommander();
+    _mlxlinkCommander->setRequestedCommands(_sendRegFuncMap);
 
     initPortInfo();
 }
