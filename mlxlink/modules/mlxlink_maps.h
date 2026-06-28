@@ -297,6 +297,8 @@ public:
     std::map<ModuleAccess_t, std::string> _moduleScopeToStr;
     std::map<u_int32_t, std::string> _moduleRxAmp;
     std::map<u_int32_t, std::string> _moduleRxAmpCap;
+    std::map<u_int32_t, std::string> _precodingOverrideCntl;
+    std::map<u_int32_t, std::string> _precodingOverrideVal;
     std::map<u_int32_t, std::string> _pepcStatus;
     std::map<u_int32_t, string> _IBSpeed2Str;
     std::map<u_int32_t, string> _NVLINKLegacySpeed2Str;

@@ -157,6 +157,9 @@ public:
     void clearPrbsDiagInfo();
     void showControlParams();
     void setControlParams(vector<pair<ControlParam, string>>& params);
+    void showModuleCapabilities();
+    void showModuleInfo();
+    void setModulePrecoding(const string& side, bool setTx, bool txEnable, bool setRx, bool rxEnable);
     void setSwControlMode();
     float getTxBiasMultiplier();
 

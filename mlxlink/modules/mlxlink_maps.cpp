@@ -983,6 +983,12 @@ void MlxlinkMaps::rxTxCdrCapMapping()
     _moduleRxAmpCap[PMCR_RX_AMP_BIT13] = "13 (" + _moduleRxAmp[13] + ")";
     _moduleRxAmpCap[PMCR_RX_AMP_BIT14] = "14 (" + _moduleRxAmp[14] + ")";
     _moduleRxAmpCap[PMCR_RX_AMP_BIT15] = "15 (" + _moduleRxAmp[15] + ")";
+
+    _precodingOverrideCntl[PMCR_PRECODING_OVERRIDE_CNTL_AUTO] = "Auto";
+    _precodingOverrideCntl[PMCR_PRECODING_OVERRIDE_CNTL_KEEP] = "Module Configuration";
+
+    _precodingOverrideVal[PMCR_PRECODING_OVERRIDE_VAL_DISABLED] = "Disabled";
+    _precodingOverrideVal[PMCR_PRECODING_OVERRIDE_VAL_ENABLED] = "Enabled";
 }
 
 void MlxlinkMaps::rxPowerTypeMapping()

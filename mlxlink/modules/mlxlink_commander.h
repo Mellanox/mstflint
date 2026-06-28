@@ -255,6 +255,8 @@
 #define SET_TX_PRECODING_FLAG_SHORT ' '
 #define SET_RX_PRECODING_FLAG "set_rx_precoding"
 #define SET_RX_PRECODING_FLAG_SHORT ' '
+#define SHOW_MODULE_CAP_FLAG "show_module_cap"
+#define SHOW_MODULE_CAP_FLAG_SHORT ' '
 
 //------------------------------------------------------------
 //        Mlxlink Cable info flags
@@ -406,6 +408,9 @@ enum OPTION_TYPE
     CABLE_EEPROM_READ,
     CABLE_PRBS_CMDS,
     CABLE_CTRL_PARM,
+    CABLE_SHOW_MODULE_CAP,
+    CABLE_SHOW_MODULE_INFO,
+    CABLE_PRECODING,
     SEND_BER_COLLECT,
     SEND_AMBER_COLLECT,
     SEND_PAOS,
@@ -653,6 +658,9 @@ public:
     void readCableEEPROM();
     void performModulePrbsCommands();
     void performControlParams();
+    void performShowModuleCap();
+    void performShowModuleInfo();
+    void performModulePrecoding();
     void printOutput(const string& output);
     void printOutput(const MlxlinkCmdPrint& output);
     void setSilentMode();
