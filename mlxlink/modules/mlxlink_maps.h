@@ -335,6 +335,8 @@ public:
     std::map<u_int32_t, pair<string, string>> _fecModeMask;
     std::vector<pair<string, string>> _fecPerSpeed;
     std::map<u_int32_t, pair<string, string>> _loopbackModeList;
+    std::map<u_int32_t, std::string> _pmlrLoopbackCapMask;
+    std::map<u_int32_t, std::string> _pmlrLoopbackEn;
     std::map<u_int32_t, std::string> _anDisableList;
     std::map<u_int32_t, std::string> _tech;
     std::map<u_int32_t, std::string> _cableComplianceSfp;

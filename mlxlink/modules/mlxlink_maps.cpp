@@ -283,6 +283,17 @@ void MlxlinkMaps::initFecAndLoopbackMapping()
     _loopbackModeList[LOOPBACK_MODE_LOCAL] = make_pair(LOOPBACK_PH_STR, PHY_LOCAL_LOOPBACK);
     _loopbackModeList[LOOPBACK_MODE_EXTERNAL] = make_pair(LOOPBACK_EX_STR, EXTERNAL_LOOPBACK);
     _loopbackModeList[LOOPBACK_MODE_LL] = make_pair(LOOPBACK_LL_STR, LINK_LAYER_LOOPBACK);
+
+    // Transceiver-level loopback capabilities bitmask (PMLR.lb_cap)
+    _pmlrLoopbackCapMask[PMLR_LB_CAP_HOST_AND_MEDIA] = "Simultaneous Host and Media";
+    _pmlrLoopbackCapMask[PMLR_LB_CAP_PER_LANE] = "Per Lane";
+    _pmlrLoopbackCapMask[PMLR_LB_CAP_OUTPUT] = "Output";
+    _pmlrLoopbackCapMask[PMLR_LB_CAP_INPUT] = "Input";
+
+    // Transceiver-level loopback operating mode (PMLR.lb_en)
+    _pmlrLoopbackEn[PMLR_LB_DISABLE] = "Disabled";
+    _pmlrLoopbackEn[PMLR_LB_INPUT] = "Input";
+    _pmlrLoopbackEn[PMLR_LB_OUTPUT] = "Output";
 }
 
 void MlxlinkMaps::ethSpeedMapping()
