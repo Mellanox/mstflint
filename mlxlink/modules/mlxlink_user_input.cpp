@@ -119,7 +119,7 @@ UserInput::UserInput()
     _pplmFec = "";
     _speedFec = "";
     _loopbackMode = "";
-    _pmlrSide = "";
+    _cableSide = "";
     _pmlrState = "";
     _prbsMode = "";
     _pprtMode = "PRBS31";
@@ -204,4 +204,5 @@ UserInput::UserInput()
     _setRxPrecoding = "";
     _setTxPrecodingProvided = false;
     _setRxPrecodingProvided = false;
+    _showModuleCap = false;
 }

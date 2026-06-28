@@ -118,7 +118,7 @@ public:
     string _pplmFec;
     string _speedFec;
     string _loopbackMode;
-    string _pmlrSide;
+    string _cableSide;
     string _pmlrState;
     string _prbsMode;
     string _pprtMode;
@@ -223,6 +223,7 @@ public:
     string _setRxPrecoding;
     bool _setTxPrecodingProvided;
     bool _setRxPrecodingProvided;
+    bool _showModuleCap;
 };
 
 #endif /* MLXLINK_USER_INPUT_H */

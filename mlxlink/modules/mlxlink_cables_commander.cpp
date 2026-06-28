@@ -1772,3 +1772,92 @@ void MlxlinkCablesCommander::setControlParams(vector<pair<ControlParam, string>>
         throw MlxRegException("Failed to set Control Parameters [%s]:\n%s", fieldsStr.c_str(), exc.what());
     }
 }
+
+void MlxlinkCablesCommander::showModuleCapabilities()
+{
+    MlxlinkCmdPrint moduleCapOutput = MlxlinkCmdPrint();
+    setPrintTitle(moduleCapOutput, "Module Capabilities", 2);
+
+    sendPrmReg(ACCESS_REG_PMCR, REG_GET);
+
+    string hostCap = getFieldValue("prec_host_cap") ? "Supported" : "Not Supported";
+    string lineCap = getFieldValue("prec_line_cap") ? "Supported" : "Not Supported";
+
+    setPrintVal(moduleCapOutput, "Host Precoding Capability", hostCap);
+    setPrintVal(moduleCapOutput, "Line Precoding Capability", lineCap);
+
+    moduleCapOutput.toJsonFormat(_jsonRoot);
+    cout << moduleCapOutput;
+}
+
+void MlxlinkCablesCommander::showModuleInfo()
+{
+    MlxlinkCmdPrint moduleInfoOutput = MlxlinkCmdPrint();
+    setPrintTitle(moduleInfoOutput, "Module Info", 4);
+
+    sendPrmReg(ACCESS_REG_PMCR, REG_GET);
+
+    // pair(UI name, PMCR field prefix)
+    vector<pair<string, string>> precodingFields = {{"Host Tx Pre-coding", "prec_host_tx"},
+                                                    {"Host Rx Pre-coding", "prec_host_rx"},
+                                                    {"Line Tx Pre-coding", "prec_line_tx"},
+                                                    {"Line Rx Pre-coding", "prec_line_rx"}};
+
+    for (auto it = precodingFields.begin(); it != precodingFields.end(); it++)
+    {
+        u_int32_t cntl = getFieldValue(it->second + "_override_cntl");
+        string status = (cntl == PMCR_PRECODING_OVERRIDE_CNTL_OVERRIDE) ?
+                          _mlxlinkMaps->_precodingOverrideVal[getFieldValue(it->second + "_override_val")] :
+                          _mlxlinkMaps->_precodingOverrideCntl[cntl];
+        setPrintVal(moduleInfoOutput, it->first, status);
+    }
+
+    moduleInfoOutput.toJsonFormat(_jsonRoot);
+    cout << moduleInfoOutput;
+}
+
+void MlxlinkCablesCommander::setModulePrecoding(const string& side, bool setTx, bool txEnable, bool setRx, bool rxEnable)
+{
+    string sideStr = (side == "HOST") ? "Host" : "Line";
+    string fieldPrefix = (side == "HOST") ? "prec_host" : "prec_line";
+    string capField = fieldPrefix + "_cap";
+
+    // Read PMCR once: serves both as the capability check and as the RMW base
+    sendPrmReg(ACCESS_REG_PMCR, REG_GET);
+
+    if (!getFieldValue(capField))
+    {
+        throw MlxRegException("Module %s precoding override is not supported for the current module", side.c_str());
+    }
+
+    string pmcrFieldsRequest = "";
+    if (setTx)
+    {
+        MlxlinkRecord::printCmdLine(
+          string("Setting Module Tx Precoding to ") + (txEnable ? "Enabled" : "Disabled") + " (" + sideStr + " side)",
+          _jsonRoot);
+        pmcrFieldsRequest +=
+          fieldPrefix + "_tx_override_cntl=" + to_string(PMCR_PRECODING_OVERRIDE_CNTL_OVERRIDE) + ",";
+        pmcrFieldsRequest += fieldPrefix + "_tx_override_val=" + to_string((u_int32_t)(txEnable ? 1 : 0)) + ",";
+    }
+    if (setRx)
+    {
+        MlxlinkRecord::printCmdLine(
+          string("Setting Module Rx Precoding to ") + (rxEnable ? "Enabled" : "Disabled") + " (" + sideStr + " side)",
+          _jsonRoot);
+        pmcrFieldsRequest +=
+          fieldPrefix + "_rx_override_cntl=" + to_string(PMCR_PRECODING_OVERRIDE_CNTL_OVERRIDE) + ",";
+        pmcrFieldsRequest += fieldPrefix + "_rx_override_val=" + to_string((u_int32_t)(rxEnable ? 1 : 0)) + ",";
+    }
+    pmcrFieldsRequest = deleteLastChar(pmcrFieldsRequest);
+
+    try
+    {
+        // Write without reset so the rest of the PMCR fields keep their read values (RMW)
+        sendPrmRegWithoutReset(ACCESS_REG_PMCR, REG_SET, pmcrFieldsRequest.c_str());
+    }
+    catch (MlxRegException& exc)
+    {
+        throw MlxRegException("Failed to set Module Precoding:\n%s", exc.what());
+    }
+}

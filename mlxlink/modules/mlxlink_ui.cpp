@@ -253,9 +253,11 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(PLR_TX_CRC_FLAG_SHORT, PLR_TX_CRC_FLAG, "tx_crc",
                                  "TX CRC over PLR: 0/DS(disable), 1/EN(enable) (Optional)");
     MlxlinkRecord::printFlagLine(SET_TX_PRECODING_FLAG_SHORT, SET_TX_PRECODING_FLAG, "tx_precoding",
-                                 "Set TX Precoding [EN(enable)/DS(disable)]");
+                                 "Set TX Precoding [EN(enable)/DS(disable)]; with --" CABLE_FLAG
+                                 " operates at module level and requires --" PMLR_SIDE_FLAG " [host|line]");
     MlxlinkRecord::printFlagLine(SET_RX_PRECODING_FLAG_SHORT, SET_RX_PRECODING_FLAG, "rx_precoding",
-                                 "Set RX Precoding [EN(enable)/DS(disable)]");
+                                 "Set RX Precoding [EN(enable)/DS(disable)]; with --" CABLE_FLAG
+                                 " operates at module level and requires --" PMLR_SIDE_FLAG " [host|line]");
     MlxlinkRecord::printFlagLine(PRBS_MODE_FLAG_SHORT, PRBS_MODE_FLAG, "prbs_mode",
                                  "Physical Test Mode Configuration [EN(enable)/DS(disable)/TU(perform tuning)]");
     printf(IDENT);
@@ -423,6 +425,8 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(
       CTRL_PARAM_RX_AMP_FLAG_SHORT, CTRL_PARAM_RX_AMP_FLAG, "value",
       "Set Module Rx Output Amplitude [0(100-400mV),1(300-600mV),2(400-800mV),3(600-1200mV)]");
+
+    MlxlinkRecord::printFlagLine(SHOW_MODULE_CAP_FLAG_SHORT, SHOW_MODULE_CAP_FLAG, "", "Show Module Capabilities");
 
     MlxlinkRecord::printFlagLine(MARGIN_SCAN_FLAG_SHORT, MARGIN_SCAN_FLAG, "", "Read the SerDes eye margins per lane");
     printf(IDENT);
@@ -698,13 +702,21 @@ void MlxlinkUi::validateGeneralCmdsParams()
     }
     bool transceiverLoopback =
       isIn(HANDLE_LOOPBACK, _sendRegFuncMap) && _userInput._loopbackMode == LOOPBACK_TRAN_STR;
-    if (!transceiverLoopback && (!_userInput._pmlrSide.empty() || !_userInput._pmlrState.empty()))
+    // --side is also reused by the --cable module precoding flow (host|line).
+    bool cablePrecoding =
+      _userInput._cable && (_userInput._setTxPrecodingProvided || _userInput._setRxPrecodingProvided);
+    if (!transceiverLoopback && !cablePrecoding && (!_userInput._cableSide.empty() || !_userInput._pmlrState.empty()))
     {
         throw MlxRegException("The --" PMLR_SIDE_FLAG " and --" PMLR_STATE_FLAG
                               " flags are valid only with --" LOOPBACK_FLAG " " +
                               string(LOOPBACK_TRAN_STR));
     }
-    if (transceiverLoopback && (_userInput._pmlrSide.empty() || _userInput._pmlrState.empty()))
+    if (!transceiverLoopback && cablePrecoding && !_userInput._pmlrState.empty())
+    {
+        throw MlxRegException("The --" PMLR_STATE_FLAG " flag is valid only with --" LOOPBACK_FLAG " " +
+                              string(LOOPBACK_TRAN_STR));
+    }
+    if (transceiverLoopback && (_userInput._cableSide.empty() || _userInput._pmlrState.empty()))
     {
         throw MlxRegException("--" LOOPBACK_FLAG " " + string(LOOPBACK_TRAN_STR) +
                               " requires --" PMLR_SIDE_FLAG " [host|media] and --" PMLR_STATE_FLAG
@@ -933,13 +945,36 @@ void MlxlinkUi::validateSpeedAndCSVBerParams()
 
 void MlxlinkUi::validateCableParams()
 {
+    // When --cable is combined with --set_tx_precoding/--set_rx_precoding, switch from the
+    // PLTC-based link precoding (SEND_PRECODING) to the PMCR-based module precoding path.
+    bool cablePrecoding = false;
+    if (_userInput._cable && isIn(SEND_PRECODING, _sendRegFuncMap))
+    {
+        removeCmd(SEND_PRECODING);
+        addCmd(CABLE_PRECODING);
+        cablePrecoding = true;
+        _userInput._uniqueCableCmds++;
+    }
+
+    // When --cable is combined with --show_module, switch from the PDDR-based module info
+    // (SHOW_MODULE) to the PMCR-based module info path.
+    bool cableShowModuleInfo = false;
+    if (_userInput._cable && isIn(SHOW_MODULE, _sendRegFuncMap))
+    {
+        removeCmd(SHOW_MODULE);
+        addCmd(CABLE_SHOW_MODULE_INFO);
+        cableShowModuleInfo = true;
+        _userInput._uniqueCableCmds++;
+    }
+
     bool readWriteFlags = _userInput._page >= 0 || _userInput._offset >= 0 || _userInput._len >= 0;
     bool prbsParamProvided = _userInput.modulePrbsParams.size();
     bool cablePrbsParamProvided = _userInput.isPrbsSelProvided || prbsParamProvided;
     bool cableConfigParamProvided = _userInput.isModuleConfigParamsProvided;
     bool paramSetProvided = _userInput.configParamsToSet.size();
     bool cableCommandProvided = _userInput._dump || _userInput._write || _userInput._read || _userInput._ddm ||
-                                cablePrbsParamProvided || cableConfigParamProvided;
+                                cablePrbsParamProvided || cableConfigParamProvided || _userInput._showModuleCap ||
+                                cablePrecoding || cableShowModuleInfo;
 
     if (!_userInput._cable && (cableCommandProvided || readWriteFlags))
     {
@@ -959,6 +994,14 @@ void MlxlinkUi::validateCableParams()
         if (!cableConfigParamProvided && paramSetProvided)
         {
             throw MlxRegException("--" CTRL_PARAM_FLAG " should be specified!");
+        }
+        if (cablePrecoding)
+        {
+            if (_userInput._cableSide != "HOST" && _userInput._cableSide != "LINE")
+            {
+                throw MlxRegException("--" SET_TX_PRECODING_FLAG "/--" SET_RX_PRECODING_FLAG " with --" CABLE_FLAG
+                                      " requires --" PMLR_SIDE_FLAG " [host|line]");
+            }
         }
 
         if (readWriteFlags)
@@ -1414,6 +1457,7 @@ void MlxlinkUi::initCmdParser()
     AddOptions(CTRL_PARAM_RX_EMPH_FLAG, CTRL_PARAM_RX_EMPH_FLAG_SHORT, "value", "RX Emp override");
     AddOptions(CTRL_PARAM_RX_POST_EMPH_FLAG, CTRL_PARAM_RX_POST_EMPH_FLAG_SHORT, "value", "RX post emp");
     AddOptions(CTRL_PARAM_RX_AMP_FLAG, CTRL_PARAM_RX_AMP_FLAG_SHORT, "value", "RX Amp");
+    AddOptions(SHOW_MODULE_CAP_FLAG, SHOW_MODULE_CAP_FLAG_SHORT, "", "Show Module Capabilities");
 
     AddOptions(SHOW_TX_GROUP_MAP_FLAG, SHOW_TX_GROUP_MAP_FLAG_SHORT, "group_num",
                "Display all label ports mapped to group <group_num>");
@@ -1583,6 +1627,15 @@ void MlxlinkUi::commandsCaller()
                 break;
             case CABLE_CTRL_PARM:
                 _mlxlinkCommander->performControlParams();
+                break;
+            case CABLE_SHOW_MODULE_CAP:
+                _mlxlinkCommander->performShowModuleCap();
+                break;
+            case CABLE_SHOW_MODULE_INFO:
+                _mlxlinkCommander->performShowModuleInfo();
+                break;
+            case CABLE_PRECODING:
+                _mlxlinkCommander->performModulePrecoding();
                 break;
             case PCIE_ERROR_INJ:
                 _mlxlinkCommander->handlePCIeErrInj();
@@ -2026,7 +2079,7 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     }
     else if (name == PMLR_SIDE_FLAG)
     {
-        _userInput._pmlrSide = toUpperCase(value);
+        _userInput._cableSide = toUpperCase(value);
         return PARSE_OK;
     }
     else if (name == PMLR_STATE_FLAG)
@@ -2446,6 +2499,13 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     {
         checkStrLength(value);
         _userInput.configParamsToSet.push_back(make_pair(CABLE_CONTROL_PARAMETERS_SET_RX_AMP, value));
+        return PARSE_OK;
+    }
+    else if (name == SHOW_MODULE_CAP_FLAG)
+    {
+        addCmd(CABLE_SHOW_MODULE_CAP);
+        _userInput._showModuleCap = true;
+        _userInput._uniqueCableCmds++;
         return PARSE_OK;
     }
     else if (name == MPEINJ_PCIE_ERR_INJ_FLAG)

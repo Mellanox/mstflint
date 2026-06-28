@@ -101,7 +101,7 @@ void MlxlinkCommander::updatePortInfo()
         if (!_isSwControled &&
             (_userInput._networkCmds != 0 || _userInput._ddm || _userInput._dump || _userInput._write ||
              _userInput._read || _userInput.isModuleConfigParamsProvided || _userInput.isPrbsSelProvided ||
-             _userInput._csvBer != ""))
+             _userInput._csvBer != "" || _userInput._showModuleCap))
         {
             getCableParams();
         }
@@ -6801,7 +6801,7 @@ void MlxlinkCommander::sendPmlr()
     {
         MlxlinkRecord::printCmdLine("Configuring Transceiver Loopback", _jsonRoot);
 
-        if (_userInput._pmlrSide.empty() || _userInput._pmlrState.empty())
+        if (_userInput._cableSide.empty() || _userInput._pmlrState.empty())
         {
             throw MlxRegException("--" LOOPBACK_FLAG " " + string(LOOPBACK_TRAN_STR) +
                                   " requires --" PMLR_SIDE_FLAG " [host|media] and --" PMLR_STATE_FLAG
@@ -6809,18 +6809,18 @@ void MlxlinkCommander::sendPmlr()
         }
 
         u_int32_t hostMedia = 0;
-        if (_userInput._pmlrSide == PMLR_SIDE_HOST_STR)
+        if (_userInput._cableSide == PMLR_SIDE_HOST_STR)
         {
             hostMedia = PMLR_SIDE_HOST;
         }
-        else if (_userInput._pmlrSide == PMLR_SIDE_MEDIA_STR)
+        else if (_userInput._cableSide == PMLR_SIDE_MEDIA_STR)
         {
             hostMedia = PMLR_SIDE_MEDIA;
         }
         else
         {
             throw MlxRegException("Invalid --" PMLR_SIDE_FLAG " value: %s, supported values are [host|media]",
-                                  _userInput._pmlrSide.c_str());
+                                  _userInput._cableSide.c_str());
         }
 
         u_int32_t lbEn = 0;
@@ -6854,7 +6854,7 @@ void MlxlinkCommander::sendPmlr()
             if (!(lbCap & lbCapBitRequired))
             {
                 throw MlxRegException("Transceiver loopback %s not supported on %s side (lb_cap=0x%x)",
-                                      _userInput._pmlrState.c_str(), _userInput._pmlrSide.c_str(), lbCap);
+                                      _userInput._pmlrState.c_str(), _userInput._cableSide.c_str(), lbCap);
             }
         }
 
@@ -7157,6 +7157,55 @@ void MlxlinkCommander::performControlParams()
     catch (MlxRegException& exc)
     {
         _allUnhandledErrors += "Reading cable EEPROM raised the following exception: ";
+        _allUnhandledErrors += exc.what_s();
+        _allUnhandledErrors += "\n";
+    }
+}
+
+void MlxlinkCommander::performShowModuleCap()
+{
+    try
+    {
+        initCablesCommander();
+        _cablesCommander->showModuleCapabilities();
+    }
+    catch (MlxRegException& exc)
+    {
+        _allUnhandledErrors += "Showing module capabilities raised the following exception: ";
+        _allUnhandledErrors += exc.what_s();
+        _allUnhandledErrors += "\n";
+    }
+}
+
+void MlxlinkCommander::performShowModuleInfo()
+{
+    try
+    {
+        initCablesCommander();
+        _cablesCommander->showModuleInfo();
+    }
+    catch (MlxRegException& exc)
+    {
+        _allUnhandledErrors += "Showing module info raised the following exception: ";
+        _allUnhandledErrors += exc.what_s();
+        _allUnhandledErrors += "\n";
+    }
+}
+
+void MlxlinkCommander::performModulePrecoding()
+{
+    try
+    {
+        initCablesCommander();
+
+        bool txEnable = _userInput._setTxPrecoding == "EN";
+        bool rxEnable = _userInput._setRxPrecoding == "EN";
+        _cablesCommander->setModulePrecoding(_userInput._cableSide, _userInput._setTxPrecodingProvided, txEnable,
+                                             _userInput._setRxPrecodingProvided, rxEnable);
+    }
+    catch (MlxRegException& exc)
+    {
+        _allUnhandledErrors += "Setting module precoding raised the following exception: ";
         _allUnhandledErrors += exc.what_s();
         _allUnhandledErrors += "\n";
     }
