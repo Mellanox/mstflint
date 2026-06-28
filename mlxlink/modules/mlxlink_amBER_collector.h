@@ -261,6 +261,11 @@ protected:
     virtual void handleSltrQGroup(vector<AmberField>& fields, u_int32_t lane);
     virtual void handleSltrAbGroup(vector<AmberField>& fields, u_int32_t lane);
     virtual void handleSltrYGroup(vector<AmberField>& fields, u_int32_t lane);
+    void
+      pushSltrClFields(vector<AmberField>& fields, u_int32_t lane, const char* const fieldNames[], u_int32_t numFields);
+    virtual void handleSltrClP1Group(vector<AmberField>& fields, u_int32_t lane);
+    virtual void handleSltrClP0Group(vector<AmberField>& fields, u_int32_t lane);
+    virtual void handleSltrClLcsrgGroup(vector<AmberField>& fields, u_int32_t lane);
     // ---------- end SLTR functions ----------
 };
 
