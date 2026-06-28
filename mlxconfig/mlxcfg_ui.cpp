@@ -57,6 +57,7 @@
 #include "mft_utils/mft_utils.h"
 #include "common/tools_string.h"
 #include "mlxfwops/lib/fs_pldm.h"
+#include "pldm_utils/pldm_utils.h"
 
 using nbu::mft::common::string_format;
 
@@ -1585,9 +1586,24 @@ mlxCfgStatus MlxCfg::readBinFile(string fileName, vector<u_int32_t>& buff)
     return MLX_CFG_OK;
 }
 
+bool MlxCfg::isPldmFile(const string& path)
+{
+    std::ifstream ifs(path.c_str(), std::ios::in | std::ios::binary);
+    u_int8_t header[16] = {0};
+    if (ifs)
+        ifs.read(reinterpret_cast<char*>(header), sizeof(header));
+    for (const auto& entry : PACKAGE_HEADER_FORMAT_REVISION_MAP)
+    {
+        const std::vector<u_int8_t>& id = entry.second;
+        if (std::equal(id.begin(), id.end(), header))
+            return true;
+    }
+    return false;
+}
+
 mlxCfgStatus MlxCfg::readNVInputFile(vector<u_int32_t>& buff)
 {
-    if (FwOperations::IsPLDM(_mlxParams.NVInputFile))
+    if (isPldmFile(_mlxParams.NVInputFile))
     {
         if (FsPldmOperations::GetComponentData(
               _mlxParams.NVInputFile,
