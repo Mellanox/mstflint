@@ -36,7 +36,7 @@
 #include "mlxlink_fields.h"
 
 // Common definitions
-#define AMBER_VERSION "7.1"
+#define AMBER_VERSION "7.5"
 #define NA_FIELD_VALUE "N/A"
 
 #define ACCESS_REG_MCIA "MCIA"
@@ -56,6 +56,7 @@
 #define ACCESS_REG_MVCR "MVCR"
 #define ACCESS_REG_PAOS "PAOS"
 #define ACCESS_REG_PCAM "PCAM"
+#define ACCESS_REG_PCCT "PCCT"
 #define ACCESS_REG_PDDR "PDDR"
 #define ACCESS_REG_PEPC "PEPC"
 #define ACCESS_REG_PEMI "PEMI"
@@ -700,6 +701,12 @@ enum PDDR_PAGES
     PDDR_MODULE_LINK_DOWN_INFO_PAGE = 6,
     PDDR_MODULE_LINK_UP_INFO_PAGE = 8,
     PDDR_MODULE_LATCHED_FLAG_INFO_PAGE = 9,
+};
+
+enum PCCT_PAGES
+{
+    PCCT_PLU_GENERAL_TRACER_PAGE = 0,
+    PCCT_PLU_LATCHED_COUNTERS_PAGE = 1,
 };
 
 enum DOWN_BLAME
