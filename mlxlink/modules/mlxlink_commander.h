@@ -493,7 +493,6 @@ public:
     void checkLocalPortDPNMapping(u_int32_t localPort);
     int getLocalPortFromMPIR(DPN& dpn);
     void checkValidFW();
-    u_int32_t getTechnologyFromMGIR();
     void getProductTechnology();
     bool checkPortStatus(u_int32_t localPort);
     void checkAllPortsStatus();
@@ -599,6 +598,20 @@ public:
     void updateSwControlStatus();
     void initSwControledModule();
     void updateNvlinkModeBStatus();
+    void updateBonusPortStatus();
+    bool isBonusPort() const;
+    bool deviceSupportsBonusPort() const;
+    void appendBonusPortToSmpiTable(const PortGroup& portInfo, vector<string>& tableData);
+    void appendBonusPortToSmpmiTable(const PortGroup& portInfo, vector<string>& tableData);
+    void collectBonusPortTableFields(const PortGroup& portInfo, BonusPortTableFields& fields);
+    bool isBonusPortPplrLoopbackEnabled();
+    string getBonusPortSmpiPlainState(bool& logicalLinkUp);
+    string getBonusPortOperationalState(bool& logicalLinkUp);
+    void operatingInfoPageForBonusPort();
+    void supportedInfoPageForBonusPort();
+    virtual void checkBonusPortAllowedCommands();
+    void setRequestedCommands(const std::vector<OPTION_TYPE>& requestedCommands);
+    bool probeLocalPortForBonusPort(u_int32_t localPort, u_int32_t& labelPort);
     u_int32_t getNumberOfPorts();
     bool checkDPNvSupport();
     bool checkPcieMgmtSupport();
@@ -843,6 +856,8 @@ public:
     bool _isSwControled;
     bool _isSwControledStandAlone;
     bool _pcieMgmtSupported;
+    bool _isBonusPort;
+    std::vector<OPTION_TYPE> _requestedCommands;
     bool _ignoreIbFECCheck;
     bool _isNVLINK;
     bool _isNvlinkModeA;

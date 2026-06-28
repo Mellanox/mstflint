@@ -61,7 +61,7 @@ std::string to_string(T toConvert)
 #endif
 
 template<typename T>
-bool isIn(const T& val, std::vector<T>& vect)
+bool isIn(const T& val, const std::vector<T>& vect)
 {
     auto it = find(vect.begin(), vect.end(), val);
     return (it != vect.end());

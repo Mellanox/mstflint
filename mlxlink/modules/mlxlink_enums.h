@@ -488,7 +488,10 @@ struct DPN
         bdf = _bdf;
     }
 
-    bool operator==(DPN dpn) { return (dpn.depth == depth && dpn.pcieIndex == pcieIndex && dpn.node == node); }
+    bool operator==(const DPN& dpn) const
+    {
+        return (dpn.depth == depth && dpn.pcieIndex == pcieIndex && dpn.node == node);
+    }
 
     u_int32_t depth;
     u_int32_t pcieIndex;
@@ -2093,7 +2096,8 @@ enum PRODUCT_TECHNOLOGY
     PRODUCT_16NM = 3,
     PRODUCT_7NM = 4,
     PRODUCT_5NM = 5,
-    SERDES_GEN_8 = 6
+    SERDES_GEN_8 = 6,
+    PRODUCT_3NM = 7
 };
 
 enum STATUS_OPCODE
@@ -2590,6 +2594,10 @@ const char* const EXTERNAL_LOOPBACK = "External Local Loopback";
 const char* const LINK_LAYER_LOOPBACK = "Link Layer Local Loopback";
 const char* const NEAR_END_ANALOG_LOOPBACK = "Near End Analog Loopback";
 const char* const NEAR_END_DIGITAL_LOOPBACK = "Near End Digital Loopback";
+
+// Loopback bonus port register values
+const uint32_t PMTM_MODULE_TYPE_LOOPBACK = 0x15;
+const uint32_t PMDR_STATUS_VALID = 1;
 
 // Loopback mode mnemonic strings (used on the command line)
 const char* const LOOPBACK_NO_STR = "NO";

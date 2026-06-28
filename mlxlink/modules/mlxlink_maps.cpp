@@ -34,6 +34,25 @@
 
 #include "mlxlink_maps.h"
 #include "mlxlink_fields.h"
+#include "mlxlink_commander.h"
+
+const std::vector<u_int32_t> bonusPortAllowedCommands = {SHOW_PDDR,
+                                                         SEND_PAOS,
+                                                         SEND_PTYS,
+                                                         HANDLE_LOOPBACK,
+                                                         SEND_CLEAR_COUNTERS,
+                                                         SHOW_MULTI_PORT_INFO,
+                                                         SHOW_MULTI_PORT_MODULE_INFO};
+
+const std::vector<u_int32_t> bonusPortCounterGroups = {PPCNT_IEEE_802_3_COUNTERS_GROUP,
+                                                       PPCNT_RFC_2863_GROUP,
+                                                       PPCNT_RFC_2819_GROUP,
+                                                       PPCNT_RFC_3635_GROUP,
+                                                       PPCNT_ETHERNET_EXTENDED_GROUP,
+                                                       PPCNT_DISC_COUNTERS_GROUP,
+                                                       PPCNT_PER_PRIORITY_COUNTERS_GROUP,
+                                                       PPCNT_PER_TRAFFIC_CLASS_COUNTERS_GROUP,
+                                                       PPCNT_PER_TRAFFIC_CLASS_CONGESTION_COUNTERS_GROUP};
 
 MlxlinkMaps* MlxlinkMaps::instance = NULL;
 
