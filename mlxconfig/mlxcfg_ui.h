@@ -245,6 +245,7 @@ private:
     mlxCfgStatus clrDevSem();
 
     mlxCfgStatus readBinFile(string fileName, vector<u_int32_t>& buff);
+    static bool isPldmFile(const string& path);
     mlxCfgStatus readNVInputFile(vector<u_int32_t>& buff);
     mlxCfgStatus readNVInputFile(string& content);
     mlxCfgStatus readNVInputFile(vector<string>& lines);

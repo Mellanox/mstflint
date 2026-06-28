@@ -110,7 +110,7 @@ mstconfig_DEPENDENCIES = \
 
 mstconfig_LDADD = $(mstconfig_DEPENDENCIES) ${LDL}
 
-mstconfig_LDFLAGS = -static
+mstconfig_LDFLAGS = -static -Wl,--gc-sections
 
 if DISABLE_XML2
 AM_CXXFLAGS += -DDISABLE_XML2
