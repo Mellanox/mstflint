@@ -95,7 +95,6 @@ mstconfig_DEPENDENCIES = \
     $(top_builddir)/libmfa/libmfa.la \
     $(top_builddir)/ext_libs/minixz/libminixz.la \
     $(top_builddir)/mflash/libmflash.la \
-    $(top_builddir)/tools_crypto/libtools_crypto.a \
     $(top_builddir)/mft_utils/libmftutils.la \
     $(top_builddir)/cmdif/libcmdif.la \
     $(top_builddir)/reg_access/libreg_access.la \
@@ -128,6 +127,7 @@ endif
 
 if ENABLE_OPENSSL
 AM_CPPFLAGS += $(openssl_CFLAGS)
+mstconfig_DEPENDENCIES += $(top_builddir)/tools_crypto/libtools_crypto.a
 mstconfig_LDADD += $(top_builddir)/mlxsign_lib/libmlxsign.la $(openssl_LIBS)
 libmlxcfg_la_LIBADD += $(top_builddir)/mlxsign_lib/libmlxsign.la $(openssl_LIBS)
 else
