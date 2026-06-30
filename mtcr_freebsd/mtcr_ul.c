@@ -1695,14 +1695,13 @@ unsigned char mset_i2c_secondary(mfile* mf, unsigned char new_i2c_slave)
     return ret;
 }
 
-int mget_i2c_secondary(mfile* mf, unsigned char* new_i2c_slave_p)
+unsigned char mget_i2c_secondary(mfile* mf)
 {
     if (mf)
     {
-        *new_i2c_slave_p = mf->i2c_secondary;
-        return 0;
+        return mf->i2c_secondary;
     }
-    return -1;
+    return 0;
 }
 
 #define MLX_DEV_PREFIX1 "mlx4_core"
