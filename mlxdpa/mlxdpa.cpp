@@ -621,7 +621,8 @@
          }
          if (!_dpaAppUUIDSpecified && !_removeAllDpaApps)
          {
-             throw MlxDpaException("dpa app uuid must be specified or --remove_all_dpa_apps flag must be set.");
+             throw MlxDpaException(
+              "dpa app uuid must be specified to create dpa app removal container unless --remove_all_dpa_apps is used.");
          }
          if (_keypairUUIDSpecified)
          {
