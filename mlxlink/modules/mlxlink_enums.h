@@ -977,6 +977,7 @@ enum SLTP_NDR
 
 enum SLTP_5NM
 {
+    SLTP_5NM_TAP0,
     SLTP_5NM_TAP1,
     SLTP_5NM_TAP2,
     SLTP_5NM_TAP3,

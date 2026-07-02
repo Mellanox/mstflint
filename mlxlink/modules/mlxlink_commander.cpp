@@ -6478,7 +6478,7 @@ void MlxlinkCommander::validateNumOfParamsForNDRGen()
 void MlxlinkCommander::validateNumOfParamsFor5nmGen()
 {
     string errMsg = "Invalid set of Transmitter Parameters, ";
-    errMsg += "valid parameters for the active speed are: fir_pre3 ,fir_pre2 ,fir_pre1 ,fir_main ,fir_post";
+    errMsg += "valid parameters for the active speed are: fir_pre3 ,fir_pre2 ,fir_pre1 ,fir_main ,fir_post1, fir_post2";
 
     if (_userInput._sltpParams.size() != SLTP_5NM_LAST)
     {
