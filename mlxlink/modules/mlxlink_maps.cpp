@@ -825,13 +825,12 @@ void MlxlinkMaps::initSltpStatusMapping()
     _SltpNdrParams[SLTP_NDR_FIR_POST1] = PRM_FIELD{"fir_post1", "fir_post1", FIELD_ACCESS_RW, true, LINK_SPEED_ALL};
     _SltpNdrParams[SLTP_NDR_DRV_AMP] = PRM_FIELD{"drv_amp", "drv_amp", FIELD_ACCESS_R, false, LINK_SPEED_ALL};
 
-    _Sltp5nmParams[SLTP_5NM_TAP1] =
-      PRM_FIELD{"tap1", "fir_pre3", FIELD_ACCESS_RW, true, LINK_SPEED_200G_LANE | LINK_SPEED_100G_LANE};
-    _Sltp5nmParams[SLTP_5NM_TAP2] = PRM_FIELD{"tap2", "fir_pre2", FIELD_ACCESS_RW, true,
-                                              LINK_SPEED_200G_LANE | LINK_SPEED_100G_LANE | LINK_SPEED_50G_LANE};
-    _Sltp5nmParams[SLTP_5NM_TAP3] = PRM_FIELD{"tap3", "fir_pre1", FIELD_ACCESS_RW, true, LINK_SPEED_ALL};
-    _Sltp5nmParams[SLTP_5NM_TAP4] = PRM_FIELD{"tap4", "fir_main", FIELD_ACCESS_RW, true, LINK_SPEED_ALL};
-    _Sltp5nmParams[SLTP_5NM_TAP5] = PRM_FIELD{"tap5", "fir_post1", FIELD_ACCESS_RW, true, LINK_SPEED_ALL};
+    _Sltp5nmParams[SLTP_5NM_TAP0] = PRM_FIELD{"tap0", "fir_pre3", FIELD_ACCESS_RW, true, LINK_SPEED_ALL};
+    _Sltp5nmParams[SLTP_5NM_TAP1] = PRM_FIELD{"tap1", "fir_pre2", FIELD_ACCESS_RW, true, LINK_SPEED_ALL};
+    _Sltp5nmParams[SLTP_5NM_TAP2] = PRM_FIELD{"tap2", "fir_pre1", FIELD_ACCESS_RW, true, LINK_SPEED_ALL};
+    _Sltp5nmParams[SLTP_5NM_TAP3] = PRM_FIELD{"tap3", "fir_main", FIELD_ACCESS_RW, true, LINK_SPEED_ALL};
+    _Sltp5nmParams[SLTP_5NM_TAP4] = PRM_FIELD{"tap4", "fir_post1", FIELD_ACCESS_RW, true, LINK_SPEED_ALL};
+    _Sltp5nmParams[SLTP_5NM_TAP5] = PRM_FIELD{"tap5", "fir_post2", FIELD_ACCESS_RW, true, LINK_SPEED_ALL};
 
     _SLTP7BadSetStatus2Str[BAD_STAT_7NM_INVALID_PRE3] = "pre3 is out of range";
     _SLTP7BadSetStatus2Str[BAD_STAT_7NM_INVALID_PRE2] = "pre2 is out of range";
