@@ -931,6 +931,8 @@ AC_OUTPUT( \
     mstdump/crd_lib/Makefile \
     mstdump/crd_main/Makefile \
     mstdump/mstdump_dbs/Makefile \
+    efuse/Makefile \
+    efuse/efuse_dbs/Makefile \
     mtcr_py/Makefile \
     mvpd/Makefile \
     pldm_utils/Makefile \
