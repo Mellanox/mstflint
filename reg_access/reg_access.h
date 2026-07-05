@@ -191,6 +191,9 @@ struct reg_access_hca_mcda_reg_ext;
 reg_access_status_t reg_access_mcda(mfile* mf, reg_access_method_t method, struct reg_access_hca_mcda_reg_ext* mcda);
 struct reg_access_hca_mqis_reg_ext;
 reg_access_status_t reg_access_mqis(mfile* mf, reg_access_method_t method, struct reg_access_hca_mqis_reg_ext* mqis);
+struct reg_access_switch_MRFV_ext;
+reg_access_status_t
+  reg_access_mrfv_switch(mfile* mf, reg_access_method_t method, struct reg_access_switch_MRFV_ext* mrfv);
 struct reg_access_hca_mcc_reg_ext;
 reg_access_status_t reg_access_mcc(mfile* mf, reg_access_method_t method, struct reg_access_hca_mcc_reg_ext* mcc);
 struct reg_access_hca_mcqs_reg_ext;
