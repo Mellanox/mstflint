@@ -179,6 +179,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/mstmwrite
 %{_bindir}/mstflint
 %{_bindir}/mstregdump
+%{_bindir}/mstefuse
 %{_bindir}/mstmtserver
 %{_bindir}/mstvpd
 %{_bindir}/mstmcra
