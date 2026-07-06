@@ -30,5 +30,16 @@
 # SOFTWARE.
 #--
 
-docdir = $(pkgdatadir)/prm_dbs/switch/ext
-dist_doc_DATA = register_access_table.adb
+# PRM databases install under the SDK's private data root ($(pkgdatadir)/sdk)
+# when building the SDK, and under the normal location otherwise, so the
+# mstflint and mstflint-sdk packages ship separate copies in distinct
+# directories (no file conflicts). A custom install dir is used rather than the
+# reserved docdir, whose automake default would otherwise override a conditional
+# assignment.
+if ENABLE_MSTFLINT_SDK
+prmdbdir = $(pkgdatadir)/sdk/prm_dbs/switch/ext
+else
+prmdbdir = $(pkgdatadir)/prm_dbs/switch/ext
+endif
+prmdb_DATA = register_access_table.adb
+EXTRA_DIST = register_access_table.adb

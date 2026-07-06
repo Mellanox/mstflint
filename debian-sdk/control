@@ -1,0 +1,33 @@
+Source: mstflint-sdk
+Section: libs
+Priority: optional
+Maintainer: NVIDIA MFT Apps team <akiselman-org@nvidia.com>
+Build-Depends:
+    autoconf,
+    automake,
+    autotools-dev,
+    debhelper (>= 9.0),
+    dpkg-dev,
+    g++,
+    libexpat1-dev,
+    liblzma-dev,
+    libssl-dev,
+    libtool,
+    make,
+    pkg-config,
+    zlib1g-dev
+Standards-Version: 4.6.1
+Homepage: https://www.nvidia.com/networking/
+Vcs-Git: https://github.com/Mellanox/mstflint.git
+
+Package: mstflint-sdk
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: mstflint SDK - standalone shared library and headers
+ The mstflint SDK is a self-contained shared library (libmstflint_sdk.so)
+ exposing a C API for device discovery, HCA capability queries, PRM register
+ access, CR-space access, I2C access and telemetry. All mstflint dependencies
+ (including mtcr) are linked in statically; at runtime the library needs only
+ standard system libraries. Its PRM databases are installed under a private
+ data directory, so this package installs cleanly alongside the mstflint
+ package.

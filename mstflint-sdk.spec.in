@@ -1,0 +1,73 @@
+%{!?name: %define name mstflint-sdk}
+%{!?version: %define version 4.37.0}
+%{!?release: %define release 1}
+
+%define mstflint_sdk_libdir %{_libdir}/mstflint/sdk
+%define mstflint_sdk_incdir %{_includedir}/mstflint/sdk
+%define mstflint_sdk_datadir %{_datadir}/mstflint/sdk
+
+# The .so is stripped at install time (see mft_sdk/Makefile.am), so there is no
+# separate debug package to build.
+%define debug_package %{nil}
+
+%if 0%{?suse_version}
+%define expat_devel_lib libexpat-devel
+%else
+%define expat_devel_lib expat-devel
+%endif
+
+Summary: mstflint SDK - standalone shared library and headers
+Name: %{name}
+Version: %{version}
+Release: %{release}
+License: GPL/BSD
+Url: http://openfabrics.org
+Group: System Environment/Libraries
+BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
+# Built from the standard mstflint source tarball.
+Source: mstflint-%{version}.tar.gz
+ExclusiveArch: i386 i486 i586 i686 x86_64 ia64 ppc ppc64 ppc64le arm64 aarch64 s390x
+
+BuildRequires: pkgconfig
+BuildRequires: autoconf
+BuildRequires: automake
+BuildRequires: libtool
+BuildRequires: %{expat_devel_lib}
+BuildRequires: xz-devel
+BuildRequires: zlib-devel
+
+%description
+The mstflint SDK is a self-contained shared library (libmstflint_sdk.so)
+exposing a C API for device discovery, HCA capability queries, PRM register
+access, CR-space access, I2C access and telemetry. All mstflint dependencies
+(including mtcr) are linked in statically; at runtime the library needs only
+standard system libraries. Its PRM databases are installed under a private
+data directory so this package does not conflict with the main mstflint
+package.
+
+%prep
+%setup -q -n mstflint-%{version}
+
+%build
+# Regenerate the build system from the checked-in Makefile.am/configure.ac so
+# the build never depends on stale generated files shipped in the tarball.
+./autogen.sh
+%configure --enable-adb-generic-tools --enable-mstflint-sdk
+make %{?_smp_mflags} sdk
+
+%install
+rm -rf $RPM_BUILD_ROOT
+make install-sdk DESTDIR=$RPM_BUILD_ROOT
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%files
+%defattr(-,root,root)
+%{mstflint_sdk_libdir}/libmstflint_sdk.so
+%{mstflint_sdk_incdir}
+%{mstflint_sdk_datadir}
+
+%changelog
+* Sun Jul 06 2025 NVIDIA Corporation - initial standalone mstflint SDK package
+- Package libmstflint_sdk.so, its headers and PRM databases.
