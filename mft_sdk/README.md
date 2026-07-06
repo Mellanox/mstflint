@@ -46,11 +46,15 @@ make install-sdk   # install the SDK library, headers and PRM databases
 ## Building an RPM
 
 A dedicated `mstflint-sdk` RPM (built from `mstflint-sdk.spec`) packages just the
-SDK. From the mstflint source tarball:
+SDK:
 
 ```sh
-rpmbuild -bb mstflint-sdk.spec
+./build_sdk.sh --rpm --rpm-output /tmp/rpms
 ```
+
+This builds the RPM from a clean source tarball in a private rpm topdir. (You
+can also build it by hand with `rpmbuild -bb mstflint-sdk.spec` from a mstflint
+source tarball.)
 
 The SDK's PRM databases are installed under a private data root
 (`$(datadir)/mstflint/sdk/prm_dbs`), so the package installs cleanly alongside

@@ -21,6 +21,8 @@ DO_CONFIGURE=1
 INSTALL=1
 BUILD_DEB=0
 DEB_OUTPUT=""
+BUILD_RPM=0
+RPM_OUTPUT=""
 
 usage() {
     cat <<'EOF'
@@ -39,6 +41,8 @@ Options:
   -j, --jobs N             Parallel build jobs (default: nproc)
   --no-configure           Skip autogen/configure; reuse the existing configuration
   --build-only             Build the SDK but do not install it
+  --rpm                    Build a standalone mstflint-sdk .rpm (uses mstflint-sdk.spec)
+  --rpm-output DIR         Directory to place the built .rpm (default: repo root)
   --deb                    Build a standalone mstflint-sdk .deb (uses debian-sdk/)
   --deb-output DIR         Directory to place the built .deb (default: repo root)
   -h, --help               Show this help
@@ -46,8 +50,56 @@ Options:
 Examples:
   ./build_sdk.sh --destdir /tmp/mstflint-sdk-stage
   ./build_sdk.sh --prefix /usr --with-nvml
+  ./build_sdk.sh --rpm --rpm-output /tmp/rpms
   ./build_sdk.sh --deb --deb-output /tmp/debs
 EOF
+}
+
+# Project version (from configure.ac AC_INIT), used to name the source tarball
+# the SDK spec expects.
+sdk_version() {
+    local v
+    v="$(sed -nE 's/^AC_INIT\(mstflint,[[:space:]]*([0-9.]+).*/\1/p' "$SCRIPT_DIR/configure.ac" | head -1)"
+    echo "${v:-4.37.0}"
+}
+
+# Build a standalone mstflint-sdk .rpm from a clean source tarball, in a private
+# rpm topdir. Mirrors the SDK spec's build (configure --enable-mstflint-sdk,
+# make sdk, make install-sdk).
+build_rpm() {
+    command -v rpmbuild >/dev/null 2>&1 || {
+        echo "error: rpmbuild not found; RPM build tools are required for --rpm" >&2
+        exit 1
+    }
+    local spec="$SCRIPT_DIR/mstflint-sdk.spec"
+    [[ -f "$spec" ]] || spec="$SCRIPT_DIR/mstflint-sdk.spec.in"
+    [[ -f "$spec" ]] || { echo "error: mstflint-sdk.spec(.in) not found" >&2; exit 1; }
+
+    local version out top
+    version="$(sdk_version)"
+    out="${RPM_OUTPUT:-$SCRIPT_DIR}"; mkdir -p "$out"; out="$(cd "$out" && pwd)"
+    top="$(mktemp -d)"
+    mkdir -p "$top"/{SOURCES,SPECS,BUILD,BUILDROOT,RPMS,SRPMS,tmp}
+
+    echo ">> creating source tarball mstflint-$version.tar.gz"
+    tar czf "$top/SOURCES/mstflint-$version.tar.gz" \
+        --transform "s,^\./,mstflint-$version/," \
+        --exclude=.git --exclude='*.o' --exclude='*.lo' --exclude='*.la' \
+        --exclude='*.a' --exclude=.libs --exclude=.deps --exclude='*.tar.gz' \
+        --exclude=./configure~ --exclude=config.status --exclude=config.log \
+        --exclude=autom4te.cache \
+        -C "$SCRIPT_DIR" . 2>/dev/null
+    cp "$spec" "$top/SPECS/mstflint-sdk.spec"
+
+    echo ">> rpmbuild -bb"
+    rpmbuild --define "_topdir $top" --define "_tmppath $top/tmp" \
+             --define "version $version" -bb "$top/SPECS/mstflint-sdk.spec"
+
+    echo ">> collecting .rpm into $out"
+    find "$top/RPMS" -name '*.rpm' -exec mv {} "$out"/ \;
+    rm -rf "$top"
+    echo ">> SDK .rpm build complete:"
+    ls -1 "$out"/mstflint-sdk-*.rpm
 }
 
 # Build a standalone mstflint-sdk .deb in an isolated copy of the source tree,
@@ -99,6 +151,8 @@ while [[ $# -gt 0 ]]; do
         -j|--jobs)             JOBS="$2"; shift 2 ;;
         --no-configure)        DO_CONFIGURE=0; shift ;;
         --build-only)          INSTALL=0; shift ;;
+        --rpm)                 BUILD_RPM=1; shift ;;
+        --rpm-output)          RPM_OUTPUT="$2"; shift 2 ;;
         --deb)                 BUILD_DEB=1; shift ;;
         --deb-output)          DEB_OUTPUT="$2"; shift 2 ;;
         -h|--help)             usage; exit 0 ;;
@@ -108,8 +162,9 @@ done
 
 cd "$SCRIPT_DIR"
 
-if [[ "$BUILD_DEB" -eq 1 ]]; then
-    build_deb
+if [[ "$BUILD_RPM" -eq 1 || "$BUILD_DEB" -eq 1 ]]; then
+    [[ "$BUILD_RPM" -eq 1 ]] && build_rpm
+    [[ "$BUILD_DEB" -eq 1 ]] && build_deb
     exit 0
 fi
 
