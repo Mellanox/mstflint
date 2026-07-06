@@ -2574,10 +2574,18 @@ int MlxlinkUi::run(int argc, char** argv)
         throw MlxRegException("failed to parse arguments. " + string(_cmdParser.GetErrDesc()));
     }
 
-    if (_userInput._forceSplit && !_userInput._secondSplitProvided)
+    if (_userInput._forceSplit)
     {
-        _userInput._secondSplitProvided = _userInput._forceSplit;
-        _userInput._secondSplitPort = _userInput._forceSplitValue;
+        if (_userInput._forceIpilValue != 0 && !_userInput._secondSplitProvided)
+        {
+            _userInput._secondSplitProvided = true;
+            _userInput._secondSplitPort = _userInput._forceSplitValue;
+        }
+        else if (_userInput._forceIpilValue == 0 && !_userInput._splitProvided)
+        {
+            _userInput._splitProvided = true;
+            _userInput._splitPort = _userInput._forceSplitValue;
+        }
     }
 
     paramValidate();

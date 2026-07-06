@@ -42,6 +42,7 @@ UserInput::UserInput()
     _labelPort = 1;
     _splitPort = 1;
     _secondSplitPort = 1;
+    _forceIpilValue = 0;
     _forceSplitValue = -1;
     _depth = 0;
     _pcieIndex = 0;
