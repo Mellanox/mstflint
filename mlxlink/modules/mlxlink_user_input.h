@@ -52,6 +52,7 @@ public:
     u_int32_t _labelPort;
     u_int32_t _splitPort;
     u_int32_t _secondSplitPort;
+    u_int32_t _forceIpilValue;
     u_int32_t _forceSplitValue;
     u_int32_t _depth;
     u_int32_t _pcieIndex;

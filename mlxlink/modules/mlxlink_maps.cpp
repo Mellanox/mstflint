@@ -1352,11 +1352,11 @@ void MlxlinkMaps::extComplianceMapping()
       "4WDM-10 MSA (10km version of 100G CWDM4 with same RS(528,514) "
       "FEC in host system)";
     _cableComplianceExt[EXT_ETHERNET_COMPLIABCE_CODE_4WDM20_MSA] =
-      "4WDM-10 MSA (20km version of 100G CWDM4 with same RS(528,514) "
+      "4WDM-20 MSA (20km version of 100GBASE-LR4 with RS(528,514) "
       "FEC in host system)";
     _cableComplianceExt[EXT_ETHERNET_COMPLIABCE_CODE_4WDM40_MSA] =
-      "4WDM-10 MSA (40km version of 100G CWDM4 with same RS(528,514) "
-      "FEC in host system)";
+      "4WDM-40 MSA (40km reach with APD receiver and RS(528,514) FEC "
+      "in host system)";
     _cableComplianceExt[EXT_ETHERNET_COMPLIABCE_CODE_100GBASE_DR] = "100GBASE-DR, with CAUI-4 without FEC";
     _cableComplianceExt[EXT_ETHERNET_COMPLIABCE_CODE_100G_FR] = "100G-FR, with CAUI-4 without FEC";
     _cableComplianceExt[EXT_ETHERNET_COMPLIABCE_CODE_100G_LR] = "100G-LR, with CAUI-4 without FEC";
@@ -1431,9 +1431,9 @@ void MlxlinkMaps::hostComplianceMapping()
     _cmisHostCompliance[CMIS_COMPLIANCE_400G_AUI16] = "400GAUI-16";
     _cmisHostCompliance[CMIS_COMPLIANCE_400G_AUI8] = "400GAUI-8";
     _cmisHostCompliance[CMIS_COMPLIANCE_10G_BASE_CX4] = "10GBASE-CX4";
-    _cmisHostCompliance[CMIS_COMPLIANCE_25G_CR_L] = "25GBASE-CR CA-L";
-    _cmisHostCompliance[CMIS_COMPLIANCE_25G_CR_S] = "25GBASE-CR CA-S";
-    _cmisHostCompliance[CMIS_COMPLIANCE_25G_CR_N] = "25GBASE-CR CA-N";
+    _cmisHostCompliance[CMIS_COMPLIANCE_25G_CR_L] = "25GBASE-CR CA-25G-L";
+    _cmisHostCompliance[CMIS_COMPLIANCE_25G_CR_S] = "25GBASE-CR CA-25G-S";
+    _cmisHostCompliance[CMIS_COMPLIANCE_25G_CR_N] = "25GBASE-CR CA-25G-N";
     _cmisHostCompliance[CMIS_COMPLIANCE_40G_BASE_CR4] = "40GBASE-CR4";
     _cmisHostCompliance[CMIS_COMPLIANCE_50G_BASE_CR] = "50GBASE-CR";
     _cmisHostCompliance[CMIS_COMPLIANCE_100G_BASE_CR10] = "100GBASE-CR10";
@@ -1441,13 +1441,12 @@ void MlxlinkMaps::hostComplianceMapping()
     _cmisHostCompliance[CMIS_COMPLIANCE_100G_BASE_CR2] = "100GBASE-CR2";
     _cmisHostCompliance[CMIS_COMPLIANCE_200G_BASE_CR4] = "200GBASE-CR4";
     _cmisHostCompliance[CMIS_COMPLIANCE_400G_CR8] = "400G CR8";
-    _cmisHostCompliance[CMIS_COMPLIANCE_1000_BASE_T] = "1000BASE-T";
-    _cmisHostCompliance[CMIS_COMPLIANCE_2_5G_BASE_T] = "2.5GBASE-T";
-    _cmisHostCompliance[CMIS_COMPLIANCE_5G_BASE_T] = "5GBASE-T";
-    _cmisHostCompliance[CMIS_COMPLIANCE_10G_BASE_T] = "10GBASE-dT";
-    _cmisHostCompliance[CMIS_COMPLIANCE_25_BASE_T] = "25GBASE-T";
-    _cmisHostCompliance[CMIS_COMPLIANCE_40_BASE_T] = "40GBASE-T";
-    _cmisHostCompliance[CMIS_COMPLIANCE_50_BASE_T] = "50GBASE-T";
+    _cmisHostCompliance[CMIS_COMPLIANCE_200G_BASE_CR1] = "200GBASE-CR1";
+    _cmisHostCompliance[CMIS_COMPLIANCE_400G_BASE_CR2] = "400GBASE-CR2";
+    _cmisHostCompliance[CMIS_COMPLIANCE_LEI_100G_PAM4_1] = "LEI-100G-PAM4-1";
+    _cmisHostCompliance[CMIS_COMPLIANCE_LEI_200G_PAM4_2] = "LEI-200G-PAM4-2";
+    _cmisHostCompliance[CMIS_COMPLIANCE_LEI_400G_PAM4_4] = "LEI-400G-PAM4-4";
+    _cmisHostCompliance[CMIS_COMPLIANCE_LEI_800G_PAM4_8] = "LEI-800G-PAM4-8";
     _cmisHostCompliance[CMIS_COMPLIANCE_SDR] = "IB SDR";
     _cmisHostCompliance[CMIS_COMPLIANCE_DDR] = "IB DDR";
     _cmisHostCompliance[CMIS_COMPLIANCE_QDR] = "IB QDR";
@@ -1475,12 +1474,12 @@ void MlxlinkMaps::hostComplianceMapping()
     _cmisHostCompliance[CMIS_COMPLIANCE_OTL4_10] = "OTL4.10";
     _cmisHostCompliance[CMIS_COMPLIANCE_OTL4_4] = "OTL4.4";
     _cmisHostCompliance[CMIS_COMPLIANCE_OTLC_4] = "OTLC.4";
-    _cmisHostCompliance[CMIS_COMPLIANCE_FOIC1_4] = "FOIC1.4";
-    _cmisHostCompliance[CMIS_COMPLIANCE_FOIC1_2] = "FOIC1.2";
-    _cmisHostCompliance[CMIS_COMPLIANCE_FOIC2_8] = "FOIC2.8";
-    _cmisHostCompliance[CMIS_COMPLIANCE_FOIC2_4] = "FOIC2.4";
-    _cmisHostCompliance[CMIS_COMPLIANCE_FOIC4_16] = "FOIC4.16";
-    _cmisHostCompliance[CMIS_COMPLIANCE_FOIC4_8] = "FOIC4.8";
+    _cmisHostCompliance[CMIS_COMPLIANCE_FOIC1_4] = "FOIC1.4-MFI";
+    _cmisHostCompliance[CMIS_COMPLIANCE_FOIC1_2] = "FOIC1.2-MFI";
+    _cmisHostCompliance[CMIS_COMPLIANCE_FOIC2_8] = "FOIC2.8-MFI";
+    _cmisHostCompliance[CMIS_COMPLIANCE_FOIC2_4] = "FOIC2.4-MFI";
+    _cmisHostCompliance[CMIS_COMPLIANCE_FOIC4_16] = "FOIC4.16-MFI";
+    _cmisHostCompliance[CMIS_COMPLIANCE_FOIC4_8] = "FOIC4.8-MFI";
     _cmisHostCompliance[CMIS_COMPLIANCE_CAUI4_C2M_NO_FEC] = "CAUI-4 C2M without FEC";
     _cmisHostCompliance[CMIS_COMPLIANCE_CAUI4_C2M_RS_FEC] = "CAUI-4 C2M with RS(528,514) FEC";
     _cmisHostCompliance[CMIS_COMPLIANCE_50G_BASE_CR2_RS_FEC] = "50GBASE-CR2 with RS(528,514) FEC";
@@ -1496,7 +1495,6 @@ void MlxlinkMaps::hostComplianceMapping()
     _cmisHostCompliance[CMIS_COMPLIANCE_800G_AUI8_S] = "800GAUI-8 S C2M";
     _cmisHostCompliance[CMIS_COMPLIANCE_800G_AUI8_L] = "800GAUI-8 L C2M";
     _cmisHostCompliance[CMIS_COMPLIANCE_OTL4_2] = "OTL4.2";
-    _cmisHostCompliance[CMIS_COMPLIANCE_1_6T_BG_CR16] = "1.6TBG-CR16";
     _cmisHostCompliance[CMIS_COMPLIANCE_1_6T_AUI16_S] = "1.6TAUI-16-S C2M";
     _cmisHostCompliance[CMIS_COMPLIANCE_1_6T_AUI16_L] = "1.6TAUI-16-L C2M";
     _cmisHostCompliance[CMIS_COMPLIANCE_800G_BASE_CR4] = "800GBASE-CR4";
@@ -1505,8 +1503,23 @@ void MlxlinkMaps::hostComplianceMapping()
     _cmisHostCompliance[CMIS_COMPLIANCE_PCIE_5_0] = "PCIe 5.0";
     _cmisHostCompliance[CMIS_COMPLIANCE_PCIE_6_0] = "PCIe 6.0";
     _cmisHostCompliance[CMIS_COMPLIANCE_PCIE_7_0] = "PCIe 7.0";
-    _cmisHostCompliance[CMIS_COMPLIANCE_200G_AUI1_400G_AUI2_800G_AUI4_1_6T_AUI8] =
-      "200GAUI-1, 400GAUI-2, 800GAUI-4 or 1.6TAUI-8";
+    _cmisHostCompliance[CMIS_COMPLIANCE_CEI_112G_LINEAR_PAM4] = "CEI-112G-LINEAR-PAM4";
+    _cmisHostCompliance[CMIS_COMPLIANCE_200G_AUI1] = "200GAUI-1";
+    _cmisHostCompliance[CMIS_COMPLIANCE_400G_AUI2] = "400GAUI-2";
+    _cmisHostCompliance[CMIS_COMPLIANCE_800G_AUI4] = "800GAUI-4";
+    _cmisHostCompliance[CMIS_COMPLIANCE_1_6T_AUI8] = "1.6TAUI-8";
+    _cmisHostCompliance[CMIS_COMPLIANCE_EEI_100G_RTLR_1_S] = "EEI-100G-RTLR-1-S";
+    _cmisHostCompliance[CMIS_COMPLIANCE_EEI_100G_RTLR_1_L] = "EEI-100G-RTLR-1-L";
+    _cmisHostCompliance[CMIS_COMPLIANCE_EEI_200G_RTLR_2_S] = "EEI-200G-RTLR-2-S";
+    _cmisHostCompliance[CMIS_COMPLIANCE_EEI_200G_RTLR_2_L] = "EEI-200G-RTLR-2-L";
+    _cmisHostCompliance[CMIS_COMPLIANCE_EEI_400G_RTLR_4_S] = "EEI-400G-RTLR-4-S";
+    _cmisHostCompliance[CMIS_COMPLIANCE_EEI_400G_RTLR_4_L] = "EEI-400G-RTLR-4-L";
+    _cmisHostCompliance[CMIS_COMPLIANCE_EEI_800G_RTLR_8_S] = "EEI-800G-RTLR-8-S";
+    _cmisHostCompliance[CMIS_COMPLIANCE_EEI_800G_RTLR_8_L] = "EEI-800G-RTLR-8-L";
+    _cmisHostCompliance[CMIS_COMPLIANCE_FOIC1_1_MFI] = "FOIC1.1-MFI";
+    _cmisHostCompliance[CMIS_COMPLIANCE_FOIC4_4_MFI] = "FOIC4.4-MFI";
+    _cmisHostCompliance[CMIS_COMPLIANCE_FOIC8_8_MFI] = "FOIC8.8-MFI";
+    _cmisHostCompliance[CMIS_COMPLIANCE_ITU_G9804_3] = "ITU-T G.9804.3";
 }
 
 void MlxlinkMaps::mediaComplianceMapping()
@@ -1524,13 +1537,13 @@ void MlxlinkMaps::mediaComplianceMapping()
     _mmfCompliance[CMIS_COMPLIANCE_100G_SWDM4] = "100GE SWDM4";
     _mmfCompliance[CMIS_COMPLIANCE_100G_BIDI] = "100GE BiDi";
     _mmfCompliance[CMIS_COMPLIANCE_100G_SR2] = "100GBASE-SR2";
-    _mmfCompliance[CMIS_COMPLIANCE_100G_SR] = "100G-SR";
+    _mmfCompliance[CMIS_COMPLIANCE_100G_SR] = "100GBASE-SR1";
     _mmfCompliance[CMIS_COMPLIANCE_200G_BASE_SR4] = "200GBASE-SR4";
     _mmfCompliance[CMIS_COMPLIANCE_400G_BASE_SR16] = "400GBASE-SR16";
-    _mmfCompliance[CMIS_COMPLIANCE_400G_BASE_SR8] = "400G-SR8";
-    _mmfCompliance[CMIS_COMPLIANCE_400G_SR4] = "400G-SR4";
-    _mmfCompliance[CMIS_COMPLIANCE_800G_SR8] = "800G-SR8";
-    _mmfCompliance[CMIS_COMPLIANCE_400G_BIDI] = "400GE BiDI";
+    _mmfCompliance[CMIS_COMPLIANCE_400G_BASE_SR8] = "400GBASE-SR8";
+    _mmfCompliance[CMIS_COMPLIANCE_400G_SR4] = "400GBASE-SR4";
+    _mmfCompliance[CMIS_COMPLIANCE_800G_SR8] = "800GBASE-SR8";
+    _mmfCompliance[CMIS_COMPLIANCE_400G_BIDI] = "400GE BiDi";
     _mmfCompliance[CMIS_COMPLIANCE_8GFC_MM] = "8GFC-MM";
     _mmfCompliance[CMIS_COMPLIANCE_10GFC_MM] = "10GFC-MM";
     _mmfCompliance[CMIS_COMPLIANCE_16GFC_MM] = "16GFC-MM";
@@ -1571,16 +1584,16 @@ void MlxlinkMaps::mediaComplianceMapping()
     _smfCompliance[CMIS_COMPLIANCE_100G_4WDM_20] = "100G 4WDM-20";
     _smfCompliance[CMIS_COMPLIANCE_100G_4WDM_40] = "100G 4WDM-40";
     _smfCompliance[CMIS_COMPLIANCE_100G_BASE_DR] = "100GBASE-DR";
-    _smfCompliance[CMIS_COMPLIANCE_100G_FR] = "100G-FR";
-    _smfCompliance[CMIS_COMPLIANCE_100G_LR] = "100G-LR";
+    _smfCompliance[CMIS_COMPLIANCE_100G_FR] = "100G-FR MSA spec2/100GBASE-FR1";
+    _smfCompliance[CMIS_COMPLIANCE_100G_LR] = "100G-LR MSA spec2/100GBASE-LR1";
     _smfCompliance[CMIS_COMPLIANCE_200G_BASE_DR4] = "200GBASE-DR4";
     _smfCompliance[CMIS_COMPLIANCE_200G_BASE_FR4] = "200GBASE-FR4";
     _smfCompliance[CMIS_COMPLIANCE_200G_BASE_LR4] = "200GBASE-LR4";
     _smfCompliance[CMIS_COMPLIANCE_400G_BASE_FR8] = "400GBASE-FR8";
     _smfCompliance[CMIS_COMPLIANCE_400G_BASE_LR8] = "400GBASE-LR8";
     _smfCompliance[CMIS_COMPLIANCE_400G_BASE_DR4] = "400GBASE-DR4";
-    _smfCompliance[CMIS_COMPLIANCE_400G_FR4] = "400G-FR4";
-    _smfCompliance[CMIS_COMPLIANCE_400G_LR4] = "400G-LR4";
+    _smfCompliance[CMIS_COMPLIANCE_400G_FR4] = "400G-FR4 MSA spec2/400GBASE-FR4";
+    _smfCompliance[CMIS_COMPLIANCE_400G_LR4] = "400G-LR4-10 MSA Spec2";
     _smfCompliance[CMIS_COMPLIANCE_10G_SR] = "10G-SR";
     _smfCompliance[CMIS_COMPLIANCE_10G_LR] = "10G-LR";
     _smfCompliance[CMIS_COMPLIANCE_25G_SR] = "25G-SR";
@@ -1605,8 +1618,8 @@ void MlxlinkMaps::mediaComplianceMapping()
     _smfCompliance[CMIS_COMPLIANCE_ZR400_OFEC_16QAM_HA] = "ZR400-OFEC-16QAM-HA";
     _smfCompliance[CMIS_COMPLIANCE_ZR400_OFEC_16QAM_HB] = "ZR400-OFEC-16QAM-HB";
     _smfCompliance[CMIS_COMPLIANCE_ZR400_OFEC_8QAM_HA] = "ZR400-OFEC-8QAM-HA";
-    _smfCompliance[CMIS_COMPLIANCE_400ZR_DWDM] = "400ZR, DWDM, amplified";
-    _smfCompliance[CMIS_COMPLIANCE_400ZR_UNAMP] = "400ZR, Single Wavelength, Unamplified";
+    _smfCompliance[CMIS_COMPLIANCE_400ZR_DWDM] = "400ZR (0x01, 0x03), DWDM, amplified";
+    _smfCompliance[CMIS_COMPLIANCE_400ZR_UNAMP] = "400ZR (0x02), Single Wavelength, Unamplified";
     _smfCompliance[CMIS_COMPLIANCE_50G_BASE_ER] = "50GBASE-ER";
     _smfCompliance[CMIS_COMPLIANCE_200G_BASE_ER4] = "200GBASE-ER4";
     _smfCompliance[CMIS_COMPLIANCE_400G_BASE_ER8] = "400GBASE-ER8";
@@ -1643,6 +1656,53 @@ void MlxlinkMaps::mediaComplianceMapping()
     _smfCompliance[CMIS_COMPLIANCE_FLEXO_2_D0_QPSK] = "FLEXO-2-D0-QPSK/FOIC2.4-DO";
     _smfCompliance[CMIS_COMPLIANCE_FLEXO_2_D0_16QAM] = "FLEXO-2-D0-16QAM/FOIC2.8-DO";
     _smfCompliance[CMIS_COMPLIANCE_FLEXO_1_D0_QPSK] = "FLEXO-1-D0-QPSK/FOIC1.4-DO";
+    _smfCompliance[CMIS_COMPLIANCE_FLEXO_4E_DO_QPSK] = "FLEXO-4e-DO-QPSK/FOIC4e.4-DO";
+    _smfCompliance[CMIS_COMPLIANCE_FLEXO_4_DO_QPSK_FOIC4_4] = "FLEXO-4-DO-QPSK/FOIC4.4-DO";
+    _smfCompliance[CMIS_COMPLIANCE_FLEXO_8E_DO_16QAM] = "FLEXO-8e-DO-16QAM/FOIC8e.8-DO";
+    _smfCompliance[CMIS_COMPLIANCE_FLEXO_8_DO_16QAM] = "FLEXO-8-DO-16QAM/FOIC8.8-DO";
+    _smfCompliance[CMIS_COMPLIANCE_FLEXO_8E_DPO_16QAM] = "FLEXO-8e-DPO-16QAM/FOIC8e.8-DPO";
+    _smfCompliance[CMIS_COMPLIANCE_FLEXO_8_DPO_16QAM] = "FLEXO-8-DPO-16QAM/FOIC8.8-DPO";
+    _smfCompliance[CMIS_COMPLIANCE_FLEXO_6E_DPO_16QAM] = "FLEXO-6e-DPO-16QAM/FOIC6e.8-DPO";
+    _smfCompliance[CMIS_COMPLIANCE_FLEXO_6_DPO_16QAM] = "FLEXO-6-DPO-16QAM/FOIC6.8-DPO";
+    _smfCompliance[CMIS_COMPLIANCE_800ZR_A] = "800ZR-A (0x01), 150 GHz DWDM, Tx Output Range A";
+    _smfCompliance[CMIS_COMPLIANCE_800ZR_B] = "800ZR-B (0x02), 150 GHz DWDM, Tx Output Range B";
+    _smfCompliance[CMIS_COMPLIANCE_800ZR_C] = "800ZR-C (0x03), 150 GHz DWDM, Tx Output Range C";
+    _smfCompliance[CMIS_COMPLIANCE_400G_ER4_30] = "400G-ER4-30 MSA Spec2";
+    _smfCompliance[CMIS_COMPLIANCE_1I1_5D1F] = "1I1-5D1F (G.959.1)";
+    _smfCompliance[CMIS_COMPLIANCE_1R1_5D1F] = "1R1-5D1F (G.959.1)";
+    _smfCompliance[CMIS_COMPLIANCE_FOIC1_1_RS] = "FOIC1.1-RS (G.709.1/Y.1331.58)";
+    _smfCompliance[CMIS_COMPLIANCE_200G_BASE_DR1] = "200GBASE-DR1";
+    _smfCompliance[CMIS_COMPLIANCE_200G_BASE_DR1_2] = "200GBASE-DR1-2";
+    _smfCompliance[CMIS_COMPLIANCE_400G_BASE_DR2] = "400GBASE-DR2";
+    _smfCompliance[CMIS_COMPLIANCE_400G_BASE_DR2_2] = "400GBASE-DR2-2";
+    _smfCompliance[CMIS_COMPLIANCE_800G_BASE_DR4] = "800GBASE-DR4";
+    _smfCompliance[CMIS_COMPLIANCE_800G_BASE_DR4_2] = "800GBASE-DR4-2";
+    _smfCompliance[CMIS_COMPLIANCE_800G_BASE_FR4_500] = "800GBASE-FR4-500";
+    _smfCompliance[CMIS_COMPLIANCE_800G_BASE_FR4] = "800GBASE-FR4";
+    _smfCompliance[CMIS_COMPLIANCE_800G_BASE_LR4] = "800GBASE-LR4";
+    _smfCompliance[CMIS_COMPLIANCE_800G_BASE_LR1] = "800GBASE-LR1";
+    _smfCompliance[CMIS_COMPLIANCE_800G_BASE_ER1_20] = "800GBASE-ER1-20";
+    _smfCompliance[CMIS_COMPLIANCE_800G_BASE_ER1] = "800GBASE-ER1";
+    _smfCompliance[CMIS_COMPLIANCE_1_6T_BASE_DR8] = "1.6TBASE-DR8";
+    _smfCompliance[CMIS_COMPLIANCE_1_6T_BASE_DR8_2] = "1.6TBASE-DR8-2";
+    _smfCompliance[CMIS_COMPLIANCE_XR400_16QAM] = "XR400-16QAM";
+    _smfCompliance[CMIS_COMPLIANCE_XR300_8QAM] = "XR300-8QAM";
+    _smfCompliance[CMIS_COMPLIANCE_XR200_QPSK] = "XR200-QPSK";
+    _smfCompliance[CMIS_COMPLIANCE_XR200_16QAM] = "XR200-16QAM";
+    _smfCompliance[CMIS_COMPLIANCE_XR100_QPSK] = "XR100-QPSK";
+    _smfCompliance[CMIS_COMPLIANCE_XR100_16QAM] = "XR100-16QAM";
+    _smfCompliance[CMIS_COMPLIANCE_XR400_WS_16QAM] = "XR400-WS-16QAM";
+    _smfCompliance[CMIS_COMPLIANCE_XR200_WS_QPSK] = "XR200-WS-QPSK";
+    _smfCompliance[CMIS_COMPLIANCE_XR200_WS_16QAM] = "XR200-WS-16QAM";
+    _smfCompliance[CMIS_COMPLIANCE_XR100_WS_QPSK] = "XR100-WS-QPSK";
+    _smfCompliance[CMIS_COMPLIANCE_XR100_WS_16QAM] = "XR100-WS-16QAM";
+    _smfCompliance[CMIS_COMPLIANCE_XR200_WS_BIDI_16QAM] = "XR200-WS-BIDI-16QAM";
+    _smfCompliance[CMIS_COMPLIANCE_XR100_WS_BIDI_QPSK] = "XR100-WS-BIDI-QPSK";
+    _smfCompliance[CMIS_COMPLIANCE_XR100_WS_BIDI_16QAM] = "XR100-WS-BIDI-16QAM";
+    _smfCompliance[CMIS_COMPLIANCE_100G_DR1_LPO] = "100G-DR1-LPO";
+    _smfCompliance[CMIS_COMPLIANCE_200G_DR2_LPO] = "200G-DR2-LPO";
+    _smfCompliance[CMIS_COMPLIANCE_400G_DR4_LPO] = "400G-DR4-LPO";
+    _smfCompliance[CMIS_COMPLIANCE_800G_DR8_LPO] = "800G-DR8-LPO";
 }
 
 void MlxlinkMaps::activeComplianceMapping()
@@ -1883,6 +1943,7 @@ void MlxlinkMaps::initPpcntGroupsMapping()
     _ppcntGroups[PPCNT_PHY_GROUP] = PPCNT_PHY_GROUP;
     _ppcntGroups[PPCNT_PER_TRAFFIC_CLASS_CONGESTION_COUNTERS_GROUP] = PPCNT_PER_TRAFFIC_CLASS_CONGESTION_COUNTERS_GROUP;
     _ppcntGroups[PPCNT_STATISTICAL_GROUP] = PPCNT_STATISTICAL_GROUP;
+    _ppcntGroups[PPCNT_PHYSICAL_LAYER_RECOVERY_COUNTERS] = PPCNT_PHYSICAL_LAYER_RECOVERY_COUNTERS;
     _ppcntGroups[PPCNT_IB_PORT_COUNTERS_GROUP] = PPCNT_IB_PORT_COUNTERS_GROUP;
     _ppcntGroups[PPCNT_EXT_IB_PORT_COUNTERS_GROUP] = PPCNT_EXT_IB_PORT_COUNTERS_GROUP;
     _ppcntGroups[PPCNT_PLR_GROUP] = PPCNT_PLR_GROUP;
