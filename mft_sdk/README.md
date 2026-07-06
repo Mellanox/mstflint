@@ -57,6 +57,20 @@ The SDK's PRM databases are installed under a private data root
 the main `mstflint` package without file conflicts, and depends only on standard
 system libraries.
 
+## Building a .deb
+
+A standalone `mstflint-sdk` Debian package is built from the dedicated
+`debian-sdk/` packaging:
+
+```sh
+./build_sdk.sh --deb --deb-output /tmp/debs
+```
+
+This builds an SDK-only `.deb` in an isolated copy of the source tree (it does
+not touch the main `debian/` packaging). Like the RPM, the databases go to the
+private `$(datadir)/mstflint/sdk/prm_dbs` path, so `mstflint` and `mstflint-sdk`
+install together without conflicts.
+
 ## Installed layout
 
 ```

@@ -19,6 +19,8 @@ NVML_INCLUDE_DIR=""
 ENABLE_VFIO=0
 DO_CONFIGURE=1
 INSTALL=1
+BUILD_DEB=0
+DEB_OUTPUT=""
 
 usage() {
     cat <<'EOF'
@@ -37,12 +39,54 @@ Options:
   -j, --jobs N             Parallel build jobs (default: nproc)
   --no-configure           Skip autogen/configure; reuse the existing configuration
   --build-only             Build the SDK but do not install it
+  --deb                    Build a standalone mstflint-sdk .deb (uses debian-sdk/)
+  --deb-output DIR         Directory to place the built .deb (default: repo root)
   -h, --help               Show this help
 
 Examples:
   ./build_sdk.sh --destdir /tmp/mstflint-sdk-stage
   ./build_sdk.sh --prefix /usr --with-nvml
+  ./build_sdk.sh --deb --deb-output /tmp/debs
 EOF
+}
+
+# Build a standalone mstflint-sdk .deb in an isolated copy of the source tree,
+# using the dedicated debian-sdk/ packaging. The real debian/ tree is never
+# touched.
+build_deb() {
+    command -v dpkg-buildpackage >/dev/null 2>&1 || {
+        echo "error: dpkg-buildpackage not found; Debian build tools are required for --deb" >&2
+        exit 1
+    }
+    [[ -d "$SCRIPT_DIR/debian-sdk" ]] || {
+        echo "error: debian-sdk/ not found" >&2
+        exit 1
+    }
+    local out="${DEB_OUTPUT:-$SCRIPT_DIR}"
+    mkdir -p "$out"
+    out="$(cd "$out" && pwd)"
+
+    local work src
+    work="$(mktemp -d)"
+    src="$work/mstflint-sdk"
+    mkdir -p "$src"
+
+    echo ">> staging isolated source tree"
+    tar -c \
+        --exclude=.git --exclude='*.o' --exclude='*.lo' --exclude='*.la' \
+        --exclude='*.a' --exclude=.libs --exclude=.deps \
+        --exclude=./debian --exclude='*.tar.gz' --exclude=./configure~ \
+        -C "$SCRIPT_DIR" . | tar -x -C "$src"
+    cp -r "$SCRIPT_DIR/debian-sdk" "$src/debian"
+
+    echo ">> dpkg-buildpackage -b -uc -us"
+    ( cd "$src" && dpkg-buildpackage -b -uc -us )
+
+    echo ">> collecting .deb into $out"
+    mv "$work"/*.deb "$out"/
+    rm -rf "$work"
+    echo ">> SDK .deb build complete:"
+    ls -1 "$out"/mstflint-sdk_*.deb
 }
 
 while [[ $# -gt 0 ]]; do
@@ -55,12 +99,19 @@ while [[ $# -gt 0 ]]; do
         -j|--jobs)             JOBS="$2"; shift 2 ;;
         --no-configure)        DO_CONFIGURE=0; shift ;;
         --build-only)          INSTALL=0; shift ;;
+        --deb)                 BUILD_DEB=1; shift ;;
+        --deb-output)          DEB_OUTPUT="$2"; shift 2 ;;
         -h|--help)             usage; exit 0 ;;
         *) echo "error: unknown option: $1" >&2; usage >&2; exit 1 ;;
     esac
 done
 
 cd "$SCRIPT_DIR"
+
+if [[ "$BUILD_DEB" -eq 1 ]]; then
+    build_deb
+    exit 0
+fi
 
 if [[ "$DO_CONFIGURE" -eq 1 ]]; then
     CONFIGURE_FLAGS=(--enable-adb-generic-tools --enable-mstflint-sdk)

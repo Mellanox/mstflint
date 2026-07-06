@@ -1,0 +1,31 @@
+#!/usr/bin/make -f
+
+# Standalone build of the mstflint SDK only (libmstflint_sdk.so), reusing the
+# `make sdk` / `make install-sdk` targets rather than building the full tool
+# suite.
+
+export DH_OPTIONS
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+	./autogen.sh
+	dh_auto_configure -- --enable-adb-generic-tools --enable-mstflint-sdk
+
+override_dh_auto_build:
+	$(MAKE) sdk
+
+override_dh_auto_install:
+	$(MAKE) install-sdk DESTDIR=$(CURDIR)/debian/mstflint-sdk
+
+# The SDK-only build does not build the test suite.
+override_dh_auto_test:
+
+# libmstflint_sdk.so is an unversioned, self-contained private SDK library; no
+# shlibs file is needed for it (nothing depends on it via the shlibs system).
+override_dh_makeshlibs:
+
+# dh_auto_clean would run `make distclean`, which needs a configured tree; keep
+# it a no-op so cleaning an unconfigured source tree does not fail.
+override_dh_auto_clean:

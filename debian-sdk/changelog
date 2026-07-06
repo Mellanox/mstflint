@@ -1,0 +1,5 @@
+mstflint-sdk (4.37.0-1) unstable; urgency=low
+
+  * Standalone mstflint SDK package (libmstflint_sdk.so, headers and PRM databases).
+
+ -- NVIDIA MFT Apps team <akiselman-org@nvidia.com>  Sun, 06 Jul 2025 00:00:00 +0000
