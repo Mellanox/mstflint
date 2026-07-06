@@ -513,7 +513,8 @@ void MlxlinkCommander::updateNvlinkModeBStatus()
         sendPrmReg(ACCESS_REG_PTYS, GET, "proto_mask=%d", PTYS_PROTO_MASK_NVLINK);
 
         u_int32_t extProtoNvlink = getFieldValue("ext_proto_nvlink");
-        if (extProtoNvlink == 0)
+        if (extProtoNvlink == 0 ||
+            (extProtoNvlink > NVLINK_SPEED_200G_2X_MODE_A && !(extProtoNvlink & NVLINK_SPEED_345G_2X_MODE_B)))
         {
             return;
         }
