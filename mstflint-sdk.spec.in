@@ -29,6 +29,9 @@ Source: mstflint-%{version}.tar.gz
 ExclusiveArch: i386 i486 i586 i686 x86_64 ia64 ppc ppc64 ppc64le arm64 aarch64 s390x
 
 BuildRequires: pkgconfig
+BuildRequires: autoconf
+BuildRequires: automake
+BuildRequires: libtool
 BuildRequires: %{expat_devel_lib}
 BuildRequires: xz-devel
 BuildRequires: zlib-devel
@@ -46,6 +49,9 @@ package.
 %setup -q -n mstflint-%{version}
 
 %build
+# Regenerate the build system from the checked-in Makefile.am/configure.ac so
+# the build never depends on stale generated files shipped in the tarball.
+./autogen.sh
 %configure --enable-adb-generic-tools --enable-mstflint-sdk
 make %{?_smp_mflags} sdk
 
