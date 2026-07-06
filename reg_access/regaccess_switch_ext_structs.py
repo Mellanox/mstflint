@@ -33,9 +33,9 @@
 
 
 ###############################################################################
-#    This file was generated at "2026-04-15 11:04:25"
+#    This file was generated at "2026-04-21 10:13:51"
 #    by:
-#      > /tmp/jenkins/workspace/automatic_prm_update/scripts/prm_update.py --project switch
+#      > /home/jenkins/agent/workspace/automatic_prm_update/scripts/prm_update.py --project Switch
 ###############################################################################
 
 import os
@@ -170,6 +170,7 @@ class MFMC_REG_EXT(ctypes.Structure):
         ("fs", ctypes.c_uint8),
         ("wrp_block_count", ctypes.c_uint8),
         ("block_size", ctypes.c_uint8),
+        ("hw_wp_gpio", ctypes.c_uint8),
         ("wrp_en", ctypes.c_uint8),
         ("sub_sector_protect_size", ctypes.c_uint8),
         ("sector_protect_size", ctypes.c_uint8),

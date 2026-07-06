@@ -36,9 +36,9 @@
  
 
 /***
-         *** This file was generated at "2026-04-15 11:04:12"
+         *** This file was generated at "2026-04-21 10:13:29"
          *** by:
-         ***    > [REDACTED]/adb2pack.py --input adb/prm/switch/ext/reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils
+         ***    > /usr/lib64/mft/adbtools/adabe_plugins/adb2c/adb2pack.py --input /home/jenkins/agent/workspace/automatic_prm_update/user/tools_layouts/adb/prm/switch/ext/reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils -o /home/jenkins/agent/workspace/automatic_prm_update/user/tools_layouts
          ***/
 #ifndef REG_ACCESS_SWITCH_LAYOUTS_H
 #define REG_ACCESS_SWITCH_LAYOUTS_H
@@ -126,7 +126,7 @@ Reserved when selector = 0 */
 Returns required TAV CVB voltage in mV.
 Used in Retimer only.
 Value of 0 means not valid voltage, host should ignore this value.
-	*/
+ */
 	/* 0x4.20 - 0x4.31 */
 	/* access: RO */
 	u_int16_t tav_cvb_voltage;
@@ -176,13 +176,13 @@ For the following fuse_ids (assuming a valid instance_id is provided), the value
 14: raw_and_value_p_avdd.
 15: raw_and_value_p_dvdd.
 16: raw_and_value_dvdd_sg.
-	*/
+ */
 	/* 0x0.31 - 0x0.31 */
 	/* access: RO */
 	u_int8_t value_valid;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - Raw fuses.
-Only the least significant <raw_fuses_width> bits are valid. */
+The only valid bits are bits 0 to <raw_fuses_highest_bit>. */
 	/* 0x4.0 - 0x4.31 */
 	/* access: RO */
 	u_int32_t raw_fuses;
@@ -350,7 +350,7 @@ Note: this bit is not an indication to validity of the fields related to the spe
 	u_int8_t max_cmd_read_size_supp;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - Device type ASCII name. Up to 8 chars
-	*/
+ */
 	/* 0x10.24 - 0x18.23 */
 	/* access: RO */
 	u_int8_t device_type_name[8];
@@ -396,7 +396,7 @@ Valid only when active or lc_ready are '1'. */
 0x00: Buffalo 4x400G
 0x01: Buffalo 8x200G
 0x02: Buffalo 16x100G
-	*/
+ */
 	/* 0x8.0 - 0x8.7 */
 	/* access: RO */
 	u_int8_t card_type;
@@ -407,7 +407,7 @@ Valid only when active or lc_ready are '1'. */
 struct reg_access_switch_mddq_slot_name_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Slot's ASCII name. Up to 20 chars
-	*/
+ */
 	/* 0x0.24 - 0x14.23 */
 	/* access: RO */
 	u_int8_t slot_ascii_name[20];
@@ -556,7 +556,7 @@ union reg_access_switch_mddt_reg_payload_auto_ext {
 struct reg_access_switch_mgpir_hw_info_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Number of devices of device_type. 
-	*/
+ */
 	/* 0x0.0 - 0x0.7 */
 	/* access: RO */
 	u_int8_t num_of_devices;
@@ -570,7 +570,7 @@ For QM-3 CPO (Taipan), return the total num of ELS and OE_MCU together. First in
 	/* access: RO */
 	u_int8_t num_of_modules_per_system;
 	/* Description - Number of devices of device_type per flash. 
-	*/
+ */
 	/* 0x0.16 - 0x0.23 */
 	/* access: RO */
 	u_int8_t devices_per_flash;
@@ -589,7 +589,7 @@ For QM-3 CPO (Taipan), return the total num of ELS and OE_MCU together. First in
 	u_int8_t slot_index;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - Number of modules within the specific ASIC.
-	*/
+ */
 	/* 0x4.0 - 0x4.7 */
 	/* access: RO */
 	u_int8_t num_of_modules;
@@ -604,7 +604,7 @@ For QM-3 CPO (Taipan), return the total num of ELS and OE_MCU together. First in
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - Num of Resource Modules. 
 Value of 0xff..ff means not valid.
-	*/
+ */
 	/* 0x8.0 - 0x8.7 */
 	/* access: RO */
 	u_int8_t num_of_resource_modules;
@@ -632,7 +632,7 @@ struct reg_access_switch_mmta_tec_power_ext {
 	/* Description - The required cooling level based on TEC power and Set Point.
 Cooling Level units are % i.e percentage.
 0% (no need to cool down) to 100% (max cooling resource, e.g fan, to cool down the module).
-	*/
+ */
 	/* 0x0.0 - 0x0.15 */
 	/* access: RO */
 	u_int16_t cooling_level;
@@ -641,7 +641,7 @@ Cooling Level units are % i.e percentage.
 1: units of 1/256 Celsius degrees
 
 For negative values 2's complement is used
-	*/
+ */
 	/* 0x0.29 - 0x0.29 */
 	/* access: INDEX */
 	u_int8_t temp_unit;
@@ -689,7 +689,7 @@ Cleared by mtecr = 1 */
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - Laser set point measured from the laser
 Units defined at temp_unit field
-	*/
+ */
 	/* 0x10.0 - 0x10.15 */
 	/* access: RO */
 	u_int16_t set_point_temperature;
@@ -721,12 +721,12 @@ Units defined at temp_unit field */
 	u_int16_t set_point_temperature_alarm_high;
 /*---------------- DWORD[7] (Offset 0x1c) ----------------*/
 	/* Description - The minimum allowed cooling level
-	*/
+ */
 	/* 0x1c.0 - 0x1c.15 */
 	/* access: RO */
 	u_int16_t min_cooling_level;
 	/* Description - The maximum allowed cooling level
-	*/
+ */
 	/* 0x1c.16 - 0x1c.31 */
 	/* access: RO */
 	u_int16_t max_cooling_level;
@@ -741,7 +741,7 @@ struct reg_access_switch_mmta_temprature_ext {
 1: units of 1/256 Celsius degrees
 
 For negative values 2's complement is used
-	*/
+ */
 	/* 0x0.26 - 0x0.26 */
 	/* access: INDEX */
 	u_int8_t temp_unit;
@@ -822,7 +822,7 @@ struct reg_access_switch_MMAM_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - (Global) Module number
 Switch: Range 0 .. MGPIR.max_modules_per_slot -1
-	*/
+ */
 	/* 0x0.16 - 0x0.23 */
 	/* access: INDEX */
 	u_int8_t module;
@@ -872,32 +872,31 @@ struct reg_access_switch_MRFV_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Fuse Index
 0: cvb - CVB Main Die, used for Retimer
-1: ULT - used for Retimer
-2: vdd_main_die - (used from SPC-4)
-3: vdd_tile_0 - (used from SPC-4)
-4: vdd_tile_1 - (used from SPC-4)
-5: vdd_tile_2 - (used from SPC-4)
-6: vdd_tile_3 - (used from SPC-4)
-7: vdd_tile_4 - (used from SPC-4)
-8: vdd_tile_5 - (used from SPC-4)
-9: vdd_tile_6 - (used from SPC-4)
-10: vdd_tile_7 - (used from SPC-4)
+1: ULT
+2: vdd_main_die - (used in SPC-4, SPC-5)
+3: vdd_tile_0 - (used in SPC-4, SPC-5)
+4: vdd_tile_1 - (used in SPC-4, SPC-5)
+5: vdd_tile_2 - (used in SPC-4, SPC-5)
+6: vdd_tile_3 - (used in SPC-4, SPC-5)
+7: vdd_tile_4 - (used in SPC-4, SPC-5)
+8: vdd_tile_5 - (used in SPC-4, SPC-5)
+9: vdd_tile_6 - (used in SPC-4, SPC-5)
+10: vdd_tile_7 - (used in SPC-4, SPC-5)
 [DWIP]:
 11: raw_and_value_vdd - Use instance_id for the specific instance. Valid on SPC6.
 12: raw_and_value_pl_avdd - Use instance_id for the specific instance. Valid on SPC6.
 13: raw_and_value_pl_dvdd - Use instance_id for the specific instance. Valid on SPC6.
 14: raw_and_value_p_avdd - Use instance_id for the specific instance. Valid on SPC6.
 15: raw_and_value_p_dvdd - Use instance_id for the specific instance. Valid on SPC6.
-16: raw_and_value_dvdd_sg - Use instance_id for the specific instance. Valid on SPC6.
-Other values reserved
-Reserved when fm = 1 */
+16: raw_and_value_dvdd_sg - Use instance_id for the specific instance. Valid on SPC6 CPO.
+Other values reserved */
 	/* 0x0.0 - 0x0.7 */
 	/* access: INDEX */
 	u_int8_t fuse_id;
 	/* Description - [DWIP]:
 Instance ID. For a fuse that has multiple instances, this field provides the Instance ID.
 For the common case where it's a single instance per asic, instance ID 0 denotes the main/die [0] instance, and subsequent instance ID X denotes the instance of tile [X-1] / die [X].
-For a given fuse_id, if an invalid instance_id is provided, BAD_PARAM is returned. */
+For a given fuse_id, if an invalid instance_id is provided, fm field will have a value of 1 ("Fuse mismatch found"). */
 	/* 0x0.8 - 0x0.15 */
 	/* access: INDEX */
 	u_int8_t instance_id;
@@ -912,17 +911,17 @@ For a given fuse_id, if an invalid instance_id is provided, BAD_PARAM is returne
 0: Fuse reading is not supported for this system
 1: Response is valid
 2-3: Reserved
-Reserved when fm = 1 */
+Reserved (0) when fm = 1 */
 	/* 0x0.30 - 0x0.31 */
 	/* access: RO */
 	u_int8_t v;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - Data
-See Table 735, "MRFV entry - CVB Layout," on page 1234
-See Table 737, "MRFV entry - ULT Layout," on page 1236
-See Table 739, "MRFV entry - VDD_MAIN Layout," on page 1237
-See Table 741, "MRFV entry - VDD_Tile Layout," on page 1238
-See Table 743, "MRFV entry - RAW_AND_VALUE Layout," on page 1239
+See Table 733, "MRFV entry - CVB Layout," on page 1179
+See Table 735, "MRFV entry - ULT Layout," on page 1181
+See Table 737, "MRFV entry - VDD_MAIN Layout," on page 1182
+See Table 739, "MRFV entry - VDD_Tile Layout," on page 1183
+See Table 741, "MRFV entry - RAW_AND_VALUE Layout," on page 1184
 Reserved when fm = 1 */
 	/* 0x10.0 - 0x18.31 */
 	/* access: RO */
@@ -939,7 +938,7 @@ Reserved for HCA */
 	/* access: INDEX */
 	u_int8_t lp_msb;
 	/* Description - Local port number.
-	*/
+ */
 	/* 0x0.16 - 0x0.23 */
 	/* access: INDEX */
 	u_int8_t local_port;
@@ -954,7 +953,7 @@ For HCA, reserved if PPCR.asymmetry_enable_supported=0 */
 	/* Description - [DWIP]
 Indicate whether asymmetry_enable supported or not.
 Reserved for switch.
-	*/
+ */
 	/* 0x4.31 - 0x4.31 */
 	/* access: RO */
 	u_int8_t asymmetry_enable_supported;
@@ -990,7 +989,7 @@ Reserved for HCA */
 	u_int8_t split;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description - The number of planes comprising this Aggregated port
-	*/
+ */
 	/* 0xc.0 - 0xc.7 */
 	/* access: RW */
 	u_int8_t num_of_planes;
@@ -1094,9 +1093,9 @@ Note: This field is not reflecting any validity of the data while accessing a no
 	u_int8_t data_valid;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - Properties of that field are based on query_type.
-For slot information query_type data - see Table 579, "MDDQ slot_info Layout," on page 1106
-For devices on slot query_type data - see Table 581, "MDDQ device_info Register Layout," on page 1107
-For slot name query_type data - see Table 583, "MDDQ slot_name Layout," on page 1109 */
+For slot information query_type data - see Table 577, "MDDQ slot_info Layout," on page 1051
+For devices on slot query_type data - see Table 579, "MDDQ device_info Register Layout," on page 1052
+For slot name query_type data - see Table 581, "MDDQ slot_name Layout," on page 1054 */
 	/* 0x10.0 - 0x2c.31 */
 	/* access: RO */
 	union reg_access_switch_mddq_data_auto_ext data;
@@ -1131,9 +1130,9 @@ struct reg_access_switch_mddt_reg_ext {
 	u_int8_t read_size;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description - Payload
-For PRM Register type payload - See Table 571, "PRM Register Payload Layout," on page 1102
-For Command type payload - See Table 573, "Command Payload Layout," on page 1102
-For CrSpace type payload - See Table 575, "CrSpace access Payload Layout," on page 1103 */
+For PRM Register type payload - See Table 569, "PRM Register Payload Layout," on page 1047
+For Command type payload - See Table 571, "Command Payload Layout," on page 1047
+For CrSpace type payload - See Table 573, "CrSpace access Payload Layout," on page 1048 */
 	/* 0xc.0 - 0x10c.31 */
 	/* access: RW */
 	union reg_access_switch_mddt_reg_payload_auto_ext payload;
@@ -1229,6 +1228,11 @@ Note that not all block sizes are supported on all flash device, need to check M
 	/* 0x4.16 - 0x4.17 */
 	/* access: RW */
 	u_int8_t block_size;
+	/* Description - External WP signal: EROT/GPIO indication (1 = asserted).
+ */
+	/* 0x4.30 - 0x4.30 */
+	/* access: RO */
+	u_int8_t hw_wp_gpio;
 	/* Description - Write protect enable
 Set write protect of flash device */
 	/* 0x4.31 - 0x4.31 */
@@ -1268,7 +1272,7 @@ Reserved if not supported by the device */
 /* Size in bytes - 160 */
 struct reg_access_switch_mgpir_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Hardware Information, see Table 589, "Hardware Info Layout," on page 1111 */
+	/* Description - Hardware Information, see Table 587, "Hardware Info Layout," on page 1056 */
 	/* 0x0.0 - 0x1c.31 */
 	/* access: RW */
 	struct reg_access_switch_mgpir_hw_info_ext hw_info;
@@ -1330,21 +1334,21 @@ struct reg_access_switch_mmta_reg_ext {
 	/* access: RO */
 	u_int32_t module_name_lo;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
-	/* Description - Temperature, see Table 541, "Module Temperature Layout," on page 1079 */
+	/* Description - Temperature, see Table 539, "Module Temperature Layout," on page 1024 */
 	/* 0xc.0 - 0x20.31 */
 	/* access: RW */
 	struct reg_access_switch_mmta_temprature_ext module_temperature;
 /*---------------- DWORD[9] (Offset 0x24) ----------------*/
-	/* Description - TEC Power, see Table 543, "Module TEC Power Layout," on page 1081 */
+	/* Description - TEC Power, see Table 541, "Module TEC Power Layout," on page 1026 */
 	/* 0x24.0 - 0x40.31 */
 	/* access: RW */
 	struct reg_access_switch_mmta_tec_power_ext module_tec_power;
 /*---------------- DWORD[17] (Offset 0x44) ----------------*/
-	/* Description - Second Temperature, see Table 541, "Module Temperature Layout," on page 1079.
+	/* Description - Second Temperature, see Table 539, "Module Temperature Layout," on page 1024.
 Note: When there is more than one Optical Engine:
 1) The "temperature" field shall be populated by the highest of the current OE temperatures.
 2) The "max_temperature" field shall be populated by the highest of any temperatures that had been measured, over all OEs.
-	*/
+ */
 	/* 0x44.0 - 0x58.31 */
 	/* access: RW */
 	struct reg_access_switch_mmta_temprature_ext module_second_temperature;
@@ -1671,7 +1675,7 @@ struct reg_access_switch_mspmer_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Device Index
 0: Main_board_or_NIC
-	*/
+ */
 	/* 0x0.0 - 0x0.3 */
 	/* access: INDEX */
 	u_int8_t device_index;
@@ -1693,7 +1697,7 @@ struct reg_access_switch_mspmer_ext {
 0: Notification only. Prevention is disabled 
 1: Prevention is enabled
 
-In Spectrum-4 only, controlled by NV_SWITCH_PHY_SEC_CONF.pvpm. See Table 386, "NV_SWITCH_PHY_SEC_CONF Layout," on page 923 */
+In Spectrum-4 only, controlled by NV_SWITCH_PHY_SEC_CONF.pvpm. See Table 380, "NV_SWITCH_PHY_SEC_CONF Layout," on page 866 */
 	/* 0x4.24 - 0x4.24 */
 	/* access: RO */
 	u_int8_t prev_en;
@@ -1703,7 +1707,7 @@ In Spectrum-4 only, controlled by NV_SWITCH_PHY_SEC_CONF.pvpm. See Table 386, "N
 29: SCPM - Secure Canary Path Monitor
 0: General 
 
-	*/
+ */
 	/* 0xc.0 - 0xc.31 */
 	/* access: RO */
 	u_int32_t supported_physical_monitor;
@@ -1749,7 +1753,8 @@ For cables, the index represents the module index starting at index 1 while inde
 0x1 - TOKEN_ALREADY_APPLIED
 0x2 - TOKEN_NOT_SUPPORTED
 0x3 - NO_KEY_CONFIGURED (there is no public_key that can be used for this token) 
-0x4 - INTERFACE_NOT_ALLOWED (asking for local token from remote interface, or remote token from local interface) */
+0x4 - INTERFACE_NOT_ALLOWED (asking for local token from remote interface, or remote token from local interface) 
+0x5 - TOKEN_APPLY_TIMEOUT_EXPIRED */
 	/* 0x0.16 - 0x0.23 */
 	/* access: RO */
 	u_int8_t status;
@@ -1805,7 +1810,7 @@ Valid only for RMCS. */
 	/* access: RO */
 	u_int16_t session_id;
 	/* Description - Version of the challenge format.
-	*/
+ */
 	/* 0x44.24 - 0x44.31 */
 	/* access: RO */
 	u_int8_t challenge_version;
@@ -1939,7 +1944,7 @@ When ipil_stat is 3: ipil_num should be 1   8 */
 1: split to 2 local ports
 2: split to 4 local ports
 3: split to 8 local ports
-	*/
+ */
 	/* 0x4.16 - 0x4.19 */
 	/* access: RO */
 	u_int8_t split_stat;
@@ -2005,7 +2010,7 @@ Spectrum: Only relevant value is 0. */
 2: IB
 3: NVLink
 Supported from Quantum-3 and above
-	*/
+ */
 	/* 0x10.0 - 0x10.2 */
 	/* access: RO */
 	u_int8_t protocol;
@@ -2026,7 +2031,7 @@ Range: 0 .. MGPIR.max_modules_per_slot -1 */
 Resource label port 
 The label port for the resource module.
 Value of 0xFFFF means field is not valid.
-	*/
+ */
 	/* 0x14.0 - 0x14.15 */
 	/* access: RO */
 	u_int16_t resource_label_port;
@@ -2061,7 +2066,7 @@ Note - To disable a module, all ports associated with the port must be disabled 
 Note 2 - disconnect cable will shut down the optical module in ungraceful manner. Not supported for OE/ELS.
 Note 3 - Disabling OE in QM-3 CPO will not cause to the OE to power disable. User will need to set all the modules to disable, which will cause the power enable to go down.
 Note 4 - Disabling OE in QM3-CPO will cause the ELS to go down as well as part of the HW flow. Before setting the ELS back up, OE should be set to up beforehand.
-	*/
+ */
 	/* 0x0.8 - 0x0.11 */
 	/* access: RW */
 	u_int8_t admin_status;
@@ -2283,7 +2288,7 @@ valid only when gb_valid is 1 */
 	u_int8_t pll_cnt_rx;
 	/* Description - Number of the MCM Tile the local_port is related to.
 valid only when mcm_tile_valid is 1
-	*/
+ */
 	/* 0x10.16 - 0x10.23 */
 	/* access: RO */
 	u_int8_t mcm_tile_num;
@@ -2588,7 +2593,7 @@ Note: supported only if indication by PCAM.feature_group=1.bit 6. */
 	/* Description - CPO indication:
 0 - not CPO
 1 - CPO
-	*/
+ */
 	/* 0x44.31 - 0x44.31 */
 	/* access: RO */
 	u_int8_t cpo_indication;
@@ -2650,37 +2655,69 @@ Up to 8 SerDes in a module can be mapped to a local port. */
 union reg_access_switch_reg_access_switch_Nodes {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
-	/* 0x0.0 - 0x2c.31 */
+	/* 0x0.0 - 0x3c.31 */
 	/* access: RW */
-	struct reg_access_switch_mpein_reg_ext mpein_reg_ext;
+	struct reg_access_switch_pmlp_reg_ext pmlp_reg_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x44.31 */
+	/* 0x0.0 - 0x18.31 */
 	/* access: RW */
-	struct reg_access_switch_pmdr_reg_ext pmdr_reg_ext;
+	struct reg_access_switch_mfmc_reg_ext mfmc_reg_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x7c.31 */
+	/* 0x0.0 - 0x10c.31 */
 	/* access: RW */
-	struct reg_access_switch_msgi_ext msgi_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x9c.31 */
-	/* access: RW */
-	struct reg_access_switch_mgpir_ext mgpir_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x4.31 */
-	/* access: RW */
-	struct reg_access_switch_mrsr_ext mrsr_ext;
+	struct reg_access_switch_mddt_reg_ext mddt_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x14.31 */
 	/* access: RW */
 	struct reg_access_switch_pllp_reg_ext pllp_reg_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x6c.31 */
+	/* 0x0.0 - 0x9c.31 */
 	/* access: RW */
-	struct reg_access_switch_mtcq_reg_ext mtcq_reg_ext;
+	struct reg_access_switch_mgpir_ext mgpir_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x40c.31 */
+	/* access: RW */
+	struct reg_access_switch_icsr_ext icsr_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x28.31 */
+	/* access: RW */
+	struct reg_access_switch_mkdc_reg_ext mkdc_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x2c.31 */
+	/* access: RW */
+	struct reg_access_switch_mdsr_reg_ext mdsr_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x4.31 */
+	/* access: RW */
+	struct reg_access_switch_mrsr_ext mrsr_ext;
+	/* Description -  */
+	/* 0x0.0 - 0xc.31 */
+	/* access: RW */
+	struct reg_access_switch_PPCR_ext PPCR_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x14.31 */
+	/* access: RW */
+	struct reg_access_switch_icam_reg_ext icam_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x2c.31 */
+	/* access: RW */
+	struct reg_access_switch_mspmer_ext mspmer_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x3c.31 */
+	/* access: RW */
+	struct reg_access_switch_MRFV_ext MRFV_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x2c.31 */
+	/* access: RW */
+	struct reg_access_switch_mpein_reg_ext mpein_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0xc.31 */
 	/* access: RW */
 	struct reg_access_switch_MMAM_ext MMAM_ext;
+	/* Description -  */
+	/* 0x0.0 - 0xc.31 */
+	/* access: RW */
+	struct reg_access_switch_mpir_ext mpir_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x5c.31 */
 	/* access: RW */
@@ -2688,63 +2725,31 @@ union reg_access_switch_reg_access_switch_Nodes {
 	/* Description -  */
 	/* 0x0.0 - 0xc.31 */
 	/* access: RW */
-	struct reg_access_switch_plib_reg_ext plib_reg_ext;
+	struct reg_access_switch_pmaos_reg_ext pmaos_reg_ext;
 	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
+	/* 0x0.0 - 0x7c.31 */
 	/* access: RW */
-	struct reg_access_switch_PPCR_ext PPCR_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x2c.31 */
-	/* access: RW */
-	struct reg_access_switch_mdsr_reg_ext mdsr_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x14.31 */
-	/* access: RW */
-	struct reg_access_switch_icam_reg_ext icam_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x40c.31 */
-	/* access: RW */
-	struct reg_access_switch_icsr_ext icsr_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x2c.31 */
-	/* access: RW */
-	struct reg_access_switch_mspmer_ext mspmer_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x2c.31 */
-	/* access: RW */
-	struct reg_access_switch_mddq_ext mddq_ext;
+	struct reg_access_switch_msgi_ext msgi_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x8c.31 */
 	/* access: RW */
 	struct reg_access_switch_mmta_reg_ext mmta_reg_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x10c.31 */
+	/* 0x0.0 - 0x44.31 */
 	/* access: RW */
-	struct reg_access_switch_mddt_reg_ext mddt_reg_ext;
+	struct reg_access_switch_pmdr_reg_ext pmdr_reg_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x18.31 */
+	/* 0x0.0 - 0x2c.31 */
 	/* access: RW */
-	struct reg_access_switch_mfmc_reg_ext mfmc_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
-	/* access: RW */
-	struct reg_access_switch_pmaos_reg_ext pmaos_reg_ext;
+	struct reg_access_switch_mddq_ext mddq_ext;
 	/* Description -  */
 	/* 0x0.0 - 0xc.31 */
 	/* access: RW */
-	struct reg_access_switch_mpir_ext mpir_ext;
+	struct reg_access_switch_plib_reg_ext plib_reg_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x3c.31 */
+	/* 0x0.0 - 0x6c.31 */
 	/* access: RW */
-	struct reg_access_switch_pmlp_reg_ext pmlp_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x3c.31 */
-	/* access: RW */
-	struct reg_access_switch_MRFV_ext MRFV_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x28.31 */
-	/* access: RW */
-	struct reg_access_switch_mkdc_reg_ext mkdc_reg_ext;
+	struct reg_access_switch_mtcq_reg_ext mtcq_reg_ext;
 };
 
 
