@@ -756,6 +756,7 @@ AM_CFLAGS="-Wall"
 AM_CXXFLAGS="-Wall"
 
 AC_CONFIG_FILES(mstflint.spec)
+AC_CONFIG_FILES(mstflint-sdk.spec)
 
 # We save and restore CFLAGS, after adding Wall and Werror
 # because AX_CHECK_COMPILE_FLAG doesn't work properly without it

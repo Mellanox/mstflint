@@ -43,12 +43,26 @@ make sdk           # build only the SDK and the subdirs it links against
 make install-sdk   # install the SDK library, headers and PRM databases
 ```
 
+## Building an RPM
+
+A dedicated `mstflint-sdk` RPM (built from `mstflint-sdk.spec`) packages just the
+SDK. From the mstflint source tarball:
+
+```sh
+rpmbuild -bb mstflint-sdk.spec
+```
+
+The SDK's PRM databases are installed under a private data root
+(`$(datadir)/mstflint/sdk/prm_dbs`), so the package installs cleanly alongside
+the main `mstflint` package without file conflicts, and depends only on standard
+system libraries.
+
 ## Installed layout
 
 ```
 $(libdir)/mstflint/sdk/libmstflint_sdk.so             # stripped, redistributable
 $(includedir)/mstflint/sdk/mft_sdk/*.h                # public SDK headers
-$(datadir)/mstflint/prm_dbs/{hca,gpu,switch}/ext/*.adb   # PRM databases opened at runtime
+$(datadir)/mstflint/sdk/prm_dbs/{hca,gpu,switch}/ext/*.adb   # PRM databases opened at runtime (SDK-private path)
 ```
 
 ## Using the SDK

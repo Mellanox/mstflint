@@ -36,6 +36,7 @@ man_MANS = man/mstflint.1 man/mstconfig.1 man/mstmcra.1 man/mstmread.1 man/mstmw
 
 EXTRA_DIST = \
 	mstflint.spec \
+	mstflint-sdk.spec \
 	tools_git_sha \
 	debian \
 	$(man_MANS)

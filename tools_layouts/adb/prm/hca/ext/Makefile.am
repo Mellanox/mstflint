@@ -32,5 +32,16 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-docdir = $(pkgdatadir)/prm_dbs/hca/ext
-dist_doc_DATA = register_access_table.adb hca_cap_table.adb
+# PRM databases install under the SDK's private data root ($(pkgdatadir)/sdk)
+# when building the SDK, and under the normal location otherwise, so the
+# mstflint and mstflint-sdk packages ship separate copies in distinct
+# directories (no file conflicts). A custom install dir is used rather than the
+# reserved docdir, whose automake default would otherwise override a conditional
+# assignment.
+if ENABLE_MSTFLINT_SDK
+prmdbdir = $(pkgdatadir)/sdk/prm_dbs/hca/ext
+else
+prmdbdir = $(pkgdatadir)/prm_dbs/hca/ext
+endif
+prmdb_DATA = register_access_table.adb hca_cap_table.adb
+EXTRA_DIST = register_access_table.adb hca_cap_table.adb

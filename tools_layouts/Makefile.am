@@ -33,7 +33,15 @@
 # Makefile.am -- Process this file with automake to produce Makefile.in
 AM_CPPFLAGS = -I$(top_srcdir)/${MTCR_CONFIG_DIR} -I$(top_srcdir)/common
 AM_CFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC)
+# The SDK ships its PRM databases under a private data root ($(pkgdatadir)/sdk)
+# so its package does not clash with the main mstflint package (which owns
+# $(pkgdatadir)). getDefaultDBName() resolves databases relative to DATA_PATH,
+# so it must point at that same private root when building the SDK.
+if ENABLE_MSTFLINT_SDK
+AM_CXXFLAGS =  -DDATA_PATH=\"$(pkgdatadir)/sdk\"
+else
 AM_CXXFLAGS =  -DDATA_PATH=\"$(pkgdatadir)\"
+endif
 
 SUBDIRS = ${ADABE_DBS}
 
