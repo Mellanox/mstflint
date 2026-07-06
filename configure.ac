@@ -597,6 +597,10 @@ if test "x$enable_mstflint_sdk" = "xyes"; then
     HCA_CAP_DIR="hca_capabilities"
     MLXREG_SDK_DIR="mlxreg_sdk"
     DEVICE_DIR="device"
+    # Link mtcr statically (whole-archive) into libmstflint_sdk.so so it carries
+    # no libmtcr_ul.so runtime dependency. Held as a substituted variable so
+    # automake does not reject the -Wl tokens in the SDK's _LIBADD.
+    MTCR_SDK_WHOLE_ARCHIVE="-Wl,--whole-archive \$(top_builddir)/$MTCR_CONF_DIR/.libs/libmtcr_ul.a -Wl,--no-whole-archive"
     AC_CONFIG_FILES(mft_sdk/Makefile)
     AC_CONFIG_FILES(hca_capabilities/Makefile)
     AC_CONFIG_FILES(mlxreg/mlxreg_sdk/Makefile)
@@ -610,6 +614,7 @@ if test "x$enable_mstflint_sdk" = "xyes"; then
     fi
 fi
 AC_SUBST(MSTFLINT_SDK_DIR)
+AC_SUBST(MTCR_SDK_WHOLE_ARCHIVE)
 AC_SUBST(HCA_CAP_DIR)
 AC_SUBST(MLXREG_SDK_DIR)
 AC_SUBST(DEVICE_DIR)

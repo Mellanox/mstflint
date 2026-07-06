@@ -42,6 +42,8 @@ AM_CPPFLAGS += $(JSON_CFLAGS)
 
 AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC)
 
+EXTRA_DIST = README.md
+
 # Optional, flag-gated dependencies. The SDK source gates its use of these
 # subsystems on the same ENABLE_* macros, so the library is self-consistent
 # whether or not the features are configured in.
@@ -90,7 +92,7 @@ libmstflint_sdk_la_LIBADD = \
     $(top_builddir)/mlxlink/modules/libmodules_lib.la \
     $(top_builddir)/mlxreg/mlxreg_lib/libmstreg_lib.la \
     $(top_builddir)/mft_utils/libmftutils.la \
-    $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
+    $(MTCR_SDK_WHOLE_ARCHIVE) \
     $(top_builddir)/adb_parser/libadb_parser.la \
     $(top_builddir)/cmdif/libcmdif.la \
     $(top_builddir)/dev_mgt/libdev_mgt.la \
@@ -103,14 +105,18 @@ libmstflint_sdk_la_LIBADD = \
     $(top_builddir)/mft_core/mft_core_utils/operating_system_api/lib_os_api.la \
     $(top_builddir)/mft_core/mft_core_utils/logger/liblogger.la \
     $(top_builddir)/mft_core/mft_core_utils/mft_exceptions/libmftexceptions.la \
+    $(top_builddir)/cmdparser/libcmdparser.a \
     $(VFIO_LIBADD) \
     $(NVML_LIBADD) \
     $(liblzma_LIBS) \
     $(expat_LIBS) \
     $(LDL)
 
-# Public SDK headers, installed under the mstflint include tree.
-sdkincludedir = $(includedir)/mstflint/sdk
+# Public SDK headers. Kept under the mstflint include tree (to avoid clashing
+# with an MFT-provided $(includedir)/mft_sdk), but inside an mft_sdk/ subdir so
+# consumers use `#include <mft_sdk/...>` (with -I$(includedir)/mstflint/sdk) --
+# consistent with MFT and with the headers' own internal <mft_sdk/...> includes.
+sdkincludedir = $(includedir)/mstflint/sdk/mft_sdk
 sdkinclude_HEADERS = \
     mft_sdk.h \
     mft_sdk_cr_space_access.h \
@@ -123,3 +129,10 @@ sdkinclude_HEADERS = \
     mft_sdk_telemetry.h \
     mft_sdk_telemetry_types.h \
     mft_sdk_types.h
+
+# The SDK ships as a redistributable binary: strip the installed shared object
+# and drop the libtool .la (nothing links against it, and .la files are not
+# wanted in a distribution).
+install-data-hook:
+	$(STRIP) --strip-unneeded $(DESTDIR)$(sdklibdir)/libmstflint_sdk.so
+	rm -f $(DESTDIR)$(sdklibdir)/libmstflint_sdk.la

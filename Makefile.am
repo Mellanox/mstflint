@@ -39,3 +39,72 @@ EXTRA_DIST = \
 	tools_git_sha \
 	debian \
 	$(man_MANS)
+
+# ---------------------------------------------------------------------------
+# Standalone mstflint SDK build
+#
+# Builds and installs only libmstflint_sdk.so and the subdirectories it links
+# against, skipping the rest of the tool suite (flint, mlxconfig, mstdump, ...).
+# Requires configuring with --enable-mstflint-sdk (which itself requires
+# --enable-adb-generic-tools).
+#
+#   make sdk           # build the SDK and its dependencies only
+#   make install-sdk   # install the SDK library, headers and PRM databases
+#
+# mtcr is absorbed statically into the .so (mft_sdk/Makefile.am), so the only
+# installed runtime artifacts are the SDK library, its headers and the PRM
+# databases the SDK opens at runtime (prm_dbs/{hca,gpu,switch}/ext).
+# ---------------------------------------------------------------------------
+if ENABLE_MSTFLINT_SDK
+
+# Dependency subdirs in the same relative order as the top-level SUBDIRS, so
+# the proven build order is preserved. Building the mlxreg/mlxlink parents also
+# builds the convenience libs the SDK links (libmstreg_lib, libmlxreg_sdk,
+# libmodules_lib); mft_core builds the mft_core_utils and NVML libs.
+SDK_BUILD_SUBDIRS = \
+	mft_core \
+	ext_libs \
+	tools_layouts \
+	common \
+	$(VFIO_DRIVER_DIR) \
+	${MTCR_CONF_DIR} \
+	$(XZ_UTILS_DIR) \
+	reg_access \
+	cmdif \
+	dev_mgt \
+	pci_library \
+	mft_utils \
+	cmdparser \
+	$(ADABE_TOOLS) \
+	$(HCA_CAP_DIR) \
+	$(MSTFLINT_SDK_DIR)
+
+# Subdirs that install SDK runtime artifacts: the .so and headers (mft_sdk) and
+# the PRM databases getDefaultDBName() opens under $(pkgdatadir)/prm_dbs.
+SDK_INSTALL_SUBDIRS = \
+	$(MSTFLINT_SDK_DIR) \
+	tools_layouts/adb/prm/hca/ext \
+	tools_layouts/adb/prm/gpu/ext \
+	tools_layouts/adb/prm/switch/ext
+
+sdk:
+	@for dir in $(SDK_BUILD_SUBDIRS); do \
+		echo "  SDK-BUILD    $$dir"; \
+		$(MAKE) $(AM_MAKEFLAGS) -C $$dir all || exit 1; \
+	done
+
+install-sdk: sdk
+	@for dir in $(SDK_INSTALL_SUBDIRS); do \
+		echo "  SDK-INSTALL  $$dir"; \
+		$(MAKE) $(AM_MAKEFLAGS) -C $$dir install || exit 1; \
+	done
+
+else
+
+sdk install-sdk:
+	@echo "error: the standalone SDK targets require ./configure --enable-mstflint-sdk" >&2; \
+	exit 1
+
+endif
+
+.PHONY: sdk install-sdk
