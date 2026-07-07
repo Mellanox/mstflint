@@ -3334,6 +3334,32 @@ void MlxlinkCommander::prepare5nmEyeInfo(u_int32_t numOfLanesToUse)
     }
 }
 
+void MlxlinkCommander::prepareSpc6EyeInfo(u_int32_t numOfLanesToUse)
+{
+    std::vector<string> legand, fomPerLane;
+
+    sendPrmReg(ACCESS_REG_SLRG, REG_GET, "all_lanes=%u", 1);
+    u_int32_t status = getFieldValue("status");
+
+    for (u_int32_t lane = 0; lane < numOfLanesToUse; lane++)
+    {
+        string fomStr = status ? getFieldStr("fom_lane" + to_string(lane), (u_int32_t)16) : NA_FIELD_VALUE;
+        fomPerLane.push_back(MlxlinkRecord::addSpaceForSlrg(fomStr));
+        legand.push_back(MlxlinkRecord::addSpaceForSlrg(to_string(lane)));
+        _fomStr += fomStr + " ";
+    }
+
+    if (!_userInput._showMultiPortInfo && !_userInput._showMultiPortModuleInfo)
+    {
+        string fomMode = status ? _mlxlinkMaps->_slrgFomMode5nm[getFieldValue("fom_mode")] : NA_FIELD_VALUE;
+        setPrintVal(_eyeOpeningInfoCmd, "FOM Mode", fomMode, ANSI_COLOR_RESET, true, true, true);
+        setPrintVal(_eyeOpeningInfoCmd, "Lane", status ? getStringFromVector(legand) : NA_FIELD_VALUE, ANSI_COLOR_RESET,
+                    true, true, true);
+        setPrintVal(_eyeOpeningInfoCmd, "FOM [per lane]", status ? getStringFromVector(fomPerLane) : NA_FIELD_VALUE,
+                    ANSI_COLOR_RESET, true, true, true);
+    }
+}
+
 void MlxlinkCommander::showEye()
 {
     if (_userInput._pcie)
@@ -3365,7 +3391,11 @@ void MlxlinkCommander::showEye()
             showEyeTitle += " (PCIe)";
         }
         setPrintTitle(_eyeOpeningInfoCmd, showEyeTitle, EYE_OPENING_INFO_LAST);
-        if (_productTechnology <= PRODUCT_16NM)
+        if (_devID == DeviceSpectrum6)
+        {
+            prepareSpc6EyeInfo(numOfLanesToUse);
+        }
+        else if (_productTechnology <= PRODUCT_16NM)
         {
             prepare40_28_16nmEyeInfo(numOfLanesToUse);
         }

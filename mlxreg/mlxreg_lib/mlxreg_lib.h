@@ -72,7 +72,6 @@ public:
     AdbInstance* getAdbTable() { return _regAccessRootNode; };
     AdbInstance* get_current_node() { return _currentNode; };
     void set_current_node(string name) { _currentNode = findAdbNode(name); }
-    Adb& getAdb() { return *_adb; };
     /* * * * * * * *
      * library API *
      * * * * * * * */

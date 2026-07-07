@@ -313,7 +313,7 @@ uint32_t PrmRegSdk::getNodeFields(AdbInstanceAdvLegacy* regNode,
     else
     {
         // Pass buffer so that we traverse only the right nodes
-        _mlxRegLib->getAdb().traverse_layout(regNode, "", 0, buffer, buffer_size, _getNodeFieldsCallback, &fields, buffer != nullptr, false);
+        regNode->traverse_layout("", 0, buffer, buffer_size, _getNodeFieldsCallback, &fields, buffer != nullptr, false);
     }
     return rc;
 }
@@ -843,7 +843,7 @@ int32_t PrmRegSdk::performRawRegRequest(void* buffer, const uint32_t size)
     {
         outBuffer = genarateBuffer(regNode, size);
 
-        _mlxRegLib->getAdb().traverse_layout(regNode, "", 0, nullptr, size, _on_traverse_get_fields, &fields_offsets, false, false);
+        regNode->traverse_layout("", 0, nullptr, size, _on_traverse_get_fields, &fields_offsets, false, false);
 
         for (auto field_offset : fields_offsets)
         {

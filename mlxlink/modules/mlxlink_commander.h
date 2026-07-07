@@ -602,6 +602,7 @@ public:
     void prepare40_28_16nmEyeInfo(u_int32_t numOfLanesToUse);
     void prepare7nmEyeInfo(u_int32_t numOfLanesToUse);
     void prepare5nmEyeInfo(u_int32_t numOfLanesToUse);
+    void prepareSpc6EyeInfo(u_int32_t numOfLanesToUse);
     void getPddrOperInfo();
     void getPrecodingStatus();
     void setPrecoding();

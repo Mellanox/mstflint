@@ -61,9 +61,7 @@ template<bool dynamic = false>
 class _RegAccessParser_impl
 {
     // Type aliases based on dynamic template parameter
-    using Adb = _Adb_impl<dynamic, uint32_t>;
     using AdbInstance = _AdbInstance_impl<dynamic, uint32_t>;
-    using AdbCondition = _AdbCondition_impl<uint32_t>;
 
     struct FieldSearchContext
     {
@@ -86,7 +84,6 @@ public:
     _RegAccessParser_impl(string data,
                           string indexes,
                           string ops,
-                          Adb* adb,
                           AdbInstance* regNode,
                           std::vector<u_int32_t> buffer,
                           bool ignore_ro = false,
@@ -94,7 +91,6 @@ public:
     _RegAccessParser_impl(string data,
                           string indexes,
                           string ops,
-                          Adb* adb,
                           AdbInstance* regNode,
                           u_int32_t len,
                           bool ignore_ro = false,
@@ -111,7 +107,6 @@ protected:
     string _indexes;
     string _ops;
     u_int32_t _len;
-    Adb* _adb;
     AdbInstance* _regNode;
     parseMode _parseMode;
     string output_file;
