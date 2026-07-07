@@ -88,6 +88,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <libgen.h>
+#include <limits.h>
 #include <sys/file.h>
 #include <linux/types.h>
 
@@ -1181,6 +1182,53 @@ static int nvml_open(mfile* mf, const char* name)
 #endif
 }
 
+/*
+ * Read the PCI device id from sysfs into mf->pci_device_id.
+ * Needed to disambiguate devices that share the same hw_dev_id over fwctl
+ * (e.g. BlueField4 and ConnectX9 both report 0x224).
+ * On sysfs lookup failure, leave mf->pci_device_id unchanged; open still succeeds.
+ */
+static void fwctl_set_pci_device_id(mfile* mf, const char* full_path_name)
+{
+    char device_link[128];
+    char resolved[PATH_MAX];
+    char name_copy[60];
+    char fname[128];
+    char inbuf[64] = {0};
+    const char* node_name;
+    FILE* f;
+
+    strncpy(name_copy, full_path_name, sizeof(name_copy) - 1);
+    name_copy[sizeof(name_copy) - 1] = '\0';
+    node_name = basename(name_copy); // e.g. "fwctl12"
+
+    snprintf(device_link, sizeof(device_link), "/sys/class/fwctl/%s/device", node_name);
+    if (realpath(device_link, resolved) == NULL)
+    {
+        FWCTL_DEBUG_PRINT(mf, "fwctl_set_pci_device_id: failed to resolve %s\n", device_link);
+        return;
+    }
+
+    // The resolved path basename is the PCI address (e.g. "0005:41:00.0").
+    snprintf(fname, sizeof(fname), "/sys/bus/pci/devices/%s/device", basename(resolved));
+    f = fopen(fname, "r");
+    if (f == NULL)
+    {
+        FWCTL_DEBUG_PRINT(mf, "fwctl_set_pci_device_id: failed to open %s\n", fname);
+        return;
+    }
+    if (fgets(inbuf, sizeof(inbuf), f))
+    {
+        mf->pci_device_id = (u_int16_t)strtol(inbuf, NULL, 0);
+        FWCTL_DEBUG_PRINT(mf, "fwctl_set_pci_device_id: pci_device_id=0x%x\n", mf->pci_device_id);
+    }
+    else
+    {
+        FWCTL_DEBUG_PRINT(mf, "fwctl_set_pci_device_id: failed to read pci device id from %s\n", fname);
+    }
+    fclose(f);
+}
+
 static int fwctrl_driver_open(mfile* mf, const char* name)
 {
     char full_path_name[60];
@@ -1214,9 +1262,10 @@ static int fwctrl_driver_open(mfile* mf, const char* name)
     ctx->mwrite4_block = (f_mwrite4_block)fwctl_driver_mwrite4_block;
     ctx->mclose = mtcr_driver_mclose;
     mf->bar_virtual_addr = NULL;
-    fwctl_set_device_id(mf);
-
     mf->fwctl_env_var_debug = getenv(FWCTL_ENV_VAR_DEBUG);
+
+    fwctl_set_device_id(mf);
+    fwctl_set_pci_device_id(mf, full_path_name);
 
     DBG_PRINTF("fwctl: device id is %d:\n", mf->device_hw_id);
     return 0;
