@@ -35,6 +35,9 @@
 
 #include "adb_exceptionHolder.h"
 
+#include <iostream>
+#include <utility>
+
 ExceptionsMap ExceptionHolder::adbExceptionMap;
 const string ExceptionHolder::FATAL_EXCEPTION = "FATAL";
 const string ExceptionHolder::ERROR_EXCEPTION = "ERROR";
@@ -106,6 +109,43 @@ void ExceptionHolder::insertNewException(const string exceptionType, string exce
 {
     ExceptionHolder::adbExceptionMap[exceptionType].push_back(exceptionTxt);
     ExceptionHolder::exceptionCounter += 1;
+}
+
+void ExceptionHolder::appendLocationSuffix(string& exceptionTxt, const string& fileName, int lineNumber)
+{
+    if (lineNumber < 0)
+    {
+        return;
+    }
+    if (fileName.empty())
+    {
+        exceptionTxt += ", line: " + std::to_string(lineNumber);
+    }
+    else
+    {
+        exceptionTxt += ", in file: \"" + fileName + "\" line: " + std::to_string(lineNumber);
+    }
+}
+
+bool ExceptionHolder::handle_exception(bool allowMultipleExceptions,
+                                       string exceptionTxt,
+                                       const string& expType,
+                                       const string& fileName,
+                                       int lineNumber,
+                                       bool raise_warnings)
+{
+    appendLocationSuffix(exceptionTxt, fileName, lineNumber);
+    if (allowMultipleExceptions)
+    {
+        insertNewException(expType, exceptionTxt);
+        return false;
+    }
+    if (!raise_warnings && expType == WARN_EXCEPTION)
+    {
+        cerr << "-WARNING-: " << exceptionTxt << endl;
+        return false;
+    }
+    throw AdbException(exceptionTxt);
 }
 
 /**

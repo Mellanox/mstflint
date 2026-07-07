@@ -116,7 +116,7 @@ _AdbInstance_impl<e, T_OFFSET>::_AdbInstance_impl(AdbField* i_fieldDesc,
 //     auto found = getInstanceAttr("condition", value);
 //     if (found && parent->getInstanceAttr("is_conditional") == "1")
 //     {
-//         inst_ops_props.condition.setCondition(value);
+//         inst_ops_props.condition.init(value);
 //     }
 
 //     found = getInstanceAttr("size_condition", value);
@@ -127,7 +127,7 @@ _AdbInstance_impl<e, T_OFFSET>::_AdbInstance_impl(AdbField* i_fieldDesc,
 //         {
 //             cond_size.erase(0, 10);
 //         }
-//         inst_ops_props.conditionalSize.setCondition(cond_size);
+//         inst_ops_props.conditionalSize.init(cond_size);
 //     }
 // }
 
@@ -539,7 +539,7 @@ string _AdbInstance_impl<e, O>::fullName(size_t skipLevel)
 
 template<bool e, typename O>
 void _AdbInstance_impl<e, O>::init_props(unsigned char adabe_version) // logic of this function is copied from devmon
-                                                                      // and it's bugous
+// and it's bugous
 {
     if (!fieldDesc)
     {
@@ -1244,6 +1244,9 @@ map<string, uint64_t> _AdbInstance_impl<e, O>::getEnumMap()
     vector<string> enumValues;
     Algorithm::split(enumValues, enums, Algorithm::is_any_of(","));
 
+    // This function is permissive to errors in the format of specific enum pairs, to return even partial enum if
+    // possible.
+    // TODO: add to AdbParse level warning for all those cases in addition to continuing (1)
     for (size_t i = 0; i < enumValues.size(); i++)
     {
         vector<string> pair;
@@ -1587,12 +1590,312 @@ _AdbInstance_impl<e, O>::LayoutPartitionProps::LayoutPartitionProps(PartitionTre
 {
 }
 
+namespace
+{
+template<bool eval_expr, typename T_OFFSET>
+uint64_t trvrs_calc_cond_num_elements(_AdbInstance_impl<eval_expr, T_OFFSET>* instance,
+                                      T_OFFSET offset_shift,
+                                      const uint8_t* buffer,
+                                      uint32_t buffer_size,
+                                      bool evaluate_conditions,
+                                      bool allow_multiple_exceptions)
+{
+    uint64_t num_elements = 1;
+    auto* array_size_condition = instance->getArraySizeCondition();
+    if (array_size_condition)
+    {
+        if (evaluate_conditions)
+        {
+            try
+            {
+                num_elements = array_size_condition->evaluate(const_cast<uint8_t*>(buffer), offset_shift);
+            }
+            catch (const AdbException& e)
+            {
+                num_elements = 1;
+                string message = "Field " + instance->get_field_name() +
+                                 " with array size condition, evaluation failed, treating as regular node and "
+                                 "processing all children\n" +
+                                 e.what();
+                ExceptionHolder::handle_exception(allow_multiple_exceptions, message, ExceptionHolder::WARN_EXCEPTION,
+                                                  "", -1, false);
+            }
+        }
+        else if (buffer_size > 0)
+        {
+            T_OFFSET current_bit_offset = instance->offset + offset_shift;
+            T_OFFSET current_byte_offset = current_bit_offset / 8;
+            T_OFFSET remaining_bytes = (buffer_size > current_byte_offset) ? (buffer_size - current_byte_offset) : 0;
+            T_OFFSET remaining_bits = remaining_bytes * 8;
+            T_OFFSET element_size_bits = instance->get_size();
+
+            if (element_size_bits > 0 && remaining_bits >= element_size_bits)
+            {
+                num_elements = remaining_bits / element_size_bits;
+            }
+            else
+            {
+                num_elements = 0;
+            }
+        }
+    }
+    return num_elements;
+}
+
+template<bool eval_expr, typename T_OFFSET>
+string trvrs_get_element_array_suffix(uint64_t i, _AdbInstance_impl<eval_expr, T_OFFSET>* instance, bool full_path)
+{
+    string array_index = "";
+    string array_suffix = "";
+    uint32_t low_bound = instance->fieldDesc ? instance->fieldDesc->lowBound : 0;
+
+    if (instance->fieldDesc && instance->fieldDesc->array_type == AdbField_impl<T_OFFSET>::ArrayType::dynamic)
+    {
+        array_index = to_string(i + low_bound);
+    }
+    else if (instance->fieldDesc && instance->fieldDesc->array_type >= AdbField_impl<T_OFFSET>::ArrayType::definite &&
+             instance->fieldDesc->array_type < AdbField_impl<T_OFFSET>::ArrayType::dynamic)
+    {
+        array_index = to_string(instance->arrIdx + low_bound);
+    }
+    if (!array_index.empty())
+    {
+        array_suffix =
+          full_path || !instance->isNode() || (instance->fieldDesc && instance->fieldDesc->subNode == "uint64") ?
+            "[" + array_index + "]" :
+            "_" + array_index;
+    }
+    return array_suffix;
+}
+
+template<bool eval_expr, typename T_OFFSET>
+void trvrs_handle_enums(_AdbInstance_impl<eval_expr, T_OFFSET>* instance,
+                        const string& element_path,
+                        T_OFFSET element_offset_shift,
+                        const uint8_t* buffer,
+                        bool (*func)(const string&, uint64_t, uint64_t, _AdbInstance_impl<eval_expr, T_OFFSET>*, void*),
+                        void* context)
+{
+    T_OFFSET field_offset = instance->offset + element_offset_shift;
+    uint64_t enum_value =
+      pop_from_buf(buffer, static_cast<uint32_t>(field_offset), static_cast<uint32_t>(instance->get_size()));
+
+    string enum_string;
+    if (instance->intToEnum(enum_value, enum_string))
+    {
+        func(element_path, field_offset, enum_value, instance, context);
+    }
+    else
+    {
+        func(element_path, field_offset, enum_value, instance, context);
+    }
+}
+
+template<bool eval_expr, typename T_OFFSET>
+_AdbInstance_impl<eval_expr, T_OFFSET>* trvrs_get_selected_node(_AdbInstance_impl<eval_expr, T_OFFSET>* instance,
+                                                                T_OFFSET element_offset_shift,
+                                                                const uint8_t* buffer)
+{
+    u_int32_t selectorValue =
+      pop_from_buf(buffer, static_cast<uint32_t>(instance->unionSelector->offset + element_offset_shift),
+                   static_cast<uint32_t>(instance->unionSelector->get_size()));
+
+    return instance->getUnionSelectedNodeName(selectorValue);
+}
+} // namespace
+
+/**
+ * Function: _AdbInstance_impl::traverse_layout
+ **/
+template<bool eval_expr, typename T_OFFSET>
+void _AdbInstance_impl<eval_expr, T_OFFSET>::traverse_layout(
+  const string& path,
+  T_OFFSET offset_shift,
+  const uint8_t* buffer,
+  uint32_t buffer_size,
+  bool (*func)(const string&, uint64_t, uint64_t, _AdbInstance_impl<eval_expr, T_OFFSET>*, void*),
+  void* context,
+  bool evaluate_conditions,
+  bool handle_enums,
+  bool full_path,
+  bool allow_multiple_exceptions)
+{
+    string suffix = "";
+    bool stop = false;
+    traverse_layout(path, offset_shift, buffer, buffer_size, func, context, suffix, stop, evaluate_conditions,
+                    handle_enums, full_path, allow_multiple_exceptions);
+}
+
+template<bool eval_expr, typename T_OFFSET>
+void _AdbInstance_impl<eval_expr, T_OFFSET>::traverse_layout(
+  const string& path,
+  T_OFFSET offset_shift,
+  const uint8_t* buffer,
+  uint32_t buffer_size,
+  bool (*func)(const string&, uint64_t, uint64_t, _AdbInstance_impl<eval_expr, T_OFFSET>*, void*),
+  void* context,
+  string suffix,
+  bool& stop,
+  bool evaluate_conditions,
+  bool handle_enums,
+  bool full_path,
+  bool allow_multiple_exceptions)
+{
+    string error_message;
+
+    if (stop || !func)
+    {
+        return;
+    }
+
+    evaluate_conditions = evaluate_conditions && buffer && buffer_size > 0;
+    handle_enums = handle_enums && buffer && buffer_size > 0;
+
+    auto* condition = this->getCondition();
+    if (evaluate_conditions && condition && !condition->get_condition().empty())
+    {
+        try
+        {
+            uint64_t condition_result = condition->evaluate(const_cast<uint8_t*>(buffer), offset_shift);
+            if (condition_result == 0)
+            {
+                return;
+            }
+        }
+        catch (const AdbException& e)
+        {
+            error_message = "Field " + this->get_field_name() +
+                            " with condition, evaluation failed, treating as regular node and processing all "
+                            "children\n" +
+                            e.what();
+            ExceptionHolder::handle_exception(allow_multiple_exceptions, error_message, ExceptionHolder::WARN_EXCEPTION,
+                                              "", -1, false);
+        }
+    }
+
+    uint64_t num_elements = trvrs_calc_cond_num_elements(this, offset_shift, buffer, buffer_size, evaluate_conditions,
+                                                         allow_multiple_exceptions);
+
+    string previous_suffix = suffix;
+    for (uint64_t i = 0; i < num_elements; i++)
+    {
+        if (stop)
+        {
+            return;
+        }
+
+        string path_suffix = trvrs_get_element_array_suffix(i, this, full_path);
+        string element_path = full_path ? path + path_suffix : path;
+        if (!full_path && !path_suffix.empty())
+        {
+            suffix = this->isNode() ? previous_suffix + path_suffix : path_suffix;
+        }
+
+        string sep = element_path.empty() ? "" : ".";
+        T_OFFSET element_offset_shift = offset_shift + (this->get_size() * i);
+
+        if (handle_enums && this->isEnumExists())
+        {
+            trvrs_handle_enums(this, element_path, element_offset_shift, buffer, func, context);
+        }
+        else if (this->isNode() && !this->subItems.empty())
+        {
+            if (evaluate_conditions && this->isUnion() && this->unionSelector)
+            {
+                _AdbInstance_impl<eval_expr, T_OFFSET>* selectedNode = nullptr;
+                try
+                {
+                    selectedNode = trvrs_get_selected_node(this, element_offset_shift, buffer);
+                }
+                catch (const AdbException& e)
+                {
+                    error_message = "Field " + this->get_field_name() +
+                                    " with union selector failed treating as regular node and processing all "
+                                    "children\n" +
+                                    e.what();
+                    ExceptionHolder::handle_exception(allow_multiple_exceptions, error_message,
+                                                      ExceptionHolder::WARN_EXCEPTION, "", -1, false);
+                    for (auto sub_item : this->subItems)
+                    {
+                        if (stop)
+                        {
+                            return;
+                        }
+                        string sub_item_path =
+                          full_path ? element_path + sep + sub_item->fieldDesc->name : sub_item->fieldDesc->name;
+                        sub_item->traverse_layout(sub_item_path, element_offset_shift, buffer, buffer_size, func,
+                                                  context, suffix, stop, evaluate_conditions, handle_enums, full_path,
+                                                  allow_multiple_exceptions);
+                    }
+                    return;
+                }
+                string selected_node_path =
+                  full_path ? element_path + sep + selectedNode->fieldDesc->name : selectedNode->fieldDesc->name;
+                selectedNode->traverse_layout(selected_node_path, element_offset_shift, buffer, buffer_size, func,
+                                              context, suffix, stop, evaluate_conditions, handle_enums, full_path,
+                                              allow_multiple_exceptions);
+            }
+            else
+            {
+                for (auto sub_item : this->subItems)
+                {
+                    if (stop)
+                    {
+                        return;
+                    }
+                    string sub_item_path =
+                      full_path ? element_path + sep + sub_item->fieldDesc->name : sub_item->fieldDesc->name;
+                    sub_item->traverse_layout(sub_item_path, element_offset_shift, buffer, buffer_size, func, context,
+                                              suffix, stop, evaluate_conditions, handle_enums, full_path,
+                                              allow_multiple_exceptions);
+                }
+            }
+        }
+        else
+        {
+            T_OFFSET field_offset = this->offset + element_offset_shift;
+            uint64_t value = 0;
+            if (buffer)
+            {
+                if (buffer_size >= (field_offset + this->get_size()) / 8)
+                {
+                    value = pop_from_buf(buffer, static_cast<uint32_t>(field_offset),
+                                         static_cast<uint32_t>(this->get_size()));
+                }
+                else
+                {
+                    error_message = "On layout traversal, trying to evaluate field, " + this->get_field_name() +
+                                    ", with offset, " + to_string(field_offset) + ",overflowing the buffer size, " +
+                                    to_string(buffer_size) + "\n";
+                    ExceptionHolder::handle_exception(allow_multiple_exceptions, error_message,
+                                                      ExceptionHolder::ERROR_EXCEPTION);
+                }
+            }
+            if (!full_path)
+            {
+                bool is_uint64 =
+                  this->parent && this->parent->fieldDesc && this->parent->fieldDesc->subNode == "uint64";
+                if (is_uint64)
+                {
+                    element_path = this->parent->fieldDesc->name + suffix + "_" + element_path;
+                }
+                else if (!suffix.empty())
+                {
+                    element_path += suffix;
+                }
+            }
+            stop = func(element_path, field_offset, value, this, context);
+        }
+    }
+}
+
 template class _AdbInstance_impl<false, uint32_t>;
 template class _AdbInstance_impl<true, uint32_t>;
 
 template class _AdbInstance_impl<false, uint64_t>;
 template class _AdbInstance_impl<true, uint64_t>;
 
+// Explicit instantiations for member template methods - only for valid enable_if combinations
 template typename enable_if<true, _AdbCondition_impl<uint32_t>*>::type
   _AdbInstance_impl<true, uint32_t>::getCondition<true>();
 template typename enable_if<true, _AdbCondition_impl<uint64_t>*>::type

@@ -324,7 +324,7 @@ void HcaCapabilities::fwctlSetHcaCapability(uint8_t* capabilityBuffer,
 std::vector<AdbInstanceAdvLegacy*> HcaCapabilities::getCapabilityFields(AdbInstanceAdvLegacy* capabilityTypeLayout)
 {
     std::vector<AdbInstanceAdvLegacy*> capabilities;
-    _adb->traverse_layout(capabilityTypeLayout, "", 0, nullptr, 0, _getHcaCapFieldsCallback, &capabilities, false, false);
+    capabilityTypeLayout->traverse_layout("", 0, nullptr, 0, _getHcaCapFieldsCallback, &capabilities, false, false);
     return capabilities;
 }
 

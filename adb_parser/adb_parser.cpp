@@ -43,12 +43,12 @@
 #include "adb_instance.h"
 #include "adb_condition.h"
 #include "adb_condVar.h"
-#include "buf_ops.h"
 #include <iostream>
 #include <sstream>
 #include <algorithm>
 #include "common/tools_algorithm.h"
 #include "common/tools_regex.h"
+#include "common/tools_utils.h"
 
 namespace Algorithm = mstflint::common::algorithm;
 namespace Regex = mstflint::common::regex;
@@ -124,32 +124,6 @@ _Adb_impl<e, O>::~_Adb_impl()
         delete iter->second;
 
     delete _logFile;
-}
-
-/**
- * Function: _Adb_impl::raiseException
- **/
-template<bool e, typename O>
-void _Adb_impl<e, O>::raiseException(bool allowMultipleExceptions,
-                                     string exceptionTxt,
-                                     const string expType,
-                                     bool raise_warnings)
-{
-    if (allowMultipleExceptions)
-    {
-        ExceptionHolder::insertNewException(expType, exceptionTxt);
-    }
-    else
-    {
-        if (!raise_warnings && expType == ExceptionHolder::WARN_EXCEPTION)
-        {
-            cerr << "-WARNING-: " << exceptionTxt << endl;
-    	}
-    	else
-    	{
-            throw AdbException(exceptionTxt);
-    	}
-    }
 }
 
 /**
@@ -455,6 +429,7 @@ typename _Adb_impl<e, O>::PathPart
 {
     PathPart result;
     result.first = part;
+    string error_message;
 
     if (!ranges_str.empty())
     {
@@ -464,12 +439,13 @@ typename _Adb_impl<e, O>::PathPart
         {
             Algorithm::trim(range);
 
+            // Validate that range is not empty after trimming (throw if field[,2] or field[1,,3])
             if (range.empty())
             {
-                raiseException(
-                  allowMultipleExceptions,
-                  "Failed to parse missing_sons attribute: empty range in '" + part + "[" + ranges_str + "]'",
-                  ExceptionHolder::WARN_EXCEPTION);
+                error_message =
+                  "Failed to parse missing_sons attribute: empty range in '" + part + "[" + ranges_str + "]'";
+                ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                  ExceptionHolder::WARN_EXCEPTION);
                 break;
             }
 
@@ -478,29 +454,35 @@ typename _Adb_impl<e, O>::PathPart
             {
                 if (colon_pos != string::npos)
                 {
+                    // Parse range format: start:end
                     string start_str = range.substr(0, colon_pos);
                     string end_str = range.substr(colon_pos + 1);
 
+                    // Validate that both start and end parts are not empty
+                    // Example: field[:5] or field[3:] or field[:]
                     if (start_str.empty() || end_str.empty())
                     {
-                        raiseException(
-                          allowMultipleExceptions,
-                          "Failed to parse missing_sons attribute: invalid range '" + part + "[" + range + "]'",
-                          ExceptionHolder::WARN_EXCEPTION);
+                        error_message =
+                          "Failed to parse missing_sons attribute: invalid range '" + part + "[" + range + "]'";
+                        ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                          ExceptionHolder::WARN_EXCEPTION);
                         break;
                     }
 
+                    // Parse and validate that entire strings are consumed
                     size_t start_idx = 0;
                     size_t end_idx = 0;
                     uint32_t start = stoul(start_str, &start_idx);
                     uint32_t end = stoul(end_str, &end_idx);
 
+                    // Validate that the entire string was parsed and start <= end
+                    // Examples: field[1a:5] or field[1:5b] or field[3:2] or field[1-5]
                     if (start_idx != start_str.length() || end_idx != end_str.length() || start > end)
                     {
-                        raiseException(
-                          allowMultipleExceptions,
-                          "Failed to parse missing_sons attribute: invalid range '" + part + "[" + range + "]'",
-                          ExceptionHolder::WARN_EXCEPTION);
+                        error_message =
+                          "Failed to parse missing_sons attribute: invalid range '" + part + "[" + range + "]'";
+                        ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                          ExceptionHolder::WARN_EXCEPTION);
                         break;
                     }
 
@@ -511,15 +493,18 @@ typename _Adb_impl<e, O>::PathPart
                 }
                 else
                 {
+                    // Parse single index
                     size_t idx = 0;
                     uint32_t value = stoul(range, &idx);
 
+                    // Validate that the entire string was parsed (no trailing invalid characters)
+                    // Examples: field[1.] or field[5abc] or field[2-3]
                     if (idx != range.length())
                     {
-                        raiseException(
-                          allowMultipleExceptions,
-                          "Failed to parse missing_sons attribute: invalid index '" + part + "[" + range + "]'",
-                          ExceptionHolder::WARN_EXCEPTION);
+                        error_message =
+                          "Failed to parse missing_sons attribute: invalid index '" + part + "[" + range + "]'";
+                        ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                          ExceptionHolder::WARN_EXCEPTION);
                         break;
                     }
 
@@ -528,18 +513,18 @@ typename _Adb_impl<e, O>::PathPart
             }
             catch (const std::runtime_error&)
             {
-                raiseException(
-                  allowMultipleExceptions,
-                  "Failed to parse missing_sons attribute: invalid number in '" + part + "[" + range + "]'",
-                  ExceptionHolder::WARN_EXCEPTION);
+                error_message =
+                  "Failed to parse missing_sons attribute: invalid number in '" + part + "[" + range + "]'";
+                ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                  ExceptionHolder::WARN_EXCEPTION);
                 break;
             }
             catch (const std::logic_error&)
             {
-                raiseException(
-                  allowMultipleExceptions,
-                  "Failed to parse missing_sons attribute: invalid number in '" + part + "[" + range + "]'",
-                  ExceptionHolder::WARN_EXCEPTION);
+                error_message =
+                  "Failed to parse missing_sons attribute: invalid number in '" + part + "[" + range + "]'";
+                ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                  ExceptionHolder::WARN_EXCEPTION);
                 break;
             }
         }
@@ -570,9 +555,9 @@ vector<typename _Adb_impl<e, O>::SplittedPath> _Adb_impl<e, O>::parse_missing_so
                     auto& match = *it;
                     if (match.position() != prev_end)
                     {
-                        raiseException(allowMultipleExceptions,
-                                       "Failed to parse missing_sons: invalid format '" + path + "'",
-                                       ExceptionHolder::WARN_EXCEPTION);
+                        string message = "Failed to parse missing_sons: invalid format '" + path + "'";
+                        ExceptionHolder::handle_exception(allowMultipleExceptions, message,
+                                                          ExceptionHolder::WARN_EXCEPTION);
                         return missing_sons;
                     }
                     prev_end = match.position() + match.length();
@@ -655,6 +640,7 @@ typename _Adb_impl<eval_expr, T_OFFSET>::AdbInstance*
 {
     try
     {
+        string error_message;
         // find root in nodes map
         typename NodesMap::iterator it;
         it = nodesMap.find(rootNodeName);
@@ -715,11 +701,13 @@ typename _Adb_impl<eval_expr, T_OFFSET>::AdbInstance*
             string path_prefix = string();
             if (!ancestor_path.empty())
             {
+                // Remove first element if it exists
                 size_t first_dot = ancestor_path.find('.');
                 if (first_dot != string::npos)
                 {
                     path_prefix = ancestor_path.substr(first_dot + 1);
                 }
+                // Add rootItem's field name
                 path_prefix =
                   path_prefix.empty() ? rootItem->get_field_name() : path_prefix + "." + rootItem->get_field_name();
             }
@@ -731,9 +719,12 @@ typename _Adb_impl<eval_expr, T_OFFSET>::AdbInstance*
                 {
                     path = path.substr(idx + 1);
                 }
+
+                // If ancestor_th is provided, check if path starts with it and remove it
                 if (!path_prefix.empty() && path.compare(0, path_prefix.length(), path_prefix) == 0)
                 {
                     path = path.substr(path_prefix.length());
+                    // Remove leading dot if present
                     if (!path.empty() && path[0] == '.')
                     {
                         path = path.substr(1);
@@ -745,9 +736,10 @@ typename _Adb_impl<eval_expr, T_OFFSET>::AdbInstance*
                 {
                     if (strict_instance_ops)
                     {
-                        raiseException(allowMultipleExceptions,
-                                       "Can't find instance path (" + it->first + ") defined in <instance_ops> section",
-                                       ExceptionHolder::ERROR_EXCEPTION);
+                        error_message =
+                          "Can't find instance path (" + it->first + ") defined in <instance_ops> section";
+                        ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                          ExceptionHolder::ERROR_EXCEPTION);
                     }
                     else
                     {
@@ -790,10 +782,10 @@ typename _Adb_impl<eval_expr, T_OFFSET>::AdbInstance*
                         { // give this warning only if this root instantiation
                             if (allowMultipleExceptions)
                                 cout << "allow multiple";
-                            raiseException(allowMultipleExceptions,
-                                           "Invalid union selector (" + inst->fullName() +
-                                             "), must be a leaf field, cannot be a parent of root",
-                                           ExceptionHolder::ERROR_EXCEPTION);
+                            error_message = "Invalid union selector (" + inst->fullName() +
+                                            "), must be a leaf field, cannot be a parent of root";
+                            ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                              ExceptionHolder::ERROR_EXCEPTION);
                         }
                         break;
                     }
@@ -817,10 +809,10 @@ typename _Adb_impl<eval_expr, T_OFFSET>::AdbInstance*
                         foundSelector = false;
                         if (rootNodeName == rootNode)
                         { // give this warning only if this root instantiation
-                            raiseException(allowMultipleExceptions,
-                                           "Failed to find union selector for union (" + inst->fullName() +
-                                             ") Can't find field (" + path[i] + ") under (" + curInst->fullName() + ")",
-                                           ExceptionHolder::ERROR_EXCEPTION);
+                            error_message = "Failed to find union selector for union (" + inst->fullName() +
+                                            ") Can't find field (" + path[i] + ") under (" + curInst->fullName() + ")";
+                            ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                              ExceptionHolder::ERROR_EXCEPTION);
                         }
                         break;
                     }
@@ -832,28 +824,35 @@ typename _Adb_impl<eval_expr, T_OFFSET>::AdbInstance*
                 string selector_val;
                 inst->unionSelector = curInst;
 
+                // Validate the union selector: must be an enum, must have unique
+                // values (otherwise selection is ambiguous), and every subitem's
+                // "selected_by" value must exist in the enum.
                 if (!inst->unionSelector->isEnumExists())
                 {
-                    string exceptionTxt = "In union (" + inst->fullName() + ") the union selector (" +
-                                          inst->unionSelector->fullName() + ") is not an enum";
-                    raiseException(allowMultipleExceptions, exceptionTxt, ExceptionHolder::ERROR_EXCEPTION);
+                    error_message = "In union (" + inst->fullName() + ") the union selector (" +
+                                    inst->unionSelector->fullName() + ") is not an enum";
+                    ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                      ExceptionHolder::ERROR_EXCEPTION);
                 }
                 else
                 {
+                    // Build the enum map once (name -> value) for all subitem checks below.
                     map<string, uint64_t> selectorValMap = inst->unionSelector->getEnumMap();
 
+                    // // Detect duplicate enum values — e.g. "OPT_A=0, OPT_B=0" makes the
+                    // // selector ambiguous because the runtime value 0 could match either subnode.
                     // map<uint64_t, string> valueToName;
                     // for (auto it = selectorValMap.begin(); it != selectorValMap.end(); ++it)
                     // {
                     //     auto result = valueToName.insert({it->second, it->first});
                     //     if (!result.second)
                     //     {
-                    //         raiseException(allowMultipleExceptions,
-                    //                        "In union (" + inst->fullName() + ") the union selector (" +
-                    //                          inst->unionSelector->fullName() + ") has duplicate enum value: '" +
-                    //                          it->first + "' and '" + result.first->second + "' both map to " +
-                    //                          to_string(it->second),
-                    //                        ExceptionHolder::WARN_EXCEPTION, false);
+                    //         error_message = "In union (" + inst->fullName() + ") the union selector (" +
+                    //                         inst->unionSelector->fullName() + ") has duplicate enum value: '" +
+                    //                         it->first + "' and '" + result.first->second + "' both map to " +
+                    //                         to_string(it->second);
+                    //         ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                    //                                           ExceptionHolder::WARN_EXCEPTION, "", -1, false);
                     //     }
                     // }
 
@@ -868,10 +867,10 @@ typename _Adb_impl<eval_expr, T_OFFSET>::AdbInstance*
                         bool found = inst->subItems[i]->getInstanceAttr("selected_by", selector_val);
                         if (!found)
                         {
-                            raiseException(allowMultipleExceptions,
-                                           "In union (" + inst->fullName() + ") the union subnode (" +
-                                             inst->subItems[i]->get_field_name() + ") doesn't define selection value",
-                                           ExceptionHolder::ERROR_EXCEPTION);
+                            error_message = "In union (" + inst->fullName() + ") the union subnode (" +
+                                            inst->subItems[i]->get_field_name() + ") doesn't define selection value";
+                            ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                              ExceptionHolder::ERROR_EXCEPTION);
                         }
 
                         if (selector_val == "")
@@ -879,13 +878,15 @@ typename _Adb_impl<eval_expr, T_OFFSET>::AdbInstance*
                             continue;
                         }
 
+                        // Verify the subitem's selected_by value exists in the selector enum
                         if (selectorValMap.find(selector_val) == selectorValMap.end())
                         {
-                            string exceptionTxt = "In union (" + inst->fullName() + ") the union subnode (" +
-                                                  inst->subItems[i]->get_field_name() + ") uses a selector value (" +
-                                                  selector_val + ") which isn't defined in the selector field (" +
-                                                  inst->unionSelector->fullName() + ")";
-                            raiseException(allowMultipleExceptions, exceptionTxt, ExceptionHolder::ERROR_EXCEPTION);
+                            error_message = "In union (" + inst->fullName() + ") the union subnode (" +
+                                            inst->subItems[i]->get_field_name() + ") uses a selector value (" +
+                                            selector_val + ") which isn't defined in the selector field (" +
+                                            inst->unionSelector->fullName() + ")";
+                            ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                              ExceptionHolder::ERROR_EXCEPTION);
                         }
                     }
                 }
@@ -957,6 +958,7 @@ typename enable_if<U>::type _Adb_impl<eval_expr, O>::updateLayoutConditions(bool
                 if (reffered_layout_item)
                 {
                     currentVar->set_instance(reffered_layout_item);
+
                     if (reffered_layout_item->isEnumExists())
                     {
                         conditionObj.update_enum(currentName);
@@ -1047,6 +1049,7 @@ bool _Adb_impl<eval_expr, O>::createInstance(AdbField* field,
                                              PartitionTree* partition_tree,
                                              bool array_path_wildcards)
 {
+    string error_message;
     // Stop on exclude tree leaf
     auto stop_on_partition_tree = partition_tree && partition_tree->stop;
 
@@ -1061,9 +1064,8 @@ bool _Adb_impl<eval_expr, O>::createInstance(AdbField* field,
         auto nodes_it = nodesMap.find(field->subNode);
         if (nodes_it == nodesMap.end())
         {
-            raiseException(allowMultipleExceptions,
-                           "Can't find the definition for subnode: " + field->subNode + " of field: " + field->name,
-                           ExceptionHolder::ERROR_EXCEPTION);
+            error_message = "Can't find the definition for subnode: " + field->subNode + " of field: " + field->name;
+            ExceptionHolder::handle_exception(allowMultipleExceptions, error_message, ExceptionHolder::ERROR_EXCEPTION);
         }
         else
         {
@@ -1125,10 +1127,9 @@ bool _Adb_impl<eval_expr, O>::createInstance(AdbField* field,
                 {
                     delete inst;
                     inst = nullptr; // Set inst to nullptr to avoid dangling pointer
-                    raiseException(
-                      false,
-                      "Cyclic definition of nodes, node: " + field->name + " was already added to the layout",
-                      ExceptionHolder::ERROR_EXCEPTION);
+                    error_message =
+                      "Cyclic definition of nodes, node: " + field->name + " was already added to the layout";
+                    ExceptionHolder::handle_exception(false, error_message, ExceptionHolder::ERROR_EXCEPTION);
                 }
                 else
                 {
@@ -1165,10 +1166,10 @@ bool _Adb_impl<eval_expr, O>::createInstance(AdbField* field,
 
                 if (_checkDsAlign && inst->get_max_leaf_size() != 0 && inst->get_size() % inst->get_max_leaf_size() != 0)
                 {
-                    raiseException(allowMultipleExceptions,
-                                   "Node: " + inst->nodeDesc->name + " size(" + to_string(inst->get_size()) +
-                                     ") is not aligned with largest leaf(" + to_string(inst->get_max_leaf_size()) + ")",
-                                   ExceptionHolder::ERROR_EXCEPTION);
+                    error_message = "Node: " + inst->nodeDesc->name + " size(" + to_string(inst->get_size()) +
+                                    ") is not aligned with largest leaf(" + to_string(inst->get_max_leaf_size()) + ")";
+                    ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                      ExceptionHolder::ERROR_EXCEPTION);
                 }
 
                 if (!inst->isUnion() && inst->subItems.size() > 0)
@@ -1180,12 +1181,13 @@ bool _Adb_impl<eval_expr, O>::createInstance(AdbField* field,
                     {
                         if (inst->subItems[j + 1]->offset < inst->subItems[j]->offset + inst->subItems[j]->get_size())
                         {
-                            string exceptionTxt =
+                            error_message =
                               "Field (" + inst->subItems[j + 1]->get_field_name() + ") (" +
                               formatAddr(inst->subItems[j + 1]->offset, inst->subItems[j + 1]->get_size()).c_str() +
                               ") overlaps with (" + inst->subItems[j]->get_field_name() + ") (" +
                               formatAddr(inst->subItems[j]->offset, inst->subItems[j]->get_size()).c_str() + ")";
-                            raiseException(allowMultipleExceptions, exceptionTxt, ExceptionHolder::ERROR_EXCEPTION);
+                            ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                              ExceptionHolder::ERROR_EXCEPTION);
                         }
                     }
                 }
@@ -1211,17 +1213,10 @@ void _Adb_impl<e, O>::checkInstanceOffsetValidity(AdbInstance* inst,
 {
     if (inst->offset + inst->get_size() > parent->offset + parent->get_size())
     {
-        string exceptionTxt = "Field (" + inst->get_field_name() + ") " + formatAddr(inst->offset, inst->get_size()) +
-                              " crosses its parent node (" + parent->get_field_name() + ") " +
-                              formatAddr(parent->offset, parent->get_size()) + " boundaries";
-        if (allowMultipleExceptions)
-        {
-            ExceptionHolder::insertNewException(ExceptionHolder::ERROR_EXCEPTION, exceptionTxt);
-        }
-        else
-        {
-            throw AdbException(exceptionTxt);
-        }
+        string error_message = "Field (" + inst->get_field_name() + ") " + formatAddr(inst->offset, inst->get_size()) +
+                               " crosses its parent node (" + parent->get_field_name() + ") " +
+                               formatAddr(parent->offset, parent->get_size()) + " boundaries";
+        ExceptionHolder::handle_exception(allowMultipleExceptions, error_message, ExceptionHolder::ERROR_EXCEPTION);
     }
 }
 
@@ -1338,312 +1333,6 @@ PartitionTree* _Adb_impl<e, O>::prune_up(PartitionTree* partition_tree)
         } while (parent_tree && current_tree && current_tree->sub_items.size() == 0);
     }
     return partition_tree;
-}
-
-template<bool eval_expr, typename T_OFFSET>
-uint64_t _Adb_impl<eval_expr, T_OFFSET>::_trvrs_calc_cond_num_elements(AdbInstance* instance,
-                                                                       T_OFFSET offset_shift,
-                                                                       const uint8_t* buffer,
-                                                                       uint32_t buffer_size,
-                                                                       bool evaluate_conditions,
-                                                                       bool allow_multiple_exceptions)
-{
-    uint64_t num_elements = 1;
-    auto* array_size_condition = instance->getArraySizeCondition();
-    if (array_size_condition)
-    {
-        if (evaluate_conditions)
-        {
-            try
-            {
-                // Evaluate the conditional size to get the number of elements
-                num_elements = array_size_condition->evaluate(const_cast<uint8_t*>(buffer), offset_shift);
-            }
-            catch (const AdbException& e)
-            {
-                // If conditional size evaluation fails, default to 1 element
-                num_elements = 1;
-                raiseException(
-                  allow_multiple_exceptions,
-                  "Field " + instance->get_field_name() +
-                    " with array size condition, evaluation failed, treating as regular node and processing all children\n" +
-                    e.what(),
-                  ExceptionHolder::WARN_EXCEPTION, false);
-            }
-        }
-        else if (buffer_size > 0)
-        {
-            // Calculate maximum number of elements that fit in the remaining buffer
-            T_OFFSET current_bit_offset = instance->offset + offset_shift;
-            T_OFFSET current_byte_offset = current_bit_offset / 8;
-            T_OFFSET remaining_bytes = (buffer_size > current_byte_offset) ? (buffer_size - current_byte_offset) : 0;
-            T_OFFSET remaining_bits = remaining_bytes * 8;
-            T_OFFSET element_size_bits = instance->get_size();
-
-            if (element_size_bits > 0 && remaining_bits >= element_size_bits)
-            {
-                num_elements = remaining_bits / element_size_bits;
-            }
-            else
-            {
-                num_elements = 0; // No space for even one element
-            }
-        }
-    }
-    return num_elements;
-}
-
-template<bool eval_expr, typename T_OFFSET>
-string _Adb_impl<eval_expr, T_OFFSET>::_trvrs_get_element_array_suffix(uint64_t i, AdbInstance* instance, bool full_path)
-{
-    string array_index = "";
-    string array_suffix = "";
-    uint32_t low_bound = instance->fieldDesc ? instance->fieldDesc->lowBound : 0;
-
-    if (instance->fieldDesc && instance->fieldDesc->array_type == AdbField::ArrayType::dynamic)
-    {
-        array_index = to_string(i + low_bound);
-    }
-    else if (instance->fieldDesc && instance->fieldDesc->array_type >= AdbField::ArrayType::definite &&
-             instance->fieldDesc->array_type < AdbField::ArrayType::dynamic)
-    {
-        array_index = to_string(instance->arrIdx + low_bound);
-    }
-    if (!array_index.empty())
-    {
-        array_suffix =
-          full_path || !instance->isNode() || (instance->fieldDesc && instance->fieldDesc->subNode == "uint64") ?
-            "[" + array_index + "]" :
-            "_" + array_index;
-    }
-    return array_suffix;
-}
-
-template<bool eval_expr, typename T_OFFSET>
-void _Adb_impl<eval_expr, T_OFFSET>::_trvrs_handle_enums(
-  AdbInstance* instance,
-  const string& element_path,
-  T_OFFSET element_offset_shift,
-  const uint8_t* buffer,
-  bool (*func)(const string&, uint64_t, uint64_t, AdbInstance*, void*),
-  void* context)
-{
-    T_OFFSET field_offset = instance->offset + element_offset_shift;
-    uint64_t enum_value =
-      pop_from_buf(buffer, static_cast<uint32_t>(field_offset), static_cast<uint32_t>(instance->get_size()));
-
-    string enum_string;
-    if (instance->intToEnum(enum_value, enum_string))
-    {
-        // For enums, we could call func with enum string info, but for simplicity use numeric value
-        func(element_path, field_offset, enum_value, instance, context);
-    }
-    else
-    {
-        func(element_path, field_offset, enum_value, instance, context);
-    }
-}
-
-template<bool eval_expr, typename T_OFFSET>
-typename _Adb_impl<eval_expr, T_OFFSET>::AdbInstance*
-  _Adb_impl<eval_expr, T_OFFSET>::_trvrs_get_selected_node(AdbInstance* instance,
-                                                           T_OFFSET element_offset_shift,
-                                                           const uint8_t* buffer)
-{
-    u_int32_t selectorValue =
-      pop_from_buf(buffer, static_cast<uint32_t>(instance->unionSelector->offset + element_offset_shift),
-                   static_cast<uint32_t>(instance->unionSelector->get_size()));
-
-    return instance->getUnionSelectedNodeName(selectorValue);
-}
-
-template<bool eval_expr, typename T_OFFSET>
-void _Adb_impl<eval_expr, T_OFFSET>::traverse_layout(
-  AdbInstance* instance,
-  const string& path,
-  T_OFFSET offset_shift,
-  const uint8_t* buffer,
-  uint32_t buffer_size, // TODO: validate correct type size
-  bool (*func)(const string&, uint64_t, uint64_t, AdbInstance*, void*),
-  void* context,
-  bool evaluate_conditions,
-  bool handle_enums,
-  bool full_path,
-  bool allow_multiple_exceptions)
-{
-    string suffix = "";
-    bool stop = false;
-    traverse_layout(instance, path, offset_shift, buffer, buffer_size, func, context, suffix, stop, evaluate_conditions,
-                    handle_enums, full_path, allow_multiple_exceptions);
-}
-
-template<bool eval_expr, typename T_OFFSET>
-void _Adb_impl<eval_expr, T_OFFSET>::traverse_layout(
-  AdbInstance* instance,
-  const string& path,
-  T_OFFSET offset_shift,
-  const uint8_t* buffer,
-  uint32_t buffer_size, // TODO: validate correct type size
-  bool (*func)(const string&, uint64_t, uint64_t, AdbInstance*, void*),
-  void* context,
-  string suffix,
-  bool& stop,
-  bool evaluate_conditions,
-  bool handle_enums,
-  bool full_path,
-  bool allow_multiple_exceptions)
-{
-    if (stop || !instance || !func)
-    {
-        return;
-    }
-
-    evaluate_conditions = evaluate_conditions && buffer && buffer_size > 0;
-    handle_enums = handle_enums && buffer && buffer_size > 0;
-
-    auto* condition = instance->getCondition();
-    if (evaluate_conditions && condition && !condition->get_condition().empty())
-    {
-        try
-        {
-            // Use the condition's evaluate method with the buffer
-            uint64_t condition_result = condition->evaluate(const_cast<uint8_t*>(buffer), offset_shift);
-            if (condition_result == 0)
-            {
-                return; // Skip this field if condition evaluates to false
-            }
-        }
-        catch (const AdbException& e)
-        {
-            // failed to evaluate condition, continue with the layout traversal
-            raiseException(
-              allow_multiple_exceptions,
-              "Field " + instance->get_field_name() +
-                " with condition, evaluation failed, treating as regular node and processing all children\n" + e.what(),
-              ExceptionHolder::WARN_EXCEPTION, false);
-        }
-    }
-
-    // Handle conditional arrays - evaluate conditional size to get num_elements
-    uint64_t num_elements = _trvrs_calc_cond_num_elements(instance, offset_shift, buffer, buffer_size,
-                                                          evaluate_conditions, allow_multiple_exceptions);
-
-    string previous_suffix = suffix;
-    for (uint64_t i = 0; i < num_elements; i++)
-    {
-        if (stop)
-        {
-            return;
-        }
-
-        string path_suffix = _trvrs_get_element_array_suffix(i, instance, full_path);
-        string element_path = full_path ? path + path_suffix : path;
-        if (!full_path && !path_suffix.empty())
-        {
-            suffix = instance->isNode() ? previous_suffix + path_suffix : path_suffix;
-        }
-
-        string sep = element_path.empty() ? "" : ".";
-        T_OFFSET element_offset_shift = offset_shift + (instance->get_size() * i);
-
-        // Handle enum fields - similar to _parse_enum_field, but only if handle_enums is true
-        if (handle_enums && instance->isEnumExists())
-        {
-            _trvrs_handle_enums(instance, element_path, element_offset_shift, buffer, func, context);
-        }
-        // Handle nodes with sub-items (structs/unions) - similar to field.subItems handling
-        else if (instance->isNode() && !instance->subItems.empty())
-        {
-            // For unions, handle selected items (simplified version of _get_union_selected_items)
-            if (evaluate_conditions && instance->isUnion() && instance->unionSelector)
-            {
-                AdbInstance* selectedNode = nullptr;
-                try
-                {
-                    selectedNode = _trvrs_get_selected_node(instance, element_offset_shift, buffer);
-                }
-                catch (const AdbException& e)
-                {
-                    // If getUnionSelectedNodeName throws an exception, treat as a regular non-union node
-                    // and process all children
-                    raiseException(
-                      allow_multiple_exceptions,
-                      "Field " + instance->get_field_name() +
-                        " with union selector failed treating as regular node and processing all children\n" + e.what(),
-                      ExceptionHolder::WARN_EXCEPTION, false);
-                    for (auto sub_item : instance->subItems)
-                    {
-                        if (stop)
-                        {
-                            return;
-                        }
-                        string sub_item_path =
-                          full_path ? element_path + sep + sub_item->fieldDesc->name : sub_item->fieldDesc->name;
-                        traverse_layout(sub_item, sub_item_path, element_offset_shift, buffer, buffer_size, func,
-                                        context, suffix, stop, evaluate_conditions, handle_enums, full_path,
-                                        allow_multiple_exceptions);
-                    }
-                    return;
-                }
-                string selected_node_path =
-                  full_path ? element_path + sep + selectedNode->fieldDesc->name : selectedNode->fieldDesc->name;
-                traverse_layout(selectedNode, selected_node_path, element_offset_shift, buffer, buffer_size, func,
-                                context, suffix, stop, evaluate_conditions, handle_enums, full_path,
-                                allow_multiple_exceptions);
-            }
-            else
-            {
-                for (auto sub_item : instance->subItems)
-                {
-                    if (stop)
-                    {
-                        return;
-                    }
-                    string sub_item_path =
-                      full_path ? element_path + sep + sub_item->fieldDesc->name : sub_item->fieldDesc->name;
-                    traverse_layout(sub_item, sub_item_path, element_offset_shift, buffer, buffer_size, func, context,
-                                    suffix, stop, evaluate_conditions, handle_enums, full_path,
-                                    allow_multiple_exceptions);
-                }
-            }
-        }
-        // Handle leaf fields - similar to the final else clause in _parse_seg_field
-        else
-        {
-            T_OFFSET field_offset = instance->offset + element_offset_shift;
-            uint64_t value = 0;
-            if (buffer)
-            {
-                if (buffer_size >= (field_offset + instance->get_size()) / 8)
-                {
-                    value = pop_from_buf(buffer, static_cast<uint32_t>(field_offset),
-                                         static_cast<uint32_t>(instance->get_size()));
-                }
-                else
-                {
-                    raiseException(allow_multiple_exceptions,
-                                   "On layout traversal, trying to evaluate field, " + instance->get_field_name() +
-                                     ", with offset, " + to_string(field_offset) + ",overflowing the buffer size, " +
-                                     to_string(buffer_size) + "\n",
-                                   ExceptionHolder::ERROR_EXCEPTION);
-                }
-            }
-            if (!full_path)
-            {
-                bool is_uint64 =
-                  instance->parent && instance->parent->fieldDesc && instance->parent->fieldDesc->subNode == "uint64";
-                if (is_uint64)
-                {
-                    element_path = instance->parent->fieldDesc->name + suffix + "_" + element_path;
-                }
-                else if (!suffix.empty())
-                {
-                    element_path += suffix;
-                }
-            }
-            stop = func(element_path, field_offset, value, instance, context);
-        }
-    }
 }
 
 template class _Adb_impl<false, uint32_t>;

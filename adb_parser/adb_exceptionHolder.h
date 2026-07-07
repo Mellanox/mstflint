@@ -52,6 +52,16 @@ class ExceptionHolder
 public:
     // METHODS
     static void insertNewException(const string exceptionType, string exceptionTxt);
+    // Appends the shared adb_parser location suffix (", in file: \"<file>\" line: <N>", or
+    // ", line: <N>" when the file name is empty). No-op when lineNumber < 0. This is THE
+    // single convention for annotating a-me errors/warnings with their source location.
+    static void appendLocationSuffix(string& exceptionTxt, const string& fileName = string(), int lineNumber = -1);
+    static bool handle_exception(bool allowMultipleExceptions,
+                                 string exceptionTxt,
+                                 const string& expType,
+                                 const string& fileName = string(),
+                                 int lineNumber = -1,
+                                 bool raise_warnings = true);
     static ExceptionsMap getAdbExceptionsMap();
     static int getNumberOfExceptions();
     static string printAdbExceptionMap();
@@ -85,6 +95,7 @@ private:
 class AdbStopException : public std::exception
 {
 };
+
 /**
  * Function: ExceptionHolder::getNumberOfExceptions
  * This function return the number of exceptions found

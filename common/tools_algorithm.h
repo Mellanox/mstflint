@@ -91,11 +91,16 @@ inline void replace_all(std::string &input, const std::string &search,
                         const std::string &format) {
   if (search.empty())
     return;
-  size_t pos = 0;
-  while (std::string::npos != (pos = input.find(search, pos))) {
-    input.replace(pos, search.length(), format);
-    pos += format.length();
+  std::string out;
+  out.reserve(input.length());
+  size_t prev = 0, pos;
+  while (std::string::npos != (pos = input.find(search, prev))) {
+    out.append(input, prev, pos - prev);
+    out.append(format);
+    prev = pos + search.length();
   }
+  out.append(input, prev, std::string::npos);
+  input.swap(out);
 }
 
 inline std::string replace_all_copy(const std::string &input,

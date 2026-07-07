@@ -112,13 +112,6 @@ extern "C"
     CRD_DLL_EXPORT int crd_get_dword_num(IN crd_ctxt_t* context, OUT u_int32_t* arr_size);
 
     /*
-       Store all addresses are dword_arr array
-     */
-    CRD_DLL_EXPORT int crd_get_addr_list(IN crd_ctxt_t* context,
-                                         OUT crd_dword_t* dword_arr); // caller well allocate the array and addresses
-                                                                      // will be filled.
-
-    /*
        Store all addresses and data in dword_arr, if func is not null, it will be called on each dword
      */
     CRD_DLL_EXPORT int crd_dump_data(IN crd_ctxt_t* context,

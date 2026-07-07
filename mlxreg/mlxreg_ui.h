@@ -80,7 +80,6 @@ private:
         using MlxRegLib = _MlxRegLib_impl<dynamic>;
         using RegAccessParser = _RegAccessParser_impl<dynamic>;
         using AdbInstance = typename MlxRegLib::AdbInstance;
-        using Adb = typename MlxRegLib::Adb;
 
         struct FieldBase
         {

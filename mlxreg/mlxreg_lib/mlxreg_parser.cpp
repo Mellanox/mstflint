@@ -50,7 +50,6 @@ template<bool dynamic>
 _RegAccessParser_impl<dynamic>::_RegAccessParser_impl(string data,
                                                       string indexes,
                                                       string ops,
-                                                      Adb* adb,
                                                       AdbInstance* regNode,
                                                       std::vector<u_int32_t> buffer,
                                                       bool ignore_ro,
@@ -59,7 +58,6 @@ _RegAccessParser_impl<dynamic>::_RegAccessParser_impl(string data,
     _data = data;
     _indexes = indexes;
     _ops = ops;
-    _adb = adb;
     _regNode = regNode;
     _ignore_ro = ignore_ro;
     _full_path = full_path;
@@ -91,7 +89,6 @@ template<bool dynamic>
 _RegAccessParser_impl<dynamic>::_RegAccessParser_impl(string data,
                                                       string indexes,
                                                       string ops,
-                                                      Adb* adb,
                                                       AdbInstance* regNode,
                                                       u_int32_t len,
                                                       bool ignore_ro,
@@ -100,7 +97,6 @@ _RegAccessParser_impl<dynamic>::_RegAccessParser_impl(string data,
     _data = data;
     _indexes = indexes;
     _ops = ops;
-    _adb = adb;
     _regNode = regNode;
     _ignore_ro = ignore_ro;
     _full_path = full_path;
@@ -157,16 +153,15 @@ std::vector<u_int32_t> _RegAccessParser_impl<dynamic>::genBuffKnown()
     parse_register_params(_ops, ParamType::OP);
     parse_register_params(_data, ParamType::DATA);
 
-    _adb->traverse_layout(_regNode,
-                          "",
-                          0,
-                          (uint8_t*)&(_buffer[0]),
-                          _buffer.size() * sizeof(uint32_t),
-                          _RegAccessParser_impl<dynamic>::_on_traverse_update_buffer,
-                          (void*)this,
-                          false,
-                          false,
-                          _full_path);
+    _regNode->traverse_layout("",
+                              0,
+                              (uint8_t*)&(_buffer[0]),
+                              _buffer.size() * sizeof(uint32_t),
+                              _RegAccessParser_impl<dynamic>::_on_traverse_update_buffer,
+                              (void*)this,
+                              false,
+                              false,
+                              _full_path);
     if (_params_map.size() > 0)
     {
         string unfound_name = "";
@@ -510,16 +505,15 @@ typename _RegAccessParser_impl<dynamic>::AdbInstance* _RegAccessParser_impl<dyna
 {
     FieldSearchContext search_context = {name, size, offset, offsetSpecified, nullptr};
     uint32_t buffer_size = is_buffer_full ? _buffer.size() * sizeof(uint32_t) : _regNode->get_size() / 8;
-    _adb->traverse_layout(_regNode,
-                          "",
-                          0,
-                          (uint8_t*)&(_buffer[0]),
-                          buffer_size,
-                          _RegAccessParser_impl<dynamic>::on_traverse_get_field,
-                          (void*)&search_context,
-                          is_buffer_full,
-                          false,
-                          _full_path);
+    _regNode->traverse_layout("",
+                              0,
+                              (uint8_t*)&(_buffer[0]),
+                              buffer_size,
+                              _RegAccessParser_impl<dynamic>::on_traverse_get_field,
+                              (void*)&search_context,
+                              is_buffer_full,
+                              false,
+                              _full_path);
     if (search_context.instance)
     {
         return search_context.instance;

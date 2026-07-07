@@ -35,7 +35,7 @@
 #include "mlxlink_reg_parser.h"
 #include <common/tools_utils.h>
 
-MlxlinkRegParser::MlxlinkRegParser() : RegAccessParser("", "", "", NULL, NULL, false, false)
+MlxlinkRegParser::MlxlinkRegParser() : RegAccessParser("", "", "", NULL, 0, false, false)
 {
     _mf = nullptr;
     _regLib = nullptr;

@@ -137,23 +137,24 @@ class _AdbInstance_impl
 {
     using AdbNode = AdbNode_impl<T_OFFSET>;
     using AdbField = AdbField_impl<T_OFFSET>;
+
     using AdbNodeLarge = AdbNodeLarge_impl<T_OFFSET>;
     using AdbFieldLarge = AdbFieldLarge_impl<T_OFFSET>;
+
     using AdbCondition = _AdbCondition_impl<T_OFFSET>;
-struct InstOpsPropertiesBasic
-{
-    LayoutItemAttrsMap* instAttrsMap{nullptr}; // Attributes after evaluations and array expanding
-};
 
-struct InstOpsPropertiesExtended
-{
+    struct InstOpsPropertiesBasic
+    {
         LayoutItemAttrsMap* instAttrsMap{nullptr}; // Attributes after evaluations and array expanding
-    AttrsMap varsMap{};               // all variables relevant to this item after evaluation
-    AdbCondition condition{};
-    AdbCondition conditionalSize{}; // for dynamic arrays
-};
+    };
 
-
+    struct InstOpsPropertiesExtended
+    {
+        LayoutItemAttrsMap* instAttrsMap{nullptr}; // Attributes after evaluations and array expanding
+        AttrsMap varsMap{};                        // all variables relevant to this item after evaluation
+        AdbCondition condition{};
+        AdbCondition conditionalSize{}; // for dynamic arrays
+    };
 
     using InstOpsProperties = typename conditional<eval_expr, InstOpsPropertiesExtended, InstOpsPropertiesBasic>::type;
 
@@ -271,8 +272,10 @@ public:
 
     template<bool U = eval_expr>
     typename enable_if<!U, AttrsMap>::type getVarsMap();
+
     template<bool U = eval_expr>
     typename enable_if<U, AdbCondition*>::type getCondition();
+
     template<bool U = eval_expr>
     typename enable_if<!U, AdbCondition*>::type getCondition();
 
@@ -287,6 +290,17 @@ public:
     void pushBufLE(uint8_t* buf, uint64_t value);
     uint64_t popBuf(uint8_t* buf);
     uint64_t popBufLE(uint8_t* buf);
+
+    void traverse_layout(const string& path,
+                         T_OFFSET offset_shift,
+                         const uint8_t* buffer,
+                         uint32_t buffer_size,
+                         bool (*func)(const string&, uint64_t, uint64_t, _AdbInstance_impl<eval_expr, T_OFFSET>*, void*),
+                         void* context,
+                         bool evaluate_conditions = true,
+                         bool handle_enums = false,
+                         bool full_path = true,
+                         bool allow_multiple_exceptions = false);
 
     template<bool U = eval_expr>
     typename enable_if<U>::type initInstOps();
@@ -316,8 +330,22 @@ public:
     AdbField* _max_leaf{nullptr}; // for DS alignment check
     InstancePropertiesMask inst_props{};
     LayoutPartitionProps* partition_props{nullptr};
+
 private:
     _AdbInstance_impl<eval_expr, T_OFFSET>* find_layout_item_dfs(const std::string& path);
+
+    void traverse_layout(const string& path,
+                         T_OFFSET offset_shift,
+                         const uint8_t* buffer,
+                         uint32_t buffer_size,
+                         bool (*func)(const string&, uint64_t, uint64_t, _AdbInstance_impl<eval_expr, T_OFFSET>*, void*),
+                         void* context,
+                         string suffix,
+                         bool& stop,
+                         bool evaluate_conditions = true,
+                         bool handle_enums = false,
+                         bool full_path = true,
+                         bool allow_multiple_exceptions = false);
 };
 
 // TODO: try to move the function definition below to the cpp file, currently fails linkage
@@ -331,7 +359,7 @@ typename enable_if<U>::type _AdbInstance_impl<eval_expr, O>::initInstOps()
     {
         auto is_conditional = parent->nodeDesc->attrs.find("is_conditional");
         if (is_conditional != parent->nodeDesc->attrs.end() && is_conditional->second == "1")
-    {
+        {
             inst_ops_props.condition.init(value);
         }
     }

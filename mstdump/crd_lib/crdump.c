@@ -134,11 +134,6 @@ static int crd_count_double_word(IN mfile* mf,
                                  IN u_int8_t with_sp2);
 
 /*
-   Fill addresses at dword_arr
- */
-static int crd_fill_address(IN crd_ctxt_t* context, OUT crd_dword_t* dword_arr);
-
-/*
    Read a line from csv file
  */
 static int crd_read_line(IN FILE* fd, OUT char* tmp);
@@ -290,22 +285,6 @@ int crd_init(OUT crd_ctxt_t** context,
 Cleanup:
     crd_free(*context);
     return rc;
-}
-
-int crd_get_addr_list(IN crd_ctxt_t* context, OUT crd_dword_t* dword_arr)
-{
-    int rc;
-
-    CRD_CHECK_NULL(context);
-    CRD_CHECK_NULL(dword_arr);
-
-    rc = crd_fill_address(context, dword_arr);
-    if (rc)
-    {
-        return rc;
-    }
-
-    return CRD_OK;
 }
 
 int crd_dump_data(IN crd_ctxt_t* context, OUT crd_dword_t* dword_arr, IN crd_callback_t func)
@@ -886,33 +865,6 @@ static int crd_count_double_word(IN mfile* mf,
         }
     }
 
-    return CRD_OK;
-}
-
-static int crd_fill_address(IN crd_ctxt_t* context, OUT crd_dword_t* dword_arr)
-{
-    u_int32_t i = 0;
-    u_int32_t j = 0;
-    int total = 0;
-
-    for (i = 0; i < context->block_count; i++)
-    {
-        for (j = 0; j < context->blocks[i].len; j++)
-        {
-            // CRD_UNKOWN, CRD_EMPTY
-            if (!context->is_full && strcmp(context->blocks[i].enable_addr, CRD_EMPTY))
-            {
-                break;
-            }
-            if ((u_int32_t)total >= context->number_of_dwords)
-            {
-                CRD_DEBUG("value exceeded, something wrong in calculation!");
-                return CRD_EXCEED_VALUE;
-            }
-            dword_arr[total].addr = context->blocks[i].addr + (j * 4);
-            total += 1;
-        }
-    }
     return CRD_OK;
 }
 
