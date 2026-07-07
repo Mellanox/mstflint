@@ -90,7 +90,7 @@ libmstflint_sdk_la_LIBADD = \
     $(top_builddir)/hca_capabilities/libhca_capabilities.la \
     $(top_builddir)/mlxreg/mlxreg_sdk/libmlxreg_sdk.la \
     $(top_builddir)/mlxlink/modules/libmodules_lib.la \
-    $(top_builddir)/mlxreg/mlxreg_lib/libmstreg_lib.la \
+    $(MSTREG_SDK_WHOLE_ARCHIVE) \
     $(top_builddir)/mft_utils/libmftutils.la \
     $(MTCR_SDK_WHOLE_ARCHIVE) \
     $(top_builddir)/adb_parser/libadb_parser.la \

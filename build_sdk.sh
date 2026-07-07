@@ -128,8 +128,10 @@ build_deb() {
         --exclude=.git --exclude='*.o' --exclude='*.lo' --exclude='*.la' \
         --exclude='*.a' --exclude=.libs --exclude=.deps \
         --exclude=./debian --exclude='*.tar.gz' --exclude=./configure~ \
+        --exclude=config.status --exclude=config.log --exclude=autom4te.cache \
         -C "$SCRIPT_DIR" . | tar -x -C "$src"
     cp -r "$SCRIPT_DIR/debian-sdk" "$src/debian"
+    cp "$SCRIPT_DIR/debian/mstflint.install.in" "$src/debian/"
 
     echo ">> dpkg-buildpackage -b -uc -us"
     ( cd "$src" && dpkg-buildpackage -b -uc -us )

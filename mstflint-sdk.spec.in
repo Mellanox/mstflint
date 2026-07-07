@@ -12,8 +12,10 @@
 
 %if 0%{?suse_version}
 %define expat_devel_lib libexpat-devel
+%define openssl_devel_lib libopenssl-devel
 %else
 %define expat_devel_lib expat-devel
+%define openssl_devel_lib openssl-devel
 %endif
 
 Summary: mstflint SDK - standalone shared library and headers
@@ -32,7 +34,9 @@ BuildRequires: pkgconfig
 BuildRequires: autoconf
 BuildRequires: automake
 BuildRequires: libtool
+BuildRequires: gcc-c++
 BuildRequires: %{expat_devel_lib}
+BuildRequires: %{openssl_devel_lib}
 BuildRequires: xz-devel
 BuildRequires: zlib-devel
 

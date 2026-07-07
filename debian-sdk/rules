@@ -7,14 +7,14 @@
 export DH_OPTIONS
 
 %:
-	dh $@
+	dh $@ --parallel
 
 override_dh_auto_configure:
 	./autogen.sh
 	dh_auto_configure -- --enable-adb-generic-tools --enable-mstflint-sdk
 
 override_dh_auto_build:
-	$(MAKE) sdk
+	dh_auto_build -- sdk
 
 override_dh_auto_install:
 	$(MAKE) install-sdk DESTDIR=$(CURDIR)/debian/mstflint-sdk
