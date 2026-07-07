@@ -65,6 +65,7 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root)
 %{mstflint_sdk_libdir}/libmstflint_sdk.so
+%{_libdir}/pkgconfig/mstflint_sdk.pc
 %{mstflint_sdk_incdir}
 %{mstflint_sdk_datadir}
 

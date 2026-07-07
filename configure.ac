@@ -602,6 +602,7 @@ if test "x$enable_mstflint_sdk" = "xyes"; then
     # automake does not reject the -Wl tokens in the SDK's _LIBADD.
     MTCR_SDK_WHOLE_ARCHIVE="-Wl,--whole-archive \$(top_builddir)/$MTCR_CONF_DIR/.libs/libmtcr_ul.a -Wl,--no-whole-archive"
     AC_CONFIG_FILES(mft_sdk/Makefile)
+    AC_CONFIG_FILES(mft_sdk/mstflint_sdk.pc)
     AC_CONFIG_FILES(hca_capabilities/Makefile)
     AC_CONFIG_FILES(mlxreg/mlxreg_sdk/Makefile)
     AC_CONFIG_FILES(mft_core/device/Makefile)
