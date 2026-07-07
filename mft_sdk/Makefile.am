@@ -130,6 +130,12 @@ sdkinclude_HEADERS = \
     mft_sdk_telemetry_types.h \
     mft_sdk_types.h
 
+# pkg-config metadata so consumers can build against the SDK with
+# `pkg-config --cflags --libs mstflint_sdk`. Installed to the conventional
+# $(libdir)/pkgconfig, generated from mstflint_sdk.pc.in by configure.
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = mstflint_sdk.pc
+
 # The SDK ships as a redistributable binary: strip the installed shared object
 # and drop the libtool .la (nothing links against it, and .la files are not
 # wanted in a distribution).
