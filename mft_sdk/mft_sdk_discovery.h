@@ -82,7 +82,7 @@ extern "C"
      *         MST_ERROR_NOT_SUPPORTED if the device's product type is not supported.
      */
     MstStatus mstGetAvailablePCIeSubinterfaces(MstDeviceInfo* deviceInfo,
-                                               MstPcIeSubInterfaceInfo** availableSubInterfaces,
+                                               MstPcieSubInterfaceInfo** availableSubInterfaces,
                                                unsigned int* numSubInterfaces);
 
     /**
@@ -92,7 +92,7 @@ extern "C"
      *         MST_SUCCESS if the available PCIe sub-interfaces array was freed successfully.
      *         MST_ERROR_INVALID_ARGUMENT if the availableSubInterfaces was not initialized.
      */
-    MstStatus mstFreePCIeSubInterfaces(MstPcIeSubInterfaceInfo* availableSubInterfaces);
+    MstStatus mstFreePCIeSubInterfaces(MstPcieSubInterfaceInfo* availableSubInterfaces);
 
     /**
      * @brief Gets a device handle by device identifier.
@@ -125,7 +125,7 @@ extern "C"
      * @return The status of the operation. In case of error, the error string can be retrieved using
      * mstGetInitErrorString function.
      */
-    MstStatus mstGetDeviceHandleByBDF(MstDevice* mstDevice, PciBDF pciBDF, MstPCIeSubInterfaceType subInterfaceType);
+    MstStatus mstGetDeviceHandleByBDF(MstDevice* mstDevice, MstPciBDF pciBDF, MstPCIeSubInterfaceType subInterfaceType);
 
     /**
      * @brief Gets a device handle by Fwctl device name.

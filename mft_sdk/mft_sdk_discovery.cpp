@@ -205,10 +205,10 @@ MstStatus mstDriverDeviceFromPciDbdf(const std::string& dbdf, std::string& mstDr
     return MST_SUCCESS;
 }
 
-MstPcIeSubInterfaceInfo createPCIeSubInterface(MstPCIeSubInterfaceType pcieSubInterfaceType,
+MstPcieSubInterfaceInfo createPCIeSubInterface(MstPCIeSubInterfaceType pcieSubInterfaceType,
                                                const char* subInterfaceIdentifier)
 {
-    MstPcIeSubInterfaceInfo currentSubInterface;
+    MstPcieSubInterfaceInfo currentSubInterface;
     currentSubInterface.pcieSubInterfaceType = pcieSubInterfaceType;
     strncpy(currentSubInterface.subInterfaceIdentifier, subInterfaceIdentifier, MAX_DEVICE_IDENTIFIER_LENGTH - 1);
     currentSubInterface.subInterfaceIdentifier[MAX_DEVICE_IDENTIFIER_LENGTH - 1] = '\0';
@@ -397,7 +397,7 @@ MstStatus updateDeviceInfo(mfile* mf, MstDeviceInfo& deviceInfo)
 extern "C"
 {
     MstStatus mstGetAvailablePCIeSubinterfaces(MstDeviceInfo* deviceInfo,
-                                               MstPcIeSubInterfaceInfo** availableSubInterfaces,
+                                               MstPcieSubInterfaceInfo** availableSubInterfaces,
                                                unsigned int* numSubInterfaces)
     {
         if (!deviceInfo)
@@ -410,7 +410,7 @@ extern "C"
             return MST_ERROR_INVALID_ARGUMENT;
         }
 
-        MstPcIeSubInterfaceInfo pcieSubInterfaceTypes[MAX_PCIe_SUB_INTERFACE_TYPES];
+        MstPcieSubInterfaceInfo pcieSubInterfaceTypes[MAX_PCIe_SUB_INTERFACE_TYPES];
         memset(pcieSubInterfaceTypes, 0, sizeof(pcieSubInterfaceTypes));
         unsigned int numSubInterfaceDiscovered = 0;
         std::string interfaceIdentifier = "";
@@ -487,7 +487,7 @@ extern "C"
             return MST_ERROR_NO_AVAILABLE_DEVICES;
         }
 
-        *availableSubInterfaces = new MstPcIeSubInterfaceInfo[numSubInterfaceDiscovered];
+        *availableSubInterfaces = new MstPcieSubInterfaceInfo[numSubInterfaceDiscovered];
         for (unsigned int i = 0; i < numSubInterfaceDiscovered; i++)
         {
             (*availableSubInterfaces)[i] = pcieSubInterfaceTypes[i];
@@ -496,7 +496,7 @@ extern "C"
         return MST_SUCCESS;
     }
 
-    MstStatus mstFreePCIeSubInterfaces(MstPcIeSubInterfaceInfo* availableSubInterfaces)
+    MstStatus mstFreePCIeSubInterfaces(MstPcieSubInterfaceInfo* availableSubInterfaces)
     {
         if (!availableSubInterfaces)
         {
@@ -592,7 +592,7 @@ extern "C"
     }
 #endif /* ENABLE_MST_DEV_I2C */
 
-    MstStatus mstGetDeviceHandleByBDF(MstDevice* mstDevice, PciBDF pciBDF, MstPCIeSubInterfaceType subInterfaceType)
+    MstStatus mstGetDeviceHandleByBDF(MstDevice* mstDevice, MstPciBDF pciBDF, MstPCIeSubInterfaceType subInterfaceType)
     {
         string bdfStr = nbu::mft::common::string_format("%04x:%02x:%02x.%x", pciBDF.domain, pciBDF.bus, pciBDF.device, pciBDF.function);
         string deviceIdentifier = "";
