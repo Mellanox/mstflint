@@ -36,6 +36,8 @@
 """
 
 from __future__ import print_function
+import glob
+import os
 import subprocess
 import platform
 import re
@@ -86,10 +88,16 @@ def getDomain(devAddr):
     return None
 
 
-def addDomainToAddress(devAddr):
-    if len(devAddr.split(":")) == 2:
-        return "0000:" + devAddr
-    return devAddr
+def addDomainToAddress(devAddr, domain=None):
+    if len(devAddr.split(":")) == 3:
+        return devAddr
+    if domain is not None:
+        return "%s:%s" % (domain, devAddr)
+    if platform.system() == "Linux":
+        matches = glob.glob("/sys/bus/pci/devices/*:%s" % devAddr)
+        if len(matches) == 1:
+            return os.path.basename(matches[0])
+    return "0000:" + devAddr
 
 
 def removeDomainFromAddress(devAddr):

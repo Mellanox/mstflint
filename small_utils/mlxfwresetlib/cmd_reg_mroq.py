@@ -221,7 +221,10 @@ class CmdRegMroq():
         return self._mroq_is_supported
 
     def is_any_sync_supported(self, tool_owner_support):
-        pci_sync_for_fw_update_start = self._pci_sync_for_fw_update_start
+        known_mask = 0
+        for field in CmdRegMroq.pci_sync_db:
+            known_mask |= field['mask']
+        pci_sync_for_fw_update_start = self._pci_sync_for_fw_update_start & known_mask
 
         if not tool_owner_support:
             pci_sync_for_fw_update_start &= ~CmdRegMroq.pci_sync_db[CmdRegMroq.LEGACY_FLOW]['mask']
@@ -246,16 +249,31 @@ class CmdRegMroq():
         if self.mroq_is_supported() is False:
             raise Exception("MROQ is not supported")
 
-        reset_sync = CmdRegMroq.LEGACY_FLOW
-        if tool_owner_support is False:
-            reset_sync = CmdRegMroq.SYNCED_DRIVER_FLOW
-
         for field in CmdRegMroq.pci_sync_db:
             if field["mask"] & self._pci_sync_for_fw_update_start:
                 if field["flow"] is CmdRegMroq.LEGACY_FLOW and tool_owner_support is False:
-                    pass
-                else:
-                    reset_sync = field["flow"]
-                    break
+                    continue
+                return field["flow"]
 
-        return reset_sync
+        return None
+
+    def disable_all_syncs(self):
+        """
+        Force disable all sync options
+        """
+        if self._mroq_is_supported:
+            if self._pci_sync_for_fw_update_start != 0:
+                self._logger.debug("Disabled all sync options in MROQ")
+            self._pci_sync_for_fw_update_start = 0
+
+    def disable_driver_sync(self, logger=None):
+        """
+        Force disable reset sync 1 (NIC driver is the owner), e.g. when RP DPC PIO is active.
+        """
+        if not self._mroq_is_supported:
+            return
+        driver_mask = CmdRegMroq.pci_sync_db[CmdRegMroq.SYNCED_DRIVER_FLOW]['mask']
+        if self._pci_sync_for_fw_update_start & driver_mask:
+            if logger:
+                logger.debug("Disabled reset sync {0} (RP DPC PIO)".format(CmdRegMroq.SYNCED_DRIVER_FLOW))
+        self._pci_sync_for_fw_update_start &= ~driver_mask
