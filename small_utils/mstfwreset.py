@@ -138,6 +138,7 @@ MLNX_DEVICES = [
     dict(name="NVLink6_Switch", devid=0x278, status_config_not_done=(0x200010, 0)),
     dict(name="NVLink6_Switch-RMA", devid=0x279, status_config_not_done=(0x200010, 0)),
     dict(name="NVLink7_Switch", devid=0x27c, status_config_not_done=(0x200010, 0)),
+    dict(name="NVLink8_Switch", devid=0x2a0, status_config_not_done=(0x200010, 0)),
     dict(name="Spectrum", devid=0x249, status_config_not_done=(0x80010, 0)),
     dict(name="Spectrum-2", devid=0x24E, status_config_not_done=(0x100010, 0)),
     dict(name="Spectrum-3", devid=0x250, status_config_not_done=(0x100010, 0)),
@@ -1963,10 +1964,20 @@ def rebootMachine():
 ######################################################################
 
 
+def is_xen_dom0():
+    # Xen dom0 has direct HW access and supports fwreset, so skip the VM check for it; "control_d" in /proc/xen/capabilities marks dom0 (empty on guests).
+    try:
+        with open("/proc/xen/capabilities") as capabilities:
+            return "control_d" in capabilities.read()
+    except (IOError, OSError) as e:
+        logger.debug("Could not read /proc/xen/capabilities, assuming not Xen dom0: {0}".format(e))
+        return False
+
+
 def assert_not_vm(args, command):
     # Exit in case of virtual-machine (not implemented for FreeBSD and Windows)
     if args.skip_vm_check is False and command == "reset" and platform.system() == "Linux" \
-            and "ppc64" not in platform.machine() and "xenenterprise" not in platform.platform():
+            and "ppc64" not in platform.machine() and not is_xen_dom0():
         rc, out, _ = cmdExec('lscpu')
         if rc == 0:
             if "Hypervisor vendor" in out:
