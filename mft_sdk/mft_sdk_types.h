@@ -128,11 +128,11 @@ extern "C"
     /**
      * @brief PCIe sub-interface information for an MST device.
      */
-    typedef struct MstPcIeSubInterfaceInfo_t
+    typedef struct MstPcieSubInterfaceInfo_t
     {
         MstPCIeSubInterfaceType pcieSubInterfaceType;              /**< PCIe sub-interface type. */
         char subInterfaceIdentifier[MAX_DEVICE_IDENTIFIER_LENGTH]; /**< PCIe sub-interface identifier string. */
-    } MstPcIeSubInterfaceInfo;
+    } MstPcieSubInterfaceInfo;
 
     /**
      * @brief Basic identifying information for an MST device.
@@ -148,13 +148,13 @@ extern "C"
     /**
      * @brief PCI bus-device-function address.
      */
-    typedef struct PciBDF_t
+    typedef struct MstPciBDF_t
     {
         uint32_t domain;   /**< PCI domain number. */
         uint32_t bus;      /**< PCI bus number. */
         uint32_t device;   /**< PCI device number. */
         uint32_t function; /**< PCI function number. */
-    } PciBDF;
+    } MstPciBDF;
 
     /**
      * @brief Firmware version triplet.
