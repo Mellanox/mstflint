@@ -135,6 +135,7 @@ typedef enum StFlashCommand
     SFC_WRSR_GIGA = 0x31,               // Write status register (GIGA)
     SFC_RDFR = 0x48,
     SFC_WRFR = 0x42,
+    SFC_SRPV_ISSI_IS25LPXXX = 0xC0, // Set violatile read parameters
     SFC_RDRP_ISSI_IS25LPXXX = 0x61, // Read read parameters
     SFC_SFDP = 0x5A                // Read SFDP table
 } StFlashCommand_t;
