@@ -1022,9 +1022,20 @@ void MlxlinkCommander::getActualNumOfLanes(u_int32_t linkSpeedActive, bool exten
     std::string rxtx;
     if (_protoActive == IB)
     {
-        sendPrmReg(ACCESS_REG_PTYS, GET, "proto_mask=%d", _protoActive);
+        if (_isNvlinkModeB || _isNvlinkModeA)
+        {
+            string linkSpeedActive = SupportedSpeeds2Str((_isNvlinkModeB || _isNvlinkModeA) ? NVLINK : IB, _activeSpeed,
+                                                         true, _isModeAsActive);
+            _numOfLanes = linkSpeedActive.empty()                                 ? 0 :
+                          checkNvl6ModeBSpeed(linkSpeedActive) || _isModeAsActive ? 2 :
+                                                                                    1;
+        }
+        else
+        {
+            sendPrmReg(ACCESS_REG_PTYS, GET, "proto_mask=%d", _protoActive);
 
-        _numOfLanes = getFieldValue("ib_link_width_oper");
+            _numOfLanes = getFieldValue("ib_link_width_oper");
+        }
     }
     else if (_protoActive == ETH)
     {
