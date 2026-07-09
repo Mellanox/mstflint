@@ -125,7 +125,7 @@ EXTERN_C_START
 #define MAX_NUM_OF_CYCLES 15
 #define MIN_NUM_OF_CYCLES 1
 #define MAX_NUM_OF_CYCLES_FOR_MX25UXXX 3
-#define MIN_NUM_OF_CYCLES_FOR_MX25UXXX 0
+#define MIN_NUM_OF_CYCLES_FOR_MX25UXXX_IS25LPXXX 0
 
 typedef struct gpio_toggle_conf_cx6
 {
@@ -261,6 +261,7 @@ int mf_get_write_protect(mflash* mfl, u_int8_t bank_num, write_protect_info_t* p
 int mf_set_dummy_cycles(mflash* mfl, u_int8_t num_of_cycles);
 int mf_get_dummy_cycles(mflash* mfl, u_int8_t* num_of_cycles);
 int is_macronix_special_case_for_dummy_cycles(mflash* mfl);
+int is_issi_special_case_for_dummy_cycles(mflash* mfl);
 int is_WINBOND_60MB_bottom_protection_supported(uint8_t vendor, uint8_t type, uint8_t log2_bank_size);
 int is_ISSI_60MB_bottom_protection_supported(uint8_t vendor, uint8_t type, uint8_t log2_bank_size);
 int is_ISSI_is25wj032f_by_jedec_id(uint32_t jedec_id);
