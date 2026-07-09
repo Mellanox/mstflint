@@ -496,7 +496,6 @@ public:
     bool check_and_set_tbs_field(std::string& param_val_str,
                                  std::size_t tbs_end_loc,
                                  std::string& tbs,
-                                 std::string& err_msg,
                                  const ext_flash_attr_t& attr,
                                  u_int8_t bank_num);
     bool get_data_for_protect_info(const ext_flash_attr_t& attr,
