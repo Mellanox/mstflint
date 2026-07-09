@@ -4075,6 +4075,15 @@ int is_macronix_mx25u51294g_mx25u51294gxdi08(uint8_t vendor, uint16_t type, uint
     return 0;
 }
 
+int is_issi_special_case_for_dummy_cycles(mflash* mfl)
+{
+    if (mfl->attr.vendor == FV_IS25LPXXX && mfl->attr.type == FMT_IS25WPXXX && mfl->attr.log2_bank_size == FD_512)
+    {
+        return 1;
+    }
+    return 0;
+}
+
 int mf_read_modify_status_winbond(mflash* mfl, u_int8_t bank_num, u_int8_t is_first_status_reg, u_int8_t param, u_int8_t offset, u_int8_t size)
 {
     u_int8_t status1 = 0, status2 = 0, use_rdsr2 = 0;
@@ -4256,7 +4265,7 @@ int set_tb_for_ISSI_is25wj032(mflash* mfl, u_int8_t tb, u_int8_t bank_num)
 
 int mf_set_dummy_cycles_direct_access(mflash* mfl, u_int8_t num_of_cycles)
 {
-    u_int8_t lower_bound = (is_macronix_special_case_for_dummy_cycles(mfl) || is_gigadevice_gd25lfxxx_512(mfl)) ? MIN_NUM_OF_CYCLES_FOR_MX25UXXX : MIN_NUM_OF_CYCLES;
+    u_int8_t lower_bound = (is_macronix_special_case_for_dummy_cycles(mfl) || is_issi_special_case_for_dummy_cycles(mfl) || is_gigadevice_gd25lfxxx_512(mfl)) ? MIN_NUM_OF_CYCLES_FOR_MX25UXXX_IS25LPXXX  : MIN_NUM_OF_CYCLES;
     u_int8_t upper_bound = (is_macronix_special_case_for_dummy_cycles(mfl) || is_gigadevice_gd25lfxxx_512(mfl)) ? MAX_NUM_OF_CYCLES_FOR_MX25UXXX : MAX_NUM_OF_CYCLES;
     if (!mfl || num_of_cycles < lower_bound || num_of_cycles > upper_bound)
     {
@@ -4279,6 +4288,12 @@ int mf_set_dummy_cycles_direct_access(mflash* mfl, u_int8_t num_of_cycles)
         else if (is_macronix_mx25u51245g(mfl))
         {
             rc = mf_read_modify_status_winbond(mfl, bank, 0, num_of_cycles, DUMMY_CYCLES_OFFSET_MX25U51245G, DUMMY_CYCLES_BIT_LEN_MACRONIX_MX25UXXX);
+            CHECK_RC(rc);
+        }
+        else if (is_issi_special_case_for_dummy_cycles(mfl))
+        {
+            rc = mf_read_modify_status_new(mfl, bank, SFC_RDRP_ISSI_IS25LPXXX, SFC_SRPV_ISSI_IS25LPXXX, num_of_cycles,
+                                           DUMMY_CYCLE_OFFSET_ISSI_IS25LPXXX, DUMMY_CYCLES_BIT_LEN_ISSI_IS25LPXXX, 1);
             CHECK_RC(rc);
         }
         else if (is_gigadevice_gd25lfxxx_512(mfl))
@@ -4319,6 +4334,11 @@ int mf_get_dummy_cycles_direct_access(mflash* mfl, u_int8_t* dummy_cycles_p)
         rc = mfl->f_spi_status(mfl, SFC_RDCR, &status);
         CHECK_RC(rc);
         *dummy_cycles_p = EXTRACT(status, DUMMY_CYCLES_OFFSET_MX25U51245G, DUMMY_CYCLES_BIT_LEN_MACRONIX_MX25UXXX);
+    }
+    else if (is_issi_special_case_for_dummy_cycles(mfl))
+    {
+        rc = mf_get_param_int(mfl, dummy_cycles_p, SFC_RDRP_ISSI_IS25LPXXX, DUMMY_CYCLE_OFFSET_ISSI_IS25LPXXX,
+                              DUMMY_CYCLES_BIT_LEN_ISSI_IS25LPXXX, 1, 0);
     }
     else if (is_gigadevice_gd25lfxxx_512(mfl))
     {
