@@ -484,6 +484,10 @@ flash_info_t g_flash_info_arr[] = {{"M25PXxx", FV_ST, FMT_ST_M25PX, FD_LEGACY, M
                                    {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND_IM, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 1, 0, 0},
                                    {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND_IQ, 1 << FD_32, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 0, 0, 1, 0, 0},
                                    {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND_IM, 1 << FD_32, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 0, 0, 1, 0, 0},
+
+                                   // https://www.mouser.com/datasheet/2/949/w25q256jw_spi_revd_09042018-1489579.pdf?srsltid=AfmBOoogLLjBZgIyiOGGuM3skhT2O5XciLm6LmVNvT_Sr_kYhxQhvXoG
+                                   {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND_IQ, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 1, 0, 0},
+  
                                    {ATMEL_NAME, FV_ATMEL, FMT_ATMEL, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 0, 0, 0, 0, 0, 0, 0, 0},
                                    {S25FLXXXP_NAME, FV_S25FLXXXX, FMT_S25FLXXXP, FD_LEGACY, MCS_STSPI, SFC_SE, FSS_64KB, 0, 0, 0, 0, 0, 0, 0, 0},
                                    {S25FL116K_NAME, FV_S25FLXXXX, FMT_S25FL116K, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 0, 0, 0, 0},
@@ -4719,7 +4723,7 @@ int mf_set_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
     }
     else if ((mfl->attr.vendor == FV_MX25K16XXX) || (mfl->attr.vendor == FV_IS25LPXXX) ||
              ((mfl->attr.vendor == FV_S25FLXXXX) && (mfl->attr.type == FMT_S25FLXXXL) && (mfl->attr.log2_bank_size == FD_256)) ||
-             ((mfl->attr.vendor == FV_WINBOND) && (mfl->attr.type == FMT_WINBOND_3V) && (mfl->attr.log2_bank_size == FD_256)) ||
+             ((mfl->attr.vendor == FV_WINBOND) && ((mfl->attr.type == FMT_WINBOND_3V) || (mfl->attr.type == FMT_WINBOND_IQ)) && (mfl->attr.log2_bank_size == FD_256)) ||
              (is_WINBOND_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size)))
     {
         if (mfl->attr.vendor == FV_MX25K16XXX && !is_macronix_mx25u51294g_mx25u51294gxdi08_wrapper(mfl))
@@ -4835,7 +4839,7 @@ int mf_get_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
     else
     {
         if (((mfl->attr.vendor == FV_S25FLXXXX) && (mfl->attr.type == FMT_S25FLXXXL) && (mfl->attr.log2_bank_size == FD_256)) ||
-            ((mfl->attr.vendor == FV_WINBOND) && (mfl->attr.type == FMT_WINBOND_3V) && (mfl->attr.log2_bank_size == FD_256)) ||
+            ((mfl->attr.vendor == FV_WINBOND) && ((mfl->attr.type == FMT_WINBOND_3V) || (mfl->attr.type == FMT_WINBOND_IQ)) && (mfl->attr.log2_bank_size == FD_256)) ||
             (is_WINBOND_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size)) || (is_macronix_mx25u51294g_mx25u51294gxdi08_wrapper(mfl)))
         {
             tb_offset = TB_OFFSET_CYPRESS_WINBOND_MACRONIX_256;
@@ -4859,7 +4863,7 @@ int mf_get_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
     // determine BP_SIZE since in some flashes it's 3 bits and in some it's 4
     uint8_t flash_specific_bp_size = BP_SIZE;
     if (mfl->attr.vendor == FV_MX25K16XXX || mfl->attr.vendor == FV_IS25LPXXX || (mfl->attr.vendor == FV_S25FLXXXX && mfl->attr.type == FMT_S25FLXXXL && mfl->attr.log2_bank_size == FD_256) ||
-        (mfl->attr.vendor == FV_WINBOND && mfl->attr.type == FMT_WINBOND_3V && mfl->attr.log2_bank_size == FD_256) ||
+        ((mfl->attr.vendor == FV_WINBOND) && ((mfl->attr.type == FMT_WINBOND_3V) || (mfl->attr.type == FMT_WINBOND_IQ)) && (mfl->attr.log2_bank_size == FD_256)) ||
         (is_WINBOND_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size)))
     {
         flash_specific_bp_size = BP_SIZE + 1;
