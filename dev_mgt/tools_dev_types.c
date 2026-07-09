@@ -595,9 +595,9 @@ static int dm_get_device_id_inner(mfile* mf, dm_dev_id_t* ptr_dm_dev_id, u_int32
     int rc;
     u_int32_t dev_flags;
 
-    if (mf->pci_device_id == DeviceBlueField4_HwId)
+    if (is_bluefield4_pci_device(mf->pci_device_id))
     {
-        *ptr_hw_dev_id = mf->pci_device_id;
+        *ptr_hw_dev_id = DeviceBlueField4_HwId;
         *ptr_hw_rev = 0;
         *ptr_dm_dev_id = DeviceBlueField4;
         return CHECK_PTR_DEV_ID;
