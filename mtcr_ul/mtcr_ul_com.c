@@ -3273,10 +3273,7 @@ static long supported_dev_ids[] = {0x1003, /* Connect-X3 */
                                    0xa2d2, /* MT416842 Family BlueField integrated ConnectX-5 network controller */
                                    0xa2d6, /* MT42822 Family BlueField2 integrated ConnectX-6DX network controller */
                                    0xa2dc, /* MT43244 Family BlueField3 integrated ConnectX-7 network controller */
-                                   0xa2dd, // BF4 Family BlueField4 Crypto Enabled
-                                   0xa2de, // BF4 Family BlueField4 Crypto Disabled
                                    0xa2df, // BF4 Family BlueField4 Network Controller
-                                   0xc2d6, // BF4 Family BlueField4 Management Interface
                                    0xcf70, /* Spectrum3 */
                                    0xcf80, /* Spectrum4 */
                                    0xcf82, /* Spectrum5 */
