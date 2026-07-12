@@ -1418,11 +1418,11 @@ bool Flash::set_attr(char* param_name, char* param_val_str, const ext_flash_attr
     {
         char* endp;
         u_int8_t dummy_cycles_val;
-        dummy_cycles_val = strtoul(param_val_str, &endp, 0);
         u_int8_t lower_bound =
-          (is_macronix_special_case_for_dummy_cycles(_mfl) || is_issi_special_case_for_dummy_cycles(_mfl) || is_gigadevice_gd25lfxxx_512(_mfl)) ? MIN_NUM_OF_CYCLES_FOR_MX25UXXX_IS25LPXXX : MIN_NUM_OF_CYCLES;
+          (is_macronix_special_case_for_dummy_cycles(_mfl) || is_gigadevice_gd25lfxxx_512(_mfl)) ? MIN_NUM_OF_CYCLES_FOR_MX25UXXX : MIN_NUM_OF_CYCLES;
         u_int8_t upper_bound =
           (is_macronix_special_case_for_dummy_cycles(_mfl) || is_gigadevice_gd25lfxxx_512(_mfl)) ? MAX_NUM_OF_CYCLES_FOR_MX25UXXX : MAX_NUM_OF_CYCLES;
+        dummy_cycles_val = strtoul(param_val_str, &endp, 0);
         if (*endp != '\0' || dummy_cycles_val < lower_bound || dummy_cycles_val > upper_bound)
         {
             // value is actually [0.15] but in most flashes val=0 and val=15 indicate default state (thus they are the
