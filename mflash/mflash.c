@@ -4457,16 +4457,13 @@ int mf_set_quad_en_direct_access(mflash* mfl, u_int8_t quad_en)
         return MFE_NOT_SUPPORTED_OPERATION;
     }
 
-    if (mfl->attr.vendor == FV_WINBOND && mfl->attr.type == FMT_WINBOND_IQ && mfl->attr.log2_bank_size == FD_256)
+    if (quad_en == 1 && mfl->attr.vendor == FV_WINBOND && mfl->attr.type == FMT_WINBOND_IQ &&
+        mfl->attr.log2_bank_size == FD_256)
     {
-        if (quad_en == 1)
-        {
-            DPRINTF(("QE is constant 1, skipping\n"));
-            return MFE_OK;
-        }
+        DPRINTF(("QE is constant 1, skipping\n"));
         return MFE_NOT_SUPPORTED_OPERATION;
     }
-
+    
     for (bank = 0; bank < mfl->attr.banks_num; bank++)
     {
         if ((mfl->attr.vendor == FV_WINBOND) && ((mfl->attr.type == FMT_WINBOND_3V) || (mfl->attr.type == FMT_WINBOND_IQ) || (mfl->attr.type == FMT_WINBOND_IM) || is_ISSI_is25wj032f(mfl)))
