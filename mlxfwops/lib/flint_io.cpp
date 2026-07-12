@@ -1069,6 +1069,7 @@ const char* Flash::getFlashType()
 bool Flash::check_and_set_tbs_field(std::string& param_val_str,
     std::size_t tbs_end_loc,
     std::string& tbs,
+    std::string& err_msg,
     const ext_flash_attr_t& attr,
     u_int8_t bank_num)
 {
@@ -1076,8 +1077,33 @@ bool Flash::check_and_set_tbs_field(std::string& param_val_str,
     tbs = param_val_str.substr(0, tbs_end_loc);
     if (tbs.compare(WP_BOTTOM_STR) && tbs.compare(WP_TOP_STR))
     {
-        rc = false; // no need to set error message here, it is defaulted for displaying bad input message
+        rc = false;
     }
+
+    if (rc)
+    {
+        int ret_val = attr.mf_get_write_protect_rc_array[bank_num];
+        write_protect_info_t existing_protect_info = attr.protect_info_array[bank_num];
+        if (ret_val == MFE_OK)
+        {
+            if ((_attr.vendor == FV_MX25K16XXX || _attr.vendor == FV_IS25LPXXX) && existing_protect_info.is_bottom &&
+                !tbs.compare(WP_TOP_STR))
+            {
+                err_msg = "The data you are trying to write is OTP and have already been programmed.";
+                rc = false;
+            }
+        }
+        else // mf_get_write_protect_rc_array failed
+        {
+            if (ret_val != MFE_NOT_SUPPORTED_OPERATION)
+            {
+                // We ignore the read when operation is not supported!
+                err_msg = "Failed to get write_protected info: %s (%s)", errno == 0 ? "" : strerror(errno),
+                mf_err2str(ret_val);
+                rc = false;
+            }
+        }
+    }   
 
     return rc;
 }
@@ -1270,7 +1296,7 @@ bool Flash::validate_write_protect_args(char* param_val, const ext_flash_attr_t&
     // checking for <tbs>,<sectorNum>-<Sector>
     if (tbs_end_loc != std::string::npos && sector_or_subsector_start_loc != std::string::npos)
     {
-        if (!check_and_set_tbs_field(param_val_str, tbs_end_loc, tbs, attr, bank_num))
+        if (!check_and_set_tbs_field(param_val_str, tbs_end_loc, tbs, err_msg, attr, bank_num))
         {
             goto end;
         }
@@ -1290,7 +1316,7 @@ bool Flash::validate_write_protect_args(char* param_val, const ext_flash_attr_t&
     // checking for <tbs>
     else if (tbs_end_loc == std::string::npos && sector_or_subsector_start_loc == std::string::npos)
     {
-        if (!check_and_set_tbs_field(param_val_str, param_val_str.length(), tbs, attr, bank_num))
+        if (!check_and_set_tbs_field(param_val_str, param_val_str.length(), tbs, err_msg, attr, bank_num))
         {
             goto end;
         }
