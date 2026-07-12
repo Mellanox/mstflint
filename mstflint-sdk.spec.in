@@ -10,6 +10,8 @@
 # separate debug package to build.
 %define debug_package %{nil}
 
+%{!?ibmadlib: %define ibmadlib libibmad-devel}
+
 %if 0%{?suse_version}
 %define expat_devel_lib libexpat-devel
 %define openssl_devel_lib libopenssl-devel
@@ -39,6 +41,8 @@ BuildRequires: %{expat_devel_lib}
 BuildRequires: %{openssl_devel_lib}
 BuildRequires: xz-devel
 BuildRequires: zlib-devel
+BuildRequires: %{ibmadlib}
+BuildRequires: libibverbs-devel
 
 %description
 The mstflint SDK is a self-contained shared library (libmstflint_sdk.so)

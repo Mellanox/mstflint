@@ -10,6 +10,8 @@ Build-Depends:
     dpkg-dev,
     g++,
     libexpat1-dev,
+    libibmad-dev,
+    libibverbs-dev,
     liblzma-dev,
     libssl-dev,
     libtool,
