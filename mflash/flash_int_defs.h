@@ -89,8 +89,9 @@ typedef enum flash_memory_type
     FMT_IS25LPXXX = 0x60,
     FMT_IS25WPXXX = 0x70,
     FVT_GD25QXXX = 0x40,
-    FVT_GD25LBXXX = 0x60,
-    FVT_GD25LFXXX = 0x63,
+    FVT_GD25LBXXX = 0x60
+
+
 } flash_memory_type_t;
 
 typedef enum flash_densities

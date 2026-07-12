@@ -591,202 +591,82 @@ int new_gw_st_spi_block_read_ex(mflash* mfl,
 /**
  * Read data (no more than 4 bytes) from SFDP table using RDSFDP command (0x5A)
  */
-/*
- * Common flow for an addressed SPI read that has a leading dummy phase:
- *   opcode + 3-byte address + <num_dummy_bytes> dummy byte(s) + <num_data_bytes> data byte(s).
- * Shared by SFDP reads and the addressed configuration-register reads.
- * out receives num_data_bytes (the dummy prefix is stripped). At most 8 bytes total (dummy+data).
- */
-static int new_gw_addressed_read(mflash* mfl,
-    u_int8_t cmd,
-    u_int32_t addr,
-    u_int8_t num_dummy_bytes,
-    u_int8_t num_data_bytes,
-    u_int8_t* out,
-    const char* msg)
+int new_gw_spi_read_sfdp(mflash* mfl, uint32_t sfdp_addr, uint8_t* data, uint8_t bytes_num)
 {
     int rc = 0;
-    u_int32_t flash_data[2] = {0, 0};
-    u_int32_t total_bytes = (u_int32_t)num_dummy_bytes + num_data_bytes;
+    uint32_t flash_data[2] = {0, 0};
 
-    if (!mfl || !out || num_data_bytes == 0 || total_bytes > sizeof(flash_data))
+    if (!mfl || !data || bytes_num == 0 || bytes_num > 4)
     {
         return MFE_BAD_PARAMS;
-    }
-
-    // Match the other GW helpers: switch zombiefish devices to the recovery address space up-front,
-    // before touching any gateway register field.
-    if (mfl->mf->is_zombiefish)
-    {
-        if (!mfl->mf->vsc_recovery_space_flash_control_vld)
-        {
-            return MFE_VSC_RECOVERY_SPACE_FLASH_CONTROL_NOT_VALID;
-        }
-        mset_addr_space(mfl->mf, AS_RECOVERY);
     }
 
     rc = mfl_com_lock(mfl);
     CHECK_RC(rc);
 
     // Write address to gateway
-    if (mwrite4(mfl->mf, mfl->gw_addr_field_addr, addr) != 4)
+    if (mwrite4(mfl->mf, mfl->gw_addr_field_addr, sfdp_addr) != 4)
     {
         release_semaphore(mfl, 0);
         return MFE_CR_ERROR;
     }
 
-    // Build gateway command with explicit 3-byte addressing
-    u_int32_t gw_cmd = 0;
+    // Build gateway command for SFDP read with explicit 3-byte addressing
+    uint32_t gw_cmd = 0;
     gw_cmd = MERGE(gw_cmd, 1, mfl->gw_rw_bit_offset, 1);         // Read operation
     gw_cmd = MERGE(gw_cmd, 1, mfl->gw_cmd_phase_bit_offset, 1);  // Enable command phase
     gw_cmd = MERGE(gw_cmd, 1, mfl->gw_addr_phase_bit_offset, 1); // Enable address phase
     gw_cmd = MERGE(gw_cmd, 1, mfl->gw_data_phase_bit_offset, 1); // Enable data phase
     gw_cmd = MERGE(gw_cmd, 0, mfl->gw_addr_size_bit_offset, 1);  // 3-byte addressing (0=3-byte, 1=4-byte)
 
-    // Clock out the dummy byte(s) followed by the data byte(s)
-    rc = set_gw_data_size(mfl, total_bytes, &gw_cmd);
+    // CRITICAL: Read 5 bytes (1 dummy + 4 data) to account for SFDP dummy byte
+    rc = set_gw_data_size(mfl, 5, &gw_cmd);
     if (rc != MFE_OK)
     {
         release_semaphore(mfl, 0);
         return rc;
     }
 
-    gw_cmd = MERGE(gw_cmd, cmd, mfl->gw_cmd_bit_offset, mfl->gw_cmd_bit_len);
+    gw_cmd = MERGE(gw_cmd, SFC_SFDP, mfl->gw_cmd_bit_offset, mfl->gw_cmd_bit_len);        // SFDP command (0x5A)
     gw_cmd = MERGE(gw_cmd, 1, 31, 1);                                                     // Lock bit
     gw_cmd = MERGE(gw_cmd, 1, mfl->gw_busy_bit_offset, 1);                                // Busy bit
     gw_cmd = MERGE(gw_cmd, (u_int32_t)mfl->curr_bank, mfl->gw_chip_select_bit_offset, 1); // Bank select
 
+    DPRINTF(("new_gw_spi_read_sfdp: addr=0x%06x final_gw_cmd=0x%08x\n", sfdp_addr, gw_cmd));
+
+    // Write command directly to gateway register
     MWRITE4(mfl->gw_cmd_register_addr, gw_cmd);
 
-    rc = gw_wait_ready(mfl, msg);
+    rc = gw_wait_ready(mfl, "SFDP Read");
     if (rc != MFE_OK)
     {
         release_semaphore(mfl, 0);
         return rc;
     }
 
-    u_int32_t num_dwords = (total_bytes + 3) / 4;
-    if (mread4_block(mfl->mf, mfl->gw_data_field_addr, flash_data, num_dwords << 2) != (int)(num_dwords << 2))
+    // Read 5 bytes = 2 dwords from gateway
+    if (mread4_block(mfl->mf, mfl->gw_data_field_addr, flash_data, 8) != 8)
     {
         release_semaphore(mfl, 0);
         return MFE_CR_ERROR;
     }
+
     release_semaphore(mfl, 0);
 
-    // Gateway returns data little-endian; the SPI byte stream is big-endian.
-    // Byte layout: [num_dummy_bytes dummy][num_data_bytes data]; strip the dummy prefix.
-    u_int32_t i;
-    for (i = 0; i < num_dwords; i++)
-    {
-        flash_data[i] = __cpu_to_be32(flash_data[i]);
-    }
-    memcpy(out, (u_int8_t*)flash_data + num_dummy_bytes, num_data_bytes);
+    DPRINTF(("new_gw_spi_read_sfdp: flash_data[0]=0x%08x flash_data[1]=0x%08x\n", flash_data[0], flash_data[1]));
+
+    // Convert to big-endian byte array
+    // Gateway returns data in little-endian, but SPI data is big-endian
+    uint32_t be_data[2];
+    be_data[0] = __cpu_to_be32(flash_data[0]);
+    be_data[1] = __cpu_to_be32(flash_data[1]);
+
+    uint8_t* raw = (uint8_t*)be_data;
+    DPRINTF(
+      ("new_gw_spi_read_sfdp: raw bytes (BE): %02x %02x %02x %02x %02x\n", raw[0], raw[1], raw[2], raw[3], raw[4]));
+
+    // Skip first byte (dummy at position 0), copy next bytes_num bytes
+    memcpy(data, &raw[1], bytes_num);
 
     return MFE_OK;
-}
-
-/*
-* Read data (no more than 4 bytes) from the SFDP table using RDSFDP (0x5A):
-* opcode + 3-byte address + 1 dummy byte + data.
-*/
-int new_gw_spi_read_sfdp(mflash* mfl, uint32_t sfdp_addr, uint8_t* data, uint8_t bytes_num)
-{
-    if (!mfl || !data || bytes_num == 0 || bytes_num > 4)
-    {
-        return MFE_BAD_PARAMS;
-    }
-    return new_gw_addressed_read(mfl, SFC_SFDP, sfdp_addr, 1, bytes_num, data, "SFDP Read");
-}
-
-/*
-* Read a single byte from the addressed Nonvolatile/Volatile Configuration Register.
-* These registers are an addressed array (RDNVR 0xB5 / RDVR 0x85): the command is
-* opcode + address (LSB selects the register byte) + 1 dummy byte + 1 data byte.
-* reg_addr - config-register byte address (only the LSB is significant)
-* val      - out: the register byte read
-*/
-int new_gw_read_config_reg(mflash* mfl, u_int8_t read_cmd, u_int32_t reg_addr, u_int8_t* val)
-{
-    if (!mfl || !val)
-    {
-        return MFE_BAD_PARAMS;
-    }
-    // opcode (B5h/85h) + 3-byte address (LSB selects the register byte) + 1 dummy byte + 1 data byte
-    return new_gw_addressed_read(mfl, read_cmd, reg_addr, 1, 1, val, "Read-Config-Register");
-}
-
-/*
-* Write a single byte to the addressed Nonvolatile/Volatile Configuration Register.
-* The command is WREN, then opcode (WRNVR 0xB1 / WRVR 0x81) + address (LSB selects the
-* register byte) + 1 data byte, followed by a WIP poll for the self-timed write.
-*/
-int new_gw_write_config_reg(mflash* mfl, u_int8_t write_cmd, u_int32_t reg_addr, u_int8_t val)
-{
-    int rc = 0;
-    u_int32_t data = (u_int32_t)val << 24; // single data byte goes to the MSB (matches new_gw_spi_write_status_reg)
-
-    if (!mfl)
-    {
-        return MFE_BAD_PARAMS;
-    }
-
-    // Match the other GW helpers: switch zombiefish devices to the recovery address space up-front,
-    // before touching any gateway register field.
-    if (mfl->mf->is_zombiefish)
-    {
-        if (!mfl->mf->vsc_recovery_space_flash_control_vld)
-        {
-            return MFE_VSC_RECOVERY_SPACE_FLASH_CONTROL_NOT_VALID;
-        }
-        mset_addr_space(mfl->mf, AS_RECOVERY);
-    }
-
-    rc = new_gw_st_spi_write_enable(mfl);
-    CHECK_RC(rc);
-
-    rc = mfl_com_lock(mfl);
-    CHECK_RC(rc);
-
-    if (mwrite4(mfl->mf, mfl->gw_data_field_addr, data) != 4)
-    {
-        release_semaphore(mfl, 0);
-        return MFE_CR_ERROR;
-    }
-    if (mwrite4(mfl->mf, mfl->gw_addr_field_addr, reg_addr) != 4)
-    {
-        release_semaphore(mfl, 0);
-        return MFE_CR_ERROR;
-    }
-
-    u_int32_t gw_cmd = 0;
-    gw_cmd = MERGE(gw_cmd, 1, mfl->gw_cmd_phase_bit_offset, 1);  // Enable command phase
-    gw_cmd = MERGE(gw_cmd, 1, mfl->gw_addr_phase_bit_offset, 1); // Enable address phase
-    gw_cmd = MERGE(gw_cmd, 1, mfl->gw_data_phase_bit_offset, 1); // Enable data phase
-    gw_cmd = MERGE(gw_cmd, 0, mfl->gw_addr_size_bit_offset, 1);  // 3-byte addressing (0=3-byte, 1=4-byte)
-
-    rc = set_gw_data_size(mfl, 1, &gw_cmd);
-    if (rc != MFE_OK)
-    {
-        release_semaphore(mfl, 0);
-        return rc;
-    }
-
-    gw_cmd = MERGE(gw_cmd, write_cmd, mfl->gw_cmd_bit_offset, mfl->gw_cmd_bit_len);
-    gw_cmd = MERGE(gw_cmd, 1, 31, 1);                                                     // Lock bit
-    gw_cmd = MERGE(gw_cmd, 1, mfl->gw_busy_bit_offset, 1);                                // Busy bit
-    gw_cmd = MERGE(gw_cmd, (u_int32_t)mfl->curr_bank, mfl->gw_chip_select_bit_offset, 1); // Bank select
-
-    MWRITE4(mfl->gw_cmd_register_addr, gw_cmd);
-
-    rc = gw_wait_ready(mfl, "Write-Config-Register");
-    if (rc != MFE_OK)
-    {
-        release_semaphore(mfl, 0);
-        return rc;
-    }
-    release_semaphore(mfl, 0);
-
-    // Wait for the self-timed configuration-register write to complete (WIP)
-    rc = st_spi_wait_wip(mfl, ERASE_SUBSECTOR_INIT_DELAY, ERASE_SUBSECTOR_RETRY_DELAY, ERASE_SUBSECTOR_RETRIES);
-    return rc;
 }
