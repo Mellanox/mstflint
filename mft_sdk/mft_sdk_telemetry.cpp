@@ -850,9 +850,14 @@ void MftSdk::setFwVersionFromJson(const Json::Value& moduleInfoJson, MstModuleIn
 
 void MftSdk::setPowerAndCdrInfoFromJson(const Json::Value& moduleInfoJson, MstModuleInfo* moduleInfo)
 {
-    moduleInfo->powerAndCdrInfo.digitalDiagnosticMonitoring =
-      getJsonStringValue(moduleInfoJson, FIELD_DIGITAL_DIAGNOSTIC_MONITORING) == "Yes";
-    mstQuerySetBit(moduleInfo->header, TELEMETRY_MODULE_INFO_DIGITAL_DIAGNOSTIC_MONITORING);
+    // Mark DDM valid only when mlxlink actually reported it (no module plugged
+    // -> field absent -> bit stays clear), like every other module field.
+    const std::string ddmValue = getJsonStringValue(moduleInfoJson, FIELD_DIGITAL_DIAGNOSTIC_MONITORING);
+    if (ddmValue != NA_FIELD_VALUE && !ddmValue.empty())
+    {
+        moduleInfo->powerAndCdrInfo.digitalDiagnosticMonitoring = ddmValue == "Yes";
+        mstQuerySetBit(moduleInfo->header, TELEMETRY_MODULE_INFO_DIGITAL_DIAGNOSTIC_MONITORING);
+    }
     extractAndSetStringField(moduleInfoJson, FIELD_POWER_CLASS, moduleInfo->powerAndCdrInfo.powerClass,
                              MODULE_INFO_MAX_LENGTH, moduleInfo->header, TELEMETRY_MODULE_INFO_POWER_CLASS);
     extractAndSetStringField(moduleInfoJson, FIELD_MAX_POWER, moduleInfo->powerAndCdrInfo.maxPower,
