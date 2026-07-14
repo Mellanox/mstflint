@@ -12,6 +12,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 PREFIX=""
+LIBDIR=""
+INCLUDEDIR=""
+DATADIR=""
 DESTDIR=""
 JOBS="$(nproc 2>/dev/null || echo 4)"
 ENABLE_NVML=0
@@ -21,8 +24,10 @@ DO_CONFIGURE=1
 INSTALL=1
 BUILD_DEB=0
 DEB_OUTPUT=""
+DEB_NAME=""
 BUILD_RPM=0
 RPM_OUTPUT=""
+RPM_NAME=""
 
 usage() {
     cat <<'EOF'
@@ -33,6 +38,12 @@ dependencies, skipping the rest of the mstflint tool suite.
 
 Options:
   --prefix DIR             Install prefix (passed to configure; default: autotools default)
+  --libdir DIR             Library install dir (overrides <prefix>/lib[64]);
+                           the SDK .so lands in DIR/mstflint/sdk, the .pc in DIR/pkgconfig
+  --includedir DIR         Header install dir (overrides <prefix>/include);
+                           SDK headers land in DIR/mstflint/sdk/mft_sdk
+  --datadir DIR            Data install dir (overrides <prefix>/share);
+                           PRM databases land under DIR/mstflint
   --destdir DIR            Staged install root (DESTDIR for `make install-sdk`)
   --with-nvml              Enable NVML support in the SDK
   --with-nvml-include-dir DIR
@@ -42,16 +53,23 @@ Options:
   --no-configure           Skip autogen/configure; reuse the existing configuration
   --build-only             Build the SDK but do not install it
   --rpm                    Build a standalone mstflint-sdk .rpm (uses mstflint-sdk.spec)
+  --rpm-name NAME          Override the RPM package Name (default: mstflint-sdk);
+                           only changes package identity, not install paths
   --rpm-output DIR         Directory to place the built .rpm (default: repo root)
   --deb                    Build a standalone mstflint-sdk .deb (uses debian-sdk/)
+  --deb-name NAME          Override the .deb package name (default: mstflint-sdk);
+                           only changes package identity, not install paths
   --deb-output DIR         Directory to place the built .deb (default: repo root)
   -h, --help               Show this help
 
 Examples:
   ./build_sdk.sh --destdir /tmp/mstflint-sdk-stage
   ./build_sdk.sh --prefix /usr --with-nvml
-  ./build_sdk.sh --rpm --rpm-output /tmp/rpms
+  ./build_sdk.sh --prefix /opt/doca --libdir /opt/doca/lib64
+  ./build_sdk.sh --rpm --prefix /opt/doca --rpm-output /tmp/rpms
+  ./build_sdk.sh --rpm --rpm-name acme-mstflint-sdk
   ./build_sdk.sh --deb --deb-output /tmp/debs
+  ./build_sdk.sh --deb --deb-name acme-mstflint-sdk
 EOF
 }
 
@@ -91,15 +109,32 @@ build_rpm() {
         -C "$SCRIPT_DIR" . 2>/dev/null
     cp "$spec" "$top/SPECS/mstflint-sdk.spec"
 
+    # Forward install-dir overrides as RPM path macros. The spec's %configure
+    # expands to --prefix=%{_prefix} --libdir=%{_libdir} etc., so redefining
+    # these macros changes both the configure invocation and the %files paths
+    # (mstflint_sdk_libdir/incdir/datadir are all derived from them). _prefix
+    # cascades to _exec_prefix/_libdir/_includedir/_datadir unless individually
+    # overridden below.
+    local dir_defines=()
+    # Override the package Name (the spec guards its default with %{!?name}),
+    # so a client can ship under a private name that won't clash with a
+    # distro-provided mstflint-sdk. Install paths are unaffected.
+    [[ -n "$RPM_NAME" ]]   && dir_defines+=(--define "name $RPM_NAME")
+    [[ -n "$PREFIX" ]]     && dir_defines+=(--define "_prefix $PREFIX")
+    [[ -n "$LIBDIR" ]]     && dir_defines+=(--define "_libdir $LIBDIR")
+    [[ -n "$INCLUDEDIR" ]] && dir_defines+=(--define "_includedir $INCLUDEDIR")
+    [[ -n "$DATADIR" ]]    && dir_defines+=(--define "_datadir $DATADIR")
+
     echo ">> rpmbuild -bb"
     rpmbuild --define "_topdir $top" --define "_tmppath $top/tmp" \
-             --define "version $version" -bb "$top/SPECS/mstflint-sdk.spec"
+             --define "version $version" "${dir_defines[@]}" \
+             -bb "$top/SPECS/mstflint-sdk.spec"
 
     echo ">> collecting .rpm into $out"
     find "$top/RPMS" -name '*.rpm' -exec mv {} "$out"/ \;
     rm -rf "$top"
     echo ">> SDK .rpm build complete:"
-    ls -1 "$out"/mstflint-sdk-*.rpm
+    ls -1 "$out"/"${RPM_NAME:-mstflint-sdk}"-*.rpm
 }
 
 # Build a standalone mstflint-sdk .deb in an isolated copy of the source tree,
@@ -133,6 +168,21 @@ build_deb() {
     cp -r "$SCRIPT_DIR/debian-sdk" "$src/debian"
     cp "$SCRIPT_DIR/debian/mstflint.install.in" "$src/debian/"
 
+    # Rename the binary/source package in the isolated debian/ copy so a client
+    # can ship under a private name without clashing with a distro mstflint-sdk.
+    # The name lives in control (Source:/Package:), the changelog source stanza,
+    # and the dh staging path in rules (override_dh_auto_install installs into
+    # debian/<package>/, which dh_builddeb then packages -- so it MUST track the
+    # package name). Install paths are unaffected. The checked-in debian-sdk/ is
+    # never touched; only this throwaway copy is edited.
+    if [[ -n "$DEB_NAME" ]]; then
+        echo ">> renaming .deb package to $DEB_NAME"
+        sed -i "s/^Source: mstflint-sdk$/Source: $DEB_NAME/;s/^Package: mstflint-sdk$/Package: $DEB_NAME/" \
+            "$src/debian/control"
+        sed -i "1s/^mstflint-sdk (/$DEB_NAME (/" "$src/debian/changelog"
+        sed -i "s#debian/mstflint-sdk#debian/$DEB_NAME#g" "$src/debian/rules"
+    fi
+
     echo ">> dpkg-buildpackage -b -uc -us"
     ( cd "$src" && dpkg-buildpackage -b -uc -us )
 
@@ -140,12 +190,15 @@ build_deb() {
     mv "$work"/*.deb "$out"/
     rm -rf "$work"
     echo ">> SDK .deb build complete:"
-    ls -1 "$out"/mstflint-sdk_*.deb
+    ls -1 "$out"/"${DEB_NAME:-mstflint-sdk}"_*.deb
 }
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --prefix)              PREFIX="$2"; shift 2 ;;
+        --libdir)              LIBDIR="$2"; shift 2 ;;
+        --includedir)          INCLUDEDIR="$2"; shift 2 ;;
+        --datadir)             DATADIR="$2"; shift 2 ;;
         --destdir)             DESTDIR="$2"; shift 2 ;;
         --with-nvml)           ENABLE_NVML=1; shift ;;
         --with-nvml-include-dir) ENABLE_NVML=1; NVML_INCLUDE_DIR="$2"; shift 2 ;;
@@ -154,8 +207,10 @@ while [[ $# -gt 0 ]]; do
         --no-configure)        DO_CONFIGURE=0; shift ;;
         --build-only)          INSTALL=0; shift ;;
         --rpm)                 BUILD_RPM=1; shift ;;
+        --rpm-name)            RPM_NAME="$2"; shift 2 ;;
         --rpm-output)          RPM_OUTPUT="$2"; shift 2 ;;
         --deb)                 BUILD_DEB=1; shift ;;
+        --deb-name)            DEB_NAME="$2"; shift 2 ;;
         --deb-output)          DEB_OUTPUT="$2"; shift 2 ;;
         -h|--help)             usage; exit 0 ;;
         *) echo "error: unknown option: $1" >&2; usage >&2; exit 1 ;;
@@ -172,7 +227,10 @@ fi
 
 if [[ "$DO_CONFIGURE" -eq 1 ]]; then
     CONFIGURE_FLAGS=(--enable-adb-generic-tools --enable-mstflint-sdk)
-    [[ -n "$PREFIX" ]] && CONFIGURE_FLAGS+=(--prefix="$PREFIX")
+    [[ -n "$PREFIX" ]]     && CONFIGURE_FLAGS+=(--prefix="$PREFIX")
+    [[ -n "$LIBDIR" ]]     && CONFIGURE_FLAGS+=(--libdir="$LIBDIR")
+    [[ -n "$INCLUDEDIR" ]] && CONFIGURE_FLAGS+=(--includedir="$INCLUDEDIR")
+    [[ -n "$DATADIR" ]]    && CONFIGURE_FLAGS+=(--datadir="$DATADIR")
     if [[ "$ENABLE_NVML" -eq 1 ]]; then
         CONFIGURE_FLAGS+=(--enable-nvml)
         [[ -n "$NVML_INCLUDE_DIR" ]] && CONFIGURE_FLAGS+=(--with-nvml-include-dir="$NVML_INCLUDE_DIR")
