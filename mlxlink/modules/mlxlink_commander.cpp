@@ -3447,6 +3447,125 @@ void MlxlinkCommander::showSltp()
     }
 }
 
+void MlxlinkCommander::dumpPrrMeasData(u_int32_t measType)
+{
+    u_int32_t numDwords = prrMeasDataDwordsForType(measType);
+
+    std::stringstream sectionStream;
+    sectionStream << "meas_type 0x" << std::hex << std::setfill('0') << std::setw(2) << measType << " (" << std::dec
+                  << numDwords << " DWORDs)";
+    setPrintVal(_prrInfoCmd, "PRR meas_type " + to_string(measType), sectionStream.str(), ANSI_COLOR_RESET, true, true,
+                true);
+
+    for (u_int32_t i = 0; i < numDwords; i++)
+    {
+        u_int32_t bufIdx = SLPRR_MEAS_DATA_DWORD_OFFSET + i;
+        if (bufIdx >= _buffer.size())
+        {
+            break;
+        }
+
+        std::stringstream keyStream;
+        keyStream << "  dword_" << std::setfill('0') << std::setw(3) << i;
+
+        std::stringstream valStream;
+        valStream << "0x" << std::hex << std::setfill('0') << std::setw(8) << _buffer[bufIdx];
+
+        setPrintVal(_prrInfoCmd, keyStream.str(), valStream.str(), ANSI_COLOR_RESET, true, true, true);
+    }
+}
+
+void MlxlinkCommander::showPrr()
+{
+    if (_userInput.planeIndex != -1)
+    {
+        throw MlxRegException("No plane information is available for show_prr!");
+    }
+
+    if (_userInput._lane >= _numOfLanes)
+    {
+        throw MlxRegException("Invalid lane number: " + to_string(_userInput._lane) +
+                              ". Value must fit in the range of 0-" + to_string(_numOfLanes - 1) + "\n");
+    }
+
+    if (!_linkUP)
+    {
+        throw MlxRegException("show_prr requires the link to be up. Bring the link up and retry.");
+    }
+
+    MlxlinkRecord::printWar(
+      "Warning: PRR measurement is destructive. After it completes, the link will be unusable\n"
+      "         until you toggle it (down -> up). Run this only on a port you can safely toggle.\n",
+      _jsonRoot);
+
+    if (!askUser("Do you want to continue with PRR measurement", _userInput.force))
+    {
+        return;
+    }
+
+    try
+    {
+        sendPrmReg(ACCESS_REG_SLPRR, REG_SET, "lane=%d,start_measure=1", _userInput._lane);
+    }
+    catch (const std::exception& exc)
+    {
+        throw MlxRegException(string("Failed to start PRR measurement "
+                                     "(feature is supported on NVL6 devices only): ") +
+                              string(exc.what()));
+    }
+
+    u_int32_t elapsed = 0;
+    u_int32_t status = SLPRR_STATUS_NO_MEAS;
+    while (elapsed < SLPRR_POLL_TIMEOUT_MS)
+    {
+        sendPrmReg(ACCESS_REG_SLPRR, REG_GET, "lane=%d", _userInput._lane);
+        status = getFieldValue("status");
+        if (status == SLPRR_STATUS_MEASUREMENT_DONE)
+        {
+            break;
+        }
+        if (status == SLPRR_STATUS_MEASUREMENT_ERROR)
+        {
+            throw MlxRegException("PRR measurement returned 'measurement_error' (status=3).");
+        }
+        msleep(SLPRR_POLL_INTERVAL_MS);
+        elapsed += SLPRR_POLL_INTERVAL_MS;
+    }
+    if (status != SLPRR_STATUS_MEASUREMENT_DONE)
+    {
+        throw MlxRegException("Timed out waiting for PRR measurement to complete (status=" + to_string(status) + ").");
+    }
+
+    // HLD-specified meas_type sweep: [0-6, 8, 10-16] (intentionally skips Extended_read_7
+    // at value 7 and value 9, which has no enum mapping in the ADB).
+    static const u_int32_t MEAS_TYPES[] = {0, 1, 2, 3, 4, 5, 6, 8, 10, 11, 12, 13, 14, 15, 16};
+    const size_t NUM_MEAS_TYPES = sizeof(MEAS_TYPES) / sizeof(MEAS_TYPES[0]);
+
+    // Pre-size the print buffer: one row per meas_type label + one row per dumped DWORD.
+    u_int32_t totalRows = 0;
+    for (size_t i = 0; i < NUM_MEAS_TYPES; i++)
+    {
+        totalRows += 1 + prrMeasDataDwordsForType(MEAS_TYPES[i]);
+    }
+    setPrintTitle(_prrInfoCmd, "PRR Measurement Data (lane " + to_string(_userInput._lane) + ")", totalRows);
+
+    try
+    {
+        for (size_t i = 0; i < NUM_MEAS_TYPES; i++)
+        {
+            sendPrmReg(ACCESS_REG_SLPRR, REG_GET, "lane=%d,meas_type=%d", _userInput._lane, MEAS_TYPES[i]);
+            dumpPrrMeasData(MEAS_TYPES[i]);
+        }
+    }
+    catch (const std::exception& exc)
+    {
+        _allUnhandledErrors +=
+          string("Reading PRR meas_data raised the following exception: ") + string(exc.what()) + string("\n");
+    }
+
+    printOutput(_prrInfoCmd);
+}
+
 void MlxlinkCommander::queryBkvCaps(uint8_t& numGroups, uint8_t groupId)
 {
     uint8_t numEntries = 0;
