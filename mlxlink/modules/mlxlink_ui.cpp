@@ -178,9 +178,9 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(
       PPLM_FLAG_SHORT, PPLM_FLAG, "fec_override",
       "Configure FEC [AU(Auto)/NF(No-FEC)/FC(FireCode "
-      "FEC)/RS(RS-FEC)/LL(LL-RS-FEC)/DF-RS(Interleaved_RS-FEC)/DF-LL(Interleaved_LL_RS-FEC)/"
-      "QUAD_KP4_FEC(Interleaved_Quad_RS-FEC_PLR)/OCTET_KP4_FEC(Interleaved_Octet_RS-FEC_PLR)/"
-      "Int_KP4_FEC_PLR(Interleaved_RS-FEC_PLR)]");
+      "FEC)/RS(RS-FEC (528,514))/RS-544Q(Interleaved_Quad_RS-FEC - (544,514))/LL(LL-RS-FEC (271,257))/DF-RS(Interleaved_RS-FEC (544,514))/RS-544(RS-FEC (544,514))/LL-272(LL-RS-FEC (272,257+1))/DF-LL(Interleaved_LL_RS-FEC (272,257+1))/"
+      "QUAD_KP4_FEC(Interleaved_Quad_RS-FEC (546,516) + PLR)/OCTET_KP4_FEC(Interleaved_Octet_RS-FEC (546,516) + PLR)/"
+      "Int_KP4_FEC_PLR(Interleaved_RS-FEC (544,514)+PLR)/PLR(RS-FEC (544,514)+PLR)/PLR(LL-FEC (271,257)+PLR)]");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(FEC_SPEED_FLAG_SHORT, FEC_SPEED_FLAG, "fec_speed",
                                  "Speed to Configure FEC "
@@ -1215,8 +1215,9 @@ void MlxlinkUi::validatePlrParams()
 void MlxlinkUi::strToInt32(char* str, u_int32_t& value)
 {
     char* endp;
+    errno = 0;
     value = strtol(str, &endp, 0);
-    if (*endp)
+    if (*endp || errno == ERANGE)
     {
         throw MlxRegException("Argument: %s is invalid.", str);
     }

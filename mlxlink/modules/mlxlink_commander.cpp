@@ -3423,9 +3423,9 @@ string MlxlinkCommander::fecMaskToUserInputStr(u_int32_t fecCapMask)
     u_int32_t mask = 0;
     string validFecStr = "";
     string shortFec = "";
-    for (double bitIdx = 0; bitIdx < _mlxlinkMaps->_fecModeMask.size(); bitIdx++)
+    for (unsigned int bitIdx = 0; bitIdx < _mlxlinkMaps->_fecModeMask.size(); bitIdx++)
     {
-        mask = (u_int32_t)pow(2.0, bitIdx);
+        mask = (u_int32_t)pow(2.0, (double)bitIdx);
         if (fecCapMask & mask)
         {
             if (_mlxlinkMaps->_fecModeMask.count(mask))
@@ -5974,7 +5974,7 @@ void MlxlinkCommander::checkDcCouple()
     else if (dcCoupledPort && _userInput._prbsDcCoupledAllow)
     {
         string warMsg = "Warning: DC couple system must be powered on both sides of the physical link prior to enabling test mode.\n";
-        warMsg += "System may be harmed and product lifetime may shortened if not ensured.";
+        warMsg += "System may be harmed and product lifetime may shorten if not ensured.";
         MlxlinkRecord::printWar(warMsg, _jsonRoot);
         if (!askUser("Do you want to continue", _userInput.force))
         {
