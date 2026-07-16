@@ -35,6 +35,7 @@
  */
 
 #include <string.h>
+#include <cstddef>
 #include <limits>
 #include <sstream>
 #include <string>
@@ -61,6 +62,66 @@ static void mstQuerySetBit(mstQueryHeader& header, uint8_t bitIndex)
 }
 
 using mft_core::MftGeneralException;
+
+namespace
+{
+
+// Reads the port label out of a caller-supplied telemetry context in an ABI-safe way.
+class TelemetryContextView
+{
+public:
+    explicit TelemetryContextView(const MstTelemetryContext& context) : _context(context) {}
+
+    std::string getPort() const
+    {
+        // Only read 'port' if the caller's struct is large enough to contain it
+        // (a smaller/older caller falls back to the device default port).
+        if (_context.size < offsetof(MstTelemetryContext_t, label_port) + sizeof(_context.label_port))
+        {
+            return std::string();
+        }
+        return std::string(_context.label_port, strnlen(_context.label_port, MST_TELEMETRY_PORT_MAX_LENGTH));
+    }
+
+private:
+    const MstTelemetryContext& _context;
+};
+
+// Validate a caller-supplied telemetry context. NULL means "use device defaults".
+// A non-NULL context must carry a plausible size header, which guards against
+// callers that forgot MST_TELEMETRY_CONTEXT_INIT and against future ABI drift.
+MstStatus validateTelemetryContext(const MstTelemetryContext* context)
+{
+    if (context == nullptr)
+    {
+        return MST_SUCCESS;
+    }
+    if (context->size < sizeof(unsigned int))
+    {
+        return MST_ERROR_INVALID_ARGUMENT;
+    }
+    return MST_SUCCESS;
+}
+
+// The device-defaults context, initialized once and shared.
+const MstTelemetryContext& defaultTelemetryContext()
+{
+    static const MstTelemetryContext defaults = []
+    {
+        MstTelemetryContext c;
+        MST_TELEMETRY_CONTEXT_INIT(&c);
+        return c;
+    }();
+    return defaults;
+}
+
+// NULL context => the shared default context (device defaults).
+const MstTelemetryContext& resolveTelemetryContext(const MstTelemetryContext* context)
+{
+    return context != nullptr ? *context : defaultTelemetryContext();
+}
+
+} // namespace
 
 static std::uint32_t parseUint32FromString(const std::string& value)
 {
@@ -164,7 +225,7 @@ void MftSdk::initMlxLinkSdkUserInput(MlxLinkInitMode initMode)
     }
 }
 
-MstStatus MftSdk::initMlxLinkSdk(MlxLinkInitMode initMode)
+MstStatus MftSdk::initMlxLinkSdk(MlxLinkInitMode initMode, const std::string& port)
 {
     clearError();
     try
@@ -176,11 +237,30 @@ MstStatus MftSdk::initMlxLinkSdk(MlxLinkInitMode initMode)
             _mfiles.push_back(_mstMlxLinkSdkInstance->_mf);
         }
 
+        // The user-input flags for a mode (e.g. cable/ddm/show_module) are set once per mode.
         if (!mlxlinkSdkInitialized[initMode])
         {
             initMlxLinkSdkUserInput(initMode);
-            initMlxLinkSdkPortInfo();
             mlxlinkSdkInitialized[initMode] = true;
+        }
+
+        // Re-bind the port only when it changes; handlePortStr parses the new port label.
+        // _currentMlxLinkPort starts empty, so the device-default port ("") never re-parses
+        // (handlePortStr would reject an empty label), matching the original default-port flow.
+        const bool portChanged = (port != _currentMlxLinkPort);
+        if (portChanged)
+        {
+            _mstMlxLinkSdkInstance->handlePortStr(port);
+            _currentMlxLinkPort = port;
+        }
+
+        // Run the per-port flow (updatePortInfo() + showPddr()) once per (port, mode), and re-run it
+        // whenever the port changes so per-port state stays fresh.
+        const auto key = std::make_pair(port, initMode);
+        if (portChanged || !_portModeInitialized[key])
+        {
+            initMlxLinkSdkPortInfo();
+            _portModeInitialized[key] = true;
         }
     }
     catch (const std::exception& e)
@@ -407,14 +487,15 @@ MstStatus MftSdk::extractOperationalInfoFromJson(MstTelemetryOperationalInfo* op
     return _lastError.status;
 }
 
-MstStatus MftSdk::getTelemetryOperationalInfo(MstTelemetryOperationalInfo* operationalInfo)
+MstStatus MftSdk::getTelemetryOperationalInfo(MstTelemetryOperationalInfo* operationalInfo,
+                                              const MstTelemetryContext& context)
 {
     if (!operationalInfo || operationalInfo->header.size < sizeof(mstQueryHeader))
     {
         return MST_ERROR_INVALID_ARGUMENT;
     }
 
-    if (initMlxLinkSdk(MlxLinkInitMode::OPERATIONAL_INFO) != MST_SUCCESS)
+    if (initMlxLinkSdk(MlxLinkInitMode::OPERATIONAL_INFO, TelemetryContextView(context).getPort()) != MST_SUCCESS)
     {
         return _lastError.status;
     }
@@ -457,14 +538,14 @@ MstStatus MftSdk::mlxlinkGetFecHistogram(MstFecHistogram* fecHistogram)
     return MST_SUCCESS;
 }
 
-MstStatus MftSdk::getFecHistogram(MstFecHistogram* fecHistogram)
+MstStatus MftSdk::getFecHistogram(MstFecHistogram* fecHistogram, const MstTelemetryContext& context)
 {
     if (!fecHistogram || fecHistogram->header.size < sizeof(mstQueryHeader))
     {
         return MST_ERROR_INVALID_ARGUMENT;
     }
 
-    if (initMlxLinkSdk() != MST_SUCCESS)
+    if (initMlxLinkSdk(MlxLinkInitMode::NONE, TelemetryContextView(context).getPort()) != MST_SUCCESS)
     {
         return _lastError.status;
     }
@@ -620,13 +701,13 @@ MstStatus MftSdk::extractCountersInfoFromJson(MstCountersInfo* countersInfo)
     return _lastError.status;
 }
 
-MstStatus MftSdk::getCountersInfo(MstCountersInfo* countersInfo)
+MstStatus MftSdk::getCountersInfo(MstCountersInfo* countersInfo, const MstTelemetryContext& context)
 {
     if (!countersInfo || countersInfo->header.size < sizeof(mstQueryHeader))
     {
         return MST_ERROR_INVALID_ARGUMENT;
     }
-    if (initMlxLinkSdk() != MST_SUCCESS)
+    if (initMlxLinkSdk(MlxLinkInitMode::NONE, TelemetryContextView(context).getPort()) != MST_SUCCESS)
     {
         return _lastError.status;
     }
@@ -757,13 +838,13 @@ MstStatus MftSdk::extractCableDDMInfoFrom(MstCableDDMInfo* cableDDMInfo)
     return MST_SUCCESS;
 }
 
-MstStatus MftSdk::getCableDDMInfo(MstCableDDMInfo* cableDDMInfo)
+MstStatus MftSdk::getCableDDMInfo(MstCableDDMInfo* cableDDMInfo, const MstTelemetryContext& context)
 {
     if (!cableDDMInfo || cableDDMInfo->header.size < sizeof(mstQueryHeader))
     {
         return MST_ERROR_INVALID_ARGUMENT;
     }
-    if (initMlxLinkSdk(MlxLinkInitMode::CABLE_DDM) != MST_SUCCESS)
+    if (initMlxLinkSdk(MlxLinkInitMode::CABLE_DDM, TelemetryContextView(context).getPort()) != MST_SUCCESS)
     {
         return _lastError.status;
     }
@@ -1153,14 +1234,14 @@ MstStatus MftSdk::extractModuleInfoFromJson(MstModuleInfo* moduleInfo)
     return MST_SUCCESS;
 }
 
-MstStatus MftSdk::getModuleInfo(MstModuleInfo* moduleInfo)
+MstStatus MftSdk::getModuleInfo(MstModuleInfo* moduleInfo, const MstTelemetryContext& context)
 {
     if (!moduleInfo || moduleInfo->header.size < sizeof(mstQueryHeader))
     {
         return MST_ERROR_INVALID_ARGUMENT;
     }
 
-    if (initMlxLinkSdk(MlxLinkInitMode::MODULE_INFO) != MST_SUCCESS)
+    if (initMlxLinkSdk(MlxLinkInitMode::MODULE_INFO, TelemetryContextView(context).getPort()) != MST_SUCCESS)
     {
         return _lastError.status;
     }
@@ -1181,59 +1262,61 @@ MstStatus MftSdk::getModuleInfo(MstModuleInfo* moduleInfo)
 // Pure C API functions:
 extern "C"
 {
-    MstStatus mstGetTelemetryOperationalInfo(MstDevice mstDevice, MstTelemetryOperationalInfo* operationalInfo)
+    MstStatus mstGetTelemetryOperationalInfo(MstDevice mstDevice,
+                                             const MstTelemetryContext* context,
+                                             MstTelemetryOperationalInfo* operationalInfo)
     {
-        if (!mstDevice)
+        if (!mstDevice || validateTelemetryContext(context) != MST_SUCCESS)
         {
             return MST_ERROR_INVALID_ARGUMENT;
         }
 
         MftSdk* instance = reinterpret_cast<MftSdk*>(mstDevice);
-        return instance->getTelemetryOperationalInfo(operationalInfo);
+        return instance->getTelemetryOperationalInfo(operationalInfo, resolveTelemetryContext(context));
     }
 
-    MstStatus mstGetFecHistogram(MstDevice mstDevice, MstFecHistogram* fecHistogram)
+    MstStatus mstGetFecHistogram(MstDevice mstDevice, const MstTelemetryContext* context, MstFecHistogram* fecHistogram)
     {
-        if (!mstDevice)
+        if (!mstDevice || validateTelemetryContext(context) != MST_SUCCESS)
         {
             return MST_ERROR_INVALID_ARGUMENT;
         }
 
         MftSdk* instance = reinterpret_cast<MftSdk*>(mstDevice);
-        return instance->getFecHistogram(fecHistogram);
+        return instance->getFecHistogram(fecHistogram, resolveTelemetryContext(context));
     }
 
-    MstStatus mstGetCountersInfo(MstDevice mstDevice, MstCountersInfo* countersInfo)
+    MstStatus mstGetCountersInfo(MstDevice mstDevice, const MstTelemetryContext* context, MstCountersInfo* countersInfo)
     {
-        if (!mstDevice)
+        if (!mstDevice || validateTelemetryContext(context) != MST_SUCCESS)
         {
             return MST_ERROR_INVALID_ARGUMENT;
         }
 
         MftSdk* instance = reinterpret_cast<MftSdk*>(mstDevice);
-        return instance->getCountersInfo(countersInfo);
+        return instance->getCountersInfo(countersInfo, resolveTelemetryContext(context));
     }
 
-    MstStatus mstGetCableDDMInfo(MstDevice mstDevice, MstCableDDMInfo* cableDDMInfo)
+    MstStatus mstGetCableDDMInfo(MstDevice mstDevice, const MstTelemetryContext* context, MstCableDDMInfo* cableDDMInfo)
     {
-        if (!mstDevice)
+        if (!mstDevice || validateTelemetryContext(context) != MST_SUCCESS)
         {
             return MST_ERROR_INVALID_ARGUMENT;
         }
 
         MftSdk* instance = reinterpret_cast<MftSdk*>(mstDevice);
-        return instance->getCableDDMInfo(cableDDMInfo);
+        return instance->getCableDDMInfo(cableDDMInfo, resolveTelemetryContext(context));
     }
 
-    MstStatus mstGetModuleInfo(MstDevice mstDevice, MstModuleInfo* moduleInfo)
+    MstStatus mstGetModuleInfo(MstDevice mstDevice, const MstTelemetryContext* context, MstModuleInfo* moduleInfo)
     {
-        if (!mstDevice)
+        if (!mstDevice || validateTelemetryContext(context) != MST_SUCCESS)
         {
             return MST_ERROR_INVALID_ARGUMENT;
         }
 
         MftSdk* instance = reinterpret_cast<MftSdk*>(mstDevice);
-        return instance->getModuleInfo(moduleInfo);
+        return instance->getModuleInfo(moduleInfo, resolveTelemetryContext(context));
     }
 
 } // extern "C"

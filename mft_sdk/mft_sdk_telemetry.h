@@ -49,43 +49,51 @@ extern "C"
      * @brief Gets the Telemetry Operational info of the device. Equivalent to Mlxlink's general query "Operating Info"
      * page.
      * @param mstDevice The MstDevice handle.
+     * @param context Context options (port and future flags), or NULL for the device defaults. Initialize with
+     * MST_TELEMETRY_CONTEXT_INIT.
      * @param operationalInfo The Telemetry Operational info struct to fill. Should be initialized with MST_QUERY_INIT.
      * @return The status of the operation.
      */
-    MstStatus mstGetTelemetryOperationalInfo(MstDevice mstDevice, MstTelemetryOperationalInfo* operationalInfo);
+    MstStatus mstGetTelemetryOperationalInfo(MstDevice mstDevice,
+                                             const MstTelemetryContext* context,
+                                             MstTelemetryOperationalInfo* operationalInfo);
 
     /**
      * @brief Gets the FEC histogram of the device. Equivalent to Mlxlink's "--show_histogram
      * --rx_fec_histogram" command.
      * @param mstDevice The MstDevice handle.
+     * @param context Context options, or NULL for the device defaults. Initialize with MST_TELEMETRY_CONTEXT_INIT.
      * @param fecHistogram The FEC histogram struct to fill.
      * @return The status of the operation.
      */
-    MstStatus mstGetFecHistogram(MstDevice mstDevice, MstFecHistogram* fecHistogram);
+    MstStatus mstGetFecHistogram(MstDevice mstDevice, const MstTelemetryContext* context, MstFecHistogram* fecHistogram);
 
     /**
      * @brief Gets the counters info of the device. Equivalent to Mlxlink's "show counters" command.
      * @param mstDevice The MstDevice handle.
+     * @param context Context options, or NULL for the device defaults. Initialize with MST_TELEMETRY_CONTEXT_INIT.
      * @param countersInfo The counters info struct to fill. should be initialized with MST_QUERY_INIT.
      * @return The status of the operation.
      */
-    MstStatus mstGetCountersInfo(MstDevice mstDevice, MstCountersInfo* countersInfo);
+    MstStatus mstGetCountersInfo(MstDevice mstDevice, const MstTelemetryContext* context, MstCountersInfo* countersInfo);
 
     /**
      * @brief Gets the Cable DDM info of the device. Equivalent to Mlxlink's "--cable --ddm" command.
      * @param mstDevice The MstDevice handle.
+     * @param context Context options, or NULL for the device defaults. Initialize with MST_TELEMETRY_CONTEXT_INIT.
      * @param cableDDMInfo The Cable DDM info struct to fill. should be initialized with MST_QUERY_INIT.
      * @return The status of the operation.
      */
-    MstStatus mstGetCableDDMInfo(MstDevice mstDevice, MstCableDDMInfo* cableDDMInfo);
+    MstStatus mstGetCableDDMInfo(MstDevice mstDevice, const MstTelemetryContext* context, MstCableDDMInfo* cableDDMInfo);
 
     /**
      * @brief Gets the Module info of the device. Equivalent to Mlxlink's "--show_module" command.
      * @param mstDevice The MstDevice handle.
+     * @param context Context options, or NULL for the device defaults. Initialize with MST_TELEMETRY_CONTEXT_INIT.
      * @param moduleInfo The Module info struct to fill. should be initialized with MST_QUERY_INIT.
      * @return The status of the operation.
      */
-    MstStatus mstGetModuleInfo(MstDevice mstDevice, MstModuleInfo* moduleInfo);
+    MstStatus mstGetModuleInfo(MstDevice mstDevice, const MstTelemetryContext* context, MstModuleInfo* moduleInfo);
 
 #ifdef __cplusplus
 }

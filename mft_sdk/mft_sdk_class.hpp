@@ -39,6 +39,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 #include <mft_sdk/mft_sdk.h>
 #ifdef MFT_SDK_EXTERNAL
@@ -79,11 +80,15 @@ public:
     MstStatus getPRMRegisterField(MstPrmRegisterMap* registerMap, const char* fieldName, uint32_t* value);
 
     // mlxlink SDK functions
-    MstStatus getTelemetryOperationalInfo(MstTelemetryOperationalInfo* operationalInfo);
-    MstStatus getFecHistogram(MstFecHistogram* fecHistogram);
-    MstStatus getCountersInfo(MstCountersInfo* countersInfo);
-    MstStatus getCableDDMInfo(MstCableDDMInfo* cableDDMInfo);
-    MstStatus getModuleInfo(MstModuleInfo* moduleInfo);
+    MstStatus getTelemetryOperationalInfo(MstTelemetryOperationalInfo* operationalInfo,
+                                          const MstTelemetryContext& context = MstTelemetryContext{0, ""});
+    MstStatus getFecHistogram(MstFecHistogram* fecHistogram,
+                              const MstTelemetryContext& context = MstTelemetryContext{0, ""});
+    MstStatus getCountersInfo(MstCountersInfo* countersInfo,
+                              const MstTelemetryContext& context = MstTelemetryContext{0, ""});
+    MstStatus getCableDDMInfo(MstCableDDMInfo* cableDDMInfo,
+                              const MstTelemetryContext& context = MstTelemetryContext{0, ""});
+    MstStatus getModuleInfo(MstModuleInfo* moduleInfo, const MstTelemetryContext& context = MstTelemetryContext{0, ""});
 
     // HCA capabilities SDK functions
     MstStatus getCapabilityTypesList(std::vector<std::string>& capabilityTypes);
@@ -127,7 +132,7 @@ private:
     MstStatus setErrorFromMlxregSDKError(int32_t errorCode);
 
     // mlxlink SDK private functions
-    MstStatus initMlxLinkSdk(MlxLinkInitMode initMode = MlxLinkInitMode::NONE);
+    MstStatus initMlxLinkSdk(MlxLinkInitMode initMode = MlxLinkInitMode::NONE, const std::string& port = "");
     void initMlxLinkSdkPortInfo();
     void initMlxLinkSdkUserInput(MlxLinkInitMode initMode);
     MstStatus extractOperationalInfoFromJson(MstTelemetryOperationalInfo* operationalInfo);
@@ -211,4 +216,8 @@ private:
     std::unique_ptr<HcaCapabilities> _hcaCapabilitiesSdkInstance;
     std::vector<mfile*> _mfiles;
     std::map<MlxLinkInitMode, bool> mlxlinkSdkInitialized;
+    // Currently bound mlxlink port label (empty => device default). Guards redundant re-binds.
+    std::string _currentMlxLinkPort;
+    // Tracks the per-port init flow (updatePortInfo()+showPddr()) already run for each (port, mode).
+    std::map<std::pair<std::string, MlxLinkInitMode>, bool> _portModeInitialized;
 };
