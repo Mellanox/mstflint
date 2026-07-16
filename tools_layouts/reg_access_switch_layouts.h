@@ -1309,6 +1309,70 @@ Other values are Reserved. */
 };
 
 /* Description -   */
+/* Size in bytes - 96 */
+struct reg_access_switch_mtecr_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Number of sensors supported by the ASIC+platform */
+	/* 0x0.0 - 0x0.11 */
+	/* access: RO */
+	u_int16_t sensor_count;
+	/* Description - Last sensor index that is available in the system to read from. */
+	/* 0x0.16 - 0x0.27 */
+	/* access: RO */
+	u_int16_t last_sensor;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Number of sensors supported by the device that are on the ASIC. */
+	/* 0x4.0 - 0x4.6 */
+	/* access: RO */
+	u_int8_t internal_sensor_count;
+	/* Description - Slot index (0: Main board). */
+	/* 0x4.28 - 0x4.31 */
+	/* access: INDEX */
+	u_int8_t slot_index;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - Mapping of system sensors supported by the device. Each bit represents a sensor. */
+	/* 0x8.0 - 0x5c.31 */
+	/* access: RO */
+	u_int32_t sensor_map[22];
+};
+
+/* Description -   */
+/* Size in bytes - 48 */
+struct reg_access_switch_mtsh_reg_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Unit time of time which each bin is counting. Unit is equal to 
+time_measure_unit in time_unit
+
+For exmple:
+time_unit = 0
+time_measure_unit = 500
+Each bit tick is 500 useconds */
+	/* 0x0.0 - 0x0.15 */
+	/* access: RO */
+	u_int16_t time_measure_unit;
+	/* Description - See MTMP.sensor_index (for MTMP.i = 0 and MTMP.ig = 0). */
+	/* 0x0.16 - 0x0.27 */
+	/* access: INDEX */
+	u_int16_t sensor_index;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Unit time of
+0 - useconds
+1 - miliseconds */
+	/* 0x4.0 - 0x4.1 */
+	/* access: RO */
+	u_int8_t time_unit;
+/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+	/* Description - Each element indicates the duration that the device was in this thermal state. The total time equals to the element value * unit_time_measure.
+thermal_state[0]: Normal
+thermal_state[1]: High Warning.
+thermal_state[2]: High Critical.
+thermal_state[3]: Low Critical. */
+	/* 0x10.0 - 0x2c.31 */
+	/* access: RO */
+	u_int32_t thermal_state[8];
+};
+
+/* Description -   */
 /* Size in bytes - 144 */
 struct reg_access_switch_mmta_reg_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
@@ -2735,6 +2799,10 @@ union reg_access_switch_reg_access_switch_Nodes {
 	/* access: RW */
 	struct reg_access_switch_mmta_reg_ext mmta_reg_ext;
 	/* Description -  */
+	/* 0x0.0 - 0x2c.31 */
+	/* access: RW */
+	struct reg_access_switch_mtsh_reg_ext mtsh_reg_ext;
+	/* Description -  */
 	/* 0x0.0 - 0x44.31 */
 	/* access: RW */
 	struct reg_access_switch_pmdr_reg_ext pmdr_reg_ext;
@@ -2971,6 +3039,20 @@ void reg_access_switch_mmta_reg_ext_print(const struct reg_access_switch_mmta_re
 unsigned int reg_access_switch_mmta_reg_ext_size(void);
 #define REG_ACCESS_SWITCH_MMTA_REG_EXT_SIZE    (0x90)
 void reg_access_switch_mmta_reg_ext_dump(const struct reg_access_switch_mmta_reg_ext *ptr_struct, FILE *fd);
+/* mtecr_ext */
+void reg_access_switch_mtecr_ext_pack(const struct reg_access_switch_mtecr_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_mtecr_ext_unpack(struct reg_access_switch_mtecr_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_mtecr_ext_print(const struct reg_access_switch_mtecr_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_mtecr_ext_size(void);
+#define REG_ACCESS_SWITCH_MTECR_EXT_SIZE    (0x60)
+void reg_access_switch_mtecr_ext_dump(const struct reg_access_switch_mtecr_ext *ptr_struct, FILE *fd);
+/* mtsh_reg_ext */
+void reg_access_switch_mtsh_reg_ext_pack(const struct reg_access_switch_mtsh_reg_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_mtsh_reg_ext_unpack(struct reg_access_switch_mtsh_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_mtsh_reg_ext_print(const struct reg_access_switch_mtsh_reg_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_mtsh_reg_ext_size(void);
+#define REG_ACCESS_SWITCH_MTSH_REG_EXT_SIZE    (0x30)
+void reg_access_switch_mtsh_reg_ext_dump(const struct reg_access_switch_mtsh_reg_ext *ptr_struct, FILE *fd);
 /* mpein_reg_ext */
 void reg_access_switch_mpein_reg_ext_pack(const struct reg_access_switch_mpein_reg_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_switch_mpein_reg_ext_unpack(struct reg_access_switch_mpein_reg_ext *ptr_struct, const u_int8_t *ptr_buff);

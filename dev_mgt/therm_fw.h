@@ -110,6 +110,23 @@ extern "C"
 
     void td_fw_release_zones_data(td_fw_zone_data_t* zones_p);
 
+    /* Thermal-state residency: cumulative time spent in each thermal state. */
+    typedef struct
+    {
+        char sensor_name[MAX_DIODE_LEN]; /* FW name from MTMP (up to 8 chars) or fallback
+                                          * "sensor_<idx>" (up to 12 chars) when MTMP fails. */
+        u_int16_t sensor_index;          /* Index of the queried sensor */
+        u_int64_t time_spent_ms[4];      /* Time per state in ms: [0] Normal, [1] High Warning,
+                                          * [2] High Critical, [3] Low Critical. */
+    } td_fw_state_durations_data_t;
+
+    /* Read the thermal-state histogram for every ASIC sensor.
+     * Allocates *out (free with td_fw_release_state_durations_data). Per-sensor read
+     * failures are dropped silently — *count_out reflects only successful reads. */
+    td_fw_result_t td_fw_read_all_state_durations(mfile* mf, td_fw_state_durations_data_t** out, int* count_out);
+
+    void td_fw_release_state_durations_data(td_fw_state_durations_data_t* p);
+
     typedef enum
     {
         
@@ -150,7 +167,7 @@ extern "C"
         char unit_str[16];          // "0.125°C", "1/256°C", or "1mW"
     } td_data_mmta;
 
-    #define TD_FW_MAX_ERR_LEN 100
+    #define TD_FW_MAX_ERR_LEN 256
     extern char td_fw_err_str[];
 
     /*
