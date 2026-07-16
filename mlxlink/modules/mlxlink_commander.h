@@ -151,6 +151,8 @@
 #define BKV_WDATA_FLAG_SHORT ' '
 #define BKV_WMASK_FLAG "wmask"
 #define BKV_WMASK_FLAG_SHORT ' '
+#define SHOW_PRR_FLAG "show_prr"
+#define SHOW_PRR_FLAG_SHORT ' '
 #define PERIODIC_EQ_FLAG "show_peq"
 #define PERIODIC_EQ_FLAG_SHORT ' '
 
@@ -395,6 +397,7 @@ enum OPTION_TYPE
     SHOW_BKV_GROUP,
     SET_BKV_GROUP,
     SET_BKV_ENTRY,
+    SHOW_PRR,
     SHOW_SLRP,
     SHOW_MODULE,
     SHOW_DEVICE,
@@ -544,6 +547,8 @@ public:
     virtual void showBkvGroup(bool showEntries = true, u_int32_t entryFilter = (u_int32_t)-1);
     virtual void setBkvGroup();
     virtual void setBkvEntry();
+    virtual void showPrr();
+    void dumpPrrMeasData(u_int32_t measType);
     void queryBkvCaps(uint8_t& numGroups, uint32_t groupId = (uint32_t)-1);
     void queryBkvCaps(uint8_t& numGroups,
                       uint8_t& numEntries,
@@ -690,6 +695,7 @@ public:
     MlxlinkCmdPrint _cableDumpRawCmd;
     MlxlinkCmdPrint _cableDDMCmd;
     MlxlinkCmdPrint _portGroupMapping;
+    MlxlinkCmdPrint _prrInfoCmd;
     MlxlinkCmdPrint _plrInfoCmd;
     MlxlinkCmdPrint _krInfoCmd;
     MlxlinkCmdPrint _hostClassCmd;

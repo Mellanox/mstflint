@@ -191,6 +191,8 @@ void updateColumnWidthPopulateTable(std::vector<std::pair<std::string, u_int32_t
 void printProgressBar(int completion, const std::string& preStr, const std::string& endStr);
 std::string string_format(const char* format, ...);
 
+u_int32_t prrMeasDataDwordsForType(u_int32_t measType);
+
 bool readBoolFromSysFs(const string& sysfsPath);
 bool isModulePresent(const string& modulePath);
 bool isModulePoweredOn(const string& modulePath);
