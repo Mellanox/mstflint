@@ -153,7 +153,7 @@ void MlxlinkCommander::init(bool warnIBDeviceCompatibility)
        setPlaneIndex(_userInput.planeIndex);
     }
 
-    if (_userInput._pcie && !(dm_is_gpu(static_cast<dm_dev_id_t>(_devID)) && _mf->tp != MST_PCICONF))
+    if (_userInput._pcie)
     {
         _pcieMgmtSupported = checkPcieMgmtSupport();
     }
