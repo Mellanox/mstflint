@@ -916,7 +916,8 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
 
             resetLocalParser(ACCESS_REG_PTYS);
             updateField("local_port", _localPort);
-            updateField("proto_mask", _protoActive);
+            updateField("proto_mask",
+                        (_isNvlinkModeB || _isNvlinkModeA) ? (u_int32_t)PTYS_PROTO_MASK_NVLINK : _protoActive);
             sendRegister(ACCESS_REG_PTYS, MACCESS_REG_METHOD_GET);
 
             float dataRate = ((float)getFieldValue("data_rate_oper")) * 0.1;
@@ -1695,6 +1696,7 @@ string MlxlinkAmBerCollector::getDateCode(u_int64_t dateCode)
     string dateCodeStr;
     u_int64_t dateCodeRev = 0;
     u_int64_t tmpDateCode = dateCode;
+    bool onlySpaces = true;
 
     while (tmpDateCode)
     {
@@ -1709,6 +1711,10 @@ string MlxlinkAmBerCollector::getDateCode(u_int64_t dateCode)
             char ch = (char)(dateCodeRev >> i);
             if (ch)
             {
+                if (ch != ' ')
+                {
+                    onlySpaces = false;
+                }
                 dateCodeStr.push_back(ch);
                 if (i % 16 == 0)
                 {
@@ -1724,6 +1730,11 @@ string MlxlinkAmBerCollector::getDateCode(u_int64_t dateCode)
     else
     {
         dateCodeStr = NA_FIELD_VALUE;
+    }
+
+    if (onlySpaces)
+    {
+        return NA_FIELD_VALUE;
     }
 
     return dateCodeStr;

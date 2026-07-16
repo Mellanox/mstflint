@@ -1569,7 +1569,7 @@ void MlxlinkCommander::handleLabelPorts(std::vector<string> labelPortsStr, bool 
     }
     else
     {
-        if (_devID == DeviceSpectrum2)
+        if (_devID == DeviceSpectrum2 || _devID == DeviceSpectrum)
         {
             handleAllEthLocalPorts(labelPortsStr, spect2WithGb, skipException);
         }
@@ -3482,15 +3482,19 @@ void MlxlinkCommander::showPrr()
         throw MlxRegException("No plane information is available for show_prr!");
     }
 
-    if (_userInput._lane >= _numOfLanes)
-    {
-        throw MlxRegException("Invalid lane number: " + to_string(_userInput._lane) +
-                              ". Value must fit in the range of 0-" + to_string(_numOfLanes - 1) + "\n");
-    }
-
     if (!_linkUP)
     {
-        throw MlxRegException("show_prr requires the link to be up. Bring the link up and retry.");
+        throw MlxRegException("Show_prr requires the link to be up. Bring the link up and retry.");
+    }
+
+    if (!(_isNvlinkModeB || _isNvlinkModeA))
+    {
+        throw MlxRegException("Show_prr is supported on NVL6 devices only.");
+    }
+
+    if (_userInput._lane >= _numOfLanes)
+    {
+        throw MlxRegException("Invalid lane number: " + to_string(_userInput._lane) + "\n");
     }
 
     MlxlinkRecord::printWar(
