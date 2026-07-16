@@ -1883,7 +1883,7 @@ void MlxlinkMaps::initEnhancedDebugMapping()
     _localReasonOpcode[LOCAL_REASON_OPCODE_THERMAL_SHUTDOWN] = "Thermal_shutdown";
     _localReasonOpcode[LOCAL_REASON_OPCODE_CURRENT_ISSUE] = "Current_issue";
     _localReasonOpcode[LOCAL_REASON_OPCODE_POWER_BUDGET] = "Power_budget";
-    _localReasonOpcode[LOCAL_REASON_OPCODE_FAST_RECOVERY_EFFECTIVE_BER] = "Fast_recovery_raw_ber";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_FAST_RECOVERY_RAW_BER] = "Fast_recovery_raw_ber";
     _localReasonOpcode[LOCAL_REASON_OPCODE_FAST_RECOVERY_EFFECTIVE_BER] = "Fast_recovery_effective_ber";
     _localReasonOpcode[LOCAL_REASON_OPCODE_FAST_RECOVERY_SYMBOL_BER] = "Fast_recovery_symbol_ber";
     _localReasonOpcode[LOCAL_REASON_OPCODE_FAST_RECOVERY_CREDIT_WATCHDOG] = "Fast_recovery_credit_watchdog";
