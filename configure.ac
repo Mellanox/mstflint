@@ -43,6 +43,9 @@ AC_PROG_CC
 AC_PROG_CXX
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 LT_INIT
+dnl Python is optional: only needed to run the Device Properties Python unit
+dnl tests via "make check". Build itself has no Python prerequisite.
+AM_PATH_PYTHON([2.7],, [:])
 AC_CONFIG_HEADERS(config.h)
 
 PKG_PROG_PKG_CONFIG
@@ -608,7 +611,6 @@ if test "x$enable_mstflint_sdk" = "xyes"; then
     AC_CONFIG_FILES(mft_sdk/mstflint_sdk.pc)
     AC_CONFIG_FILES(hca_capabilities/Makefile)
     AC_CONFIG_FILES(mlxreg/mlxreg_sdk/Makefile)
-    AC_CONFIG_FILES(mft_core/device/Makefile)
     # NVML-backed GPU discovery is pulled in only when NVML is enabled; the SDK
     # source gates its use of it on ENABLE_NVML to keep the build self-consistent.
     if test "x$enable_nvml" = "xyes"; then
@@ -721,7 +723,7 @@ AM_CONDITIONAL([USE_LOCAL_INIPARSER], [test "$INIPARSER_SYSTEM_AVAILABLE" = no])
 AS_IF([test "x$INIPARSER_SYSTEM_AVAILABLE" = "xyes" ], [
     CXXFLAGS="$CXXFLAGS -DHAVE_INI_PARSER"])
 
-AC_SEARCH_LIBS([JSON], [jsoncpp], [JSON_SYSTEM_AVAILABLE="yes"],[
+PKG_CHECK_MODULES([JSON], [jsoncpp], [JSON_SYSTEM_AVAILABLE="yes"],[
     JSON_SYSTEM_AVAILABLE="no"
     JSON_CFLAGS='-I$(top_srcdir)/ext_libs/json'
     AC_SUBST(JSON_CFLAGS)
@@ -1039,4 +1041,6 @@ AC_OUTPUT( \
     mft_core/mft_core_utils/logger/Makefile \
     mft_core/mft_core_utils/operating_system_api/Makefile \
     mft_core/mft_core_utils/mft_exceptions/Makefile \
+    mft_core/device/Makefile \
+    mft_core/device/device_info/Makefile \
  )

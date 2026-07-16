@@ -1,0 +1,18 @@
+{
+    "0x90": {
+        "general_info": {
+            "device_name": "SagittaZ",
+            "device_type": "LinkX",
+            "vendor": "Mellanox"
+        },
+        "linkx_info": {
+            "i2c_secondary" : 118,
+            "addr_width" : 2
+        },
+        "devmon_info": {
+            "market_name": "",
+            "project_name": "sagittaz",
+            "hw_rev_id": -1
+        }
+    }
+}

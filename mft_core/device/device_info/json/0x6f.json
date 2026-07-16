@@ -1,0 +1,18 @@
+{
+    "0x6f": {
+        "general_info": {
+            "device_name": "Menhit",
+            "device_type": "LinkX",
+            "vendor": "Mellanox"
+        },
+        "linkx_info": {
+            "i2c_secondary" : 18,
+            "addr_width" : 2
+        },
+        "devmon_info": {
+          "market_name": "",
+          "project_name": "menhit",
+          "hw_rev_id": -1
+        }
+    }
+}

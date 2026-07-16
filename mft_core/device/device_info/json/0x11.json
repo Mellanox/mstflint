@@ -1,0 +1,18 @@
+{
+    "0x11": {
+        "general_info": {
+            "device_name": "CableQSFPaging",
+            "device_type": "Cable",
+            "vendor": "Mellanox",
+            "hw_rev_id": 171
+        },
+        "cable_info": {
+            "cable_type": "QSFP"
+        },
+        "devmon_info": {
+          "market_name": "",
+          "project_name": "cable_qsfp_paging",
+          "hw_rev_id": 171
+        }
+    }
+}
