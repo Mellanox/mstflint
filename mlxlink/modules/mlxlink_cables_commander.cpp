@@ -579,6 +579,7 @@ void MlxlinkCablesCommander::readCableDDMInfo()
             break;
         case IDENTIFIER_QSFP_DD:
         case IDENTIFIER_OSFP:
+        case IDENTIFIER_C2C:
         case IDENTIFIER_DSFP:
         case IDENTIFIER_QSFP_CMIS:
             prepareQsfpddDdmInfo();
@@ -802,7 +803,7 @@ void MlxlinkCablesCommander::initValidPages()
     bool qsfpCable = (_cableIdentifier == IDENTIFIER_QSFP28 || _cableIdentifier == IDENTIFIER_QSFP_PLUS);
     bool cmisCable = (_cableIdentifier == IDENTIFIER_SFP_DD || _cableIdentifier == IDENTIFIER_QSFP_DD ||
                       _cableIdentifier == IDENTIFIER_OSFP || _cableIdentifier == IDENTIFIER_DSFP ||
-                      _cableIdentifier == IDENTIFIER_QSFP_CMIS);
+                      _cableIdentifier == IDENTIFIER_C2C || _cableIdentifier == IDENTIFIER_QSFP_CMIS);
     if (cmisCable || qsfpCable || _sfp51Paging)
     {
         p = page_t{PAGE_0, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};

@@ -1207,6 +1207,9 @@ string getCableIdentifier(u_int32_t identifier)
         case IDENTIFIER_OSFP:
             identifierStr = "OSFP";
             break;
+        case IDENTIFIER_C2C:
+            identifierStr = "C2C";
+            break;
         case IDENTIFIER_DSFP:
             identifierStr = "DSFP";
             break;
@@ -1551,7 +1554,7 @@ string getCableLengthStr(u_int32_t cableLength, bool cmisCable)
     {
         snprintf(cableLengthStr, sizeof(cableLengthStr), "%d", cableLength);
     }
-    return string(cableLengthStr);
+    return string(cableLengthStr) != "" ? string(cableLengthStr) : "0";
 }
 
 string getRxTxCDRState(u_int32_t state, u_int32_t numOfLanes)
