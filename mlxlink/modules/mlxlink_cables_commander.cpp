@@ -1069,7 +1069,7 @@ void MlxlinkCablesCommander::writeToEEPROM(u_int16_t page, u_int16_t offset, vec
 // Checking read command parameters and initializing the valid pages
 void MlxlinkCablesCommander::checkParams(u_int16_t offset, u_int16_t length)
 {
-    if (offset > (EEPROM_PAGE_LENGTH + 1))
+    if (offset > EEPROM_PAGE_LENGTH)
     {
         throw MlxRegException("Invalid offset value %d. It must be within range [0-255].", offset);
     }
