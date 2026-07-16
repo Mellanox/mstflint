@@ -84,6 +84,7 @@
 #define ACCESS_REG_PREI "PREI"
 #define ACCESS_REG_PRTL "PRTL"
 #define ACCESS_REG_PTYS "PTYS"
+#define ACCESS_REG_SLPRR "SLPRR"
 #define ACCESS_REG_SLRED "SLRED"
 #define ACCESS_REG_SLRG "SLRG"
 #define ACCESS_REG_SLTP "SLTP"
@@ -116,6 +117,22 @@
 #define SLRG_PCIE_7NM_SLEEP 10
 #define SLRG_PCIE_7NM_TIMEOUT SLRG_PCIE_7NM_SLEEP * 50
 #define SLTP_LANE_SPEED_SLEEP 250
+
+// SLPRR (PRR measurement) status enum values - mirror the ADB enum for the SLPRR.status field
+#define SLPRR_STATUS_NO_MEAS 0
+#define SLPRR_STATUS_MEASUREMENT_PROGRESS 1
+#define SLPRR_STATUS_MEASUREMENT_DONE 2
+#define SLPRR_STATUS_MEASUREMENT_ERROR 3
+
+// SLPRR (PRR measurement) timing constants
+// HLD: wait ~0.5s for FW readiness before triggering the measurement (exact value still TBD by HLD)
+#define SLPRR_FW_READY_DELAY_MS 500
+#define SLPRR_POLL_INTERVAL_MS 100
+#define SLPRR_POLL_TIMEOUT_MS 10000
+
+// SLPRR meas_data layout: the SLPRR register has a 16-byte header followed by a 320-byte meas_data
+// payload (offset 0x10, size 0x140 = 80 DWORDs). The DWORDs reside in _buffer[SLPRR_MEAS_DATA_DWORD_OFFSET ..].
+#define SLPRR_MEAS_DATA_DWORD_OFFSET 4
 // cables parse definition
 
 #define SHIFT_0 0

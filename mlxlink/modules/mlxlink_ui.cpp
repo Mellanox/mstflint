@@ -126,6 +126,11 @@ void MlxlinkUi::printSynopsisQueries()
     "Show BKV Groups Info (requires --lane parameter)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(LANE_INDEX_FLAG_SHORT, LANE_INDEX_FLAG, "lane_index", "lane index (Required)");
+    MlxlinkRecord::printFlagLine(SHOW_PRR_FLAG_SHORT, SHOW_PRR_FLAG, "",
+                                 "Run PRR measurement on the given lane and dump meas_data "
+                                 "(destructive: a link toggle is required afterwards; requires --lane)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(LANE_INDEX_FLAG_SHORT, LANE_INDEX_FLAG, "lane_index", "lane index (Required)");
     MlxlinkRecord::printFlagLine(BKV_GROUP_FLAG_SHORT, BKV_GROUP_FLAG, "group_id", "Show BKV Group Info");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(DEVICE_DATA_FLAG_SHORT, DEVICE_DATA_FLAG, "", "General Device Info");
@@ -1182,6 +1187,18 @@ void MlxlinkUi::validateBkvParams()
     }
 }
 
+void MlxlinkUi::validatePrrParams()
+{
+    if (isIn(SHOW_PRR, _sendRegFuncMap))
+    {
+        if (!_userInput.laneSpecified)
+        {
+            throw MlxRegException("The --" LANE_INDEX_FLAG " parameter is required when using --" SHOW_PRR_FLAG
+                                  " flag");
+        }
+    }
+}
+
 void MlxlinkUi::validatePlrParams()
 {
     if (_userInput._setPlr)
@@ -1315,6 +1332,7 @@ void MlxlinkUi::paramValidate()
     validatePCIeParams();
     validateGeneralCmdsParams();
     validateBkvParams();
+    validatePrrParams();
     validatePlrParams();
     validatePRBSParams();
     validatePhyRecoveryParams();
@@ -1465,6 +1483,8 @@ void MlxlinkUi::initCmdParser()
     AddOptions(TX_GROUP_PORTS_FLAG, TX_GROUP_PORTS_FLAG_SHORT, "ports", "Ports to be mapped [1,2,3,4,..,128]");
 
     AddOptions(SLTP_SHOW_FLAG, SLTP_SHOW_FLAG_SHORT, "", "get SLTP");
+    AddOptions(SHOW_PRR_FLAG, SHOW_PRR_FLAG_SHORT, "",
+               "Run PRR measurement and dump meas_data (destructive; requires --lane)");
     AddOptions(SLTP_SET_FLAG, SLTP_SET_FLAG_SHORT, "set", "set SLTP");
     AddOptions(SLTP_SET_ADVANCED_FLAG, SLTP_SET_ADVANCED_FLAG_SHORT, "", "set SLTP");
     AddOptions(SLTP_TX_POLICY_FLAG, SLTP_TX_POLICY_FLAG_SHORT, "", "set TX Policy");
@@ -1531,6 +1551,9 @@ void MlxlinkUi::commandsCaller()
                 break;
             case SHOW_SLTP:
                 _mlxlinkCommander->showSltp();
+                break;
+            case SHOW_PRR:
+                _mlxlinkCommander->showPrr();
                 break;
             case SHOW_BKV:
                 _mlxlinkCommander->showBkv();
@@ -1854,6 +1877,11 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     {
         addCmd(SHOW_SLTP);
         _userInput._showSltp = true;
+        return PARSE_OK;
+    }
+    else if (name == SHOW_PRR_FLAG)
+    {
+        addCmd(SHOW_PRR);
         return PARSE_OK;
     }
     else if (name == BKV_GROUPS_FLAG)

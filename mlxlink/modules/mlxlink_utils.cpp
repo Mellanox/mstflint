@@ -2076,6 +2076,21 @@ std::string string_format(const char* format, ...)
     va_end(args);
     return out;
 }
+
+u_int32_t prrMeasDataDwordsForType(u_int32_t measType)
+{
+    switch (measType)
+    {
+        case 6:
+        case 16:
+            return 32;
+        case 8:
+            return 4;
+        default:
+            return 80;
+    }
+}
+
 /* SW controlled module utilities */
 bool readBoolFromSysFs(const string& sysfsPath)
 {
