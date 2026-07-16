@@ -238,6 +238,7 @@ static const char* const IDENTIFIER_STR_SFP_DD = "SFP-DD";
 static const char* const IDENTIFIER_STR_QSFP_DD = "QSFP-DD";
 static const char* const IDENTIFIER_STR_QSFP_CMIS = "QSFP_CMIS";
 static const char* const IDENTIFIER_STR_OSFP = "OSFP";
+static const char* const IDENTIFIER_STR_C2C = "C2C";
 static const char* const IDENTIFIER_STR_DSFP = "DSFP";
 static const char* const IDENTIFIER_STR_CPO = "CPO";
 static const char* const IDENTIFIER_STR_OE = "OE";

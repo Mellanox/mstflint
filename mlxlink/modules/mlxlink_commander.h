@@ -483,6 +483,7 @@ public:
     void updateSysFsPath();
     void checkRegCmd();
     bool isBackplane();
+    bool isC2C();
     bool errorObserved();
     std::string getAllUnhandledErrors();
     void validatePortToLC();

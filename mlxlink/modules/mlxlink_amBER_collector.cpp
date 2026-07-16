@@ -1625,6 +1625,7 @@ void MlxlinkAmBerCollector::initCableIdentifier(u_int32_t cableIdentifier)
         case IDENTIFIER_SFP_DD:
         case IDENTIFIER_QSFP_DD:
         case IDENTIFIER_OSFP:
+        case IDENTIFIER_C2C:
         case IDENTIFIER_DSFP:
         case IDENTIFIER_QSFP_CMIS:
             _isCmisCable = true;

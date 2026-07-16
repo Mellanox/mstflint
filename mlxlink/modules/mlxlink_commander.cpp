@@ -2490,6 +2490,21 @@ bool MlxlinkCommander::isBackplane()
     return isBackplane;
 }
 
+bool MlxlinkCommander::isC2C()
+{
+    bool isC2C = false;
+    try
+    {
+        sendPrmReg(ACCESS_REG_PDDR, REG_GET, "page_select=%d", PDDR_MODULE_INFO_PAGE);
+        isC2C = (getFieldValue("cable_identifier") == IDENTIFIER_C2C);
+    }
+    catch (const std::exception& e)
+    {
+    }
+
+    return isC2C;
+}
+
 void MlxlinkCommander::supportedInfoPage()
 {
     try
@@ -4758,7 +4773,10 @@ void MlxlinkCommander::updatePortModuleInfo(vector<string>& tableData, const Por
     // Get cable information strings
     std::string cableLenStr = getCableLengthStr(_cableLen, _cmisCable);
     cableLenStr = (cableLenStr == "0" || cableLenStr == "0.0") ? "" : getCableLengthStr(_cableLen, _cmisCable) + "m";
-    std::string cableTypeStr = _isSwControled ? "sw cntrld" : _mlxlinkMaps->_cableTypeForTableDisplay[_cableMediaType];
+    std::string cableTypeStr = _isSwControled ? "sw cntrld" :
+                               isBackplane()  ? "Backplane" :
+                               isC2C()        ? "C2C" :
+                                                _mlxlinkMaps->_cableTypeForTableDisplay[_cableMediaType];
 
     // Get speed and color information
     std::string speedStr = getSpeedStrForTableView();
@@ -4840,9 +4858,12 @@ void MlxlinkCommander::updatePortInfo(vector<string>& tableData, const PortGroup
     }
     string cableLenStr = getCableLengthStr(_cableLen, _cmisCable);
     cableLenStr = (cableLenStr == "0" || cableLenStr == "0.0") ? "" : "/" + cableLenStr + "m";
-    std::string cableInfoStr = _isSwControled ? "sw cntrld" : _mlxlinkMaps->_cableTypeForTableDisplay[_cableMediaType] + cableLenStr;
+    std::string cableInfoStr = _isSwControled ? "sw cntrld" :
+                               isBackplane()  ? "Backplane" :
+                               isC2C()        ? "C2C" :
+                                                _mlxlinkMaps->_cableTypeForTableDisplay[_cableMediaType] + cableLenStr;
     updateColumnWidthPopulateTable(_mlxlinkMaps->_multiPortInfoTableHeader, posToUpdateWidthInVector++, tableData, cableInfoStr, cableInfoStr.length(),
-                                   !(_cableMediaType == UNPLUGGED || _cableMediaType == UNIDENTIFIED));
+                                   !((_cableMediaType == UNPLUGGED || _cableMediaType == UNIDENTIFIED) && (!isC2C() && !isBackplane())));
 
     // Update time to link up info
     sendPrmReg(ACCESS_REG_PDDR, REG_GET, "page_select=%d", PDDR_MODULE_LINK_UP_INFO_PAGE);
