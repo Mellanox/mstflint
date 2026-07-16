@@ -3145,6 +3145,71 @@ void reg_access_switch_mtcq_reg_ext_dump(const struct reg_access_switch_mtcq_reg
 	reg_access_switch_mtcq_reg_ext_print(ptr_struct, fd, 0);
 }
 
+void reg_access_switch_mtecr_ext_pack(const struct reg_access_switch_mtecr_ext *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	int i;
+
+	offset = 20;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 12, (u_int32_t)ptr_struct->sensor_count);
+	offset = 4;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 12, (u_int32_t)ptr_struct->last_sensor);
+	offset = 57;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 7, (u_int32_t)ptr_struct->internal_sensor_count);
+	offset = 32;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->slot_index);
+	for (i = 0; i < 22; ++i) {
+		offset = adb2c_calc_array_field_address(64, 32, i, 768, 1);
+		adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->sensor_map[i]);
+	}
+}
+void reg_access_switch_mtecr_ext_unpack(struct reg_access_switch_mtecr_ext *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	int i;
+
+	offset = 20;
+	ptr_struct->sensor_count = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 12);
+	offset = 4;
+	ptr_struct->last_sensor = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 12);
+	offset = 57;
+	ptr_struct->internal_sensor_count = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 7);
+	offset = 32;
+	ptr_struct->slot_index = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
+	for (i = 0; i < 22; ++i) {
+		offset = adb2c_calc_array_field_address(64, 32, i, 768, 1);
+		ptr_struct->sensor_map[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	}
+}
+void reg_access_switch_mtecr_ext_print(const struct reg_access_switch_mtecr_ext *ptr_struct, FILE *fd, int indent_level)
+{
+	int i;
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== reg_access_switch_mtecr_ext ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "sensor_count         : " UH_FMT "\n", ptr_struct->sensor_count);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "last_sensor          : " UH_FMT "\n", ptr_struct->last_sensor);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "internal_sensor_count : " UH_FMT "\n", ptr_struct->internal_sensor_count);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "slot_index           : " UH_FMT "\n", ptr_struct->slot_index);
+	for (i = 0; i < 22; ++i) {
+		adb2c_add_indentation(fd, indent_level);
+		fprintf(fd, "sensor_map_%03d      : " U32H_FMT "\n", i, ptr_struct->sensor_map[i]);
+	}
+}
+unsigned int reg_access_switch_mtecr_ext_size(void)
+{
+	return REG_ACCESS_SWITCH_MTECR_EXT_SIZE;
+}
+void reg_access_switch_mtecr_ext_dump(const struct reg_access_switch_mtecr_ext *ptr_struct, FILE *fd)
+{
+	reg_access_switch_mtecr_ext_print(ptr_struct, fd, 0);
+}
+
 void reg_access_switch_mtsh_reg_ext_pack(const struct reg_access_switch_mtsh_reg_ext *ptr_struct, u_int8_t *ptr_buff)
 {
 	u_int32_t offset;

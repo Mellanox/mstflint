@@ -2086,6 +2086,63 @@ Valid only for RMCS. */
 };
 
 /* Description -   */
+/* Size in bytes - 96 */
+struct reg_access_switch_mtecr_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Number of sensors supported by the ASIC+platform
+This includes the ASIC, ambient sensors, module sensors, Gearboxes etc.
+This actually is equal to sum of all '1' in sensor_map
+
+Known sensors:
+See MTMP.sensor_index description. */
+	/* 0x0.0 - 0x0.11 */
+	/* access: RO */
+	u_int16_t sensor_count;
+	/* Description - Last sensor index that is available in the system to read from.
+e.g. when 32modules: 64+32-1 = 95 */
+	/* 0x0.16 - 0x0.27 */
+	/* access: RO */
+	u_int16_t last_sensor;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Number of sensors supported by the device that are on the ASIC. 
+Exposes how many ASIC diodes exist. 
+The FW exposes all of them as sensor[0] */
+	/* 0x4.0 - 0x4.6 */
+	/* access: RO */
+	u_int8_t internal_sensor_count;
+	/* Description - Slot index
+0: Main board */
+	/* 0x4.28 - 0x4.31 */
+	/* access: INDEX */
+	u_int8_t slot_index;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - Mapping of system sensors supported by the device. Each bit represents a sensor.
+This field is size variable based on the last_sensor field and in granularity of 32bits.
+Per bit:
+0: Not connected or not supported
+1: Supports temperature measurements
+
+In case of last_sensor = 704 (22*32):
+sensor_warning[0] bit31 is sensor_warning[703]
+sensor_warning[0] bit0 is sensor_warning[703-31]
+sensor_warning[21] bit31 is sensor_warning[31]
+sensor_warning[21] bit0 is sensor_warning[0]
+
+In case if last_sensor = 259 (22*32):
+Note: roundup(259,32)=288
+sensor_warning[0] bit31 is sensor_warning[287]
+sensor_warning[0] bit0 is sensor_warning[287-31=256]
+sensor_warning[8] bit31 is sensor_warning[31]
+sensor_warning[8] bit0 is sensor_warning[0]
+sensor_warning[9..21] are not used
+
+64-192 of sensor_index are mapped to the modules sequentially (module 0 is mapped to sensor_index 64, module 1 to sensor_index 65 and so on). */
+	/* 0x8.0 - 0x5c.31 */
+	/* access: RO */
+	u_int32_t sensor_map[22];
+};
+
+/* Description -   */
 /* Size in bytes - 48 */
 struct reg_access_switch_mtsh_reg_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
@@ -3415,6 +3472,13 @@ void reg_access_switch_mtcq_reg_ext_print(const struct reg_access_switch_mtcq_re
 unsigned int reg_access_switch_mtcq_reg_ext_size(void);
 #define REG_ACCESS_SWITCH_MTCQ_REG_EXT_SIZE    (0x70)
 void reg_access_switch_mtcq_reg_ext_dump(const struct reg_access_switch_mtcq_reg_ext *ptr_struct, FILE *fd);
+/* mtecr_ext */
+void reg_access_switch_mtecr_ext_pack(const struct reg_access_switch_mtecr_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_mtecr_ext_unpack(struct reg_access_switch_mtecr_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_mtecr_ext_print(const struct reg_access_switch_mtecr_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_mtecr_ext_size(void);
+#define REG_ACCESS_SWITCH_MTECR_EXT_SIZE    (0x60)
+void reg_access_switch_mtecr_ext_dump(const struct reg_access_switch_mtecr_ext *ptr_struct, FILE *fd);
 /* mtsh_reg_ext */
 void reg_access_switch_mtsh_reg_ext_pack(const struct reg_access_switch_mtsh_reg_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_switch_mtsh_reg_ext_unpack(struct reg_access_switch_mtsh_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
