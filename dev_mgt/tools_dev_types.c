@@ -1037,6 +1037,22 @@ int dm_is_gpu(dm_dev_id_t type)
     return (dm_is_gb100(type) || dm_is_gr100(type));
 }
 
+int dm_is_cpo(mfile* mf, u_int8_t* ptr_cpo_ind)
+{
+    reg_access_status_t rc;
+    struct reg_access_hca_mgir_ext mgir;
+    memset(&mgir, 0, sizeof(mgir));
+    rc = reg_access_mgir(mf, REG_ACCESS_METHOD_GET, &mgir);
+
+    if (rc)
+    {
+        return MFE_ERROR;
+    }
+
+    *ptr_cpo_ind = mgir.hw_info.cpo_indication;
+    return MFE_OK;
+}
+
 int dm_is_cx7(dm_dev_id_t type)
 {
     return (type == DeviceConnectX7);

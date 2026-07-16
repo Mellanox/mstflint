@@ -71,16 +71,28 @@ static float _raw_temp_to_celsius(u_int16_t raw_temp, td_temp_unit_t unit)
 
 char td_fw_err_str[TD_FW_MAX_ERR_LEN] = "General error";
 
-/* MTMP_GET keyed on (granularity, asic_index, sensor_index, i=1).
+/* Convert MTSH ticks to milliseconds.
+ * Each thermal_state counter is in units of time_measure_unit, which itself is expressed
+ * in microseconds (time_unit == 0) or milliseconds (time_unit == 1). */
+static u_int64_t _ticks_to_ms(u_int32_t ticks, u_int16_t time_measure_unit, u_int8_t time_unit)
+{
+    u_int64_t total = (u_int64_t)ticks * (u_int64_t)time_measure_unit;
+    return (time_unit == 0) ? (total / 1000ULL) : total;
+}
+
+/* MTMP_GET keyed on (internal, granularity, asic_index, sensor_index).
+ * internal = 0 global virtual-sensor namespace (MTSH.sensor_index lives here);
+ *            1 internal-diode / zone namespace.
  * granularity = 0 legacy single-die; 1 main perim; 2 + asic_index tile. */
 static reg_access_status_t _mtmp_read(mfile* mf,
+                                      u_int8_t internal,
                                       u_int8_t granularity,
                                       u_int8_t asic_index,
                                       u_int16_t sensor_index,
                                       struct reg_access_hca_mtmp_ext* mtmp_out)
 {
     memset(mtmp_out, 0, sizeof(*mtmp_out));
-    mtmp_out->i = 1;
+    mtmp_out->i = internal;
     mtmp_out->ig = granularity;
     mtmp_out->asic_index = asic_index;
     mtmp_out->sensor_index = sensor_index;
@@ -145,8 +157,8 @@ td_fw_result_t td_fw_read_all_zones(mfile* mf, td_fw_zone_data_t** zones_out, in
     for (i = 0; i < total; i++)
     {
         struct reg_access_hca_mtmp_ext mtmp;
-        reg_access_status_t rc =
-          _mtmp_read(mf, /*granularity=*/0, /*asic_index=*/0, (u_int16_t)(ZONE_BASE_SENSOR_INDEX + i), &mtmp);
+        reg_access_status_t rc = _mtmp_read(mf, /*internal=*/1, /*granularity=*/0, /*asic_index=*/0,
+                                            (u_int16_t)(ZONE_BASE_SENSOR_INDEX + i), &mtmp);
         if (rc != ME_OK)
         {
             continue;
@@ -164,6 +176,101 @@ td_fw_result_t td_fw_read_all_zones(mfile* mf, td_fw_zone_data_t** zones_out, in
 void td_fw_release_zones_data(td_fw_zone_data_t* zones_p)
 {
     free(zones_p);
+}
+
+/* Read the histogram for one sensor. Internal helper for td_fw_read_all_state_durations. */
+static td_fw_result_t _read_one_state_duration(mfile* mf, u_int16_t sensor_index, td_fw_state_durations_data_t* out)
+{
+    struct reg_access_switch_mtsh_reg_ext mtsh;
+    struct reg_access_hca_mtmp_ext mtmp;
+    int i;
+
+    memset(out, 0, sizeof(*out));
+    memset(&mtsh, 0, sizeof(mtsh));
+    mtsh.sensor_index = sensor_index;
+
+    if (reg_access_mtsh(mf, REG_ACCESS_METHOD_GET, &mtsh) != ME_OK)
+    {
+        return TDFWE_REG_ACCESS_ERR;
+    }
+    out->sensor_index = sensor_index;
+    /* Only states 0..3 are defined; MTSH.thermal_state[4..7] are reserved. */
+    for (i = 0; i < 4; i++)
+    {
+        out->time_spent_ms[i] = _ticks_to_ms(mtsh.thermal_state[i], mtsh.time_measure_unit, mtsh.time_unit);
+    }
+
+    /* MTMP carries the sensor_name (MTSH itself does not). If MTMP fails for any reason,
+     * fall back to a synthesized label so the row remains identifiable in the output. */
+    if (_mtmp_read(mf, /*internal=*/0, /*granularity=*/0, /*asic_index=*/0, sensor_index, &mtmp) == ME_OK)
+    {
+        _decode_sensor_name(mtmp.sensor_name_hi, mtmp.sensor_name_lo, out->sensor_name);
+    }
+    if (out->sensor_name[0] == '\0')
+    {
+        snprintf(out->sensor_name, sizeof(out->sensor_name), "sensor_%u", (unsigned)sensor_index);
+    }
+    return TDFW_SUCCESS;
+}
+
+/* MTECR (i/ig namespace 0) advertises the real sensor set via last_sensor (highest valid
+ * sensor index) + sensor_map (per-index availability bitmap). We walk 0..last_sensor and read
+ * the histogram (MTSH) + name (MTMP) for every sensor that the bitmap marks as present. */
+td_fw_result_t td_fw_read_all_state_durations(mfile* mf, td_fw_state_durations_data_t** out, int* count_out)
+{
+    struct reg_access_switch_mtecr_ext mtecr;
+    td_fw_state_durations_data_t* arr;
+    int total;
+    int valid = 0;
+    int s;
+
+    if (!mf || !out || !count_out)
+    {
+        return TDFWE_INV_ARG;
+    }
+    *out = NULL;
+    *count_out = 0;
+
+    memset(&mtecr, 0, sizeof(mtecr));
+    reg_access_status_t mrc = reg_access_mtecr_ext(mf, REG_ACCESS_METHOD_GET, &mtecr);
+    if (mrc != ME_OK)
+    {
+        snprintf(td_fw_err_str, TD_FW_MAX_ERR_LEN, "Failed to query available thermal sensors: %s",
+                 reg_access_err2str(mrc));
+        return TDFWE_REG_ACCESS_ERR;
+    }
+
+    total = (int)mtecr.last_sensor + 1;
+    arr = (td_fw_state_durations_data_t*)malloc(sizeof(*arr) * (size_t)total);
+    if (!arr)
+    {
+        return TDFWE_MEM_ALLOC_FAIL;
+    }
+    memset(arr, 0, sizeof(*arr) * (size_t)total);
+
+    /* sensor_map is packed highest-index-first (per the MTECR PRM): with 'used' dwords in use,
+     * sensor_map[0] holds the top 32 indices and the last used dword holds sensors 0..31, so
+     * sensor s is at dword (used - 1 - s/32), bit (s % 32) -- the array index must be reversed. */
+    unsigned used = (unsigned)(mtecr.last_sensor / 32) + 1u;
+    for (s = 0; s <= (int)mtecr.last_sensor; s++)
+    {
+        td_fw_state_durations_data_t entry;
+        unsigned dword = (used - 1u) - ((unsigned)s / 32u);
+        if (((mtecr.sensor_map[dword] >> ((unsigned)s % 32u)) & 0x1u) &&
+            _read_one_state_duration(mf, (u_int16_t)s, &entry) == TDFW_SUCCESS)
+        {
+            arr[valid++] = entry;
+        }
+    }
+
+    *out = arr;
+    *count_out = valid;
+    return TDFW_SUCCESS;
+}
+
+void td_fw_release_state_durations_data(td_fw_state_durations_data_t* p)
+{
+    free(p);
 }
 
 const char* _diode_idx_to_str(int diode_idx)
@@ -516,8 +623,11 @@ td_fw_result_t td_fw_read_diode(mfile* mf, int diode_idx, td_data_fw* diode_data
             snprintf(td_fw_err_str, TD_FW_MAX_ERR_LEN, "Failed to query diode(0x%x), diode does not exist.", diode_idx);
             return TDFWW_DIODE_IDX_NO_EXIST;
         }
-        else
+        else if (rc != ME_MAD_SEND_FAILED)
         {
+            // On IB the diode enumeration walk overshoots the last sensor; on the GMP path
+            // (no SMP fallback) that returns ME_MAD_SEND_FAILED. Tolerate it (fall through)
+            // so previously collected reads are kept instead of aborting the whole read.
             DPRINTF("reg_access failed (0x%x): %s", rc, reg_access_err2str(rc));
             snprintf(td_fw_err_str, TD_FW_MAX_ERR_LEN, "Failed to query diode: %s", reg_access_err2str(rc));
             return TDFWE_ICMD;

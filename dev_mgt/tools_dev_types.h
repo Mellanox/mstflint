@@ -320,6 +320,13 @@ extern "C"
     int dm_is_gpu(dm_dev_id_t type);
 
     /**
+     * Reads MGIR.cpo_indication into *ptr_cpo_ind (1 = CPO system).
+     * Returns MFE_OK on success, MFE_ERROR on register-access failure
+     * (in which case *ptr_cpo_ind is left untouched).
+     */
+    int dm_is_cpo(mfile* mf, u_int8_t* ptr_cpo_ind);
+
+    /**
      * A predicate returning if the device is a gr100
      */
     int dm_is_gr100(dm_dev_id_t type);
