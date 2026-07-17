@@ -92,6 +92,24 @@ def is_known_missing(name):
 _MFT_SDK_INSTALL_LIB_DIR = "/usr/lib64/mft_sdk"
 
 
+def _installed_c_test_bin(config):
+    """Path to this suite's real C test binary shipped by mft-sdk
+    (tests/c/<x>_c_test, SDK statically linked), or None when not installed.
+
+    Derived from the suite's bazel target name: <x>-c-test-bin -> <x>_c_test.
+    The static link means the binary tests the SDK snapshot it was built
+    with — never the .so selected by MFT_SDK_SO_DIR — so callers must only
+    use it when the installed MFT SDK itself is under test.
+    """
+    target = getattr(config, "C_TEST_TARGET", "") or ""
+    name = target.rsplit(":", 1)[-1]
+    if not name.endswith("-c-test-bin"):
+        return None
+    c_name = name[:-len("-c-test-bin")].replace("-", "_") + "_c_test"
+    path = os.path.join(_MFT_SDK_INSTALL_LIB_DIR, "tests", "c", c_name)
+    return path if os.path.isfile(path) else None
+
+
 def _detect_pkg_type():
     """Detect the package type of the running system."""
     if os.path.exists("/etc/debian_version"):
@@ -590,7 +608,11 @@ class BaseCTestRunner(TestRunner):
             return False
 
         cmd = self._sudo_prefix() + self.config.C_TEST_BIN
-        if BaseConfig.MFT_SDK_SO:
+        # In --so mode the C column is the real C test binary when the
+        # mft-sdk package ships it (tests/c/); only when it falls back to
+        # the unified gtest harness does the invocation need a filter.
+        if BaseConfig.MFT_SDK_SO and \
+                self.config.C_TEST_BIN == BaseConfig.MFT_SDK_SO_TEST_BIN:
             cmd += ' --gtest_filter="' + self.config.GTEST_FILTER + '"'
             if self.device:
                 cmd += " -d " + self.device
@@ -606,7 +628,8 @@ class BaseCTestRunner(TestRunner):
         return self.success
 
     def get_error(self):
-        if BaseConfig.MFT_SDK_SO:
+        if BaseConfig.MFT_SDK_SO and \
+                self.config.C_TEST_BIN == BaseConfig.MFT_SDK_SO_TEST_BIN:
             return parse_gtest_error(self.output)
         return parse_sdk_error(self.output)
 
@@ -1010,9 +1033,22 @@ def run_main(config, test_suite_class, mlxlink_runner_class, mlxlink_action, pri
     # Configure mft_sdk_so linking mode (run-only, no building)
     if mft_sdk_so:
         BaseConfig.MFT_SDK_SO = True
-        config.C_TEST_BIN = BaseConfig.MFT_SDK_SO_TEST_BIN
+        # C column: prefer the real C test binary shipped by mft-sdk
+        # (tests/c/, SDK statically linked). Only when the installed MFT SDK
+        # is under test — with MFT_SDK_SO_DIR (e.g. the mstflint flow) the
+        # static binary would test a different SDK than requested, so the
+        # column falls back to the harness. Same fallback when the package
+        # predates the shipped C tests.
+        c_bin = None
+        if not os.environ.get("MFT_SDK_SO_DIR"):
+            c_bin = _installed_c_test_bin(config)
+        config.C_TEST_BIN = c_bin or BaseConfig.MFT_SDK_SO_TEST_BIN
         config.CPP_TEST_BIN = BaseConfig.MFT_SDK_SO_TEST_BIN
         print("[INFO] mft_sdk_so mode: using pre-installed binaries (build disabled)")
+        if c_bin:
+            print("[INFO] C column: installed C test binary {}".format(c_bin))
+        else:
+            print("[INFO] C column: gtest harness (no installed C test binary applicable)")
 
         # MFT_SDK_SO_DIR env var overrides the system lib dir (e.g. the
         # mstflint SDK under /usr/local/lib/mstflint/sdk).
