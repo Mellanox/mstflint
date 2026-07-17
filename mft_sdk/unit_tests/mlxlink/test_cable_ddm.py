@@ -148,6 +148,22 @@ def _threshold_match_fn(field_name, c_val, cpp_val, mlx_val):
     return max(nums) - min(nums) <= 0.001
 
 
+def _latched_flags_match_fn(field_name, c_val, cpp_val, mlx_val):
+    """DDM alarm/warning flags are latched clear-on-read (SFF-8636/CMIS):
+    the first reader drains a flag latched since link-up, so the readers —
+    which run in C, C++, mlxlink order — may legitimately see a 1 followed
+    by 0s. Accept a non-increasing 0/1 sequence as a match; anything else
+    falls back to the default equality check."""
+    vals = [c_val, cpp_val] if BaseConfig.SDK_ONLY else [c_val, cpp_val, mlx_val]
+    try:
+        nums = [int(v) for v in vals]
+    except (TypeError, ValueError):
+        return None
+    if all(n in (0, 1) for n in nums) and all(a >= b for a, b in zip(nums, nums[1:])):
+        return True
+    return None
+
+
 def _format_bit_ranges(bits):
     """Format a sorted list of ints into compact ranges, e.g. [0,1,2,3,4] -> '0-4'."""
     if not bits:
@@ -839,7 +855,8 @@ class ComparisonTable(object):
         def flags_cap(_): return self._is_bit_available(3)
         rows = self._build_ddm_flags_rows()
         m, d, s, mo, mf = self._print_section_table(
-            DDM_SECTION_DDM_FLAGS, rows, flags_cap, self._flags_valid_fn)
+            DDM_SECTION_DDM_FLAGS, rows, flags_cap, self._flags_valid_fn,
+            match_fn=_latched_flags_match_fn)
         total_match += m
         total_diff += d
         total_skip += s
@@ -855,7 +872,7 @@ class ComparisonTable(object):
             rows = self._build_channel_flags_rows(i)
             m, d, s, mo, mf = self._print_section_table(
                 "Channel {} Flags".format(i + 1), rows, flags_cap,
-                self._flags_valid_fn)
+                self._flags_valid_fn, match_fn=_latched_flags_match_fn)
             total_match += m
             total_diff += d
             total_skip += s

@@ -33,7 +33,7 @@ extern "C"
      *   0 = operational-info enum (capabilityBit selects MlxlinkMaps lookup)
      *   1 = uint16_t              2 = double "%.01f"      3 = uint32_t
      *   4 = ScientificNotation    5 = per-lane errors     6 = temperature "%dC"
-     *   7 = voltage "%.4fV"       9 = uint8_t
+     *   7 = voltage "%.4fV"       9 = uint8_t             10 = per-lane ScientificNotation
      */
     typedef struct
     {
@@ -44,7 +44,7 @@ extern "C"
     } FieldDescriptor;
 
 #define NUM_OP_INFO_FIELDS 7
-#define NUM_COUNTER_FIELDS 9
+#define NUM_COUNTER_FIELDS 10
 #define NUM_DDM_FIELDS 2
 
     const FieldDescriptor* getOpInfoFields(void);

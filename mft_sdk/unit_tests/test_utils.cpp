@@ -61,6 +61,7 @@ static const FieldDescriptor counterFields[NUM_COUNTER_FIELDS] = {
   {TELEMETRY_COUNTERS_INFO_EFFECTIVE_PHYSICAL_BER, FIELD_EFFECTIVE_PHYSICAL_BER,
    offsetof(MstCountersInfo, effectivePhysicalBER), 4},
   {TELEMETRY_COUNTERS_INFO_RAW_PHYSICAL_ERRORS_PER_LANE, FIELD_RAW_PHYSICAL_ERRORS_PER_LANE, 0, 5},
+  {TELEMETRY_COUNTERS_INFO_RAW_PHYSICAL_BER_PER_LANE, FIELD_RAW_PHYSICAL_BER_PER_LANE, 0, 10},
   {TELEMETRY_COUNTERS_INFO_RAW_PHYSICAL_BER, FIELD_RAW_PHYSICAL_BER, offsetof(MstCountersInfo, rawPhysicalBER), 4},
   {TELEMETRY_COUNTERS_INFO_LINK_DOWN_COUNTER, FIELD_LINK_DOWN_COUNTER, offsetof(MstCountersInfo, linkDownCounter), 3},
   {TELEMETRY_COUNTERS_INFO_LINK_ERROR_RECOVERY_COUNTER, FIELD_LINK_ERROR_RECOVERY_COUNTER,
@@ -159,6 +160,22 @@ extern "C"
             case 9: /* uint8_t */
                 g_stringBuffer = std::to_string(*reinterpret_cast<const uint8_t*>(base + field->offset));
                 return g_stringBuffer.c_str();
+            case 10: /* per-lane ScientificNotation (comma-joined, mlxlink format) */
+            {
+                const auto* info = reinterpret_cast<const MstCountersInfo*>(structPtr);
+                if (info->numberOfLanes == 0)
+                    return NA_FIELD_VALUE;
+                g_stringBuffer.clear();
+                for (uint32_t i = 0; i < info->numberOfLanes; i++)
+                {
+                    if (i > 0)
+                        g_stringBuffer += ",";
+                    snprintf(buf, sizeof(buf), "%gE%d", info->rawPhysicalBERPerLane[i].significand,
+                             info->rawPhysicalBERPerLane[i].exponent);
+                    g_stringBuffer += buf;
+                }
+                return g_stringBuffer.c_str();
+            }
             default:
                 return "?";
         }
