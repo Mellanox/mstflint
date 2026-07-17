@@ -92,22 +92,39 @@ def is_known_missing(name):
 _MFT_SDK_INSTALL_LIB_DIR = "/usr/lib64/mft_sdk"
 
 
-def _installed_c_test_bin(config):
-    """Path to this suite's real C test binary shipped by mft-sdk
-    (tests/c/<x>_c_test, SDK statically linked), or None when not installed.
+def _default_cpp_so_test_bin():
+    """Installed unified gtest harness: prefer the current name
+    (mft_sdk_cpp_so_test); fall back to the pre-rename mft_sdk_so_test so
+    packages built before the rename keep working."""
+    tests_dir = os.path.join(_MFT_SDK_INSTALL_LIB_DIR, "tests")
+    for name in ("mft_sdk_cpp_so_test", "mft_sdk_so_test"):
+        path = os.path.join(tests_dir, name)
+        if os.path.isfile(path):
+            return path
+    return os.path.join(tests_dir, "mft_sdk_cpp_so_test")
 
-    Derived from the suite's bazel target name: <x>-c-test-bin -> <x>_c_test.
-    The static link means the binary tests the SDK snapshot it was built
-    with — never the .so selected by MFT_SDK_SO_DIR — so callers must only
-    use it when the installed MFT SDK itself is under test.
+
+def _c_so_test_bin():
+    """Installed unified C test driver (mft_sdk_c_so_test): one dynamically
+    linked binary hosting every C suite, selected by argv[1]. Resolves the
+    SDK from libmft_sdk.so.1 at runtime exactly like the gtest harness.
+    MFT_SDK_C_SO_TEST_BIN env overrides (e.g. the mstflint flow's seeded
+    copy); returns None when the binary is not installed.
     """
+    path = os.environ.get(
+        "MFT_SDK_C_SO_TEST_BIN",
+        os.path.join(_MFT_SDK_INSTALL_LIB_DIR, "tests", "mft_sdk_c_so_test"))
+    return path if os.path.isfile(path) else None
+
+
+def _c_suite_key(config):
+    """The unified C driver's suite key (its argv[1]), derived from the
+    suite's bazel target name: <x>-c-test-bin -> <x>."""
     target = getattr(config, "C_TEST_TARGET", "") or ""
     name = target.rsplit(":", 1)[-1]
     if not name.endswith("-c-test-bin"):
         return None
-    c_name = name[:-len("-c-test-bin")].replace("-", "_") + "_c_test"
-    path = os.path.join(_MFT_SDK_INSTALL_LIB_DIR, "tests", "c", c_name)
-    return path if os.path.isfile(path) else None
+    return name[:-len("-c-test-bin")].replace("-", "_")
 
 
 def _detect_pkg_type():
@@ -357,9 +374,8 @@ class BaseConfig(object):
 
     # Pre-installed test binary (same path on all distros), shipped by mft-sdk.
     # MFT_SDK_SO_TEST_BIN env var overrides (e.g. when validating the mstflint SDK).
-    MFT_SDK_SO_TEST_BIN = os.environ.get(
-        "MFT_SDK_SO_TEST_BIN",
-        os.path.join(_MFT_SDK_INSTALL_LIB_DIR, "tests", "mft_sdk_so_test"))
+    MFT_SDK_SO_TEST_BIN = (os.environ.get("MFT_SDK_SO_TEST_BIN")
+                           or _default_cpp_so_test_bin())
 
     # Verbose mode (set by --verbose CLI flag)
     VERBOSE = False
@@ -608,11 +624,16 @@ class BaseCTestRunner(TestRunner):
             return False
 
         cmd = self._sudo_prefix() + self.config.C_TEST_BIN
-        # In --so mode the C column is the real C test binary when the
-        # mft-sdk package ships it (tests/c/); only when it falls back to
-        # the unified gtest harness does the invocation need a filter.
-        if BaseConfig.MFT_SDK_SO and \
-                self.config.C_TEST_BIN == BaseConfig.MFT_SDK_SO_TEST_BIN:
+        # In --so mode the C column is the unified C driver when installed
+        # (suite selected by argv[1], BDF positional); only when it falls
+        # back to the gtest harness does the invocation need a filter.
+        c_suite = getattr(self.config, "C_SO_SUITE", None)
+        if BaseConfig.MFT_SDK_SO and c_suite and \
+                self.config.C_TEST_BIN != BaseConfig.MFT_SDK_SO_TEST_BIN:
+            cmd += " " + c_suite
+            if self.device:
+                cmd += " " + self._device_arg()
+        elif BaseConfig.MFT_SDK_SO:
             cmd += ' --gtest_filter="' + self.config.GTEST_FILTER + '"'
             if self.device:
                 cmd += " -d " + self.device
@@ -1033,22 +1054,23 @@ def run_main(config, test_suite_class, mlxlink_runner_class, mlxlink_action, pri
     # Configure mft_sdk_so linking mode (run-only, no building)
     if mft_sdk_so:
         BaseConfig.MFT_SDK_SO = True
-        # C column: prefer the real C test binary shipped by mft-sdk
-        # (tests/c/, SDK statically linked). Only when the installed MFT SDK
-        # is under test — with MFT_SDK_SO_DIR (e.g. the mstflint flow) the
-        # static binary would test a different SDK than requested, so the
-        # column falls back to the harness. Same fallback when the package
-        # predates the shipped C tests.
-        c_bin = None
-        if not os.environ.get("MFT_SDK_SO_DIR"):
-            c_bin = _installed_c_test_bin(config)
-        config.C_TEST_BIN = c_bin or BaseConfig.MFT_SDK_SO_TEST_BIN
+        # C column: prefer the unified C driver (mft_sdk_c_so_test). Like
+        # the gtest harness it links libmft_sdk.so.1 dynamically, so
+        # MFT_SDK_SO_DIR selects which SDK it tests (works for the mstflint
+        # flow too, via its seeded copy). Falls back to the harness when
+        # the driver is not installed.
+        c_bin = _c_so_test_bin()
+        c_suite = _c_suite_key(config)
+        if c_bin and c_suite:
+            config.C_TEST_BIN = c_bin
+            config.C_SO_SUITE = c_suite
+            print("[INFO] C column: unified C driver {} (suite {})".format(
+                c_bin, c_suite))
+        else:
+            config.C_TEST_BIN = BaseConfig.MFT_SDK_SO_TEST_BIN
+            print("[INFO] C column: gtest harness (unified C driver not installed)")
         config.CPP_TEST_BIN = BaseConfig.MFT_SDK_SO_TEST_BIN
         print("[INFO] mft_sdk_so mode: using pre-installed binaries (build disabled)")
-        if c_bin:
-            print("[INFO] C column: installed C test binary {}".format(c_bin))
-        else:
-            print("[INFO] C column: gtest harness (no installed C test binary applicable)")
 
         # MFT_SDK_SO_DIR env var overrides the system lib dir (e.g. the
         # mstflint SDK under /usr/local/lib/mstflint/sdk).
