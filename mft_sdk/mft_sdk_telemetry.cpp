@@ -825,7 +825,9 @@ MstStatus MftSdk::extractCableDDMInfoFrom(MstCableDDMInfo* cableDDMInfo)
                                    cableDDMInfo->txBias.alarmFlags[i]);
             cableDDMInfo->rxPower.value[i] = cableDDMOutput.rx_power[i].val;
             cableDDMInfo->txPower.value[i] = cableDDMOutput.tx_power[i].val;
-            cableDDMInfo->txBias.value[i] = cableDDMOutput.tx_bias[i].val;
+            // tx_bias[i].val is the raw ADC reading (2uA/LSB, multiplier already
+            // folded in by the cables commander) — convert to mA like mlxlink does.
+            cableDDMInfo->txBias.value[i] = (double)cableDDMOutput.tx_bias[i].val / 500;
         }
         mstQuerySetBit(cableDDMInfo->header, TELEMETRY_CABLE_DDM_INFO_CHANNELS);
     }
