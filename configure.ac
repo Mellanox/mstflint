@@ -63,8 +63,9 @@ AC_COMPILE_IFELSE(
 OS=$(uname -s)
 KERNEL_VER=`uname -r | egrep -E -o '[[0-9]]+\.[[0-9]]+' | head -1`
 OFED_VER=`ofed_info -s | egrep -E -o '[[0-9]]+\.[[0-9]]+' | head -1`
-OFED_EXIST=`ofed_info -s`
-OFED_NOT_EXIST="ofed_info: command not found"
+MIN_OFED_VER="5.6"
+MIN_RDMA_CORE_VER="2607"
+RDMA_CORE_VER=`{ rpm -q rdma-core --queryformat '%{VERSION}\n' 2>/dev/null; dpkg-query -W -f='${Version}\n' rdma-core 2>/dev/null; } | egrep -E -o '^[[0-9]]+' | head -1`
 MTCR_CONF_DIR=""
 LDL=""
 LDFLAGS="$LDFLAGS -lstdc++"
@@ -77,10 +78,11 @@ default_en_mstflint_sdk="no"
 OFED_VERSION_CHK=0
 KERNEL_BUILD_CHK=0
 
-if test "x$OFED_EXIST" != "x$OFED_NOT_EXIST"; then
-    if test $(echo $OFED_VER 5.6 | tr " " "\n" | sort -V | tail -n 1) == $OFED_VER ; then
-        OFED_VERSION_CHK=1
-    fi
+if test -n "$OFED_VER" && test $(echo $OFED_VER $MIN_OFED_VER | tr " " "\n" | sort -V | tail -n 1) == "$OFED_VER" ; then
+    OFED_VERSION_CHK=1
+fi
+if test -n "$RDMA_CORE_VER" && test $(echo $RDMA_CORE_VER $MIN_RDMA_CORE_VER | tr " " "\n" | sort -V | tail -n 1) == "$RDMA_CORE_VER" ; then
+    OFED_VERSION_CHK=1
 fi
 
 AM_CONDITIONAL(OFED_BUILD,[test ${OFED_VERSION_CHK} = 1])
