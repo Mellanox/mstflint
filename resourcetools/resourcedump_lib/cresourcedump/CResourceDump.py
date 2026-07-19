@@ -42,8 +42,21 @@
 import sys
 import ctypes
 import platform
+import subprocess
 from pathlib import Path
 from . import cresourcedump_types
+
+
+def exec_command(cmd_list):
+    process = subprocess.Popen(cmd_list, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = process.communicate()
+    if stderr and isinstance(stderr, bytes):
+        stderr = stderr.decode("utf-8")
+    if stdout and isinstance(stdout, bytes):
+        stdout = stdout.decode("utf-8")
+    if process.returncode != 0:
+        raise RuntimeError("Command '%s' has failed with error:\n%s" % (cmd_list, stderr))
+    return stdout.strip()
 
 
 class CResourceDump:
@@ -54,6 +67,38 @@ class CResourceDump:
         except BaseException:
             # print("Openning: {}".format(installer_lib_path))
             return ctypes.CDLL(str(installer_lib_path), *args)
+
+    MEM_MODE_NOT_SUPPORTED = 0x105
+    MEM_MODE_NOT_SUPPORTED_ERROR = b"Mem Mode is not supported, unsopported OS or device, or the driver is down, or the driver's version is not supported."
+    _mem_mode_blocked = False
+
+    def is_ofed_up():
+        try:
+            exec_command(["/etc/init.d/openibd", "status"])
+        except FileNotFoundError:
+            return False
+        except RuntimeError:
+            return False
+        return True
+
+    def c_create_resource_dump(device_attributes, *args):
+        if device_attributes.rdma_name and not CResourceDump.is_ofed_up():
+            CResourceDump._mem_mode_blocked = True
+            return CResourceDump.MEM_MODE_NOT_SUPPORTED
+        CResourceDump._mem_mode_blocked = False
+        return CResourceDump._c_create_resource_dump(device_attributes, *args)
+
+    def c_dump_resource_to_file(device_attributes, *args):
+        if device_attributes.rdma_name and not CResourceDump.is_ofed_up():
+            CResourceDump._mem_mode_blocked = True
+            return CResourceDump.MEM_MODE_NOT_SUPPORTED
+        CResourceDump._mem_mode_blocked = False
+        return CResourceDump._c_dump_resource_to_file(device_attributes, *args)
+
+    def c_get_resource_dump_error():
+        if CResourceDump._mem_mode_blocked:
+            return CResourceDump.MEM_MODE_NOT_SUPPORTED_ERROR
+        return CResourceDump._c_get_resource_dump_error()
 
     try:
         c_resource_dump_sdk = None
@@ -73,9 +118,9 @@ class CResourceDump:
         print("Error: Failed loading shared-library - {0}. Exiting...".format(ose))
         sys.exit(1)
 
-    c_create_resource_dump = c_resource_dump_sdk.create_resource_dump
-    c_create_resource_dump.restype = ctypes.c_uint16
-    c_create_resource_dump.argtypes = [
+    _c_create_resource_dump = c_resource_dump_sdk.create_resource_dump
+    _c_create_resource_dump.restype = ctypes.c_uint16
+    _c_create_resource_dump.argtypes = [
         cresourcedump_types.c_device_attributes,
         cresourcedump_types.c_dump_request,
         ctypes.POINTER(cresourcedump_types.c_resource_dump_data),
@@ -88,9 +133,9 @@ class CResourceDump:
         cresourcedump_types.c_resource_dump_data
     ]
 
-    c_dump_resource_to_file = c_resource_dump_sdk.dump_resource_to_file
-    c_dump_resource_to_file.restype = ctypes.c_uint16
-    c_dump_resource_to_file.argtypes = [
+    _c_dump_resource_to_file = c_resource_dump_sdk.dump_resource_to_file
+    _c_dump_resource_to_file.restype = ctypes.c_uint16
+    _c_dump_resource_to_file.argtypes = [
         cresourcedump_types.c_device_attributes,
         cresourcedump_types.c_dump_request,
         ctypes.c_uint32,
@@ -98,6 +143,6 @@ class CResourceDump:
         ctypes.c_uint8
     ]
 
-    c_get_resource_dump_error = c_resource_dump_sdk.get_resource_dump_error
-    c_get_resource_dump_error.restype = ctypes.c_char_p
-    c_get_resource_dump_error.argtypes = []
+    _c_get_resource_dump_error = c_resource_dump_sdk.get_resource_dump_error
+    _c_get_resource_dump_error.restype = ctypes.c_char_p
+    _c_get_resource_dump_error.argtypes = []
