@@ -43,6 +43,8 @@
 #include <errno.h>
 #include <stdio.h>
 #include <iomanip>
+#include <cstring>
+#include <fstream>
 #include <mft_sig_handler.h>
 #include <bit_slice.h>
 #include <cmdif/tools_cif.h>
@@ -66,6 +68,17 @@ using namespace std;
 #include <sys/types.h>
 #include <unistd.h>
 #endif
+
+bool mlxcfg_is_debug_enabled()
+{
+    static int debug_enabled = -1;
+    if (debug_enabled == -1)
+    {
+        const char* env_val = getenv("MLXCONFIG_DEBUG");
+        debug_enabled = (env_val != NULL) && (env_val[0] != '\0') && (env_val[0] != '0') ? 1 : 0;
+    }
+    return debug_enabled;
+}
 
 struct ScopedStdoutSilence::Impl
 {
@@ -141,17 +154,6 @@ ScopedStdoutSilence::~ScopedStdoutSilence()
     _impl = nullptr;
 }
 
-bool mlxcfg_is_debug_enabled()
-{
-    static int debug_enabled = -1;
-    if (debug_enabled == -1)
-    {
-        const char* env_val = getenv("MLXCONFIG_DEBUG");
-        debug_enabled = (env_val != NULL) && (env_val[0] != '\0') && (env_val[0] != '0') ? 1 : 0;
-    }
-    return debug_enabled;
-}
-
 typedef struct reg_access_hca_mqis_reg_ext mqisReg;
 #define MAX_REG_DATA 128
 
@@ -221,13 +223,15 @@ MError mnvaCom5thGen(mfile* mf,
     return ME_OK;
 }
 
-MError nvqcCom5thGen(mfile* mf, u_int32_t tlvType, bool& suppRead, bool& suppWrite, u_int32_t& version)
+MError
+  nvqcCom5thGen(mfile* mf, u_int32_t tlvType, bool& suppRead, bool& suppWrite, u_int32_t& version, bool is_host_id_valid)
 {
     struct reg_access_hca_mnvqc_reg_ext nvqcTlv;
     memset(&nvqcTlv, 0, sizeof(struct reg_access_hca_mnvqc_reg_ext));
 
     // tlvType should be in the correct endianess
     nvqcTlv.type = __be32_to_cpu(tlvType);
+    nvqcTlv.host_id_valid = is_host_id_valid ? 1 : 0;
     MError rc;
     // "suspend" signals as we are going to take semaphores
     mft_signal_set_handling(1);
@@ -661,6 +665,7 @@ Device_Type getDeviceTypeFromString(string inStr)
         return Device_Type::UNSUPPORTED_DEVICE;
     }
 }
+
 string deviceTypeToString(Device_Type deviceType)
 {
     switch (deviceType)
@@ -721,6 +726,51 @@ void parseSystemConfName(const string& fullName, string& name, int& asic)
         name = fullName;
         asic = -1;
     }
+}
+
+string resolveAggregatedDeviceFilePath(const string& aggregatedDevice)
+{
+    vector<string> candidates;
+    candidates.push_back(aggregatedDevice);
+
+#ifdef __WIN__
+    const char* mlnxWinmft = getenv("MLNX_WINMFT");
+    if (mlnxWinmft && mlnxWinmft[0] != '\0')
+    {
+        candidates.push_back(string(mlnxWinmft) + "\\devs\\" + aggregatedDevice);
+    }
+    candidates.push_back("C:\\Program Files\\Mellanox\\WinMFT\\devs\\" + aggregatedDevice);
+
+    char exePath[MAX_PATH] = {0};
+    DWORD chars = GetModuleFileNameA(NULL, exePath, MAX_PATH);
+    if (chars > 0 && chars < MAX_PATH)
+    {
+        string exeDir(exePath);
+        size_t lastSep = exeDir.find_last_of("\\/");
+        if (lastSep != string::npos)
+        {
+            exeDir = exeDir.substr(0, lastSep);
+            candidates.push_back(exeDir + "\\devs\\" + aggregatedDevice);
+        }
+    }
+#else
+    candidates.push_back(string("/dev/mst/") + aggregatedDevice);
+#endif
+    /*look at the possible path candidates to open and read the file stop on the first find.
+    1) plain name
+    2) full path from environment variable
+    3) default install path
+    4) mlxconfig exe location as base path
+    */
+    for (const string& candidate : candidates)
+    {
+        ifstream file(candidate.c_str());
+        if (file.is_open())
+        {
+            return candidate;
+        }
+    }
+    return aggregatedDevice;
 }
 
 // if temp directory doesn't exist, try to create it

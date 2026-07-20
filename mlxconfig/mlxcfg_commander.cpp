@@ -148,6 +148,19 @@ void Commander::setHostFunctionParams(u_int8_t hostId, u_int8_t pfIndex, bool va
     _userHostIdPfValid = valid;
 }
 
+/* Enforce monotonic raise. SkipChecksLevel values are ordered by permissiveness
+ * (None < RespectBlocklist < All); downgrade requests are dropped so that, for
+ * example, a nested query path cannot weaken a bypass that an outer set_system_conf
+ * scope enabled.
+ */
+void Commander::setSkipChecksLevel(SkipChecksLevel level)
+{
+    if (static_cast<int>(level) > static_cast<int>(_skipChecks))
+    {
+        _skipChecks = level;
+    }
+}
+
 string Commander::getDefaultDBName(bool isSwitchPrmDb)
 {
     const string dbDirName = "mlxconfig_dbs";

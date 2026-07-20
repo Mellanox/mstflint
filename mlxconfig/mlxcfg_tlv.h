@@ -124,6 +124,7 @@ public:
     vector<u_int8_t> _buff;
     u_int32_t _maxTlvVersionSuppByFw;
     bool _isReadOnly;
+    bool _forceDisallowed;
 
     TLVConf(int columnsCount, char** dataRow, char** headerRow);
     ~TLVConf();
