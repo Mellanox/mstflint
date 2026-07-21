@@ -33,9 +33,9 @@
 
 
 ###############################################################################
-#    This file was generated at "2026-04-21 10:13:51"
+#    This file was generated at "2026-07-01 06:36:31"
 #    by:
-#      > /home/jenkins/agent/workspace/automatic_prm_update/scripts/prm_update.py --project Switch
+#      > prm_update.py --project switch
 ###############################################################################
 
 import os
@@ -49,8 +49,10 @@ import mtcr
 class MMAM_EXT(ctypes.Structure):
     _fields_ = [
         ("module", ctypes.c_uint8),
+        ("module_msb", ctypes.c_uint8),
         ("ga", ctypes.c_uint8),
         ("local_module", ctypes.c_uint8),
+        ("local_module_msb", ctypes.c_uint8),
         ("module_type", ctypes.c_uint8)
     ]
 
@@ -67,12 +69,30 @@ class MGPIR_HW_INFO_EXT(ctypes.Structure):
         ("num_of_resource_modules", ctypes.c_uint8),
         ("total_num_of_module_i2c_bus", ctypes.c_uint8),
         ("num_lanes_per_sub_module", ctypes.c_uint8),
-        ("max_sub_modules_index", ctypes.c_uint8)
+        ("max_sub_modules_index", ctypes.c_uint8),
+        ("num_of_modules_msb", ctypes.c_uint8),
+        ("num_of_modules_per_system_msb", ctypes.c_uint8),
+        ("max_modules_per_slot_msb", ctypes.c_uint8),
+        ("els_count_local", ctypes.c_uint16),
+        ("oe_count_local", ctypes.c_uint16),
+        ("els_count_global", ctypes.c_uint16),
+        ("oe_count_global", ctypes.c_uint16)
+    ]
+
+class MGPIR_HW_METADATA_EXT(ctypes.Structure):
+    _fields_ = [
+        ("tl_module_base_index_local", ctypes.c_uint16),
+        ("tl_module_base_index_global", ctypes.c_uint16),
+        ("els_base_index_local", ctypes.c_uint16),
+        ("els_base_index_global", ctypes.c_uint16),
+        ("oe_base_index_local", ctypes.c_uint16),
+        ("oe_base_index_global", ctypes.c_uint16)
     ]
 
 class MGPIR_EXT(ctypes.Structure):
     _fields_ = [
-        ("hw_info", MGPIR_HW_INFO_EXT)
+        ("hw_info", MGPIR_HW_INFO_EXT),
+        ("hw_metadata", MGPIR_HW_METADATA_EXT)
     ]
 
 class MPIR_EXT(ctypes.Structure):
@@ -157,7 +177,8 @@ class MDSR_REG_EXT(ctypes.Structure):
         ("type_of_token", ctypes.c_uint8),
         ("revoke_version", ctypes.c_uint8),
         ("end", ctypes.c_uint8),
-        ("time_left", ctypes.c_uint32)
+        ("time_left", ctypes.c_uint32),
+        ("token_config", ctypes.c_uint32)
     ]
 
 class MRSR_EXT(ctypes.Structure):

@@ -33,7 +33,7 @@
 
 
 ###############################################################################
-#    This file was generated at "2026-04-28 06:49:54"
+#    This file was generated at "2026-07-05 12:14:38"
 #    by:
 #      > prm_update.py --project Nic
 ###############################################################################
@@ -211,6 +211,7 @@ class MGIR_FW_INFO_EXT(ctypes.Structure):
         ("dev", ctypes.c_uint8),
         ("string_tlv", ctypes.c_uint8),
         ("dev_sc", ctypes.c_uint8),
+        ("index_tlv", ctypes.c_uint8),
         ("build_id", ctypes.c_uint32),
         ("year", ctypes.c_uint16),
         ("day", ctypes.c_uint8),
@@ -234,7 +235,13 @@ class MGIR_FW_INFO_EXT(ctypes.Structure):
         ("issu_able", ctypes.c_uint8),
         ("pds", ctypes.c_uint8),
         ("ec_offload_engine_disabled", ctypes.c_uint8),
-        ("dev_counter", ctypes.c_uint8)
+        ("dev_counter", ctypes.c_uint8),
+        ("uphy_version_sub_minor", ctypes.c_uint8),
+        ("uphy_version_minor", ctypes.c_uint8),
+        ("uphy_version_major", ctypes.c_uint8),
+        ("BKV_clm_sub_minor", ctypes.c_uint8),
+        ("BKV_clm_minor", ctypes.c_uint8),
+        ("BKV_clm_major", ctypes.c_uint8)
     ]
 
 class ROM_VERSION_EXT(ctypes.Structure):
@@ -376,6 +383,7 @@ class NIC_CAP_EXT_DPA_CAP(ctypes.Structure):
         ("max_num_dpa_eu_per_group", ctypes.c_uint16),
         ("dpa_perf_sample_type", ctypes.c_uint8),
         ("max_num_partition_vhca_id", ctypes.c_uint16),
+        ("dpa_dispatch_low_latency", ctypes.c_uint8),
         ("dpa_eug_eu_share", ctypes.c_uint8),
         ("nic_dpa_self_host_app_mgmt", ctypes.c_uint8),
         ("dpa_partition_eug", ctypes.c_uint8),
