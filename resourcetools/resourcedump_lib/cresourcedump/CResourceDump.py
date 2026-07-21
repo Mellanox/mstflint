@@ -69,7 +69,7 @@ class CResourceDump:
             return ctypes.CDLL(str(installer_lib_path), *args)
 
     MEM_MODE_NOT_SUPPORTED = 0x105
-    MEM_MODE_NOT_SUPPORTED_ERROR = b"Mem Mode is not supported, unsopported OS or device, or the driver is down, or the driver's version is not supported."
+    MEM_MODE_NOT_SUPPORTED_ERROR = b"Mem Mode is not supported, unsupported OS or device, or the driver is down, or the driver's version is not supported."
     _mem_mode_blocked = False
 
     def is_ofed_up():
