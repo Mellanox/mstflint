@@ -38,6 +38,8 @@
 #include <json/reader.h>
 #include <json/value.h>
 
+#define NUMBER_OF_VOLTAGE_TYPES 3 // 0=DVDD, 1=AVDD, 2=VDD
+
 static bool parse_instance_ids(const Json::Value& instance_ids_node, std::vector<int>& instance_ids, std::string& error)
 {
     if (!instance_ids_node.isArray() || instance_ids_node.empty())
@@ -130,13 +132,60 @@ static bool parse_fuse_entry(const Json::Value& fuse_node,
         return false;
     }
 
+    // voltage_types is required iff fuse_id == 0 (CVB MRFV layout, per PRM).
+    if (fuse_node.isMember("voltage_types"))
+    {
+        if (fuse.fuse_id != 0)
+        {
+            error =
+              "JSON config format error: " + path + ".voltage_types is only allowed when fuse_id == 0 (CVB layout)";
+            return false;
+        }
+        if (fuse.instance_ids.size() != 1 || fuse.instance_ids[0] != 0)
+        {
+            error = "JSON config format error: " + path + ".instance_ids must be [0] for CVB layout (fuse_id == 0)";
+            return false;
+        }
+        const Json::Value& vt_node = fuse_node["voltage_types"];
+        if (!vt_node.isArray() || vt_node.empty())
+        {
+            error = "JSON config format error: " + path + ".voltage_types must be a non-empty array";
+            return false;
+        }
+        for (Json::ArrayIndex idx = 0; idx < vt_node.size(); idx++)
+        {
+            const Json::Value& v = vt_node[idx];
+            if (!v.isInt())
+            {
+                error = "JSON config format error: " + path + ".voltage_types entry at index " + std::to_string(idx) +
+                        " must be an integer";
+                return false;
+            }
+            int val = v.asInt();
+            if (val < 0 || val >= NUMBER_OF_VOLTAGE_TYPES)
+            {
+                error = "JSON config format error: " + path + ".voltage_types entry at index " + std::to_string(idx) +
+                        " value " + std::to_string(val) + " out of valid range [0.." +
+                        std::to_string(NUMBER_OF_VOLTAGE_TYPES - 1) + "] (0=DVDD, 1=AVDD, 2=VDD)";
+                return false;
+            }
+            fuse.voltage_types.push_back(val);
+        }
+    }
+    else if (fuse.fuse_id == 0)
+    {
+        error =
+          "JSON config format error: " + path + " missing required field 'voltage_types' for CVB layout (fuse_id == 0)";
+        return false;
+    }
+
     return true;
 }
 
 static bool parse_device_match(const Json::Value& device_node,
                                const std::string& device_path,
                                uint32_t& hw_dev_id,
-                               int& hw_rev_id,
+                               int& chip_rev_id,
                                std::string& part_number,
                                std::string& error)
 {
@@ -165,18 +214,18 @@ static bool parse_device_match(const Json::Value& device_node,
     }
     hw_dev_id = hw_dev_id_node.asUInt();
 
-    if (!match_node.isMember("hw_rev_id"))
+    if (!match_node.isMember("chip_rev_id"))
     {
-        error = "JSON config format error: " + device_path + ".match missing required field 'hw_rev_id'";
+        error = "JSON config format error: " + device_path + ".match missing required field 'chip_rev_id'";
         return false;
     }
-    const Json::Value& hw_rev_id_node = match_node["hw_rev_id"];
-    if (!hw_rev_id_node.isInt())
+    const Json::Value& chip_rev_id_node = match_node["chip_rev_id"];
+    if (!chip_rev_id_node.isInt())
     {
-        error = "JSON config format error: " + device_path + ".match.hw_rev_id must be an integer";
+        error = "JSON config format error: " + device_path + ".match.chip_rev_id must be an integer";
         return false;
     }
-    hw_rev_id = hw_rev_id_node.asInt();
+    chip_rev_id = chip_rev_id_node.asInt();
 
     if (!match_node.isMember("part_number"))
     {
@@ -226,7 +275,7 @@ static bool parse_device_fuses(const Json::Value& device_node,
 
 bool load_matching_device_config(const std::string& path,
                                  uint32_t target_hw_dev_id,
-                                 int target_hw_rev_id,
+                                 int target_chip_rev_id,
                                  const std::string& target_part_number,
                                  DeviceConfig& device,
                                  int& schema_version,
@@ -292,14 +341,14 @@ bool load_matching_device_config(const std::string& path,
         std::string device_path = "devices[" + std::to_string(idx) + "]";
 
         uint32_t hw_dev_id;
-        int hw_rev_id;
+        int chip_rev_id;
         std::string part_number;
-        if (!parse_device_match(device_node, device_path, hw_dev_id, hw_rev_id, part_number, error))
+        if (!parse_device_match(device_node, device_path, hw_dev_id, chip_rev_id, part_number, error))
         {
             return false;
         }
 
-        if (hw_dev_id != target_hw_dev_id || hw_rev_id != target_hw_rev_id)
+        if (hw_dev_id != target_hw_dev_id || chip_rev_id != target_chip_rev_id)
         {
             continue;
         }
@@ -315,13 +364,13 @@ bool load_matching_device_config(const std::string& path,
         }
 
         device.hw_dev_id = hw_dev_id;
-        device.hw_rev_id = hw_rev_id;
+        device.chip_rev_id = chip_rev_id;
         device.part_number = part_number;
 
         return true;
     }
 
     error = "No matching device config found for hw_dev_id=" + std::to_string(target_hw_dev_id) +
-            " hw_rev_id=" + std::to_string(target_hw_rev_id) + " part_number=" + target_part_number;
+            " chip_rev_id=" + std::to_string(target_chip_rev_id) + " part_number=" + target_part_number;
     return false;
 }
