@@ -220,6 +220,18 @@ class CmdRegMroq():
     def mroq_is_supported(self):
         return self._mroq_is_supported
 
+    def disable_driver_sync(self, logger=None):
+        """
+        Force disable reset sync 1 (NIC driver is the owner), e.g. when RP DPC PIO is active.
+        """
+        if not self._mroq_is_supported:
+            return
+        driver_mask = CmdRegMroq.pci_sync_db[CmdRegMroq.SYNCED_DRIVER_FLOW]['mask']
+        if self._pci_sync_for_fw_update_start & driver_mask:
+            if logger:
+                logger.debug("Disabled reset sync {0} (RP DPC PIO)".format(CmdRegMroq.SYNCED_DRIVER_FLOW))
+        self._pci_sync_for_fw_update_start &= ~driver_mask
+
     def is_any_sync_supported(self, tool_owner_support):
         pci_sync_for_fw_update_start = self._pci_sync_for_fw_update_start
 
