@@ -41,6 +41,18 @@ AM_INIT_AUTOMAKE([foreign subdir-objects])
 dnl Checks for programs
 AC_PROG_CC
 AC_PROG_CXX
+
+AC_MSG_CHECKING([whether the C library is musl])
+AC_EGREP_CPP([mstflint_is_musl],
+    [#include <stdlib.h>
+     #if defined(__linux__) && !defined(__GLIBC__)
+     mstflint_is_musl
+     #endif],
+    [mstflint_musl=yes], [mstflint_musl=no])
+AC_MSG_RESULT([$mstflint_musl])
+AS_IF([test "x$mstflint_musl" = xyes],
+    [CPPFLAGS="$CPPFLAGS -D_GNU_SOURCE"])
+
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 LT_INIT
 AC_CONFIG_HEADERS(config.h)

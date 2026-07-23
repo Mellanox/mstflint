@@ -34,7 +34,9 @@
  *
  */
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 #include <crdump.h>
 #include <dev_mgt/tools_dev_types.h>
 #include <common/bit_slice.h>
