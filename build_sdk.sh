@@ -183,6 +183,22 @@ build_deb() {
         sed -i "s#debian/mstflint-sdk#debian/$DEB_NAME#g" "$src/debian/rules"
     fi
 
+    # Forward install-dir overrides into the isolated tree's debian/rules so a
+    # relocated package (e.g. --prefix /opt/...) actually installs there. dh's
+    # dh_auto_configure otherwise defaults to /usr, ignoring these; unlike the
+    # RPM path there is no macro to redefine, so append the flags to the
+    # override_dh_auto_configure configure invocation.
+    local configure_extra=""
+    [[ -n "$PREFIX" ]]     && configure_extra+=" --prefix=$PREFIX"
+    [[ -n "$LIBDIR" ]]     && configure_extra+=" --libdir=$LIBDIR"
+    [[ -n "$INCLUDEDIR" ]] && configure_extra+=" --includedir=$INCLUDEDIR"
+    [[ -n "$DATADIR" ]]    && configure_extra+=" --datadir=$DATADIR"
+    if [[ -n "$configure_extra" ]]; then
+        echo ">> forwarding install dirs to debian/rules:$configure_extra"
+        sed -i "s#--enable-adb-generic-tools --enable-mstflint-sdk#--enable-adb-generic-tools --enable-mstflint-sdk$configure_extra#" \
+            "$src/debian/rules"
+    fi
+
     echo ">> dpkg-buildpackage -b -uc -us"
     ( cd "$src" && dpkg-buildpackage -b -uc -us )
 
