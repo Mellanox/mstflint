@@ -46,6 +46,10 @@
 
  
  private:
+     void ParseCommonRecordFields(const Json::Value& deviceRecord,
+                                  std::vector<u_int8_t>& appliedComponents,
+                                  std::vector<PLDMDescriptor>& descriptors);
+     PLDMDeviceRecord ParseDeviceRecord(const Json::Value& deviceRecord);
      static std::string FindComponentNameByIdentifier(const std::string& identifier, const Json::Value& components);
      static std::string
        AddComponent(const std::string& identifier, int& componentCounter, Json::Value& components, bool reuseComponents);
