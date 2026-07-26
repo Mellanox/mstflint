@@ -88,6 +88,66 @@
      return comparisonStamp;
  }
  
+ void PLDM::ParseCommonRecordFields(const Json::Value& deviceRecord,
+                                    vector<u_int8_t>& appliedComponents,
+                                    vector<PLDMDescriptor>& descriptors)
+ {
+     for (unsigned int j = 0; j < deviceRecord[COMPONENTS_STR].size(); j++)
+     {
+         bool componentFound = false;
+         string componentName = deviceRecord[COMPONENTS_STR][j].asString();
+         for (unsigned int k = 0; k < _components.size(); k++)
+         {
+             if (_components[k]._name == componentName)
+             {
+                 appliedComponents[k / 8] |= (1 << (k % 8));
+                 componentFound = true;
+             }
+         }
+         if (!componentFound)
+         {
+             throw PLDMException("Component %s was not found in the defined "
+                                 "components list",
+                                 componentName.c_str());
+         }
+     }
+
+     for (unsigned int j = 0; j < deviceRecord[DESCRIPTORS_STR].size(); j++)
+     {
+         for (Json::ValueConstIterator itr = deviceRecord[DESCRIPTORS_STR][j].begin();
+              itr != deviceRecord[DESCRIPTORS_STR][j].end();
+              itr++)
+         {
+             string type = itr.key().asString();
+             string val = deviceRecord[DESCRIPTORS_STR][j][type].asString();
+
+             if (val == "DEFAULT_VALUE")
+             {
+                 if (!PLDMDescriptor::IsDefaultValue(type))
+                 {
+                     throw PLDMException("The descriptor type '%s' cannot have 'DEFAULT_VALUE' as its value.",
+                                         type.c_str());
+                 }
+                 val = PLDMDescriptor::GetDefaultValue(type);
+             }
+
+             descriptors.push_back(PLDMDescriptor(type, val));
+         }
+     }
+ }
+
+ PLDMDeviceRecord PLDM::ParseDeviceRecord(const Json::Value& deviceRecord)
+ {
+     vector<u_int8_t> appliedComponents(_componentBitmapLength / 8);
+     vector<PLDMDescriptor> descriptors;
+     ParseCommonRecordFields(deviceRecord, appliedComponents, descriptors);
+
+     return PLDMDeviceRecord(GetStringFromJson(deviceRecord, SET_VERSION_STR),
+                             GetStringFromJson(deviceRecord, DEVICERECORD_OPTION_STR),
+                             appliedComponents,
+                             descriptors);
+ }
+
  PLDM::PLDM(const string& cookBook, bool recovery)
  {
      Json::Value root, componentsJSON, deviceRecordsJSON;
@@ -175,61 +235,7 @@
      deviceRecordsJSON = root[DEVICERECORDS_STR];
      for (unsigned int i = 0; i < deviceRecordsJSON.size(); i++)
      {
-         vector<u_int8_t> appliedComponents(_componentBitmapLength / 8);
-         vector<PLDMDescriptor> descriptors;
- 
-         // parse applied components
-         for (unsigned int j = 0; j < deviceRecordsJSON[i][COMPONENTS_STR].size(); j++)
-         {
-             bool componentFound = false;
-             string componentName = deviceRecordsJSON[i][COMPONENTS_STR][j].asString();
-             for (unsigned int k = 0; k < _components.size(); k++)
-             {
-                 if (_components[k]._name == componentName)
-                 {
-                     appliedComponents[k / 8] |= (1 << (k % 8));
-                     componentFound = true;
-                 }
-             }
-             if (!componentFound)
-             {
-                 throw PLDMException("Component %s was not found in the defined "
-                                     "components list",
-                                     componentName.c_str());
-             }
-         }
- 
-         // parse descriptors
-         for (unsigned int j = 0; j < deviceRecordsJSON[i][DESCRIPTORS_STR].size(); j++)
-         {
-             for (Json::ValueIterator itr = deviceRecordsJSON[i][DESCRIPTORS_STR][j].begin();
-                  itr != deviceRecordsJSON[i][DESCRIPTORS_STR][j].end();
-                  itr++)
-             {
-                 string type = itr.key().asString();
-                 string val = deviceRecordsJSON[i][DESCRIPTORS_STR][j][type].asString();
- 
-                 // if default value is set, use the default value
-                 if (val == "DEFAULT_VALUE")
-                 {
-                     if (!PLDMDescriptor::IsDefaultValue(type))
-                     {
-                         throw PLDMException("The descriptor type '%s' cannot have 'DEFAULT_VALUE' as its value.",
-                                             type.c_str());
-                     }
-                     string default_value = PLDMDescriptor::GetDefaultValue(type);
-                     val = default_value;
-                 }
- 
-                 descriptors.push_back(PLDMDescriptor(type, val));
-             }
-         }
- 
-         PLDMDeviceRecord deviceRecord(GetStringFromJson(deviceRecordsJSON[i], SET_VERSION_STR),
-                                       GetStringFromJson(deviceRecordsJSON[i], DEVICERECORD_OPTION_STR),
-                                       appliedComponents,
-                                       descriptors);
-         _deviceRecords.push_back(deviceRecord);
+         _deviceRecords.push_back(ParseDeviceRecord(deviceRecordsJSON[i]));
      }
      if (!_deviceRecords.size())
      {
