@@ -35,10 +35,7 @@
 
 int is_bluefield4_pci_device(u_int16_t pci_device_id)
 {
-    return pci_device_id == BLUEFIELD4_PCI_DEVICE_ID_CRYPTO_DISABLED ||
-           pci_device_id == BLUEFIELD4_PCI_DEVICE_ID_CRYPTO_ENABLED ||
-           pci_device_id == BLUEFIELD4_PCI_DEVICE_ID_NETWORK_CONTROLLER ||
-           pci_device_id == BLUEFIELD4_PCI_DEVICE_ID_MANAGMENT_INTERFACE;
+    return pci_device_id == BLUEFIELD4_PCI_DEVICE_ID_NETWORK_CONTROLLER;
 }
 
 void swap_pci_address_space(mfile* mf)
