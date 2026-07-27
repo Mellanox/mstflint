@@ -106,7 +106,7 @@ protected:
     static map<dm_dev_id_t, Adb*> _adbDBs;
     static const int RETRIES_COUNT;
     static const int SLEEP_INTERVAL;
-    Adb* _adb;
+    Adb* _adb{nullptr};
     AdbInstance* _regAccessRootNode;
     AdbInstance* _regAccessUnionNode;
     std::map<string, u_int64_t> _regAccessMap;
