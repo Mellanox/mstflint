@@ -1,0 +1,27 @@
+{
+    "schema_version": 1,
+    "devices": [
+        {
+            "match": {
+                "hw_dev_id": 628,
+                "chip_rev_id": 0,
+                "part_number": ""
+            },
+            "fuses": [
+                {"fuse_id": 11, "name": "vdd", "instance_ids": [0, 1, 2, 3, 4, 5, 6, 7, 8]},
+                {"fuse_id": 12, "name": "pl_avdd", "instance_ids": [1, 2, 3, 4, 5, 6, 7, 8]},
+                {"fuse_id": 13, "name": "pl_dvdd", "instance_ids": [1, 2, 3, 4, 5, 6, 7, 8]}
+            ]
+        },
+        {
+            "match": {
+                "hw_dev_id": 548,
+                "chip_rev_id": 0,
+                "part_number": ""
+            },
+            "fuses": [
+                {"fuse_id": 0, "name": "cvb", "instance_ids": [0], "voltage_types": [0]}
+            ]
+        }
+    ]
+}

@@ -1,0 +1,63 @@
+/*
+ * Copyright (c) 2024-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ *
+ * This software is available to you under a choice of one of two
+ * licenses.  You may choose to be licensed under the terms of the GNU
+ * General Public License (GPL) Version 2, available from the file
+ * COPYING in the main directory of this source tree, or the
+ * OpenIB.org BSD license below:
+ *
+ *     Redistribution and use in source and binary forms, with or
+ *     without modification, are permitted provided that the following
+ *     conditions are met:
+ *
+ *      - Redistributions of source code must retain the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer.
+ *
+ *      - Redistributions in binary form must reproduce the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer in the documentation and/or other materials
+ *        provided with the distribution.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+#pragma once
+
+#include <cstdint>
+#include <string>
+#include <vector>
+
+struct FuseConfig
+{
+    int fuse_id;
+    std::string name;
+    std::vector<int> instance_ids;
+    std::vector<int> voltage_types; // required iff fuse_id == 0 (CVB layout)
+};
+
+struct DeviceConfig
+{
+    uint32_t hw_dev_id;
+    // Chip revision as reported by the device (mfile::rev_id, raw silicon stepping).
+    // Not the same as mft's tools_dev_types hw_rev_id, which is a device-table matching key.
+    int chip_rev_id;
+    std::string part_number;
+    std::vector<FuseConfig> fuses;
+};
+
+bool load_matching_device_config(const std::string& path,
+                                 uint32_t hw_dev_id,
+                                 int chip_rev_id,
+                                 const std::string& part_number,
+                                 DeviceConfig& device,
+                                 int& schema_version,
+                                 std::string& error);

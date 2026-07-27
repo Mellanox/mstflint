@@ -110,7 +110,7 @@ int main(int argc, char* argv[])
             continue;
         }
 
-        if (dm_is_5th_gen_hca(devid_type) && !dm_is_bluefield(devid_type))
+        if (dm_is_5th_gen_hca(devid_type))
         {
             const int fixed_num_ports = 1;
             num_ports = checkModule(mf, fixed_num_ports);

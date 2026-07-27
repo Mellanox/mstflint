@@ -369,10 +369,14 @@ class PrivilegeMgr(object):
         exit_code = 0
         if self._isARM:
             for host in range(self._total_hosts):
+                rc = 0
                 if self._requested_level == self.RESTRICT:
-                    exit_code = self.setRestrictConf(host)
+                    rc = self.setRestrictConf(host)
                 elif self._requested_level == self.PRIVILEGE:
-                    exit_code = self.setPrivilegeConf(host)
+                    rc = self.setPrivilegeConf(host)
+                if rc:
+                    error("Failed to configure host %d", host)
+                    exit_code = rc
                 self._disable_out = True
         else:
             error("Operation is not permitted (refer to the DPU user manual)")

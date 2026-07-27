@@ -224,6 +224,47 @@ class PCIDeviceBase(object):
 
         self.logger.info("PCI Configurations for [{0} was restored successfully]".format(self.dbdf))
 
+    def get_extended_capability_offset(self, capability_id):
+        """
+        Walk the PCIe extended capability list starting at 0x100.
+        Return the offset of capability_id, or None if not found.
+        """
+        visited_capabilities = []
+        pci_extended_ptr = MAXIMUN_LEGACY_CAP_SIZE
+        self.logger.debug(
+            "Searching extended capability 0x{0:x} on PCI device [{1}]".format(
+                capability_id, self.dbdf)
+        )
+        while pci_extended_ptr and pci_extended_ptr != 0xfff:
+            assert pci_extended_ptr >= MAXIMUN_LEGACY_CAP_SIZE, "Extended pointer (<{0:#x}>) is out of range".format(pci_extended_ptr)
+            cap_id = self.read_word(pci_extended_ptr)
+            if cap_id is None:
+                self.logger.debug(
+                    "Extended capability walk ended (no data) at 0x{0:x} on [{1}]".format(
+                        pci_extended_ptr, self.dbdf)
+                )
+                break
+            self.logger.debug(
+                "Extended capability 0x{0:x} at offset 0x{1:x} on [{2}]".format(
+                    cap_id, pci_extended_ptr, self.dbdf)
+            )
+            if cap_id == capability_id:
+                self.logger.debug(
+                    "Found extended capability 0x{0:x} at offset 0x{1:x} on [{2}]".format(
+                        capability_id, pci_extended_ptr, self.dbdf)
+                )
+                return pci_extended_ptr
+            if cap_id in CAP_EXTENDED_DICT:
+                if cap_id in visited_capabilities:
+                    raise RuntimeError("Capability id {0} was seen before (avoid infinite loop).".format(cap_id))
+                visited_capabilities.append(cap_id)
+            pci_extended_ptr = self.read_word(pci_extended_ptr + 2) >> 4
+        self.logger.debug(
+            "Extended capability 0x{0:x} not found on [{1}]".format(
+                capability_id, self.dbdf)
+        )
+        return None
+
     def _is_valid_range(self, offset, size):
         """
         A method to validate offset and size
