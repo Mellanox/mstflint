@@ -787,33 +787,47 @@ bool MlxlinkCommander::isBonusPort() const
 
 void MlxlinkCommander::collectBonusPortTableFields(const PortGroup& portInfo, BonusPortTableFields& fields)
 {
-    _localPort = portInfo.localPort;
-
-    fields.labelPortStr = getLabelPortString(portInfo);
-
-    string plainState = getBonusPortSmpiPlainState(fields.logicalLinkUp);
-    string stateColor = MlxlinkRecord::state2Color(RESET);
-    if (fields.logicalLinkUp)
+    try
     {
-        stateColor = MlxlinkRecord::state2Color(GREEN);
-    }
-    else if (plainState != NA_FIELD_VALUE)
-    {
-        stateColor = MlxlinkRecord::state2Color(RED);
-    }
-    string resetColor = MlxlinkRecord::state2Color(RESET);
-    fields.stateStr = stateColor + plainState + resetColor;
-    fields.plainStateLen = plainState.length();
+        _localPort = portInfo.localPort;
 
-    fields.speedStr = getSpeedStrForTableView();
-    getPddrOperInfo();
-    fields.fecStr = _mlxlinkMaps->_fecModeActiveForTableDispaly[_fecActive];
+        fields.labelPortStr = getLabelPortString(portInfo);
+
+        string plainState = getBonusPortSmpiPlainState(fields.logicalLinkUp);
+        string stateColor = MlxlinkRecord::state2Color(RESET);
+        if (fields.logicalLinkUp)
+        {
+            stateColor = MlxlinkRecord::state2Color(GREEN);
+        }
+        else if (plainState != NA_FIELD_VALUE)
+        {
+            stateColor = MlxlinkRecord::state2Color(RED);
+        }
+        string resetColor = MlxlinkRecord::state2Color(RESET);
+        fields.stateStr = stateColor + plainState + resetColor;
+        fields.plainStateLen = plainState.length();
+
+        fields.speedStr = getSpeedStrForTableView();
+        getPddrOperInfo();
+        fields.fecStr = _mlxlinkMaps->_fecModeActiveForTableDispaly[_fecActive];
+    }
+    catch (MlxRegException& exc)
+    {
+        throw MlxRegException("Failed to collect bonus port table fields: %s", exc.what_s().c_str());
+    }
 }
 
 void MlxlinkCommander::appendBonusPortToSmpiTable(const PortGroup& portInfo, vector<string>& tableData)
 {
     BonusPortTableFields fields;
-    collectBonusPortTableFields(portInfo, fields);
+    try
+    {
+        collectBonusPortTableFields(portInfo, fields);
+    }
+    catch (MlxRegException& exc)
+    {
+        return;
+    }
 
     u_int32_t pos = 0;
     auto& hdr = _mlxlinkMaps->_multiPortInfoTableHeader;
@@ -837,7 +851,14 @@ void MlxlinkCommander::appendBonusPortToSmpiTable(const PortGroup& portInfo, vec
 void MlxlinkCommander::appendBonusPortToSmpmiTable(const PortGroup& portInfo, vector<string>& tableData)
 {
     BonusPortTableFields fields;
-    collectBonusPortTableFields(portInfo, fields);
+    try
+    {
+        collectBonusPortTableFields(portInfo, fields);
+    }
+    catch (MlxRegException& exc)
+    {
+        return;
+    }
 
     u_int32_t pos = 0;
     auto& hdr = _mlxlinkMaps->_multiPortModuleInfoTableHeader;
