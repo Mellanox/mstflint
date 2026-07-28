@@ -95,11 +95,7 @@ mstconfig_DEPENDENCIES = \
     $(top_builddir)/mlxfwops/lib/libmlxfwops.a \
     $(top_builddir)/pldmlib/libpldm.la \
     $(top_builddir)/pldm_utils/libpldm_utils.la \
-    $(top_builddir)/libmfa/libmfa.la \
-    $(top_builddir)/xz_utils/libxz_utils.la \
-    $(top_builddir)/ext_libs/minixz/libminixz.la \
     $(top_builddir)/mflash/libmflash.la \
-    $(top_builddir)/tools_crypto/libtools_crypto.a \
     $(top_builddir)/mft_utils/libmftutils.la \
     $(top_builddir)/cmdif/libcmdif.la \
     $(top_builddir)/reg_access/libreg_access.la \
@@ -136,6 +132,17 @@ mstconfig_LDADD += $(top_builddir)/mlxsign_lib/libmlxsign.la $(openssl_LIBS)
 libmlxcfg_la_LIBADD += $(top_builddir)/mlxsign_lib/libmlxsign.la $(openssl_LIBS)
 else
 AM_CXXFLAGS += -DNO_OPEN_SSL
+endif
+
+if ENABLE_FWMGR
+mstconfig_DEPENDENCIES += \
+    $(top_builddir)/libmfa/libmfa.la \
+    $(top_builddir)/xz_utils/libxz_utils.la \
+    $(top_builddir)/ext_libs/minixz/libminixz.la
+endif
+
+if ENABLE_CS
+mstconfig_DEPENDENCIES += $(top_builddir)/tools_crypto/libtools_crypto.a
 endif
 
 if ENABLE_DPA
