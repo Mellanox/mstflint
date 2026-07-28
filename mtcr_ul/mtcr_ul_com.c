@@ -88,6 +88,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <libgen.h>
+#include <limits.h>
 #include <sys/file.h>
 #include <linux/types.h>
 
@@ -1181,6 +1182,53 @@ static int nvml_open(mfile* mf, const char* name)
 #endif
 }
 
+/*
+ * Read the PCI device id from sysfs into mf->pci_device_id.
+ * Needed to disambiguate devices that share the same hw_dev_id over fwctl
+ * (e.g. BlueField4 and ConnectX9 both report 0x224).
+ * On sysfs lookup failure, leave mf->pci_device_id unchanged; open still succeeds.
+ */
+static void fwctl_set_pci_device_id(mfile* mf, const char* full_path_name)
+{
+    char device_link[128];
+    char resolved[PATH_MAX];
+    char name_copy[60];
+    char fname[128];
+    char inbuf[64] = {0};
+    const char* node_name;
+    FILE* f;
+
+    strncpy(name_copy, full_path_name, sizeof(name_copy) - 1);
+    name_copy[sizeof(name_copy) - 1] = '\0';
+    node_name = basename(name_copy); // e.g. "fwctl12"
+
+    snprintf(device_link, sizeof(device_link), "/sys/class/fwctl/%s/device", node_name);
+    if (realpath(device_link, resolved) == NULL)
+    {
+        FWCTL_DEBUG_PRINT(mf, "fwctl_set_pci_device_id: failed to resolve %s\n", device_link);
+        return;
+    }
+
+    // The resolved path basename is the PCI address (e.g. "0005:41:00.0").
+    snprintf(fname, sizeof(fname), "/sys/bus/pci/devices/%s/device", basename(resolved));
+    f = fopen(fname, "r");
+    if (f == NULL)
+    {
+        FWCTL_DEBUG_PRINT(mf, "fwctl_set_pci_device_id: failed to open %s\n", fname);
+        return;
+    }
+    if (fgets(inbuf, sizeof(inbuf), f))
+    {
+        mf->pci_device_id = (u_int16_t)strtol(inbuf, NULL, 0);
+        FWCTL_DEBUG_PRINT(mf, "fwctl_set_pci_device_id: pci_device_id=0x%x\n", mf->pci_device_id);
+    }
+    else
+    {
+        FWCTL_DEBUG_PRINT(mf, "fwctl_set_pci_device_id: failed to read pci device id from %s\n", fname);
+    }
+    fclose(f);
+}
+
 static int fwctrl_driver_open(mfile* mf, const char* name)
 {
     char full_path_name[60];
@@ -1214,9 +1262,10 @@ static int fwctrl_driver_open(mfile* mf, const char* name)
     ctx->mwrite4_block = (f_mwrite4_block)fwctl_driver_mwrite4_block;
     ctx->mclose = mtcr_driver_mclose;
     mf->bar_virtual_addr = NULL;
-    fwctl_set_device_id(mf);
-
     mf->fwctl_env_var_debug = getenv(FWCTL_ENV_VAR_DEBUG);
+
+    fwctl_set_device_id(mf);
+    fwctl_set_pci_device_id(mf, full_path_name);
 
     DBG_PRINTF("fwctl: device id is %d:\n", mf->device_hw_id);
     return 0;
@@ -3171,10 +3220,7 @@ static long supported_dev_ids[] = {0x1003, /* Connect-X3 */
                                    0xa2d2, /* MT416842 Family BlueField integrated ConnectX-5 network controller */
                                    0xa2d6, /* MT42822 Family BlueField2 integrated ConnectX-6DX network controller */
                                    0xa2dc, /* MT43244 Family BlueField3 integrated ConnectX-7 network controller */
-                                   0xa2dd, // BF4 Family BlueField4 Crypto Enabled
-                                   0xa2de, // BF4 Family BlueField4 Crypto Disabled
                                    0xa2df, // BF4 Family BlueField4 Network Controller
-                                   0xc2d6, // BF4 Family BlueField4 Management Interface
                                    0xcf70, /* Spectrum3 */
                                    0xcf80, /* Spectrum4 */
                                    0xcf82, /* Spectrum5 */
@@ -4287,7 +4333,7 @@ int init_dev_info_ul(mfile* mf, const char* dev_name, unsigned domain, unsigned 
     }
     if (mf->dinfo && is_bluefield4_pci_device(mf->dinfo->pci.dev_id))
     {
-        mf->pci_device_id = DeviceBlueField4_HwId;
+        mf->pci_device_id = mf->dinfo->pci.dev_id;
     }
     
 cleanup:
@@ -5371,8 +5417,7 @@ int read_device_id(mfile* mf, u_int32_t* device_id)
     // For Bluefield4 device, the HW device ID is 0x224, but need to check the PCI device ID
     if (mf->dinfo && is_bluefield4_pci_device(mf->dinfo->pci.dev_id))
     {
-        // Use the HW device ID for JSON
-        mf->pci_device_id = DeviceBlueField4_HwId;
+        mf->pci_device_id = mf->dinfo->pci.dev_id;
     }
 
     mf->hw_dev_id = (*device_id & 0xffff);

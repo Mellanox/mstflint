@@ -513,7 +513,8 @@ void MlxlinkCommander::updateNvlinkModeBStatus()
         sendPrmReg(ACCESS_REG_PTYS, GET, "proto_mask=%d", PTYS_PROTO_MASK_NVLINK);
 
         u_int32_t extProtoNvlink = getFieldValue("ext_proto_nvlink");
-        if (extProtoNvlink == 0)
+        if (extProtoNvlink == 0 ||
+            (extProtoNvlink > NVLINK_SPEED_200G_2X_MODE_A && !(extProtoNvlink & NVLINK_SPEED_345G_2X_MODE_B)))
         {
             return;
         }
@@ -1021,9 +1022,20 @@ void MlxlinkCommander::getActualNumOfLanes(u_int32_t linkSpeedActive, bool exten
     std::string rxtx;
     if (_protoActive == IB)
     {
-        sendPrmReg(ACCESS_REG_PTYS, GET, "proto_mask=%d", _protoActive);
+        if (_isNvlinkModeB || _isNvlinkModeA)
+        {
+            string linkSpeedActive = SupportedSpeeds2Str((_isNvlinkModeB || _isNvlinkModeA) ? NVLINK : IB, _activeSpeed,
+                                                         true, _isModeAsActive);
+            _numOfLanes = linkSpeedActive.empty()                                 ? 0 :
+                          checkNvl6ModeBSpeed(linkSpeedActive) || _isModeAsActive ? 2 :
+                                                                                    1;
+        }
+        else
+        {
+            sendPrmReg(ACCESS_REG_PTYS, GET, "proto_mask=%d", _protoActive);
 
-        _numOfLanes = getFieldValue("ib_link_width_oper");
+            _numOfLanes = getFieldValue("ib_link_width_oper");
+        }
     }
     else if (_protoActive == ETH)
     {
