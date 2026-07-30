@@ -1,3 +1,14 @@
+This directory holds two suites:
+
+| Script | Covers | Needs |
+|---|---|---|
+| `test_build_flags.py` | install-dir relocation + package rename, against real installed packages | device, sudo, package cache |
+| `test_source_packages.py` | source-package emission (`--rpm-source`/`--deb-source`) and release stamping | nothing — fully offline |
+
+`test_source_packages.py` is documented at the end of this file.
+
+---
+
 # Packaging tests — build_sdk.sh custom install dirs & package names
 
 Validates the mstflint `build_sdk.sh` packaging-customization flags
@@ -61,3 +72,69 @@ Needs: passwordless sudo, gcc, the package cache (`MSTFLINT_PKG_CACHE`,
 required) with `variants/manifest.json` + variant packages (produced by the
 extension's Build & Run), and the seeded harness binary
 (`MFT_SDK_SO_TEST_BIN`, default `/usr/lib64/mft_sdk/tests/mft_sdk_mstflint_so_test`).
+
+---
+
+# Source-package tests — build_sdk.sh `--rpm-source` / `--deb-source`
+
+Validates that `build_sdk.sh` emits source packages alongside the binaries, so
+UBS can resolve a binary to its source (RPM `SOURCERPM` tag / DEB `Source`
+field). Before these flags existed the SDK binary referenced a
+`mstflint-sdk-local-*.src.rpm` that was never produced.
+
+**Fully offline.** No device, no sudo, no installed package, no package cache.
+It drives `build_sdk.sh` in a scratch dir and inspects the output, which makes it
+a build-host suite rather than a per-machine one.
+
+## Flags under test
+
+| Flag | Effect |
+|---|---|
+| `--rpm-release R` | `--define "release R"`; the binary also picks up `%{?dist}` from the spec |
+| `--rpm-source` | extra `rpmbuild -bs` with `--define "dist %{nil}"` (implies `--rpm`) |
+| `--deb-version V` | rewrites the staged `debian/changelog` version |
+| `--deb-source` | `dpkg-buildpackage -F` + quilt format + orig tarball (implies `--deb`) |
+
+## Steps
+
+`flags_present → spec_release_dist → dist_not_doubled → no_trailing_test_exit →
+rpm_invocations → deb_invocations → rpm_build → rpm_artifacts → rpm_identity →
+srpm_no_dist → srpm_contents → deb_build → deb_artifacts →
+deb_source_identity → deb_tree_untouched`
+
+- **Static** (`flags_present`, `spec_release_dist`, `no_trailing_test_exit`) — instant.
+- **Stubbed** (`rpm_invocations`, `deb_invocations`) — a fake `rpmbuild` /
+  `dpkg-buildpackage` on `PATH` records its argv and fabricates artifacts.
+  Seconds, and the only DEB coverage available on an RPM host where dpkg is absent.
+- **Real build** (`dist_not_doubled` and everything from `rpm_build` on) — an
+  actual compile, several minutes. `--no-build` skips the expensive group.
+
+## Non-obvious things these catch
+
+- **`BuildArch:` doubles the dist tag.** With a `BuildArch:` tag, rpm expands the
+  `Release:` tag twice, so `%{release}%{?dist}` yields `1.60.gABC.el10.el10`.
+  `mstflint-sdk.spec.in` has no `BuildArch` (it uses `ExclusiveArch`), so it is
+  safe — but `spec_release_dist` fails if anyone adds one, and
+  `dist_not_doubled` proves the property on a real build.
+- **The `-bs` call must run before `-bb`**, so a source-packaging failure cannot
+  discard an already-built binary.
+- **Only `-bs` may pass `--define "dist %{nil}"`.** If `-bb` got it too, the
+  binary would lose its per-distro suffix and collide across distros.
+- **The orig tarball must exclude `debian/`**, or the generated
+  `.debian.tar.*` diff is corrupted.
+- **A trailing `[[ ... ]] && cmd` silently breaks `set -e`.** As a function's
+  last line it makes the function return 1 when the test is false. Mid-function
+  the same pattern is fine and is this file's established style.
+- **`debian-sdk/` must stay `3.0 (native)`** in the tree; the quilt switch
+  applies only to the throwaway staged copy.
+
+## Running by hand
+
+```bash
+cd <mstflint-repo>
+python3 mft_sdk/unit_tests/packaging/test_source_packages.py --so             # full
+python3 mft_sdk/unit_tests/packaging/test_source_packages.py --so --no-build  # fast
+```
+
+Scratch defaults to `$SDKV_TMP_ROOT` or `/data/tmp` — never the system temp dir,
+which cannot hold an SDK rpmbuild.

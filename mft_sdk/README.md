@@ -9,6 +9,47 @@ The library is self-contained: all mstflint dependencies (including `mtcr`) are
 linked in statically, so at runtime it needs only standard system libraries
 (`libstdc++`, `liblzma`, `libexpat`, `libc`, ...).
 
+## Build dependencies
+
+`build_sdk.sh` runs `autogen.sh` + `configure --enable-adb-generic-tools
+--enable-mstflint-sdk`, which needs autotools, a C++ toolchain and the expat /
+lzma / zlib / openssl / libibmad headers.
+
+RHEL / CentOS / Rocky (9, 10):
+
+```sh
+sudo dnf install -y autoconf automake libtool m4 make gcc gcc-c++ pkgconfig \
+    expat-devel openssl-devel xz-devel zlib-devel libibmad-devel libibverbs-devel
+```
+
+Debian / Ubuntu:
+
+```sh
+sudo apt-get update   # required on a freshly re-imaged host
+sudo apt-get install -y --no-install-recommends autoconf automake m4 libtool make g++ \
+    pkg-config libexpat1-dev libssl-dev liblzma-dev zlib1g-dev libibmad-dev libibverbs-dev
+```
+
+SUSE / SLES:
+
+```sh
+sudo zypper install -y autoconf automake libtool m4 make gcc-c++ pkgconfig \
+    libexpat-devel libopenssl-devel xz-devel zlib-devel rdma-core-devel
+```
+
+Extra packages per packaging mode:
+
+| Mode | Extra packages |
+| --- | --- |
+| `--rpm` | `rpm-build` (dnf / zypper) |
+| `--deb` | `dpkg-dev debhelper fakeroot autotools-dev` (apt) |
+
+On RHEL, `pkgconfig`, `zlib-devel`, `libibmad-devel` and `libibverbs-devel` are
+virtual names (resolved by `pkgconf-pkg-config`, `zlib-ng-compat-devel` on el10
+and `rdma-core-devel`); all come from BaseOS/AppStream, so CRB/PowerTools is not
+required. `--rpm` only works on an RPM distro — `build_sdk.sh` runs
+`rpmbuild -bb` without `--nodeps`.
+
 ## Standalone build
 
 The SDK can be built and installed on its own, without building the rest of the
