@@ -25,9 +25,13 @@ INSTALL=1
 BUILD_DEB=0
 DEB_OUTPUT=""
 DEB_NAME=""
+DEB_VERSION=""
+BUILD_DEB_SRC=0
 BUILD_RPM=0
 RPM_OUTPUT=""
 RPM_NAME=""
+RPM_RELEASE=""
+BUILD_RPM_SRC=0
 
 usage() {
     cat <<'EOF'
@@ -55,10 +59,14 @@ Options:
   --rpm                    Build a standalone mstflint-sdk .rpm (uses mstflint-sdk.spec)
   --rpm-name NAME          Override the RPM package Name (default: mstflint-sdk);
                            only changes package identity, not install paths
+  --rpm-release R          RPM Release (default: 1); the binary also gets %{?dist}
+  --rpm-source             Also build the .src.rpm, without a dist tag
   --rpm-output DIR         Directory to place the built .rpm (default: repo root)
   --deb                    Build a standalone mstflint-sdk .deb (uses debian-sdk/)
   --deb-name NAME          Override the .deb package name (default: mstflint-sdk);
                            only changes package identity, not install paths
+  --deb-version V          Debian version (default: from debian-sdk/changelog)
+  --deb-source             Also build the .dsc + .orig.tar.gz + .debian.tar.*
   --deb-output DIR         Directory to place the built .deb (default: repo root)
   -h, --help               Show this help
 
@@ -120,10 +128,20 @@ build_rpm() {
     # so a client can ship under a private name that won't clash with a
     # distro-provided mstflint-sdk. Install paths are unaffected.
     [[ -n "$RPM_NAME" ]]   && dir_defines+=(--define "name $RPM_NAME")
+    [[ -n "$RPM_RELEASE" ]] && dir_defines+=(--define "release $RPM_RELEASE")
     [[ -n "$PREFIX" ]]     && dir_defines+=(--define "_prefix $PREFIX")
     [[ -n "$LIBDIR" ]]     && dir_defines+=(--define "_libdir $LIBDIR")
     [[ -n "$INCLUDEDIR" ]] && dir_defines+=(--define "_includedir $INCLUDEDIR")
     [[ -n "$DATADIR" ]]    && dir_defines+=(--define "_datadir $DATADIR")
+
+    # SRPM first (cheap) so a failure here does not discard the built binary.
+    if [[ "$BUILD_RPM_SRC" -eq 1 ]]; then
+        echo ">> rpmbuild -bs"
+        rpmbuild --define "_topdir $top" --define "_tmppath $top/tmp" \
+                 --define "version $version" "${dir_defines[@]}" \
+                 --define "dist %{nil}" --nodeps \
+                 -bs "$top/SPECS/mstflint-sdk.spec"
+    fi
 
     echo ">> rpmbuild -bb"
     rpmbuild --define "_topdir $top" --define "_tmppath $top/tmp" \
@@ -131,7 +149,7 @@ build_rpm() {
              -bb "$top/SPECS/mstflint-sdk.spec"
 
     echo ">> collecting .rpm into $out"
-    find "$top/RPMS" -name '*.rpm' -exec mv {} "$out"/ \;
+    find "$top/RPMS" "$top/SRPMS" -name '*.rpm' -exec mv {} "$out"/ \;
     rm -rf "$top"
     echo ">> SDK .rpm build complete:"
     ls -1 "$out"/"${RPM_NAME:-mstflint-sdk}"-*.rpm
@@ -183,6 +201,11 @@ build_deb() {
         sed -i "s#debian/mstflint-sdk#debian/$DEB_NAME#g" "$src/debian/rules"
     fi
 
+    if [[ -n "$DEB_VERSION" ]]; then
+        echo ">> setting .deb version to $DEB_VERSION"
+        sed -i "1s#([^)]*)#($DEB_VERSION)#" "$src/debian/changelog"
+    fi
+
     # Forward install-dir overrides into the isolated tree's debian/rules so a
     # relocated package (e.g. --prefix /opt/...) actually installs there. dh's
     # dh_auto_configure otherwise defaults to /usr, ignoring these; unlike the
@@ -199,14 +222,26 @@ build_deb() {
             "$src/debian/rules"
     fi
 
-    echo ">> dpkg-buildpackage -b -uc -us"
-    ( cd "$src" && dpkg-buildpackage -b -uc -us )
+    local flags=(-b)
+    if [[ "$BUILD_DEB_SRC" -eq 1 ]]; then
+        # debian-sdk/ is native, which has no .orig/.debian split; quilt needs an orig tarball.
+        local name ver
+        name="${DEB_NAME:-mstflint-sdk}"
+        ver="$(sed -nE '1s/^[^ ]+ \(([^)]*)\).*/\1/p' "$src/debian/changelog")"
+        echo "3.0 (quilt)" > "$src/debian/source/format"
+        tar czf "$work/${name}_${ver%-*}.orig.tar.gz" --exclude=./debian -C "$src" .
+        flags=(-F)
+    fi
+
+    echo ">> dpkg-buildpackage ${flags[*]} -uc -us"
+    ( cd "$src" && dpkg-buildpackage "${flags[@]}" -uc -us )
 
     echo ">> collecting .deb into $out"
     mv "$work"/*.deb "$out"/
+    [[ "$BUILD_DEB_SRC" -eq 1 ]] && mv "$work"/*.dsc "$work"/*.tar.* "$out"/
     rm -rf "$work"
     echo ">> SDK .deb build complete:"
-    ls -1 "$out"/"${DEB_NAME:-mstflint-sdk}"_*.deb
+    ls -1 "$out"/"${DEB_NAME:-mstflint-sdk}"_*
 }
 
 while [[ $# -gt 0 ]]; do
@@ -224,9 +259,13 @@ while [[ $# -gt 0 ]]; do
         --build-only)          INSTALL=0; shift ;;
         --rpm)                 BUILD_RPM=1; shift ;;
         --rpm-name)            RPM_NAME="$2"; shift 2 ;;
+        --rpm-release)         RPM_RELEASE="$2"; shift 2 ;;
+        --rpm-source)          BUILD_RPM=1; BUILD_RPM_SRC=1; shift ;;
         --rpm-output)          RPM_OUTPUT="$2"; shift 2 ;;
         --deb)                 BUILD_DEB=1; shift ;;
         --deb-name)            DEB_NAME="$2"; shift 2 ;;
+        --deb-version)         DEB_VERSION="$2"; shift 2 ;;
+        --deb-source)          BUILD_DEB=1; BUILD_DEB_SRC=1; shift ;;
         --deb-output)          DEB_OUTPUT="$2"; shift 2 ;;
         -h|--help)             usage; exit 0 ;;
         *) echo "error: unknown option: $1" >&2; usage >&2; exit 1 ;;
