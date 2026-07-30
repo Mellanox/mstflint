@@ -899,9 +899,10 @@ def main():
         return 1
 
     # /data/tmp, never the system temp dir: an SDK rpmbuild does not fit in /tmp.
+    # Test writability, not just existence -- /data/tmp is root-owned on some hosts.
     if workdir is None:
         root = os.environ.get("SDKV_TMP_ROOT", "/data/tmp")
-        if not os.path.isdir(root):
+        if not (os.path.isdir(root) and os.access(root, os.W_OK)):
             root = os.path.expanduser("~")
         workdir = os.path.join(root, "sdkv_source_pkg_test")
     if os.path.isdir(workdir):
