@@ -13,7 +13,7 @@ suites themselves.
 | `mlxlink/` | 5 compare suites (operational info, counters, FEC histogram, cable DDM, module info) + gtest sources |
 | `mlxreg/` | 5 compare suites (register list/access/metadata/full path/error handling) + gtest sources |
 | `discovery/`, `hca_caps/`, `telemetry/`, `segfault/` | gtest-only suites (run via the installed harness with `--gtest_filter`) |
-| `packaging/` | `build_sdk.sh` packaging-flags validation (variants, relocation, coexistence) |
+| `packaging/` | `build_sdk.sh` packaging-flags validation (variants, relocation, coexistence) and source-package emission (SRPM / `.dsc`) |
 | `test_utils.*`, `mft_sdk_test_main.cpp`, `mlxreg/mlxreg_fields.h` | gtest harness sources (shared `main()`, field-name parsing contract) |
 
 ## Running
