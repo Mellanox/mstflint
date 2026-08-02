@@ -514,6 +514,20 @@ void parseDependency(string d, string& t, string& p, u_int32_t& v, OP& op)
     v = atoi(d.substr(opPos + opStrLen, d.length() - opPos - opStrLen).c_str());
 }
 
+bool GenericCommander::forceBypassForTLV(const std::shared_ptr<TLVConf>& tlv) const
+{
+    switch (_skipChecks)
+    {
+        case SkipChecksLevel::All:
+            return true;
+        case SkipChecksLevel::RespectBlocklist:
+            return tlv && !tlv->_forceDisallowed;
+        case SkipChecksLevel::None:
+        default:
+            return false;
+    }
+}
+
 bool GenericCommander::checkDependency(std::shared_ptr<TLVConf> cTLV, string dStr)
 {
     if (dStr.empty())
@@ -558,7 +572,7 @@ bool GenericCommander::checkDependency(std::shared_ptr<TLVConf> cTLV, string dSt
             {
                 throw MlxcfgTLVNotFoundException(dTLVName.c_str());
             }
-            if (!(_ignoreWriteSupport || dTLV->isFWSupported(_mf, false)))
+            if (!(forceBypassForTLV(dTLV) || dTLV->isFWSupported(_mf, false)))
             {
                 return false;
             }
@@ -586,8 +600,7 @@ void GenericCommander::filterByDependency(std::shared_ptr<TLVConf> cTLV,
 {
     for (size_t i = 0; i < dependencyTable.size(); i++)
     {
-        if (_ignoreWriteSupport ||
-            (checkDependency(cTLV, dependencyTable[i].second)) ||
+        if (forceBypassForTLV(cTLV) || (checkDependency(cTLV, dependencyTable[i].second)) ||
             (dependencyTable[i].second.empty() &&
              (!dependencyTable[i].first.rule.empty() || dependencyTable[i].first.supportedFromVersion > 0)) ||
             (!dependencyTable[i].first.arrayVal.empty()))
@@ -626,8 +639,9 @@ void GenericCommander::queryTLV(std::shared_ptr<TLVConf> tlv,
                                 bool isWriteOperation,
                                 QueryType qt)
 {
-    // When _ignoreWriteSupport is set, skip FW support check entirely and assume FW supports the TLV
-    bool fwSupported = _ignoreWriteSupport || tlv->isFWSupported(_mf, isWriteOperation);
+    // When force bypass is active for this TLV (per SkipChecksLevel), skip the FW
+    // capability check entirely and assume the FW supports the TLV.
+    bool fwSupported = forceBypassForTLV(tlv) || tlv->isFWSupported(_mf, isWriteOperation);
     if (!tlv->_cap && tlv->isMlxconfigSupported() && fwSupported)
     {
         vector<pair<ParamView, string>> dependencyTable = {};
@@ -782,6 +796,13 @@ void GenericCommander::queryAll(vector<ParamView>& params, vector<string>& faile
         }
         catch (const std::exception& e)
         {
+            // --force queries every TLV in the DB, including ones the FW cannot serve on this device;
+            // those throw and have no value to read. Skip them so query reports every readable TLV
+            // instead of failing the whole command. Without --force, every failure is surfaced.
+            if (forceBypassForTLV(it->second))
+            {
+                continue;
+            }
             string failedTLVName = std::get<0>(it->first) + "_P" + to_string(std::get<1>(it->first)) + "_M" +
                                    to_string(std::get<2>(it->first));
             failedTLVs.push_back(failedTLVName);
@@ -811,7 +832,7 @@ void GenericCommander::getCfg(ParamView& pv, QueryType qt)
     }
 }
 
-void GenericCommander::setCfg(vector<ParamView>& params, bool force)
+void GenericCommander::setCfg(vector<ParamView>& params)
 {
     map<string, std::shared_ptr<TLVConf>> uniqueTlvMap;
 
@@ -847,37 +868,40 @@ void GenericCommander::setCfg(vector<ParamView>& params, bool force)
         }
     }
 
-    // prepare ruleTLVs,and check rules
-    if (!force)
+    // prepare ruleTLVs, and check rules. The bypass decision is per-TLV so that
+    // blocklisted TLVs always go through the FW capability and rule checks even
+    // when the user requested --force (RespectBlocklist level).
+    for (std::map<string, std::shared_ptr<TLVConf>>::iterator it = uniqueTlvMap.begin(); it != uniqueTlvMap.end(); ++it)
     {
-        // printf("-D- do not force!\n");
-        for (std::map<string, std::shared_ptr<TLVConf>>::iterator it = uniqueTlvMap.begin(); it != uniqueTlvMap.end();
-             ++it)
+        std::shared_ptr<TLVConf> tlv = it->second;
+        if (forceBypassForTLV(tlv))
         {
-            std::shared_ptr<TLVConf> tlv = it->second;
-            std::set<string> strRuleTLVs;
-            tlv->getRuleTLVs(strRuleTLVs);
-            std::vector<std::shared_ptr<TLVConf>> ruleTLVs;
-            for (std::set<string>::iterator j = strRuleTLVs.begin(); j != strRuleTLVs.end(); ++j)
-            {
-                string strRuleTLV = *j;
-                std::shared_ptr<TLVConf> ruleTLV = _dbManager->getDependencyTLVByName(
-                  strRuleTLV, tlv->_port, tlv->_module); // similar to dependency, rule TLV may also be cross class.
-                if (!(_ignoreWriteSupport || ruleTLV->isFWSupported(_mf, false)))
-                {
-                    if (strRuleTLV == "nv_global_roce_cc_cap")
-                    {
-                        ruleTLVs.push_back(ruleTLV);
-                        continue;
-                    }
-                    throw MlxcfgException("The Rule TLV configuration %s is not supported by FW", strRuleTLV.c_str());
-                    break;
-                }
-                ruleTLV->query(_mf, QueryNext);
-                ruleTLVs.push_back(ruleTLV);
-            }
-            tlv->checkRules(ruleTLVs, QueryNext);
+            continue;
         }
+        std::set<string> strRuleTLVs;
+        tlv->getRuleTLVs(strRuleTLVs);
+        std::vector<std::shared_ptr<TLVConf>> ruleTLVs;
+        for (std::set<string>::iterator j = strRuleTLVs.begin(); j != strRuleTLVs.end(); ++j)
+        {
+            string strRuleTLV = *j;
+            std::shared_ptr<TLVConf> ruleTLV = _dbManager->getDependencyTLVByName(
+              strRuleTLV, tlv->_port, tlv->_module); // similar to dependency, rule TLV may also be cross class.
+            if (!ruleTLV->isFWSupported(_mf, false))
+            {
+                // per #4549772 in case rule TLV does not exist / not supported by FW, we should add the rule but
+                // not query it. to minimize impact only do it for this tlv that breaks Cx4 right now.
+                if (strRuleTLV == "nv_global_roce_cc_cap")
+                {
+                    ruleTLVs.push_back(ruleTLV);
+                    continue;
+                }
+                throw MlxcfgException("The Rule TLV configuration %s is not supported by FW", strRuleTLV.c_str());
+                break;
+            }
+            ruleTLV->query(_mf, QueryNext);
+            ruleTLVs.push_back(ruleTLV);
+        }
+        tlv->checkRules(ruleTLVs, QueryNext);
     }
 
     // set the tlv on the device
@@ -1237,7 +1261,7 @@ void GenericCommander::updateParamViewValue(ParamView& p, string v, QueryType qt
     }
     /* queryDevCfg runs this before queryParamViews; RO must be checked before parseValue or BYTES
      * alignment errors mask "read only". */
-    if (!_ignoreWriteSupport)
+    if (!forceBypassForTLV(tlv))
     {
         if (!tlv->isFWSupported(_mf, false))
         {

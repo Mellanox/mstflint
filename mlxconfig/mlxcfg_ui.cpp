@@ -869,10 +869,15 @@ mlxCfgStatus MlxCfg::queryDevCfg(Commander* commander,
 mlxCfgStatus MlxCfg::queryDevCfg(const char* dev, int devIndex, bool printNewCfg)
 {
     bool isWriteOperation = false;
-    Commander* commander = createCommander(string(dev), false, false);
+    Commander* commander = createCommander(string(dev), false, _mlxParams.force);
     if (!commander)
     {
         return MLX_CFG_ERROR;
+    }
+
+    if (_mlxParams.force)
+    {
+        commander->setSkipChecksLevel(SkipChecksLevel::RespectBlocklist);
     }
 
     mlxCfgStatus rc = queryDevCfg(commander, dev, isWriteOperation, devIndex, printNewCfg);
@@ -1105,6 +1110,11 @@ mlxCfgStatus MlxCfg::handlecompleteSetWithDefault(Commander* commander)
 
 mlxCfgStatus MlxCfg::setDevCfgWithParams(Commander* commander)
 {
+    if (_mlxParams.force)
+    {
+        commander->setSkipChecksLevel(SkipChecksLevel::RespectBlocklist);
+    }
+
     // check if there is a set of DISABLE_SLOT_POWER
     // for mlx_config_name
     for (vector<ParamView>::iterator p = _mlxParams.setParams.begin(); p != _mlxParams.setParams.end(); ++p)
@@ -1155,7 +1165,7 @@ mlxCfgStatus MlxCfg::setDevCfgWithParams(Commander* commander)
     if (_mlxParams.force)
     {
         printf("\n-W- Force flag specified, the validity of the Parameters will not be checked !\n");
-        printf("-W- Incorrect configuration might yield unexpected results. running in this mode is not recommended.");
+        printf("-W- Incorrect configuration might yield unexpected results. running in this mode is not recommended.\n");
     }
 
     if (!_mlxParams.completeSetWithDefault)
@@ -1171,7 +1181,7 @@ mlxCfgStatus MlxCfg::setDevCfgWithParams(Commander* commander)
     try
     {
         printf("Applying... ");
-        commander->setCfg(_mlxParams.setParams, _mlxParams.force);
+        commander->setCfg(_mlxParams.setParams);
         printf("Done!\n");
         const char* resetStr = commander->loadConfigurationGetStr();
         printf("-I- %s\n", resetStr);
@@ -1206,7 +1216,7 @@ Commander* MlxCfg::createCommander(const string& device, bool forceCreate, bool 
 
 mlxCfgStatus MlxCfg::setDevCfg()
 {
-    Commander* commander = createCommander(_mlxParams.device, false, false);
+    Commander* commander = createCommander(_mlxParams.device, false, _mlxParams.force);
     if (!commander)
     {
         return MLX_CFG_ERROR;
@@ -1509,7 +1519,7 @@ mlxCfgStatus MlxCfg::tlvLine2DwVec(const std::string& tlvStringLine, std::vector
 mlxCfgStatus MlxCfg::resetDevCfg(const char* dev)
 {
     mlxCfgStatus rc = MLX_CFG_OK;
-    Commander* commander = createCommander(string(dev), false, false);
+    Commander* commander = createCommander(string(dev), false, _mlxParams.force);
     if (!commander)
     {
         return MLX_CFG_ERROR;
@@ -1547,7 +1557,8 @@ mlxCfgStatus MlxCfg::showDevConfs()
 
     try
     {
-        commander = Commander::create(_mlxParams.device, _mlxParams.dbName, false, _mlxParams.deviceType, false);
+        bool useMaxPort = false || _mlxParams.force;
+        commander = Commander::create(_mlxParams.device, _mlxParams.dbName, false, _mlxParams.deviceType, useMaxPort);
         printf("\nList of configurations the device %s may support:\n", _mlxParams.device.c_str());
         commander->printLongDesc(stdout);
     }
@@ -2201,9 +2212,10 @@ std::vector<std::pair<std::string, int>> MlxCfg::getAggregatedDeviceList(const s
 {
     std::vector<std::pair<std::string, int>> devices;
 
+    std::string aggregatedDevicePath = resolveAggregatedDeviceFilePath(aggregatedDevice);
     // Parse JSON array: [{"device": "name", "ga": 0}, ...]
 	Json::Value root;
-    ifstream jsonInputStream(aggregatedDevice);
+    ifstream jsonInputStream(aggregatedDevicePath);
     Json::CharReaderBuilder builder;
     builder["collectComments"] = true;
     JSONCPP_STRING errs;
@@ -2428,8 +2440,8 @@ mlxCfgStatus MlxCfg::setSingleDeviceSystemConf(const std::string& mstDevicePath,
         return MLX_CFG_ERROR;
     }
 
-    // For system configuration, ignore FW write support check to allow writing anyway
-    commander->setIgnoreWriteSupport(true);
+    // For system configuration, ignore FW write support check unconditionally
+    commander->setSkipChecksLevel(SkipChecksLevel::All);
     string devName = getDeviceName(commander->mf());
     std::shared_ptr<SystemConfiguration> config = commander->getSystemConfiguration(confName, confAsic, devName);
     if (!config)
