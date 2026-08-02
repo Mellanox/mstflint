@@ -769,6 +769,17 @@ elif test ${CCVER} \> 4.7.2 ; then
     CXXFLAGS="$CXXFLAGS -std=c++11"
 fi
 
+# Deprecation notice: as of January 2027 mstflint will be built as C++17,
+# which requires GCC 9 or newer. Warn users still on an older compiler.
+CC_MAJOR_VER=`${CC} -dumpversion 2>/dev/null | cut -d. -f1`
+AS_IF([test x"${CC_MAJOR_VER}" != x && expr "${CC_MAJOR_VER}" : '[[0-9]][[0-9]]*$' >/dev/null && test "${CC_MAJOR_VER}" -lt 9],
+      [AC_MSG_WARN([
+*******************************************************************************
+Detected compiler ${CC} version ${CC_MAJOR_VER}.
+Starting January 2027, the mstflint project will require C++17, and the
+minimal supported GCC version will be 9. Please upgrade your compiler.
+*******************************************************************************])])
+
 AM_CFLAGS="-Wall"
 AM_CXXFLAGS="-Wall"
 
