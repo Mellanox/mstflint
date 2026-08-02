@@ -20,7 +20,8 @@
                 "part_number": ""
             },
             "fuses": [
-                {"fuse_id": 0, "name": "cvb", "instance_ids": [0], "voltage_types": [0]}
+                {"fuse_id": 30, "name": "dvdd", "instance_ids": [0]},
+                {"fuse_id": 31, "name": "vddp", "instance_ids": [0]}
             ]
         }
     ]

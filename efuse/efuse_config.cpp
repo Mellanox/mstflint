@@ -38,7 +38,11 @@
 #include <json/reader.h>
 #include <json/value.h>
 
+// [CVB-DISABLED] cx9 now uses the RAW_AND_VALUE layout; CVB 'voltage_types' parsing is
+// gated behind EFUSE_CVB_ENABLED to allow re-enabling later.
+#ifdef EFUSE_CVB_ENABLED
 #define NUMBER_OF_VOLTAGE_TYPES 3 // 0=DVDD, 1=AVDD, 2=VDD
+#endif                            // EFUSE_CVB_ENABLED
 
 static bool parse_instance_ids(const Json::Value& instance_ids_node, std::vector<int>& instance_ids, std::string& error)
 {
@@ -132,7 +136,19 @@ static bool parse_fuse_entry(const Json::Value& fuse_node,
         return false;
     }
 
-    // voltage_types is required iff fuse_id == 0 (CVB MRFV layout, per PRM).
+    // [CVB-DISABLED] fuse_id == 0 selects the CVB MRFV layout per PRM. While CVB is disabled,
+    // reject configs that use it so a stale entry does not silently get parsed as RAW_AND_VALUE
+    // and issue an MRFV read with the wrong layout to hardware.
+    if (fuse.fuse_id == 0)
+    {
+        error = "JSON config format error: " + path +
+                ".fuse_id == 0 selects the CVB MRFV layout, which is currently disabled in this build";
+        return false;
+    }
+
+#ifdef EFUSE_CVB_ENABLED
+    // fuse_id == 0 is reserved by the PRM for the CVB MRFV layout and selects it at runtime;
+    // any other fuse_id uses the RAW_AND_VALUE layout. 'voltage_types' is required iff fuse_id == 0.
     if (fuse_node.isMember("voltage_types"))
     {
         if (fuse.fuse_id != 0)
@@ -178,6 +194,7 @@ static bool parse_fuse_entry(const Json::Value& fuse_node,
           "JSON config format error: " + path + " missing required field 'voltage_types' for CVB layout (fuse_id == 0)";
         return false;
     }
+#endif // EFUSE_CVB_ENABLED
 
     return true;
 }
