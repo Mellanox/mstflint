@@ -158,7 +158,12 @@ MError mnvaCom5thGen(mfile* mf,
                      QueryType qT = QueryNext,
                      bool is_host_id_valid = false);
 
-MError nvqcCom5thGen(mfile* mf, u_int32_t tlvType, bool& suppRead, bool& suppWrite, u_int32_t& version);
+MError nvqcCom5thGen(mfile* mf,
+                     u_int32_t tlvType,
+                     bool& suppRead,
+                     bool& suppWrite,
+                     u_int32_t& version,
+                     bool is_host_id_valid = false);
 
 MError nvdiCom5thGen(mfile* mf, u_int32_t tlvType, bool is_host_id_valid = false);
 
@@ -210,6 +215,9 @@ Device_Type getDeviceTypeFromString(string inStr);
 string deviceTypeToString(Device_Type deviceType);
 
 string getTempFolder();
+
+string resolveAggregatedDeviceFilePath(const string& aggregatedDevice);
+
 void parseSystemConfName(const string& fullName, string& name, int& asic);
 
 class MlxcfgException : public exception

@@ -71,6 +71,10 @@ private:
     void printParamViews(FILE* f, vector<ParamView>& v);
     void genXMLTemplateAux(vector<string> tlvs, string& xmlTemplate, bool allAttrs, bool withVal, bool defaultAttrVal);
     void removeSignatureTlvs(vector<std::shared_ptr<TLVConf>>& tlvs);
+    // Returns true if the current SkipChecksLevel allows bypassing FW capability,
+    // dependency, and rule TLV checks for the given TLV. RespectBlocklist honors
+    // tlv->_forceDisallowed; All ignores it; None never bypasses.
+    bool forceBypassForTLV(const std::shared_ptr<TLVConf>& tlv) const;
 
 public:
     GenericCommander(mfile* mf, string& dbName, Device_Type deviceType = Device_Type::HCA, bool useMaxPort = false);
@@ -82,7 +86,7 @@ public:
       queryParamViews(std::vector<ParamView>& paramsToQuery, bool isWriteOperation, QueryType qt = QueryNext) override;
     void queryAll(vector<ParamView>& params, vector<string>& failedTLVs, QueryType qt) override;
     void getCfg(ParamView& cfgParam, QueryType qt = QueryNext) override;
-    void setCfg(std::vector<ParamView>& params, bool force) override;
+    void setCfg(std::vector<ParamView>& params) override;
     void getGlobalCapabilities(bool& isDefaultSupported,
                                bool& isCurrentSupported,
                                bool& isPrivNvOtherHostSupported) override;

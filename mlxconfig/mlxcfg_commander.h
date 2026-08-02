@@ -50,6 +50,21 @@
 #include "mlxcfg_utils.h"
 #include "mlxcfg_status.h"
 
+// Controls how aggressively GenericCommander bypasses validation checks
+// (FW capability, parameter dependency, rule TLVs).
+//
+//   None             - default; full validation, normal user query/set path.
+//   RespectBlocklist - user-facing `--force` flag; bypass checks for any TLV
+//                      not flagged force_disallowed in the DB.
+//   All              - set_system_conf path; unconditional bypass, blocklist
+//                      is ignored so any TLV can be forced.
+enum class SkipChecksLevel
+{
+    None,
+    RespectBlocklist,
+    All,
+};
+
 class Commander
 {
 public:
@@ -70,7 +85,7 @@ public:
       queryParamViews(std::vector<ParamView>& paramsToQuery, bool isWriteOperation, QueryType qt = QueryNext) = 0;
     virtual void queryAll(vector<ParamView>& params, vector<string>& failedTLVs, QueryType qt) = 0;
     virtual void getCfg(ParamView& cfgParam, QueryType qt = QueryNext) = 0;
-    virtual void setCfg(std::vector<ParamView>&, bool) = 0;
+    virtual void setCfg(std::vector<ParamView>&) = 0;
     virtual void clearSemaphore() = 0;
     virtual void invalidateCfgs() = 0;
     virtual void invalidateCfg(const std::string& configName) = 0;
@@ -92,18 +107,19 @@ public:
     virtual std::map<std::string, std::vector<std::shared_ptr<SystemConfiguration>>>
       getAllSystemConfigurations(const std::string& deviceName) = 0;
     void setExtResourceType(bool extT) { _extResource = extT; }
-    void setIgnoreWriteSupport(bool ignore) { _ignoreWriteSupport = ignore; }
+    void setSkipChecksLevel(SkipChecksLevel level);
+    SkipChecksLevel getSkipChecksLevel() const { return _skipChecks; }
     virtual void setHostFunctionParams(u_int8_t hostId, u_int8_t pfIndex, bool valid);
     static string getDefaultDBName(bool isSwitchPrmDb);
     mfile* mf() { return _mf; }
-    Commander(mfile* mf) : _mf(mf), _extResource(true), _isSwitch(false), _ignoreWriteSupport(false){};
+    Commander(mfile* mf) : _mf(mf), _extResource(true), _isSwitch(false), _skipChecks(SkipChecksLevel::None){};
     virtual ~Commander();
 
 protected:
     mfile* _mf;
     bool _extResource;
     bool _isSwitch;
-    bool _ignoreWriteSupport;
+    SkipChecksLevel _skipChecks;
     u_int8_t _userHostId = 0;
     u_int8_t _userPfIndex = 0;
     bool _userHostIdPfValid = false;

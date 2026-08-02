@@ -38,6 +38,7 @@
  */
 
 #include <sstream>
+#include <fstream>
 #include <stdarg.h>
 #include <signal.h>
 #include <errno.h>
@@ -144,13 +145,15 @@ MError mnvaCom5thGen(mfile* mf,
     return ME_OK;
 }
 
-MError nvqcCom5thGen(mfile* mf, u_int32_t tlvType, bool& suppRead, bool& suppWrite, u_int32_t& version)
+MError
+  nvqcCom5thGen(mfile* mf, u_int32_t tlvType, bool& suppRead, bool& suppWrite, u_int32_t& version, bool is_host_id_valid)
 {
     struct reg_access_hca_mnvqc_reg_ext nvqcTlv;
     memset(&nvqcTlv, 0, sizeof(struct reg_access_hca_mnvqc_reg_ext));
 
     // tlvType should be in the correct endianess
     nvqcTlv.type = __be32_to_cpu(tlvType);
+    nvqcTlv.host_id_valid = is_host_id_valid ? 1 : 0;
     MError rc;
     // "suspend" signals as we are going to take semaphores
     mft_signal_set_handling(1);
@@ -393,12 +396,7 @@ bool isContinuanceArray(const string& mlxconfigName)
 
 bool isIndexedStartFromOneSupported(const string& mlxconfigName)
 {
-#if defined(MST_UL)
-    (void)mlxconfigName;
-    return false;
-#else
     return mlxconfigName == "SPLIT_PORT";
-#endif
 }
 
 void parseIndexedMlxconfigName(const string& indexedMlxconfigName, string& mlxconfigName, u_int32_t& index)
@@ -462,10 +460,6 @@ bool isIndexedMlxconfigName(const string& mlxconfigName)
 
 string getArraySuffix(const string& mlxconfigName)
 {
-#if defined(MST_UL)
-    (void)mlxconfigName;
-    return "";
-#else
     static const mstflint::common::regex::regex EXP_PATTERN("(_[0-9]{2}_[0-9]+)");
     string suffix = "";
     mstflint::common::regex::smatch match;
@@ -476,7 +470,6 @@ string getArraySuffix(const string& mlxconfigName)
     }
 
     return suffix;
-#endif
 }
 
 string getArrayPrefix(const string& mlxconfigName)
@@ -642,6 +635,51 @@ void parseSystemConfName(const string& fullName, string& name, int& asic)
         name = fullName;
         asic = -1;
     }
+}
+
+string resolveAggregatedDeviceFilePath(const string& aggregatedDevice)
+{
+    vector<string> candidates;
+    candidates.push_back(aggregatedDevice);
+
+#ifdef __WIN__
+    const char* mlnxWinmft = getenv("MLNX_WINMFT");
+    if (mlnxWinmft && mlnxWinmft[0] != '\0')
+    {
+        candidates.push_back(string(mlnxWinmft) + "\\devs\\" + aggregatedDevice);
+    }
+    candidates.push_back("C:\\Program Files\\Mellanox\\WinMFT\\devs\\" + aggregatedDevice);
+
+    char exePath[MAX_PATH] = {0};
+    DWORD chars = GetModuleFileNameA(NULL, exePath, MAX_PATH);
+    if (chars > 0 && chars < MAX_PATH)
+    {
+        string exeDir(exePath);
+        size_t lastSep = exeDir.find_last_of("\\/");
+        if (lastSep != string::npos)
+        {
+            exeDir = exeDir.substr(0, lastSep);
+            candidates.push_back(exeDir + "\\devs\\" + aggregatedDevice);
+        }
+    }
+#else
+    candidates.push_back(string("/dev/mst/") + aggregatedDevice);
+#endif
+    /*look at the possible path candidates to open and read the file stop on the first find.
+    1) plain name
+    2) full path from environment variable
+    3) default install path
+    4) mlxconfig exe location as base path
+    */
+    for (const string& candidate : candidates)
+    {
+        ifstream file(candidate.c_str());
+        if (file.is_open())
+        {
+            return candidate;
+        }
+    }
+    return aggregatedDevice;
 }
 
 // if temp directory doesn't exist, try to create it

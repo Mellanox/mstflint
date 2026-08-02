@@ -105,6 +105,7 @@ void MlxCfg::printHelp()
     printFlagLine("k", "openssl_key_id", "IDENTIFIER", "deprecated");
     printFlagLine("t", "device_type", "switch/hca", "Specify the device type");
     printFlagLine("tkn", "token_type", "", "Specify token type.");
+    printFlagLine("", "force", "", "Skip FW checks, attempt to query and set parameters anyway.");
 
     // print commands
     printf("\n");
