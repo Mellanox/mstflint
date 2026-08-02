@@ -14,6 +14,7 @@ suites themselves.
 | `mlxreg/` | 5 compare suites (register list/access/metadata/full path/error handling) + gtest sources |
 | `discovery/`, `hca_caps/`, `telemetry/`, `segfault/` | gtest-only suites (run via the installed harness with `--gtest_filter`) |
 | `packaging/` | `build_sdk.sh` packaging-flags validation (variants, relocation, coexistence) and source-package emission (SRPM / `.dsc`) |
+| `build/` | autotools build-system checks — the `configure.ac` C++17 / GCC-9 deprecation notice (offline, no device) |
 | `test_utils.*`, `mft_sdk_test_main.cpp`, `mlxreg/mlxreg_fields.h` | gtest harness sources (shared `main()`, field-name parsing contract) |
 
 ## Running
@@ -46,4 +47,5 @@ Env knobs (all consumed by `utils.py`):
 The Python suites, field mirrors and gtest sources are synced from the MFT
 repo (`user/mft_sdk/unit_tests/`), which is the upstream for shared files;
 only `utils.py` intentionally diverges (no build machinery here). The
-`packaging/` suite is owned by this repo.
+`packaging/` and `build/` suites are owned by this repo — they test
+`build_sdk.sh` and `configure.ac`, which exist only here.
