@@ -119,6 +119,7 @@ class PrivilegeMgr(object):
     BLUE_FIELD_DEV_ID = 0x211
     BLUE_FIELD2_DEV_ID = 0x214
     BLUE_FIELD3_DEV_ID = 0x21c
+    BLUE_FIELD4_DEV_ID = 0x224
 
     PRIVILEGE = 0
     RESTRICT = 1
@@ -392,7 +393,8 @@ class PrivilegeMgr(object):
         dev_id = int(stdout, 16)
         if dev_id not in (self.BLUE_FIELD_DEV_ID,
                           self.BLUE_FIELD2_DEV_ID,
-                          self.BLUE_FIELD3_DEV_ID):
+                          self.BLUE_FIELD3_DEV_ID,
+                          self.BLUE_FIELD4_DEV_ID):
             raise PrivilegeException(
                 "Device '%s' is not supported, "
                 "only BlueField devices are supported!" %
