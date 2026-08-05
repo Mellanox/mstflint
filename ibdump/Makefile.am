@@ -59,3 +59,5 @@ ibdump_LDADD = \
     -lpthread \
     $(LDL) \
     -lm
+
+ibdump_LDFLAGS = -static
