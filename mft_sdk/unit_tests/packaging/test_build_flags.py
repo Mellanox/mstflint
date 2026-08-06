@@ -94,8 +94,36 @@ def _run(cmd, desc="", verbose=False, timeout=None):
 
 
 def _pkg_type():
-    return "deb" if os.path.exists("/usr/bin/dpkg") and not os.path.exists("/usr/bin/rpm") \
-        else ("rpm" if os.path.exists("/usr/bin/rpm") else "deb")
+    """Which packaging this DISTRO uses -- not merely which tools are present.
+
+    The old test was `dpkg and not rpm -> deb`, which misreads any Debian
+    machine that happens to have /usr/bin/rpm installed (a perfectly normal
+    thing: rpm2cpio, or a cross-inspection tool). apps-124-002 (Ubuntu 24.04,
+    aarch64) has both, was classified rpm, and then hunted for
+    mstflint-sdk-*.rpm in an aarch64 cache holding only a .deb -- 3 red
+    "variant package not in cache" rows for a machine whose deb was right
+    there. The sibling apps-124-003 (Debian 13, no rpm binary) passed the same
+    suite, which is the asymmetry that gave it away.
+
+    Ask /etc/os-release first; fall back to dpkg OWNING its own binary (true
+    only on a real dpkg distro), and only then to bare tool presence.
+    """
+    try:
+        with open("/etc/os-release") as fh:
+            osr = fh.read().lower()
+        ids = " ".join(l.split("=", 1)[1].strip().strip('"')
+                       for l in osr.splitlines() if l.startswith(("id=", "id_like=")))
+        if any(d in ids for d in ("debian", "ubuntu")):
+            return "deb"
+        if any(d in ids for d in ("rhel", "fedora", "centos", "suse", "mariner", "azurelinux")):
+            return "rpm"
+    except Exception:  # noqa: BLE001 - fall through to the probes below
+        pass
+    # dpkg owning its own binary is true only where dpkg is the system manager.
+    if os.path.exists("/usr/bin/dpkg") and subprocess.call(
+            "dpkg -S /usr/bin/dpkg >/dev/null 2>&1", shell=True) == 0:
+        return "deb"
+    return "rpm" if os.path.exists("/usr/bin/rpm") else "deb"
 
 
 def _arch():

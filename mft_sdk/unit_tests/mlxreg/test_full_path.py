@@ -421,13 +421,15 @@ class MlxregFullPathCliRunner(object):
         if full_path:
             cmd += " --full_path"
         cmd = "echo '{}' | sudo su".format(cmd)
+        # merge_stderr=False: parse_show_reg() takes everything before the
+        # first '|' as a field name, so any stderr text becomes a phantom field.
         self.success, self.output = CommandRunner.run(
             cmd, "Running {} --show_reg {} {}on {}".format(
                 MFT_SDK_REG_TOOL,
                 register_name,
                 "--full_path " if full_path else "",
                 self.device),
-            verbose)
+            verbose, merge_stderr=False)
         return self.success
 
     def get_field_names(self):

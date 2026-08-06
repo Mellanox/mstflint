@@ -463,11 +463,24 @@ class CommandRunner(object):
     """Handles execution of shell commands."""
 
     @staticmethod
-    def run(cmd, description, verbose=True):
+    def run(cmd, description, verbose=True, merge_stderr=True):
         """Run a command and return (success, output).
 
         When BaseConfig.VERBOSE is True, output is streamed in real-time
         and errors are shown even for quiet (verbose=False) commands.
+
+        merge_stderr=False keeps the command's stderr OUT of the returned
+        text. Pass it whenever the output is going to be machine-parsed.
+
+        Why this matters: the default 2>&1 merge means any diagnostic the
+        reference tool writes to stderr is spliced into the stdout we parse
+        as a table -- and because the tool's stdout is a block-buffered pipe
+        while stderr is unbuffered, it lands in the MIDDLE of a row. A
+        Bullseye-coverage-instrumented mlxreg_ext (COVFILE unset) did exactly
+        that on 2026-08-06 and split one row of `--show_reg --full_path` in
+        two, which the parsers then read as an SDK field mismatch: 15 red
+        rows across apps-174 and apps-08-03 blaming the SDK for a message
+        printed by the oracle. The SDK output was correct throughout.
         """
         show_header = verbose or BaseConfig.VERBOSE
         if show_header and description:
@@ -479,7 +492,8 @@ class CommandRunner(object):
         if BaseConfig.VERBOSE:
             # Stream output line-by-line in real-time while capturing it
             process = subprocess.Popen(
-                cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                cmd, shell=True, stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT if merge_stderr else subprocess.DEVNULL)
             output_lines = []
             for line in iter(process.stdout.readline, b''):
                 decoded = line.decode('utf-8', errors='replace')
@@ -490,7 +504,8 @@ class CommandRunner(object):
             output = ''.join(output_lines)
         else:
             process = subprocess.Popen(
-                cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                cmd, shell=True, stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT if merge_stderr else subprocess.DEVNULL)
             output, _ = process.communicate()
             output = output.decode('utf-8', errors='replace')
         success = process.returncode == 0

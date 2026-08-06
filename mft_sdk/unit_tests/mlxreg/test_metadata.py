@@ -128,8 +128,12 @@ class MlxregCliRunner(object):
         # names the SDK metadata uses (e.g. fw_info.major).
         cmd = self._base_cmd() + " --show_reg {} --full_path".format(register_name)
         cmd = "echo '{}' | sudo su".format(cmd)
+        # merge_stderr=False: get_fields() parses this as a pipe table, so a
+        # diagnostic on the tool's stderr would corrupt a row and be reported
+        # as an SDK field mismatch.
         self.success, self.output = CommandRunner.run(
-            cmd, "Running {} --show_reg {} on {}".format(MFT_SDK_REG_TOOL, register_name, self.device), verbose)
+            cmd, "Running {} --show_reg {} on {}".format(MFT_SDK_REG_TOOL, register_name, self.device), verbose,
+            merge_stderr=False)
         return self.success
 
     def get_fields(self):

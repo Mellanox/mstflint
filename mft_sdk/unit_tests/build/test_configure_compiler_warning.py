@@ -31,6 +31,7 @@ from __future__ import print_function
 import os
 import re
 import shutil
+import socket
 import subprocess
 import sys
 
@@ -119,7 +120,13 @@ def main():
     root = os.environ.get("SDKV_TMP_ROOT", "/data/tmp")
     if not (os.path.isdir(root) and os.access(root, os.W_OK)):
         root = os.path.expanduser("~")
-    work = os.path.join(root, "sdkv_configure_warning_test")
+    # Namespaced by host+pid, because the fallback root above is $HOME and
+    # $HOME (/labhome/<user>) is ONE NFS export shared by every lab machine.
+    # With machines tested in parallel, a fixed name means two hosts rmtree
+    # each other's tree mid-build ("Stale file handle"). This suite is
+    # per-machine by design; the name just has to say so.
+    work = os.path.join(root, "sdkv_configure_warning_test_{}_{}".format(
+        socket.gethostname().split(".")[0], os.getpid()))
     shutil.rmtree(work, ignore_errors=True)
 
     cc = os.environ.get("CC") or "gcc"
