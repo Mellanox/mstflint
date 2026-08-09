@@ -28,7 +28,7 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-AC_INIT(mstflint, 4.37.0, akiselman-org@exchange.nvidia.com)
+AC_INIT([mstflint],[4.37.0],[akiselman-org@exchange.nvidia.com])
 
 AC_DEFINE_UNQUOTED([PROJECT], ["mstflint"], [Firmware Burning and Diagnostics Tools for NVIDIA network devices.])
 AC_SUBST([PROJECT])
@@ -1005,7 +1005,7 @@ AC_MSG_NOTICE(TOOLS_GIT_SHA $TOOLS_GIT_SHA)
 
 AC_CONFIG_FILES([debian/mstflint.install])
 
-AC_OUTPUT( \
+AC_CONFIG_FILES([\
     Makefile \
     cmdif/Makefile \
     cmdparser/Makefile \
@@ -1062,4 +1062,5 @@ AC_OUTPUT( \
     mft_core/mft_core_utils/logger/Makefile \
     mft_core/mft_core_utils/operating_system_api/Makefile \
     mft_core/mft_core_utils/mft_exceptions/Makefile \
- )
+ ])
+AC_OUTPUT
