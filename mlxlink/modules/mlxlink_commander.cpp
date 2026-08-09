@@ -4605,6 +4605,42 @@ void MlxlinkCommander::showBerMonitorInfo()
     }
 }
 
+void MlxlinkCommander::showPhyInfo()
+{
+    try
+    {
+        setPrintTitle(_phyInfoCmd, "PHY Info", PHY_INFO_LAST);
+
+        sendPrmReg(ACCESS_REG_PDDR, REG_GET, "page_select=%d", PDDR_PHY_INFO_PAGE);
+
+        u_int32_t sdValid = getFieldValue("sd_valid");
+        u_int32_t signalDetected = getFieldValue("signal_detected");
+        u_int32_t pcsPhyState = getFieldValue("pcs_phy_state");
+        u_int32_t amLockBits = (pcsPhyState >> 8) & 0xFF; // bits 8-15: AM lock (one bit per lane)
+
+        setPrintVal(_phyInfoCmd, FIELD_RX_SIGNAL_DETECT, bitsToPerLaneStr(signalDetected, _numOfLanes),
+                    ANSI_COLOR_RESET, true, sdValid, true);
+        setPrintVal(_phyInfoCmd, FIELD_RX_AM_LOCK, bitsToPerLaneStr(amLockBits, _numOfLanes), ANSI_COLOR_RESET, true,
+                    true, true);
+
+        sendPrmReg(ACCESS_REG_PDDR, REG_GET, "page_select=%d", PDDR_MODULE_LINK_DOWN_INFO_PAGE);
+
+        u_int32_t pcsPhyStateLatched = getFieldValue("pcs_phy_state_latched");
+        bool latchedValid = (pcsPhyStateLatched >> 31) & 1;             // bit 31: validity bit
+        u_int32_t amLockLatchedBits = (pcsPhyStateLatched >> 8) & 0xFF; // bits 8-15: AM lock (one bit per lane)
+
+        setPrintVal(_phyInfoCmd, FIELD_RX_AM_LOCK_LATCHED, bitsToPerLaneStr(amLockLatchedBits, _numOfLanes),
+                    ANSI_COLOR_RESET, true, latchedValid, true);
+
+        printOutput(_phyInfoCmd);
+    }
+    catch (const std::exception& exc)
+    {
+        _allUnhandledErrors +=
+          string("Showing PHY Info raised the following exception: ") + string(exc.what()) + string("\n");
+    }
+}
+
 void MlxlinkCommander::showExternalPhy()
 {
     if (_isSwControled)
@@ -8120,6 +8156,7 @@ void MlxlinkCommander::prepareJsonOut()
     _sltpInfoCmd.toJsonFormat(_jsonRoot);
     _showDeviceInfoCmd.toJsonFormat(_jsonRoot);
     _showBerMonitorInfo.toJsonFormat(_jsonRoot);
+    _phyInfoCmd.toJsonFormat(_jsonRoot);
     _extPhyInfoCmd.toJsonFormat(_jsonRoot);
     _linkBlameInfoCmd.toJsonFormat(_jsonRoot);
     _validPcieLinks.toJsonFormat(_jsonRoot);

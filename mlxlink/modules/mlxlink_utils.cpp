@@ -114,6 +114,16 @@ string getStringFromVector(vector<float> values)
     return deleteLastChar(s);
 }
 
+string bitsToPerLaneStr(u_int32_t bitmask, u_int32_t numOfLanes)
+{
+    vector<string> perLane;
+    for (u_int32_t i = 0; i < numOfLanes; i++)
+    {
+        perLane.push_back(to_string((bitmask >> i) & 1));
+    }
+    return getStringFromVector(perLane);
+}
+
 u_int64_t add32BitTo64(u_int32_t value1, u_int32_t value2)
 {
     return (((u_int64_t)value1) << 32 | value2);

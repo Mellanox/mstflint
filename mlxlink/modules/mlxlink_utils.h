@@ -74,6 +74,7 @@ void termHandler(int sig);
 string deleteLastChar(const string& s, u_int32_t numOfCharsToRemove = 1);
 string getStringFromVector(std::vector<std::string> values);
 string getStringFromVector(std::vector<float> values);
+string bitsToPerLaneStr(u_int32_t bitmask, u_int32_t numOfLanes);
 float convertFloatPrec(float value);
 u_int64_t add32BitTo64(u_int32_t value1, u_int32_t value2);
 string getFullString(u_int64_t intVal);

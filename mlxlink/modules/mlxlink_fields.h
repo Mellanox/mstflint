@@ -69,6 +69,9 @@ static const char* const FIELD_EFFECTIVE_PHYSICAL_BER = "Effective Physical BER"
 static const char* const FIELD_RAW_PHYSICAL_ERRORS_PER_LANE = "Raw Physical Errors Per Lane";
 static const char* const FIELD_RAW_PHYSICAL_BER = "Raw Physical BER";
 static const char* const FIELD_RAW_PHYSICAL_BER_PER_LANE = "Raw Physical BER Per Lane";
+static const char* const FIELD_RX_SIGNAL_DETECT = "RX Signal Detect Per Lane";
+static const char* const FIELD_RX_AM_LOCK = "RX AM Lock Per Lane";
+static const char* const FIELD_RX_AM_LOCK_LATCHED = "RX AM Lock Latched Per Lane";
 static const char* const FIELD_LINK_DOWN_COUNTER = "Link Down Counter";
 static const char* const FIELD_LINK_ERROR_RECOVERY_COUNTER = "Link Error Recovery Counter";
 
