@@ -195,6 +195,12 @@ char const* get_opt_pos(const char* option_suspect, int enforce_option_with_args
     return strstr(OPTSTR, suspect_to_search);
 }
 
+// Returns 1 if the arg looks like an option, i.e. anything but "-" (stdin) and "--" (keywords separator)
+int is_option_like(const char* arg)
+{
+    return arg[0] == '-' && arg[1] != '\0' && strcmp(arg, "--") != 0;
+}
+
 int verify_command_layout(int argc, char const** argv)
 {
     if (argc < 2)
@@ -217,7 +223,7 @@ int verify_command_layout(int argc, char const** argv)
     // i is file argument or at the end of argv
     for (i = i + 1; i < argc; i++)
     {
-        if (get_opt_pos(argv[i], 0))
+        if (is_option_like(argv[i]))
         {
             return 0;
         }
