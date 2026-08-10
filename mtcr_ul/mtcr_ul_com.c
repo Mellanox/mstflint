@@ -2612,13 +2612,34 @@ static inline int prepare_i2c_data(unsigned char* buf, DType dtype, u_int32_t of
     return data_length + len;
 }
 
+static int execute_i2c_transaction(mfile* mf, struct i2c_rdwr_ioctl_data* transaction)
+{
+    int completed_messages = ioctl(mf->fd, I2C_RDWR, transaction);
+
+    if (completed_messages == (int)transaction->nmsgs)
+    {
+        return 0;
+    }
+
+    if (completed_messages < 0)
+    {
+        DBG_PRINTF("I2C transaction failed: %s\n", strerror(errno));
+        return -1;
+    }
+
+    errno = EIO;
+    DBG_PRINTF("I2C transaction incomplete: completed %d of %u messages\n",
+               completed_messages,
+               transaction->nmsgs);
+    return -1;
+}
+
 int mtcr_i2c_mread4(mfile* mf, unsigned int offset, u_int32_t* value)
 {
-    int bytes_read = 4; /* Indicates success */
     struct i2c_rdwr_ioctl_data i2c_rdwr;
     struct i2c_msg i2c_msg[2];
     char maddr[4];
-    char data[4];
+    char data[4] = {0};
 
     i2c_msg[0].addr = mf->i2c_secondary;
     i2c_msg[0].flags = 0;
@@ -2639,35 +2660,34 @@ int mtcr_i2c_mread4(mfile* mf, unsigned int offset, u_int32_t* value)
         i2c_msg[0].buf = (unsigned char*)data;
         i2c_rdwr.nmsgs = 1;
     }
-    int int_rc = ioctl(mf->fd, I2C_RDWR, &i2c_rdwr);
 
-    if (int_rc < 0)
+    if (execute_i2c_transaction(mf, &i2c_rdwr))
     {
-        bytes_read = -1;
-        DBG_PRINTF("function: %s. I2C ioctl failed: %s\n", __FUNCTION__, strerror(errno));
+        return -1;
     }
+
     BYTES_TO_DWORD_BE(value, data);
 
-    DBG_PRINTF("mtcr_i2c_mread4: mf->i2c_secondary: 0x%x offset: 0x%x. value: 0x%x. bytes_read: %d\n", mf->i2c_secondary, offset, value, bytes_read);
+    DBG_PRINTF("mtcr_i2c_mread4: mf->i2c_secondary: 0x%x offset: 0x%x. value: 0x%x. bytes_read: 4\n",
+               mf->i2c_secondary,
+               offset,
+               *value);
 
-    return bytes_read;
+    return 4;
 }
 
 int mtcr_i2c_mwrite4(mfile* mf, unsigned int offset, u_int32_t value)
 {
-    int bytes_written = 4; /* Indicates success */
     struct i2c_rdwr_ioctl_data i2c_rdwr;
     struct i2c_msg i2c_msg[1];
-    unsigned char data[8]; /* Buffer for I2C data */
-
-    memset(data, 0, sizeof(data));
+    unsigned char data[8] = {0};
+    u_int32_t big_endian_value = __cpu_to_be32(value);
 
     i2c_msg[0].addr = mf->i2c_secondary; /* Device address */
     i2c_msg[0].flags = 0;                /* Write operation */
     i2c_msg[0].buf = data;               /* Pointer to the data buffer */
 
-    value = __cpu_to_be32(value);
-    int len = prepare_i2c_data(data, mf->dtype, offset, &value, sizeof(value));
+    int len = prepare_i2c_data(data, mf->dtype, offset, &big_endian_value, sizeof(big_endian_value));
 
     i2c_msg[0].len = len;
 
@@ -2675,25 +2695,22 @@ int mtcr_i2c_mwrite4(mfile* mf, unsigned int offset, u_int32_t value)
     i2c_rdwr.msgs = i2c_msg;
     i2c_rdwr.nmsgs = 1;
 
-    int int_rc = ioctl(mf->fd, I2C_RDWR, &i2c_rdwr);
-
-    if (int_rc < 0)
+    if (execute_i2c_transaction(mf, &i2c_rdwr))
     {
-        bytes_written = -1;
-        DBG_PRINTF("function: %s. I2C ioctl failed: %s\n", __FUNCTION__, strerror(errno));
-        return bytes_written;
+        return -1;
     }
 
-    DBG_PRINTF("mtcr_i2c_mwrite4: mf->i2c_secondary: 0x%x offset: 0x%x. value: 0x%x. bytes_written: %d\n", mf->i2c_secondary, offset, value, bytes_written);
+    DBG_PRINTF("mtcr_i2c_mwrite4: mf->i2c_secondary: 0x%x offset: 0x%x. value: 0x%x. bytes_written: 4\n",
+               mf->i2c_secondary,
+               offset,
+               value);
 
-    return bytes_written;
+    return 4;
 }
 
 /* reads up to 64 bytes */
 int mread_i2cblock(mfile* mf, unsigned char i2c_secondary, u_int8_t addr_width, unsigned int offset, void* data, int length)
 {
-    int rc;
-
     if (length > MAX_TRANS_SIZE)
     {
         errno = EINVAL;
@@ -2729,20 +2746,18 @@ int mread_i2cblock(mfile* mf, unsigned char i2c_secondary, u_int8_t addr_width, 
         i2c_msg[0].buf = (unsigned char*)data;
         i2c_rdwr.nmsgs = 1;
     }
-    rc = ioctl(mf->fd, I2C_RDWR, &i2c_rdwr);
-    if (rc < 0)
+
+    if (execute_i2c_transaction(mf, &i2c_rdwr))
     {
-        DBG_PRINTF("function: %s. I2C ioctl failed: %s\n", __FUNCTION__, strerror(errno));
-        return rc;
+        return -1;
     }
+
     return length;
 }
 
 /* writes up to 64 bytes */
 int mwrite_i2cblock(mfile* mf, unsigned char i2c_secondary, u_int8_t addr_width, unsigned int offset, void* data, int length)
 {
-    int rc;
-
     if (length > MAX_TRANS_SIZE)
     {
         errno = EINVAL;
@@ -2768,11 +2783,9 @@ int mwrite_i2cblock(mfile* mf, unsigned char i2c_secondary, u_int8_t addr_width,
 
     i2c_msg[0].len = prepare_i2c_data(buf, mf->dtype, offset, data, length);
 
-    rc = ioctl(mf->fd, I2C_RDWR, &i2c_rdwr);
-    if (rc < 0)
+    if (execute_i2c_transaction(mf, &i2c_rdwr))
     {
-        DBG_PRINTF("function: %s. I2C ioctl failed: %s\n", __FUNCTION__, strerror(errno));
-        return rc;
+        return -1;
     }
 
     return length;
