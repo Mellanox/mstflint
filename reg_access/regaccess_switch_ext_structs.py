@@ -33,7 +33,7 @@
 
 
 ###############################################################################
-#    This file was generated at "2026-06-23 09:04:09"
+#    This file was generated at "2026-08-10 11:37:35"
 #    by:
 #      > /home/jenkins/agent/workspace/automatic_prm_update/scripts/prm_update.py --project switch
 ###############################################################################
@@ -49,8 +49,10 @@ import mtcr
 class MMAM_EXT(ctypes.Structure):
     _fields_ = [
         ("module", ctypes.c_uint8),
+        ("module_msb", ctypes.c_uint8),
         ("ga", ctypes.c_uint8),
         ("local_module", ctypes.c_uint8),
+        ("local_module_msb", ctypes.c_uint8),
         ("module_type", ctypes.c_uint8)
     ]
 
@@ -64,10 +66,7 @@ class MGPIR_HW_INFO_EXT(ctypes.Structure):
         ("num_of_modules", ctypes.c_uint8),
         ("num_of_slots", ctypes.c_uint8),
         ("max_modules_per_slot", ctypes.c_uint8),
-        ("num_of_resource_modules", ctypes.c_uint8),
-        ("total_num_of_module_i2c_bus", ctypes.c_uint8),
-        ("num_lanes_per_sub_module", ctypes.c_uint8),
-        ("max_sub_modules_index", ctypes.c_uint8)
+        ("num_of_resource_modules", ctypes.c_uint8)
     ]
 
 class MGPIR_EXT(ctypes.Structure):
@@ -98,17 +97,6 @@ class MPIR_EXT(ctypes.Structure):
         ("slot_cap", ctypes.c_uint8)
     ]
 
-class MDDQ_SLOT_INFO_EXT(ctypes.Structure):
-    _fields_ = [
-        ("active", ctypes.c_uint8),
-        ("lc_ready", ctypes.c_uint8),
-        ("sr_valid", ctypes.c_uint8),
-        ("provisioned", ctypes.c_uint8),
-        ("ini_file_version", ctypes.c_uint16),
-        ("hw_revision", ctypes.c_uint16),
-        ("card_type", ctypes.c_uint8)
-    ]
-
 class MDDQ_DEVICE_INFO_EXT(ctypes.Structure):
     _fields_ = [
         ("device_index", ctypes.c_uint8),
@@ -126,6 +114,17 @@ class MDDQ_DEVICE_INFO_EXT(ctypes.Structure):
         ("device_type_name", ctypes.c_uint8 * 8)
     ]
 
+class MDDQ_SLOT_INFO_EXT(ctypes.Structure):
+    _fields_ = [
+        ("active", ctypes.c_uint8),
+        ("lc_ready", ctypes.c_uint8),
+        ("sr_valid", ctypes.c_uint8),
+        ("provisioned", ctypes.c_uint8),
+        ("ini_file_version", ctypes.c_uint16),
+        ("hw_revision", ctypes.c_uint16),
+        ("card_type", ctypes.c_uint8)
+    ]
+
 class MDDQ_SLOT_NAME_EXT(ctypes.Structure):
     _fields_ = [
         ("slot_ascii_name", ctypes.c_uint8 * 20)
@@ -133,8 +132,8 @@ class MDDQ_SLOT_NAME_EXT(ctypes.Structure):
 
 class MDDQ_DATA_AUTO_EXT(ctypes.Union):
     _fields_ = [
-        ("mddq_slot_info_ext", MDDQ_SLOT_INFO_EXT),
         ("mddq_device_info_ext", MDDQ_DEVICE_INFO_EXT),
+        ("mddq_slot_info_ext", MDDQ_SLOT_INFO_EXT),
         ("mddq_slot_name_ext", MDDQ_SLOT_NAME_EXT)
     ]
 
