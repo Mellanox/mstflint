@@ -47,6 +47,7 @@ Env:
 
 from __future__ import print_function
 import os
+import socket
 import platform
 import re
 import shutil
@@ -904,7 +905,11 @@ def main():
         root = os.environ.get("SDKV_TMP_ROOT", "/data/tmp")
         if not (os.path.isdir(root) and os.access(root, os.W_OK)):
             root = os.path.expanduser("~")
-        workdir = os.path.join(root, "sdkv_source_pkg_test")
+        # Host+pid namespaced: the fallback root is $HOME, one NFS export
+        # shared by the whole fleet, so a fixed name lets two machines running
+        # this suite in parallel rmtree each other's tree mid-build.
+        workdir = os.path.join(root, "sdkv_source_pkg_test_{}_{}".format(
+            socket.gethostname().split(".")[0], os.getpid()))
     if os.path.isdir(workdir):
         shutil.rmtree(workdir)
     os.makedirs(workdir)

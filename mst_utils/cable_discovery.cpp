@@ -13,10 +13,14 @@
 #include "dev_mgt/tools_dev_types.h"
 #include "reg_access/reg_access.h"
 #include "tools_layouts/reg_access_hca_layouts.h"
+#include "mft_utils/mft_sig_handler.h"
 
 
 const std::string TOOL_NAME = "mstcable_discovery";
 const std::string MSTFLINT_DEV_DIR = "/dev/mstflint/";
+
+/* mft_signal_set_msg() takes a non-const pointer. */
+static char INTERRUPT_MSG[] = "\nInterrupted, Exiting...\n";
 
 int checkModule(mfile* mf, u_int32_t localPort)
 {
@@ -82,6 +86,12 @@ int main(int argc, char* argv[])
         return 1;
     }
 
+    /* The handler only raises a flag, which lets the in-flight access run to
+     * its cleanup and drop the semaphore; we then stop at the next loop boundary,
+     * where no semaphore is held. */
+    mft_signal_set_msg(INTERRUPT_MSG);
+    mft_signal_set_handling(1);
+
     devs = mdevices_info_v(MDEVS_TAVOR, &device_count, 1);
 
     if (!device_count || !devs)
@@ -91,9 +101,11 @@ int main(int argc, char* argv[])
         {
             free(devs);
         }
+        mft_restore_and_raise();
+        return 0;
     }
 
-    for (int i = 0; i < device_count; i++)
+    for (int i = 0; i < device_count && !mft_signal_is_fired(); i++)
     {
         mfile* mf = mopen_adv(devs[i].dev_name, (MType)(MST_DEFAULT | MST_CABLE));
         if (!mf)
@@ -139,7 +151,7 @@ int main(int argc, char* argv[])
         else if (dm_dev_is_switch(devid_type) && !dm_is_gpu(devid_type))
         {
             num_ports = dm_get_hw_ports_num(devid_type);
-            for (int port = 0; port < num_ports; port++)
+            for (int port = 0; port < num_ports && !mft_signal_is_fired(); port++)
             {
                 std::string cable_name = std::string(devs[i].dev_name) + "_" + CABLE_DEVICE_STR + std::to_string(port);
                 mfile     * cable_mf = mopen_adv(cable_name.c_str(), (MType)(MST_DEFAULT | MST_CABLE));
@@ -159,14 +171,24 @@ int main(int argc, char* argv[])
         mclose(mf);
     }
 
-    if (cable_count == 0)
+    free(devs);
+
+    if (mft_signal_is_fired())
+    {
+        std::cout << "Interrupted after adding " << cable_count << " NVIDIA cable devices." << std::endl;
+    }
+    else if (cable_count == 0)
     {
         std::cout << "No supported NVIDIA cables were found." << std::endl;
-    } 
+    }
     else
     {
         std::cout << "Added " << cable_count << " NVIDIA cable devices." << std::endl;
     }
+
+    /* Restores the previous handlers, and - if a signal did fire - re-raises it so
+     * the shell sees the tool as interrupted rather than as a clean exit. */
+    mft_restore_and_raise();
 
     return 0;
 }

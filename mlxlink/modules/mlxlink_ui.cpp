@@ -137,6 +137,7 @@ void MlxlinkUi::printSynopsisQueries()
     MlxlinkRecord::printFlagLine(DEVICE_DATA_FLAG_SHORT, DEVICE_DATA_FLAG, "", "General Device Info");
     MlxlinkRecord::printFlagLine(BER_MONITOR_INFO_FLAG_SHORT, BER_MONITOR_INFO_FLAG, "",
                                  "Show BER Monitor Info (not supported for HCA)");
+    MlxlinkRecord::printFlagLine(PHY_INFO_FLAG_SHORT, PHY_INFO_FLAG, "", "Show PHY Info");
     MlxlinkRecord::printFlagLine(PEPC_SHOW_FLAG_SHORT, PEPC_SHOW_FLAG, "",
                                  "Show External PHY Info (for Ethernet switches only)");
     MlxlinkRecord::printFlagLineWithAcronym(MULTI_PORT_INFO_FLAG_SHORT, MULTI_PORT_INFO_FLAG,
@@ -1369,6 +1370,7 @@ void MlxlinkUi::initCmdParser()
     AddOptions(PPCNT_CLEAR_FLAG, PPCNT_CLEAR_FLAG_SHORT, "", "Clear PPCNT Counters");
     AddOptions(DEVICE_DATA_FLAG, DEVICE_DATA_FLAG_SHORT, "", "Device Info");
     AddOptions(BER_MONITOR_INFO_FLAG, BER_MONITOR_INFO_FLAG_SHORT, "", "Show BER Monitor Info");
+    AddOptions(PHY_INFO_FLAG, PHY_INFO_FLAG_SHORT, "", "Show PHY Info");
     AddOptions(PEPC_SHOW_FLAG, PEPC_SHOW_FLAG_SHORT, "", "Show External PHY Info");
     AddOptions(PRINT_JSON_OUTPUT_FLAG, PRINT_JSON_OUTPUT_FLAG_SHORT, "", "Print the output in json format");
     AddOptions(MULTI_PORT_INFO_FLAG, MULTI_PORT_INFO_FLAG_SHORT, "", "Show multi ports info table");
@@ -1574,6 +1576,9 @@ void MlxlinkUi::commandsCaller()
                 break;
             case SHOW_BER_MONITOR:
                 _mlxlinkCommander->showBerMonitorInfo();
+                break;
+            case SHOW_PHY_INFO:
+                _mlxlinkCommander->showPhyInfo();
                 break;
             case SHOW_EXTERNAL_PHY:
                 _mlxlinkCommander->showExternalPhy();
@@ -2248,6 +2253,11 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     else if (name == BER_MONITOR_INFO_FLAG)
     {
         addCmd(SHOW_BER_MONITOR);
+        return PARSE_OK;
+    }
+    else if (name == PHY_INFO_FLAG)
+    {
+        addCmd(SHOW_PHY_INFO);
         return PARSE_OK;
     }
     else if (name == PEPC_SHOW_FLAG)
