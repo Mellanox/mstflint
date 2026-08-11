@@ -833,6 +833,7 @@ enum
 #define DEVID_OFFSET 0xf0014
 #define PCICONF_ADDR_OFF 0x58
 #define PCICONF_DATA_OFF 0x5c
+#define PCICONF_ADDR_NON_POSTED_MASK 0x80000000
 
 int mtcr_driver_mread4(mfile* mf, unsigned int offset, u_int32_t* value)
 {
@@ -2012,6 +2013,11 @@ int mtcr_pciconf_mread4_old(mfile* mf, unsigned int offset, u_int32_t* value)
     {
         new_offset |= 0x1;
     }
+
+    /* Mark the access non-posted so the device acknowledges it before responding on the data register.
+     * A posted read lets the data register be sampled before the device fetched the value, returning stale data. */
+    new_offset |= PCICONF_ADDR_NON_POSTED_MASK;
+
     /* adrianc: PCI registers always in le32 */
     offset = __cpu_to_le32(new_offset);
     rc = _flock_int(ctx->fdlock, LOCK_EX);
@@ -2047,6 +2053,9 @@ pciconf_read_cleanup:
     return rc;
 }
 
+/* Writes stay posted, unlike the non-posted read in mtcr_pciconf_mread4_old(): this gateway exposes no completion
+ * status, so an acknowledgement would have no consumer, while a device that never acknowledges stalls the PCI
+ * configuration write into a completion timeout - which is fatal to the host on the recovery flows this path serves. */
 int mtcr_pciconf_mwrite4_old(mfile* mf, unsigned int offset, u_int32_t value)
 {
     ul_ctx_t* ctx = mf->ul_ctx;
