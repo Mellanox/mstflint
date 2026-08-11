@@ -629,6 +629,35 @@ if test "x$enable_mstflint_sdk" = "xyes"; then
         AC_CONFIG_FILES(mft_core/mft_core_utils/load_shared_library/Makefile)
     fi
 fi
+
+# libmstflint_sdk.so is installed into a private directory ($(libdir)/mstflint/sdk)
+# that no dynamic linker searches by default, so consumers that link it by soname
+# only (e.g. libdoca_mgmt) cannot resolve it. Register that directory with
+# ldconfig by installing an ld.so.conf.d snippet naming it.
+#
+# The directory is NOT derived from $(sysconfdir): ldconfig reads /etc/ld.so.conf.d
+# unconditionally, so a relocated install (--prefix=/opt/...) must still drop the
+# snippet under /etc. Override with --with-ldsoconfdir=DIR, or skip the snippet
+# altogether with --without-ldsoconfdir.
+AC_MSG_CHECKING(--with-ldsoconfdir argument)
+AC_ARG_WITH(ldsoconfdir,
+    AS_HELP_STRING([--with-ldsoconfdir=DIR],
+        [directory for the mstflint SDK ld.so.conf.d snippet @<:@default=/etc/ld.so.conf.d@:>@; --without-ldsoconfdir installs no snippet]),
+    [with_ldsoconfdir="$withval"],
+    [with_ldsoconfdir="/etc/ld.so.conf.d"]
+)
+if test "x$with_ldsoconfdir" = "xyes"; then
+    with_ldsoconfdir="/etc/ld.so.conf.d"
+fi
+AC_MSG_RESULT($with_ldsoconfdir)
+LDSOCONFDIR=""
+if test "x$with_ldsoconfdir" != "xno"; then
+    LDSOCONFDIR="$with_ldsoconfdir"
+fi
+AC_SUBST(LDSOCONFDIR)
+AM_CONDITIONAL(INSTALL_SDK_LDSOCONF,
+    [ test "x$enable_mstflint_sdk" = "xyes" && test "x$with_ldsoconfdir" != "xno" ])
+
 AC_SUBST(MSTFLINT_SDK_DIR)
 AC_SUBST(MTCR_SDK_WHOLE_ARCHIVE)
 AC_SUBST(MSTREG_SDK_WHOLE_ARCHIVE)

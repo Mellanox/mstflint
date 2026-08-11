@@ -1,0 +1,8 @@
+# Refresh the ld.so cache after (de)installing, so the ld.so.conf.d snippet this
+# package ships for $libdir/mstflint/sdk takes effect. dh_makeshlibs would
+# normally add this, but it is a no-op here (see debian/rules).
+#
+# Unprefixed file name (not <package>.triggers) so it keeps working when the
+# binary package is renamed at build time (build_sdk.sh --deb-name); debhelper
+# accepts unprefixed files for a single-binary source package.
+activate-noawait ldconfig
