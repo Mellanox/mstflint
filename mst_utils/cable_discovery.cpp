@@ -6,6 +6,8 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/stat.h>
+#include <dirent.h>
+#include <unistd.h>
 #include <iostream>
 #include <stdexcept>
 #include "include/mtcr_ul/mtcr.h"
@@ -82,6 +84,24 @@ void CreateDirectoryIfNotExist(const std::string& poNewDirectory)
     }
 }
 
+void ClearCableDeviceFiles()
+{
+    DIR* dir = opendir(MSTFLINT_DEV_DIR.c_str());
+    if (!dir) {
+        return;
+    }
+
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != NULL) {
+        if (strstr(entry->d_name, "cable_") == NULL) {
+            continue;
+        }
+        std::string path = MSTFLINT_DEV_DIR + entry->d_name;
+        unlink(path.c_str());
+    }
+    closedir(dir);
+}
+
 void CreateCableDeviceFile(const std::string& cable_name)
 {
     CreateDirectoryIfNotExist(MSTFLINT_DEV_DIR);
@@ -121,6 +141,9 @@ int main(int argc, char* argv[])
      * where no semaphore is held. */
     mft_signal_set_msg(INTERRUPT_MSG);
     mft_signal_set_handling(1);
+
+    /* Refresh inventory: drop prior stubs before recreating the current set. */
+    ClearCableDeviceFiles();
 
     devs = mdevices_info_v(MDEVS_TAVOR, &device_count, 1);
 
