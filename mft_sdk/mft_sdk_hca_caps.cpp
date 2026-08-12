@@ -182,6 +182,12 @@ MstStatus
         setLastError(MST_ERROR_INVALID_ARGUMENT, "Capability map or value is not initialized");
         return MST_ERROR_INVALID_ARGUMENT;
     }
+    // Required, not symmetry: the instance is null until this runs, so calling
+    // this entry point first crashed. Also clears the stale error.
+    if (initHcaCapabilities() != MST_SUCCESS)
+    {
+        return _lastError.status;
+    }
     try
     {
         *capabilityValue = _hcaCapabilitiesSdkInstance->getCapabilityValue(capabilityMap, capabilityName);
@@ -200,6 +206,12 @@ MstStatus
     {
         setLastError(MST_ERROR_INVALID_ARGUMENT, "Capability map is not initialized");
         return MST_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Same null-instance crash as getCapabilityValue above.
+    if (initHcaCapabilities() != MST_SUCCESS)
+    {
+        return _lastError.status;
     }
 
     try

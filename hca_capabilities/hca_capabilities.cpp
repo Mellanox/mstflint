@@ -347,8 +347,23 @@ void HcaCapabilities::updateCapabilityMap(MstHcaCapabilityMap* capabilityMap,
 {
     strncpy(capabilityMap->capabilityType, capabilityType, sizeof(capabilityMap->capabilityType) - 1);
     capabilityMap->capabilityType[sizeof(capabilityMap->capabilityType) - 1] = '\0';
+    // Reuse the existing array on re-query; replacing the pointer leaks one
+    // array per call, delete[] here would double-free.
+    if (!capabilityMap->capabilities || capabilityMap->numberOfCapabilities != capabilities.size())
+    {
+        // () matters: POD, so `set`/`value` would otherwise be indeterminate.
+        capabilityMap->capabilities = new MstHcaCapability[capabilities.size()]();
+    }
+    else
+    {
+        // Clear write-back flags so a re-query doesn't inherit previous marks.
+        for (unsigned int i = 0; i < capabilityMap->numberOfCapabilities; i++)
+        {
+            capabilityMap->capabilities[i].value = 0;
+            capabilityMap->capabilities[i].set = false;
+        }
+    }
     capabilityMap->numberOfCapabilities = capabilities.size();
-    capabilityMap->capabilities = new MstHcaCapability[capabilities.size()];
     std::map<std::string, uint32_t> capabilityIndexMap;
     for (unsigned int i = 0; i < capabilities.size(); i++)
     {
@@ -467,6 +482,12 @@ std::vector<std::string> HcaCapabilities::getCapabilityTypesList()
     std::vector<std::string> capabilityTypesList;
     for (auto field : _hcaCapabilitiesNode->nodeDesc->fields)
     {
+        // Skip union members with no op_mod (e.g. embedded_program_capabilities):
+        // querying one throws, so listing it would break iterate-and-query.
+        if (_capabilityTypesMap.find(field->name) == _capabilityTypesMap.end())
+        {
+            continue;
+        }
         capabilityTypesList.push_back(field->name);
     }
     return capabilityTypesList;
