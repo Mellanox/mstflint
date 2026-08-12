@@ -198,13 +198,56 @@ class PackagingSuite(object):
         return status != "FAIL"
 
     # -- steps ---------------------------------------------------------------
+    def _pkg_installed(self, p):
+        """Is the package installed right now?
+
+        The dpkg status must match EXACTLY. 'Status:.*installed' also matches
+        "purge ok not-installed" and "install ok half-installed", so a package
+        that had only ever been purged read back as present. That was harmless
+        while it only fed the leftovers report, but as the pre-erase gate it
+        makes wipe() "remove" a package that is not there and then call the
+        resulting no-op an erase failure. The name_only variant hits it every
+        run, because coexist_or_conflict purges the default-named package just
+        before restore_default.
+        """
+        if self.ctx.pkg == "rpm":
+            return _run("rpm -q {} >/dev/null 2>&1".format(p))[0] == 0
+        return _run("dpkg-query -W -f='${{Status}}' {} 2>/dev/null "
+                    "| grep -q '^install ok installed$'".format(p))[0] == 0
+
     def wipe(self, label="clean_slate"):
         c = self.ctx
+        # Erase only what is actually installed, and KEEP rc and output.
+        # "not installed" is the normal case for most of SDK_PKGS and must not
+        # be mistaken for an erase that was refused, so the old blanket
+        # `rpm -e ... 2>/dev/null` (rc and stderr both discarded) could not
+        # tell the two apart -- which is exactly why the one time it mattered
+        # the logs held no evidence of why.
+        erase_errors = []
         for p in SDK_PKGS:
+            if not self._pkg_installed(p):
+                continue
             if c.pkg == "rpm":
-                _run("sudo rpm -e {} 2>/dev/null".format(p))
+                rc, out = _run("sudo rpm -e {}".format(p))
             else:
-                _run("sudo dpkg --purge {} 2>/dev/null".format(p))
+                rc, out = _run("sudo dpkg --purge {}".format(p))
+            if rc != 0 or self._pkg_installed(p):
+                erase_errors.append("{}: rc={} {}".format(
+                    p, rc, " ".join(out.split())[:200] or "(no output)"))
+
+        # A refused erase must NOT be followed by rm -rf. Deleting the files
+        # while the package database still registers them leaves the host
+        # half-removed: a plain reinstall is then refused as "already
+        # installed" and every later SDK suite on that machine fails. Stop
+        # here, while it is still recoverable, and say what rpm/dpkg actually
+        # reported. (Seen on apps-132, 2026-08-12: the erase was blocked but
+        # the rm -rf ran anyway and took the install dirs with it.)
+        if erase_errors:
+            return self._record(
+                label, "FAIL",
+                "package erase failed - install dirs deliberately left intact "
+                "so the host stays recoverable: " + "; ".join(erase_errors))
+
         dirs = []
         for flavor_defaults in (_default_dirs("rpm"), _default_dirs("deb")):
             dirs += [os.path.join(flavor_defaults["libdir"], "mstflint")]
@@ -216,12 +259,7 @@ class PackagingSuite(object):
         _ldconfig()
 
         leftovers = [d for d in dirs if os.path.exists(d)]
-        pkgs_left = []
-        for p in SDK_PKGS:
-            probe = "rpm -q {}".format(p) if c.pkg == "rpm" \
-                else "dpkg -s {} 2>/dev/null | grep -q 'Status:.*installed'".format(p)
-            if _run(probe)[0] == 0:
-                pkgs_left.append(p)
+        pkgs_left = [p for p in SDK_PKGS if self._pkg_installed(p)]
         if leftovers or pkgs_left:
             return self._record(label, "FAIL",
                                 "leftovers: {} {}".format(leftovers, pkgs_left))
@@ -430,15 +468,28 @@ class PackagingSuite(object):
         if not c.default_pkg_file:
             return self._record("restore_default", "SKIP",
                                 "default package not in cache")
+        # --replacepkgs/--force-confnew so this can still heal a host whose
+        # package database claims the package is present while its files are
+        # gone; without it rpm refuses with "already installed" and the machine
+        # stays broken for every later suite.
         if c.pkg == "rpm":
-            rc, out = _run("sudo rpm -Uvh --nodeps {}".format(c.default_pkg_file))
+            rc, out = _run("sudo rpm -Uvh --replacepkgs --nodeps {}".format(
+                c.default_pkg_file))
         else:
-            rc, out = _run("sudo dpkg -i {}".format(c.default_pkg_file))
+            rc, out = _run("sudo dpkg -i --force-confnew {}".format(c.default_pkg_file))
         d = os.path.join(_default_dirs(c.pkg)["libdir"], "mstflint", "sdk")
         _run("sudo ln -sf {0}/libmstflint_sdk.so {0}/libmft_sdk.so.1".format(d))
         _ldconfig()
-        ok = rc == 0 and os.path.exists(os.path.join(d, "libmstflint_sdk.so"))
-        return self._record("restore_default", "PASS" if ok else "FAIL")
+        so = os.path.join(d, "libmstflint_sdk.so")
+        ok = rc == 0 and os.path.exists(so)
+        # Always carry a detail: a bare FAIL here reads as an unexplained
+        # assertion when it is nearly always a cascade from the wipe above.
+        return self._record(
+            "restore_default", "PASS" if ok else "FAIL",
+            "{} reinstalled at {}".format(os.path.basename(c.default_pkg_file), d) if ok
+            else "reinstall rc={}, {} {} - host may need manual repair: {}".format(
+                rc, so, "missing" if not os.path.exists(so) else "present",
+                " ".join(out.split())[:200] or "(no output)"))
 
     # -- driver ---------------------------------------------------------------
     def run(self):

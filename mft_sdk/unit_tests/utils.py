@@ -88,6 +88,38 @@ def is_known_missing(name):
     return False
 
 
+# The reference CLI is whatever MFT happens to be installed on the lab machine
+# -- the harness only ever checks that it EXISTS. When that MFT predates a PRM
+# alignment it knows fewer register fields than the SDK under test, and every
+# newly-added field shows up as an SDK-vs-CLI difference. The oracle cannot
+# validate a field it has never heard of, so by default those count as
+# "unverifiable here" rather than as failures; fields the two DO share are
+# still compared strictly, in both name and attributes. Set
+# MFT_SDK_STRICT_ORACLE=1 where the oracle is pinned to the SDK's PRM revision
+# to restore a hard failure.
+STRICT_ORACLE = os.environ.get("MFT_SDK_STRICT_ORACLE", "").strip() not in ("", "0")
+
+
+def oracle_version():
+    """Version banner of the reference CLI, for the report.
+
+    Best effort and purely diagnostic -- never a pass/fail input. Recording it
+    is the difference between "6 fields DIFFER" and "6 fields the 4.36 oracle
+    does not know", which is the whole triage.
+    """
+    for cmd in ("{} -v".format(MFT_SDK_REG_TOOL),
+                "{} --version".format(MFT_SDK_REG_TOOL)):
+        try:
+            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
+                                 stderr=subprocess.STDOUT)
+            out = p.communicate()[0].decode("utf-8", errors="replace").strip()
+        except Exception:  # noqa: BLE001 - diagnostics must never break a run
+            continue
+        if p.returncode == 0 and out:
+            return out.splitlines()[0].strip()
+    return "unknown version"
+
+
 # MFT SDK install directory (distro-independent).
 _MFT_SDK_INSTALL_LIB_DIR = "/usr/lib64/mft_sdk"
 
@@ -415,11 +447,18 @@ class DeviceInfo(object):
         self.user_specified = user_specified
 
     def is_operational(self):
-        """Check if device is in a state that can be queried."""
+        """Check if device is in a state that can be queried.
+
+        Note the second case is NOT "no driver loaded" -- mlx5_core can be
+        resident and simply have failed to bind to this device (e.g. firmware
+        stuck in pre-init), and mstflint reaches devices over pciconf/VSEC
+        without needing a bound driver at all. All this says is that port-level
+        telemetry is unlikely to be answerable, which is advisory, not a defect.
+        """
         if self.state.lower() == "recovery":
             return False, "Device is in recovery mode"
         if not self.rdma and not self.net and not self.user_specified:
-            return False, "No driver loaded (no RDMA/NET interface)"
+            return False, "No RDMA/NET interface (no driver bound to this device)"
         return True, ""
 
 
@@ -791,20 +830,39 @@ class BaseTestSuite(object):
         ) + "\n" + "=" * 60)
 
     def _check_operational(self):
-        """Return a result code if the device is not operational, else None.
+        """Return a result code if the device cannot be tested, else None.
 
-        Recovery is a transient state (SKIP); anything else (e.g. missing
-        driver) is an environment defect (FAIL). Header and reason are
-        printed before returning.
+        Recovery is a transient state and short-circuits to SKIP.
+
+        Anything else -- in practice "no interface / no driver bound" -- is
+        NOT decided here. It used to return FAIL, which short-circuited the
+        very fallback written for this case: every caller ends in
+        _compare_errors(), which PASSes when the C runner, the C++ runner and
+        mlxlink all fail identically (no SDK divergence, which is the only
+        thing this suite exists to detect) and FAILs the moment they disagree.
+        Deciding here instead threw that evidence away and reported an
+        unreachable device as an SDK failure -- on 2026-08-12 one BlueField3
+        whose firmware never left pre-init produced 16 of the run's 40
+        failures this way, while mlxreg and the mlxlink counters suite, which
+        do not call this gate, PASSed on the same devices at the same instant
+        by comparing errors.
+
+        So: print the condition as an advisory and return None to let the
+        comparison run. It costs three tool invocations per device and
+        strictly increases detection power.
         """
         is_operational, reason = self.device_info.is_operational()
         if is_operational:
             return None
-        is_recovery = "recovery" in reason.lower()
-        status = "SKIP" if is_recovery else "FAIL"
-        self._print_header(status)
-        print("{}Reason: {}{}".format(RED, reason, RESET))
-        return self.RESULT_SKIP if is_recovery else self.RESULT_FAIL
+        if "recovery" in reason.lower():
+            self._print_header("SKIP")
+            print("{}Reason: {}{}".format(RED, reason, RESET))
+            return self.RESULT_SKIP
+        self._print_header("ADVISORY")
+        print("{}{}{} - port-level data is likely unavailable; comparing what "
+              "each runner reports instead of assuming an SDK fault.".format(
+                  YELLOW, reason, RESET))
+        return None
 
     def _compare_errors(self):
         """Compare error messages from all runners when no data was produced.

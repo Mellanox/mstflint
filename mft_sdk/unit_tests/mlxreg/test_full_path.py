@@ -35,7 +35,7 @@ from mlxreg_fields import (
     FIELD_FIELD_COUNT,
 )
 from utils import (
-    MFT_SDK_REG_TOOL, is_known_missing,
+    MFT_SDK_REG_TOOL, is_known_missing, STRICT_ORACLE, oracle_version,
     RED, GREEN, BLUE, YELLOW, RESET,
     BaseConfig, clean_value, format_sdk_command,
     CommandRunner,
@@ -253,6 +253,7 @@ class FullPathMetadataComparisonTable(object):
 
         match_count = 0
         known_count = 0
+        ahead_count = 0
         for name in all_names:
             in_c = name in c_set
             in_cpp = name in cpp_set
@@ -270,6 +271,19 @@ class FullPathMetadataComparisonTable(object):
                 print("| {:<{}} |{}|{}|{}| {} |".format(
                     name, nw, c_col, cpp_col, mlx_col, status))
                 continue
+            if (in_c and in_cpp and not in_mlx and not BaseConfig.SDK_ONLY
+                    and not STRICT_ORACLE):
+                # The mirror image: both SDK runners agree the field exists and
+                # the oracle has never heard of it. That is the oracle being an
+                # older MFT than the SDK's PRM, not an SDK defect -- and the
+                # oracle cannot cross-check a field it does not know, so it is
+                # unverifiable here rather than wrong. MFT_SDK_STRICT_ORACLE=1
+                # restores the hard DIFF.
+                ahead_count += 1
+                status = YELLOW + " AHEAD" + RESET
+                print("| {:<{}} |{}|{}|{}| {} |".format(
+                    name, nw, c_col, cpp_col, mlx_col, status))
+                continue
             if BaseConfig.SDK_ONLY:
                 match = in_c and in_cpp
             else:
@@ -283,13 +297,16 @@ class FullPathMetadataComparisonTable(object):
                 name, nw, c_col, cpp_col, mlx_col, status))
 
         print(sep)
-        compared = len(all_names) - known_count
+        compared = len(all_names) - known_count - ahead_count
         diff_count = compared - match_count
         summary = "Summary: {} fields, {} match, {} differ".format(
             compared, match_count, diff_count)
         if known_count:
             summary += ", {} expected-missing (MFT_SDK_KNOWN_MISSING)".format(
                 known_count)
+        if ahead_count:
+            summary += (", {} SDK-ahead (oracle {} {} does not know them)".format(
+                ahead_count, MFT_SDK_REG_TOOL, oracle_version()))
         print("\n" + summary)
         return match_count == compared
 

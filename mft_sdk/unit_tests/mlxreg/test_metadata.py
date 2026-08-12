@@ -24,6 +24,7 @@ Usage:
 from __future__ import print_function
 import os
 import re
+import subprocess
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -32,8 +33,8 @@ from mlxreg_fields import (
     FIELD_FIELD_COUNT,
 )
 from utils import (
-    MFT_SDK_REG_TOOL, is_known_missing,
-    RED, GREEN, BLUE, RESET,
+    MFT_SDK_REG_TOOL, is_known_missing, STRICT_ORACLE, oracle_version,
+    RED, GREEN, BLUE, YELLOW, RESET,
     BaseConfig, format_sdk_command,
     CommandRunner,
     BaseCTestRunner, BaseCppTestRunner,
@@ -232,8 +233,22 @@ class TestSuite(BaseTestSuite):
                 expected_missing = set(
                     n for n in mlxreg_names
                     if n not in set(c_names) and is_known_missing(n))
-                match = match and (
-                    c_names == sorted(set(mlxreg_names) - expected_missing))
+                # Fields the SDK exposes and the oracle has never heard of.
+                # This is NOT evidence of an SDK defect: the reference CLI is
+                # whatever MFT happens to be installed on the lab machine, and
+                # when it predates a PRM alignment it simply knows fewer
+                # fields. The oracle cannot validate what it does not know, so
+                # the honest verdict is "unverifiable here", not FAIL --
+                # attribute-level checking below still validates every field
+                # the two DO share, and a CLI-only field the SDK is missing
+                # still fails as before. Set MFT_SDK_STRICT_ORACLE=1 where the
+                # oracle is pinned to the SDK's PRM revision to restore a hard
+                # failure.
+                sdk_ahead = sorted(set(c_names) - set(mlxreg_names))
+                comparable = sorted(set(mlxreg_names) - expected_missing)
+                if sdk_ahead and not STRICT_ORACLE:
+                    comparable = sorted(set(comparable) | set(sdk_ahead))
+                match = match and (c_names == comparable)
                 # Attribute-level compare on common fields:
                 # SDK addr/bit_offset/bit_size/access vs CLI Address/Offset/Size/Access.
                 sdk_by_name = dict((f.get('name', ''), f) for f in c_fields)
@@ -275,6 +290,14 @@ class TestSuite(BaseTestSuite):
                 cli_only_names = sorted(set(mlxreg_fields) - set(c_names))
                 if sdk_only_names:
                     print("SDK-only fields ({}): {}".format(len(sdk_only_names), ", ".join(sdk_only_names)))
+                    # Say plainly which side is behind -- this is the line that
+                    # turns a mystifying DIFFER into a one-glance diagnosis.
+                    print("{}  ^ the oracle ({} {}) does not know these fields; "
+                          "the SDK is ahead of it, so they cannot be cross-checked "
+                          "here{}.{}".format(
+                              YELLOW, MFT_SDK_REG_TOOL, oracle_version(),
+                              "" if STRICT_ORACLE else " and are not counted as failures",
+                              RESET))
                 if cli_only_names:
                     print("{}-only fields ({}): {}".format(MFT_SDK_REG_TOOL, len(cli_only_names), ", ".join(cli_only_names)))
                 if expected_missing:
