@@ -163,7 +163,7 @@ UNSUPPORTED_PSIDS_PER_DEV_ID = {
 }
 
 BLUEFIELD_DEVICES = ['BlueField2', 'BlueField3', 'BlueField4']
-PCIE_SWITCH_DEVICES_ALL = BLUEFIELD_DEVICES + ['ConnectX7', 'ConnectX8', 'ConnectX9', 'ConnectX10']
+PCIE_SWITCH_DEVICES_ALL = BLUEFIELD_DEVICES + ['ConnectX7', 'ConnectX8', 'ConnectX9', 'ConnectX10', 'ConnectX8-Pure-PCIe-Switch', 'ConnectX9-Pure-PCIe-Switch']
 
 IS_MSTFLINT = os.path.basename(__file__) == "mstfwreset.py"
 # TODO later remove mcra to the new class
@@ -1685,6 +1685,7 @@ def is_pcie_switch_device(devid, reg_access_obj=None):
     except Exception as e:
         logger.info('is_pcie_switch_device: Failed to get device dict: {0}'.format(e))
         return res
+    logger.debug(f"devDict['name']: {devDict['name']}")
     if devDict['name'] in PCIE_SWITCH_DEVICES_ALL:
         reg_access_obj = RegAccessObj if reg_access_obj is None else reg_access_obj
         logger.debug('is_pcie_switch_device: checking port type for device {0} with pcie index 0'.format(devDict['name']))
