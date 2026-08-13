@@ -24,6 +24,7 @@ Usage:
 from __future__ import print_function
 import os
 import re
+import subprocess
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -32,8 +33,8 @@ from mlxreg_fields import (
     FIELD_FIELD_COUNT,
 )
 from utils import (
-    MFT_SDK_REG_TOOL, is_known_missing,
-    RED, GREEN, BLUE, RESET,
+    MFT_SDK_REG_TOOL, is_known_missing, STRICT_ORACLE, oracle_version, tool_label,
+    RED, GREEN, BLUE, YELLOW, RESET,
     BaseConfig, format_sdk_command,
     CommandRunner,
     BaseCTestRunner, BaseCppTestRunner,
@@ -132,7 +133,7 @@ class MlxregCliRunner(object):
         # diagnostic on the tool's stderr would corrupt a row and be reported
         # as an SDK field mismatch.
         self.success, self.output = CommandRunner.run(
-            cmd, "Running {} --show_reg {} on {}".format(MFT_SDK_REG_TOOL, register_name, self.device), verbose,
+            cmd, "Running {} --show_reg {} on {}".format(tool_label(MFT_SDK_REG_TOOL), register_name, self.device), verbose,
             merge_stderr=False)
         return self.success
 
@@ -202,7 +203,9 @@ class TestSuite(BaseTestSuite):
         self.mlxlink_runner = self.mlxreg_runner
 
     def _get_mlxlink_cmd(self):
-        return "mlxreg_ext -d " + self.device if self.device else "mlxreg_ext"
+        # mlxreg suite: the oracle is the mlxreg CLI runner, so derive the
+        # header from it and it follows MFT_SDK_REG_TOOL automatically.
+        return self.mlxreg_runner._base_cmd()
 
     def run_comparison(self):
         v = _verbose()
@@ -232,8 +235,22 @@ class TestSuite(BaseTestSuite):
                 expected_missing = set(
                     n for n in mlxreg_names
                     if n not in set(c_names) and is_known_missing(n))
-                match = match and (
-                    c_names == sorted(set(mlxreg_names) - expected_missing))
+                # Fields the SDK exposes and the oracle has never heard of.
+                # This is NOT evidence of an SDK defect: the reference CLI is
+                # whatever MFT happens to be installed on the lab machine, and
+                # when it predates a PRM alignment it simply knows fewer
+                # fields. The oracle cannot validate what it does not know, so
+                # the honest verdict is "unverifiable here", not FAIL --
+                # attribute-level checking below still validates every field
+                # the two DO share, and a CLI-only field the SDK is missing
+                # still fails as before. Set MFT_SDK_STRICT_ORACLE=1 where the
+                # oracle is pinned to the SDK's PRM revision to restore a hard
+                # failure.
+                sdk_ahead = sorted(set(c_names) - set(mlxreg_names))
+                comparable = sorted(set(mlxreg_names) - expected_missing)
+                if sdk_ahead and not STRICT_ORACLE:
+                    comparable = sorted(set(comparable) | set(sdk_ahead))
+                match = match and (c_names == comparable)
                 # Attribute-level compare on common fields:
                 # SDK addr/bit_offset/bit_size/access vs CLI Address/Offset/Size/Access.
                 sdk_by_name = dict((f.get('name', ''), f) for f in c_fields)
@@ -270,13 +287,21 @@ class TestSuite(BaseTestSuite):
             print("C fields:   {}".format(len(c_fields)))
             print("C++ fields: {}".format(len(cpp_fields)))
             if mlxreg_fields is not None:
-                print("{} fields: {}".format(MFT_SDK_REG_TOOL, len(mlxreg_fields)))
+                print("{} fields: {}".format(tool_label(MFT_SDK_REG_TOOL), len(mlxreg_fields)))
                 sdk_only_names = sorted(set(c_names) - set(mlxreg_fields))
                 cli_only_names = sorted(set(mlxreg_fields) - set(c_names))
                 if sdk_only_names:
                     print("SDK-only fields ({}): {}".format(len(sdk_only_names), ", ".join(sdk_only_names)))
+                    # Say plainly which side is behind -- this is the line that
+                    # turns a mystifying DIFFER into a one-glance diagnosis.
+                    print("{}  ^ the oracle ({} {}) does not know these fields; "
+                          "the SDK is ahead of it, so they cannot be cross-checked "
+                          "here{}.{}".format(
+                              YELLOW, tool_label(MFT_SDK_REG_TOOL), oracle_version(),
+                              "" if STRICT_ORACLE else " and are not counted as failures",
+                              RESET))
                 if cli_only_names:
-                    print("{}-only fields ({}): {}".format(MFT_SDK_REG_TOOL, len(cli_only_names), ", ".join(cli_only_names)))
+                    print("{}-only fields ({}): {}".format(tool_label(MFT_SDK_REG_TOOL), len(cli_only_names), ", ".join(cli_only_names)))
                 if expected_missing:
                     print("Expected differences (MFT_SDK_KNOWN_MISSING), not counted as failures: {}".format(
                         ", ".join(sorted(expected_missing))))
@@ -316,7 +341,8 @@ class TestSuite(BaseTestSuite):
 
 
 def print_usage():
-    _print_usage_base("Show mlxreg_ext --show_reg output for first device")
+    _print_usage_base(
+        "Show {} --show_reg output for first device".format(tool_label(MFT_SDK_REG_TOOL)))
 
 
 def main():

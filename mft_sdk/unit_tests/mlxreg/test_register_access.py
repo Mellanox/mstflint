@@ -35,7 +35,7 @@ from mlxreg_fields import (
     FIELD_INDEXES,
 )
 from utils import (
-    MFT_SDK_REG_TOOL, is_known_missing,
+    MFT_SDK_REG_TOOL, tool_label, is_known_missing,
     RED, GREEN, BLUE, YELLOW, RESET,
     BaseConfig, clean_value, format_sdk_command,
     CommandRunner,
@@ -223,10 +223,13 @@ class RegisterGetComparisonTable(object):
             print("  No fields to compare")
             return True
 
+        oracle = tool_label(MFT_SDK_REG_TOOL)
         fw = max(max(len(k) for k in all_keys), 10) + 2
         cw = max(max(len(str(self.c_fields.get(k, "-"))) for k in all_keys), 3) + 2
         cpw = max(max(len(str(self.cpp_fields.get(k, "-"))) for k in all_keys), 3) + 2
-        mw = max(max(len(str(self.mlxreg_fields.get(k, "-"))) for k in all_keys), 6) + 2
+        # Floor the oracle column at its own header so the name always fits.
+        mw = max(max(len(str(self.mlxreg_fields.get(k, "-"))) for k in all_keys),
+                 len(oracle)) + 2
 
         print("")
         print("=" * 70)
@@ -241,13 +244,14 @@ class RegisterGetComparisonTable(object):
         if self.sdk_cmd:
             print("{}SDK command:    {}{}".format(BLUE, self.sdk_cmd, RESET))
         if self.mlxreg_cmd:
-            print("{}mlxreg_ext command: {}{}".format(BLUE, self.mlxreg_cmd, RESET))
+            print("{}{} command: {}{}".format(
+                BLUE, oracle, self.mlxreg_cmd, RESET))
         print("")
 
         sep = "+-{}-+-{}-+-{}-+-{}-+---------+".format("-" * fw, "-" * cw, "-" * cpw, "-" * mw)
         print(sep)
         print("| {:<{}} | {:<{}} | {:<{}} | {:<{}} | Match   |".format(
-            "Field", fw, "C", cw, "C++", cpw, "mlxreg_ext", mw))
+            "Field", fw, "C", cw, "C++", cpw, oracle, mw))
         print(sep)
 
         match_count = 0
@@ -356,14 +360,16 @@ class MlxregCliRunner(object):
             cmd += " --indexes " + ",".join(idx_parts)
         cmd = "echo '{}' | sudo su".format(cmd)
         self.success, self.output = CommandRunner.run(
-            cmd, "Running mlxreg_ext --get {} on {}".format(register_name, self.device), verbose)
+            cmd, "Running {} --get {} on {}".format(
+                MFT_SDK_REG_TOOL, register_name, self.device), verbose)
         return self.success
 
     def run_raw_get(self, reg_id, reg_len, verbose=True):
         cmd = self._base_cmd() + " --reg_id {} --reg_len {} --get".format(reg_id, reg_len)
         cmd = "echo '{}' | sudo su".format(cmd)
         self.success, self.output = CommandRunner.run(
-            cmd, "Running mlxreg_ext raw GET {} on {}".format(reg_id, self.device), verbose)
+            cmd, "Running {} raw GET {} on {}".format(
+                MFT_SDK_REG_TOOL, reg_id, self.device), verbose)
         return self.success
 
     def get_register_get(self):
@@ -392,7 +398,9 @@ class TestSuite(BaseTestSuite):
         self.mlxlink_runner = self.mlxreg_runner
 
     def _get_mlxlink_cmd(self):
-        return "mlxreg_ext -d " + self.device if self.device else "mlxreg_ext"
+        # mlxreg suite: the oracle is the mlxreg CLI runner, so derive the
+        # header from it and it follows MFT_SDK_REG_TOOL automatically.
+        return self.mlxreg_runner._base_cmd()
 
     def _handle_all_empty(self, reg_name, mlxreg_cmd):
         if BaseConfig.SDK_ONLY:
@@ -400,7 +408,8 @@ class TestSuite(BaseTestSuite):
             return True
         cli_error = self.mlxreg_runner.get_error()
         if not self.mlxreg_runner.success and cli_error:
-            print("\n{}Both SDK and mlxreg_ext failed consistently — not an SDK bug{}".format(GREEN, RESET))
+            print("\n{}Both SDK and {} failed consistently — not an SDK bug{}".format(
+                GREEN, tool_label(MFT_SDK_REG_TOOL), RESET))
             return True
         print("\n{}Register GET {}: all sources returned empty{}".format(RED, reg_name, RESET))
         return False
@@ -423,7 +432,8 @@ class TestSuite(BaseTestSuite):
             sdk_cmd = format_sdk_command(
                 binary_path=[Config.C_TEST_BIN, Config.CPP_TEST_BIN],
                 keywords=["InitRegisterMap", "SendPRMReg", "FreePrmRegisterMap"])
-            mlxreg_cmd = "mlxreg_ext -d {} --reg_name {} --get".format(self.device, reg_name)
+            mlxreg_cmd = "{} --reg_name {} --get".format(
+                self.mlxreg_runner._base_cmd(), reg_name)
             volatile = Config.VOLATILE_FIELDS.get(reg_name, set())
             if c_fields or cpp_fields or mlxreg_fields:
                 results["Register GET ({})".format(reg_name)] = RegisterGetComparisonTable(
@@ -442,8 +452,8 @@ class TestSuite(BaseTestSuite):
                 binary_path=[Config.C_TEST_BIN, Config.CPP_TEST_BIN],
                 keywords=["InitRegisterMap", "SetPRMRegister", "SendPRMReg", "FreePrmRegisterMap"])
             idx_str = ",".join("{}={}".format(k, vl) for k, vl in indexes.items())
-            mlxreg_cmd = "mlxreg_ext -d {} --reg_name {} --get --indexes {}".format(
-                self.device, reg_name, idx_str)
+            mlxreg_cmd = "{} --reg_name {} --get --indexes {}".format(
+                self.mlxreg_runner._base_cmd(), reg_name, idx_str)
             volatile = Config.VOLATILE_FIELDS.get(reg_name, set())
             if c_fields or cpp_fields or mlxreg_fields:
                 results["Register GET ({})".format(reg_name)] = RegisterGetComparisonTable(
@@ -510,7 +520,8 @@ class TestSuite(BaseTestSuite):
 
 
 def print_usage():
-    _print_usage_base("Show mlxreg_ext --get output for first device")
+    _print_usage_base(
+        "Show {} --get output for first device".format(MFT_SDK_REG_TOOL))
 
 
 def main():

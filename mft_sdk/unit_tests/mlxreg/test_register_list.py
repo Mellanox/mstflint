@@ -32,7 +32,7 @@ from mlxreg_fields import (
     FIELD_TOTAL,
 )
 from utils import (
-    MFT_SDK_REG_TOOL, is_known_missing,
+    MFT_SDK_REG_TOOL, tool_label, is_known_missing,
     RED, GREEN, BLUE, YELLOW, RESET,
     BaseConfig, format_sdk_command,
     CommandRunner,
@@ -95,7 +95,14 @@ class MlxregCliParser(object):
             stripped = line.strip()
             if not stripped or stripped.startswith('-') or 'Supported' in stripped:
                 continue
-            if re.match(r'^[A-Z][A-Z0-9_]+$', stripped):
+            # Register names are NOT all-uppercase: the PRM DB also holds
+            # mixed-case ones (Loopback_Control_Register, PTASv2, SLTPv2,
+            # Resource_dump_registers). An [A-Z]-only pattern dropped those
+            # four from the CLI side and reported them as bogus "SDK only"
+            # rows on every device. Every other line of --show_regs output is
+            # multi-word ("Available Access Registers") or punctuation
+            # ("======"), so a single bare identifier is always a register.
+            if re.match(r'^[A-Za-z][A-Za-z0-9_]*$', stripped):
                 names.append(stripped)
         return sorted(names)
 
@@ -134,31 +141,40 @@ class RegisterListComparisonTable(object):
         sdk_cmd = format_sdk_command(
             binary_path=[Config.C_TEST_BIN, Config.CPP_TEST_BIN],
             keywords=["ShowAll", "NamesArray"])
-        mlxreg_cmd = "mlxreg_ext -d {} --show_regs".format(
-            self.device) if self.device else "mlxreg_ext --show_regs"
+        # Name the oracle after the CLI that actually ran (MFT_SDK_REG_TOOL).
+        oracle = tool_label(MFT_SDK_REG_TOOL)
+        mlxreg_cmd = "{} -d {} --show_regs".format(
+            MFT_SDK_REG_TOOL, self.device) if self.device \
+            else MFT_SDK_REG_TOOL + " --show_regs"
         print("{}SDK command:    {}{}".format(BLUE, sdk_cmd, RESET))
-        print("{}mlxreg_ext command: {}{}".format(BLUE, mlxreg_cmd, RESET))
+        print("{}{} command: {}{}".format(BLUE, oracle, mlxreg_cmd, RESET))
         print("")
 
-        print("SDK registers:        {}".format(len(self.sdk_names)))
-        print("mlxreg_ext registers: {}".format(len(self.mlxreg_names)))
-        print("{}Common:               {}{}".format(GREEN, len(common), RESET))
+        # Label column stays 22 wide for the default oracle -- the historical
+        # layout -- and grows only if a longer tool name needs it.
+        lw = max(22, len(oracle) + 12)
+        print("{:<{}}{}".format("SDK registers:", lw, len(self.sdk_names)))
+        print("{:<{}}{}".format(oracle + " registers:", lw, len(self.mlxreg_names)))
+        print("{}{:<{}}{}{}".format(GREEN, "Common:", lw, len(common), RESET))
         if sdk_only:
-            print("{}SDK only:             {}{}".format(YELLOW, len(sdk_only), RESET))
+            print("{}{:<{}}{}{}".format(YELLOW, "SDK only:", lw, len(sdk_only), RESET))
         if mlxreg_only:
-            print("{}mlxreg_ext only:      {}{}".format(YELLOW, len(mlxreg_only), RESET))
+            print("{}{:<{}}{}{}".format(
+                YELLOW, oracle + " only:", lw, len(mlxreg_only), RESET))
         print("")
 
         nw = max(len(n) for n in all_names) + 2 if all_names else 20
-        sep = "+-{}-+------+------------+---------+".format("-" * nw)
+        ow = max(len(oracle), 10)
+        sep = "+-{}-+------+-{}-+---------+".format("-" * nw, "-" * ow)
         print(sep)
-        print("| {:<{}} | SDK  | mlxreg_ext | Match   |".format("Register Name", nw))
+        print("| {:<{}} | SDK  | {:<{}} | Match   |".format(
+            "Register Name", nw, oracle, ow))
         print(sep)
         for name in all_names:
             in_sdk = name in self.sdk_names
             in_mlxreg = name in self.mlxreg_names
             sdk_col = " YES " if in_sdk else "  -  "
-            mlxreg_col = "    YES    " if in_mlxreg else "     -     "
+            mlxreg_col = "{:^{}}".format("YES" if in_mlxreg else "-", ow + 1)
             if in_sdk and in_mlxreg:
                 status = GREEN + "  OK  " + RESET
             elif in_sdk:
@@ -170,18 +186,21 @@ class RegisterListComparisonTable(object):
 
         if sdk_only:
             print("\n{}SDK only ({}):{} registers present in SDK "
-                  "but not in mlxreg_ext:".format(YELLOW, len(sdk_only), RESET))
+                  "but not in {}:".format(
+                      YELLOW, len(sdk_only), RESET, oracle))
             for name in sorted(sdk_only):
                 print("  {}".format(name))
         if mlxreg_only:
-            print("\n{}mlxreg_ext only ({}):{} registers present in "
-                  "mlxreg_ext but not in SDK:".format(YELLOW, len(mlxreg_only), RESET))
+            print("\n{}{} only ({}):{} registers present in "
+                  "{} but not in SDK:".format(
+                      YELLOW, oracle, len(mlxreg_only), RESET, oracle))
             for name in sorted(mlxreg_only):
                 print("  {}".format(name))
 
         print("\nSummary: {} total, {} common, {} SDK-only, "
-              "{} mlxreg_ext-only".format(
-                  len(all_names), len(common), len(sdk_only), len(mlxreg_only)))
+              "{} {}-only".format(
+                  len(all_names), len(common), len(sdk_only),
+                  len(mlxreg_only), oracle))
 
         if BaseConfig.SDK_ONLY:
             c_names = set(self._c_names) if self._c_names else set()
@@ -204,11 +223,12 @@ class RegisterListComparisonTable(object):
                   "as failures: {}{}".format(
                       YELLOW, ", ".join(sorted(expected_missing)), RESET))
         if unexpected_missing:
-            print("{}FAIL: mlxreg_ext has {} registers missing from SDK{}".format(
-                RED, len(unexpected_missing), RESET))
+            print("{}FAIL: {} has {} registers missing from SDK{}".format(
+                RED, oracle, len(unexpected_missing), RESET))
         elif sdk_only or expected_missing:
-            print("{}SDK covers all comparable mlxreg_ext registers "
-                  "(common registers validate correctly){}".format(YELLOW, RESET))
+            print("{}SDK covers all comparable {} registers "
+                  "(common registers validate correctly){}".format(
+                      YELLOW, oracle, RESET))
         else:
             print("{}All registers match{}".format(GREEN, RESET))
 
@@ -260,7 +280,8 @@ class MlxregCliRunner(object):
     def run_show_regs(self, verbose=True):
         cmd = "echo '{}' | sudo su".format(self._base_cmd() + " --show_regs")
         self.success, self.output = CommandRunner.run(
-            cmd, "Running mlxreg_ext --show_regs on {}".format(self.device), verbose)
+            cmd, "Running {} --show_regs on {}".format(
+                MFT_SDK_REG_TOOL, self.device), verbose)
         return self.success
 
     def get_register_list(self):
@@ -286,7 +307,9 @@ class TestSuite(BaseTestSuite):
         self.mlxlink_runner = self.mlxreg_runner
 
     def _get_mlxlink_cmd(self):
-        return "mlxreg_ext -d " + self.device if self.device else "mlxreg_ext"
+        # mlxreg suite: the oracle is the mlxreg CLI runner, so derive the
+        # header from it and it follows MFT_SDK_REG_TOOL automatically.
+        return self.mlxreg_runner._base_cmd()
 
     def run_comparison(self):
         v = _verbose()
@@ -321,7 +344,8 @@ class TestSuite(BaseTestSuite):
 
 
 def print_usage():
-    _print_usage_base("Show mlxreg_ext --show_regs output for first device")
+    _print_usage_base(
+        "Show {} --show_regs output for first device".format(MFT_SDK_REG_TOOL))
 
 
 def main():

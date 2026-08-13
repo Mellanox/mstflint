@@ -5,6 +5,9 @@
 *.so
 .deps/
 
+__pycache__/
+*.py[cod]
+
 Makefile
 Makefile.in
 

@@ -188,7 +188,7 @@ build_deb() {
 
     echo ">> staging isolated source tree as $name-$upstream"
     # ibdump/ stays: automake traces AC_CONFIG_FILES(ibdump/Makefile) statically,
-    # so excluding it silently breaks autogen.sh (see PACKAGING_TESTS.md).
+    # so excluding it silently breaks autogen.sh.
     tar -c \
         --exclude=.git --exclude='*.o' --exclude='*.lo' --exclude='*.la' \
         --exclude='*.a' --exclude=.libs --exclude=.deps \
