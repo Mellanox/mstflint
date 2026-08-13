@@ -35,7 +35,8 @@ from mlxreg_fields import (
     FIELD_FIELD_COUNT,
 )
 from utils import (
-    MFT_SDK_REG_TOOL, is_known_missing, STRICT_ORACLE, oracle_version,
+    MFT_SDK_REG_TOOL, tool_label, is_known_missing, STRICT_ORACLE,
+    oracle_version,
     RED, GREEN, BLUE, YELLOW, RESET,
     BaseConfig, clean_value, format_sdk_command,
     CommandRunner,
@@ -227,6 +228,11 @@ class FullPathMetadataComparisonTable(object):
             return True
 
         nw = max(len(n) for n in all_names) + 2
+        # Oracle column: name it after the CLI that actually ran, but never
+        # narrower than the historical width, so the table is byte-identical
+        # under the default mlxreg_ext.
+        oracle = tool_label(MFT_SDK_REG_TOOL)
+        ow = max(len(oracle), 10)
 
         print("")
         print("=" * 70)
@@ -241,14 +247,14 @@ class FullPathMetadataComparisonTable(object):
         if self.sdk_cmd:
             print("{}SDK command:    {}{}".format(BLUE, self.sdk_cmd, RESET))
         if self.mlxreg_cmd:
-            print("{}mlxreg_ext command: {}{}".format(
-                BLUE, self.mlxreg_cmd, RESET))
+            print("{}{} command: {}{}".format(
+                BLUE, oracle, self.mlxreg_cmd, RESET))
         print("")
 
-        sep = "+-{}-+------+------+------------+---------+".format("-" * nw)
+        sep = "+-{}-+------+------+-{}-+---------+".format("-" * nw, "-" * ow)
         print(sep)
-        print("| {:<{}} | C    | C++  | mlxreg_ext | Match   |".format(
-            "Field Name", nw))
+        print("| {:<{}} | C    | C++  | {:<{}} | Match   |".format(
+            "Field Name", nw, oracle, ow))
         print(sep)
 
         match_count = 0
@@ -260,7 +266,7 @@ class FullPathMetadataComparisonTable(object):
             in_mlx = name in mlxreg_set
             c_col = " YES " if in_c else "  -  "
             cpp_col = " YES " if in_cpp else "  -  "
-            mlx_col = "    YES    " if in_mlx else "     -     "
+            mlx_col = "{:^{}}".format("YES" if in_mlx else "-", ow + 1)
 
             if not in_c and not in_cpp and in_mlx and is_known_missing(name):
                 # CLI-only field listed in MFT_SDK_KNOWN_MISSING: an expected
@@ -338,10 +344,11 @@ class CredentialHandleDisambiguationTable(object):
 
         results = {}
         no_data = set()
+        cli_label = tool_label(MFT_SDK_REG_TOOL)
         for label, names in [("C", self.c_names), ("C++", self.cpp_names),
-                             ("mlxreg_ext", self.mlxreg_names)]:
+                             (cli_label, self.mlxreg_names)]:
             if not names:
-                if label == "mlxreg_ext":
+                if label == cli_label:
                     if BaseConfig.SDK_ONLY:
                         continue
                     # In compare mode an empty CLI result is a failure,
@@ -474,8 +481,9 @@ class TestSuite(BaseTestSuite):
         self.mlxlink_runner = self.mlxreg_runner
 
     def _get_mlxlink_cmd(self):
-        return "mlxreg_ext -d {} --show_reg --full_path".format(
-            self.device) if self.device else "mlxreg_ext --show_reg --full_path"
+        # Derived from the runner (so it follows MFT_SDK_REG_TOOL) plus the
+        # flags this suite adds per call.
+        return self.mlxreg_runner._base_cmd() + " --show_reg --full_path"
 
     def run_comparison(self):
         v = _verbose()
@@ -563,7 +571,8 @@ class TestSuite(BaseTestSuite):
 
 
 def print_usage():
-    _print_usage_base("Show mlxreg_ext --full_path output for first device")
+    _print_usage_base(
+        "Show {} --full_path output for first device".format(MFT_SDK_REG_TOOL))
 
 
 def main():

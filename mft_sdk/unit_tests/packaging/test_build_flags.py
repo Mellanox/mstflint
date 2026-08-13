@@ -61,7 +61,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from utils import (  # noqa: E402
     RED, GREEN, BLUE, RESET,
-    CommandRunner,
+    CommandRunner, MFT_SDK_REG_TOOL,
     _get_pci_devices_lspci, _normalize_bdf,
 )
 
@@ -72,8 +72,9 @@ GTEST_EXCLUSIONS = "-*I2c*:*NullDeviceToAllApis*:*TelemetryJson*:*FreeJsonString
 
 # Every package identity this suite may install or must clean away. The wipe
 # below removes exactly these + the SDK install dirs; it deliberately does NOT
-# touch the MFT CLI tools (mlxreg_ext — the compare reference) nor the seeded
-# harness binary under /usr/lib64/mft_sdk/tests (unowned file, survives rpm -e).
+# touch the CLI tools that serve as the compare reference (MFT's mlxreg_ext, or
+# mstflint's mstreg — both ship outside these packages) nor the seeded harness
+# binary under /usr/lib64/mft_sdk/tests (unowned file, survives rpm -e).
 SDK_PKGS = ["mft-sdk-int", "mft-sdk", "mstflint-sdk", "sdkv-mstflint-sdk"]
 
 VARIANTS = ("paths_only", "name_only", "both")
@@ -248,10 +249,17 @@ class PackagingSuite(object):
                 "package erase failed - install dirs deliberately left intact "
                 "so the host stays recoverable: " + "; ".join(erase_errors))
 
+        # The SDK's OWN subdirectory in each of these trees, never the parent:
+        # /usr/lib64/mstflint, /usr/include/mstflint and /usr/share/mstflint
+        # belong to the main mstflint package (its binaries' register database
+        # lives in /usr/share/mstflint/prm_dbs), which this suite neither
+        # installs nor erases. Deleting the parent took the CLI reference's
+        # database with it and left mstreg/mstlink broken for every later
+        # compare on that machine.
         dirs = []
         for flavor_defaults in (_default_dirs("rpm"), _default_dirs("deb")):
-            dirs += [os.path.join(flavor_defaults["libdir"], "mstflint")]
-        dirs += ["/usr/include/mstflint", "/usr/share/mstflint",
+            dirs += [os.path.join(flavor_defaults["libdir"], "mstflint", "sdk")]
+        dirs += ["/usr/include/mstflint/sdk", "/usr/share/mstflint/sdk",
                  "/usr/include/mft_sdk", "/usr/share/mft_sdk", "/etc/mft_sdk",
                  c.dirs["prefix"] if c.relocated else None]
         dirs = [d for d in dirs if d and d != "/usr"]
@@ -394,19 +402,34 @@ class PackagingSuite(object):
 
     def cli_compare(self):
         """Functional equivalence: mlxreg register-access compare, SDK (from
-        the variant install) vs the MFT CLI — reuses the sibling suite."""
+        the variant install) vs the reference CLI — reuses the sibling suite.
+
+        The gate must ask about the SAME tool the sibling suite will run, i.e.
+        MFT_SDK_REG_TOOL (mlxreg_ext by default, mstreg for the mstflint SDK).
+        Probing mlxreg_ext unconditionally would skip this test on a machine
+        that has only mstreg, and run it on one that has only mlxreg_ext while
+        the child then fails to find its actual oracle.
+
+        Either oracle comes from a package this suite does not touch (MFT's
+        mft, or mstflint's own CLI package), so the variant install/wipe
+        cannot move it and the configured path is used as-is.
+        """
         if self.sdk_only:
             return self._record("cli_compare", "SKIP", "--sdk-only mode")
         if not self.device:
             return self._record("cli_compare", "SKIP", "no device")
-        if _run("command -v mlxreg_ext")[0] != 0:
+        reg_tool = MFT_SDK_REG_TOOL
+        if _run("command -v {}".format(reg_tool))[0] != 0:
             return self._record("cli_compare", "SKIP",
-                                "mlxreg_ext (MFT CLI reference) not installed")
+                                "{} (CLI reference) not installed".format(reg_tool))
         script = os.path.join(os.path.dirname(os.path.dirname(
             os.path.abspath(__file__))), "mlxreg", "test_register_access.py")
+        # os.environ.copy(): MFT_SDK_REG_TOOL (and MFT_SDK_LINK_TOOL) reach the
+        # child, so the sibling suite compares against the same oracle.
         env = os.environ.copy()
         env["MFT_SDK_SO_DIR"] = self.ctx.sdk_libdir
         env["MFT_SDK_SO_TEST_BIN"] = self.harness
+        env["MFT_SDK_REG_TOOL"] = reg_tool
         try:
             p = subprocess.Popen(
                 [sys.executable, script, "--compare", "-d", self.device, "--so"],
@@ -419,7 +442,7 @@ class PackagingSuite(object):
             print(out)
         ok = rc == 0 and "ALL TESTS PASSED" in out
         return self._record("cli_compare", "PASS" if ok else "FAIL",
-                            "register_access vs mlxreg_ext, rc={}".format(rc))
+                            "register_access vs {}, rc={}".format(reg_tool, rc))
 
     def coexist_or_conflict(self):
         """Rename semantics vs the default package.

@@ -61,6 +61,21 @@ _SDK_SO_CANDIDATES = ("libmft_sdk_int.so.1", "libmft_sdk.so.1", "libmstflint_sdk
 # to compare against mstflint's CLI instead of MFT's mlxreg_ext.
 MFT_SDK_REG_TOOL = os.environ.get("MFT_SDK_REG_TOOL", "mlxreg_ext")
 
+# Same knob for the mlxlink compare flow. Override with MFT_SDK_LINK_TOOL
+# (bare name or absolute path) — e.g. mstlink to compare against mstflint's
+# CLI instead of MFT's mlxlink_ext. Defaults keep the MFT flow untouched.
+MFT_SDK_LINK_TOOL = os.environ.get("MFT_SDK_LINK_TOOL", "mlxlink_ext")
+
+
+def tool_label(tool):
+    """Short display name of a reference CLI, for report headers.
+
+    An override may be an absolute path; the reports only need the tool name,
+    and a full path would wreck the fixed-width comparison tables.
+    """
+    return os.path.basename(tool) if tool else tool
+
+
 # Known product divergences: register names, field leaf names, or dotted full
 # paths that the reference CLI knows but the SDK under test does not — e.g.
 # when validating the open-source mstflint SDK, whose bundled register DB lags
@@ -100,15 +115,19 @@ def is_known_missing(name):
 STRICT_ORACLE = os.environ.get("MFT_SDK_STRICT_ORACLE", "").strip() not in ("", "0")
 
 
-def oracle_version():
+def oracle_version(tool=None):
     """Version banner of the reference CLI, for the report.
 
     Best effort and purely diagnostic -- never a pass/fail input. Recording it
     is the difference between "6 fields DIFFER" and "6 fields the 4.36 oracle
     does not know", which is the whole triage.
+
+    `tool` defaults to the mlxreg oracle; pass MFT_SDK_LINK_TOOL to report the
+    mlxlink side instead.
     """
-    for cmd in ("{} -v".format(MFT_SDK_REG_TOOL),
-                "{} --version".format(MFT_SDK_REG_TOOL)):
+    tool = tool or MFT_SDK_REG_TOOL
+    for cmd in ("{} -v".format(tool),
+                "{} --version".format(tool)):
         try:
             p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
                                  stderr=subprocess.STDOUT)
@@ -271,9 +290,28 @@ def find_project_root():
 # =============================================================================
 
 
+_ANSI_RE = re.compile(r'\x1b\[[0-9;]*m')
+
+
+def strip_ansi(text):
+    """Remove ANSI SGR escapes from a captured tool output.
+
+    Per-value cleanup (clean_value) is not enough for every oracle: mlxlink
+    colours a value and emits the reset AFTER the newline
+    (mlxlink/modules/printutil/mlxlink_record.cpp), so the escape lands at the
+    START of the next line. mstflint's mstlink does exactly that, which makes
+    "\\x1b[0mPhysical state" the parsed key (never matches) and turns the blank
+    line that terminates a section into a non-empty "\\x1b[0m" (section never
+    ends). Measured on apps-180: OperationalInfoParser saw 1 of 7 fields.
+    Stripping the whole captured text at the seam fixes both, and is a no-op
+    for an oracle that emits no colour at all.
+    """
+    return _ANSI_RE.sub('', text)
+
+
 def clean_value(value):
     """Clean a value by stripping ANSI codes and normalizing whitespace."""
-    value = re.sub(r'\x1b\[[0-9;]*m', '', value)
+    value = strip_ansi(value)
     value = ' '.join(value.split())
     return value if value else "-"
 
@@ -502,11 +540,18 @@ class CommandRunner(object):
     """Handles execution of shell commands."""
 
     @staticmethod
-    def run(cmd, description, verbose=True, merge_stderr=True):
+    def run(cmd, description, verbose=True, merge_stderr=True,
+            strip_ansi_escapes=False):
         """Run a command and return (success, output).
 
         When BaseConfig.VERBOSE is True, output is streamed in real-time
         and errors are shown even for quiet (verbose=False) commands.
+
+        strip_ansi_escapes=True removes ANSI SGR codes from the RETURNED text
+        (the live stream stays coloured). Opt-in, not the default: mlxreg
+        output is byte-identical between the oracles today and must stay so,
+        and the C/C++ SDK runners are parsed as-is. See strip_ansi() for why
+        the mlxlink oracle needs it.
 
         merge_stderr=False keeps the command's stderr OUT of the returned
         text. Pass it whenever the output is going to be machine-parsed.
@@ -547,6 +592,8 @@ class CommandRunner(object):
                 stderr=subprocess.STDOUT if merge_stderr else subprocess.DEVNULL)
             output, _ = process.communicate()
             output = output.decode('utf-8', errors='replace')
+        if strip_ansi_escapes:
+            output = strip_ansi(output)
         success = process.returncode == 0
         if show_header and description:
             status = "[SUCCESS]" if success else "[ERROR]"
@@ -556,9 +603,10 @@ class CommandRunner(object):
         return success, output
 
     @staticmethod
-    def run_quiet(cmd):
+    def run_quiet(cmd, strip_ansi_escapes=False):
         """Run a command quietly and return (success, output)."""
-        return CommandRunner.run(cmd, "", verbose=False)
+        return CommandRunner.run(cmd, "", verbose=False,
+                                 strip_ansi_escapes=strip_ansi_escapes)
 
 
 # =============================================================================
@@ -750,7 +798,7 @@ class BaseMlxlinkRunner(TestRunner):
 
     def _base_cmd(self):
         """Build base mlxlink command (without extra flags)."""
-        base = "mlxlink_ext"
+        base = MFT_SDK_LINK_TOOL
         if self.device:
             base += " -d " + self.device
         return base
@@ -761,8 +809,12 @@ class BaseMlxlinkRunner(TestRunner):
 
     def run(self, verbose=True):
         cmd = "echo '{}' | sudo su".format(self._cmd())
+        # strip_ansi_escapes: this is the oracle output every mlxlink parser
+        # reads. mstlink resets colour after the newline, so the escapes leak
+        # onto the next line's key and onto the section-terminating blank line.
         self.success, self.output = CommandRunner.run(
-            cmd, "Running {} on {}".format(self.name, self.device), verbose)
+            cmd, "Running {} on {}".format(self.name, self.device), verbose,
+            strip_ansi_escapes=True)
         return self.success
 
     def get_error(self):
@@ -805,8 +857,14 @@ class BaseTestSuite(object):
         # Subclasses must set: self.c_runner, self.cpp_runner, self.mlxlink_runner
 
     def _get_mlxlink_cmd(self):
-        """Get the display mlxlink command. Override to add extra flags."""
-        return "mlxlink_ext -d " + self.device if self.device else "mlxlink_ext"
+        """Display command for the reference CLI, for the report header.
+
+        Derived from the runner that actually executes, so the header can
+        never name a tool the run did not use (it follows MFT_SDK_LINK_TOOL /
+        MFT_SDK_REG_TOOL for free). Override only to ADD semantics, e.g. flags
+        the runner appends per call rather than in _cmd().
+        """
+        return self.mlxlink_runner._cmd()
 
     def _print_header(self, status_type):
         """Print the standard header box for a device test."""

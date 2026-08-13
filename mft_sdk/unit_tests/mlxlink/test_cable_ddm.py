@@ -75,7 +75,7 @@ from mlxlink_fields import (
 )
 from utils import (
     RED, GREEN, BLUE, YELLOW, RESET,
-    BaseConfig, clean_value, format_sdk_command,
+    BaseConfig, clean_value, format_sdk_command, MFT_SDK_LINK_TOOL,
     CommandRunner,
     BaseCTestRunner, BaseCppTestRunner, BaseMlxlinkRunner,
     BaseTestSuite,
@@ -797,8 +797,9 @@ class ComparisonTable(object):
         sdk_cmd = format_sdk_command(
             binary_path=[Config.C_TEST_BIN, Config.CPP_TEST_BIN],
             keywords=["CableDDM"])
-        mlxlink_cmd = ("mlxlink_ext -d " + self.device + " " + Config.MLXLINK_DDM_ARGS
-                       if self.device else "mlxlink_ext")
+        mlxlink_cmd = (MFT_SDK_LINK_TOOL + " -d " + self.device + " " +
+                       Config.MLXLINK_DDM_ARGS
+                       if self.device else MFT_SDK_LINK_TOOL)
         print("{}SDK command:    {}{}".format(BLUE, sdk_cmd, RESET))
         print("{}mlxlink command: {}{}".format(BLUE, mlxlink_cmd, RESET))
 
@@ -948,7 +949,8 @@ class MlxlinkDDMRunner(BaseMlxlinkRunner):
         return CableDDMParser.parse_mlxlink(self.output)
 
     def print_ddm_only(self):
-        self.success, self.output = CommandRunner.run_quiet(self._cmd())
+        self.success, self.output = CommandRunner.run_quiet(
+            self._cmd(), strip_ansi_escapes=True)
         result = self.get_ddm()
         if result.supported:
             print(self.output)
@@ -970,10 +972,6 @@ class TestSuite(BaseTestSuite):
         self.c_runner = CTestRunner(self.device)
         self.cpp_runner = CppTestRunner(self.device)
         self.mlxlink_runner = MlxlinkDDMRunner(self.device)
-
-    def _get_mlxlink_cmd(self):
-        cmd = "mlxlink_ext -d " + self.device if self.device else "mlxlink_ext"
-        return cmd + " " + Config.MLXLINK_DDM_ARGS
 
     def run_comparison(self):
         result = self._check_operational()
