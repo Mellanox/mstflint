@@ -743,47 +743,42 @@ AC_SUBST(TOOLS_CRYPTO)
 AM_CONDITIONAL(ENABLE_OPENSSL, [test "x$enable_openssl" = "xyes"])
 AM_CONDITIONAL(ENABLE_CS, [test  "x$enable_cs" = "xyes" || test "x$enable_openssl" = "xyes"])
 
-AC_CHECK_HEADERS(iniparser.h, INIPARSER_SYSTEM_AVAILABLE="yes", INIPARSER_SYSTEM_AVAILABLE="no")
-if test "$INIPARSER_SYSTEM_AVAILABLE" = "yes"; then
-    AC_SEARCH_LIBS([iniparser_load], [iniparser],
-        [INIPARSER_SYSTEM_AVAILABLE="yes"],
-        [INIPARSER_SYSTEM_AVAILABLE="no"]
-    )
-fi
-
-if test "$INIPARSER_SYSTEM_AVAILABLE" = "no"; then
-    INIPARSER_CFLAGS='-I$(top_srcdir)/ext_libs/iniParser'
-    AC_SUBST(INIPARSER_CFLAGS)
-    INIPARSER_LIBS='$(top_builddir)/ext_libs/iniParser/libiniparser.la'
-    AC_SUBST(INIPARSER_LIBS)
-fi
-
+PKG_CHECK_MODULES([INIPARSER], [iniparser],
+    [INIPARSER_SYSTEM_AVAILABLE="yes"],
+    [INIPARSER_SYSTEM_AVAILABLE="no"
+     INIPARSER_CFLAGS='-I$(top_srcdir)/ext_libs/iniParser'
+     INIPARSER_LIBS='$(top_builddir)/ext_libs/iniParser/libiniparser.la'
+     AC_SUBST(INIPARSER_CFLAGS)
+     AC_SUBST(INIPARSER_LIBS)])
 AM_CONDITIONAL([USE_LOCAL_INIPARSER], [test "$INIPARSER_SYSTEM_AVAILABLE" = no])
 AS_IF([test "x$INIPARSER_SYSTEM_AVAILABLE" = "xyes" ], [
     CXXFLAGS="$CXXFLAGS -DHAVE_INI_PARSER"])
 
-AC_SEARCH_LIBS([JSON], [jsoncpp], [JSON_SYSTEM_AVAILABLE="yes"],[
-    JSON_SYSTEM_AVAILABLE="no"
-    JSON_CFLAGS='-I$(top_srcdir)/ext_libs/json'
-    AC_SUBST(JSON_CFLAGS)
-    JSON_LIBS='$(top_builddir)/ext_libs/json/libjson.la'
-    AC_SUBST(JSON_LIBS)])
+PKG_CHECK_MODULES([JSON], [jsoncpp],
+    [JSON_SYSTEM_AVAILABLE="yes"],
+    [JSON_SYSTEM_AVAILABLE="no"
+     JSON_CFLAGS='-I$(top_srcdir)/ext_libs/json'
+     JSON_LIBS='$(top_builddir)/ext_libs/json/libjson.la'
+     AC_SUBST(JSON_CFLAGS)
+     AC_SUBST(JSON_LIBS)])
 AM_CONDITIONAL([USE_LOCAL_JSON], [test "$JSON_SYSTEM_AVAILABLE" = no])
 
-AC_SEARCH_LIBS([mupCreateVar], [muparser], [MUPARSER_SYSTEM_AVAILABLE="yes"],[
-    MUPARSER_SYSTEM_AVAILABLE="no"
-    MUPARSER_CFLAGS='-I$(top_srcdir)/ext_libs/muparser'
-    AC_SUBST(MUPARSER_CFLAGS)
-    MUPARSER_LIBS='$(top_builddir)/ext_libs/muparser/libmuparser.la'
-    AC_SUBST(MUPARSER_LIBS)])
+PKG_CHECK_MODULES([MUPARSER], [muparser],
+    [MUPARSER_SYSTEM_AVAILABLE="yes"],
+    [MUPARSER_SYSTEM_AVAILABLE="no"
+     MUPARSER_CFLAGS='-I$(top_srcdir)/ext_libs/muparser'
+     MUPARSER_LIBS='$(top_builddir)/ext_libs/muparser/libmuparser.la'
+     AC_SUBST(MUPARSER_CFLAGS)
+     AC_SUBST(MUPARSER_LIBS)])
 AM_CONDITIONAL([USE_LOCAL_MUPARSER], [test "$MUPARSER_SYSTEM_AVAILABLE" = no])
 
-AC_SEARCH_LIBS([sqlite3_initialize], [sqlite3], [SQLITE_SYSTEM_AVAILABLE="yes"],[
-    SQLITE_SYSTEM_AVAILABLE="no"
-    SQLITE_CFLAGS='-I$(top_srcdir)/ext_libs/sqlite'
-    AC_SUBST(SQLITE_CFLAGS)
-    SQLITE_LIBS='$(top_builddir)/ext_libs/sqlite/libsqlite3.la'
-    AC_SUBST(SQLITE_LIBS)])
+PKG_CHECK_MODULES([SQLITE], [sqlite3],
+    [SQLITE_SYSTEM_AVAILABLE="yes"],
+    [SQLITE_SYSTEM_AVAILABLE="no"
+     SQLITE_CFLAGS='-I$(top_srcdir)/ext_libs/sqlite'
+     SQLITE_LIBS='$(top_builddir)/ext_libs/sqlite/libsqlite3.la'
+     AC_SUBST(SQLITE_CFLAGS)
+     AC_SUBST(SQLITE_LIBS)])
 AM_CONDITIONAL([USE_LOCAL_SQLITE], [test "$SQLITE_SYSTEM_AVAILABLE" = no])
 
 CFLAGS="$CFLAGS -DMST_UL"
