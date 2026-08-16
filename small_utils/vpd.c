@@ -336,10 +336,12 @@ int main(int argc, char** argv)
         rc = mvpd_get_vpd_size(mf, &mvpd_len);
         if (rc != 0)
         {
+            mclose(mf);
             fprintf(stderr, "-E- Failed to get VPD size from %s!\n", name);
             return MVPD_ERR;
         }
         rc = mvpd_get_raw_vpd(mf, (u_int8_t*)d, mvpd_len);
+        mclose(mf);
         if (rc)
         {
             fprintf(stderr, "-E- Failed to read VPD from %s!\n", name);
