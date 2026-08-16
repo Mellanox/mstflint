@@ -220,6 +220,7 @@ public:
     bool isUnion();
     bool isStruct();
     bool isNode();
+    T_OFFSET get_array_size();
     bool isPartOfArray();
     string fullName(size_t skipLevel = 0);
     bool isReserved();

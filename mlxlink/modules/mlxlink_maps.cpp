@@ -42,7 +42,8 @@ const std::vector<u_int32_t> bonusPortAllowedCommands = {SHOW_PDDR,
                                                          HANDLE_LOOPBACK,
                                                          SEND_CLEAR_COUNTERS,
                                                          SHOW_MULTI_PORT_INFO,
-                                                         SHOW_MULTI_PORT_MODULE_INFO};
+                                                         SHOW_MULTI_PORT_MODULE_INFO,
+                                                         SHOW_MULTI_PORT_CPO_INFO};
 
 const std::vector<u_int32_t> bonusPortCounterGroups = {PPCNT_IEEE_802_3_COUNTERS_GROUP,
                                                        PPCNT_RFC_2863_GROUP,
@@ -53,6 +54,20 @@ const std::vector<u_int32_t> bonusPortCounterGroups = {PPCNT_IEEE_802_3_COUNTERS
                                                        PPCNT_PER_PRIORITY_COUNTERS_GROUP,
                                                        PPCNT_PER_TRAFFIC_CLASS_COUNTERS_GROUP,
                                                        PPCNT_PER_TRAFFIC_CLASS_CONGESTION_COUNTERS_GROUP};
+
+namespace
+{
+const std::vector<u_int32_t> elsModuleSupportedFunctions = {HANDLE_ELS_OPERATION, SAVE_LASER_SETPOINT,
+                                                            CABLE_SAVE_LASER_SETPOINT, SEND_PMAOS};
+
+const std::vector<u_int32_t> cpuSupportedFunctions = {SHOW_PCIE, SHOW_EYE, SHOW_BER, SHOW_PCIE_LINKS};
+
+} // namespace
+
+const std::vector<u_int32_t>& getElsModuleSupportedFunctions()
+{
+    return elsModuleSupportedFunctions;
+}
 
 MlxlinkMaps* MlxlinkMaps::instance = NULL;
 
@@ -1120,6 +1135,16 @@ void MlxlinkMaps::cmisModuleStMapping()
     _cimsModuleSt[CIMS_MODULE_ST_FAULT_STATE] = "Fault state";
 }
 
+void MlxlinkMaps::pemiModuleStMapping()
+{
+    _pemiModuleSt[PEMI_MODULE_ST_RESERVED] = NA_FIELD_VALUE;
+    _pemiModuleSt[PEMI_MODULE_ST_LOW_PWR] = "Low-Power state";
+    _pemiModuleSt[PEMI_MODULE_ST_PWR_UP] = "Power-Up state";
+    _pemiModuleSt[PEMI_MODULE_ST_READY] = "Ready state";
+    _pemiModuleSt[PEMI_MODULE_ST_PWR_DN] = "Power-Down state";
+    _pemiModuleSt[PEMI_MODULE_ST_FAULT] = "Fault state";
+}
+
 void MlxlinkMaps::tempFlagsMapping()
 {
     _tempFlags[TEMP_FLAGS_NO_ALARM_WARN] = NA_FIELD_VALUE;
@@ -1156,6 +1181,12 @@ void MlxlinkMaps::errorCodeResMapping()
     _moduleOperSt[MODULE_OPER_STATUS_PLUGGED_EN] = "plugged_enable";
     _moduleOperSt[MODULE_OPER_STATUS_UNPLUGGED] = "unplugged";
     _moduleOperSt[MODULE_OPER_STATUS_PLUGGED_WITH_ERROR] = "module_plugged_with_error";
+
+    _elsOperState[ELS_OPER_STATE_LASER_INIT] = "laser_init";
+    _elsOperState[ELS_OPER_STATE_LASER_ACTIVE] = "laser_active";
+    _elsOperState[ELS_OPER_STATE_LASER_ACTIVE_WITH_FAULT] = "laser_active_with_fault";
+    _elsOperState[ELS_OPER_STATE_LASER_DOWN] = "laser_down";
+    _elsOperState[ELS_OPER_STATE_LASER_DOWN_WITH_FAULT] = "laser_down_with_fault";
 
     _moduleErrType[MODULE_ERROR_TYPE_POWER] = "Power_Budget_Exceeded";
     _moduleErrType[MODULE_ERROR_TYPE_LONG_RANGE] = "Long_Range_for_non_MLNX_cable_or_module";
@@ -1771,6 +1802,7 @@ void MlxlinkMaps::initCableComplianceMapping()
     qsfpFarEndCableBreakoutMapping();
     rxTxCdrCapMapping();
     cmisModuleStMapping();
+    pemiModuleStMapping();
     rxPowerTypeMapping();
     maxReadReqSizeMapping();
     pwrStatusMapping();
@@ -2004,6 +2036,10 @@ void MlxlinkMaps::initTableHeaders()
                                        {"Cable Type", SHIFT_15}, {"State", SHIFT_15},     {"Speed", SHIFT_8},
                                        {"FEC", SHIFT_15},        {"Net BER", SHIFT_20}};
 
+    // Need to add here localPort string, done when used in mlxlinkCommander
+    _multiPortCpoInfoTableHeader = {
+      {"Status", SHIFT_15}, {"OE idx", SHIFT_8}, {"ELS idx", SHIFT_8}, {"Laser idx", SHIFT_10}};
+
     _bkvGroupsTableHeader = {{"Group #", SHIFT_10}, {"Supported Entries", SHIFT_20}, {"Filled Indication", SHIFT_20}};
 
     _bkvGroupEntriesTableHeader = {
@@ -2058,6 +2094,15 @@ void MlxlinkMaps::initHostClassMapping()
     _hostClass[7] = "Reserved";
 }
 
+void MlxlinkMaps::initPmpeModuleStatusMapping()
+{
+    _pmpeModuleStatusForTableDisplay[PMPE_MODULE_STATUS_PLUGGED_ENABLED] = "PLUGGED_EN";
+    _pmpeModuleStatusForTableDisplay[PMPE_MODULE_STATUS_UNPLUGGED] = "UNPLUGGED";
+    _pmpeModuleStatusForTableDisplay[PMPE_MODULE_STATUS_MODULE_PLUGGED_ERROR] = "PLUGGED_ERR";
+    _pmpeModuleStatusForTableDisplay[PMPE_MODULE_STATUS_PLUGGED_DISABLED] = "PLUGGED_DS";
+    _pmpeModuleStatusForTableDisplay[PMPE_MODULE_STATUS_UNKNOWN] = "UNKNOWN";
+}
+
 MlxlinkMaps::MlxlinkMaps()
 {
     initPublicStrings();
@@ -2088,6 +2133,43 @@ MlxlinkMaps::MlxlinkMaps()
     initHostClassMapping();
     initPprmOperationRecoveryMapping();
     initPprmRecoveryStatusMapping();
+    initPmpeModuleStatusMapping();
+    initElsMapping();
+}
+
+void MlxlinkMaps::initElsMapping()
+{
+    // ELS operation code to value mapping
+    _elsOperationToVal[ELS_OPERATION_NO_OPERATION_STR] = ELS_OPERATION_NO_OPERATION;
+    _elsOperationToVal[ELS_OPERATION_FIBER_CHECK_STR] = ELS_OPERATION_FIBER_CHECK;
+    _elsOperationToVal[ELS_OPERATION_LASER_TUNING_STR] = ELS_OPERATION_LASER_TUNING;
+    _elsOperationToVal[ELS_OPERATION_LASER_UP_STR] = ELS_OPERATION_LASER_UP;
+    _elsOperationToVal[ELS_OPERATION_FORCE_LASER_UP_STR] = ELS_OPERATION_FORCE_LASER_UP;
+    _elsOperationToVal[ELS_OPERATION_LASER_OFF_STR] = ELS_OPERATION_LASER_OFF;
+    _elsOperationToVal[ELS_OPERATION_LASER_FINE_TUNE_STR] = ELS_OPERATION_LASER_FINE_TUNE;
+    _elsOperationToVal[ELS_OPERATION_LASER_WL_TUNING_STR] = ELS_OPERATION_LASER_WL_TUNING;
+
+    // ELS operation value to string mapping
+    _elsValToOperation[ELS_OPERATION_NO_OPERATION] = "No Operation";
+    _elsValToOperation[ELS_OPERATION_FIBER_CHECK] = "Fiber Check";
+    _elsValToOperation[ELS_OPERATION_LASER_TUNING] = "Laser Tuning";
+    _elsValToOperation[ELS_OPERATION_LASER_UP] = "Laser Up";
+    _elsValToOperation[ELS_OPERATION_FORCE_LASER_UP] = "Force Laser Up";
+    _elsValToOperation[ELS_OPERATION_LASER_OFF] = "Laser Off";
+    _elsValToOperation[ELS_OPERATION_LASER_FINE_TUNE] = "Laser Fine Tune";
+    _elsValToOperation[ELS_OPERATION_LASER_WL_TUNING] = "Laser WL Tuning";
+
+    _pmlseOperStatusToStr[PMLSE_OPER_STATUS_NO_OPERATION] = "No Operation";
+    _pmlseOperStatusToStr[PMLSE_OPER_STATUS_IN_PROGRESS] = "In Progress";
+    _pmlseOperStatusToStr[PMLSE_OPER_STATUS_SUCCESS] = "Success";
+    _pmlseOperStatusToStr[PMLSE_OPER_STATUS_FAILED] = "Failed";
+    _pmlseOperStatusToStr[PMLSE_OPER_STATUS_FAILED_FIBER_CHECK_NOT_DONE] = "Failed - Fiber Check Not Done";
+    _pmlseOperStatusToStr[PMLSE_OPER_STATUS_FAILED_NO_POWER_SETPOINT] = "Failed - No Power Setpoint";
+    _pmlseOperStatusToStr[PMLSE_OPER_STATUS_FAILED_LASER_FAILURE] = "Failed - Laser Failure";
+    _pmlseOperStatusToStr[PMLSE_OPER_STATUS_FAILED_OPERATION_ABORT] = "Failed - Operation Abort";
+    _pmlseOperStatusToStr[PMLSE_OPER_STATUS_FAILED_TIMEOUT] = "Failed - Timeout";
+    _pmlseOperStatusToStr[PMLSE_OPER_STATUS_FAILED_MODULE_UNINITIALIZED] = "Failed - Module Uninitialized";
+    _pmlseOperStatusToStr[PMLSE_OPER_STATUS_FAILED_LASER_TUNE_WAS_NOT_DONE] = "Failed - Laser Tune Was Not Done";
 }
 
 MlxlinkMaps::~MlxlinkMaps()

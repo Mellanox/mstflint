@@ -49,6 +49,8 @@ MlxlinkRegParser::MlxlinkRegParser() : RegAccessParser("", "", "", NULL, 0, fals
     _isHCA = false;
     _isSwControled = false;
     _isDPNvSupported = false;
+    _currentModuleIndexType = 0;
+    _originalModuleIndexType = 0;
 }
 
 MlxlinkRegParser::~MlxlinkRegParser() {}
@@ -59,6 +61,7 @@ void MlxlinkRegParser::resetParser(const string& regName)
     _data = "";
     _indexes = "";
     _len = 0;
+    _currentModuleIndexType = _originalModuleIndexType;
     if (!_regNode)
     {
         if (_len > MAX_REG_SIZE)
@@ -117,6 +120,10 @@ void MlxlinkRegParser::updateField(string field_name, u_int32_t value)
             // If the lp_msb does not exists on some access register, no need to fail the command
         }
     }
+    else if (field_name == "module_ind_type")
+    {
+        _currentModuleIndexType = value;
+    }
 }
 
 void MlxlinkRegParser::updateWithDefault(const string& fieldName, const string& fieldsStr, u_int32_t val)
@@ -160,6 +167,11 @@ void MlxlinkRegParser::setDefaultFields(const string& regName, const string& fie
          regName == ACCESS_REG_MPEINJ))
     {
         updateWithDefault("DPNv", fieldsStr, 1);
+    }
+
+    if (_currentModuleIndexType != _originalModuleIndexType)
+    {
+        updateWithDefault("module_ind_type", fieldsStr, static_cast<u_int32_t>(_currentModuleIndexType));
     }
 }
 
@@ -315,9 +327,17 @@ u_int32_t MlxlinkRegParser::getFieldValue(string field_name,
     return field_Val;
 }
 
-u_int32_t MlxlinkRegParser::getFieldSize(string field_name)
+u_int32_t MlxlinkRegParser::getFieldSize(string field_name, bool array_size)
 {
-    return RegAccessParser::getField(field_name)->get_size();
+    if (!array_size)
+    {
+        return RegAccessParser::getField(field_name)->get_size();
+    }
+    else
+    {
+        field_name.append("[0]");
+        return RegAccessParser::getField(field_name)->get_array_size();
+    }
 }
 
 string MlxlinkRegParser::getAscii(const string& name, u_int32_t size)

@@ -77,6 +77,7 @@ MlxlinkAmBerCollector::MlxlinkAmBerCollector(Json::Value& jsonRoot) : _jsonRoot(
     _isSfpCable = false;
     _cablePlugged = false;
     _inPRBSMode = false;
+    _isCpo = false;
 
     _mlxlinkMaps = NULL;
 
@@ -96,7 +97,7 @@ MlxlinkAmBerCollector::MlxlinkAmBerCollector(Json::Value& jsonRoot) : _jsonRoot(
     _baseSheetsList[AMBER_SHEET_TEST_MODE_INFO] = FIELDS_COUNT{68, 136, 0};
     _baseSheetsList[AMBER_SHEET_TEST_MODE_MODULE_INFO] = FIELDS_COUNT{70, 110, 0};
     _baseSheetsList[AMBER_SHEET_PHY_DEBUG_INFO] = FIELDS_COUNT{4, 4, 0};
-    _baseSheetsList[AMBER_SHEET_EXT_MODULE_STATUS] = FIELDS_COUNT{191, 125, 0};
+    _baseSheetsList[AMBER_SHEET_EXT_MODULE_STATUS] = FIELDS_COUNT{335, 269, 0};
     _baseSheetsList[AMBER_SHEET_RECOVERY_COUNTERS] = FIELDS_COUNT{30, 25, 0};
     _baseSheetsList[AMBER_SHEET_SERDES_5NM_GEN8] = FIELDS_COUNT{1482, 0, 0};
 
@@ -128,6 +129,10 @@ void MlxlinkAmBerCollector::sendRegister(const string& regName, maccess_reg_meth
                 {
                     updateField("plane_ind", static_cast<u_int32_t>(_planeInd));
                 }
+                else if (_isCpo)
+                {
+                    updateField("module_ind_type", static_cast<u_int32_t>(_originalModuleIndexType));
+                }
             }
             catch (...)
             {
@@ -146,19 +151,63 @@ void MlxlinkAmBerCollector::sendRegister(const string& regName, maccess_reg_meth
     }
 }
 
-void MlxlinkAmBerCollector::sendLocalPrmReg(const string& regName, maccess_reg_method_t method, const char* fields, ...)
+bool MlxlinkAmBerCollector::createPemiCacheKey(u_int32_t& keyOut, uint8_t pemiPage, MODULE_IND_TYPE moduleIndType)
+{
+    if (!(_isCpo && dm_is_qt3(static_cast<dm_dev_id_t>(_devID))))
+    {
+        return false;
+    }
+    keyOut = ((uint32_t)moduleIndType << PEMI_CACHE_KEY_POS_MODULE_IND_TYPE) |
+             (_moduleIndex << PEMI_CACHE_KEY_POS_MODULE) |
+             ((uint32_t)AMBER_CACHE_REG_ID_PEMI << PEMI_CACHE_KEY_POS_REG_ID) |
+             ((uint32_t)pemiPage << PEMI_CACHE_KEY_POS_PAGE);
+    return true;
+}
+
+bool MlxlinkAmBerCollector::isCached(u_int32_t cacheKey)
+{
+    return _registerCache.count(cacheKey) > 0;
+}
+
+void MlxlinkAmBerCollector::cacheRegister(u_int32_t cacheKey)
+{
+    _registerCache[cacheKey] = RegAccessParser::_buffer;
+}
+
+void MlxlinkAmBerCollector::loadCachedRegister(u_int32_t cacheKey)
+{
+    RegAccessParser::_buffer = _registerCache[cacheKey];
+}
+
+void MlxlinkAmBerCollector::sendLocalPrmRegVaList(const string& regName,
+                                                  maccess_reg_method_t method,
+                                                  const char* fields,
+                                                  va_list args,
+                                                  bool cache,
+                                                  u_int32_t cacheKey)
 {
     char fieldsCstr[MAX_FIELDS_BUFFER];
+    vsnprintf(fieldsCstr, MAX_FIELDS_BUFFER, fields, args);
     try
     {
         if (AmberField::_dataValid)
         {
-            va_list args;
-            va_start(args, fields);
-            vsnprintf(fieldsCstr, MAX_FIELDS_BUFFER, fields, args);
-            va_end(args);
-
-            sendPrmReg(regName, method, fieldsCstr);
+            if (!cache)
+            {
+                sendPrmReg(regName, method, fieldsCstr);
+            }
+            else
+            {
+                if (isCached(cacheKey))
+                {
+                    loadCachedRegister(cacheKey);
+                }
+                else
+                {
+                    sendPrmReg(regName, method, fieldsCstr);
+                    cacheRegister(cacheKey);
+                }
+            }
         }
     }
     catch (MlxRegException& exc)
@@ -169,6 +218,27 @@ void MlxlinkAmBerCollector::sendLocalPrmReg(const string& regName, maccess_reg_m
         AmberField::_dataValid = false;
 #endif
     }
+}
+
+void MlxlinkAmBerCollector::sendLocalPrmReg(const string& regName, maccess_reg_method_t method, const char* fields, ...)
+{
+    va_list args;
+    va_start(args, fields);
+    sendLocalPrmRegVaList(regName, method, fields, args, false, 0);
+    va_end(args);
+}
+
+void MlxlinkAmBerCollector::sendLocalPrmRegCached(const string& regName,
+                                                  maccess_reg_method_t method,
+                                                  bool cache,
+                                                  u_int32_t cacheKey,
+                                                  const char* fields,
+                                                  ...)
+{
+    va_list args;
+    va_start(args, fields);
+    sendLocalPrmRegVaList(regName, method, fields, args, cache, cacheKey);
+    va_end(args);
 }
 
 string MlxlinkAmBerCollector::getLocalFieldStr(const string& fieldName)
@@ -1720,6 +1790,8 @@ void MlxlinkAmBerCollector::initCableIdentifier(u_int32_t cableIdentifier)
         case IDENTIFIER_C2C:
         case IDENTIFIER_DSFP:
         case IDENTIFIER_QSFP_CMIS:
+        case IDENTIFIER_CPO:
+        case IDENTIFIER_ELS:
             _isCmisCable = true;
             break;
     }
@@ -2194,6 +2266,44 @@ void MlxlinkAmBerCollector::getModuleLatchedFlagInfoPage(vector<AmberField>& fie
     fields.push_back(AmberField("rx_power_lo_war", getBitmaskPerLaneStr(getFieldValue("rx_power_lo_war"))));
 }
 
+void MlxlinkAmBerCollector::getModuleLaserInfo(vector<AmberField>& fields)
+{
+    string laserEnabled = NA_FIELD_VALUE, laserStatus = NA_FIELD_VALUE, laserRestriction = NA_FIELD_VALUE,
+           elsOperState = NA_FIELD_VALUE, elsLaserFaultState = NA_FIELD_VALUE;
+
+    if (_isCpo)
+    {
+        resetLocalParser(ACCESS_REG_PDDR);
+        updateField("local_port", _localPort);
+        updateField("module_ind_type", _isPortIB ?
+                                         MODULE_IND_TYPE_ELS :
+                                         MODULE_IND_TYPE_DEFAULT_CPO); // Use this statement to access the laser info
+        updateField("page_select", PDDR_MODULE_INFO_PAGE);
+        sendRegister(ACCESS_REG_PDDR, MACCESS_REG_METHOD_GET);
+
+        laserEnabled = to_string(getFieldValue("laser_enabled"));
+        laserStatus = to_string(getFieldValue("laser_status"));
+        laserRestriction = to_string(getFieldValue("laser_restriction"));
+        elsOperState = getStrByValue(getFieldValue("els_oper_state"), _mlxlinkMaps->_elsOperState);
+        elsLaserFaultState = to_string(getFieldValue("els_laser_fault_state"));
+
+        if (_isPortETH)
+        {
+            fields.push_back(AmberField("laser2_enabled", to_string(getFieldValue("laser2_enabled"))));
+            fields.push_back(AmberField("laser2_status", to_string(getFieldValue("laser2_status"))));
+            fields.push_back(AmberField("laser2_restriction", to_string(getFieldValue("laser2_restriction"))));
+            fields.push_back(AmberField("els2_oper_state",
+                                        getStrByValue(getFieldValue("els2_oper_state"), _mlxlinkMaps->_elsOperState)));
+            fields.push_back(AmberField("els_laser2_fault_state", to_string(getFieldValue("els_laser2_fault_state"))));
+        }
+    }
+    fields.push_back(AmberField("laser_enabled", laserEnabled));
+    fields.push_back(AmberField("laser_status", laserStatus));
+    fields.push_back(AmberField("laser_restriction", laserRestriction));
+    fields.push_back(AmberField("els_oper_state", elsOperState));
+    fields.push_back(AmberField("els_laser_fault_state", elsLaserFaultState));
+}
+
 vector < AmberField > MlxlinkAmBerCollector::getModuleStatus()
 {
     vector<AmberField> fields;
@@ -2241,6 +2351,8 @@ vector < AmberField > MlxlinkAmBerCollector::getModuleStatus()
                 AmberField::_dataValid = false;
             }
             getModuleLatchedFlagInfoPage(fields);
+
+            getModuleLaserInfo(fields);
         }
     }
     catch (const std::exception& exc)
@@ -2850,7 +2962,10 @@ void MlxlinkAmBerCollector::getPemiSnr(vector<AmberField>& fields, bool isGroupS
         AmberField::_dataValid = false;
     }
 
-    sendLocalPrmReg(ACCESS_REG_PEMI, REG_GET, "local_port=%d,page_select=%d", _localPort, PEMI_GROUP_SEL_SNR_SAMPLES);
+    u_int32_t cacheKey = 0;
+    bool useCache = createPemiCacheKey(cacheKey, PEMI_GROUP_SEL_SNR_SAMPLES);
+    sendLocalPrmRegCached(ACCESS_REG_PEMI, REG_GET, useCache, cacheKey, "local_port=%d,page_select=%d", _localPort,
+                          PEMI_GROUP_SEL_SNR_SAMPLES);
 
     pushModulePerLaneField(fields, "snr_media_lane", 256, "");
     pushModulePerLaneField(fields, "snr_host_lane", 256, "");
@@ -2865,13 +2980,70 @@ void MlxlinkAmBerCollector::getPemiLaserMonitors(vector<AmberField>& fields, boo
         AmberField::_dataValid = false;
     }
     string iccMonitor = NA_FIELD_VALUE, elsPowerConsumption = NA_FIELD_VALUE;
+    u_int32_t cacheKey = 0;
+    bool useCache;
 
-    sendLocalPrmReg(ACCESS_REG_PEMI, REG_GET, "local_port=%d,page_select=%d", _localPort,
-                    PEMI_GROUP_SEL_LASER_MONITORS_SAMPLES);
-
+    useCache = createPemiCacheKey(cacheKey, PEMI_GROUP_SEL_LASER_MONITORS_SAMPLES);
+    sendLocalPrmRegCached(ACCESS_REG_PEMI, REG_GET, useCache, cacheKey, "local_port=%d,page_select=%d", _localPort,
+                          PEMI_GROUP_SEL_LASER_MONITORS_SAMPLES);
     pushModulePerLaneField(fields, "laser_frequency_error_lane", 1, "");
-    pushModulePerLaneField(fields, "cooled_laser_temperature_lane", 1, "");
 
+    MODULE_IND_TYPE moduleIndexType = _isPortIB ? MODULE_IND_TYPE_ELS : MODULE_IND_TYPE_DEFAULT_CPO;
+
+    if (_isPortIB)
+    {
+        useCache = createPemiCacheKey(cacheKey, PEMI_GROUP_SEL_LASER_MONITORS_SAMPLES, MODULE_IND_TYPE_ELS);
+        sendLocalPrmRegCached(ACCESS_REG_PEMI, REG_GET, useCache, cacheKey,
+                              "local_port=%d,page_select=%d,module_ind_type=%d", _localPort,
+                              PEMI_GROUP_SEL_LASER_MONITORS_SAMPLES, MODULE_IND_TYPE_ELS);
+        pushModulePerLaneField(fields, "cooled_laser_temperature_lane", 1, "", "", 1.0,
+                               "els_cooled_laser_temperature_lane");
+    }
+
+    useCache = createPemiCacheKey(cacheKey, PEMI_GROUP_SEL_LASER_MONITORS_SAMPLES);
+    sendLocalPrmRegCached(ACCESS_REG_PEMI, REG_GET, useCache, cacheKey,
+                          "local_port=%d,page_select=%d,module_ind_type=%d", _localPort,
+                          PEMI_GROUP_SEL_LASER_MONITORS_SAMPLES, MODULE_IND_TYPE_DEFAULT_CPO);
+    if (!_isPortIB)
+    {
+        pushModulePerLaneField(fields, "cooled_laser_temperature_lane", 1, "", "", 1.0,
+                               "oe_cooled_laser_temperature_lane");
+    }
+    pushOpticalChannelTemperatureFields(fields);
+
+    if (_isCpo)
+    {
+        pushModulePerLaneField(fields, "laser_age_lane", 1, "");
+        pushModulePerLaneField(fields, "els_input_power_lane", 1, "");
+        pushModulePerLaneField(fields, "tec_current_laser", 1, "");
+
+        u_int32_t groupCapMask = getLocalFieldValue("group_cap_mask");
+
+        if (!(groupCapMask & PEMI_GROUP_CAP_LASER_SOURCE_MODULE_ESSENTIAL))
+        {
+            AmberField::_dataValid = false;
+        }
+
+        useCache = createPemiCacheKey(cacheKey, PEMI_GROUP_SEL_LASER_SOURCE_MODULE_ESSENTIAL_SAMPLES, moduleIndexType);
+        sendLocalPrmRegCached(ACCESS_REG_PEMI, REG_GET, useCache, cacheKey,
+                              "local_port=%d,page_select=%d,module_ind_type=%d", _localPort,
+                              PEMI_GROUP_SEL_LASER_SOURCE_MODULE_ESSENTIAL_SAMPLES, moduleIndexType);
+        pushModulePerLaneField(fields, "opt_power_monitor", 1, "");
+        iccMonitor = getLocalFieldStr("icc_monitor");
+        pushModulePerLaneField(fields, "bias_current_monitor", 1, "");
+        pushModulePerLaneField(fields, "voltage_monitor", 1, "");
+        pushModulePerLaneField(fields, "opt_power_setpoint", 1, "");
+
+        useCache = createPemiCacheKey(cacheKey, PEMI_GROUP_SEL_LASER_SOURCE_MODULE_ADVANCED_SAMPLES, moduleIndexType);
+        sendLocalPrmRegCached(ACCESS_REG_PEMI, REG_GET, useCache, cacheKey,
+                              "local_port=%d,page_select=%d,module_ind_type=%d", _localPort,
+                              PEMI_GROUP_SEL_LASER_SOURCE_MODULE_ADVANCED_SAMPLES, moduleIndexType);
+        pushModulePerLaneField(fields, "laser_mpd_lane", 1, "");
+        pushModulePerLaneField(fields, "tec_voltage_laser", 1, "");
+        pushModulePerLaneField(fields, "health_value_tec", 1, "");
+        pushModulePerLaneField(fields, "health_value_laser", 1, "");
+        elsPowerConsumption = getLocalFieldStr("power_consumption");
+    }
     fields.push_back(AmberField("icc_monitor", iccMonitor));
     fields.push_back(AmberField("els_power_consumption", elsPowerConsumption));
 }
@@ -2882,9 +3054,12 @@ void MlxlinkAmBerCollector::getPemiModuleStatus(vector<AmberField>& fields, bool
     {
         AmberField::_dataValid = false;
     }
-    string moduleSt = NA_FIELD_VALUE, oeTemp = NA_FIELD_VALUE, elsTemp = NA_FIELD_VALUE;
-    sendLocalPrmReg(ACCESS_REG_PEMI, REG_GET, "local_port=%d,page_select=%d", _localPort,
-                    PEMI_GROUP_SEL_MODULE_STATUS_SAMPLES);
+    string moduleSt = NA_FIELD_VALUE, oeTemp = NA_FIELD_VALUE, elsTemp = NA_FIELD_VALUE,
+           laserSourceTs1Temp = NA_FIELD_VALUE;
+    u_int32_t cacheKey = 0;
+    bool useCache = createPemiCacheKey(cacheKey, PEMI_GROUP_SEL_MODULE_STATUS_SAMPLES);
+    sendLocalPrmRegCached(ACCESS_REG_PEMI, REG_GET, useCache, cacheKey, "local_port=%d,page_select=%d", _localPort,
+                          PEMI_GROUP_SEL_MODULE_STATUS_SAMPLES);
 
     fields.push_back(AmberField("voltage_pemi", to_string((getLocalFieldValue("voltage") / 10.0))));
 
@@ -2900,8 +3075,25 @@ void MlxlinkAmBerCollector::getPemiModuleStatus(vector<AmberField>& fields, bool
 
     pushModuleDpPerLane(fields, "dp_st_lane", "_pemi");
 
+    if (_isCpo)
+    {
+        MODULE_IND_TYPE moduleIndType = _isPortIB ? MODULE_IND_TYPE_ELS : MODULE_IND_TYPE_DEFAULT_CPO;
+        oeTemp = to_string((getLocalFieldValue("temperature")));
+        useCache = createPemiCacheKey(cacheKey, PEMI_GROUP_SEL_MODULE_STATUS_SAMPLES, moduleIndType);
+        sendLocalPrmRegCached(ACCESS_REG_PEMI, REG_GET, useCache, cacheKey,
+                              "local_port=%d,page_select=%d,module_ind_type=%d", _localPort,
+                              PEMI_GROUP_SEL_MODULE_STATUS_SAMPLES, moduleIndType);
+        elsTemp = _isPortIB ? to_string((getLocalFieldValue("temperature"))) :
+                              to_string((getLocalFieldValue("laser_source_temperature")));
+
+        if (_isPortETH)
+        {
+            laserSourceTs1Temp = to_string((getLocalFieldValue("laser_source_temperature")));
+        }
+    }
     fields.push_back(AmberField("oe_ts1_temperature", oeTemp));
     fields.push_back(AmberField("els_ts1_temperature", elsTemp));
+    fields.push_back(AmberField("laser_source_ts1_temperature", laserSourceTs1Temp));
 
     AmberField::_dataValid = true;
 }
@@ -2913,8 +3105,10 @@ void MlxlinkAmBerCollector::getPemiPreFecBer(vector<AmberField>& fields, bool is
         AmberField::_dataValid = false;
     }
 
-    sendLocalPrmReg(ACCESS_REG_PEMI, REG_GET, "local_port=%d,page_select=%d", _localPort,
-                    PEMI_GROUP_SEL_PRE_FEC_BER_SAMPLES);
+    u_int32_t cacheKey = 0;
+    bool useCache = createPemiCacheKey(cacheKey, PEMI_GROUP_SEL_PRE_FEC_BER_SAMPLES);
+    sendLocalPrmRegCached(ACCESS_REG_PEMI, REG_GET, useCache, cacheKey, "local_port=%d,page_select=%d", _localPort,
+                          PEMI_GROUP_SEL_PRE_FEC_BER_SAMPLES);
 
     fields.push_back(AmberField("pre_fec_ber_min_media", getLocalFieldStr("pre_fec_ber_min_media")));
     fields.push_back(AmberField("pre_fec_ber_min_host", getLocalFieldStr("pre_fec_ber_min_host")));
@@ -2925,9 +3119,32 @@ void MlxlinkAmBerCollector::getPemiPreFecBer(vector<AmberField>& fields, bool is
     fields.push_back(AmberField("pre_fec_ber_val_media", getLocalFieldStr("pre_fec_ber_val_media")));
     fields.push_back(AmberField("pre_fec_ber_val_host", getLocalFieldStr("pre_fec_ber_val_host")));
 
-    sendLocalPrmReg(ACCESS_REG_PEMI, REG_GET, "local_port=%d,page_select=%d", _localPort, PEMI_GROUP_SEL_PRE_FEC_BER_PROP);
+    useCache = createPemiCacheKey(cacheKey, PEMI_GROUP_SEL_PRE_FEC_BER_PROP);
+    sendLocalPrmRegCached(ACCESS_REG_PEMI, REG_GET, useCache, cacheKey, "local_port=%d,page_select=%d", _localPort,
+                          PEMI_GROUP_SEL_PRE_FEC_BER_PROP);
 
     fields.push_back(AmberField("pre_fec_ber_cap", getLocalFieldStr("pre_fec_ber_cap")));
+
+    AmberField::_dataValid = true;
+}
+
+void MlxlinkAmBerCollector::getPemiOpticalEngineTelemetry(vector<AmberField>& fields, bool isGroupSupported)
+{
+    AmberField::_dataValid = true;
+    if (!isGroupSupported)
+    {
+        AmberField::_dataValid = false;
+    }
+    u_int32_t cacheKey = 0;
+    bool useCache = createPemiCacheKey(cacheKey, PEMI_GROUP_SEL_OPTICAL_ENGINE_TELEMETRY_PARAMETERS_SAMPLES);
+    sendLocalPrmRegCached(ACCESS_REG_PEMI, REG_GET, useCache, cacheKey, "local_port=%d,page_select=%d", _localPort,
+                          PEMI_GROUP_SEL_OPTICAL_ENGINE_TELEMETRY_PARAMETERS_SAMPLES);
+
+    for (char letter = 'a'; letter <= 'r'; letter++)
+    {
+        string fieldName = string(1, letter) + "_parameter_lane";
+        pushModulePerLaneField(fields, fieldName, 1, "", "");
+    }
 
     AmberField::_dataValid = true;
 }
@@ -2969,6 +3186,18 @@ void MlxlinkAmBerCollector::getMTMRFields(vector<AmberField>& fields)
     fields.push_back(AmberField("abs_max_temp_change", getLocalFieldStr("abs_max_temp_change")));
 }
 
+void MlxlinkAmBerCollector::pushOpticalChannelTemperatureFields(vector<AmberField>& fields)
+{
+    fields.push_back(AmberField("optical_channel0_temperature", getLocalFieldStr("optical_channel0_temperature")));
+    fields.push_back(AmberField("optical_channel1_temperature", getLocalFieldStr("optical_channel1_temperature")));
+    fields.push_back(AmberField("optical_channel2_temperature", getLocalFieldStr("optical_channel2_temperature")));
+    fields.push_back(AmberField("optical_channel3_temperature", getLocalFieldStr("optical_channel3_temperature")));
+    fields.push_back(AmberField("optical_channel4_temperature", getLocalFieldStr("optical_channel4_temperature")));
+    fields.push_back(AmberField("optical_channel5_temperature", getLocalFieldStr("optical_channel5_temperature")));
+    fields.push_back(AmberField("optical_channel6_temperature", getLocalFieldStr("optical_channel6_temperature")));
+    fields.push_back(AmberField("optical_channel7_temperature", getLocalFieldStr("optical_channel7_temperature")));
+}
+
 vector<AmberField> MlxlinkAmBerCollector::getExtModuleStatus()
 {
     vector<AmberField> fields;
@@ -2977,7 +3206,10 @@ vector<AmberField> MlxlinkAmBerCollector::getExtModuleStatus()
     {
         if (!_isPortPCIE)
         {
-            sendLocalPrmReg(ACCESS_REG_PEMI, REG_GET, "local_port=%d,page_select=%d", _localPort, PEMI_GROUP_SEL_SNR_SAMPLES);
+            u_int32_t cacheKey = 0;
+            bool useCache = createPemiCacheKey(cacheKey, PEMI_GROUP_SEL_SNR_SAMPLES);
+            sendLocalPrmRegCached(ACCESS_REG_PEMI, REG_GET, useCache, cacheKey, "local_port=%d,page_select=%d",
+                                  _localPort, PEMI_GROUP_SEL_SNR_SAMPLES);
 
             u_int32_t groupCapMask = getLocalFieldValue("group_cap_mask");
 
@@ -2985,6 +3217,7 @@ vector<AmberField> MlxlinkAmBerCollector::getExtModuleStatus()
             getPemiModuleStatus(fields, groupCapMask & PEMI_GROUP_CAP_MODULE_STATUS);
             getPemiLaserMonitors(fields, groupCapMask & PEMI_GROUP_CAP_LASER_MONITORS);
             getPemiPreFecBer(fields, groupCapMask & PEMI_GROUP_CAP_PRE_FEC_BER);
+            getPemiOpticalEngineTelemetry(fields, groupCapMask & PEMI_GROUP_CAP_OPTICAL_ENGINE_TELEMETRY_PARAMETERS);
 
             getMTMGFields(fields);
             getMTMRFields(fields);
