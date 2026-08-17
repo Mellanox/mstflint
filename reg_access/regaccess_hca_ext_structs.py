@@ -33,9 +33,9 @@
 
 
 ###############################################################################
-#    This file was generated at "2026-04-21 06:59:00"
+#    This file was generated at "2026-08-06 11:30:50"
 #    by:
-#      > prm_update.py --project Nic
+#      > /home/jenkins/agent/workspace/automatic_prm_update/scripts/prm_update.py --project nic
 ###############################################################################
 
 import os
@@ -189,6 +189,7 @@ class MGIR_HARDWARE_INFO_EXT(ctypes.Structure):
         ("num_ports", ctypes.c_uint16),
         ("hw_dev_id", ctypes.c_uint16),
         ("module_master_fw_default", ctypes.c_uint8),
+        ("board_ga", ctypes.c_uint8),
         ("cpo_indication", ctypes.c_uint8),
         ("ga_valid", ctypes.c_uint8),
         ("development", ctypes.c_uint8),
@@ -211,6 +212,7 @@ class MGIR_FW_INFO_EXT(ctypes.Structure):
         ("dev", ctypes.c_uint8),
         ("string_tlv", ctypes.c_uint8),
         ("dev_sc", ctypes.c_uint8),
+        ("index_tlv", ctypes.c_uint8),
         ("build_id", ctypes.c_uint32),
         ("year", ctypes.c_uint16),
         ("day", ctypes.c_uint8),
@@ -234,7 +236,15 @@ class MGIR_FW_INFO_EXT(ctypes.Structure):
         ("issu_able", ctypes.c_uint8),
         ("pds", ctypes.c_uint8),
         ("ec_offload_engine_disabled", ctypes.c_uint8),
-        ("dev_counter", ctypes.c_uint8)
+        ("dev_counter", ctypes.c_uint8),
+        ("uphy_version_sub_minor", ctypes.c_uint8),
+        ("uphy_version_minor", ctypes.c_uint8),
+        ("uphy_version_major", ctypes.c_uint8),
+        ("BKV_clm_sub_minor", ctypes.c_uint8),
+        ("BKV_clm_minor", ctypes.c_uint8),
+        ("BKV_clm_major", ctypes.c_uint8),
+        ("pci_major", ctypes.c_uint16),
+        ("pci_minor", ctypes.c_uint8)
     ]
 
 class ROM_VERSION_EXT(ctypes.Structure):
@@ -368,21 +378,6 @@ class NIC_DPA_PERF_CTRL_REG_EXT(ctypes.Structure):
         ("count_state", ctypes.c_uint8)
     ]
 
-class NIC_CAP_EXT_DPA_CAP(ctypes.Structure):
-    _fields_ = [
-        ("max_num_dpa_eug", ctypes.c_uint16),
-        ("max_num_dpa_eu", ctypes.c_uint16),
-        ("max_num_dpa_eu_partition", ctypes.c_uint16),
-        ("max_num_dpa_eu_per_group", ctypes.c_uint16),
-        ("dpa_perf_sample_type", ctypes.c_uint8),
-        ("max_num_partition_vhca_id", ctypes.c_uint16),
-        ("dpa_eug_eu_share", ctypes.c_uint8),
-        ("nic_dpa_self_host_app_mgmt", ctypes.c_uint8),
-        ("dpa_partition_eug", ctypes.c_uint8),
-        ("process_perf_cnt", ctypes.c_uint8),
-        ("dpa_self_host_app_action", ctypes.c_uint16)
-    ]
-
 class NIC_CAP_EXT_DIAG_DATA_CAP(ctypes.Structure):
     _fields_ = [
         ("producer_sample_id", ctypes.c_uint8),
@@ -398,10 +393,26 @@ class NIC_CAP_EXT_DIAG_DATA_CAP(ctypes.Structure):
         ("diag_data_domain_max", ctypes.c_uint8)
     ]
 
+class NIC_CAP_EXT_DPA_CAP(ctypes.Structure):
+    _fields_ = [
+        ("max_num_dpa_eug", ctypes.c_uint16),
+        ("max_num_dpa_eu", ctypes.c_uint16),
+        ("max_num_dpa_eu_partition", ctypes.c_uint16),
+        ("max_num_dpa_eu_per_group", ctypes.c_uint16),
+        ("dpa_perf_sample_type", ctypes.c_uint8),
+        ("max_num_partition_vhca_id", ctypes.c_uint16),
+        ("dpa_dispatch_low_latency", ctypes.c_uint8),
+        ("dpa_eug_eu_share", ctypes.c_uint8),
+        ("nic_dpa_self_host_app_mgmt", ctypes.c_uint8),
+        ("dpa_partition_eug", ctypes.c_uint8),
+        ("process_perf_cnt", ctypes.c_uint8),
+        ("dpa_self_host_app_action", ctypes.c_uint16)
+    ]
+
 class NIC_CAP_EXT_REG_CAP_DATA_AUTO(ctypes.Union):
     _fields_ = [
-        ("nic_cap_ext_dpa_cap", NIC_CAP_EXT_DPA_CAP),
-        ("nic_cap_ext_diag_data_cap", NIC_CAP_EXT_DIAG_DATA_CAP)
+        ("nic_cap_ext_diag_data_cap", NIC_CAP_EXT_DIAG_DATA_CAP),
+        ("nic_cap_ext_dpa_cap", NIC_CAP_EXT_DPA_CAP)
     ]
 
 class NIC_CAP_EXT_REG(ctypes.Structure):
