@@ -536,6 +536,8 @@ typedef struct fs3_info_ext
     u_int32_t ini_file_version;
     u_int8_t geo_address;
     bool geo_address_valid;
+    u_int8_t board_ga;
+    bool board_ga_valid;
     bool socket_direct;
     bool aux_card_connected;
     bool is_aux_card_connected_valid;
