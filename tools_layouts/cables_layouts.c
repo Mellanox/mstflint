@@ -35,8 +35,12 @@
 */
  
 
+/***
+         *** This file was generated at "2026-08-11 11:13:15"
+         *** by:
+         ***    > /images/nsivancohen/mft/adb_tools/src/mft_adbtools/adabe_plugins/adb2c/adb2pack.py --input /images/nsivancohen/mft/user/tools_layouts/adb/prm/hca/ext/reg_access_cables.adb --file-prefix cables --prefix reg_access_hca_ --no-adb-utils --no-cpp -o /images/nsivancohen/mft/user/tools_layouts
+         ***/
 #include "cables_layouts.h"
-
 
 void reg_access_hca_mcia_ext_pack(const struct reg_access_hca_mcia_ext *ptr_struct, u_int8_t *ptr_buff)
 {
@@ -45,10 +49,14 @@ void reg_access_hca_mcia_ext_pack(const struct reg_access_hca_mcia_ext *ptr_stru
 
 	offset = 24;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->status);
+	offset = 20;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->module_bits_11_8);
 	offset = 16;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->slot_index);
 	offset = 8;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->module);
+	offset = 3;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 3, (u_int32_t)ptr_struct->module_bits_14_12);
 	offset = 2;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->pnv);
 	offset = 0;
@@ -63,6 +71,8 @@ void reg_access_hca_mcia_ext_pack(const struct reg_access_hca_mcia_ext *ptr_stru
 	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->size);
 	offset = 72;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->bank_number);
+	offset = 71;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->module_bit_15);
 	offset = 68;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->bg_mode);
 	offset = 67;
@@ -84,10 +94,14 @@ void reg_access_hca_mcia_ext_unpack(struct reg_access_hca_mcia_ext *ptr_struct, 
 
 	offset = 24;
 	ptr_struct->status = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 20;
+	ptr_struct->module_bits_11_8 = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
 	offset = 16;
 	ptr_struct->slot_index = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
 	offset = 8;
 	ptr_struct->module = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 3;
+	ptr_struct->module_bits_14_12 = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 3);
 	offset = 2;
 	ptr_struct->pnv = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 0;
@@ -102,6 +116,8 @@ void reg_access_hca_mcia_ext_unpack(struct reg_access_hca_mcia_ext *ptr_struct, 
 	ptr_struct->size = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
 	offset = 72;
 	ptr_struct->bank_number = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 71;
+	ptr_struct->module_bit_15 = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 68;
 	ptr_struct->bg_mode = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 67;
@@ -126,9 +142,13 @@ void reg_access_hca_mcia_ext_print(const struct reg_access_hca_mcia_ext *ptr_str
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "status               : " UH_FMT "\n", ptr_struct->status);
 	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "module_bits_11_8     : " UH_FMT "\n", ptr_struct->module_bits_11_8);
+	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "slot_index           : " UH_FMT "\n", ptr_struct->slot_index);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "module               : " UH_FMT "\n", ptr_struct->module);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "module_bits_14_12    : " UH_FMT "\n", ptr_struct->module_bits_14_12);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "pnv                  : " UH_FMT "\n", ptr_struct->pnv);
 	adb2c_add_indentation(fd, indent_level);
@@ -143,6 +163,8 @@ void reg_access_hca_mcia_ext_print(const struct reg_access_hca_mcia_ext *ptr_str
 	fprintf(fd, "size                 : " UH_FMT "\n", ptr_struct->size);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "bank_number          : " UH_FMT "\n", ptr_struct->bank_number);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "module_bit_15        : " UH_FMT "\n", ptr_struct->module_bit_15);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "bg_mode              : " UH_FMT "\n", ptr_struct->bg_mode);
 	adb2c_add_indentation(fd, indent_level);
@@ -166,3 +188,34 @@ void reg_access_hca_mcia_ext_dump(const struct reg_access_hca_mcia_ext *ptr_stru
 {
 	reg_access_hca_mcia_ext_print(ptr_struct, fd, 0);
 }
+
+void reg_access_hca_cables_Nodes_pack(const union reg_access_hca_cables_Nodes *ptr_struct, u_int8_t *ptr_buff)
+{
+	reg_access_hca_mcia_ext_pack(&(ptr_struct->mcia_ext), ptr_buff);
+}
+
+void reg_access_hca_cables_Nodes_unpack(union reg_access_hca_cables_Nodes *ptr_struct, const u_int8_t *ptr_buff)
+{
+	reg_access_hca_mcia_ext_unpack(&(ptr_struct->mcia_ext), ptr_buff);
+}
+
+void reg_access_hca_cables_Nodes_print(const union reg_access_hca_cables_Nodes *ptr_struct, FILE *fd, int indent_level)
+{
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== reg_access_hca_cables_Nodes ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "mcia_ext:\n");
+	reg_access_hca_mcia_ext_print(&(ptr_struct->mcia_ext), fd, indent_level + 1);
+}
+
+unsigned int reg_access_hca_cables_Nodes_size(void)
+{
+	return REG_ACCESS_HCA_CABLES_NODES_SIZE;
+}
+
+void reg_access_hca_cables_Nodes_dump(const union reg_access_hca_cables_Nodes *ptr_struct, FILE *fd)
+{
+	reg_access_hca_cables_Nodes_print(ptr_struct, fd, 0);
+}
+
