@@ -49,6 +49,7 @@ static const unsigned int REG_GROUP_LEN = 0x80;
 typedef enum
 {
     MCAM_CAP_MGIR_PCI_SWITCH_ONLY_MODE = 74, // If set, MGIR.hw_info.pci_switch_only_mode is supported [NIC_only]
+    MCAM_CAP_MGIR_HW_INFO_BOARD_GA = 93,     // If set, MGIR.hw_info.board_ga is supported
 
     MCAM_CAP_MAX // for validation
 } mcam_capability_t;

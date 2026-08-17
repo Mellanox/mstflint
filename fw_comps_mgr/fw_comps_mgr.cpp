@@ -2050,6 +2050,16 @@ bool FwCompsMgr::queryFwInfo(fwInfoT* query, bool next_boot_fw_ver)
         }
     }
 
+    query->board_ga_valid = false;
+    bool is_board_ga_supported = false;
+    rc = isCapabilitySupportedAccordingToMcamReg(_mf, MCAM_CAP_MGIR_HW_INFO_BOARD_GA,
+                                                 dm_dev_is_mcam_dword_swap_needed(dm_device_id), &is_board_ga_supported);
+    if (rc == ME_OK && is_board_ga_supported)
+    {
+        query->board_ga_valid = true;
+        query->board_ga = mgir.hw_info.board_ga;
+    }
+
     return true;
 }
 unsigned char* FwCompsMgr::getLastErrMsg()
