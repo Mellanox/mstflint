@@ -1824,6 +1824,13 @@
 </node>
 
 <node name="mtdth_ext"                            size="0x18.0" descr="" >
+	<field name="sensor_index"                    offset="0x0.0"    size="0x0.12" access="INDEX" descr="See MTMP.sensor_index." />
+	<field name="hardware_shutdown"               offset="0x4.0"    size="0x0.16" access="RO" descr="Temperature threshold for hardware shutdown.\;\;Units of 0.125 Celsius degrees.\;\;For negative values 2’s complement is used (for example: -3.25 Celsius\;will read as 0xFFE6)" />
+	<field name="firmware_shutdown"               offset="0x4.16"   size="0x0.16" access="RO" descr="Temperature threshold for firmware shutdown.\;\;Units of 0.125 Celsius degrees.\;\;For negative values 2’s complement is used (for example: -3.25 Celsius\;will read as 0xFFE6)" />
+	<field name="warning_high"                    offset="0x8.0"    size="0x0.16" access="RO" descr="Default temperature threshold for Warning High.\;\;Units of 0.125 Celsius degrees.\;\;For negative values 2’s complement is used (for example: -3.25 Celsius\;will read as 0xFFE6)" />
+	<field name="warning_low"                     offset="0x8.16"   size="0x0.16" access="RO" descr="Default temperature threshold for Warning Low.\;\;Units of 0.125 Celsius degrees.\;\;For negative values 2’s complement is used (for example: -3.25 Celsius\;will read as 0xFFE6)" />
+	<field name="critical_high"                   offset="0xc.0"    size="0x0.16" access="RO" descr="Default temperature threshold for Critical High.\;\;Units of 0.125 Celsius degrees.\;\;For negative values 2’s complement is used (for example: -3.25 Celsius\;will read as 0xFFE6)" />
+	<field name="critical_low"                    offset="0xc.16"   size="0x0.16" access="RO" descr="Default temperature threshold for Critical Low.\;\;Units of 0.125 Celsius degrees.\;\;For negative values 2’s complement is used (for example: -3.25 Celsius\;will read as 0xFFE6)" />
 </node>
 
 <node name="mtecr_ext"                            size="0x60.0" descr="" >
@@ -5713,6 +5720,25 @@
 </node>
 
 <node name="sltr_non_periodic_non_destructive_7_5_ext" size="0x10.0" descr="" >
+	<field name="w_group_exist"                   offset="0x0.30"   size="0x0.1" access="RO" descr="does this group implemented\;\;0 - no\;\;1- yes" />
+	<field name="e_group_exist"                   offset="0x0.31"   size="0x0.1" access="RO" descr="does this group implemented\;\;0 - no\;\;1- yes" />
+	<field name="e_group6"                        offset="0x4.0"    size="0x0.8" access="RO" descr="AE_CDR_OFFSET_STAT_cdr_offset" />
+	<field name="e_group5"                        offset="0x4.10"   size="0x0.2" access="RO" descr="AE_CTLE_STAT1_lf_gain" />
+	<field name="e_group4"                        offset="0x4.13"   size="0x0.3" access="RO" descr="AE_CTLE_STAT1_lf_pole" />
+	<field name="e_group3"                        offset="0x4.17"   size="0x0.2" access="RO" descr="AE_CTLE_STAT1_mf_gain" />
+	<field name="e_group2"                        offset="0x4.20"   size="0x0.2" access="RO" descr="AE_CTLE_STAT1_mf_pole" />
+	<field name="e_group1"                        offset="0x4.23"   size="0x0.3" access="RO" descr="AE_CTLE_STAT0_dc_gain" />
+	<field name="e_group0"                        offset="0x4.27"   size="0x0.5" access="RO" descr="AE_CTLE_STAT0_hf_gain" />
+	<field name="w_group4"                        offset="0x8.0"    size="0x0.5" access="RO" descr="AE_PLLC_PHOS_STAT3.phos_coef4" />
+	<field name="w_group3"                        offset="0x8.5"    size="0x0.5" access="RO" descr="AE_PLLC_PHOS_STAT2.phos_coef3" />
+	<field name="w_group2"                        offset="0x8.10"   size="0x0.5" access="RO" descr="AE_PLLC_PHOS_STAT2.phos_coef2" />
+	<field name="w_group1"                        offset="0x8.15"   size="0x0.5" access="RO" descr="AE_PLLC_PHOS_STAT1.phos_coef1" />
+	<field name="w_group0"                        offset="0x8.20"   size="0x0.5" access="RO" descr="AE_PLLC_PHOS_STAT1.phos_coef0" />
+	<field name="e_group8"                        offset="0x8.26"   size="0x0.2" access="RO" descr="AE_TERM_ATTN_STAT_term_lpf" />
+	<field name="e_group7"                        offset="0x8.29"   size="0x0.3" access="RO" descr="AE_TERM_ATTN_STAT_term_attn_ctrl" />
+	<field name="w_group7"                        offset="0xc.17"   size="0x0.5" access="RO" descr="AE_PLLC_PHOS_STAT4.phos_coef7" />
+	<field name="w_group6"                        offset="0xc.22"   size="0x0.5" access="RO" descr="AE_PLLC_PHOS_STAT4.phos_coef6" />
+	<field name="w_group5"                        offset="0xc.27"   size="0x0.5" access="RO" descr="AE_PLLC_PHOS_STAT3.phos_coef5" />
 </node>
 
 <node name="sltr_non_periodic_non_destructive_ext" size="0x18.0" descr="" >
@@ -5755,6 +5781,155 @@
 </node>
 
 <node name="sltr_periodic_non_destructive_7_5_ext" size="0xd8.0" descr="" >
+	<field name="d_group_exist"                   offset="0x0.23"   size="0x0.1" access="RO" descr="does this group implemented\;\;0 - no\;\;1- yes" />
+	<field name="c_group_exist"                   offset="0x0.24"   size="0x0.1" access="RO" descr="does this group implemented\;\;0 - no\;\;1- yes" />
+	<field name="bs_group_exist"                  offset="0x0.25"   size="0x0.1" access="RO" descr="does this group implemented\;\;0 - no\;\;1- yes" />
+	<field name="bc_group_exist"                  offset="0x0.26"   size="0x0.1" access="RO" descr="does this group implemented\;\;0 - no\;\;1- yes" />
+	<field name="af_group_exist"                  offset="0x0.27"   size="0x0.1" access="RO" descr="does this group implemented\;\;0 - no\;\;1- yes" />
+	<field name="afm_group_exist"                 offset="0x0.28"   size="0x0.1" access="RO" descr="does this group implemented\;\;0 - no\;\;1- yes" />
+	<field name="f_group_exist"                   offset="0x0.29"   size="0x0.1" access="RO" descr="does this group implemented\;\;0 - no\;\;1- yes" />
+	<field name="t_group_exist"                   offset="0x0.31"   size="0x0.1" access="RO" descr="does this group implemented\;\;0 - no\;\;1- yes" />
+	<field name="af_group16"                      offset="0x4.16"   size="0x0.4" access="RO" descr="ffe_fm16" />
+	<field name="af_group15"                      offset="0x4.20"   size="0x0.4" access="RO" descr="ffe_fm15" />
+	<field name="af_group14"                      offset="0x4.24"   size="0x0.4" access="RO" descr="ffe_fm14" />
+	<field name="af_group13"                      offset="0x4.28"   size="0x0.4" access="RO" descr="ffe_fm13" />
+	<field name="afm_group5"                      offset="0x8.3"    size="0x0.7" access="RO" descr="ffe_fm5" />
+	<field name="afm_group6"                      offset="0x8.11"   size="0x0.7" access="RO" descr="ffe_fm6" />
+	<field name="afm_group7"                      offset="0x8.18"   size="0x0.6" access="RO" descr="ffe_fm7" />
+	<field name="afm_group8"                      offset="0x8.25"   size="0x0.4" access="RO" descr="ffe_fm8" />
+	<field name="afm_group9"                      offset="0x8.29"   size="0x0.3" access="RO" descr="ffe_fm9" />
+	<field name="f_group0"                        offset="0xc.8"    size="0x0.6" access="RO" descr="adc_vref_val" />
+	<field name="afm_group3"                      offset="0xc.15"   size="0x0.8" access="RO" descr="ffe_fm3" />
+	<field name="afm_group4"                      offset="0xc.24"   size="0x0.8" access="RO" descr="ffe_fm4" />
+	<field name="afm_group2"                      offset="0x10.0"   size="0x0.8" access="RO" descr="ffe_fm2" />
+	<field name="afm_group1"                      offset="0x10.10"  size="0x0.9" access="RO" descr="ffe_fm1" />
+	<field name="af_group1"                       offset="0x10.21"  size="0x0.8" access="RO" descr="ffe_f1" />
+	<field name="af_group2"                       offset="0x14.0"   size="0x0.8" access="RO" descr="ffe_f2" />
+	<field name="af_group3"                       offset="0x14.10"  size="0x0.7" access="RO" descr="ffe_f3" />
+	<field name="af_group4"                       offset="0x14.19"  size="0x0.7" access="RO" descr="ffe_f4" />
+	<field name="m_group0"                        offset="0x14.28"  size="0x0.4" access="RO" descr="ECHO_AEX_N2M2_STAT0_aex_n2" />
+	<field name="af_group5"                       offset="0x18.0"   size="0x0.7" access="RO" descr="ffe_f5" />
+	<field name="af_group6"                       offset="0x18.9"   size="0x0.6" access="RO" descr="ffe_f6" />
+	<field name="af_group7"                       offset="0x18.17"  size="0x0.6" access="RO" descr="ffe_f7" />
+	<field name="af_group8"                       offset="0x18.25"  size="0x0.6" access="RO" descr="ffe_f8" />
+	<field name="af_group9"                       offset="0x1c.0"   size="0x0.6" access="RO" descr="ffe_f9" />
+	<field name="af_group10"                      offset="0x1c.8"   size="0x0.5" access="RO" descr="ffe_f10" />
+	<field name="af_group11"                      offset="0x1c.15"  size="0x0.5" access="RO" descr="ffe_f11" />
+	<field name="af_group12"                      offset="0x1c.22"  size="0x0.5" access="RO" descr="ffe_f12" />
+	<field name="bs_group0"                       offset="0x20.0"   size="0x0.6" access="RO" descr="dffe_dsel0" />
+	<field name="bc_group0"                       offset="0x20.6"   size="0x0.4" access="RO" descr="dffe_coef0" />
+	<field name="bs_group1"                       offset="0x20.11"  size="0x0.6" access="RO" descr="dffe_dsel1" />
+	<field name="bc_group1"                       offset="0x20.17"  size="0x0.4" access="RO" descr="dffe_coef1" />
+	<field name="bs_group2"                       offset="0x20.22"  size="0x0.6" access="RO" descr="dffe_dsel2" />
+	<field name="bc_group2"                       offset="0x20.28"  size="0x0.4" access="RO" descr="dffe_coef2" />
+	<field name="bs_group3"                       offset="0x24.0"   size="0x0.6" access="RO" descr="dffe_dsel3" />
+	<field name="bc_group3"                       offset="0x24.6"   size="0x0.4" access="RO" descr="dffe_coef3" />
+	<field name="bs_group4"                       offset="0x24.11"  size="0x0.6" access="RO" descr="dffe_dsel4" />
+	<field name="bc_group4"                       offset="0x24.17"  size="0x0.4" access="RO" descr="dffe_coef4" />
+	<field name="bs_group5"                       offset="0x24.22"  size="0x0.6" access="RO" descr="dffe_dsel5" />
+	<field name="bc_group5"                       offset="0x24.28"  size="0x0.4" access="RO" descr="dffe_coef5" />
+	<field name="bs_group6"                       offset="0x28.0"   size="0x0.6" access="RO" descr="dffe_dsel6" />
+	<field name="bc_group6"                       offset="0x28.6"   size="0x0.4" access="RO" descr="dffe_coef6" />
+	<field name="bs_group7"                       offset="0x28.11"  size="0x0.6" access="RO" descr="dffe_dsel7" />
+	<field name="bc_group7"                       offset="0x28.17"  size="0x0.4" access="RO" descr="dffe_coef7" />
+	<field name="bs_group8"                       offset="0x28.22"  size="0x0.6" access="RO" descr="dffe_dsel8" />
+	<field name="bc_group8"                       offset="0x28.28"  size="0x0.4" access="RO" descr="dffe_coef8" />
+	<field name="bs_group9"                       offset="0x2c.0"   size="0x0.6" access="RO" descr="dffe_dsel9" />
+	<field name="bc_group9"                       offset="0x2c.6"   size="0x0.4" access="RO" descr="dffe_coef9" />
+	<field name="bs_group10"                      offset="0x2c.11"  size="0x0.6" access="RO" descr="dffe_dsel10" />
+	<field name="bc_group10"                      offset="0x2c.17"  size="0x0.4" access="RO" descr="dffe_coef10" />
+	<field name="bs_group11"                      offset="0x2c.22"  size="0x0.6" access="RO" descr="dffe_dsel11" />
+	<field name="bc_group11"                      offset="0x2c.28"  size="0x0.4" access="RO" descr="dffe_coef11" />
+	<field name="bs_group12"                      offset="0x30.0"   size="0x0.6" access="RO" descr="dffe_dsel12" />
+	<field name="bc_group12"                      offset="0x30.6"   size="0x0.4" access="RO" descr="dffe_coef12" />
+	<field name="bs_group13"                      offset="0x30.11"  size="0x0.6" access="RO" descr="dffe_dsel13" />
+	<field name="bc_group13"                      offset="0x30.17"  size="0x0.4" access="RO" descr="dffe_coef13" />
+	<field name="bs_group14"                      offset="0x30.22"  size="0x0.6" access="RO" descr="dffe_dsel14" />
+	<field name="bc_group14"                      offset="0x30.28"  size="0x0.4" access="RO" descr="dffe_coef14" />
+	<field name="bs_group15"                      offset="0x34.0"   size="0x0.6" access="RO" descr="dffe_dsel15" />
+	<field name="bc_group15"                      offset="0x34.6"   size="0x0.4" access="RO" descr="dffe_coef15" />
+	<field name="c_group0"                        offset="0x34.11"  size="0x0.10" access="RO" descr="fb_slicer_th0" />
+	<field name="c_group1"                        offset="0x34.22"  size="0x0.10" access="RO" descr="fb_slicer_th1" />
+	<field name="c_group2"                        offset="0x38.0"   size="0x0.10" access="RO" descr="fb_slicer_th2" />
+	<field name="c_group3"                        offset="0x38.11"  size="0x0.10" access="RO" descr="fb_slicer_th3" />
+	<field name="c_group4"                        offset="0x38.22"  size="0x0.10" access="RO" descr="fb_slicer_th4" />
+	<field name="c_group5"                        offset="0x3c.0"   size="0x0.10" access="RO" descr="fb_slicer_th5" />
+	<field name="c_group6"                        offset="0x3c.11"  size="0x0.10" access="RO" descr="fb_slicer_th6" />
+	<field name="c_group7"                        offset="0x3c.22"  size="0x0.10" access="RO" descr="fb_slicer_th7" />
+	<field name="c_group8"                        offset="0x40.0"   size="0x0.10" access="RO" descr="fb_slicer_th8" />
+	<field name="c_group9"                        offset="0x40.11"  size="0x0.10" access="RO" descr="fb_slicer_th9" />
+	<field name="c_group10"                       offset="0x40.22"  size="0x0.10" access="RO" descr="fb_slicer_th10" />
+	<field name="c_group11"                       offset="0x44.0"   size="0x0.10" access="RO" descr="fb_slicer_th11" />
+	<field name="c_group12"                       offset="0x44.11"  size="0x0.10" access="RO" descr="fb_slicer_th12" />
+	<field name="d_group0"                        offset="0x44.22"  size="0x0.10" access="RO" descr="ff_slicer_th0" />
+	<field name="d_group1"                        offset="0x48.0"   size="0x0.10" access="RO" descr="ff_slicer_th1" />
+	<field name="d_group2"                        offset="0x48.11"  size="0x0.10" access="RO" descr="ff_slicer_th2" />
+	<field name="d_group3"                        offset="0x48.22"  size="0x0.10" access="RO" descr="ff_slicer_th3" />
+	<field name="d_group4"                        offset="0x4c.0"   size="0x0.10" access="RO" descr="ff_slicer_th4" />
+	<field name="d_group5"                        offset="0x4c.11"  size="0x0.10" access="RO" descr="ff_slicer_th5" />
+	<field name="d_group6"                        offset="0x4c.22"  size="0x0.10" access="RO" descr="ff_slicer_th6" />
+	<field name="d_group7"                        offset="0x50.0"   size="0x0.10" access="RO" descr="ff_slicer_th7" />
+	<field name="d_group8"                        offset="0x50.11"  size="0x0.10" access="RO" descr="ff_slicer_th8" />
+	<field name="d_group9"                        offset="0x50.22"  size="0x0.10" access="RO" descr="ff_slicer_th9" />
+	<field name="d_group10"                       offset="0x54.0"   size="0x0.10" access="RO" descr="ff_slicer_th10" />
+	<field name="d_group11"                       offset="0x54.11"  size="0x0.10" access="RO" descr="ff_slicer_th11" />
+	<field name="d_group12"                       offset="0x54.22"  size="0x0.10" access="RO" descr="ff_slicer_th12" />
+	<field name="za_group4"                       offset="0x58.2"   size="0x0.6" access="RO" descr="CLKBUF_DCC_Q_STAT_dcc_qclk_vref_ctrl" />
+	<field name="za_group3"                       offset="0x58.8"   size="0x0.6" access="RO" descr="CLKBUF_DCC_I_STAT_dcc_iclkb_vref_ctrl" />
+	<field name="za_group2"                       offset="0x58.14"  size="0x0.6" access="RO" descr="CLKBUF_DCC_I_STAT_dcc_iclk_vref_ctrl" />
+	<field name="za_group1"                       offset="0x58.20"  size="0x0.6" access="RO" descr="CLKBUF_IQC_STAT_iqc_qclk_fine_ctrl" />
+	<field name="za_group0"                       offset="0x58.26"  size="0x0.6" access="RO" descr="CLKBUF_IQC_STAT_iqc_iclk_fine_ctrl" />
+	<field name="zd_group0"                       offset="0x5c.20"  size="0x0.5" access="RO" descr="TX_TMCAL_CTX_CTRL_ctx_pi_phase" />
+	<field name="za_group5"                       offset="0x5c.26"  size="0x0.6" access="RO" descr="CLKBUF_DCC_Q_STAT_dcc_qclkb_vref_ctrl" />
+	<field name="x_group1"                        offset="0x64.0"   size="0x0.16" access="RO" descr="AE_PLLC_GOSC_STAT0" />
+	<field name="x_group0"                        offset="0x64.16"  size="0x0.16" access="RO" descr="AE_PLLC_VOS_STAT0" />
+	<field name="x_group5"                        offset="0x68.0"   size="0x0.6" access="RO" descr="AE_PLLC_RO_STAT_ro_fine" />
+	<field name="x_group4"                        offset="0x68.6"   size="0x0.4" access="RO" descr="AE_PLLC_ILO_STAT_ilo_coarse" />
+	<field name="x_group3"                        offset="0x68.10"  size="0x0.6" access="RO" descr="AE_PLLC_ILO_STAT_ilo_fine" />
+	<field name="x_group2"                        offset="0x68.16"  size="0x0.16" access="RO" descr="AE_PLLC_GOSF_STAT0" />
+	<field name="x_group7"                        offset="0x6c.15"  size="0x0.13" access="RO" descr="AE_CDR_RXPLL_FRVAL_STAT_rxpll_frval" />
+	<field name="x_group6"                        offset="0x6c.28"  size="0x0.4" access="RO" descr="AE_PLLC_RO_STAT_ro_coarse" />
+	<field name="u_group1"                        offset="0x70.0"   size="0x0.16" access="RO" descr="AE_PHOS_CTX_CTRL1" />
+	<field name="u_group0"                        offset="0x70.16"  size="0x0.16" access="RO" descr="AE_PHOS_CTX_CTRL0" />
+	<field name="u_group3"                        offset="0x74.0"   size="0x0.16" access="RO" descr="AE_PHOS_CTX_CTRL3" />
+	<field name="u_group2"                        offset="0x74.16"  size="0x0.16" access="RO" descr="AE_PHOS_CTX_CTRL2" />
+	<field name="u_group5"                        offset="0x78.0"   size="0x0.16" access="RO" descr="AE_PHOS_CTX_CTRL5" />
+	<field name="u_group4"                        offset="0x78.16"  size="0x0.16" access="RO" descr="AE_PHOS_CTX_CTRL4" />
+	<field name="u_group7"                        offset="0x7c.0"   size="0x0.16" access="RO" descr="AE_PHOS_CTX_CTRL7" />
+	<field name="u_group6"                        offset="0x7c.16"  size="0x0.16" access="RO" descr="AE_PHOS_CTX_CTRL6" />
+	<field name="u_group9"                        offset="0x80.0"   size="0x0.16" access="RO" descr="AE_PHOS_CTX_CTRL9" />
+	<field name="u_group8"                        offset="0x80.16"  size="0x0.16" access="RO" descr="AE_PHOS_CTX_CTRL8" />
+	<field name="u_group11"                       offset="0x84.0"   size="0x0.16" access="RO" descr="AE_PHOS_CTX_CTRL11" />
+	<field name="u_group10"                       offset="0x84.16"  size="0x0.16" access="RO" descr="AE_PHOS_CTX_CTRL10" />
+	<field name="u_group13"                       offset="0x88.0"   size="0x0.16" access="RO" descr="AE_PHOS_CTX_CTRL13" />
+	<field name="u_group12"                       offset="0x88.16"  size="0x0.16" access="RO" descr="AE_PHOS_CTX_CTRL12" />
+	<field name="u_group15"                       offset="0x8c.0"   size="0x0.16" access="RO" descr="AE_PHOS_CTX_CTRL15" />
+	<field name="u_group14"                       offset="0x8c.16"  size="0x0.16" access="RO" descr="AE_PHOS_CTX_CTRL14" />
+	<field name="ha_group"                        offset="0x90.24"  size="0x10.0" access="RO" high_bound="15" low_bound="0" descr="adc_vos" />
+	<field name="hb_group"                        offset="0xa0.24"  size="0x10.0" access="RO" high_bound="15" low_bound="0" descr="adc_gos" />
+	<field name="t_group1"                        offset="0xb0.0"   size="0x0.16" access="RO" descr="AE_NSX_STAT1" />
+	<field name="t_group0"                        offset="0xb0.16"  size="0x0.16" access="RO" descr="AE_NSX_STAT0" />
+	<field name="t_group4"                        offset="0xb4.0"   size="0x0.8" access="RO" descr="AE_EQ_NSX_CTRL0_nsx_error_limit" />
+	<field name="t_group3"                        offset="0xb4.8"   size="0x0.8" access="RO" descr="AE_EQ_NSX_CTRL1_nsx_error_ratio" />
+	<field name="t_group2"                        offset="0xb4.16"  size="0x0.16" access="RO" descr="AE_NSX_STAT2" />
+	<field name="t_group5"                        offset="0xb8.30"  size="0x0.2" access="RO" descr="AE_EQ_NSX_CTRL0_nsx_mode" />
+	<field name="g_group1"                        offset="0xbc.0"   size="0x0.16" access="RO" descr="EOM_FOM_STAT1" />
+	<field name="g_group0"                        offset="0xbc.16"  size="0x0.16" access="RO" descr="EOM_FOM_STAT0" />
+	<field name="g_group3"                        offset="0xc0.0"   size="0x0.16" access="RO" descr="EOM_FOM_STAT3" />
+	<field name="g_group2"                        offset="0xc0.16"  size="0x0.16" access="RO" descr="EOM_FOM_STAT2" />
+	<field name="g_group5"                        offset="0xc4.0"   size="0x0.16" access="RO" descr="EOM_FOM_STAT5" />
+	<field name="g_group4"                        offset="0xc4.16"  size="0x0.16" access="RO" descr="EOM_FOM_STAT4" />
+	<field name="g_group7"                        offset="0xc8.0"   size="0x0.16" access="RO" descr="EOM_FOM_STAT7" />
+	<field name="g_group6"                        offset="0xc8.16"  size="0x0.16" access="RO" descr="EOM_FOM_STAT6" />
+	<field name="g_group9"                        offset="0xcc.0"   size="0x0.16" access="RO" descr="EOM_FOM_STAT9" />
+	<field name="g_group8"                        offset="0xcc.16"  size="0x0.16" access="RO" descr="EOM_FOM_STAT8" />
+	<field name="ah_group2"                       offset="0xd0.6"   size="0x0.5" access="RO" descr="phos_fine_gray" />
+	<field name="ah_group1"                       offset="0xd0.11"  size="0x0.5" access="RO" descr="phos_coarse_gray" />
+	<field name="ah_group7"                       offset="0xd4.6"   size="0x0.4" access="RO" descr="dco_sprfine" />
+	<field name="ah_group6"                       offset="0xd4.10"  size="0x0.5" access="RO" descr="dco_fine" />
+	<field name="ah_group5"                       offset="0xd4.15"  size="0x0.4" access="RO" descr="dco_coarse" />
+	<field name="ah_group4"                       offset="0xd4.19"  size="0x0.6" access="RO" descr="caldac_vos_ctrl_gray" />
+	<field name="ah_group3"                       offset="0xd4.25"  size="0x0.7" access="RO" descr="dtc_gain_gray" />
 </node>
 
 <node name="sltr_periodic_non_destructive_ext"    size="0x124.0" descr="" >
