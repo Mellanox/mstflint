@@ -33,9 +33,9 @@
 
 
 ###############################################################################
-#    This file was generated at "2026-08-11 11:13:14"
+#    This file was generated at "2026-07-05 12:14:38"
 #    by:
-#      > gen_adb_data.py -g hca_prm_projects
+#      > prm_update.py --project Nic
 ###############################################################################
 
 import os
@@ -189,7 +189,6 @@ class MGIR_HARDWARE_INFO_EXT(ctypes.Structure):
         ("num_ports", ctypes.c_uint16),
         ("hw_dev_id", ctypes.c_uint16),
         ("module_master_fw_default", ctypes.c_uint8),
-        ("board_ga", ctypes.c_uint8),
         ("cpo_indication", ctypes.c_uint8),
         ("ga_valid", ctypes.c_uint8),
         ("development", ctypes.c_uint8),
@@ -242,9 +241,7 @@ class MGIR_FW_INFO_EXT(ctypes.Structure):
         ("uphy_version_major", ctypes.c_uint8),
         ("BKV_clm_sub_minor", ctypes.c_uint8),
         ("BKV_clm_minor", ctypes.c_uint8),
-        ("BKV_clm_major", ctypes.c_uint8),
-        ("pci_major", ctypes.c_uint16),
-        ("pci_minor", ctypes.c_uint8)
+        ("BKV_clm_major", ctypes.c_uint8)
     ]
 
 class ROM_VERSION_EXT(ctypes.Structure):
@@ -378,21 +375,6 @@ class NIC_DPA_PERF_CTRL_REG_EXT(ctypes.Structure):
         ("count_state", ctypes.c_uint8)
     ]
 
-class NIC_CAP_EXT_DIAG_DATA_CAP(ctypes.Structure):
-    _fields_ = [
-        ("producer_sample_id", ctypes.c_uint8),
-        ("sample_mode_on_demand", ctypes.c_uint8),
-        ("sample_mode_repetitive", ctypes.c_uint8),
-        ("sample_mode_single", ctypes.c_uint8),
-        ("tracer_dump", ctypes.c_uint8),
-        ("sync_start", ctypes.c_uint8),
-        ("data_clear", ctypes.c_uint8),
-        ("max_log_num_sample", ctypes.c_uint8),
-        ("log_max_num_data_id", ctypes.c_uint8),
-        ("data_timestamp_source", ctypes.c_uint8),
-        ("diag_data_domain_max", ctypes.c_uint8)
-    ]
-
 class NIC_CAP_EXT_DPA_CAP(ctypes.Structure):
     _fields_ = [
         ("max_num_dpa_eug", ctypes.c_uint16),
@@ -409,10 +391,25 @@ class NIC_CAP_EXT_DPA_CAP(ctypes.Structure):
         ("dpa_self_host_app_action", ctypes.c_uint16)
     ]
 
+class NIC_CAP_EXT_DIAG_DATA_CAP(ctypes.Structure):
+    _fields_ = [
+        ("producer_sample_id", ctypes.c_uint8),
+        ("sample_mode_on_demand", ctypes.c_uint8),
+        ("sample_mode_repetitive", ctypes.c_uint8),
+        ("sample_mode_single", ctypes.c_uint8),
+        ("tracer_dump", ctypes.c_uint8),
+        ("sync_start", ctypes.c_uint8),
+        ("data_clear", ctypes.c_uint8),
+        ("max_log_num_sample", ctypes.c_uint8),
+        ("log_max_num_data_id", ctypes.c_uint8),
+        ("data_timestamp_source", ctypes.c_uint8),
+        ("diag_data_domain_max", ctypes.c_uint8)
+    ]
+
 class NIC_CAP_EXT_REG_CAP_DATA_AUTO(ctypes.Union):
     _fields_ = [
-        ("nic_cap_ext_diag_data_cap", NIC_CAP_EXT_DIAG_DATA_CAP),
-        ("nic_cap_ext_dpa_cap", NIC_CAP_EXT_DPA_CAP)
+        ("nic_cap_ext_dpa_cap", NIC_CAP_EXT_DPA_CAP),
+        ("nic_cap_ext_diag_data_cap", NIC_CAP_EXT_DIAG_DATA_CAP)
     ]
 
 class NIC_CAP_EXT_REG(ctypes.Structure):
