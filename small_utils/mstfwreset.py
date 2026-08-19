@@ -2433,6 +2433,7 @@ def status_pending_nvconfig(device):
 # Description: Determine required reset type based on pending changes
 ######################################################################
 
+FULL_POWER_CYCLE = "Full power cycle"
 
 def determine_required_reset(has_pending_fw, has_pending_nvconfig, mfrl, is_any_sync_supported, sync_2_only_supported):
     """
@@ -2458,8 +2459,9 @@ def determine_required_reset(has_pending_fw, has_pending_nvconfig, mfrl, is_any_
     try:
         default_level = mfrl.default_reset_level(is_any_sync_supported, skip_pci_reset, sync_2_only_supported)
         reset_type_str = "%s (Level %d)" % (CmdRegMfrl.reset_level_description(default_level), default_level)
-    except CmdNotSupported:
-        reset_type_str = "Full power cycle"
+    except CmdNotSupported as e:
+        logger.debug("default_reset_level failed: %s" % e)  # either no reset level is supported or no default exists
+        reset_type_str = FULL_POWER_CYCLE
 
     return {
         'reset_needed': True,
@@ -2489,9 +2491,12 @@ def status_command(device, mfrl, is_any_sync_supported, sync_2_only_supported, d
     has_pending_nvconfig = len(nvconfig_params) > 0
     reset_info = determine_required_reset(has_pending_fw, has_pending_nvconfig, mfrl, is_any_sync_supported, sync_2_only_supported)
 
-    if pci_rescan_required:
+    if reset_info['reset_type'] == FULL_POWER_CYCLE:
+        description_action = "Full power cycle is required"
+        command_required = None  # we can't say how to perform power cycle as it's system dependent
+    elif pci_rescan_required:
         description_action = "PCI rescan is required"
-        command_required = "Reboot external host is required"
+        command_required = "Reboot external host is required" # System Level Reset (SLR) - arm shutdown followed by warm reboot
         # command_required = "echo 1 > /sys/bus/pci/rescan" // Missing FW implementation.
         reset_info['reset_needed'] = True
         reset_info['reasons'].append("PCI rescan is required")
