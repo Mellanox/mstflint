@@ -3509,7 +3509,7 @@ void MlxlinkCommander::showPrr()
 
     try
     {
-        sendPrmReg(ACCESS_REG_SLPRR, REG_SET, "lane=%d,start_measure=1", _userInput._lane);
+        sendPrmReg(ACCESS_REG_SLPRR, SET, "lane=%d,start_measure=1", _userInput._lane);
     }
     catch (const std::exception& exc)
     {
@@ -3522,7 +3522,7 @@ void MlxlinkCommander::showPrr()
     u_int32_t status = SLPRR_STATUS_NO_MEAS;
     while (elapsed < SLPRR_POLL_TIMEOUT_MS)
     {
-        sendPrmReg(ACCESS_REG_SLPRR, REG_GET, "lane=%d", _userInput._lane);
+        sendPrmReg(ACCESS_REG_SLPRR, GET, "lane=%d", _userInput._lane);
         status = getFieldValue("status");
         if (status == SLPRR_STATUS_MEASUREMENT_DONE)
         {
@@ -3557,7 +3557,7 @@ void MlxlinkCommander::showPrr()
     {
         for (size_t i = 0; i < NUM_MEAS_TYPES; i++)
         {
-            sendPrmReg(ACCESS_REG_SLPRR, REG_GET, "lane=%d,meas_type=%d", _userInput._lane, MEAS_TYPES[i]);
+            sendPrmReg(ACCESS_REG_SLPRR, GET, "lane=%d,meas_type=%d", _userInput._lane, MEAS_TYPES[i]);
             dumpPrrMeasData(MEAS_TYPES[i]);
         }
     }
@@ -3567,7 +3567,7 @@ void MlxlinkCommander::showPrr()
           string("Reading PRR meas_data raised the following exception: ") + string(exc.what()) + string("\n");
     }
 
-    printOutput(_prrInfoCmd);
+    cout << _prrInfoCmd;
 }
 
 void MlxlinkCommander::queryBkvCaps(uint8_t& numGroups, uint8_t groupId)
@@ -3968,7 +3968,7 @@ void MlxlinkCommander::showPhyInfo()
     {
         setPrintTitle(_phyInfoCmd, "PHY Info", PHY_INFO_LAST);
 
-        sendPrmReg(ACCESS_REG_PDDR, REG_GET, "page_select=%d", PDDR_PHY_INFO_PAGE);
+        sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d", PDDR_PHY_INFO_PAGE);
 
         u_int32_t sdValid = getFieldValue("sd_valid");
         u_int32_t signalDetected = getFieldValue("signal_detected");
@@ -3980,7 +3980,7 @@ void MlxlinkCommander::showPhyInfo()
         setPrintVal(_phyInfoCmd, "RX AM Lock Per Lane", bitsToPerLaneStr(amLockBits, _numOfLanes), ANSI_COLOR_RESET, true,
                     true, true);
 
-        sendPrmReg(ACCESS_REG_PDDR, REG_GET, "page_select=%d", PDDR_MODULE_LINK_DOWN_INFO_PAGE);
+        sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d", PDDR_MODULE_LINK_DOWN_INFO_PAGE);
 
         u_int32_t pcsPhyStateLatched = getFieldValue("pcs_phy_state_latched");
         bool latchedValid = (pcsPhyStateLatched >> 31) & 1;             // bit 31: validity bit
@@ -3989,7 +3989,7 @@ void MlxlinkCommander::showPhyInfo()
         setPrintVal(_phyInfoCmd, "RX AM Lock Latched Per Lane", bitsToPerLaneStr(amLockLatchedBits, _numOfLanes),
                     ANSI_COLOR_RESET, true, latchedValid, true);
 
-        printOutput(_phyInfoCmd);
+        cout << _phyInfoCmd;
     }
     catch (const std::exception& exc)
     {
@@ -7453,7 +7453,7 @@ void MlxlinkCommander::showHostClass()
 {
     try
     {
-        sendPrmReg(ACCESS_REG_PDDR, REG_GET, "page_select=%d", PDDR_OPERATIONAL_INFO_PAGE);
+        sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d", PDDR_OPERATIONAL_INFO_PAGE);
         setPrintTitle(_hostClassCmd, HEADER_HOST_CLASS_INFO, HOST_CLASS_INFO_LAST);
         setPrintVal(_hostClassCmd, "Local Host Class",
                     getStrByValue(getFieldValue("local_host_class"), _mlxlinkMaps->_hostClass));
@@ -7464,7 +7464,7 @@ void MlxlinkCommander::showHostClass()
     {
         throw MlxRegException("Host Class is not supported for the current device!");
     }
-    printOutput(_hostClassCmd);
+    cout << _hostClassCmd;
 }
 
 void MlxlinkCommander::showRxRecoveryCounters()
