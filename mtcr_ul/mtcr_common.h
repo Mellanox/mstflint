@@ -38,15 +38,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define DBG_PRINTF(...)                   \
-    do                                    \
-    {                                     \
-        if (getenv("MFT_DEBUG") != NULL)  \
-        {                                 \
-            fprintf(stderr, __VA_ARGS__); \
-        }                                 \
-    } while (0)
-
 void swap_pci_address_space(mfile* mf);
 int is_bluefield4_pci_device(u_int16_t pci_device_id);
 

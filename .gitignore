@@ -3,7 +3,9 @@
 *.la
 *.lo
 *.so
+*.lai
 .deps/
+.libs/
 __pycache__/
 
 Makefile

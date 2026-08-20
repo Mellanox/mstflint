@@ -32,6 +32,8 @@
  */
 
 #include "mtcr_common.h"
+#include "mtcr_int_defs.h"
+#include "mft_logger/mft_logger_c.h"
 
 int is_bluefield4_pci_device(u_int16_t pci_device_id)
 {
@@ -83,11 +85,11 @@ void swap_pci_address_space(mfile* mf)
         break;
 
     default:
-        DBG_PRINTF("MTCR: swap_pci_address_space: no address_space found: %x\n", mf->address_space);
+        MTCR_LOG_DEBUG("MTCR: swap_pci_address_space: no address_space found: %x", mf->address_space);
         return;
     }
 
-    DBG_PRINTF("mf->address_space swapped to: %x\n", mf->address_space);
+    MTCR_LOG_DEBUG("mf->address_space swapped to: %x", mf->address_space);
 }
 
 const char* m_err2str(MError status)

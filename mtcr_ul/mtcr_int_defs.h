@@ -36,6 +36,28 @@
 
 #include "mtcr_com_defs.h"
 
+/*
+ * mtcr logging - thin, printf-style wrappers over the central MFT logger C API
+ * on the MTCR layer. What is emitted is controlled by the logger configuration
+ * (/var/lib/mstflint/mstflint_logger.json), so these cost a null check and an
+ * integer compare until someone turns the mtcr layer on.
+ *
+ * These only bind the MTCR layer to the shared MFT_LOG_C_*F macros; every layer
+ * uses the same shared macros with its own MFT_LAYER_* constant, so no per-layer
+ * implementation is needed. They live in this internal header rather than in
+ * mtcr_com_defs.h because the latter is installed as a public header
+ * ($(includedir)/mstflint) and must not drag the logger headers into the
+ * external API. Translation units that use these must include
+ * "mft_logger/mft_logger_c.h".
+ *
+ * Pass a single self-contained message per call, without a trailing newline.
+ */
+#define MTCR_LOG_DEBUG(...) MFT_LOG_C_DEBUGF(MFT_LAYER_MTCR, __VA_ARGS__)
+#define MTCR_LOG_INFO(...) MFT_LOG_C_INFOF(MFT_LAYER_MTCR, __VA_ARGS__)
+#define MTCR_LOG_WARNING(...) MFT_LOG_C_WARNINGF(MFT_LAYER_MTCR, __VA_ARGS__)
+#define MTCR_LOG_ERROR(...) MFT_LOG_C_ERRORF(MFT_LAYER_MTCR, __VA_ARGS__)
+#define MTCR_LOG_FATAL(...) MFT_LOG_C_FATALF(MFT_LAYER_MTCR, __VA_ARGS__)
+
 typedef int (*f_mread4)(mfile* mf, unsigned int offset, u_int32_t* value);
 typedef int (*f_mwrite4)(mfile* mf, unsigned int offset, u_int32_t value);
 typedef int (*f_mread4_block)(mfile* mf, unsigned int offset, void* data, int byte_len);

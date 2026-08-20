@@ -35,17 +35,10 @@
 #include "mtcr_ib.h"
 #include "packets_common.h"
 #include <string.h>
+#include "mtcr_int_defs.h"
+#include "mft_logger/mft_logger_c.h"
 
 #define IB_SMP_DATA_SIZE 48
-
-#define DBG_PRINTF(...)                   \
-    do                                    \
-    {                                     \
-        if (getenv("MFT_DEBUG") != NULL)  \
-        {                                 \
-            fprintf(stderr, __VA_ARGS__); \
-        }                                 \
-    } while (0)
 
 /* Description -   */
 /* Size in bytes - 12 */
@@ -151,7 +144,7 @@ int mib_semaphore_lock_vs_mad(mfile* mf,
     cmd.semaphore_addr = sem_addr;
     cmd.op = op;
     cmd.lock_key = lock_key;
-    DBG_PRINTF("#######BFORE#####\n# SEM_ADDR: 0x%x\n# OP: %d\n# Lock_Key: 0x%x\n#################\n",
+    MTCR_LOG_DEBUG("#######BFORE#####\n# SEM_ADDR: 0x%x\n# OP: %d\n# Lock_Key: 0x%x\n#################",
                cmd.semaphore_addr, cmd.op, cmd.lock_key);
     semaphore_lock_cmd_pack(&cmd, mad_data);
     if (method == SEM_LOCK_SET)
@@ -163,7 +156,7 @@ int mib_semaphore_lock_vs_mad(mfile* mf,
         rc = mib_semaphore_lock_smp(mf, mad_data, method);
     }
     semaphore_lock_cmd_unpack(&cmd, mad_data);
-    DBG_PRINTF("#######AFTER#####\n# SEM_ADDR: 0x%x\n# OP: %d\n# Lock_Key: 0x%x\n#################\n",
+    MTCR_LOG_DEBUG("#######AFTER#####\n# SEM_ADDR: 0x%x\n# OP: %d\n# Lock_Key: 0x%x\n#################",
                cmd.semaphore_addr, cmd.op, cmd.lock_key);
     *res = cmd.lock_key;
     *is_leaseable = (int)cmd.is_lease;
@@ -190,7 +183,7 @@ int mib_semaphore_lock_is_supported(mfile* mf)
     memset(&cmd, 0, sizeof(cmd));
     mib_smp_get(mf, mad_data, SMP_SEMAPHOE_LOCK_CMD, 0);
     semaphore_lock_cmd_unpack(&cmd, mad_data);
-    DBG_PRINTF("###### QUERY #####\n# MAX_SEM_ADDR: 0x%x\n#################\n", cmd.semaphore_max_addr);
+    MTCR_LOG_DEBUG("###### QUERY #####\n# MAX_SEM_ADDR: 0x%x\n#################", cmd.semaphore_max_addr);
     if (cmd.semaphore_max_addr > 0)
     {
         return 1;
