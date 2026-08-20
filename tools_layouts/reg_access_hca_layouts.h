@@ -36,9 +36,9 @@
  
 
 /***
-         *** This file was generated at "2026-08-06 11:30:47"
+         *** This file was generated at "2026-08-20 15:38:06"
          *** by:
-         ***    > /usr/local/lib64/python3.6/site-packages/mft_adbtools/adabe_plugins/adb2c/adb2pack.py --input /home/jenkins/agent/workspace/automatic_prm_update/user/tools_layouts/adb/prm/hca/ext/reg_access_hca.adb --file-prefix reg_access_hca --prefix reg_access_hca_ --no-adb-utils -o /home/jenkins/agent/workspace/automatic_prm_update/user/tools_layouts
+         ***    > /usr/local/lib64/python3.9/site-packages/mft_adbtools/adabe_plugins/adb2c/adb2pack.py --input /home/jenkins/agent/workspace/automatic_prm_update/user/tools_layouts/adb/prm/hca/ext/reg_access_hca.adb --file-prefix reg_access_hca --prefix reg_access_hca_ --no-adb-utils -o /home/jenkins/agent/workspace/automatic_prm_update/user/tools_layouts
          ***/
 #ifndef REG_ACCESS_HCA_LAYOUTS_H
 #define REG_ACCESS_HCA_LAYOUTS_H
@@ -705,11 +705,45 @@ command. No additional actions required from the host.3-15: Reserved */
 	/* 0x1c.10 - 0x1c.13 */
 	/* access: RO */
 	u_int8_t activation_type;
+	/* Description - Flag indicating that the currently running Firmware content deviates from
+the Load identified by the active firmware version information. */
+	/* 0x1c.15 - 0x1c.15 */
+	/* access: RO */
+	u_int8_t abnormal_fw_indication;
 /*---------------- DWORD[8] (Offset 0x20) ----------------*/
 	/* Description - Vendor Serial Number */
 	/* 0x20.0 - 0x20.15 */
 	/* access: RO */
 	u_int16_t vendor_sn;
+/*---------------- DWORD[9] (Offset 0x24) ----------------*/
+	/* Description - Bit 7: FixedFirmwareFallback  1b: A fixed firmware load with basic
+firmware download capabilities is available.Bits 6:0: Reserved. */
+	/* 0x24.0 - 0x24.7 */
+	/* access: RO */
+	u_int8_t fw_support_options;
+	/* Description - Bit 7: UniqueLoadVersionSupported  1b: Version information is
+characteristic of entire load.Bit 6: DualBankSupported  1b: Banks A and B are supported.Bit 5: FirmwareLoadTagSupported  1b: Persistent Firmware Load Tag is
+supported.Bit 4: AbnormalIndicationSupported  1b: Abnormal Firmware Indication
+is supported.Bit 3: TransferIsHarmless  1b: Transfer does not impact mission
+integrity and quality.Bit 2: RejectUnsupportedActivation  1b: Module rejects if activation
+has unwanted side effects.Bits 1:0: Reserved. */
+	/* 0x24.8 - 0x24.15 */
+	/* access: RO */
+	u_int8_t fw_support_details;
+	/* Description - bits 7:4: OptionsProfileCompliance: 0: undefined, unknown;
+1: noncompliant; 2: partially compliant, with exceptions; 3: fully
+compliant.
+bits 3:0: RequirementsCompliance: 0: undefined, unknown;
+1: noncompliant; 2: partially compliant, with exceptions; 3: fully
+compliant. */
+	/* 0x24.16 - 0x24.23 */
+	/* access: RO */
+	u_int8_t load_management_compliance;
+	/* Description - Byte 0  FeatureSupport (bits 7:0): 0: Feature is not supported; >0:
+CmisRevision of the feature definition (U4 major, U4 minor). */
+	/* 0x24.24 - 0x24.31 */
+	/* access: RO */
+	u_int8_t load_management_feature_support;
 };
 
 /* Description -   */
@@ -929,7 +963,7 @@ header (together with the type field). */
 	/* Description - The entity which configured this parameter0x0: UNSPECIFIED0x1: CHASSIS_BMC0x2: MAD0x3: BMC0x4: COMMAND_INTERFACE0x5: ICMD - with unspecified source0x6: ICMD_UEFI_HII - configured by the NICs UEFI expansion ROMs HII
 menu.0x7: ICMD_UEFI_CLP - configured by the NICs expansion ROMs CLP.0x8: ICMD_Flexboot - configured by the NICs legacy expansion ROM.0x9: ICMD_mlxconfig - configured by Mellanox mlxconfig tool0xA: ICMD_USER1 - value available for customer created tools that
 uses the ICMD interface for writing TLVs.0xB: ICMD_USER2 - value available for customer created tools that
-uses the ICMD interface for writing TLVs.0xC: ICMD_MLXCONFIG_SET_RAW - configures bymlxconfig set raw operation.0xD: ICMD_FLEXBOOT_CLP - configured by Legacy Expansion ROM CLP0x10: BMC_APP1 - Configuration was done over the BMC0x11: BMC_APP2 - Configuration was done over the BMC0x12: BMP_APP3 - Configuration was done over the BMC0x1F: OTHER - the parameter was written by the NIC due to other
+uses the ICMD interface for writing TLVs.0xC: ICMD_MLXCONFIG_SET_RAW - configures bymlxconfig set raw operation.0xD: ICMD_FLEXBOOT_CLP - configured by Legacy Expansion ROM CLP0xE: CMIS_CDB - configured by VMOD CMIS CDB I/F0x10: BMC_APP1 - Configuration was done over the BMC0x11: BMC_APP2 - Configuration was done over the BMC0x12: BMP_APP3 - Configuration was done over the BMC0x1F: OTHER - the parameter was written by the NIC due to other
 reasons.Note - This field is writeable only when using the ICMD interface.
 The only value that are valid for writes are 0x6 through 0xB. Other
 values will be replaced by 0x5ICMD. */
@@ -1516,21 +1550,31 @@ will have a value of 1 (Fuse mismatch found). */
 	/* 0x0.8 - 0x0.15 */
 	/* access: INDEX */
 	u_int8_t instance_id;
-	/* Description - Fuse Mismatch0: No fuse mismatch1: Fuse mismatch found2-3: Reserved */
+	/* Description - Fuse Mismatch0: No fuse mismatch1: Fuse mismatch found2-3: ReservedFor further details see fm_sel field. */
 	/* 0x0.24 - 0x0.25 */
 	/* access: RO */
 	u_int8_t fm;
+	/* Description - Fuse Mismatch 20: No fuse mismatch1: Fuse mismatch found2-3: ReservedFor further details see fm_sel field. */
+	/* 0x0.26 - 0x0.27 */
+	/* access: RO */
+	u_int8_t fm2;
+	/* Description - Fuse Mismatch Selection0: fm field should be used to read Fuse Mismatch status relating to fuse_id field.
+1: fm2 field should be used to read Fuse Mismatch status relating to fuse_id field.
+For supporting platforms, fm field reflects HW status bit regarding fuse mismatch. */
+	/* 0x0.28 - 0x0.28 */
+	/* access: RO */
+	u_int8_t fm_sel;
 	/* Description - [DWIP]1: module_index_msb and module_index fields contain a valid index. */
 	/* 0x0.29 - 0x0.29 */
 	/* access: INDEX */
 	u_int8_t module_index_valid;
-	/* Description - Valid bit0: Fuse reading is not supported for this system1: Response is valid2-3: ReservedReserved (0) when fm = 1 */
+	/* Description - Valid bit0: Fuse reading is not supported for this system1: Response is valid2-3: ReservedReserved (0) when there is a value of 1 in fuse_id-related fuse mismatch field (fm or fm2, see definition of fm_sel) */
 	/* 0x0.30 - 0x0.31 */
 	/* access: RO */
 	u_int8_t v;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - [DWIP]:<module_index_msb, module_index> specifies the element in which the fuse
-resides, if not part of the ASIC itself.Currently only valid elements are Optical Engines. */
+resides, if not part of the ASIC itself. */
 	/* 0x4.0 - 0x4.7 */
 	/* access: INDEX */
 	u_int8_t module_index;
@@ -1592,7 +1636,7 @@ resource_dump_event */
 	/* Description - If set, Resource_dump register is supported.
 
 See
-RESOURCE_DUMP Register Layout */
+table 2016 - RESOURCE_DUMP Register Layout */
 	/* 0x0.22 - 0x0.22 */
 	/* access: RW */
 	u_int8_t resource_dump;
@@ -1601,7 +1645,7 @@ order to accommodate cr_dump.
 
 0 means feature is not supported.
 
-See CORE_DUMP Register Layout */
+See table 2014 - CORE_DUMP Register Layout */
 	/* 0x0.23 - 0x0.27 */
 	/* access: RW */
 	u_int8_t log_cr_dump_to_mem_size;
@@ -1776,7 +1820,7 @@ PEMI.laser_source_essential, PEMI.laser_source_advance, PEMI.module
 status, PEMI.optical_engine_telemetry_parameters, PEMI.cpo_module,
 PEMI.last_sub_module.Bit 89: If set, supports minimum temperatures, as well as alerts for low
 critical and high critical thresholds, in the following registers: MTMP,
-MTEWE, MTBR, MTBR_v2.Bit 90: If set, MQDIK.key_index=1 is supported.Bit 91: If set, CPO Combined Model is supported.Bit 93: If set, MGIR.hw_info.board_ga is supported; ignore otherwise. */
+MTEWE, MTBR, MTBR_v2.Bit 90: If set, MQDIK.key_index=1 is supported.Bit 91: If set, CPO Combined Model is supported.Bit 93: If set, MGIR.hw_info.board_ga is supported; ignore otherwise.Bit 94: If set, MFKV is supported.Bit 95: If set, MRFV.fm2 and MRFV.fm_sel are supported. */
 	/* 0x28.0 - 0x34.31 */
 	/* access: RO */
 	u_int32_t mng_feature_cap_mask[4];
@@ -1811,6 +1855,14 @@ READ_PENDING_COMPONENT instructions. Otherwise, this field is reserved. */
 	/* 0x8.0 - 0x8.23 */
 	/* access: RW */
 	u_int32_t update_handle;
+	/* Description - 0x0: reserved */
+	/* 0x8.29 - 0x8.29 */
+	/* access: RW */
+	u_int8_t retry_on_error;
+	/* Description - 0x0: stop_on_error0x1: do_not_stop_on_error */
+	/* 0x8.30 - 0x8.30 */
+	/* access: RW */
+	u_int8_t no_stop_on_error;
 	/* Description - Auto-update to all matching downstream devices is requested. */
 	/* 0x8.31 - 0x8.31 */
 	/* access: WO */
@@ -1820,6 +1872,11 @@ READ_PENDING_COMPONENT instructions. Otherwise, this field is reserved. */
 	/* 0xc.0 - 0xc.3 */
 	/* access: RO */
 	u_int8_t control_state;
+	/* Description - Raw count of errors encountered during the current or last operation
+(015). Used also on legacy devices to indicate completion status. */
+	/* 0xc.4 - 0xc.7 */
+	/* access: RO */
+	u_int8_t error_count;
 	/* Description - Indicates the successful completion of the instruction, or the reason it
 failed.See section 10.3.7 - Error Handling0x0: OK0x1: ERROR0x2: REJECTED_DIGEST_ERR0x3: REJECTED_NOT_APPLICABLE0x4: REJECTED_UNKNOWN_KEY0x5: REJECTED_AUTH_FAILED0x6: REJECTED_UNSIGNED0x7: REJECTED_KEY_NOT_APPLICABLE0x8: REJECTED_BAD_FORMAT0x9: BLOCKED_PENDING_RESET0xA: REJECTED_NOT_A_SECURED_FW0xB: REJECTED_MFG_BASE_MAC_NOT_LISTED0xC: REJECTED_NO_DEBUG_TOKEN0xD: REJECTED_VERSION_NUM_MISMATCH0xE: REJECTED_USER_TIMESTAMP_MISMATCH0xF: REJECTED_FORBIDDEN_VERSION0x10: FLASH_ERASE_ERROR0x11: REJECTED_REBURN_RUNNING_AND_RETRY0x12: REJECTED_LINKX_TYPE_NOT_SUPPORTED0x13: REJECTED_HOST_STORAGE_IN_USE0x14: REJECTED_LINKX_TRANSFER (see module index in
 rejected_device_index)0x15: REJECTED_LINKX_ACTIVATE (see module index in
@@ -1869,12 +1926,12 @@ successful completion of the instruction0x0: OK0x1: WARNING_DPA_API_OS_INCOMPATI
 	/* access: RO */
 	u_int8_t warning_code;
 	/* Description - Device number, bits [11:0].For gearboxes, the index represents the gearbox die.For cables, the index represents the module index starting at index 1.
-Index 0 indicates the host device.For QM-3 CPO system, device index represents OE or ELS device.For other CPO systems, device index of ELS or OE not allowed. */
+Index 0 indicates the host device. */
 	/* 0x14.16 - 0x14.27 */
 	/* access: INDEX */
 	u_int16_t device_index;
 	/* Description - [Switch][DWIP]Device number, bits [15:12].For gearboxes, the index represents the gearbox die.For cables, the index represents the module index starting at index 1.
-Index 0 indicates the host device.For QM-3 CPO system, device index represents OE or ELS device.For other CPO systems, device index of ELS or OE not allowed. */
+Index 0 indicates the host device. */
 	/* 0x14.28 - 0x14.31 */
 	/* access: INDEX */
 	u_int8_t device_index_msb;
@@ -4134,45 +4191,177 @@ On first call, device_opaque shall be 0. */
 union reg_access_hca_reg_access_hca_Nodes {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
+	/* 0x0.0 - 0x4.31 */
+	/* access: RW */
+	struct reg_access_hca_mfrl_reg_ext mfrl_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x4.31 */
+	/* access: RW */
+	struct reg_access_hca_mnvqc_reg_ext mnvqc_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x8.31 */
+	/* access: RW */
+	struct reg_access_hca_mmdio_ext mmdio_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x3c.31 */
+	/* access: RW */
+	struct reg_access_hca_pmlp_reg_ext pmlp_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x90.31 */
+	/* access: RW */
+	struct reg_access_hca_mcqi_reg_ext mcqi_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x14.31 */
+	/* access: RW */
+	struct reg_access_hca_mqis_reg_ext mqis_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x11c.31 */
+	/* access: RW */
+	struct reg_access_hca_misoc_reg_ext misoc_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x3c.31 */
+	/* access: RW */
+	struct reg_access_hca_nic_dpa_perf_ctrl_reg_ext nic_dpa_perf_ctrl_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0xfc.31 */
+	/* access: RW */
+	struct reg_access_hca_resource_dump_ext resource_dump_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x3c.31 */
+	/* access: RW */
+	struct reg_access_hca_mrsi_ext mrsi_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x2c.31 */
+	/* access: RW */
+	struct reg_access_hca_mtie_ext mtie_ext;
+	/* Description -  */
+	/* 0x0.0 - 0xc.31 */
+	/* access: RW */
+	struct reg_access_hca_mpqd_reg_ext mpqd_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x1c.31 */
+	/* access: RW */
+	struct reg_access_hca_mfpa_reg_ext mfpa_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0xc.31 */
+	/* access: RW */
+	struct reg_access_hca_mcqs_reg_ext mcqs_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x5c.31 */
+	/* access: RW */
+	struct reg_access_hca_pguid_reg_ext pguid_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0xc.31 */
+	/* access: RW */
+	struct reg_access_hca_mtim_ext mtim_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x8.31 */
+	/* access: RW */
+	struct reg_access_hca_mnvdi_reg_ext mnvdi_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0xc.31 */
+	/* access: RW */
+	struct reg_access_hca_pmaos_reg_ext pmaos_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x4.31 */
+	/* access: RW */
+	struct reg_access_hca_mnvia_reg_ext mnvia_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x8.31 */
+	/* access: RW */
+	struct reg_access_hca_mfbe_reg_ext mfbe_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0xc.31 */
+	/* access: RW */
+	struct reg_access_hca_mpir_ext mpir_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x2c.31 */
+	/* access: RW */
+	struct reg_access_hca_mteim_reg_ext mteim_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x3c.31 */
+	/* access: RW */
+	struct reg_access_hca_MRSV_ext MRSV_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x3c.31 */
+	/* access: RW */
+	struct reg_access_hca_mtrc_ctrl_reg_ext mtrc_ctrl_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x8c.31 */
+	/* access: RW */
+	struct reg_access_hca_mcda_reg_ext mcda_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x2c.31 */
+	/* access: RW */
+	struct reg_access_hca_mpein_reg_ext mpein_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x44.31 */
+	/* access: RW */
+	struct reg_access_hca_mcam_reg_ext mcam_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x1c.31 */
+	/* access: RW */
+	struct reg_access_hca_mroq_ext mroq_ext;
+	/* Description -  */
+	/* 0x0.0 - 0xc.31 */
+	/* access: RW */
+	struct reg_access_hca_mtcap_ext mtcap_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x7c.31 */
+	/* access: RW */
+	struct reg_access_hca_nic_cap_ext_reg_ext nic_cap_ext_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x7c.31 */
+	/* access: RW */
+	struct reg_access_hca_mtrc_conf_reg_ext mtrc_conf_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x8.31 */
+	/* access: RW */
+	struct reg_access_hca_mtrc_stdb_reg_ext mtrc_stdb_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x9c.31 */
+	/* access: RW */
+	struct reg_access_hca_mgir_ext mgir_ext;
+	/* Description -  */
 	/* 0x0.0 - 0x40.31 */
 	/* access: RW */
 	struct reg_access_hca_ptys_reg_ext ptys_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x78.31 */
 	/* access: RW */
-	struct reg_access_hca_mcqi_version_ext mcqi_version_ext;
+	struct reg_access_hca_mcqi_activation_method_ext mcqi_activation_method_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x9c.31 */
+	/* 0x0.0 - 0x1c.31 */
 	/* access: RW */
-	struct reg_access_hca_mgir_ext mgir_ext;
+	struct reg_access_hca_mtdc_ext mtdc_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x7c.31 */
+	/* access: RW */
+	struct reg_access_hca_mmhi_reg_ext mmhi_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x1c.31 */
+	/* access: RW */
+	struct reg_access_hca_mtmp_ext mtmp_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x78.31 */
 	/* access: RW */
 	struct reg_access_hca_mcqi_cap_ext mcqi_cap_ext;
 	/* Description -  */
+	/* 0x0.0 - 0x2fc.31 */
+	/* access: RW */
+	struct reg_access_hca_nic_dpa_eu_partition_reg_ext nic_dpa_eu_partition_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0xfc.31 */
+	/* access: RW */
+	struct reg_access_hca_nic_dpa_eug_reg_ext nic_dpa_eug_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x1c.31 */
+	/* access: RW */
+	struct reg_access_hca_mcc_reg_ext mcc_reg_ext;
+	/* Description -  */
 	/* 0x0.0 - 0xc.31 */
 	/* access: RW */
 	struct reg_access_hca_mnvgc_reg_ext mnvgc_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x4.31 */
-	/* access: RW */
-	struct reg_access_hca_mnvqc_reg_ext mnvqc_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
-	/* access: RW */
-	struct reg_access_hca_mtcap_ext mtcap_ext;
-	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
-	/* access: RW */
-	struct reg_access_hca_mcqs_reg_ext mcqs_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x40.31 */
-	/* access: RW */
-	struct reg_access_hca_debug_cap debug_cap;
-	/* Description -  */
-	/* 0x0.0 - 0x78.31 */
-	/* access: RW */
-	struct reg_access_hca_mcqi_activation_method_ext mcqi_activation_method_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x8.31 */
 	/* access: RW */
@@ -4180,179 +4369,47 @@ union reg_access_hca_reg_access_hca_Nodes {
 	/* Description -  */
 	/* 0x0.0 - 0x3c.31 */
 	/* access: RW */
-	struct reg_access_hca_mrsi_ext mrsi_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x2fc.31 */
-	/* access: RW */
-	struct reg_access_hca_nic_dpa_eu_partition_reg_ext nic_dpa_eu_partition_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x8.31 */
-	/* access: RW */
-	struct reg_access_hca_mmdio_ext mmdio_ext;
-	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
-	/* access: RW */
-	struct reg_access_hca_mtim_ext mtim_ext;
-	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
-	/* access: RW */
-	struct reg_access_hca_paos_reg_ext paos_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x1c.31 */
-	/* access: RW */
-	struct reg_access_hca_mtdc_ext mtdc_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x3c.31 */
-	/* access: RW */
 	struct reg_access_hca_MRFV_ext MRFV_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x44.31 */
-	/* access: RW */
-	struct reg_access_hca_mcam_reg_ext mcam_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x8.31 */
-	/* access: RW */
-	struct reg_access_hca_mtrc_stdb_reg_ext mtrc_stdb_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x80.31 */
-	/* access: RW */
-	struct reg_access_hca_mtrc_cap_reg_ext mtrc_cap_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x78.31 */
-	/* access: RW */
-	struct reg_access_hca_mcqi_linkx_properties_ext mcqi_linkx_properties_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x7c.31 */
-	/* access: RW */
-	struct reg_access_hca_nic_cap_ext_reg_ext nic_cap_ext_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x11c.31 */
-	/* access: RW */
-	struct reg_access_hca_misoc_reg_ext misoc_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x2c.31 */
-	/* access: RW */
-	struct reg_access_hca_mpein_reg_ext mpein_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
-	/* access: RW */
-	struct reg_access_hca_mpqd_reg_ext mpqd_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x8.31 */
-	/* access: RW */
-	struct reg_access_hca_mnvdi_reg_ext mnvdi_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x90.31 */
-	/* access: RW */
-	struct reg_access_hca_mcqi_reg_ext mcqi_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x8.31 */
-	/* access: RW */
-	struct reg_access_hca_mfbe_reg_ext mfbe_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x2c.31 */
-	/* access: RW */
-	struct reg_access_hca_mtie_ext mtie_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x1c.31 */
-	/* access: RW */
-	struct reg_access_hca_mfpa_reg_ext mfpa_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x9c.31 */
-	/* access: RW */
-	struct reg_access_hca_mpcir_ext mpcir_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x4.31 */
-	/* access: RW */
-	struct reg_access_hca_mnvia_reg_ext mnvia_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0xfc.31 */
-	/* access: RW */
-	struct reg_access_hca_resource_dump_ext resource_dump_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x4.31 */
-	/* access: RW */
-	struct reg_access_hca_mfrl_reg_ext mfrl_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x1c.31 */
-	/* access: RW */
-	struct reg_access_hca_mroq_ext mroq_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x2c.31 */
-	/* access: RW */
-	struct reg_access_hca_mteim_reg_ext mteim_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x7c.31 */
-	/* access: RW */
-	struct reg_access_hca_mtrc_conf_reg_ext mtrc_conf_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x7c.31 */
-	/* access: RW */
-	struct reg_access_hca_mmhi_reg_ext mmhi_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x2c.31 */
-	/* access: RW */
-	struct reg_access_hca_mfsv_reg_ext mfsv_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x5c.31 */
-	/* access: RW */
-	struct reg_access_hca_pguid_reg_ext pguid_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0xfc.31 */
-	/* access: RW */
-	struct reg_access_hca_nic_dpa_eug_reg_ext nic_dpa_eug_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x3c.31 */
-	/* access: RW */
-	struct reg_access_hca_nic_dpa_perf_ctrl_reg_ext nic_dpa_perf_ctrl_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x3c.31 */
-	/* access: RW */
-	struct reg_access_hca_mtrc_ctrl_reg_ext mtrc_ctrl_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x3c.31 */
-	/* access: RW */
-	struct reg_access_hca_MRSV_ext MRSV_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x14.31 */
-	/* access: RW */
-	struct reg_access_hca_mqis_reg_ext mqis_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x3c.31 */
-	/* access: RW */
-	struct reg_access_hca_pmlp_reg_ext pmlp_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x8c.31 */
-	/* access: RW */
-	struct reg_access_hca_mcda_reg_ext mcda_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
-	/* access: RW */
-	struct reg_access_hca_mpir_ext mpir_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x1c.31 */
-	/* access: RW */
-	struct reg_access_hca_mtmp_ext mtmp_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x3c.31 */
-	/* access: RW */
-	struct reg_access_hca_dtor_reg_ext dtor_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
-	/* access: RW */
-	struct reg_access_hca_pmaos_reg_ext pmaos_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x28.31 */
 	/* access: RW */
 	struct reg_access_hca_mpegc_reg_ext mpegc_reg_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x1c.31 */
+	/* 0x0.0 - 0x80.31 */
 	/* access: RW */
-	struct reg_access_hca_mcc_reg_ext mcc_reg_ext;
+	struct reg_access_hca_mtrc_cap_reg_ext mtrc_cap_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x9c.31 */
+	/* access: RW */
+	struct reg_access_hca_mpcir_ext mpcir_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x2c.31 */
+	/* access: RW */
+	struct reg_access_hca_mfsv_reg_ext mfsv_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x108.31 */
 	/* access: RW */
 	struct reg_access_hca_mfba_reg_ext mfba_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x3c.31 */
+	/* access: RW */
+	struct reg_access_hca_dtor_reg_ext dtor_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x78.31 */
+	/* access: RW */
+	struct reg_access_hca_mcqi_linkx_properties_ext mcqi_linkx_properties_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x40.31 */
+	/* access: RW */
+	struct reg_access_hca_debug_cap debug_cap;
+	/* Description -  */
+	/* 0x0.0 - 0xc.31 */
+	/* access: RW */
+	struct reg_access_hca_paos_reg_ext paos_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x78.31 */
+	/* access: RW */
+	struct reg_access_hca_mcqi_version_ext mcqi_version_ext;
 };
 
 

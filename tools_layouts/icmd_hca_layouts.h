@@ -36,9 +36,9 @@
  
 
 /***
-         *** This file was generated at "2026-08-06 11:30:49"
+         *** This file was generated at "2026-08-20 15:38:07"
          *** by:
-         ***    > /usr/local/lib64/python3.6/site-packages/mft_adbtools/adabe_plugins/adb2c/adb2pack.py --input /home/jenkins/agent/workspace/automatic_prm_update/user/tools_layouts/adb/tools/icmd_hca.adb --file-prefix icmd_hca --prefix icmd_hca_ --no-adb-utils -o /home/jenkins/agent/workspace/automatic_prm_update/user/tools_layouts
+         ***    > /usr/local/lib64/python3.9/site-packages/mft_adbtools/adabe_plugins/adb2c/adb2pack.py --input /home/jenkins/agent/workspace/automatic_prm_update/user/tools_layouts/adb/tools/icmd_hca.adb --file-prefix icmd_hca --prefix icmd_hca_ --no-adb-utils -o /home/jenkins/agent/workspace/automatic_prm_update/user/tools_layouts
          ***/
 #ifndef ICMD_HCA_LAYOUTS_H
 #define ICMD_HCA_LAYOUTS_H
@@ -164,7 +164,7 @@ resource_dump_event */
 	/* Description - If set, Resource_dump register is supported.
 
 See
-RESOURCE_DUMP Register Layout */
+table 2016 - RESOURCE_DUMP Register Layout */
 	/* 0x0.22 - 0x0.22 */
 	/* access: RW */
 	u_int8_t resource_dump;
@@ -173,7 +173,7 @@ order to accommodate cr_dump.
 
 0 means feature is not supported.
 
-See CORE_DUMP Register Layout */
+See table 2014 - CORE_DUMP Register Layout */
 	/* 0x0.23 - 0x0.27 */
 	/* access: RW */
 	u_int8_t log_cr_dump_to_mem_size;
@@ -510,6 +510,30 @@ DIAGNOSTIC_PARAMS_CONTEXT Input Structure Layout */
 union icmd_hca_icmd_hca_Nodes {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
+	/* 0x0.0 - 0x20.31 */
+	/* access: RW */
+	struct icmd_hca_icmd_set_diagnostic_params_in icmd_set_diagnostic_params_in;
+	/* Description -  */
+	/* 0x0.0 - 0x0.31 */
+	/* access: RW */
+	struct icmd_hca_icmd_query_cap_in icmd_query_cap_in;
+	/* Description -  */
+	/* 0x0.0 - 0x40.31 */
+	/* access: RW */
+	struct icmd_hca_debug_cap debug_cap;
+	/* Description -  */
+	/* 0x0.0 - 0xc.31 */
+	/* access: RW */
+	struct icmd_hca_icmd_query_diagnostic_cntrs_in icmd_query_diagnostic_cntrs_in;
+	/* Description -  */
+	/* 0x0.0 - 0x20.31 */
+	/* access: RW */
+	struct icmd_hca_icmd_query_diagnostic_params_out icmd_query_diagnostic_params_out;
+	/* Description -  */
+	/* 0x0.0 - 0x4.31 */
+	/* access: RW */
+	struct icmd_hca_icmd_query_cap_general icmd_query_cap_general;
+	/* Description -  */
 	/* 0x0.0 - 0x8.31 */
 	/* access: RW */
 	struct icmd_hca_icmd_mh_sync_out icmd_mh_sync_out;
@@ -517,30 +541,6 @@ union icmd_hca_icmd_hca_Nodes {
 	/* 0x0.0 - 0x0.31 */
 	/* access: RW */
 	struct icmd_hca_icmd_mh_sync_in icmd_mh_sync_in;
-	/* Description -  */
-	/* 0x0.0 - 0x20.31 */
-	/* access: RW */
-	struct icmd_hca_icmd_query_diagnostic_params_out icmd_query_diagnostic_params_out;
-	/* Description -  */
-	/* 0x0.0 - 0x40.31 */
-	/* access: RW */
-	struct icmd_hca_debug_cap debug_cap;
-	/* Description -  */
-	/* 0x0.0 - 0x0.31 */
-	/* access: RW */
-	struct icmd_hca_icmd_query_cap_in icmd_query_cap_in;
-	/* Description -  */
-	/* 0x0.0 - 0x20.31 */
-	/* access: RW */
-	struct icmd_hca_icmd_set_diagnostic_params_in icmd_set_diagnostic_params_in;
-	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
-	/* access: RW */
-	struct icmd_hca_icmd_query_diagnostic_cntrs_in icmd_query_diagnostic_cntrs_in;
-	/* Description -  */
-	/* 0x0.0 - 0x4.31 */
-	/* access: RW */
-	struct icmd_hca_icmd_query_cap_general icmd_query_cap_general;
 };
 
 
