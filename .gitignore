@@ -4,6 +4,7 @@
 *.lo
 *.so
 .deps/
+__pycache__/
 
 Makefile
 Makefile.in
@@ -24,6 +25,7 @@ config/
 flint/mstflint
 libtool
 /m4/*.m4
+/mft_core/mft_core_utils/mft_logger/mstlogger_config
 /mlxconfig/mstconfig
 /mlxconfig/mstprivhost
 /mstdump/crd_main/mstregdump

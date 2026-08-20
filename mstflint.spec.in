@@ -197,6 +197,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/mstresourcedump
 %{_bindir}/mstresourceparse
 %{_bindir}/mstdevices_info
+%{_bindir}/mstlogger_config
 %if %{enablecables}
    %{_bindir}/mstcable_discovery
 %endif
@@ -232,6 +233,8 @@ rm -rf $RPM_BUILD_ROOT
 
 %{mstflint_python_tools}/tools_version.py
 %{mstflint_python_tools}/mft_logger.py
+%{mstflint_python_tools}/mft_logger_api.py
+%{mstflint_python_tools}/libmft_logger.so
 %{mstflint_python_tools}/mlxpci/*.py
 %{mstflint_python_tools}/mstfwtrace/*.py
 %{mstflint_python_tools}/mstfwreset/mstfwreset.py

@@ -28,11 +28,15 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-SUBDIRS = $(NVML_DIR) mft_core ext_libs $(TOOLS_CRYPTO) tools_layouts common $(VFIO_DRIVER_DIR) ${MTCR_CONF_DIR} mtcr_py $(MAD_IFC) $(XZ_UTILS_DIR) reg_access cmdif dev_mgt pci_library mft_utils $(CABLE_ACCESS_DIR) tools_res_mgmt mvpd mflash fw_comps_mgr libmfa pldm_utils pldmlib cmdparser $(DPA) mlxfwops mlxconfig $(NVFWRESET_DIR) $(FW_MGR_TOOLS) $(PLDM_PKG_GEN) mlxtokengenerator flint small_utils mst_utils mstdump efuse ${ADABE_TOOLS} $(HCA_CAP_DIR) $(MSTFLINT_SDK_DIR) tracers resourcetools $(IBDUMP_DIR)
+# ext_libs, common and cmdparser sit before mft_core because
+# mft_core/mft_core_utils/mft_logger links ext_libs/json/libjson.la and
+# cmdparser/libcmdparser.a, and includes common/tools_version.h, which
+# common's all: rule generates.
+SUBDIRS = $(NVML_DIR) ext_libs common cmdparser mft_core $(TOOLS_CRYPTO) tools_layouts $(VFIO_DRIVER_DIR) ${MTCR_CONF_DIR} mtcr_py $(MAD_IFC) $(XZ_UTILS_DIR) reg_access cmdif dev_mgt pci_library mft_utils $(CABLE_ACCESS_DIR) tools_res_mgmt mvpd mflash fw_comps_mgr libmfa pldm_utils pldmlib $(DPA) mlxfwops mlxconfig $(NVFWRESET_DIR) $(FW_MGR_TOOLS) $(PLDM_PKG_GEN) mlxtokengenerator flint small_utils mst_utils mstdump efuse ${ADABE_TOOLS} $(HCA_CAP_DIR) $(MSTFLINT_SDK_DIR) tracers resourcetools $(IBDUMP_DIR)
 
 DIST_SUBDIRS = tracers
 
-man_MANS = man/mstflint.1 man/mstconfig.1 man/mstmcra.1 man/mstmread.1 man/mstmwrite.1 man/mstmtserver.1 man/mstregdump.1 man/mstvpd.1 man/mstprivhost.1 man/mstarchive.1 man/mstreg.1 man/mstfwtrace.1 man/mstlink.1 man/mstcongestion.1 man/mstfwmanager.1 man/mstfwreset.1 man/mstresourcedump.1
+man_MANS = man/mstflint.1 man/mstconfig.1 man/mstmcra.1 man/mstmread.1 man/mstmwrite.1 man/mstmtserver.1 man/mstregdump.1 man/mstvpd.1 man/mstprivhost.1 man/mstarchive.1 man/mstreg.1 man/mstfwtrace.1 man/mstlink.1 man/mstcongestion.1 man/mstfwmanager.1 man/mstfwreset.1 man/mstresourcedump.1 man/mstlogger_config.1
 
 EXTRA_DIST = \
 	mstflint.spec \
@@ -63,10 +67,11 @@ if ENABLE_MSTFLINT_SDK
 # builds the convenience libs the SDK links (libmstreg_lib, libmlxreg_sdk,
 # libmodules_lib); mft_core builds the mft_core_utils and NVML libs.
 SDK_BUILD_SUBDIRS = \
-	mft_core \
 	ext_libs \
-	tools_layouts \
 	common \
+	cmdparser \
+	mft_core \
+	tools_layouts \
 	$(VFIO_DRIVER_DIR) \
 	${MTCR_CONF_DIR} \
 	$(XZ_UTILS_DIR) \
@@ -75,7 +80,6 @@ SDK_BUILD_SUBDIRS = \
 	dev_mgt \
 	pci_library \
 	mft_utils \
-	cmdparser \
 	$(ADABE_TOOLS) \
 	$(HCA_CAP_DIR) \
 	$(MSTFLINT_SDK_DIR)
