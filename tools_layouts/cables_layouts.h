@@ -36,9 +36,9 @@
  
 
 /***
-         *** This file was generated at "2026-08-06 11:30:51"
+         *** This file was generated at "2026-08-20 15:38:08"
          *** by:
-         ***    > /usr/local/lib64/python3.6/site-packages/mft_adbtools/adabe_plugins/adb2c/adb2pack.py --input /home/jenkins/agent/workspace/automatic_prm_update/user/tools_layouts/adb/prm/hca/ext/reg_access_cables.adb --file-prefix cables --prefix reg_access_hca_ --no-adb-utils -o /home/jenkins/agent/workspace/automatic_prm_update/user/tools_layouts
+         ***    > /usr/local/lib64/python3.9/site-packages/mft_adbtools/adabe_plugins/adb2c/adb2pack.py --input /home/jenkins/agent/workspace/automatic_prm_update/user/tools_layouts/adb/prm/hca/ext/reg_access_cables.adb --file-prefix cables --prefix reg_access_hca_ --no-adb-utils -o /home/jenkins/agent/workspace/automatic_prm_update/user/tools_layouts
          ***/
 #ifndef CABLES_LAYOUTS_H
 #define CABLES_LAYOUTS_H
@@ -59,7 +59,7 @@ using I2C.16: MODULE_DISABLED - module is disabled */
 	/* 0x0.0 - 0x0.7 */
 	/* access: RO */
 	u_int8_t status;
-	/* Description - [Switch][DWIP]:Module number, bits [11:8]. - */
+	/* Description - [Switch][DWIP]:Module number, bits [11:8]. */
 	/* 0x0.8 - 0x0.11 */
 	/* access: INDEX */
 	u_int8_t module_bits_11_8;
@@ -67,11 +67,11 @@ using I2C.16: MODULE_DISABLED - module is disabled */
 	/* 0x0.12 - 0x0.15 */
 	/* access: INDEX */
 	u_int8_t slot_index;
-	/* Description - Module number, bits [7:0].NIC: Range 0 .. MGPIR.num_of_modules -1 - */
+	/* Description - Module number, bits [7:0].NIC: Range 0 .. MGPIR.num_of_modules -1 */
 	/* 0x0.16 - 0x0.23 */
 	/* access: INDEX */
 	u_int8_t module;
-	/* Description - [Switch][DWIP]:Module number, bits [14:12]. - */
+	/* Description - [Switch][DWIP]:Module number, bits [14:12]. */
 	/* 0x0.26 - 0x0.28 */
 	/* access: INDEX */
 	u_int8_t module_bits_14_12;
@@ -105,7 +105,7 @@ using I2C.16: MODULE_DISABLED - module is disabled */
 	/* 0x8.16 - 0x8.23 */
 	/* access: INDEX */
 	u_int8_t bank_number;
-	/* Description - [Switch][DWIP]:Module number, bit [15]. - */
+	/* Description - [Switch][DWIP]:Module number, bit [15]. */
 	/* 0x8.24 - 0x8.24 */
 	/* access: INDEX */
 	u_int8_t module_bit_15;

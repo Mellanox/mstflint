@@ -29,7 +29,7 @@
 <config  field_attr="capability" type="ascii" />
 <config  field_attr="target" type="ascii" />
 <config  field_attr="version" type="ascii" />
-<info source_doc_name="NIC_PRM_internal" source_doc_version="0.0.65a" />
+<info source_doc_name="NIC_PRM_internal" source_doc_version="0.0.65c" />
 <node name="High_bit_error_rate_configuration_page_ext" descr="" size="0x10.0" >
 	<field name="en" descr="enable hi_ber monitoring" access="RW" offset="0x0.31" size="0x0.1" />
 </node>
@@ -156,17 +156,19 @@
 	<field name="MRFV_CVB_ext" descr="" subnode="MRFV_CVB_ext" access="RW" condition="($(parent).fuse_id == cvb)" offset="0x0.0" size="0x8.0" />
 	<field name="MRFV_PVS_MAIN_ext" descr="" subnode="MRFV_PVS_MAIN_ext" access="RW" condition="($(parent).fuse_id == vdd_main_die)" offset="0x0.0" size="0x4.0" />
 	<field name="MRFV_PVS_TILE_ext" descr="" subnode="MRFV_PVS_TILE_ext" access="RW" condition="($(parent).fuse_id == vdd_tile_0 | $(parent).fuse_id == vdd_tile_1 | $(parent).fuse_id == vdd_tile_2 | $(parent).fuse_id == vdd_tile_3 | $(parent).fuse_id == vdd_tile_4 | $(parent).fuse_id == vdd_tile_5 | $(parent).fuse_id == vdd_tile_6 | $(parent).fuse_id == vdd_tile_7)" offset="0x0.0" size="0x4.0" />
-	<field name="MRFV_RAW_AND_VALUE_ext" descr="" subnode="MRFV_RAW_AND_VALUE_ext" access="RW" condition="($(parent).fuse_id == raw_and_value_vdd | $(parent).fuse_id == raw_and_value_pl_avdd | $(parent).fuse_id == raw_and_value_pl_dvdd | $(parent).fuse_id == raw_and_value_dvdd_sg)" offset="0x0.0" size="0xc.0" />
+	<field name="MRFV_RAW_AND_VALUE_ext" descr="" subnode="MRFV_RAW_AND_VALUE_ext" access="RW" condition="($(parent).fuse_id == raw_and_value_dvdd | $(parent).fuse_id == raw_and_value_vddp)" offset="0x0.0" size="0xc.0" />
 	<field name="MRFV_ULT_ext" descr="" subnode="MRFV_ULT_ext" access="RW" condition="($(parent).fuse_id == ULT)" offset="0x0.0" size="0xc.0" />
 </node>
 
 <node name="MRFV_ext" descr="" size="0x40.0" >
 	<field name="fuse_id" descr="Fuse Index0: cvb - CVB Main Die, used for Retimer1: ULT2: vdd_main_die - (used in SPC-4, SPC-5)3: vdd_tile_0 - (used in SPC-4, SPC-5)4: vdd_tile_1 - (used in SPC-4, SPC-5)5: vdd_tile_2 - (used in SPC-4, SPC-5)6: vdd_tile_3 - (used in SPC-4, SPC-5)7: vdd_tile_4 - (used in SPC-4, SPC-5)8: vdd_tile_5 - (used in SPC-4, SPC-5)9: vdd_tile_6 - (used in SPC-4, SPC-5)10: vdd_tile_7 - (used in SPC-4, SPC-5)[SwitchOnly][DWIP]:11: raw_and_value_vdd - Use instance_id for the specific instance. Valid on SPC6.12: raw_and_value_pl_avdd - Use instance_id for the specific instance. Valid on SPC6.13: raw_and_value_pl_dvdd - Use instance_id for the specific instance. Valid on SPC6.15: raw_and_value_opt_fuse_rev - Valid on SPC6 CPO.16: raw_and_value_dvdd_sg - Use instance_id for the specific instance. Valid on SPC6 CPO.17: raw_and_value_opt_lot_code_0 - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.18: raw_and_value_opt_lot_code_1 - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.19: raw_and_value_opt_ops_reserved - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.20: raw_and_value_opt_vendor_code - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.21: raw_and_value_opt_wafer_id Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.22: raw_and_value_opt_x_coordinate Use entity_index to specify the Optical Engine index Valid on SPC6 CPO.23: raw_and_value_opt_y_coordinate Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.24: raw_and_value_opt_fab_code\;Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO. -\; -\; -\;\;[NIC_only][DWIP]:30: raw_and_value_dvdd[NIC_only][DWIP]:31: raw_and_value_vddpOther values reserved." access="INDEX" enum="cvb=0x0,ULT=0x1,vdd_main_die=0x2,vdd_tile_0=0x3,vdd_tile_1=0x4,vdd_tile_2=0x5,vdd_tile_3=0x6,vdd_tile_4=0x7,vdd_tile_5=0x8,vdd_tile_6=0x9,vdd_tile_7=0xa,raw_and_value_vdd=0xb,raw_and_value_pl_avdd=0xc,raw_and_value_pl_dvdd=0xd,raw_and_value_opt_fuse_rev=0xf,raw_and_value_dvdd_sg=0x10,raw_and_value_opt_lot_code_0=0x11,raw_and_value_opt_lot_code_1=0x12,raw_and_value_opt_ops_reserved=0x13,raw_and_value_opt_vendor_code=0x14,raw_and_value_opt_wafer_id=0x15,raw_and_value_opt_x_coordinate=0x16,raw_and_value_opt_y_coordinate=0x17,raw_and_value_opt_fab_code=0x18,raw_and_value_dvdd=0x1e,raw_and_value_vddp=0x1f" offset="0x0.0" size="0x0.8" />
 	<field name="instance_id" descr="[DWIP]:Instance ID. For a fuse that has multiple instances, this field provides\;the Instance ID.For the common case where it’s a single instance per asic, instance ID 0\;denotes the main/die [0] instance, and subsequent instance ID X denotes\;the instance of tile [X-1] / die [X].For a given fuse_id, if an invalid instance_id is provided, fm field\;will have a value of 1 (“Fuse mismatch found”)." access="INDEX" offset="0x0.8" size="0x0.8" />
-	<field name="fm" descr="Fuse Mismatch0: No fuse mismatch1: Fuse mismatch found2-3: Reserved" access="RO" offset="0x0.24" size="0x0.2" />
+	<field name="fm" descr="Fuse Mismatch0: No fuse mismatch1: Fuse mismatch found2-3: ReservedFor further details see fm_sel field." access="RO" offset="0x0.24" size="0x0.2" />
+	<field name="fm2" descr="Fuse Mismatch 20: No fuse mismatch1: Fuse mismatch found2-3: ReservedFor further details see fm_sel field." access="RO" offset="0x0.26" size="0x0.2" />
+	<field name="fm_sel" descr="Fuse Mismatch Selection0: fm field should be used to read Fuse Mismatch status relating to fuse_id field.\;1: fm2 field should be used to read Fuse Mismatch status relating to fuse_id field.\;For supporting platforms, fm field reflects HW status bit regarding fuse mismatch." access="RO" offset="0x0.28" size="0x0.1" />
 	<field name="module_index_valid" descr="[DWIP]1: module_index_msb and module_index fields contain a valid index." access="INDEX" offset="0x0.29" size="0x0.1" />
-	<field name="v" descr="Valid bit0: Fuse reading is not supported for this system1: Response is valid2-3: ReservedReserved (0) when fm = 1" access="RO" offset="0x0.30" size="0x0.2" />
-	<field name="module_index" descr="[DWIP]:&lt;module_index_msb, module_index&gt; specifies the element in which the fuse\;resides, if not part of the ASIC itself.Currently only valid elements are Optical Engines." access="INDEX" offset="0x4.0" size="0x0.8" />
+	<field name="v" descr="Valid bit0: Fuse reading is not supported for this system1: Response is valid2-3: ReservedReserved (0) when there is a value of 1 in fuse_id-related fuse mismatch field (fm or fm2, see definition of fm_sel)" access="RO" offset="0x0.30" size="0x0.2" />
+	<field name="module_index" descr="[DWIP]:&lt;module_index_msb, module_index&gt; specifies the element in which the fuse\;resides, if not part of the ASIC itself." access="INDEX" offset="0x4.0" size="0x0.8" />
 	<field name="module_index_msb" descr="[DWIP]:&lt;module_index_msb, module_index&gt; specifies the element in which the fuse\;resides, if not part of the ASIC itself.Currently only valid elements are Optical Engines." access="INDEX" offset="0x4.8" size="0x0.8" />
 	<field name="data" descr="DataSee \;MRFV entry - CVB LayoutSee \;MRFV entry - ULT LayoutSee \;MRFV entry - VDD_MAIN LayoutSee\;\;MRFV entry - VDD_Tile LayoutSee\;\;MRFV entry - RAW_AND_VALUE LayoutReserved when fm = 1" subnode="MRFV_data_auto_ext" access="RO" condition="$(parent).fuse_id" offset="0x10.0" size="0xc.0" />
 </node>
@@ -301,7 +303,7 @@
 </node>
 
 <node name="access_reg_summary_ctrl_ext" descr="" attr_is_union="1" size="0x4.0" >
-	<field name="id" descr="" subnode="enum_entry" access="RW" enum="QPTS=0x4002,QPDPM=0x4013,QSHR=0x4030,QEEC=0x400d,QPDP=0x4007,QPRT=0x4008,QTCT=0x400a,QSPIP=0x400e,QSPCP=0x401e,QHLL=0x4016,PCAM=0x507f,PCAP=0x5001,PTYS=0x5004,PAOS=0x5006,PLTC=0x5046,PPCNT=0x5008,PUDE=0x5009,PTSE=0x5047,PIPG=0x5017,PGMR=0x5039,PTER=0x5055,PREI=0x5058,PPRM=0x5059,PMSCR=0x505c,PMLP=0x5002,PMPR=0x5013,PMTDB=0x501a,PMECR=0x501b,PMLPE=0x501c,PMSC=0x501d,PMMP=0x5044,PMCR=0x5045,PEPC=0x5056,PMPT=0x5064,PMPD=0x5065,PMLR=0x506d,PMAC=0x507e,PLDS=0x5076,PPSC=0x5011,PRTL=0x5014,PPLR=0x5018,PEIR=0x5019,PPLM=0x5023,SLTP=0x5027,SLTPv2=0x502f,SLRG=0x5028,PTASv2=0x502e,SLSIR=0x502c,PDDR=0x5031,PPTT=0x5036,PPRT=0x5037,PMDR=0x503c,PPHCR=0x503e,PPAOS=0x5040,PCNR=0x5050,PPBMP=0x5051,PPBMC=0x5052,PPBME=0x5053,PGLF=0x5091,SLRED=0x505a,SLLM=0x505b,PEMI=0x5075,PMLSE=0x508f,PMFT=0x5090,SLPRR=0x507b,PLCC=0x505e,PCCT=0x5086,SLTR=0x5081,PFLDC=0x5083,SLMTRD=0x5095,PEDCC=0x5087,PMTU=0x5003,PPAD=0x5005,PFCC=0x5007,PPFCG=0x50f1,PPWCC=0x50f2,PPWPT=0x50f3,PPWE=0x50f4,PPWDC=0x50f5,PPTB=0x500b,PBMC=0x500c,PGUID=0x5066,PVLC=0x500f,PHBR=0x5034,PHRR=0x5035,PBSR=0x5038,PCMR=0x5041,PFSC=0x5043,PPCR=0x504c,PPIR=0x50eb,PVLS=0x504b,PPCC=0x506e,PRTSR=0x5402,PLIB=0x500a,PLIBDB=0x50e1,PPSLC=0x50e2,PPSLS=0x50e3,PPSLD=0x50e4,PBWS=0x5101,PGCB=0x5103,PGRRS=0x5104,PRCCT=0x5400,MMDIO=0x9017,MLCR=0x902b,MGCR=0x903a,MJTAG=0x901f,MRSV=0x9164,MTPPS=0x9053,MTUTC=0x9055,MRTC=0x902d,MSMR=0x9058,MRTCQ=0x9182,MTPTM=0x9180,MTCTR=0x9181,MSECQ=0x9155,MSEES=0x9156,MCIA=0x9014,MCION=0x9052,PMAOS=0x5012,PMTM=0x5067,MGPIR=0x9100,MTCAP=0x9009,MTMP=0x900a,MTMG=0x910d,MTMR=0x910e,MVCAP=0x902e,MVCR=0x900c,MPCS=0x917d,MFRL=0x9028,MROQ=0x902f,MRSI=0x912a,MCQS=0x9060,MCQI=0x9061,MCC=0x9062,MCDA=0x9063,MCDD=0x905c,MIRC=0x9162,MQIS=0x9064,MGIR=0x9020,MSGI=0x9021,MSCI=0x902a,MDIR=0x911a,MISOC=0x9026,MIDV=0x9027,MIDFV=0x9018,MCAM=0x907f,MRFV=0x906d,MTEIR=0x9190,MDTR=0x9073,MDPS=0x9074,MDSR=0x9110,MFSV=0x9115,MTCQ=0x9065,MQDIK=0x9116,MKDC=0x9066,MFCDR=0x9178,MSGCR=0x9179,MNVDA=0x9024,MNVDI=0x9025,MNVQC=0x9030,MNVIA=0x9033,MNVGC=0x9034,MNVGN=0x9035,MGNLE=0x9036,MGLS=0x9068,MVTS=0x902c,MTRC_CAP=0x9040,MTRC_CONF=0x9041,MTRC_STDB=0x9042,MTRC_CTRL=0x9043,MTEIM=0x9118,MTIE=0x911b,MTIM=0x911c,MTDC=0x911d,MFPA=0x9010,MFBA=0x9011,MFBE=0x9012,MPCIR=0x905a,MERR=0x903c,MRPR=0x9117,MHMPR=0x905d,MSEM=0x906f,MPFM=0x9022,MPEIN=0x9050,MPCNT=0x9051,MPEGC=0x9056,MPIR=0x9059,MPECS=0x905b,MPCAM=0x9702,MPEINJ=0x9057,MPQD=0x9700,MPLH=0x9701,MPTTC=0x9706,MPTFC=0x9703,MPTTR=0x9704,MPTOR=0x9705,SBPR=0xb001,SBCM=0xb002,SBPM=0xb003,SBHPC=0xb013,SBSR=0xb005,SBSRD=0xb015,SBCAM=0xb01f,CWGCR=0x2801,CWTP=0x2802,CWPP=0x2804,CWTPM=0x2803,CPQE=0x2806,CHLTR=0x2810,CHLTM=0x2811,CHLMM=0x2812,CEGCR=0x2820,CEPC=0x2821,CEDR=0x2822,CEER=0x2823,CWCAM=0x281f,UNIT_PERF_COUNTERS_GLOBAL_CTRL=0x100,UNIT_PERF_COUNTERS_CFG=0x101,UNIT_PERF_COUNTERS_DATA=0x102,MISC_COUNTERS=0x104,Loopback_Control_Register=0x700,DB_TRESHOLD=0x701,DCBX_PARAM=0x4020,DCBX_APPLICATION=0x4021,ROCE_ACCL=0x402c,SET_NODE=0x6001,POWER_SETTINGS=0x7001,FP_SL_MAP=0x7002,HOST_ENDIANNESS=0x7004,MMHI=0x904a,Resource_dump_registers=0xc000,NCFG=0xc001,CRYPTO_OPERATIONAL=0xc002,IMPORT_KEK_HANDLE=0xc004,CREDENTIAL_HANDLE=0xc005,ZTT=0xc006,VHCA_TRUST_LEVEL=0xc007,PORT_STATE_BEHAVIOR=0xc008,HCA_CMD_ENCAP=0xc009,NVMF_TARGET_PACER_DEFAULTS=0xc00a,NIC_CAP_REG=0xc00d,DTOR=0xc00e,VHCA_ICM_CTRL=0xc010,NIC_CAP_EXT_REG=0xc011,NIC_DPA_EUG_REG=0xc012,NIC_DPA_PERF_CTRL_REG=0xc014,NIC_DPA_EU_PARTITION_REG=0xc015,ADP_RETX_HISTOGRAM_CONFIG=0xc01d,ADP_RETX_HISTOGRAM=0xc01e,NIC_DPA_SELF_HOST_APP_MGMT=0xc01f,HOST_OS_INIT_CTRL=0xc020,VHCA_GROUP_ICM_CTRL=0xc021" offset="0x0.0" size="0x4.0" />
+	<field name="id" descr="" subnode="enum_entry" access="RW" enum="QPTS=0x4002,QPDPM=0x4013,QSHR=0x4030,QEEC=0x400d,QPDP=0x4007,QPRT=0x4008,QTCT=0x400a,QSPIP=0x400e,QSPCP=0x401e,QHLL=0x4016,QCAM=0x4019,PCAM=0x507f,PCAP=0x5001,PTYS=0x5004,PAOS=0x5006,PLTC=0x5046,PPCNT=0x5008,PUDE=0x5009,PTSE=0x5047,PIPG=0x5017,PGMR=0x5039,PTER=0x5055,PREI=0x5058,PPRM=0x5059,PMSCR=0x505c,PMLP=0x5002,PMPR=0x5013,PMTDB=0x501a,PMECR=0x501b,PMLPE=0x501c,PMSC=0x501d,PMMP=0x5044,PMCR=0x5045,PEPC=0x5056,PMPT=0x5064,PMPD=0x5065,PMLR=0x506d,PMAC=0x507e,PLDS=0x5076,PPSC=0x5011,PRTL=0x5014,PPLR=0x5018,PEIR=0x5019,PPLM=0x5023,SLTP=0x5027,SLTPv2=0x502f,SLRG=0x5028,PTASv2=0x502e,SLSIR=0x502c,PDDR=0x5031,PPTT=0x5036,PPRT=0x5037,PMDR=0x503c,PPHCR=0x503e,PPAOS=0x5040,PCNR=0x5050,PPBMP=0x5051,PPBMC=0x5052,PPBME=0x5053,PGLF=0x5091,SLRED=0x505a,SLLM=0x505b,PEMI=0x5075,PMLSE=0x508f,PMFT=0x5090,SLPRR=0x507b,PLCC=0x505e,PCCT=0x5086,SLTR=0x5081,PFLDC=0x5083,SLMTRD=0x5095,PEDCC=0x5087,PMTU=0x5003,PPAD=0x5005,PFCC=0x5007,PPFCG=0x50f1,PPWCC=0x50f2,PPWPT=0x50f3,PPWE=0x50f4,PPWDC=0x50f5,PPTB=0x500b,PBMC=0x500c,PGUID=0x5066,PVLC=0x500f,PHBR=0x5034,PHRR=0x5035,PBSR=0x5038,PCMR=0x5041,PFSC=0x5043,PPCR=0x504c,PPIR=0x50eb,PVLS=0x504b,PPCC=0x506e,PRTSR=0x5402,PLIB=0x500a,PLIBDB=0x50e1,PPSLC=0x50e2,PPSLS=0x50e3,PPSLD=0x50e4,PBWS=0x5101,PGCB=0x5103,PGRRS=0x5104,PRCCT=0x5400,MMDIO=0x9017,MLCR=0x902b,MGCR=0x903a,MJTAG=0x901f,MRSV=0x9164,MTPPS=0x9053,MTUTC=0x9055,MRTC=0x902d,MSMR=0x9058,MRTCQ=0x9182,MTPTM=0x9180,MTCTR=0x9181,MSECQ=0x9155,MSEES=0x9156,MCIA=0x9014,MCION=0x9052,PMAOS=0x5012,MMTA=0x9113,PMTM=0x5067,MELSRC=0x9046,MELSEQ=0x9047,MGPIR=0x9100,MILAQ=0x9187,MTCAP=0x9009,MTMP=0x900a,MTMG=0x910d,MTMR=0x910e,MVCAP=0x902e,MVCR=0x900c,MPCS=0x917d,MFRL=0x9028,MROQ=0x902f,MRSI=0x912a,MCQS=0x9060,MCQI=0x9061,MCC=0x9062,MCDA=0x9063,MCDD=0x905c,MIRC=0x9162,MQIS=0x9064,MGIR=0x9020,MSGI=0x9021,MSCI=0x902a,MDIR=0x911a,MISOC=0x9026,MIDV=0x9027,MIDFV=0x9018,MCAM=0x907f,MRFV=0x906d,MTEIR=0x9190,MDTR=0x9073,MDPS=0x9074,MDSR=0x9110,MFKV=0x9114,MFSV=0x9115,MTCQ=0x9065,MQDIK=0x9116,MKDC=0x9066,MFCDR=0x9178,MSGCR=0x9179,MNVDA=0x9024,MNVDI=0x9025,MNVQC=0x9030,MNVIA=0x9033,MNVGC=0x9034,MNVGN=0x9035,MGNLE=0x9036,MGLS=0x9068,MVTS=0x902c,MTRC_CAP=0x9040,MTRC_CONF=0x9041,MTRC_STDB=0x9042,MTRC_CTRL=0x9043,MTEIM=0x9118,MTIE=0x911b,MTIM=0x911c,MTDC=0x911d,MFPA=0x9010,MFBA=0x9011,MFBE=0x9012,MPCIR=0x905a,MERR=0x903c,MRPR=0x9117,MHMPR=0x905d,MSEM=0x906f,MPFM=0x9022,MPEIN=0x9050,MPCNT=0x9051,MPEGC=0x9056,MPIR=0x9059,MPECS=0x905b,MPCAM=0x9702,MPEINJ=0x9057,MPQD=0x9700,MPLH=0x9701,MPTTC=0x9706,MPTFC=0x9703,MPTTR=0x9704,MPTOR=0x9705,SBPR=0xb001,SBCM=0xb002,SBPM=0xb003,SBHPC=0xb013,SBSR=0xb005,SBSRD=0xb015,SBCAM=0xb01f,CWGCR=0x2801,CWTP=0x2802,CWPP=0x2804,CWTPM=0x2803,CPQE=0x2806,CHLTR=0x2810,CHLTM=0x2811,CHLMM=0x2812,CEGCR=0x2820,CEPC=0x2821,CEDR=0x2822,CEER=0x2823,CWCAM=0x281f,UNIT_PERF_COUNTERS_GLOBAL_CTRL=0x100,UNIT_PERF_COUNTERS_CFG=0x101,UNIT_PERF_COUNTERS_DATA=0x102,MISC_COUNTERS=0x104,Loopback_Control_Register=0x700,DB_TRESHOLD=0x701,DCBX_PARAM=0x4020,DCBX_APPLICATION=0x4021,ROCE_ACCL=0x402c,SET_NODE=0x6001,POWER_SETTINGS=0x7001,FP_SL_MAP=0x7002,HOST_ENDIANNESS=0x7004,MMHI=0x904a,Resource_dump_registers=0xc000,NCFG=0xc001,CRYPTO_OPERATIONAL=0xc002,IMPORT_KEK_HANDLE=0xc004,CREDENTIAL_HANDLE=0xc005,ZTT=0xc006,VHCA_TRUST_LEVEL=0xc007,PORT_STATE_BEHAVIOR=0xc008,HCA_CMD_ENCAP=0xc009,NVMF_TARGET_PACER_DEFAULTS=0xc00a,NIC_CAP_REG=0xc00d,DTOR=0xc00e,VHCA_ICM_CTRL=0xc010,NIC_CAP_EXT_REG=0xc011,NIC_DPA_EUG_REG=0xc012,NIC_DPA_PERF_CTRL_REG=0xc014,NIC_DPA_EU_PARTITION_REG=0xc015,ADP_RETX_HISTOGRAM_CONFIG=0xc01d,ADP_RETX_HISTOGRAM=0xc01e,NIC_DPA_SELF_HOST_APP_MGMT=0xc01f,HOST_OS_INIT_CTRL=0xc020,VHCA_GROUP_ICM_CTRL=0xc021" offset="0x0.0" size="0x4.0" />
 </node>
 
 <node name="access_reg_summary_ext" descr="" attr_is_union="1" size="0x450.0" >
@@ -353,10 +355,13 @@
 	<field name="mdps_reg" descr="" subnode="mdps_reg_ext" access="RW" offset="0x0.0" selected_by="MDPS" size="0x10.0" />
 	<field name="mdsr_reg" descr="" subnode="mdsr_reg_ext" access="RW" offset="0x0.0" selected_by="MDSR" size="0x30.0" />
 	<field name="mdtr_reg" descr="" subnode="mdtr_reg_ext" access="RW" offset="0x0.0" selected_by="MDTR" size="0xb0.0" />
+	<field name="melseq_reg" descr="" subnode="melseq_reg_ext" access="RW" offset="0x0.0" selected_by="MELSEQ" size="0x30.0" />
+	<field name="melsrc_reg" descr="" subnode="melsrc_reg_ext" access="RW" offset="0x0.0" selected_by="MELSRC" size="0x1c.0" />
 	<field name="merr" descr="" subnode="merr_ext" access="RW" offset="0x0.0" selected_by="MERR" size="0x14.0" />
 	<field name="mfba_reg" descr="" subnode="mfba_reg_ext" access="RW" offset="0x0.0" selected_by="MFBA" size="0x10c.0" />
 	<field name="mfbe_reg" descr="" subnode="mfbe_reg_ext" access="RW" offset="0x0.0" selected_by="MFBE" size="0xc.0" />
 	<field name="mfcdr_reg" descr="" subnode="mfcdr_reg_ext" access="RW" offset="0x0.0" selected_by="MFCDR" size="0x8.0" />
+	<field name="mfkv_reg" descr="" subnode="mfkv_reg_ext" access="RW" offset="0x0.0" selected_by="MFKV" size="0x18.0" />
 	<field name="mfpa_reg" descr="" subnode="mfpa_reg_ext" access="RW" offset="0x0.0" selected_by="MFPA" size="0x20.0" />
 	<field name="mfrl_reg" descr="" subnode="mfrl_reg_ext" access="RW" offset="0x0.0" selected_by="MFRL" size="0x8.0" />
 	<field name="mfsv_reg" descr="" subnode="mfsv_reg_ext" access="RW" offset="0x0.0" selected_by="MFSV" size="0x30.0" />
@@ -368,6 +373,7 @@
 	<field name="mhmpr_reg" descr="" subnode="mhmpr_reg_ext" access="RW" offset="0x0.0" selected_by="MHMPR" size="0x14.0" />
 	<field name="midfv_reg" descr="" subnode="midfv_reg_ext" access="RW" offset="0x0.0" selected_by="MIDFV" size="0x80.0" />
 	<field name="midv_reg" descr="" subnode="midv_reg_ext" access="RW" offset="0x0.0" selected_by="MIDV" size="0x28c.0" />
+	<field name="milaq" descr="" subnode="milaq_ext" access="RW" offset="0x0.0" selected_by="MILAQ" size="0x24.0" />
 	<field name="mirc_reg" descr="" subnode="mirc_reg_ext" access="RW" offset="0x0.0" selected_by="MIRC" size="0x8.0" />
 	<field name="misoc_reg" descr="" subnode="misoc_reg_ext" access="RW" offset="0x0.0" selected_by="MISOC" size="0x120.0" />
 	<field name="mjtag" descr="" subnode="mjtag_ext" access="RW" offset="0x0.0" selected_by="MJTAG" size="0x30.0" />
@@ -375,12 +381,14 @@
 	<field name="mlcr" descr="" subnode="mlcr_ext" access="RW" offset="0x0.0" selected_by="MLCR" size="0xc.0" />
 	<field name="mmdio" descr="" subnode="mmdio_ext" access="RW" offset="0x0.0" selected_by="MMDIO" size="0xc.0" />
 	<field name="mmhi_reg" descr="" subnode="mmhi_reg_ext" access="RW" offset="0x0.0" selected_by="MMHI" size="0x80.0" />
+	<field name="mmta_reg" descr="" subnode="mmta_reg_ext" access="RW" offset="0x0.0" selected_by="MMTA" size="0x90.0" />
 	<field name="mnvda_reg" descr="" subnode="mnvda_reg_ext" access="RW" offset="0x0.0" selected_by="MNVDA" size="0x10c.0" />
 	<field name="mnvdi_reg" descr="" subnode="mnvdi_reg_ext" access="RW" offset="0x0.0" selected_by="MNVDI" size="0xc.0" />
 	<field name="mnvgc_reg" descr="" subnode="mnvgc_reg_ext" access="RW" offset="0x0.0" selected_by="MNVGC" size="0x10.0" />
 	<field name="mnvgn_reg" descr="" subnode="mnvgn_reg_ext" access="RW" offset="0x0.0" selected_by="MNVGN" size="0x20.0" />
 	<field name="mnvia_reg" descr="" subnode="mnvia_reg_ext" access="RW" offset="0x0.0" selected_by="MNVIA" size="0x8.0" />
 	<field name="mnvqc_reg" descr="" subnode="mnvqc_reg_ext" access="RW" offset="0x0.0" selected_by="MNVQC" size="0x8.0" />
+	<field name="mpcam_reg" descr="" subnode="mpcam_reg_ext" access="RW" offset="0x0.0" selected_by="MPCAM" size="0x48.0" />
 	<field name="mpcir" descr="" subnode="mpcir_ext" access="RW" offset="0x0.0" selected_by="MPCIR" size="0xa0.0" />
 	<field name="mpcnt_reg" descr="" subnode="mpcnt_reg_ext" access="RW" offset="0x0.0" selected_by="MPCNT" size="0x100.0" />
 	<field name="mpcs_reg" descr="" subnode="mpcs_reg_ext" access="RW" offset="0x0.0" selected_by="MPCS" size="0x50.0" />
@@ -517,7 +525,7 @@
 	<field name="pude_reg" descr="" subnode="pude_reg_ext" access="RW" offset="0x0.0" selected_by="PUDE" size="0x10.0" />
 	<field name="pvlc_reg" descr="" subnode="pvlc_reg_ext" access="RW" offset="0x0.0" selected_by="PVLC" size="0x10.0" />
 	<field name="pvls" descr="" subnode="pvls_ext" access="RW" offset="0x0.0" selected_by="PVLS" size="0x20.0" />
-	<field name="qcam" descr="" subnode="qcam_ext" access="RW" offset="0x0.0" selected_by="MPCAM" size="0x48.0" />
+	<field name="qcam" descr="" subnode="qcam_ext" access="RW" offset="0x0.0" selected_by="QCAM" size="0x48.0" />
 	<field name="qeec" descr="" subnode="qeec_ext" access="RW" offset="0x0.0" selected_by="QEEC" size="0x20.0" />
 	<field name="qhll" descr="" subnode="qhll_ext" access="RW" offset="0x0.0" selected_by="QHLL" size="0xc.0" />
 	<field name="qpdp" descr="" subnode="qpdp_ext" access="RW" offset="0x0.0" selected_by="QPDP" size="0x8.0" />
@@ -752,7 +760,7 @@
 	<field name="length" descr="Length of configuration item data in bytes (not including header). Must\;be between 0 and 256." access="RW" offset="0x0.0" size="0x0.9" />
 	<field name="host_id_valid" descr="Host ID valid:1: the type_index.host_id field is validValid only when MNVGC.priv_nv_other_host=1 and the type_class is a Host\;or Host-PF" access="INDEX" offset="0x0.9" size="0x0.1" />
 	<field name="version" descr="Configuration item version – defines the data structure following the\;header (together with the type field)." access="RW" offset="0x0.12" size="0x0.4" />
-	<field name="writer_id" descr="The entity which configured this parameter0x0: UNSPECIFIED0x1: CHASSIS_BMC0x2: MAD0x3: BMC0x4: COMMAND_INTERFACE0x5: ICMD - with unspecified source0x6: ICMD_UEFI_HII - configured by the NIC’s UEFI expansion ROM’s HII\;menu.0x7: ICMD_UEFI_CLP - configured by the NIC’s expansion ROM’s CLP.0x8: ICMD_Flexboot - configured by the NIC’s legacy expansion ROM.0x9: ICMD_mlxconfig - configured by Mellanox mlxconfig tool0xA: ICMD_USER1 - value available for customer created tools that\;uses the ICMD interface for writing TLVs.0xB: ICMD_USER2 - value available for customer created tools that\;uses the ICMD interface for writing TLVs.0xC: ICMD_MLXCONFIG_SET_RAW - configures bymlxconfig set raw operation.0xD: ICMD_FLEXBOOT_CLP - configured by Legacy Expansion ROM CLP0x10: BMC_APP1 - Configuration was done over the BMC0x11: BMC_APP2 - Configuration was done over the BMC0x12: BMP_APP3 - Configuration was done over the BMC0x1F: OTHER - the parameter was written by the NIC due to other\;reasons.Note - This field is writeable only when using the ICMD interface.\;The only value that are valid for writes are 0x6 through 0xB. Other\;values will be replaced by 0x5ICMD." access="RO" enum="UNSPECIFIED=0x0,CHASSIS_BMC=0x1,MAD=0x2,BMC=0x3,COMMAND_INTERFACE=0x4,ICMD=0x5,ICMD_UEFI_HII=0x6,ICMD_UEFI_CLP=0x7,ICMD_Flexboot=0x8,ICMD_mlxconfig=0x9,ICMD_USER1=0xa,ICMD_USER2=0xb,ICMD_MLXCONFIG_SET_RAW=0xc,ICMD_FLEXBOOT_CLP=0xd,BMC_APP1=0x10,BMC_APP2=0x11,BMP_APP3=0x12,OTHER=0x1f" offset="0x0.16" size="0x0.5" />
+	<field name="writer_id" descr="The entity which configured this parameter0x0: UNSPECIFIED0x1: CHASSIS_BMC0x2: MAD0x3: BMC0x4: COMMAND_INTERFACE0x5: ICMD - with unspecified source0x6: ICMD_UEFI_HII - configured by the NIC’s UEFI expansion ROM’s HII\;menu.0x7: ICMD_UEFI_CLP - configured by the NIC’s expansion ROM’s CLP.0x8: ICMD_Flexboot - configured by the NIC’s legacy expansion ROM.0x9: ICMD_mlxconfig - configured by Mellanox mlxconfig tool0xA: ICMD_USER1 - value available for customer created tools that\;uses the ICMD interface for writing TLVs.0xB: ICMD_USER2 - value available for customer created tools that\;uses the ICMD interface for writing TLVs.0xC: ICMD_MLXCONFIG_SET_RAW - configures bymlxconfig set raw operation.0xD: ICMD_FLEXBOOT_CLP - configured by Legacy Expansion ROM CLP0xE: CMIS_CDB - configured by VMOD CMIS CDB I/F0x10: BMC_APP1 - Configuration was done over the BMC0x11: BMC_APP2 - Configuration was done over the BMC0x12: BMP_APP3 - Configuration was done over the BMC0x1F: OTHER - the parameter was written by the NIC due to other\;reasons.Note - This field is writeable only when using the ICMD interface.\;The only value that are valid for writes are 0x6 through 0xB. Other\;values will be replaced by 0x5ICMD." access="RO" enum="UNSPECIFIED=0x0,CHASSIS_BMC=0x1,MAD=0x2,BMC=0x3,COMMAND_INTERFACE=0x4,ICMD=0x5,ICMD_UEFI_HII=0x6,ICMD_UEFI_CLP=0x7,ICMD_Flexboot=0x8,ICMD_mlxconfig=0x9,ICMD_USER1=0xa,ICMD_USER2=0xb,ICMD_MLXCONFIG_SET_RAW=0xc,ICMD_FLEXBOOT_CLP=0xd,CMIS_CDB=0xe,BMC_APP1=0x10,BMC_APP2=0x11,BMP_APP3=0x12,OTHER=0x1f" offset="0x0.16" size="0x0.5" />
 	<field name="access_mode" descr="Defines which value of the Configuration Item will be accessed.0: NEXT - Next value to be applied1: CURRENT - Currently set values (only valid for Query\;operation)Supported only if NVGC.nvda_read_current_settings==1.2: FACTORY - Default factory values (only valid for Query operation).\;Supported only if NVGC.nvda_read_factory_settings==1." access="INDEX" enum="NEXT=0x0,CURRENT=0x1,FACTORY=0x2" offset="0x0.22" size="0x0.2" />
 	<field name="rd_en" descr="Read EnableControls the read operation during different life-cycle stages.0: TLV cannot be read by the subsequent life-cycle priorities.1: TLV can be read by the subsequent life-cycle priorities." access="RW" offset="0x0.24" size="0x0.1" />
 	<field name="ovr_en" descr="Override Enable0: Can only be overwritten by the current life-cycle priority.1: Allowed to be over-written by the subsequent life-cycle priorities." access="RW" offset="0x0.25" size="0x0.1" />
@@ -874,7 +882,7 @@
 	<field name="en" descr="enable bits:bit2: WRED drop enableFor Spectrum, ingress mirror of WRED can utilize this configuration, see" access="RW" offset="0x0.24" size="0x0.4" />
 	<field name="cece" descr="Count ECN for Congestion Experienced0: do not count “ECN mark” for a packet which has Congestion Experienced\;(ECN=11 at ingress)1: do count ECN mark for a packet which has Congestion Experienced\;(ECN=11 at ingress) and experiences congestion in the switch (default)In any case, a packet coming with ECN=00 is not counted as ECN." access="RW" offset="0x4.0" size="0x0.1" />
 	<field name="mece" descr="Mirror ECN for Congestion Experienced0: do not ecn-mirror a packet which has Congestion Experienced (ECN=11\;at ingress)1: do ecn-mirror for a packet which has Congestion Experienced (ECN=11\;at ingress) and experiences congestion in the switch (default)In any case, a packet coming with ECN=00 is not ecn-mirroredReserved when Spectrum-1, and from Spectrum-6 onwards.Reserved when Quantum which always does ecn-mirror regardless of fecn in\;the packet" access="RW" offset="0x4.1" size="0x0.1" />
-	<field name="ece_inner_en" descr="Only for Eth Switches:When ECE is event then:0: OUTER - only for outer TCP (if exists)1: OUTER_OR_INNER - for either outer (if exists) or inner TCP (if\;exists)Reserved when Spectrum/-2/-3Supported from Spectrum-4 and above." access="RW" offset="0x4.4" size="0x0.1" />
+	<field name="ece_inner_en" descr="Only for Eth Switches:When ECE is event then:0: OUTER - only for outer TCP (if exists)1: OUTER_OR_INNER - for either outer (if exists) or inner TCP (if\;exists)Reserved when Spectrum/-2/-3Supported from Spectrum-4 through Spectrum-6 only." access="RW" offset="0x4.4" size="0x0.1" />
 	<field name="selector" descr="Profile parameter selector.0: TCP - Default1: ECT - ECN capable transportCan be changed under traffic.When ECT mode, the CWTPM fields tcp_* and ntcp_* are used for\;ECT.ECT is positive according to the field ect_positive.Supported from Spectrum-2." access="RW" enum="TCP=0x0,ECT=0x1" offset="0x8.4" size="0x0.4" />
 </node>
 
@@ -913,7 +921,7 @@
 	<field name="traffic_class" descr="Traffic ClassRange is\;0..cap_max_tclass_sb-1" access="INDEX" offset="0x20.0" size="0x0.8" />
 	<field name="ee" descr="Enable ECN on traffic class0: Disable1: EnableDefault is 0Reserved when Quantum" access="RW" enum="Disable=0x0,Enable=0x1" offset="0x24.0" size="0x0.1" />
 	<field name="ew" descr="Enable WRED on traffic class:0: Disable1: EnableDefault is 0Reserved when Quantum" access="RW" enum="Disable=0x0,Enable=0x1" offset="0x24.1" size="0x0.1" />
-	<field name="ece" descr="Eth switch only:Enable ECE (TCP.ECE setting by the switch):Note: for ECE only tcp_g is used (tcp_y, tcp_r, ntcp_* ignored)Note: when both ece and ew are set, then if WRED does a drop then\;efficiently the ECE has no significance.Reserved when IB Switches and when Spectrum/-2/-3Note: ECE is per Ingress Port, packet TC0: Disable1: EnableDefault is 0Supported from Spectrum-4 and above." access="RW" enum="Disable=0x0,Enable=0x1" offset="0x24.2" size="0x0.1" />
+	<field name="ece" descr="Eth switch only:Enable ECE (TCP.ECE setting by the switch):Note: for ECE only tcp_g is used (tcp_y, tcp_r, ntcp_* ignored)Note: when both ece and ew are set, then if WRED does a drop then\;efficiently the ECE has no significance.Reserved when IB Switches and when Spectrum/-2/-3Note: ECE is per Ingress Port, packet TC0: Disable1: EnableDefault is 0Supported from Spectrum-4 through Spectrum-6 only." access="RW" enum="Disable=0x0,Enable=0x1" offset="0x24.2" size="0x0.1" />
 </node>
 
 <node name="date_time_layout_ext" descr="" size="0x8.0" >
@@ -973,6 +981,83 @@
 	<field name="RECLAIM_VFS_PAGES_TO" descr="Maximum period for PF to reclaim VF function pages." subnode="default_timeout_ext" access="RO" offset="0x34.0" size="0x4.0" />
 	<field name="DRIVER_UNLOAD_AND_RESET_TO" descr="Maximum period for Reset FSM to move from UNLOAD ACCEPTED to\;LINK_TOGGLE_REQUEST" subnode="default_timeout_ext" access="RO" offset="0x38.0" size="0x4.0" />
 	<field name="EMBEDDED_CPU_OS_SHUTDOWN_TO" descr="Maximum period for shutting down/booting the embedded CPU OS. Relevant\;for DPU devices only.Valid only if the timeout value is not zero." subnode="default_timeout_ext" access="RW" offset="0x3c.0" size="0x4.0" />
+</node>
+
+<node name="ef_pddr_apsu_lane_data_v1_ext" descr="" size="0xc.0" >
+	<field name="train_ctl_state" descr="The actual state of the Training control state diagram (IEEE 802.3dj Annex 178B Figure 178B-10).0: QUIET1: SEND_TRAINING2: TRAIN_START3: TRAIN_LOCAL4: TRAIN_REMOTE5: ISL_READY6: PATH_READY7: PATH_UP8: RECOVERY9: FAIL10: SEND_LOCAL11: RX_READY" access="RO" offset="0x0.0" size="0x0.4" />
+	<field name="local_mc_mode" descr="Enumerated variable that indicates the training pattern modulation and coding.0: PAM21: Reserved2: PAM4 without precoding3: PAM4 with precoding." access="RO" offset="0x0.8" size="0x0.2" />
+	<field name="local_tp_mode" descr="Enumerated variable that indicates the transmitted training pattern.0: synchronous PRBS131: free-running PRBS132: Reserved3: freerunningPRBS31" access="RO" offset="0x0.10" size="0x0.2" />
+	<field name="lane_training_status" descr="The status of the ILT function. Valid only if apsu_oper = Enabled.0: FAIL: Training failed1: OK: Training OK2: Reserved3: IN_PROGRESS: Lane is being trained" access="RO" offset="0x0.12" size="0x0.2" />
+	<field name="polarity_correction" descr="Set if the signal polarity was reverted" access="RO" offset="0x0.18" size="0x0.1" />
+	<field name="tx_disable" descr="Set if the transmitter is disabled (squelch). Used only if training_en_oper = Disable" access="RO" offset="0x0.19" size="0x0.1" />
+	<field name="remote_rts" descr="Set if the Not ready to send bit in the ILT received frame is clear." access="RO" offset="0x0.20" size="0x0.1" />
+	<field name="local_rts" descr="Set if the local transmitter is ready to send PCS data" access="RO" offset="0x0.21" size="0x0.1" />
+	<field name="remote_rx_ready" descr="Set if the Receiver ready bit in the ILT received frame is set." access="RO" offset="0x0.22" size="0x0.1" />
+	<field name="local_rx_ready" descr="Set if the local receiver finished training." access="RO" offset="0x0.23" size="0x0.1" />
+	<field name="remote_tf_lock" descr="Set if the Receiver frame lock bit in the ILT received frame is set." access="RO" offset="0x0.24" size="0x0.1" />
+	<field name="local_tf_lock" descr="Set if the ILT frame position has been detected" access="RO" offset="0x0.25" size="0x0.1" />
+	<field name="rx_ok" descr="Set if local receiver is receiving a good signal" access="RO" offset="0x0.26" size="0x0.1" />
+	<field name="invert_to_done" descr="Set if the invert_to timer expired" access="RO" offset="0x0.28" size="0x0.1" />
+	<field name="training_failure" descr="Set if the training process failed" access="RO" offset="0x0.31" size="0x0.1" />
+	<field name="bcnl_rx_block_cnt" descr="nLUT backchannel number of transmitted blocks" access="RO" offset="0x4.0" size="0x0.10" />
+	<field name="bcnl_tx_block_cnt" descr="nLUT backchannel number of received blocks" access="RO" offset="0x4.16" size="0x0.10" />
+	<field name="bcnl_msg_rx_fail" descr="Set if nLUT backchannel message failed to be received" access="RO" offset="0x4.30" size="0x0.1" />
+	<field name="bcnl_msg_tx_fail" descr="Set if nLUT backchannel message failed to be transmitted" access="RO" offset="0x4.31" size="0x0.1" />
+</node>
+
+<node name="ef_ptasv2_3nm_apsu_ctrl_v1_ext" descr="" size="0x18.0" >
+	<field name="apsu_cap" descr="Set if APSU (ILT/RTS) capability is supported" access="RO" offset="0x0.0" size="0x0.1" />
+	<field name="apsu_ctl" descr="Control the APSU (ILT/RTS) activation if apsu_cap = 10: Default. Default = 11: Enable2: Disable" access="RW" offset="0x0.1" size="0x0.2" />
+	<field name="apsu_oper" descr="APSU (ILT/RTS) operational mode.1: APSU enabled2: APSU disabled" access="RO" offset="0x0.3" size="0x0.2" />
+	<field name="hop_count_cap" descr="Set if hop count capability is supported" access="RO" offset="0x0.5" size="0x0.1" />
+	<field name="hop_count_ctl" descr="Control the hop count for TRO activation if hop_count_cap = 10: Default. Default = 1 for TRO, 0 otherwise1: Enable2: Disable" access="RW" offset="0x0.6" size="0x0.2" />
+	<field name="hop_count_oper" descr="Hop count operational mode.1: Hop count enabled2: Hop count disabled" access="RO" offset="0x0.8" size="0x0.2" />
+	<field name="peer_det_cap" descr="Set if peer detection capability is supported" access="RO" offset="0x0.10" size="0x0.1" />
+	<field name="lt_peer_det_ctl" descr="Control the Link Training peer detection activation if lt_peer_det_cap = 10: Default. Default= 11: Enable2: Disable" access="RW" offset="0x0.11" size="0x0.2" />
+	<field name="lt_peer_det_oper" descr="Peer detection operational mode.1: Peer detection enabled2: Peer detection disabled" access="RO" offset="0x0.13" size="0x0.2" />
+	<field name="nlut_cap" descr="Set if nLUTn capability is supported" access="RO" offset="0x0.15" size="0x0.1" />
+	<field name="nlut_ctl" descr="Control the nLUT activation if nlut_cap = 10: Default. Default = 0 for electrical interfaces, 1 for optical interfaces1: Enable2: Disable" access="RW" offset="0x0.16" size="0x0.2" />
+	<field name="nlut_oper" descr="nLUTn operational mode.1: nLUT enabled2: nLUT disabled" access="RO" offset="0x0.18" size="0x0.2" />
+	<field name="mr_training_enable_cap" descr="Set if training_enable can be clear when apsu_oper = 1" access="RO" offset="0x0.20" size="0x0.1" />
+	<field name="training_en_ctl" descr="Control the training_en configuration if training_en_cap = 10: Default. Default = 11: Enable training2: Disable training" access="RW" offset="0x0.21" size="0x0.2" />
+	<field name="training_en_oper" descr="APSU training  operational mode.1: Training enabled2: Training disabled" access="RO" offset="0x0.23" size="0x0.2" />
+	<field name="restart_training" descr="Set to restart APSU" access="WO" offset="0x0.31" size="0x0.1" />
+	<field name="recovery_timer" descr="Time to recover from a loss of training frame sync event. System parameter0: Disable.1:255: Number of milliseconds" access="RW" offset="0x4.0" size="0x0.8" />
+	<field name="max_recovery_events" descr="Number os times that training frames can be lost before fail. Syatme parameter0: Disable.1:255: maximum allowed number of transitions into the RECOVERY state in the Training control state diagram" access="RW" offset="0x4.16" size="0x0.8" />
+	<field name="max_wait_timer" descr="Maximum time to perform link training in 802.3dj in seconds. System parameter.Default: 30 for electrical interfaces, 60 for optical interfaces" access="RW" offset="0x8.0" size="0x0.16" />
+	<field name="propagation_timer" descr="Time to wait before moving from training to data forwarding. Used to guarantee that the whiole path is ready. System parameter.0: Disabled.1 - 31: 10 msec to 310 msec timer in 10 msec granularity.Default = 10" access="RW" offset="0x8.22" size="0x0.5" />
+	<field name="quiet_timer" descr="Squelch time before restarting APSU. System parameter.0: Disable.1 - 31: 10 msec to 310 msec timer in 10 msec granularity.Default = 20" access="RW" offset="0x8.28" size="0x0.4" />
+	<field name="invert_to" descr="Invert to timer. System parameter.0: Disable.1 - 15: Number of millisecondsDefault = 5" access="RW" offset="0xc.0" size="0x0.4" />
+	<field name="tf_detect_timer" descr="This timer limits the time synchronization on link training frames is searched after modulation_detect becomes true. Per system timer.0: Disable1-15: Number of milliseconds allowed to detect link train frames." access="RW" offset="0xc.6" size="0x0.4" />
+	<field name="peer_det_timer" descr="This timer limits the peer detection protocol including the peer configuration detection. Per system timer.0: Disable.1-15: Number of 100’s of milliseconds allowed for the peer detection protocol.Default = 2" access="RW" offset="0xc.11" size="0x0.4" />
+	<field name="fail_timer" descr="This timer limits the allowed failure time before an APSU restart is forced. It is started when modulation_detect = false is detected in any lane of the port. Per system timer.0: Disable1-255: of 10’s of milliseconds before restarting due to signal fail.Default = 100" access="RW" offset="0xc.16" size="0x0.8" />
+	<field name="validation_timer" descr="This timer limits the time local_tf_lock shall be true before APSU restart is forced. Relevant only if validation_en = 1. Per system timer.0: Disable.1-15: Number of 10’s of milliseconds local_tf_lock shall be stable.Default = 1" access="RW" offset="0xc.26" size="0x0.4" />
+	<field name="local_pattern_tx" descr="Select local pattern for APSU. System parameter.0: PRBS311: PCS data0: Default. Default = 0" access="RW" offset="0xc.31" size="0x0.1" />
+	<field name="restart_on_los" descr="Select the behavior under signal los. System parameter0: Do not restart on signal los1: Restart on signal los2: Restart only on long signal losDefault = 1" access="RW" offset="0x10.6" size="0x0.2" />
+	<field name="validation_en" descr="Allow received ILT frames validation timer. Relevant only if rx_fail_on_los = 0. System parameter.0: Validation disabled1: Validation enabled0: Default. Default = 0" access="RW" offset="0x10.9" size="0x0.1" />
+	<field name="max_hop_count" descr="Maximum hop count value in D14 and D15 of the ILT frame that is transmitted.Default is 1 except for the case of a host connected to a TRO module in which case it is 0." access="RW" offset="0x10.26" size="0x0.2" />
+	<field name="hop_decrement" descr="Amount to be decremented from the received ILT frame hop count field in D15 and D15Default is 0 except for the case of a host connected to a TRO module in which case it is 1." access="RW" offset="0x10.28" size="0x0.2" />
+	<field name="hop_count" descr="Hop count to be transmitted in bits D14 and D15 of the ILT frame.Default is 0 except for the cases of a host connected to a TRO module and a TRO module, in which cases it is 1." access="RW" offset="0x10.30" size="0x0.2" />
+	<field name="bcnl_pages_retransmissions" descr="Number of times the nLUT backchannel pages are sent. System parameter.1-255: Retransmit each page timesDefault = 95" access="RW" offset="0x14.0" size="0x0.8" />
+</node>
+
+<node name="ef_ptasv2_3nm_prbs_v1_ext" descr="" size="0x30.0" >
+	<field name="lane0_seed_prbs31" descr="PRBS31 training sequence seed for lane 0." access="RW" offset="0x0.0" size="0x0.31" />
+	<field name="lane1_seed_prbs31" descr="PRBS31 training sequence seed for lane 1." access="RW" offset="0x4.0" size="0x0.31" />
+	<field name="lane2_seed_prbs31" descr="PRBS31 training sequence seed for lane 2." access="RW" offset="0x8.0" size="0x0.31" />
+	<field name="lane3_seed_prbs31" descr="PRBS31 training sequence seed for lane 3." access="RW" offset="0xc.0" size="0x0.31" />
+	<field name="lane4_seed_prbs31" descr="PRBS31 training sequence seed for lane 4." access="RW" offset="0x10.0" size="0x0.31" />
+	<field name="lane5_seed_prbs31" descr="PRBS31 training sequence seed for lane 5." access="RW" offset="0x14.0" size="0x0.31" />
+	<field name="lane6_seed_prbs31" descr="PRBS31 training sequence seed for lane 6." access="RW" offset="0x18.0" size="0x0.31" />
+	<field name="lane7_seed_prbs31" descr="PRBS31 training sequence seed for lane 7." access="RW" offset="0x1c.0" size="0x0.31" />
+	<field name="lane1_seed_prbs13" descr="PRBS13 training sequence seed for lane 1." access="RW" offset="0x20.0" size="0x0.13" />
+	<field name="lane0_seed_prbs13" descr="PRBS13 training sequence seed for lane 0." access="RW" offset="0x20.16" size="0x0.13" />
+	<field name="lane3_seed_prbs13" descr="PRBS13 training sequence seed for lane 3." access="RW" offset="0x24.0" size="0x0.13" />
+	<field name="lane2_seed_prbs13" descr="PRBS13 training sequence seed for lane 2." access="RW" offset="0x24.16" size="0x0.13" />
+	<field name="lane5_seed_prbs13" descr="PRBS13 training sequence seed for lane 5." access="RW" offset="0x28.0" size="0x0.13" />
+	<field name="lane4_seed_prbs13" descr="PRBS13 training sequence seed for lane 4." access="RW" offset="0x28.16" size="0x0.13" />
+	<field name="lane7_seed_prbs13" descr="PRBS13 training sequence seed for lane 7." access="RW" offset="0x2c.0" size="0x0.13" />
+	<field name="lane6_seed_prbs13" descr="PRBS13 training sequence seed for lane 6." access="RW" offset="0x2c.16" size="0x0.13" />
 </node>
 
 <node name="enum_entry" descr="" size="0x4.0" >
@@ -1053,38 +1138,38 @@
 </node>
 
 <node name="eth_3635_cntrs_grp_data_layout_ext" descr="" size="0xf8.0" >
-	<field name="dot3stats_alignment_errors_high" descr="A count of frames received that are not an integral number of octets in\;length and do not pass the FCS check." access="RW" offset="0x0.0" size="0x4.0" />
-	<field name="dot3stats_alignment_errors_low" descr="(see above)" access="RW" offset="0x4.0" size="0x4.0" />
-	<field name="dot3stats_fcs_errors_high" descr="A count of frames received that are an integral number of octets in\;length but do not pass the FCS check. This count does not include frames\;received with frame-too-long or frame-too-short errors." access="RW" offset="0x8.0" size="0x4.0" />
-	<field name="dot3stats_fcs_errors_low" descr="(see above)" access="RW" offset="0xc.0" size="0x4.0" />
-	<field name="dot3stats_single_collision_frames_high" descr="A count of frames that are involved in a single collision, and are\;subsequently transmitted successfully.This counter does not increment when the interface is operating in\;full-duplex mode." access="RW" offset="0x10.0" size="0x4.0" />
-	<field name="dot3stats_single_collision_frames_low" descr="(see above)" access="RW" offset="0x14.0" size="0x4.0" />
-	<field name="dot3stats_multiple_collision_frames_high" descr="A count of frames that are involved in more than one collision and are\;subsequently transmitted successfully.This counter does not increment when the interface is operating in\;full-duplex mode." access="RW" offset="0x18.0" size="0x4.0" />
-	<field name="dot3stats_multiple_collision_frames_low" descr="(see above)" access="RW" offset="0x1c.0" size="0x4.0" />
-	<field name="dot3stats_sqe_test_errors_high" descr="A count of times that the SQE TEST ERROR is received on a particular\;interface.This counter does not increment on interfaces operating at speeds\;greater than 10 Mb/s, or on interfaces operating in full-duplex mode." access="RW" offset="0x20.0" size="0x4.0" />
-	<field name="dot3stats_sqe_test_errors_low" descr="(see above)" access="RW" offset="0x24.0" size="0x4.0" />
-	<field name="dot3stats_deferred_transmissions_high" descr="A count of frames for which the first transmission attempt on a\;particular interface is delayed because the medium is busy.This counter does not increment when the interface is operating in\;full-duplex mode." access="RW" offset="0x28.0" size="0x4.0" />
-	<field name="dot3stats_deferred_transmissions_low" descr="(see above)" access="RW" offset="0x2c.0" size="0x4.0" />
-	<field name="dot3stats_late_collisions_high" descr="The number of times that a collision is detected on a particular\;interface later than one slotTime into the transmission of a packet.This counter does not increment when the interface is operating in\;full-duplex mode." access="RW" offset="0x30.0" size="0x4.0" />
-	<field name="dot3stats_late_collisions_low" descr="(see above)" access="RW" offset="0x34.0" size="0x4.0" />
-	<field name="dot3stats_excessive_collisions_high" descr="A count of frames for which transmission on a particular interface fails\;due to excessive collisions.This counter does not increment when the interface is operating in\;full-duplex mode." access="RW" offset="0x38.0" size="0x4.0" />
-	<field name="dot3stats_excessive_collisions_low" descr="(see above)" access="RW" offset="0x3c.0" size="0x4.0" />
-	<field name="dot3stats_internal_mac_transmit_errors_high" descr="A count of frames for which transmission failed and were discarded even\;though no errors had been detected to prevent their being deliverable to\;a higher-layer protocol." access="RW" offset="0x40.0" size="0x4.0" />
-	<field name="dot3stats_internal_mac_transmit_errors_low" descr="(see above)" access="RW" offset="0x44.0" size="0x4.0" />
-	<field name="dot3stats_carrier_sense_errors_high" descr="The number of times that the carrier sense condition was lost or never\;asserted when attempting to transmit a frame on a particular interface.This counter does not increment when the interface is operating in\;full-duplex mode." access="RW" offset="0x48.0" size="0x4.0" />
-	<field name="dot3stats_carrier_sense_errors_low" descr="(see above)" access="RW" offset="0x4c.0" size="0x4.0" />
-	<field name="dot3stats_frame_too_longs_high" descr="A count of frames received that exceed the maximum permitted frame size." access="RW" offset="0x50.0" size="0x4.0" />
-	<field name="dot3stats_frame_too_longs_low" descr="(see above)" access="RW" offset="0x54.0" size="0x4.0" />
-	<field name="dot3stats_internal_mac_receive_errors_high" descr="A count of frames for which reception failed and were discarded even\;though no errors had been detected to prevent their being deliverable to\;a higher-layer protocol." access="RW" offset="0x58.0" size="0x4.0" />
-	<field name="dot3stats_internal_mac_receive_errors_low" descr="(see above)" access="RW" offset="0x5c.0" size="0x4.0" />
-	<field name="dot3stats_symbol_errors_high" descr="The number of times the receiving media is non-idle (a carrier event)\;for a period of time equal to or greater than minFrameSize, and during\;which there was at least one occurrence of an event that causes the PHY\;to indicate ‘Receive Error’." access="RW" offset="0x60.0" size="0x4.0" />
-	<field name="dot3stats_symbol_errors_low" descr="(see above)" access="RW" offset="0x64.0" size="0x4.0" />
-	<field name="dot3control_in_unknown_opcodes_high" descr="A count of MAC Control frames received that contain an opcode that is\;not supported." access="RW" offset="0x68.0" size="0x4.0" />
-	<field name="dot3control_in_unknown_opcodes_low" descr="(see above)" access="RW" offset="0x6c.0" size="0x4.0" />
-	<field name="dot3in_pause_frames_high" descr="A count of MAC Control frames received with an opcode indicating the\;PAUSE operation." access="RW" offset="0x70.0" size="0x4.0" />
-	<field name="dot3in_pause_frames_low" descr="(see above)" access="RW" offset="0x74.0" size="0x4.0" />
-	<field name="dot3out_pause_frames_high" descr="A count of MAC Control frames transmitted with an opcode indicating the\;PAUSE operation." access="RW" offset="0x78.0" size="0x4.0" />
-	<field name="dot3out_pause_frames_low" descr="(see above)" access="RW" offset="0x7c.0" size="0x4.0" />
+	<field name="dot3stats_alignment_errors_high" descr="A count of frames received that are not an integral number of octets in\;length and do not pass the FCS check." access="RO" offset="0x0.0" size="0x4.0" />
+	<field name="dot3stats_alignment_errors_low" descr="(see above)" access="RO" offset="0x4.0" size="0x4.0" />
+	<field name="dot3stats_fcs_errors_high" descr="A count of frames received that are an integral number of octets in\;length but do not pass the FCS check. This count does not include frames\;received with frame-too-long or frame-too-short errors." access="RO" offset="0x8.0" size="0x4.0" />
+	<field name="dot3stats_fcs_errors_low" descr="(see above)" access="RO" offset="0xc.0" size="0x4.0" />
+	<field name="dot3stats_single_collision_frames_high" descr="A count of frames that are involved in a single collision, and are\;subsequently transmitted successfully.This counter does not increment when the interface is operating in\;full-duplex mode." access="RO" offset="0x10.0" size="0x4.0" />
+	<field name="dot3stats_single_collision_frames_low" descr="(see above)" access="RO" offset="0x14.0" size="0x4.0" />
+	<field name="dot3stats_multiple_collision_frames_high" descr="A count of frames that are involved in more than one collision and are\;subsequently transmitted successfully.This counter does not increment when the interface is operating in\;full-duplex mode." access="RO" offset="0x18.0" size="0x4.0" />
+	<field name="dot3stats_multiple_collision_frames_low" descr="(see above)" access="RO" offset="0x1c.0" size="0x4.0" />
+	<field name="dot3stats_sqe_test_errors_high" descr="A count of times that the SQE TEST ERROR is received on a particular\;interface.This counter does not increment on interfaces operating at speeds\;greater than 10 Mb/s, or on interfaces operating in full-duplex mode." access="RO" offset="0x20.0" size="0x4.0" />
+	<field name="dot3stats_sqe_test_errors_low" descr="(see above)" access="RO" offset="0x24.0" size="0x4.0" />
+	<field name="dot3stats_deferred_transmissions_high" descr="A count of frames for which the first transmission attempt on a\;particular interface is delayed because the medium is busy.This counter does not increment when the interface is operating in\;full-duplex mode." access="RO" offset="0x28.0" size="0x4.0" />
+	<field name="dot3stats_deferred_transmissions_low" descr="(see above)" access="RO" offset="0x2c.0" size="0x4.0" />
+	<field name="dot3stats_late_collisions_high" descr="The number of times that a collision is detected on a particular\;interface later than one slotTime into the transmission of a packet.This counter does not increment when the interface is operating in\;full-duplex mode." access="RO" offset="0x30.0" size="0x4.0" />
+	<field name="dot3stats_late_collisions_low" descr="(see above)" access="RO" offset="0x34.0" size="0x4.0" />
+	<field name="dot3stats_excessive_collisions_high" descr="A count of frames for which transmission on a particular interface fails\;due to excessive collisions.This counter does not increment when the interface is operating in\;full-duplex mode." access="RO" offset="0x38.0" size="0x4.0" />
+	<field name="dot3stats_excessive_collisions_low" descr="(see above)" access="RO" offset="0x3c.0" size="0x4.0" />
+	<field name="dot3stats_internal_mac_transmit_errors_high" descr="A count of frames for which transmission failed and were discarded even\;though no errors had been detected to prevent their being deliverable to\;a higher-layer protocol." access="RO" offset="0x40.0" size="0x4.0" />
+	<field name="dot3stats_internal_mac_transmit_errors_low" descr="(see above)" access="RO" offset="0x44.0" size="0x4.0" />
+	<field name="dot3stats_carrier_sense_errors_high" descr="The number of times that the carrier sense condition was lost or never\;asserted when attempting to transmit a frame on a particular interface.This counter does not increment when the interface is operating in\;full-duplex mode." access="RO" offset="0x48.0" size="0x4.0" />
+	<field name="dot3stats_carrier_sense_errors_low" descr="(see above)" access="RO" offset="0x4c.0" size="0x4.0" />
+	<field name="dot3stats_frame_too_longs_high" descr="A count of frames received that exceed the maximum permitted frame size." access="RO" offset="0x50.0" size="0x4.0" />
+	<field name="dot3stats_frame_too_longs_low" descr="(see above)" access="RO" offset="0x54.0" size="0x4.0" />
+	<field name="dot3stats_internal_mac_receive_errors_high" descr="A count of frames for which reception failed and were discarded even\;though no errors had been detected to prevent their being deliverable to\;a higher-layer protocol." access="RO" offset="0x58.0" size="0x4.0" />
+	<field name="dot3stats_internal_mac_receive_errors_low" descr="(see above)" access="RO" offset="0x5c.0" size="0x4.0" />
+	<field name="dot3stats_symbol_errors_high" descr="The number of times the receiving media is non-idle (a carrier event)\;for a period of time equal to or greater than minFrameSize, and during\;which there was at least one occurrence of an event that causes the PHY\;to indicate ‘Receive Error’." access="RO" offset="0x60.0" size="0x4.0" />
+	<field name="dot3stats_symbol_errors_low" descr="(see above)" access="RO" offset="0x64.0" size="0x4.0" />
+	<field name="dot3control_in_unknown_opcodes_high" descr="A count of MAC Control frames received that contain an opcode that is\;not supported." access="RO" offset="0x68.0" size="0x4.0" />
+	<field name="dot3control_in_unknown_opcodes_low" descr="(see above)" access="RO" offset="0x6c.0" size="0x4.0" />
+	<field name="dot3in_pause_frames_high" descr="A count of MAC Control frames received with an opcode indicating the\;PAUSE operation." access="RO" offset="0x70.0" size="0x4.0" />
+	<field name="dot3in_pause_frames_low" descr="(see above)" access="RO" offset="0x74.0" size="0x4.0" />
+	<field name="dot3out_pause_frames_high" descr="A count of MAC Control frames transmitted with an opcode indicating the\;PAUSE operation." access="RO" offset="0x78.0" size="0x4.0" />
+	<field name="dot3out_pause_frames_low" descr="(see above)" access="RO" offset="0x7c.0" size="0x4.0" />
 </node>
 
 <node name="eth_802_3_cntrs_grp_data_layout_ext" descr="" size="0xf8.0" >
@@ -1200,7 +1285,7 @@
 	<field name="tx_stats_pkts4096to8191octets_low" descr="(see above)" access="RO" offset="0x94.0" size="0x4.0" />
 	<field name="tx_stats_pkts8192to10239octets_high" descr="The total number of packets (including bad packets) transmitted that\;were between 8192 and 10239 octets in length (excluding framing bits but\;including FCS octets).transmitted" access="RO" offset="0x98.0" size="0x4.0" />
 	<field name="tx_stats_pkts8192to10239octets_low" descr="(see above)" access="RO" offset="0x9c.0" size="0x4.0" />
-	<field name="ece_marked_high" descr="A count of packets marked as ECE or potentially marked as ECE." access="RO" offset="0xa0.0" size="0x4.0" />
+	<field name="ece_marked_high" descr="A count of packets marked as ECE or potentially marked as ECE.Supported in Spectrum switches from Spectrum-4 through Spectrum-6 only." access="RO" offset="0xa0.0" size="0x4.0" />
 	<field name="ece_marked_low" descr="(see above)" access="RO" offset="0xa4.0" size="0x4.0" />
 	<field name="tx_int_cksm_err_high" descr="Counter is incremented upon packet payload internal checksum error" access="RO" offset="0xa8.0" size="0x4.0" />
 	<field name="tx_int_cksm_err_low" descr="(see above)" access="RO" offset="0xac.0" size="0x4.0" />
@@ -1330,7 +1415,7 @@
 	<field name="access_reg_group" descr="Access Register ID groups0: First_128_REG_ID - Register IDs 0x9001 - 0x907F)1: Register_IDs_0x9080 - 0x90FF (bit 0 in mng_access_reg_cap_mask\;represent register ID 0x9080 while bit 127 represents register ID\;0x90FF).2: Register_IDs_0x9100 - 0x917F (bit 0 in mng_access_reg_cap_mask\;represent register ID 0x9100 while bit 127 represents register ID\;0x917F).3: Register_IDs_0x9180 - 0x91FF (bit 0 in mng_access_reg_cap_mask\;represent register ID 0x9180 while bit 127 represents register ID\;0x91FF)." access="INDEX" enum="First_128_REG_ID=0x0,Register_IDs_0x9080=0x1,Register_IDs_0x9100=0x2,Register_IDs_0x9180=0x3" offset="0x0.0" size="0x0.8" />
 	<field name="feature_group" descr="Feature list mask index:0: enhanced_features" access="INDEX" enum="enhanced_features=0x0" offset="0x0.16" size="0x0.8" />
 	<field name="mng_access_reg_cap_mask" descr="Supported management’s access register bitmask. Based on\;access_reg_group index.When bit is set, the register is supported in the device.For example:Bit 1: MFCR_0x9001Bit 2: MFSC_0x9002Bit 3: MFSM_0x9003Bit 4: MFSL_0x9004Bit 58: MGCR_0x903ABit 73: MPPF_0x9049Bit 127: MCAP_0x907F" access="RO" enum="MFCR_0x9001=0x2,MFSC_0x9002=0x4,MFSM_0x9003=0x8,MFSL_0x9004=0x10,MGCR_0x903A=0x4000000,MPPF_0x9049=0x200,MCAP_0x907F=0x80000000" high_bound="3" low_bound="0" offset="0x8.0" size="0x10.0" />
-	<field name="mng_feature_cap_mask" descr="Supported port’s enhanced features.Based on feature_group index.When bit is set, The feature is supported in the deviceBit 0: MPCNT counter group- PCIE performance counters supportedBit 1: mtpps_fs - If set, field_select field in MTPPS register is\;supported.Bit 2: mtpps_enhanced_out_periodic_adjustment - If set,\;enhanced_out_periodic_adjustment field in MTPPS register is supported.Bit 3: tx_lossy_overflow_oper - If set, tx_overflow_buffer_pkt counter\;in MPCNT register is supported.Bit 4: pcie_outbound_stalled - if set, outbound_stalled_reads,\;outbound_stalled_writes, outbound_stalled_reads_events and\;outbound_stalled_writes_events counters in MPCNT are supported.Bit 5: Management pass through is supportedBit 6: sensor_map - If set, sensor_map is supported in MTCAP register.Bit 7: if set, module_status bit 8 (Module Low Power) in MCION register\;is supported.Bit 8: beacon_capability_disable - If set, beacon feature, as appears in\;MLCR register, in not supported by the device.Bit 9: dynamic_tx_overflow - If set, tx_overflow_sense field is\;supported in MPEGC register.Bit 10: mark_tx_action_cqe is supported if set to ‘1’.Bit 11: mark_tx_action_cnp is supported if set to ‘1’.Bit 12: dev_info is supported in register is set to ‘1’.Bit 13: sensor_count field is 12bit size in MTMP and MTBRBit 14: cs_tokens_supported is supportedBit 15: debug_fw_tokens_supportedBit 16: long_keys is supportedBit 17: pwr_status and pci_power are supported in MPEINBit 18: If set, accessing through device_type and device_index is\;supported in MCC, MCQI and MCQSBit 19: pcie_sync_for_fw_update_supported is set to ‘1’Bit 20: ptpCyc2Realtime_modify - If set, the cycle to realtime\;translation offload is supportedBit 21: If set to ‘1’, reset_state in MFRL is supportedBit 22: If set to ‘1’, link_peer_max_speed is supported in MPEIN\;RegisterBit 23: If set to ‘1’, slot_index field is supported in: MCIA, MCAS,\;MCION, MQSP, MTCAP, MTECR, MTMP, MTEWE, MTBR, MVCAP, MVCR, MGPIR,\;MDDT.Bit 24: If set, transceiver burn flow is supported in MCC, MCQI and\;MCQS.Bit 26: If set, progress field is supported in MCQSBit 28: If set, number_of_slots field is supported in MGPIR.Bit 29: If set, virtual hot plug / unplug is supported in MPEGC.Bit 30: If set, my_pf_number is supported in MPPF.Bit 31: If set, sdee is supported in MTMPBit 32: If set, npps_period is supported in MTPPS.Bit 33: If set, out_pulse_duration_ns is supported in MTPPS.Bit 34: If set, MCIA supports 32 D-words. Otherwise, 12 D-words.Bit 35: If set, MGIR.hw_info.technology is supported.Bit 37: If set, lp_msb is supported for MLCR, MPIR\;Bit 39: If set, MRCS and RMDT tokens are supported in MCQSBit 40: If set, ‘encryption’ field in MGIR is supportedBit 43: If set, MFCR supports tacho_active_msb fieldBit 44: If set, FORE supports fan_under_limit_msb and fan_over_limit_msb\;fieldsBit 45: If set, MFRL.pci_rescan_required is supportedBit 46: time_adjust_range_extended - if set, the MTUTC.time_adjustment\;range is extended to -200,000 to +200,000\;Bit 47: If set, MTUTC.freq_adj_units=1 is supportedBit 48: If set, MRSRFT/MRSR.command=6 is supportedBit 49: If set, MCQS.identifier support CRCS and CRDT tokensBit 51: If set, MTUTC.freq_adj_units=2 is supportedBit 53: If set, Mlx mlxfwreset with downstream port is supported by FW\;Bit 59: If set, MCC.component_specific_error_code is valid for LinkX\;devicesBit 60: If set, MGNLE.clr is supportedBit 61: If set, MGIR supports life_cycle_msb and pds fields in FW\;info and development field in HW info.\;\;Bit 65: If set, MVCR support current_sensor_value_msbBit 66: If set. MFRL supports pci_reset_req_method, pci_switch_exist\;fields. [DWIP]Bit 67: If set, MRSR.cmd = 6 works with SBRBit 68: If set, DPNv supported [NIC_Only]Bit 69: If set, supports MGIR pci_major, pci_minor fieldsBit 70: If set, supports MTCAP support 8 bit internal_sensor_count\;[DWIP]Bit 71: If set, supports MVCAP supports sensor_map_type [DWIP]Bit 72: If set, MVCR supports parent_id field [nic_prm]Bit 73: If set, MFRL.reset_type=5 Network reset is supported\;[nic_prm]Bit 74: If set, MGIR.hw_info.pci_switch_only_mode is supported\;[nic_prm]Bit 75: If set, PLLP supports oe_identifier and resource_labe_port\;[switch_internal][DWIP]bit 76: If set, MCQS supports the component_not_supported field\;[DWIP]Bit 77: If set, host_id field in MPIR is supportedBit 78: If set, MGIR supports 12 bit num_ports fieldbit 80: If set, MCQS,identifier supports the DPA_COMPONENT, DPA\;_COMPONENT_REMOVAL fields and MCQI supports DPA apps infoBit 81: If set, MFCDR supports module and query_type fields [DWIP]Bit 82: If set, MCIA supports async mode [DWIP][switch_internal]Bit 83: If set, MISOC supports types 0x2,0x3,0xF and\;query_not_availble, query_pending fields[NIC_Only]Bit 84: If set, MCANM supports ec_offload_engine_disabled field\;[NIC_Only]Bit 85: If set, MTDT token is supportedBit 86: If set, MPCAPM PRM is supported [NIC_Only]Bit 87: If set, MTCTR cross timestamp of the DPA timer is supported [NIC_Only]Bit 88: If set, the following are supported:\;PEMI.laser_source_essential, PEMI.laser_source_advance, PEMI.module\;status, PEMI.optical_engine_telemetry_parameters, PEMI.cpo_module,\;PEMI.last_sub_module.Bit 89: If set, supports minimum temperatures, as well as alerts for low\;critical and high critical thresholds, in the following registers: MTMP,\;MTEWE, MTBR, MTBR_v2.Bit 90: If set, MQDIK.key_index=1 is supported.Bit 91: If set, CPO Combined Model is supported.Bit 93: If set, MGIR.hw_info.board_ga is supported; ignore otherwise." access="RO" high_bound="3" low_bound="0" offset="0x28.0" size="0x10.0" />
+	<field name="mng_feature_cap_mask" descr="Supported port’s enhanced features.Based on feature_group index.When bit is set, The feature is supported in the deviceBit 0: MPCNT counter group- PCIE performance counters supportedBit 1: mtpps_fs - If set, field_select field in MTPPS register is\;supported.Bit 2: mtpps_enhanced_out_periodic_adjustment - If set,\;enhanced_out_periodic_adjustment field in MTPPS register is supported.Bit 3: tx_lossy_overflow_oper - If set, tx_overflow_buffer_pkt counter\;in MPCNT register is supported.Bit 4: pcie_outbound_stalled - if set, outbound_stalled_reads,\;outbound_stalled_writes, outbound_stalled_reads_events and\;outbound_stalled_writes_events counters in MPCNT are supported.Bit 5: Management pass through is supportedBit 6: sensor_map - If set, sensor_map is supported in MTCAP register.Bit 7: if set, module_status bit 8 (Module Low Power) in MCION register\;is supported.Bit 8: beacon_capability_disable - If set, beacon feature, as appears in\;MLCR register, in not supported by the device.Bit 9: dynamic_tx_overflow - If set, tx_overflow_sense field is\;supported in MPEGC register.Bit 10: mark_tx_action_cqe is supported if set to ‘1’.Bit 11: mark_tx_action_cnp is supported if set to ‘1’.Bit 12: dev_info is supported in register is set to ‘1’.Bit 13: sensor_count field is 12bit size in MTMP and MTBRBit 14: cs_tokens_supported is supportedBit 15: debug_fw_tokens_supportedBit 16: long_keys is supportedBit 17: pwr_status and pci_power are supported in MPEINBit 18: If set, accessing through device_type and device_index is\;supported in MCC, MCQI and MCQSBit 19: pcie_sync_for_fw_update_supported is set to ‘1’Bit 20: ptpCyc2Realtime_modify - If set, the cycle to realtime\;translation offload is supportedBit 21: If set to ‘1’, reset_state in MFRL is supportedBit 22: If set to ‘1’, link_peer_max_speed is supported in MPEIN\;RegisterBit 23: If set to ‘1’, slot_index field is supported in: MCIA, MCAS,\;MCION, MQSP, MTCAP, MTECR, MTMP, MTEWE, MTBR, MVCAP, MVCR, MGPIR,\;MDDT.Bit 24: If set, transceiver burn flow is supported in MCC, MCQI and\;MCQS.Bit 26: If set, progress field is supported in MCQSBit 28: If set, number_of_slots field is supported in MGPIR.Bit 29: If set, virtual hot plug / unplug is supported in MPEGC.Bit 30: If set, my_pf_number is supported in MPPF.Bit 31: If set, sdee is supported in MTMPBit 32: If set, npps_period is supported in MTPPS.Bit 33: If set, out_pulse_duration_ns is supported in MTPPS.Bit 34: If set, MCIA supports 32 D-words. Otherwise, 12 D-words.Bit 35: If set, MGIR.hw_info.technology is supported.Bit 37: If set, lp_msb is supported for MLCR, MPIR\;Bit 39: If set, MRCS and RMDT tokens are supported in MCQSBit 40: If set, ‘encryption’ field in MGIR is supportedBit 43: If set, MFCR supports tacho_active_msb fieldBit 44: If set, FORE supports fan_under_limit_msb and fan_over_limit_msb\;fieldsBit 45: If set, MFRL.pci_rescan_required is supportedBit 46: time_adjust_range_extended - if set, the MTUTC.time_adjustment\;range is extended to -200,000 to +200,000\;Bit 47: If set, MTUTC.freq_adj_units=1 is supportedBit 48: If set, MRSRFT/MRSR.command=6 is supportedBit 49: If set, MCQS.identifier support CRCS and CRDT tokensBit 51: If set, MTUTC.freq_adj_units=2 is supportedBit 53: If set, Mlx mlxfwreset with downstream port is supported by FW\;Bit 59: If set, MCC.component_specific_error_code is valid for LinkX\;devicesBit 60: If set, MGNLE.clr is supportedBit 61: If set, MGIR supports life_cycle_msb and pds fields in FW\;info and development field in HW info.\;\;Bit 65: If set, MVCR support current_sensor_value_msbBit 66: If set. MFRL supports pci_reset_req_method, pci_switch_exist\;fields. [DWIP]Bit 67: If set, MRSR.cmd = 6 works with SBRBit 68: If set, DPNv supported [NIC_Only]Bit 69: If set, supports MGIR pci_major, pci_minor fieldsBit 70: If set, supports MTCAP support 8 bit internal_sensor_count\;[DWIP]Bit 71: If set, supports MVCAP supports sensor_map_type [DWIP]Bit 72: If set, MVCR supports parent_id field [nic_prm]Bit 73: If set, MFRL.reset_type=5 Network reset is supported\;[nic_prm]Bit 74: If set, MGIR.hw_info.pci_switch_only_mode is supported\;[nic_prm]Bit 75: If set, PLLP supports oe_identifier and resource_labe_port\;[switch_internal][DWIP]bit 76: If set, MCQS supports the component_not_supported field\;[DWIP]Bit 77: If set, host_id field in MPIR is supportedBit 78: If set, MGIR supports 12 bit num_ports fieldbit 80: If set, MCQS,identifier supports the DPA_COMPONENT, DPA\;_COMPONENT_REMOVAL fields and MCQI supports DPA apps infoBit 81: If set, MFCDR supports module and query_type fields [DWIP]Bit 82: If set, MCIA supports async mode [DWIP][switch_internal]Bit 83: If set, MISOC supports types 0x2,0x3,0xF and\;query_not_availble, query_pending fields[NIC_Only]Bit 84: If set, MCANM supports ec_offload_engine_disabled field\;[NIC_Only]Bit 85: If set, MTDT token is supportedBit 86: If set, MPCAPM PRM is supported [NIC_Only]Bit 87: If set, MTCTR cross timestamp of the DPA timer is supported [NIC_Only]Bit 88: If set, the following are supported:\;PEMI.laser_source_essential, PEMI.laser_source_advance, PEMI.module\;status, PEMI.optical_engine_telemetry_parameters, PEMI.cpo_module,\;PEMI.last_sub_module.Bit 89: If set, supports minimum temperatures, as well as alerts for low\;critical and high critical thresholds, in the following registers: MTMP,\;MTEWE, MTBR, MTBR_v2.Bit 90: If set, MQDIK.key_index=1 is supported.Bit 91: If set, CPO Combined Model is supported.Bit 93: If set, MGIR.hw_info.board_ga is supported; ignore otherwise.Bit 94: If set, MFKV is supported.Bit 95: If set, MRFV.fm2 and MRFV.fm_sel are supported." access="RO" high_bound="3" low_bound="0" offset="0x28.0" size="0x10.0" />
 </node>
 
 <node name="mcc_reg_ext" descr="" size="0x20.0" >
@@ -1339,8 +1424,11 @@
 	<field name="time_elapsed_since_last_cmd" descr="The number of seconds elapsed since the update_handle owner last issued\;a command. The time saturates at 0xFFF." access="RO" offset="0x0.16" size="0x0.12" />
 	<field name="component_index" descr="Index of the accessed component.Value from MCQS.component_indexValid forUPDATE_COMPONENT, ACTIVATE_COMPONENT, READ_COMPONENT and\;READ_PENDING_COMPONENT instructions. Otherwise, this field is reserved." access="INDEX" offset="0x4.0" size="0x0.16" />
 	<field name="update_handle" descr="Token representing the current flow executed by the FSM.See 29260." access="RW" offset="0x8.0" size="0x0.24" />
+	<field name="retry_on_error" descr="0x0: reserved" access="RW" enum="reserved=0x0" offset="0x8.29" size="0x0.1" />
+	<field name="no_stop_on_error" descr="0x0: stop_on_error0x1: do_not_stop_on_error" access="RW" enum="stop_on_error=0x0,do_not_stop_on_error=0x1" offset="0x8.30" size="0x0.1" />
 	<field name="auto_update" descr="Auto-update to all matching downstream devices is requested." access="WO" offset="0x8.31" size="0x0.1" />
 	<field name="control_state" descr="Current Update FSM state, see section 10.3.8 - FSM States0x0: IDLE0x1: LOCKED0x2: INITIALIZE0x3: DOWNLOAD0x4: VERIFY0x5: APPLY0x6: ACTIVATE0x7: UPLOAD0x8: UPLOAD_PENDING0x9: DOWNSRTEAM_DEVICE_TRANSFEROther values are reserved" access="RO" enum="IDLE=0x0,LOCKED=0x1,INITIALIZE=0x2,DOWNLOAD=0x3,VERIFY=0x4,APPLY=0x5,ACTIVATE=0x6,UPLOAD=0x7,UPLOAD_PENDING=0x8,DOWNSRTEAM_DEVICE_TRANSFER=0x9" offset="0xc.0" size="0x0.4" />
+	<field name="error_count" descr="Raw count of errors encountered during the current or last operation\;(0–15). Used also on legacy devices to indicate completion status." access="RO" offset="0xc.4" size="0x0.4" />
 	<field name="error_code" descr="Indicates the successful completion of the instruction, or the reason it\;failed.See section 10.3.7 - Error Handling0x0: OK0x1: ERROR0x2: REJECTED_DIGEST_ERR0x3: REJECTED_NOT_APPLICABLE0x4: REJECTED_UNKNOWN_KEY0x5: REJECTED_AUTH_FAILED0x6: REJECTED_UNSIGNED0x7: REJECTED_KEY_NOT_APPLICABLE0x8: REJECTED_BAD_FORMAT0x9: BLOCKED_PENDING_RESET0xA: REJECTED_NOT_A_SECURED_FW0xB: REJECTED_MFG_BASE_MAC_NOT_LISTED0xC: REJECTED_NO_DEBUG_TOKEN0xD: REJECTED_VERSION_NUM_MISMATCH0xE: REJECTED_USER_TIMESTAMP_MISMATCH0xF: REJECTED_FORBIDDEN_VERSION0x10: FLASH_ERASE_ERROR0x11: REJECTED_REBURN_RUNNING_AND_RETRY0x12: REJECTED_LINKX_TYPE_NOT_SUPPORTED0x13: REJECTED_HOST_STORAGE_IN_USE0x14: REJECTED_LINKX_TRANSFER (see module index in\;rejected_device_index)0x15: REJECTED_LINKX_ACTIVATE (see module index in\;rejected_device_index)0x16: REJECTED_INCOMPATIBLE_FLASH0x17: REJECTED_TOKEN_ALREADY_APPLIED0x18: REJECTED_FW_BURN_DRAM_NOT_AVAILABLE0x19: FW_BURN_REJECTED_INVALID_SECURITY_VERSION0x1A: FW_BURN_REJECTED_CERT_CER5090x1B: FW_BURN_REJECTED_CERT_SIGNATURE0x1C: FW_BURN_REJECTED_CERT_METADATA0x1D: FW_BURN_REJECTED_INTERNAL_ERROR_0\;0x1E: FW_BURN_REJECTED_NO_PLACE0x1F: FW_BURN_REJECTED_REMOVAL_NO_MATCH_UIDD0x20: FW_BURN_REJECTED_INTERNAL_ERROR_1\;0x21: FW_BURN_REJECTED_INTERNAL_ERROR_2\;0x22: FW_BURN_REJECTED_NUM_OF_SWAP0x23: FW_BURN_REJECTED_INTERNAL_ERROR_3\;0x24: FW_BURN_REJECTED_INTERNAL_ERROR_4\;0x25: FW_BURN_REJECTED_NOT_ALLOWED_SAME_UIDD0x26: FW_BURN_REJECTED_INTERNAL_ERROR_5\;0x27: FW_BURN_REJECTED_INTERNAL_ERROR_6\;0x28: FW_BURN_REJECTED_FLASH_WRITE_PROTECTED0x29: FW_BURN_REJECTED_INTERNAL_ERROR_7\;0x2A: FW_BURN_REJECTED_INTERNAL_ERROR_8\;0x2B: FW_BURN_REJECTED_INTERNAL_ERROR_90x2C: FW_BURN_REJECTED_DPA_ELF0x2D: FW_BURN_REJECTED_DPA_CRYPTO_BLOB0x2E: FW_BURN_REJECTED_DPA_APP_METADATA0x2F: FW_BURN_REJECTED_DPA_REMOVAL_SIGNATURE0x30: FW_BURN_REJECTED_DPA_CONTAINER_VERIFY0x31: FW_BURN_REJECTED_INTERNAL_ERROR_10\;0x32: REJECTED_DEV_IMAGE_ON_PROD_DEVICE0x33: FW_BURN_REJECTED_DPA_APP_MANIFESTOther values should be treated as an unknown error." access="RO" offset="0xc.8" size="0x0.8" />
 	<field name="control_progress" descr="Indicates the estimated progress status of the current operation\;executed by the FSM. Valid values are 0..100.101 indicates that progress reporting is not supported for this update\;state." access="RO" offset="0xc.16" size="0x0.7" />
 	<field name="handle_owner_host_id" descr="For handle_owner_type BMC, command-interface and ICMD, indicates the\;identifier of the host of the handle owner.Otherwise reserved" access="RO" offset="0xc.24" size="0x0.4" />
@@ -1348,8 +1436,8 @@
 	<field name="component_size" descr="Component size in bytes.Valid for UPDATE_COMPONENT instruction. Specifying the size may shorten\;the update time.Value 0x0 means that size is unspecified." access="WO" offset="0x10.0" size="0x4.0" />
 	<field name="device_type" descr="Peripheral device type:0: Switch_or_NIC1: Gearbox" access="INDEX" enum="Switch_or_NIC=0x0,Gearbox=0x1" offset="0x14.0" size="0x0.8" />
 	<field name="warning_code" descr="Indicates warnings reported during the completion that did not prevent\;successful completion of the instruction0x0: OK0x1: WARNING_DPA_API_OS_INCOMPATIBLE0x2: WARNING_DPA_API_FW_INCOMPATIBLE" access="RO" offset="0x14.8" size="0x0.8" />
-	<field name="device_index" descr="Device number, bits [11:0].For gearboxes, the index represents the gearbox die.For cables, the index represents the module index starting at index 1.\;Index 0 indicates the host device.For QM-3 CPO system, device index represents OE or ELS device.For other CPO systems, device index of ELS or OE not allowed." access="INDEX" offset="0x14.16" size="0x0.12" />
-	<field name="device_index_msb" descr="[Switch][DWIP]Device number, bits [15:12].For gearboxes, the index represents the gearbox die.For cables, the index represents the module index starting at index 1.\;Index 0 indicates the host device.For QM-3 CPO system, device index represents OE or ELS device.For other CPO systems, device index of ELS or OE not allowed." access="INDEX" offset="0x14.28" size="0x0.4" />
+	<field name="device_index" descr="Device number, bits [11:0].For gearboxes, the index represents the gearbox die.For cables, the index represents the module index starting at index 1.\;Index 0 indicates the host device." access="INDEX" offset="0x14.16" size="0x0.12" />
+	<field name="device_index_msb" descr="[Switch][DWIP]Device number, bits [15:12].For gearboxes, the index represents the gearbox die.For cables, the index represents the module index starting at index 1.\;Index 0 indicates the host device." access="INDEX" offset="0x14.28" size="0x0.4" />
 	<field name="device_index_size" descr="In multiple downstream devices action, the action will be executed\;starting on device_index and ending on &lt;device_index_msb, device_index&gt;\;+ &lt;device_index_size_msb, device_index_size&gt; - 1." access="RW" offset="0x18.0" size="0x0.12" />
 	<field name="device_index_size_msb" descr="[Switch][DWIP]In multiple downstream devices action, the action will be executed\;starting on device_index and ending on &lt;device_index_msb, device_index&gt;\;+ &lt;device_index_size_msb, device_index_size&gt; - 1." access="RW" offset="0x18.12" size="0x0.4" />
 	<field name="rejected_device_index" descr="The device index that the action has been rejected to." access="RO" offset="0x18.16" size="0x0.12" />
@@ -1375,10 +1463,10 @@
 
 <node name="mcia_ext" descr="" size="0x94.0" >
 	<field name="status" descr="Module Status0: SUCCESS1: NO_EEPROM_MODULE. No response from module’s EEPROM.2: MODULE_NOT_SUPPORTED. Module type not supported by the device.\;3: MODULE_NOT_CONNECTED. No module present indication.4: MODULE_TYPE_INVALID - module is not supported by INI.9: I2C_ERROR. Error occurred while trying to access the module’s EEPROM\;using I2C.16: MODULE_DISABLED - module is disabled" access="RO" offset="0x0.0" size="0x0.8" />
-	<field name="module_bits_11_8" descr="[Switch][DWIP]:Module number, bits [11:8]. -" access="INDEX" offset="0x0.8" size="0x0.4" />
+	<field name="module_bits_11_8" descr="[Switch][DWIP]:Module number, bits [11:8]." access="INDEX" offset="0x0.8" size="0x0.4" />
 	<field name="slot_index" descr="Slot index0: Main board" access="INDEX" offset="0x0.12" size="0x0.4" />
-	<field name="module" descr="Module number, bits [7:0].NIC: Range 0 .. MGPIR.num_of_modules -1 -" access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="module_bits_14_12" descr="[Switch][DWIP]:Module number, bits [14:12]. -" access="INDEX" offset="0x0.26" size="0x0.3" />
+	<field name="module" descr="Module number, bits [7:0].NIC: Range 0 .. MGPIR.num_of_modules -1" access="INDEX" offset="0x0.16" size="0x0.8" />
+	<field name="module_bits_14_12" descr="[Switch][DWIP]:Module number, bits [14:12]." access="INDEX" offset="0x0.26" size="0x0.3" />
 	<field name="pnv" descr="[DWIP]:Page Number Valid0: write page number1: don’t write page numberValid only if module is in SW control" access="OP" offset="0x0.29" size="0x0.1" />
 	<field name="l" descr="Lock Page bit.When bit is set, FW can access the last accessed page.After boot and ISSU, default value is 0." access="RW" offset="0x0.31" size="0x0.1" />
 	<field name="device_address" descr="Device address" access="INDEX" offset="0x4.0" size="0x0.16" />
@@ -1386,7 +1474,7 @@
 	<field name="i2c_device_address" descr="I2C device address" access="INDEX" offset="0x4.24" size="0x0.8" />
 	<field name="size" descr="Number of bytes to read/write (up to 128 bytes)" access="INDEX" offset="0x8.0" size="0x0.16" />
 	<field name="bank_number" descr="Bank number" access="INDEX" offset="0x8.16" size="0x0.8" />
-	<field name="module_bit_15" descr="[Switch][DWIP]:Module number, bit [15]. -" access="INDEX" offset="0x8.24" size="0x0.1" />
+	<field name="module_bit_15" descr="[Switch][DWIP]:Module number, bit [15]." access="INDEX" offset="0x8.24" size="0x0.1" />
 	<field name="bg_mode" descr="[DWIP][switch_internal]Background operation0: Foreground mode (legacy)1: Background modeWhen working on background mode, FW shall return STS_OK immediately and\;return the transaction data via MCIA trap." access="OP" offset="0x8.27" size="0x0.1" />
 	<field name="passwd_length" descr="0: password length is 4B (password_msb is reserved)1: password length is 8B (password_msb is used)" access="OP" offset="0x8.28" size="0x0.1" />
 	<field name="password" descr="The password that is written to the module password field.This field is reserved when passwd_cap is not set to 1.Reserved when module is in SW control." access="OP" offset="0xc.0" size="0x4.0" />
@@ -1396,8 +1484,8 @@
 
 <node name="mcion_ext" descr="" size="0x18.0" >
 	<field name="slot_index" descr="Slot index0: Main board" access="INDEX" offset="0x0.12" size="0x0.4" />
-	<field name="module" descr="Module number bits [7:0].NIC: Range 0 .. MGPIR.num_of_modules -1\;.." access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="module_msb" descr="[Switch][DWIP]Module number bits [15:8].\;.." access="INDEX" offset="0x0.24" size="0x0.8" />
+	<field name="module" descr="Module number bits [7:0].NIC: Range 0 .. MGPIR.num_of_modules -1" access="INDEX" offset="0x0.16" size="0x0.8" />
+	<field name="module_msb" descr="[Switch][DWIP]Module number bits [15:8]." access="INDEX" offset="0x0.24" size="0x0.8" />
 	<field name="module_status_bits" descr="Module IO status, as defined by SFF and CMIS:Bit 0: PresentBit 1: RX_LOSBit 2: TX_FaultBit 6: LPModeBit 7: Interrupt (IntL)Bit 8: Low Power Mode Status Bit 9: Power GoodIf bit 0 (Present) is clear, all other bits are reserved." access="RO" offset="0x4.0" size="0x0.16" />
 	<field name="module_inputs" descr="Module inputs:Bit 0: ResetL - low polarityBit 1: LPModeBit 2: Power EnableReserved when module is controlled by FW" access="RW" offset="0xc.0" size="0x0.4" />
 	<field name="module_status_bits_valid" descr="Module Inputs Valid BitmaskBitmask which mentions the validity of module_inputs fields.For each bit, 0 means valid, 1 means not valid.For example:Bit 0: if set, present bit value is ignored. If cleared, value is valid.Bit 1: if set, rx loss value is ignored. when cleared, value is valid\;and so on for all bits mentioned in module_inputs.Reserved when module is controlled by FW" access="RO" offset="0xc.16" size="0x0.16" />
@@ -1465,7 +1553,12 @@
 	<field name="factory_image_subminor" descr="Factory / boot image FW subminor number" access="RO" offset="0x18.0" size="0x0.16" />
 	<field name="management_interface_protocol" descr="0: Does not support either one of the FW update procedures defined below1: SFF-8636 management interface and pseudo-CMIS FW. Update is supported2: CMIS 4.0 is implemented3: CMIS 5.0 is implemented4: CMIS 5.2 is implemented5: CMIS 5.3 is implemented6: CMIS 5.4 is implemented7: CMIS 5.5 is implemented" access="RO" offset="0x1c.0" size="0x0.6" />
 	<field name="activation_type" descr="0: HW reset is required. Host should be prepared to power cycle a cable\;after sending a RunFWImage command.1: Self-activation with HW reset contained in the RunFWImage command. No\;additional actions required from the host.2:Self-activation with hitless reset contained in the RunFWImage\;command. No additional actions required from the host.3-15: Reserved" access="RO" offset="0x1c.10" size="0x0.4" />
+	<field name="abnormal_fw_indication" descr="Flag indicating that the currently running Firmware content deviates from\;the Load identified by the active firmware version information." access="RO" offset="0x1c.15" size="0x0.1" />
 	<field name="vendor_sn" descr="Vendor Serial Number" access="RO" offset="0x20.0" size="0x0.16" />
+	<field name="fw_support_options" descr="Bit 7: FixedFirmwareFallback — 1b: A fixed firmware load with basic\;firmware download capabilities is available.Bits 6:0: Reserved." access="RO" offset="0x24.0" size="0x0.8" />
+	<field name="fw_support_details" descr="Bit 7: UniqueLoadVersionSupported — 1b: Version information is\;characteristic of entire load.Bit 6: DualBankSupported — 1b: Banks A and B are supported.Bit 5: FirmwareLoadTagSupported — 1b: Persistent Firmware Load Tag is\;supported.Bit 4: AbnormalIndicationSupported — 1b: Abnormal Firmware Indication\;is supported.Bit 3: TransferIsHarmless — 1b: Transfer does not impact mission\;integrity and quality.Bit 2: RejectUnsupportedActivation — 1b: Module rejects if activation\;has unwanted side effects.Bits 1:0: Reserved." access="RO" offset="0x24.8" size="0x0.8" />
+	<field name="load_management_compliance" descr="bits 7:4: OptionsProfileCompliance: 0: undefined, unknown;\;1: noncompliant; 2: partially compliant, with exceptions; 3: fully\;compliant.\;bits 3:0: RequirementsCompliance: 0: undefined, unknown;\;1: noncompliant; 2: partially compliant, with exceptions; 3: fully\;compliant." access="RO" offset="0x24.16" size="0x0.8" />
+	<field name="load_management_feature_support" descr="Byte 0 — FeatureSupport (bits 7:0): 0: Feature is not supported; &gt;0:\;CmisRevision of the feature definition (U4 major, U4 minor)." access="RO" offset="0x24.24" size="0x0.8" />
 </node>
 
 <node name="mcqi_reg_data_auto_ext" descr="" attr_is_union="1" size="0x7c.0" >
@@ -1553,6 +1646,31 @@
 	<field name="event_params" descr="event parameters - layout is according to event_id value:See\;Event_params cvb_config_error Layout" subnode="mdtr_reg_event_params_auto_ext" access="RW" offset="0x10.0" size="0xa0.0" union_selector="$(parent).event_id" />
 </node>
 
+<node name="melseq_reg_ext" descr="" size="0x30.0" >
+	<field name="module" descr="Module number bits [7:0].Taipan: The PRM is supported for module type OSFP_ELS.Post-Taipan:" access="INDEX" offset="0x0.0" size="0x0.8" />
+	<field name="module_msb" descr="Module number bits [15:8]." access="INDEX" offset="0x0.8" size="0x0.8" />
+	<field name="err_type" descr="Error type:1: laser_fiber_contaminated2: laser_APC_fault3: laser_power_exceeded_allowed_range4: laser_power_subceeded_allowed_range5: laser_TEC_control_loop_fault6: laser_ramping_timeout_fault7: laser_power_tuning_fault" access="INDEX" enum="laser_fiber_contaminated=0x1,laser_APC_fault=0x2,laser_power_exceeded_allowed_range=0x3,laser_power_subceeded_allowed_range=0x4,laser_TEC_control_loop_fault=0x5,laser_ramping_timeout_fault=0x6,laser_power_tuning_fault=0x7" offset="0x0.16" size="0x0.8" />
+	<field name="cc" descr="Clear counters" access="OP" offset="0x0.31" size="0x0.1" />
+	<field name="laser_warn_cnt" descr="Number of warning events occurred for the error typeStuck in 0xFF, cleared with cc field" access="RO" high_bound="7" low_bound="0" offset="0x10.24" size="0x8.0" />
+	<field name="laser_alarm_cnt" descr="Number of alarm events occurred for the error typeStuck in 0xFF, cleared with cc field" access="RO" high_bound="7" low_bound="0" offset="0x20.24" size="0x8.0" />
+</node>
+
+<node name="melsr_laser_error_recovery_control_ext" descr="" size="0x10.0" >
+	<field name="num_of_recovery_retries" descr="Number of laser recovery retriesRelevant only when recovery_en is set" access="RW" offset="0x0.0" size="0x0.8" />
+	<field name="th_units" descr="Units of the error_warning_th and error_alarm_th0: mW1: Seconds2: CelsiusOther values are reserved" access="RO" offset="0x0.8" size="0x0.2" />
+	<field name="err_type" descr="Error type:0: laser ramping time1: automatic power control2: laser high power3: laser low power4: TEC control loop" access="INDEX" offset="0x0.16" size="0x0.8" />
+	<field name="recovery_en" descr="When set, FW will do laser recovery flowOtherwise, FW will be just\;monitoring and notifyingReserved for fiber check, high power and laser tuning errors" access="RW" offset="0x0.31" size="0x0.1" />
+	<field name="laser_relaxtion_time" descr="Specifies the mandatory wait duration between disabling and re-enabling\;the laser during the recovery flowUnits of seconds, minimum value of 1Relevant only when recovery_en is set" access="RW" offset="0x4.0" size="0x0.8" />
+	<field name="error_alarm_th" descr="Laser high power alarm thresholdCannot be set for laser high power" access="RW" offset="0x8.0" size="0x0.16" />
+	<field name="error_warning_th" descr="Laser high power warning thresholdCannot be set for laser high power" access="RW" offset="0x8.16" size="0x0.16" />
+	<field name="alarm_error_grouping_time" descr="Specifies the time in which events are grouped together to decide if to\;continue the recoveriesUnits of seconds, minimum value of 1Relevant only when recovery_en is set" access="RW" offset="0xc.0" size="0x4.0" />
+</node>
+
+<node name="melsrc_reg_ext" descr="" size="0x1c.0" >
+	<field name="module" descr="Module number bits [7:0]." access="INDEX" offset="0x0.0" size="0x0.8" />
+	<field name="laser_error" descr="see\;Laser Error Recovery Control Layout)" subnode="melsr_laser_error_recovery_control_ext" access="RW" offset="0xc.0" size="0x10.0" />
+</node>
+
 <node name="merr_ext" descr="" size="0x14.0" >
 	<field name="ent_type" descr="Entity type.0: Reserved1: QSFP Module (the relevant signals are: present, reset, interrupt,\;power enable, low power mode, power good, modsel, QSFP LEDs)" access="INDEX" offset="0x0.0" size="0x0.4" />
 	<field name="current_index" descr="Current entity index" access="INDEX" offset="0x0.16" size="0x0.8" />
@@ -1581,6 +1699,17 @@
 	<field name="local_port" descr="Local portValid when query_type = 0, else this field is ignored" access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="query_type" descr="Selector of query type0: local_port based query1: module based query" access="INDEX" offset="0x0.31" size="0x0.1" />
 	<field name="status" descr="0: N/A1: Fake cable detected2: NVIDIA Cable detected3: Non-Nvidia Cable detected" access="RO" offset="0x4.0" size="0x0.2" />
+</node>
+
+<node name="mfkv_reg_ext" descr="" size="0x18.0" >
+	<field name="efuses_prog_en" descr="When this bit is set, it indicates that it is allowed for the boot\;FW to program the FW key version related EFUSEs if needed.Once set to 1, this configuration will be relevant only for the\;upcoming boot, thus this configuration will be set back to 0 upon\;next boot." access="RW" offset="0x0.0" size="0x0.1" />
+	<field name="fw_key_ver_stat" descr="Firmware key version status.0: equal - EFUSEs value is equal to the currently running FW image\;maximal value. No change is possible.1: update_required - EFUSEs value is smaller than the currently\;running FW image maximal value. An update to the EFUSEs is\;required.2: pending_image - There is pending image, MFKV is rejected3: reserved - Reserved" access="RO" enum="equal=0x0,update_required=0x1,pending_image=0x2,reserved=0x3" offset="0x0.1" size="0x0.2" />
+	<field name="revoke_efuse_prog" descr="0: do_not_revoke - Do not revoke EFUSE programming (no-op)1: revoke - Revoke pending EFUSE programming. This command is\;possible only if reset did not occur from EFUSE programming\;request, and the EFUSE programming revocation request" access="RW" enum="do_not_revoke=0x0,revoke=0x1" offset="0x0.3" size="0x0.1" />
+	<field name="pending_efuse_prog" descr="0: no_pending_prog - No pending EFUSE programming command1: pending_prog - There is pending MFKV command" access="RO" enum="no_pending_prog=0x0,pending_prog=0x1" offset="0x0.4" size="0x0.1" />
+	<field name="fuse_failure" descr="" access="RO" offset="0x0.8" size="0x0.2" />
+	<field name="index" descr="Index of the key to revoke.0: NCORE_FW1: PSC_BL12: PSC_FW3: OEMAll other values are reserved." access="INDEX" enum="NCORE_FW=0x0,PSC_BL1=0x1,PSC_FW=0x2,OEM=0x3" offset="0x0.16" size="0x0.4" />
+	<field name="efuses_key_ver" descr="EFUSE key version" access="RO" offset="0x0.24" size="0x0.4" />
+	<field name="img_key_ver" descr="Image key version" access="RO" offset="0x0.28" size="0x0.4" />
 </node>
 
 <node name="mfpa_reg_ext" descr="" size="0x20.0" >
@@ -1748,11 +1877,34 @@
 
 <node name="mgpir_ext" descr="" size="0xa0.0" >
 	<field name="hw_info" descr="Hardware Information, see\;Hardware Info Layout" subnode="mgpir_hw_info_ext" access="RW" offset="0x0.0" size="0x20.0" />
+	<field name="hw_metadata" descr="[Switch][DWIP]Hardware meta-data, see\;Hardware Metadata Layout" subnode="mgpir_hw_metadata_ext" access="RW" offset="0x20.0" size="0x20.0" />
 </node>
 
 <node name="mgpir_hw_info_ext" descr="" size="0x20.0" >
 	<field name="slot_index" descr="Slot index0: Main board" access="INDEX" offset="0x0.28" size="0x0.4" />
 	<field name="max_modules_per_slot" descr="Maximum number of modules that can be connected per slot, bits [7:0].\;Includes internal and external modules." access="RO" offset="0x4.16" size="0x0.8" />
+	<field name="total_num_of_module_i2c_bus" descr="Total number of module i2c bus" access="RO" offset="0x8.8" size="0x0.8" />
+	<field name="num_lanes_per_sub_module" descr="Maximum lane count per submodule" access="RO" offset="0x8.16" size="0x0.4" />
+	<field name="max_sub_modules_index" descr="The maximum submodule index.0: Only one submodule 3: Four submodulesOther values are reserved" access="RO" offset="0x8.24" size="0x0.4" />
+	<field name="num_of_modules_msb" descr="[Switch][DWIP]Bits [15:8] of number of all modules on ASIC (chip/package)." access="RO" offset="0xc.0" size="0x0.8" />
+	<field name="num_of_modules_per_system_msb" descr="[Switch][DWIP]Bits [15:8] of number of all modules on system (tray)." access="RO" offset="0xc.8" size="0x0.8" />
+	<field name="max_modules_per_slot_msb" descr="[Switch][DWIP]Bits [15:8] of number of top-level modules (e.g not including OEs and\;ELSes) on ASIC (chip/package)." access="RO" offset="0xc.16" size="0x0.8" />
+	<field name="els_count_local" descr="[Switch][DWIP]Number of ELSes connected to ASIC (chip/package)." access="RO" offset="0x10.0" size="0x0.16" />
+	<field name="oe_count_local" descr="[Switch][DWIP]Number of Optical Engines on ASIC (chip/package)." access="RO" offset="0x10.16" size="0x0.16" />
+	<field name="els_count_global" descr="[Switch][DWIP]Number of ELSes connected to system (tray)." access="RO" offset="0x14.0" size="0x0.16" />
+	<field name="oe_count_global" descr="[Switch][DWIP]Number of Optical Engines on system (tray)." access="RO" offset="0x14.16" size="0x0.16" />
+	<field name="tl_module_non_mission_count_local" descr="[Switch][DWIP]Number of top-level non-mission modules on ASIC (chip/package).." access="RO" offset="0x18.0" size="0x0.16" />
+</node>
+
+<node name="mgpir_hw_metadata_ext" descr="" size="0x20.0" >
+	<field name="tl_module_mission_base_index_local" descr="[DWIP]Top Level Mission Modules base index for ASIC (chip/package)." access="RO" offset="0x0.0" size="0x0.16" />
+	<field name="tl_module_mission_base_index_global" descr="[DWIP]Top Level Mission Modules base index for system (tray)." access="RO" offset="0x0.16" size="0x0.16" />
+	<field name="tl_module_non_mission_base_index_local" descr="[DWIP]Top Level Non-Mission Modules base index for ASIC (chip/package)." access="RO" offset="0x4.0" size="0x0.16" />
+	<field name="tl_module_non_mission_base_index_global" descr="[DWIP]Top Level Non-Mission Modules base index for system (tray)." access="RO" offset="0x4.16" size="0x0.16" />
+	<field name="els_base_index_local" descr="[DWIP]ELS base index for ASIC (chip/package)." access="RO" offset="0x8.0" size="0x0.16" />
+	<field name="els_base_index_global" descr="[DWIP]ELS base index for system (tray)." access="RO" offset="0x8.16" size="0x0.16" />
+	<field name="oe_base_index_local" descr="[DWIP]Optical Engines base index for ASIC (chip/package)." access="RO" offset="0xc.0" size="0x0.16" />
+	<field name="oe_base_index_global" descr="[DWIP]Optical Engines base index for system (tray)." access="RO" offset="0xc.16" size="0x0.16" />
 </node>
 
 <node name="mhmpr_reg_ext" descr="" size="0x14.0" >
@@ -1769,6 +1921,26 @@
 	<field name="length" descr="Length of the version in the version field (including null terminator if\;present)." access="RO" offset="0x4.0" size="0x0.16" />
 	<field name="info_not_available" descr="If true, the version information for this component type is currently\;unavailable. In this case the version field will be all zeros, and\;length will be zero." access="RO" offset="0x4.31" size="0x0.1" />
 	<field name="version" descr="The version as an ASCII string (might not be null terminated)." access="RO" high_bound="639" low_bound="0" offset="0xc.24" size="0x280.0" />
+</node>
+
+<node name="milaq_ext" descr="" size="0x24.0" >
+	<field name="entity_input_type" descr="0: Top-Level module.1: Optical Engine.2: ELS." access="INDEX" offset="0x0.0" size="0x0.8" />
+	<field name="entity_input_format" descr="0: asic_scope_separate_namespaces.1: asic_scope_shared_module_namespace. Only relevant for top-level\;modules, OEs, ELSes.2: module_scope_separate_namespaces. Only relevant for top-level\;modules, OEs, ELSes." access="INDEX" offset="0x0.8" size="0x0.8" />
+	<field name="entity_instance_input_count" descr="Currently only a value of 1 is supported." access="INDEX" offset="0x0.16" size="0x0.8" />
+	<field name="entity_sub_instance_input_count" descr="If entity_input_format is other than module_scope_seperate_namespaces,\;must be 0.If entity_input_format is module_scope_seperate_namespaces, currently\;only a value of 1 is supported." access="INDEX" offset="0x0.24" size="0x0.8" />
+	<field name="entity_instance_input_index_base" descr="Entity instance input index base." access="INDEX" offset="0x4.0" size="0x0.16" />
+	<field name="entity_sub_instance_input_index_base" descr="Entity instance input subindex base.If entity_sub_instance_input_count is 0, this field is ignored." access="INDEX" offset="0x4.16" size="0x0.16" />
+	<field name="entity_output_type" descr="0: Top-Level module.1: Optical Engine.2: ELS." access="INDEX" offset="0x8.0" size="0x0.8" />
+	<field name="entity_output_format" descr="0: asic_scope_separate_namespaces.1: asic_scope_shared_module_namespace. Only relevant for top-level\;modules, OEs, ELSes.2: module_scope_separate_namespaces. Only relevant for top-level\;modules, OEs, ELSes." access="INDEX" offset="0x8.8" size="0x0.8" />
+	<field name="entity_instance_output_count" descr="Number of indexes starting from entity_intsance_output_base_index." access="RO" offset="0x8.16" size="0x0.8" />
+	<field name="entity_sub_instance_output_count" descr="Number of indexes starting from entity_intsance_output_base_index. If entity_output_format is other than module_scope_seperate_namespaces,\;will be 0." access="RO" offset="0x8.24" size="0x0.8" />
+	<field name="entity_instance_output_base_index" descr="Entity instance output index base." access="RO" offset="0xc.0" size="0x0.16" />
+	<field name="entity_sub_instance_output_base_index" descr="Entity instance output subindex base.If entity_sub_instance_input_count is 0, this field is invalid." access="RO" offset="0xc.16" size="0x0.16" />
+	<field name="session_current_valid" descr="1: session_current_handle is valid.Currently only 0 is supported." access="OP" offset="0x10.0" size="0x0.1" />
+	<field name="session_current_status" descr="0: Invalid session handle." access="RO" offset="0x10.30" size="0x0.1" />
+	<field name="session_next_valid" descr="1: session_next_handle is valid.Currently only 0 is supported." access="RO" offset="0x10.31" size="0x0.1" />
+	<field name="session_current_handle" descr="Session current handle." access="OP" offset="0x14.0" size="0x4.0" />
+	<field name="session_next_handle" descr="Session next handle." access="RO" offset="0x18.0" size="0x4.0" />
 </node>
 
 <node name="mirc_reg_ext" descr="" size="0x8.0" >
@@ -1820,6 +1992,54 @@
 <node name="mmhi_reg_ext" descr="" size="0x80.0" >
 	<field name="host_number" descr="Identifier for the host used to access the register" access="RO" offset="0x4.0" size="0x0.8" />
 	<field name="host_en" descr="Bit per Host, when set indicating this host is present in the current\;Multi-Host configuration.Value 0x0 indicates this field in not valid." access="RO" offset="0x8.0" size="0x0.16" />
+</node>
+
+<node name="mmta_reg_ext" descr="" size="0x90.0" >
+	<field name="module" descr="module number bits [7:0]." access="INDEX" offset="0x0.0" size="0x0.8" />
+	<field name="module_msb" descr="module number bits [15:8].Switch: Local module indexes.For read operation, supported concatenated module number ranges are -Range 1 base: MGPIR.tl_module_mission_base_index_localRange 1 count: &lt;MGPIR.max_modules_per_slot_msb, MGPIR.max_modules_per_slot&gt; - MGPIR.tl_module_non_mission_count_localRange 2 base: MGPIR.tl_module_non_mission_base_index_localRange 2 count: MGPIR.tl_module_non_mission_count_localRange 3 base: MGPIR.els_base_index_localRange 3 count: MGPIR.els_count_localRange 4 base: MGPIR.oe_base_index_localRange 4 count: MGPIR.oe_count_localFor write operation, only ranges 1 and 2 above are supported." access="INDEX" offset="0x0.8" size="0x0.8" />
+	<field name="supported_measurements" descr="Supported measurements bit maskBit 0: Temperature - ELS. Only set if the concatenation of &lt;module_msb,\;module&gt; refers to the index of a top-level module or ELS.Bit 1: TEC Power. Only set if the concatenation of &lt;module_msb, module&gt;\;refers to the index of a top-level module.Bit 2: Second Temperature - Optical Engines. Only set if the\;concatenation of &lt;module_msb, module&gt; refers to the index of a top-level\;module or OE.Other are reserved." access="RO" offset="0x0.24" size="0x0.4" />
+	<field name="module_name_hi" descr="8 characters long module name" access="RO" offset="0x4.0" size="0x4.0" />
+	<field name="module_name_lo" descr="(see above)" access="RO" offset="0x8.0" size="0x4.0" />
+	<field name="module_temperature" descr="Temperature, see Module Temperature Layout" subnode="mmta_temprature_ext" access="RW" offset="0xc.0" size="0x18.0" />
+	<field name="module_tec_power" descr="TEC Power, see Module TEC Power Layout" subnode="mmta_tec_power_ext" access="RW" offset="0x24.0" size="0x20.0" />
+	<field name="module_second_temperature" descr="Second Temperature, see\;Module Temperature Layout.Note: When there is more than one Optical Engine:1) The “temperature” field shall be populated by the highest of the\;current OE temperatures.2) The “max_temperature” field shall be populated by the highest of any\;temperatures that had been measured, over all OEs." subnode="mmta_temprature_ext" access="RW" offset="0x44.0" size="0x18.0" />
+</node>
+
+<node name="mmta_tec_power_ext" descr="" size="0x20.0" >
+	<field name="cooling_level" descr="The required cooling level based on TEC power and Set Point.Cooling Level units are % i.e percentage.0% (no need to cool down) to 100% (max cooling resource, e.g fan, to\;cool down the module)." access="RO" offset="0x0.0" size="0x0.16" />
+	<field name="temp_unit" descr="Temperature measurement units0: units of 0.125 Celsius degrees1: units of 1/256 Celsius degreesFor negative values 2’s complement is used" access="INDEX" offset="0x0.29" size="0x0.1" />
+	<field name="mtpr" descr="Max TEC Power Reset:0: do not modify the value of the max temperature register1: clear the value of the max TEC Power and max Setpoint register" access="OP" offset="0x0.30" size="0x0.1" />
+	<field name="mtpe" descr="Max TEC Power Enable:0: disable measuring the max TEC Power and set point on a module1: enables measuring the max TEC Power and set point on a module" access="RW" offset="0x0.31" size="0x0.1" />
+	<field name="tec_power" descr="TEC power reading from the module. Units of 1mW." access="RO" offset="0x4.0" size="0x0.16" />
+	<field name="max_tec_power" descr="The highest measured TEC power from the module.Reserved when mtece = 0Cleared by mtecr = 1" access="RO" offset="0x4.16" size="0x0.16" />
+	<field name="tec_power_warning_low" descr="Refers to module TEC Power low warning threshold. Units of 1mW." access="RW" offset="0x8.0" size="0x0.16" />
+	<field name="tec_power_warning_high" descr="Refers to module TEC Power high warning threshold. Units of 1mW." access="RW" offset="0x8.16" size="0x0.16" />
+	<field name="tec_power_alarm_low" descr="Refers to module TEC Power low alarm threshold. Units of 1mW." access="RW" offset="0xc.0" size="0x0.16" />
+	<field name="tec_power_alarm_high" descr="Refers to module TEC Power high alarm threshold. Units of 1mW." access="RW" offset="0xc.16" size="0x0.16" />
+	<field name="set_point_temperature" descr="Laser set point measured from the laserUnits defined at temp_unit field" access="RO" offset="0x10.0" size="0x0.16" />
+	<field name="max_set_point_temperature" descr="The highest measured set point from the module.Reserved when mtece = 0Cleared by mtecr = 1" access="RO" offset="0x10.16" size="0x0.16" />
+	<field name="set_point_temperature_warning_low" descr="Refers to module set point low warning threshold Units defined at\;temp_unit field" access="RW" offset="0x14.0" size="0x0.16" />
+	<field name="set_point_temperature_warning_high" descr="Refers to module TEC Power high warning threshold Units defined at\;temp_unit field" access="RW" offset="0x14.16" size="0x0.16" />
+	<field name="set_point_temperature_alarm_low" descr="Refers to module set point low alarm thresholdUnits defined at temp_unit field" access="RW" offset="0x18.0" size="0x0.16" />
+	<field name="set_point_temperature_alarm_high" descr="Refers to module set point high alarm thresholdUnits defined at temp_unit field" access="RW" offset="0x18.16" size="0x0.16" />
+	<field name="min_cooling_level" descr="The minimum allowed cooling level" access="RO" offset="0x1c.0" size="0x0.16" />
+	<field name="max_cooling_level" descr="The maximum allowed cooling level" access="RO" offset="0x1c.16" size="0x0.16" />
+</node>
+
+<node name="mmta_temprature_ext" descr="" size="0x18.0" >
+	<field name="ref_module_valid" descr="1: ref_module field valid.This bit is set only when the &lt;module_msb, module&gt; concatenation refers\;to the index of a top-level module. In such a case, the ref_module field\;refers to the index of the component with the highest current\;temperature of that component type." access="RO" offset="0x0.25" size="0x0.1" />
+	<field name="temp_unit" descr="Temperature measurement units0: units of 0.125 Celsius degrees1: units of 1/256 Celsius degreesFor negative values 2’s complement is used" access="INDEX" offset="0x0.26" size="0x0.1" />
+	<field name="twee" descr="Temperature Warning Event Enable (MMTA Trap)0: do_not_generate_event1: generate_events2: generate_single_event" access="RW" enum="do_not_generate_event=0x0,generate_events=0x1,generate_single_event=0x2" offset="0x0.27" size="0x0.2" />
+	<field name="twe" descr="Temperature Warning Enable:0: all fields are set1: only twee field is set, all other fields reserved" access="OP" offset="0x0.29" size="0x0.1" />
+	<field name="mtr" descr="Max Temperature Reset:0: do not modify the value of the max temperature register1: clear the value of the max temperature register" access="OP" offset="0x0.30" size="0x0.1" />
+	<field name="mte" descr="Max Temperature Enable:0: disable measuring the max temperature on a sensor1: enables measuring the max temperature on a sensor" access="RW" offset="0x0.31" size="0x0.1" />
+	<field name="temperature" descr="Temperature reading from the moduleUnits defined at temp_unit field" access="RO" offset="0x4.0" size="0x0.16" />
+	<field name="max_temperature" descr="The highest measured temperature from the module.Reserved when mte = 0Cleared by mtr = 1" access="RO" offset="0x4.16" size="0x0.16" />
+	<field name="temperature_warning_low" descr="Refers to module temperature low warning thresholdUnits defined at temp_unit field" access="RW" offset="0x8.0" size="0x0.16" />
+	<field name="temperature_warning_high" descr="Refers to module temperature high warning thresholdUnits defined at temp_unit field" access="RW" offset="0x8.16" size="0x0.16" />
+	<field name="temperature_alarm_low" descr="Refers to module temperature low alarm thresholdUnits defined at temp_unit field" access="RW" offset="0xc.0" size="0x0.16" />
+	<field name="temperature_alarm_high" descr="Refers to module temperature high alarm thresholdUnits defined at temp_unit field" access="RW" offset="0xc.16" size="0x0.16" />
+	<field name="ref_module" descr="Indicates the index of the OE or ELS component, whose information is\;reflected in this structure." access="RO" offset="0x10.0" size="0x0.16" />
 </node>
 
 <node name="mnvda_reg_ext" descr="" size="0x10c.0" >
@@ -1920,6 +2140,13 @@
 	<field name="lane_temp_hi_war" descr="Bitmask for latched OE lane temperature high warning flag per lane.Bit 0 - lane 0… Bit 7 - lane 7" access="RO" offset="0x2c.8" size="0x0.8" />
 	<field name="lane_temp_lo_al" descr="Bitmask for latched OE lane temperature low alarm flag per lane.Bit 0 - lane 0… Bit 7 - lane 7" access="RO" offset="0x2c.16" size="0x0.8" />
 	<field name="lane_temp_hi_al" descr="Bitmask for latched OE lane temperature high alarm flag per lane.Bit 0 - lane 0… Bit 7 - lane 7" access="RO" offset="0x2c.24" size="0x0.8" />
+</node>
+
+<node name="mpcam_reg_ext" descr="" size="0x48.0" >
+	<field name="access_reg_group" descr="Access Register ID groups0: First_128_REG_ID - Register IDs 0x9000 - 0x907F)1: Register_IDs_0x9080 - 0x90FF (bit 0 in mng_access_reg_cap_mask\;represent register ID 0x9080 while bit 127 represents register ID\;0x90FF).2: Register_IDs_0x9100 - 0x917F (bit 0 in mng_access_reg_cap_mask\;represent register ID 0x9100 while bit 127 represents register ID\;0x917F).3: Register_IDs_0x9180 - 0x91FF (bit 0 in mng_access_reg_cap_mask\;represent register ID 0x9180 while bit 127 represents register ID\;0x91FF).4: Register_IDs_0x9200 - 0x927F (bit 0 in mng_access_reg_cap_mask\;represent register ID 0x9200 while bit 127 represents register ID\;0x927F).5: Register_IDs_0x9280 - 0x92FF (bit 0 in mng_access_reg_cap_mask\;represent register ID 0x9280 while bit 127 represents register ID\;0x92FF).6: Register_IDs_0x9300 - 0x937F (bit 0 in mng_access_reg_cap_mask\;represent register ID 0x9300 while bit 127 represents register ID\;0x937F).7: Register_IDs_0x9380 - 0x93FF (bit 0 in mng_access_reg_cap_mask\;represent register ID 0x9380 while bit 127 represents register ID\;0x93FF).8: Register_IDs_0x9400 - 0x947F (bit 0 in mng_access_reg_cap_mask\;represent register ID 0x9400 while bit 127 represents register ID\;0x947F).9: Register_IDs_0x9480 - 0x94FF (bit 0 in mng_access_reg_cap_mask\;represent register ID 0x9480 while bit 127 represents register ID\;0x94FF).10: Register_IDs_0x9500 - 0x957F (bit 0 in mng_access_reg_cap_mask\;represent register ID 0x9500 while bit 127 represents register ID\;0x957F).11: Register_IDs_0x9580 - 0x95FF (bit 0 in mng_access_reg_cap_mask\;represent register ID 0x9580 while bit 127 represents register ID\;0x95FF).12: Register_IDs_0x9600 - 0x967F (bit 0 in mng_access_reg_cap_mask\;represent register ID 0x9600 while bit 127 represents register ID\;0x967F).13: Register_IDs_0x9680 - 0x96FF (bit 0 in mng_access_reg_cap_mask\;represent register ID 0x9680 while bit 127 represents register ID\;0x96FF).14: Register_IDs_0x9700 - 0x977F (bit 0 in mng_access_reg_cap_mask\;represent register ID 0x9700 while bit 127 represents register ID\;0x967F).15: Register_IDs_0x9780 - 0x97FF (bit 0 in mng_access_reg_cap_mask\;represent register ID 0x9780 while bit 127 represents register ID\;0x97FF)." access="INDEX" enum="First_128_REG_ID=0x0,Register_IDs_0x9080=0x1,Register_IDs_0x9100=0x2,Register_IDs_0x9180=0x3,Register_IDs_0x9200=0x4,Register_IDs_0x9280=0x5,Register_IDs_0x9300=0x6,Register_IDs_0x9380=0x7,Register_IDs_0x9400=0x8,Register_IDs_0x9480=0x9,Register_IDs_0x9500=0xa,Register_IDs_0x9580=0xb,Register_IDs_0x9600=0xc,Register_IDs_0x9680=0xd,Register_IDs_0x9700=0xe,Register_IDs_0x9780=0xf" offset="0x0.0" size="0x0.8" />
+	<field name="feature_group" descr="Feature list mask index:0: enhanced_features" access="INDEX" enum="enhanced_features=0x0" offset="0x0.16" size="0x0.8" />
+	<field name="mng_access_reg_cap_mask" descr="Supported management’s access register bitmaks.Based on access_reg_group\;index.When bit is set, the register is supported in the device.For example:Bit 1: MFCR_0x9001Bit 2: MFSC_0x9002Bit 3: MFSM_0x9003Bit 4: MFSL_0x9004Bit 58: MGCR_0x903ABit 73: MPPF_0x9049Bit 127: MCAP_0x907FNote that up to version XXX management and PCIe are in the same base\;id so MCAM and MPCAM are similar in this field" access="RO" enum="MFCR_0x9001=0x2,MFSC_0x9002=0x4,MFSM_0x9003=0x8,MFSL_0x9004=0x10,MGCR_0x903A=0x4000000,MPPF_0x9049=0x200,MCAP_0x907F=0x80000000" high_bound="3" low_bound="0" offset="0x8.0" size="0x10.0" />
+	<field name="mng_feature_cap_mask" descr="Supported port’s enhanced features.Based on feature_group index.When bit is set, The feature is supported in the device:Bit 0: MPCNT counter group- PCIE performance counters supportedBit 3: tx_lossy_overflow_oper - If set, tx_overflow_buffer_pkt counter\;in MPCNT register is supported.Bit 4: pcie_outbound_stalled - if set, outbound_stalled_reads,\;outbound_stalled_writes, outbound_stalled_reads_events and\;outbound_stalled_writes_events counters in MPCNT are supported.Bit 9 - dynamic_tx_overflow - If set, tx_overflow_sense field is\;supported in MPEGC register.Bit 17 - pwr_status and pci_power are supported in MPEINBit 19 - pcie_sync_for_fw_update_supported is set to ‘1’Bit 22 - If set to ‘1’, link_peer_max_speed is supported in MPEIN\;RegisterBit 29: If set, virtual hot plug / unplug is supported in MPEGC.Bit 30: If set, my_pf_number is supported in MPPF.Bit 45: If set, MFRL.pci_rescan_required is supportedBit 68: If set, DPNv is supportedBit 77: If set, host_id field in MPIR is supportedBit 78: If set, FBER, FEC correctable and FEC uncorrectable reporting is\;supported in MPCNT group 0Bit 79: If set the MPCNT performance counter 2 is supportedBit 80: pcie_segment - if set the MPIR and MPEGC registers supports the\;segment base, segment_cap and segment_valid are supported.Bit 81: cmn_clk_mode- if set the the cmn_clk_mode bit in the MPEIN\;registers is supported.bit 83: lane_cdr_error - if set the lane cdr error field in MPCNT PCIE\;lane counter group is supported.bit 84: mpcnt_perf_cnt_2_ver1 - if set the MPCNT PCIE performance\;counter 2 version 1 is supported, else version 0 is supported.Note - up to bit 77 this is common to MCAM due to legacy reasons." access="RO" high_bound="3" low_bound="0" offset="0x28.0" size="0x10.0" />
 </node>
 
 <node name="mpcir_ext" descr="" size="0xa0.0" >
@@ -2729,7 +2956,7 @@
 </node>
 
 <node name="pcam_feature_capability_mask_group1_ext" descr="" size="0x10.0" >
-	<field name="feature_cap_mask" descr="Bit 5: PPRM.link_down_timeout_default_supportedBit 6: PMDR.active_module_lane_mask_supportedBit 7: PPBMC.plr_bw_loss_negotation_supportedBit 8: PPCNT.port_up_time_supportedBit 9: PPCNT.IB_Routing_counters_supportedBit 10: PPLM.plr_to_default_read_supportBit 11: Uneven_port_split_is_supported (Note: even port split is\;mandatory within a 4x)Bit 12: PPCNT.recovery_counters_group_new_steps_counters_supportedBit 13: PPCNT.excessive_recoveries_counters_supportedBit 17: PPRM.phy_mode_idx_supportedBit 19: PPCNT.plr_rx_block_cs_on_demand_activated_supportedBit 20: SLTPv2.tx_policy_supported" access="RO" high_bound="3" low_bound="0" offset="0x0.0" size="0x10.0" />
+	<field name="feature_cap_mask" descr="Bit 5: PPRM.link_down_timeout_default_supportedBit 6: PMDR.active_module_lane_mask_supportedBit 7: PPBMC.plr_bw_loss_negotation_supportedBit 8: PPCNT.port_up_time_supportedBit 9: PPCNT.IB_Routing_counters_supportedBit 10: PPLM.plr_to_default_read_supportBit 11: Uneven_port_split_is_supported (Note: even port split is\;mandatory within a 4x)Bit 12: PPCNT.recovery_counters_group_new_steps_counters_supportedBit 13: PPCNT.excessive_recoveries_counters_supportedBit 17: PPRM.phy_mode_idx_supportedBit 19: PPCNT.plr_rx_block_cs_on_demand_activated_supportedBit 20: SLTPv2.tx_policy_supportedBit 21: PPCNT.plr_nack_csn_counters_supported" access="RO" high_bound="3" low_bound="0" offset="0x0.0" size="0x10.0" />
 </node>
 
 <node name="pcam_reg_ext" descr="" size="0x50.0" >
@@ -2870,6 +3097,20 @@
 	<field name="link_width_active" descr="IB link active width:Bit 0: 1xBit 1: 2xBit 2: 4xOther - reserved" access="RO" offset="0x0.16" size="0x0.16" />
 </node>
 
+<node name="pddr_apsu_info_page_ext" descr="" size="0xf8.0" >
+	<field name="rts_update_state" descr="The actual state of the RTS update state diagram (IEEE 802.3dj Annex 178B Figure 178B-9).0: START1: WAIT_ADJACENT2: SWITCH_CLOCK3: TX_CLOCK_READY4: FORWARD_RTS" access="RO" offset="0x0.5" size="0x0.3" />
+	<field name="training_status" descr="The status of the RTS function. Valid only if apsu_oper = Enabled.0: FAIL: Any lane training failed1: OK: All lanes are OK2: READY: remote_rts is true and training_status is READY3: IN_PROGRESS: training_status is IN_PROGRESS or remote_rts is false and training_status is READY" access="RO" offset="0x0.12" size="0x0.2" />
+	<field name="rts_status" descr="The status of the RTS function.0: FAIL: Any lane training failed1: TRAINED: training_status is IN_PROGRESS or remote_rts isfalse and training_status is READY2: READY: remote_rts is true and training_status is READY3: OK: All lanes are OK" access="RO" offset="0x0.15" size="0x0.2" />
+	<field name="isl_ready" descr="Set when ln_local_rx_ready and ln_remote_rx_ready are true for all lanes of the port" access="RO" offset="0x0.18" size="0x0.1" />
+	<field name="remote_type" descr="Peer type. Can be written by the FW in FW control mode and by the SW in independent mode.4: Not detected1: CPO detected2: LPO detected3: FRO detected6: TRO detected7: Not supported" access="RO" offset="0x4.4" size="0x0.3" />
+	<field name="peer_detected" descr="Set if the remote peer is an Nvidia device." access="RO" offset="0x4.9" size="0x0.1" />
+	<field name="rts_rx_all" descr="Set if the Not ready to send bit in the ILT received frame is clear for all lanes in the port" access="RO" offset="0x4.10" size="0x0.1" />
+	<field name="rts_tx_all" descr="Set when all lanes in the port are ready to send PCS data" access="RO" offset="0x4.11" size="0x0.1" />
+	<field name="remote_host_iud" descr="Remote host. Can be written by the FW in FW control mode and by the SW in independent mode.0: Spectrum1: ConnectX" access="RO" offset="0x4.25" size="0x0.3" />
+	<field name="uses_recovered_clock" descr="Indicates that interafce uses recovered clock for transmission.0: For hosts: Spectrum, Quantum, ConnectX1: For retimers: Arcus" access="RO" offset="0x4.31" size="0x0.1" />
+	<field name="lane_data" descr="Per-lane APSU status. Array of 8 96-bit elements, 3 DWORDs each\;(lane_data[0] at 08h-10h, lane_data[7] at 5Ch-64h)." subnode="ef_pddr_apsu_lane_data_v1_ext" access="RW" high_bound="7" low_bound="0" offset="0x8.0" size="0x60.0" />
+</node>
+
 <node name="pddr_c2p_link_enabled_eth_ext" descr="" size="0x4.0" >
 	<field name="core_to_phy_link_eth_enabled" descr="Ethernet protocols admin state: see PTYS.ext_eth_proto_admin" access="RO" offset="0x0.0" size="0x4.0" />
 </node>
@@ -2966,6 +3207,7 @@
 	<field name="last_symbol_ber_coef" descr="Last symbol BER window calculated.Effective_BER = symbol_ber_coef*10^(-symbol_ber_magnitude)" access="RO" offset="0x2c.24" size="0x0.4" />
 	<field name="hi_ser_counter" descr="Number of hi_ser events since last clear" access="RO" offset="0x30.0" size="0x0.8" />
 	<field name="pcs_phy_state_latched" descr="PCS HW state on link-down, latched:Bits 0-7: Block lock (one bit per lane) - No FEC modeBits 8-15: AM lock (one bit per lane) - RS FEC modeBits 16-23: FEC lock (one bit per lane) - FC FEC modeBit 24: Align_statusBit 25: Hi_BERBit 26: Hi_SERBits 30:27: ReservedBit 31: Active. When set the value of the pcs_phy_state_latched is valid" access="RO" offset="0x34.0" size="0x4.0" />
+	<field name="apsu_restart_reason_opcode" descr="Opcode for APSU restart reason.0: apsu_restarted_due_to_fail1: apsu_restarted_due_to_link_fail" access="RO" enum="apsu_restarted_due_to_fail=0x0,apsu_restarted_due_to_link_fail=0x1" offset="0x38.0" size="0x0.8" />
 </node>
 
 <node name="pddr_link_health_page_ext" descr="" size="0xb0.0" >
@@ -3022,7 +3264,10 @@
 	<field name="time_on_last_hi_ser" descr="Time duration of last hi_ser event.value reset every new hi_ser event." access="RO" offset="0x30.0" size="0x4.0" />
 	<field name="last_phy_data_groups_collection_time" descr="Duration of last phy data collection period conducted by FW Phy\;following a single timeline event trigger. This indicates the overall\;duration it took to complete the FW Phy data collection thread.Value is reset every new data collection trigger. If in the last trigger\;there was no requirement to collect FW Phy data field should return 0.Value is in units of 1 [msec]" access="RO" offset="0x34.0" size="0x0.16" />
 	<field name="last_data_groups_collection_time" descr="Duration of last data collection period conducted by FW Phy following a\;single timeline event trigger. This indicates the overall duration it\;took to complete all different collection threads.Value is reset every new data collection trigger.Value is in units of 1 [msec]" access="RO" offset="0x34.16" size="0x0.16" />
+	<field name="last_module_data_groups_collection_time" descr="Duration of last module data collection period conducted by FW Phy\;following a single timeline event trigger. This indicates the overall\;duration it took to complete the System Module data collection thread.Value is reset every new data collection trigger. If in the last trigger\;there was no requirement to collect module data field should return 0.Value is in units of 1 [msec]" access="RO" offset="0x38.0" size="0x0.16" />
 	<field name="last_serdes_data_groups_collection_time" descr="Duration of last SerDes data collection period conducted by FW Phy\;following a single timeline event trigger. This indicates the overall\;duration it took to complete the FW Serdes data collection thread.Value is reset every new data collection trigger. If in the last trigger\;there was no requirement to collect UPHY data field should return 0.Value is in units of 1 [msec]" access="RO" offset="0x38.16" size="0x0.16" />
+	<field name="apsu_total_time" descr="Duration of the last APSU until data is transmitted in seconds" access="RO" offset="0x40.0" size="0x0.12" />
+	<field name="apsu_ilt_time" descr="Duration of the last link training function of APSU in seconds" access="RO" offset="0x40.16" size="0x0.12" />
 </node>
 
 <node name="pddr_module_info_ext" descr="" size="0xd0.0" >
@@ -3134,6 +3379,8 @@
 	<field name="laser2_enabled" descr="Relevant for CPO ETH switches. when 8x port split is applied, this\;fields represent the ELS laser with the higher logical mapping index.\;Each bit represent the ELS’s laser.0: laser2_disabled1: laser2_enabled" access="RO" enum="laser2_disabled=0x0,laser2_enabled=0x1" offset="0xc4.30" size="0x0.1" />
 	<field name="laser_enabled" descr="Relevant for CPO product. Each bit represent the ELS’s laser.0: laser_disabled1: laser_enabled" access="RO" enum="laser_disabled=0x0,laser_enabled=0x1" offset="0xc4.31" size="0x0.1" />
 	<field name="module_production_test_revision_lsb" descr="Pluggable module production test version. Lower 32 bits." access="RO" offset="0xc8.0" size="0x4.0" />
+	<field name="module_hw_revision_minor" descr="Module Hardware Revision Minor" access="RO" offset="0xcc.0" size="0x0.8" />
+	<field name="module_hw_revision_major" descr="Module Hardware Revision Major" access="RO" offset="0xcc.8" size="0x0.8" />
 	<field name="module_production_test_revision_msb" descr="Pluggable module production test version. Upper 8 bits." access="RO" offset="0xcc.24" size="0x0.8" />
 </node>
 
@@ -3175,7 +3422,9 @@
 	<field name="phy_hst_link_enabled" descr="For IB:\;PDDR - HST Link Enabled IB LayoutFor Ethernet:\;PDDR - HST Link Enabled Eth LayoutFor NVLink:\;PDDR - HST Link Enabled NVLink Layout" subnode="pddr_operation_info_page_phy_hst_link_enabled_auto_ext" access="RO" offset="0x28.0" size="0x4.0" union_selector="$(parent).proto_active" />
 	<field name="eth_an_link_enabled" descr="PDDR - ETH AN Link Enabled Eth Layout" access="RO" offset="0x2c.0" size="0x4.0" />
 	<field name="link_health" descr="0: N/A - not supported or not enabled1: Attention2: Healthy" access="RO" offset="0x38.0" size="0x0.4" />
-	<field name="attention_trigger" descr="Indicates the reason that caused the link health status to transition to\;Attention. This field is sticky - it retains its value until the link\;health status is cleared by the next link-up event resets it. Valid only\;when link_health = 1 (Attention)." access="RO" offset="0x38.5" size="0x0.8" />
+	<field name="attention_trigger" descr="" access="RO" offset="0x38.5" size="0x0.8" />
+	<field name="attention_trigger_metric" descr="" access="RO" offset="0x38.13" size="0x0.7" />
+	<field name="link_health_config_changed" descr="" access="RO" offset="0x38.20" size="0x0.2" />
 	<field name="test_mode_fsm_state" descr="Test mode FSM state exposure is supported only if PCAM.feature_cap_mask\;bit 120 is set.Mode B links test mode FSM0: Disable - this state is shared by Mode A links and Mode B links\;test mode FSM1: Open_lane2: Idle_mode_b3: Close_lane- Mode A links test mode FSM4: Receiver_detect5: Idle_mode_a6: Signal_detect7: Auto_fix_reversal_polarity8: Tuning_in_progress" access="RO" enum="Disable=0x0,Open_lane=0x1,Idle_mode_b=0x2,Close_lane=0x3,Receiver_detect=0x4,Idle_mode_a=0x5,Signal_detect=0x6,Auto_fix_reversal_polarity=0x7,Tuning_in_progress=0x8" offset="0x38.24" size="0x0.8" />
 	<field name="local_host_class" descr="Local host class - Insertion loss0: Unspecified1: Host nominal (HN) - 4.45 to 13.95 dB2: Host low (HL) - 4.45 to 8.95 dB3: Host high (HH) - 4.55 to 18.5 dB4-7: Reserved" access="RO" offset="0x3c.0" size="0x0.3" />
 	<field name="remote_host_class" descr="Remote host class - Insertion loss0: Unspecified1: Host nominal (HN) - 4.45 to 13.95 dB2: Host low (HL) - 4.45 to 8.95 dB3: Host high (HH) - 4.55 to 18.5 dB4-7: Reserved" access="RO" offset="0x3c.4" size="0x0.3" />
@@ -3312,13 +3561,6 @@
 	<field name="plr_rtt_xdr_2x_ell_threshold" descr="rtt threshold in 1 ns units for XDR_2x speeds with ELL FEC" access="RO" offset="0xa8.16" size="0x0.16" />
 	<field name="mode_b_fsm_state_lane_0" descr="(see above)" access="RO" offset="0xc0.0" size="0x0.4" />
 	<field name="mode_b_fsm_state_lane_1" descr="Mode B FSM state for lane[i]:0: STATE_0 1: STATE_1 2: STATE_2 3: STATE_3 4: STATE_4 Note: this FSM is applicable only to mode B links." access="RO" offset="0xc0.4" size="0x0.4" />
-	<field name="local_type" descr="Local type.Can be written by the FW in FW control mode and by the SW in\;independent mode.001: CPO010: LPO011: FRO110: TRO111: Not supported" access="RW" offset="0xc4.0" size="0x0.3" />
-	<field name="remote_type" descr="Peer type. Can be written by the FW in FW control mode and by the SW in\;independent mode.100: Not detected001: CPO detected010: LPO detected011: FRO detected110: TRO detected111: Not supported" access="RW" offset="0xc4.4" size="0x0.3" />
-	<field name="nvidia_peer" descr="Nvidia peer detected indication" access="RO" offset="0xc4.9" size="0x0.1" />
-	<field name="rts_rx_all" descr="RTS received in all lanes assigned to the port" access="RO" offset="0xc4.10" size="0x0.1" />
-	<field name="training_status" descr="The status of the ILT function. Valid only if apsu_oper = Enabled.0: FAIL: Any lane training failed1: OK: All lanes are OK2: READY: All lanes are TRAINED or OK with at least one lane being\;TRAINED3: IN_PROGRESS: At least one lane is being trained and no lanes training\;failed" access="RO" offset="0xc4.12" size="0x0.2" />
-	<field name="rts_status" descr="The status of the RTS function. Valid only if apsu_oper = Enabled.0: FAIL: Any lane training failed1: OK: All lanes are OK2: READY: remote_rts is true and training_status is READY3: IN_PROGRESS: training_status is IN_PROGRESS or remote_rts is false\;and training_status is READY" access="RO" offset="0xc4.15" size="0x0.2" />
-	<field name="isl_ready" descr="Indicates that link training is done for the port. Set to 1 when\;ln_local_rx_ready and ln_remote_rx_ready are true for all lanes of the\;port, and to 0 otherwise" access="RO" offset="0xc4.18" size="0x0.1" />
 	<field name="apsu_oper" descr="APSU (ILT/RTS) operational mode1: APSU enabled2: APSU disabled" access="RO" offset="0xcc.0" size="0x0.2" />
 	<field name="hop_count_oper" descr="Hop count for TRO operational mode1: Hop count enabled2: Hop count disabled" access="RO" offset="0xcc.3" size="0x0.2" />
 	<field name="lt_peer_det_oper" descr="Link Training peer detection operation mode1: Peer detection enabled2: Peer detection disabled" access="RO" offset="0xcc.6" size="0x0.2" />
@@ -3346,13 +3588,14 @@
 	<field name="pnat" descr="Port number access type. determines the way local_port is interpreted:0: Local_port_number1: IB_port_number3: Out_of_band_or_PCI" access="INDEX" enum="Local_port_number=0x0,IB_port_number=0x1,Out_of_band_or_PCI=0x3" offset="0x0.14" size="0x0.2" />
 	<field name="local_port" descr="Local port number.:" access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="module_ind_type" descr="Module index type selector:0: CPO_or_pluggable_modules1: OE2: ELS" access="INDEX" enum="CPO_or_pluggable_modules=0x0,OE=0x1,ELS=0x2" offset="0x0.24" size="0x0.2" />
-	<field name="page_select" descr="page select index:0: Operational_info_page1: Troubleshooting_info_page2: Phy_info_page3: Module_info_page6: link_down_info8: Link_up_info9: Module_latched_flag_info_page11: link_partner_info_page14: cpo_module_info_page15: link_health_fec_measure_info_page16: apsu_info_page" access="INDEX" enum="Operational_info_page=0x0,Troubleshooting_info_page=0x1,Phy_info_page=0x2,Module_info_page=0x3,link_down_info=0x6,Link_up_info=0x8,Module_latched_flag_info_page=0x9,link_partner_info_page=0xb,cpo_module_info_page=0xe,link_health_fec_measure_info_page=0xf,apsu_info_page=0x10" offset="0x4.0" size="0x0.8" />
+	<field name="page_select" descr="page select index:0: Operational_info_page1: Troubleshooting_info_page2: Phy_info_page3: Module_info_page6: link_down_info8: Link_up_info9: Module_latched_flag_info_page11: link_partner_info_page14: cpo_module_info_page15: link_health_fec_measure_info_page16: APSU_info_page" access="INDEX" enum="Operational_info_page=0x0,Troubleshooting_info_page=0x1,Phy_info_page=0x2,Module_info_page=0x3,link_down_info=0x6,Link_up_info=0x8,Module_latched_flag_info_page=0x9,link_partner_info_page=0xb,cpo_module_info_page=0xe,link_health_fec_measure_info_page=0xf,APSU_info_page=0x10" offset="0x4.0" size="0x0.8" />
 	<field name="module_info_ext" descr="Module info extended configurations.resolution for rx_power, rx_power_high_th, rx_power_low_th tx_power,\;tx_power_high_th, tx_power_low_th in module info page0: dbm1: uW" access="OP" enum="dbm=0x0,uW=0x1" offset="0x4.29" size="0x0.2" />
-	<field name="page_data" descr="Operation Info Page LayoutTroubleshooting info Page layoutPhy Info Page LayoutModule Info Page LayoutLink Down Info Page LayoutLink Up Info Page LayoutModule Latched Flag Info Page LayoutLink Partner Info Page LayoutCPO Module Page LayoutLink Health FEC Measure Info Page Layout" subnode="pddr_reg_page_data_auto_ext" access="RO" offset="0x8.0" size="0xf8.0" union_selector="$(parent).page_select" />
+	<field name="page_data" descr="Operation Info Page LayoutTroubleshooting info Page layoutPhy Info Page LayoutModule Info Page LayoutLink Down Info Page LayoutLink Up Info Page LayoutModule Latched Flag Info Page LayoutLink Partner Info Page LayoutCPO Module Page LayoutLink Health FEC Measure Info Page LayoutAPSU Info Page Layout" subnode="pddr_reg_page_data_auto_ext" access="RO" offset="0x8.0" size="0xf8.0" union_selector="$(parent).page_select" />
 </node>
 
 <node name="pddr_reg_page_data_auto_ext" descr="" attr_is_union="1" size="0xf8.0" >
 	<field name="module_latched_flag_info_ext" descr="" subnode="module_latched_flag_info_ext" access="RW" offset="0x0.0" selected_by="Module_latched_flag_info_page" size="0x50.0" />
+	<field name="pddr_apsu_info_page_ext" descr="" subnode="pddr_apsu_info_page_ext" access="RW" offset="0x0.0" selected_by="APSU_info_page" size="0xf8.0" />
 	<field name="pddr_cpo_module_page_ext" descr="" subnode="pddr_cpo_module_page_ext" access="RW" offset="0x0.0" selected_by="cpo_module_info_page" size="0xa8.0" />
 	<field name="pddr_link_down_info_page_ext" descr="" subnode="pddr_link_down_info_page_ext" access="RW" offset="0x0.0" selected_by="link_down_info" size="0xf4.0" />
 	<field name="pddr_link_health_page_ext" descr="" subnode="pddr_link_health_page_ext" access="RW" offset="0x0.0" selected_by="link_health_fec_measure_info_page" size="0xb0.0" />
@@ -3945,14 +4188,14 @@
 </node>
 
 <node name="pemi_ext" descr="" size="0x100.0" >
-	<field name="status" descr="The status of the page reading:0: READ_SUCCESSFUL - read operation was successful1: OPERATION_NOT_SUPPORTED2: NO_EEPROM_MODULE - no response from module’sEEPROM.3: MODULE_NOT_CONNECTED - no module present indication.4: I2C_ERROR - an Error occurred while trying to access the module’s\;EEPROM using I2C.5: MODULE_IN_PROGRESS - indicates that the module is still busy.6: CDB_STSATUS_FAILED - the CDB return status is FAILED." access="RO" enum="READ_SUCCESSFUL=0x0,OPERATION_NOT_SUPPORTED=0x1,NO_EEPROM_MODULE=0x2,MODULE_NOT_CONNECTED=0x3,I2C_ERROR=0x4,MODULE_IN_PROGRESS=0x5,CDB_STSATUS_FAILED=0x6" offset="0x0.0" size="0x0.8" />
+	<field name="status" descr="The status of the page reading:0: READ_SUCCESSFUL - read operation was successful1: OPERATION_NOT_SUPPORTED2: NO_EEPROM_MODULE - no response from module’sEEPROM.3: MODULE_NOT_CONNECTED - no module present indication.4: I2C_ERROR - an Error occurred while trying to access the module’s\;EEPROM using I2C.5: MODULE_IN_PROGRESS - indicates that the module is still busy.6: CDB_STSATUS_FAILED - the CDB return status is FAILED.7: VDM_FREEZE_TIMEOUT_EXPIRED - for VDM based telemetry - module did not response to freeze command during the allowed advertised time interval" access="RO" enum="READ_SUCCESSFUL=0x0,OPERATION_NOT_SUPPORTED=0x1,NO_EEPROM_MODULE=0x2,MODULE_NOT_CONNECTED=0x3,I2C_ERROR=0x4,MODULE_IN_PROGRESS=0x5,CDB_STSATUS_FAILED=0x6,VDM_FREEZE_TIMEOUT_EXPIRED=0x7" offset="0x0.0" size="0x0.8" />
 	<field name="last_sub_module" descr="Relevant for CPO virtual module based switches, for pages module_status,\;laser_source_essential, laser_source_advance,\;optical_engine_telemetry_parameters, when module_index_cap=1.\;last_sub_module=1, is an indication that user reached the last supported\;sub_module index of the page that was selected via page_select." access="RO" offset="0x0.8" size="0x0.1" />
 	<field name="lp_msb" descr="Local port number [9:8]For Retimer: reserved" access="INDEX" offset="0x0.12" size="0x0.2" />
 	<field name="pnat" descr="Port number access type. determines the way local_port isinterpreted:0: Local_port_number1: IB_port_number3: Out_of_band_or_PCIFor Retimer: reserved" access="INDEX" offset="0x0.14" size="0x0.2" />
 	<field name="local_port" descr="Local port numberFor Retimer: Data path numberIf module_index_cap is set, fields represent module index" access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="module_ind_type" descr="Module index type selector, for IB CPO switches only:0: CPO_or_pluggable_modules1: OE2: ELS" access="INDEX" offset="0x0.24" size="0x0.2" />
 	<field name="module_index_cap" descr="Indicates if local_port fields represent a local port of module index.0: local_port1: module_index" access="INDEX" enum="local_port=0x0,module_index=0x1" offset="0x0.26" size="0x0.1" />
-	<field name="page_select" descr="The user can select to read a sampled data page or a properties page.the properties page is accessible no matter what the group_cap_mask\;indicate, and samples page is accessible only if the group_cap_mask is\;on.0: Module_Status_Samples1: SNR_Samples2: Laser_Monitors_Samples3: PAM4_Level_Transition_Samples4: Pre_FEC_BER_Samples5: FERC_Samples7: Laser_Source_Module_Essential_Samples8: Laser_Source_Module_Advanced_Samples9: Optical_Engine_Debug_Parameters_Samples10: Laser_Source_Module_Status_Samples11: Optical_Engine_Telemetry_Parameters_Samples12: SEWmax_Samples13: CPO_Module_Info_Samples12: APSU_module_info_page16: Module_Status_Properties17: SNR_Properties18: Laser_Monitors_Properties19: PAM4_Level_Transition_Properties20: Pre_FEC_BER_Properties21: FERC_Properties23: Laser_Source_Module_Essential_Properties24: Laser_Source_Module_Advanced_Properties25: Optical_Engine_Debug_Parameters_Properties26: Laser_Source_Module_Status_Properties27: Optical_Engine_Telemetry_Parameters_Properties28: SEWmax_PropertiesAll other values are reserved." access="INDEX" enum="Module_Status_Samples=0x0,SNR_Samples=0x1,Laser_Monitors_Samples=0x2,PAM4_Level_Transition_Samples=0x3,Pre_FEC_BER_Samples=0x4,FERC_Samples=0x5,Laser_Source_Module_Essential_Samples=0x7,Laser_Source_Module_Advanced_Samples=0x8,Optical_Engine_Debug_Parameters_Samples=0x9,Laser_Source_Module_Status_Samples=0xa,Optical_Engine_Telemetry_Parameters_Samples=0xb,SEWmax_Samples=0xc,CPO_Module_Info_Samples=0xd,APSU_module_info_page=0xc,Module_Status_Properties=0x10,SNR_Properties=0x11,Laser_Monitors_Properties=0x12,PAM4_Level_Transition_Properties=0x13,Pre_FEC_BER_Properties=0x14,FERC_Properties=0x15,Laser_Source_Module_Essential_Properties=0x17,Laser_Source_Module_Advanced_Properties=0x18,Optical_Engine_Debug_Parameters_Properties=0x19,Laser_Source_Module_Status_Properties=0x1a,Optical_Engine_Telemetry_Parameters_Properties=0x1b,SEWmax_Properties=0x1c" offset="0x4.0" size="0x0.5" />
+	<field name="page_select" descr="The user can select to read a sampled data page or a properties page.the properties page is accessible no matter what the group_cap_mask\;indicate, and samples page is accessible only if the group_cap_mask is\;on.0: Module_Status_Samples1: SNR_Samples2: Laser_Monitors_Samples3: PAM4_Level_Transition_Samples4: Pre_FEC_BER_Samples5: FERC_Samples7: Laser_Source_Module_Essential_Samples8: Laser_Source_Module_Advanced_Samples9: Optical_Engine_Debug_Parameters_Samples10: Laser_Source_Module_Status_Samples11: Optical_Engine_Telemetry_Parameters_Samples12: SEWmax_Samples13: CPO_Module_Info_Samples14: APSU_module_info_page16: Module_Status_Properties17: SNR_Properties18: Laser_Monitors_Properties19: PAM4_Level_Transition_Properties20: Pre_FEC_BER_Properties21: FERC_Properties23: Laser_Source_Module_Essential_Properties24: Laser_Source_Module_Advanced_Properties25: Optical_Engine_Debug_Parameters_Properties26: Laser_Source_Module_Status_Properties27: Optical_Engine_Telemetry_Parameters_Properties28: SEWmax_PropertiesAll other values are reserved." access="INDEX" enum="Module_Status_Samples=0x0,SNR_Samples=0x1,Laser_Monitors_Samples=0x2,PAM4_Level_Transition_Samples=0x3,Pre_FEC_BER_Samples=0x4,FERC_Samples=0x5,Laser_Source_Module_Essential_Samples=0x7,Laser_Source_Module_Advanced_Samples=0x8,Optical_Engine_Debug_Parameters_Samples=0x9,Laser_Source_Module_Status_Samples=0xa,Optical_Engine_Telemetry_Parameters_Samples=0xb,SEWmax_Samples=0xc,CPO_Module_Info_Samples=0xd,APSU_module_info_page=0xe,Module_Status_Properties=0x10,SNR_Properties=0x11,Laser_Monitors_Properties=0x12,PAM4_Level_Transition_Properties=0x13,Pre_FEC_BER_Properties=0x14,FERC_Properties=0x15,Laser_Source_Module_Essential_Properties=0x17,Laser_Source_Module_Advanced_Properties=0x18,Optical_Engine_Debug_Parameters_Properties=0x19,Laser_Source_Module_Status_Properties=0x1a,Optical_Engine_Telemetry_Parameters_Properties=0x1b,SEWmax_Properties=0x1c" offset="0x4.0" size="0x0.5" />
 	<field name="group_cap_mask" descr="each group has a samples page and a properties page.in case that at least one of the capability bits in the properties page\;is on (supported) the group capability should be on.Group capability mask:Bit 0: Module_StatusBit 1: SNRBit 2: Laser_MonitorsBit 3: PAM4_Level_TransitionBit 4: Pre_FEC_BERBit 5: FERCBit 11: Optical_Engine_Telemetry_Parameters_samplesBit 12: SEWmaxBit 13: CPO_Module_infoBit 14: APSU_info" access="RO" enum="Module_Status=0x1,SNR=0x2,Laser_Monitors=0x4,PAM4_Level_Transition=0x8,Pre_FEC_BER=0x10,FERC=0x20,Optical_Engine_Telemetry_Parameters_samples=0x800,SEWmax=0x1000,CPO_Module_info=0x2000,APSU_info=0x4000" offset="0x4.16" size="0x0.16" />
 	<field name="page_data" descr="Page data:Module Status Samples Page- LayoutSNR Samples page - LayoutLaser Monitors Samples page - LayoutPAM4 Level Transition Samples Page - LayoutPre-FEC BER Samples Page - LayoutFERC Samples page - LayoutSEWmax Samples page - LayoutCPO Module Info Samples page - LayoutLaser Source Module Essential Samples Page - LayoutLaser Source Module Advanced Samples Page - LayoutOptical Engine Debug Parameters Samples Page - LayoutLaser Source Module Status Samples page - LayoutOptical Engine Telemetry Parameters Samples page - LayoutAPSU Info Page LayoutModule Status Properties Page - LayoutSNR Properties Page - LayoutLaser Monitors Properties Page - LayoutPAM4 Level Transition Properties Page - LayoutPre-FEC BER Properties Page - LayoutFERC Properties Page - LayoutSEWmax Properties Page - FieldsLaser Source Module Essential Properties page - LayoutLaser Source Module Advanced Properties page - LayoutOptical Engine Debug Parameters Properties page - LayoutLaser Source Module Status Properties page - LayoutOptical Engine Telemetry Parameters Properties page - Layout" subnode="pemi_page_data_auto_ext" access="RO" offset="0x8.0" size="0xf8.0" union_selector="$(parent).page_select" />
 </node>
@@ -4223,54 +4466,54 @@
 </node>
 
 <node name="pemi_optical_engine_debug_parameters_samples_ext" descr="" size="0xf8.0" >
-	<field name="heater_voltage_lane1" descr="(see above)" access="RW" offset="0x0.0" size="0x0.16" />
-	<field name="heater_voltage_lane0" descr="Optical Engine heater voltage for lane &lt;i&gt; in unit of 1500 / 4095 mV" access="RW" offset="0x0.16" size="0x0.16" />
-	<field name="heater_voltage_lane3" descr="(see above)" access="RW" offset="0x4.0" size="0x0.16" />
-	<field name="heater_voltage_lane2" descr="(see above)" access="RW" offset="0x4.16" size="0x0.16" />
-	<field name="heater_voltage_lane5" descr="(see above)" access="RW" offset="0x8.0" size="0x0.16" />
-	<field name="heater_voltage_lane4" descr="(see above)" access="RW" offset="0x8.16" size="0x0.16" />
-	<field name="heater_voltage_lane7" descr="(see above)" access="RW" offset="0xc.0" size="0x0.16" />
-	<field name="heater_voltage_lane6" descr="(see above)" access="RW" offset="0xc.16" size="0x0.16" />
-	<field name="photocurrent_lane1" descr="(see above)" access="RW" offset="0x10.0" size="0x0.16" />
-	<field name="photocurrent_lane0" descr="Optical Engine photo current for lane &lt;i&gt; in unit of TBD" access="RW" offset="0x10.16" size="0x0.16" />
-	<field name="photocurrent_lane3" descr="(see above)" access="RW" offset="0x14.0" size="0x0.16" />
-	<field name="photocurrent_lane2" descr="(see above)" access="RW" offset="0x14.16" size="0x0.16" />
-	<field name="photocurrent_lane5" descr="(see above)" access="RW" offset="0x18.0" size="0x0.16" />
-	<field name="photocurrent_lane4" descr="(see above)" access="RW" offset="0x18.16" size="0x0.16" />
-	<field name="photocurrent_lane7" descr="(see above)" access="RW" offset="0x1c.0" size="0x0.16" />
-	<field name="photocurrent_lane6" descr="(see above)" access="RW" offset="0x1c.16" size="0x0.16" />
-	<field name="tx_cm_cathode_voltage_lane1" descr="(see above)" access="RW" offset="0x20.0" size="0x0.16" />
-	<field name="tx_cm_cathode_voltage_lane0" descr="Optical Engine Tx cathode common mode voltage for lane &lt;i&gt; in unit of\;1500 / 4095 mV" access="RW" offset="0x20.16" size="0x0.16" />
-	<field name="tx_cm_cathode_voltage_lane3" descr="(see above)" access="RW" offset="0x24.0" size="0x0.16" />
-	<field name="tx_cm_cathode_voltage_lane2" descr="(see above)" access="RW" offset="0x24.16" size="0x0.16" />
-	<field name="tx_cm_cathode_voltage_lane5" descr="(see above)" access="RW" offset="0x28.0" size="0x0.16" />
-	<field name="tx_cm_cathode_voltage_lane4" descr="(see above)" access="RW" offset="0x28.16" size="0x0.16" />
-	<field name="tx_cm_cathode_voltage_lane7" descr="(see above)" access="RW" offset="0x2c.0" size="0x0.16" />
-	<field name="tx_cm_cathode_voltage_lane6" descr="(see above)" access="RW" offset="0x2c.16" size="0x0.16" />
-	<field name="tx_cm_anode_voltage_lane1" descr="(see above)" access="RW" offset="0x30.0" size="0x0.16" />
-	<field name="tx_cm_anode_voltage_lane0" descr="Optical Engine Tx anode common mode voltage for lane &lt;i&gt; in unit of 1500\;/ 4095 mV" access="RW" offset="0x30.16" size="0x0.16" />
-	<field name="tx_cm_anode_voltage_lane3" descr="(see above)" access="RW" offset="0x34.0" size="0x0.16" />
-	<field name="tx_cm_anode_voltage_lane2" descr="(see above)" access="RW" offset="0x34.16" size="0x0.16" />
-	<field name="tx_cm_anode_voltage_lane5" descr="(see above)" access="RW" offset="0x38.0" size="0x0.16" />
-	<field name="tx_cm_anode_voltage_lane4" descr="(see above)" access="RW" offset="0x38.16" size="0x0.16" />
-	<field name="tx_cm_anode_voltage_lane7" descr="(see above)" access="RW" offset="0x3c.0" size="0x0.16" />
-	<field name="tx_cm_anode_voltage_lane6" descr="(see above)" access="RW" offset="0x3c.16" size="0x0.16" />
-	<field name="rx_voa_xpol_voltage_lane1" descr="(see above)" access="RW" offset="0x40.0" size="0x0.16" />
-	<field name="rx_voa_xpol_voltage_lane0" descr="Optical Engine Rx XPOL VOA for lane &lt;i&gt; in unit of 1500 / 4095 mV" access="RW" offset="0x40.16" size="0x0.16" />
-	<field name="rx_voa_xpol_voltage_lane3" descr="(see above)" access="RW" offset="0x44.0" size="0x0.16" />
-	<field name="rx_voa_xpol_voltage_lane2" descr="(see above)" access="RW" offset="0x44.16" size="0x0.16" />
-	<field name="rx_voa_xpol_voltage_lane5" descr="(see above)" access="RW" offset="0x48.0" size="0x0.16" />
-	<field name="rx_voa_xpol_voltage_lane4" descr="(see above)" access="RW" offset="0x48.16" size="0x0.16" />
-	<field name="rx_voa_xpol_voltage_lane7" descr="(see above)" access="RW" offset="0x4c.0" size="0x0.16" />
-	<field name="rx_voa_xpol_voltage_lane6" descr="(see above)" access="RW" offset="0x4c.16" size="0x0.16" />
-	<field name="rx_voa_ypol_voltage_lane1" descr="(see above)" access="RW" offset="0x50.0" size="0x0.16" />
-	<field name="rx_voa_ypol_voltage_lane0" descr="Optical Engine Rx YPOL VOA for lane &lt;i&gt; in unit of 1500 / 4095 mV" access="RW" offset="0x50.16" size="0x0.16" />
-	<field name="rx_voa_ypol_voltage_lane3" descr="(see above)" access="RW" offset="0x54.0" size="0x0.16" />
-	<field name="rx_voa_ypol_voltage_lane2" descr="(see above)" access="RW" offset="0x54.16" size="0x0.16" />
-	<field name="rx_voa_ypol_voltage_lane5" descr="(see above)" access="RW" offset="0x58.0" size="0x0.16" />
-	<field name="rx_voa_ypol_voltage_lane4" descr="(see above)" access="RW" offset="0x58.16" size="0x0.16" />
-	<field name="rx_voa_ypol_voltage_lane7" descr="(see above)" access="RW" offset="0x5c.0" size="0x0.16" />
-	<field name="rx_voa_ypol_voltage_lane6" descr="(see above)" access="RW" offset="0x5c.16" size="0x0.16" />
+	<field name="heater_voltage_lane1" descr="(see above)" access="RO" offset="0x0.0" size="0x0.16" />
+	<field name="heater_voltage_lane0" descr="Optical Engine heater voltage for lane &lt;i&gt; in unit of 1500 / 4095 mV" access="RO" offset="0x0.16" size="0x0.16" />
+	<field name="heater_voltage_lane3" descr="(see above)" access="RO" offset="0x4.0" size="0x0.16" />
+	<field name="heater_voltage_lane2" descr="(see above)" access="RO" offset="0x4.16" size="0x0.16" />
+	<field name="heater_voltage_lane5" descr="(see above)" access="RO" offset="0x8.0" size="0x0.16" />
+	<field name="heater_voltage_lane4" descr="(see above)" access="RO" offset="0x8.16" size="0x0.16" />
+	<field name="heater_voltage_lane7" descr="(see above)" access="RO" offset="0xc.0" size="0x0.16" />
+	<field name="heater_voltage_lane6" descr="(see above)" access="RO" offset="0xc.16" size="0x0.16" />
+	<field name="photocurrent_lane1" descr="(see above)" access="RO" offset="0x10.0" size="0x0.16" />
+	<field name="photocurrent_lane0" descr="Optical Engine photo current for lane &lt;i&gt; in unit of TBD" access="RO" offset="0x10.16" size="0x0.16" />
+	<field name="photocurrent_lane3" descr="(see above)" access="RO" offset="0x14.0" size="0x0.16" />
+	<field name="photocurrent_lane2" descr="(see above)" access="RO" offset="0x14.16" size="0x0.16" />
+	<field name="photocurrent_lane5" descr="(see above)" access="RO" offset="0x18.0" size="0x0.16" />
+	<field name="photocurrent_lane4" descr="(see above)" access="RO" offset="0x18.16" size="0x0.16" />
+	<field name="photocurrent_lane7" descr="(see above)" access="RO" offset="0x1c.0" size="0x0.16" />
+	<field name="photocurrent_lane6" descr="(see above)" access="RO" offset="0x1c.16" size="0x0.16" />
+	<field name="tx_cm_cathode_voltage_lane1" descr="(see above)" access="RO" offset="0x20.0" size="0x0.16" />
+	<field name="tx_cm_cathode_voltage_lane0" descr="Optical Engine Tx cathode common mode voltage for lane &lt;i&gt; in unit of\;1500 / 4095 mV" access="RO" offset="0x20.16" size="0x0.16" />
+	<field name="tx_cm_cathode_voltage_lane3" descr="(see above)" access="RO" offset="0x24.0" size="0x0.16" />
+	<field name="tx_cm_cathode_voltage_lane2" descr="(see above)" access="RO" offset="0x24.16" size="0x0.16" />
+	<field name="tx_cm_cathode_voltage_lane5" descr="(see above)" access="RO" offset="0x28.0" size="0x0.16" />
+	<field name="tx_cm_cathode_voltage_lane4" descr="(see above)" access="RO" offset="0x28.16" size="0x0.16" />
+	<field name="tx_cm_cathode_voltage_lane7" descr="(see above)" access="RO" offset="0x2c.0" size="0x0.16" />
+	<field name="tx_cm_cathode_voltage_lane6" descr="(see above)" access="RO" offset="0x2c.16" size="0x0.16" />
+	<field name="tx_cm_anode_voltage_lane1" descr="(see above)" access="RO" offset="0x30.0" size="0x0.16" />
+	<field name="tx_cm_anode_voltage_lane0" descr="Optical Engine Tx anode common mode voltage for lane &lt;i&gt; in unit of 1500\;/ 4095 mV" access="RO" offset="0x30.16" size="0x0.16" />
+	<field name="tx_cm_anode_voltage_lane3" descr="(see above)" access="RO" offset="0x34.0" size="0x0.16" />
+	<field name="tx_cm_anode_voltage_lane2" descr="(see above)" access="RO" offset="0x34.16" size="0x0.16" />
+	<field name="tx_cm_anode_voltage_lane5" descr="(see above)" access="RO" offset="0x38.0" size="0x0.16" />
+	<field name="tx_cm_anode_voltage_lane4" descr="(see above)" access="RO" offset="0x38.16" size="0x0.16" />
+	<field name="tx_cm_anode_voltage_lane7" descr="(see above)" access="RO" offset="0x3c.0" size="0x0.16" />
+	<field name="tx_cm_anode_voltage_lane6" descr="(see above)" access="RO" offset="0x3c.16" size="0x0.16" />
+	<field name="rx_voa_xpol_voltage_lane1" descr="(see above)" access="RO" offset="0x40.0" size="0x0.16" />
+	<field name="rx_voa_xpol_voltage_lane0" descr="Optical Engine Rx XPOL VOA for lane &lt;i&gt; in unit of 1500 / 4095 mV" access="RO" offset="0x40.16" size="0x0.16" />
+	<field name="rx_voa_xpol_voltage_lane3" descr="(see above)" access="RO" offset="0x44.0" size="0x0.16" />
+	<field name="rx_voa_xpol_voltage_lane2" descr="(see above)" access="RO" offset="0x44.16" size="0x0.16" />
+	<field name="rx_voa_xpol_voltage_lane5" descr="(see above)" access="RO" offset="0x48.0" size="0x0.16" />
+	<field name="rx_voa_xpol_voltage_lane4" descr="(see above)" access="RO" offset="0x48.16" size="0x0.16" />
+	<field name="rx_voa_xpol_voltage_lane7" descr="(see above)" access="RO" offset="0x4c.0" size="0x0.16" />
+	<field name="rx_voa_xpol_voltage_lane6" descr="(see above)" access="RO" offset="0x4c.16" size="0x0.16" />
+	<field name="rx_voa_ypol_voltage_lane1" descr="(see above)" access="RO" offset="0x50.0" size="0x0.16" />
+	<field name="rx_voa_ypol_voltage_lane0" descr="Optical Engine Rx YPOL VOA for lane &lt;i&gt; in unit of 1500 / 4095 mV" access="RO" offset="0x50.16" size="0x0.16" />
+	<field name="rx_voa_ypol_voltage_lane3" descr="(see above)" access="RO" offset="0x54.0" size="0x0.16" />
+	<field name="rx_voa_ypol_voltage_lane2" descr="(see above)" access="RO" offset="0x54.16" size="0x0.16" />
+	<field name="rx_voa_ypol_voltage_lane5" descr="(see above)" access="RO" offset="0x58.0" size="0x0.16" />
+	<field name="rx_voa_ypol_voltage_lane4" descr="(see above)" access="RO" offset="0x58.16" size="0x0.16" />
+	<field name="rx_voa_ypol_voltage_lane7" descr="(see above)" access="RO" offset="0x5c.0" size="0x0.16" />
+	<field name="rx_voa_ypol_voltage_lane6" descr="(see above)" access="RO" offset="0x5c.16" size="0x0.16" />
 </node>
 
 <node name="pemi_optical_engine_telemetry_parameters_properties_ext" descr="" size="0xf8.0" >
@@ -4967,10 +5210,10 @@
 	<field name="Previous_2_FEC_block_histogram_fec1" descr="(see above)" access="RO" offset="0x8.20" size="0x0.4" />
 	<field name="Previous_1_FEC_block_histogram_fec1" descr="(see above)" access="RO" offset="0x8.24" size="0x0.4" />
 	<field name="Previous_0_FEC_block_histogram_fec1" descr="Histogram bin the i+1 previous FEC block belongs to in FEC engine 1.\;Latched when PLU general tracer stop condition is met" access="RO" offset="0x8.28" size="0x0.4" />
-	<field name="max_consec_cw_bad_cnt_fec3" descr="Holds the maximum number of consecutive uncorrectable FEC codewords (FEC\;blocks) that were received in FEC engine 3." access="RO" offset="0xc.4" size="0x0.7" />
-	<field name="max_consec_cw_bad_cnt_fec2" descr="Holds the maximum number of consecutive uncorrectable FEC codewords (FEC\;blocks) that were received in FEC engine 2." access="RO" offset="0xc.11" size="0x0.7" />
-	<field name="max_consec_cw_bad_cnt_fec1" descr="Holds the maximum number of consecutive uncorrectable FEC codewords (FEC\;blocks) that were received in FEC engine 1." access="RO" offset="0xc.18" size="0x0.7" />
-	<field name="max_consec_cw_bad_cnt_fec0" descr="Holds the maximum number of consecutive uncorrectable FEC codewords (FEC\;blocks) that were received in FEC engine 0." access="RO" offset="0xc.25" size="0x0.7" />
+	<field name="max_consec_cw_bad_cnt_fec3" descr="Holds the maximum number of uncorrectable FEC codewords (FEC\;blocks) measured within a 128 FEC codewords window in FEC engine 3." access="RO" offset="0xc.4" size="0x0.7" />
+	<field name="max_consec_cw_bad_cnt_fec2" descr="Holds the maximum number of uncorrectable FEC codewords (FEC\;blocks) measured within a 128 FEC codewords window in FEC engine 2." access="RO" offset="0xc.11" size="0x0.7" />
+	<field name="max_consec_cw_bad_cnt_fec1" descr="Holds the maximum number of uncorrectable FEC codewords (FEC\;blocks) measured within a 128 FEC codewords window in FEC engine 1." access="RO" offset="0xc.18" size="0x0.7" />
+	<field name="max_consec_cw_bad_cnt_fec0" descr="Holds the maximum number of uncorrectable FEC codewords (FEC\;blocks) measured within a 128 FEC codewords window in FEC engine 0." access="RO" offset="0xc.25" size="0x0.7" />
 </node>
 
 <node name="plu_latched_counters_page_ext" descr="" size="0x18.0" >
@@ -5158,6 +5401,7 @@
 	<field name="oe_lane1_to_els_logical_laser" descr="(see above)" access="RO" offset="0x40.24" size="0x0.4" />
 	<field name="oe_lane0_to_els_logical_laser" descr="OE optical lane to ELS logical laser mapping" access="RO" offset="0x40.28" size="0x0.4" />
 	<field name="els_module_index" descr="ELS module index" access="RO" offset="0x44.0" size="0x0.8" />
+	<field name="cpo_module_indication" descr="Indicates whether the port is associated with a virtual module (vmod).0: no_vmod_indication1: vmod_indication" access="RO" enum="no_vmod_indication=0x0,vmod_indication=0x1" offset="0x44.9" size="0x0.1" />
 	<field name="els_index" descr="ELS label index" access="RO" offset="0x44.10" size="0x0.6" />
 	<field name="active_module_lane_mask" descr="Lane mask representing the active lanes associated with the local port\;as determined by the agreed link protocol during link up.0: N/A (not supported or link is down)Bit 0: Lane 0Bit 1: Lane 1Bit 2: Lane 2Bit 3: Lane 3Bit 4: Lane 4Bit 5: Lane 5Bit 6: Lane 6Bit 7: Lane 7Note: supported only if indication by PCAM.feature_group=1.bit 6." access="RO" offset="0x44.16" size="0x0.8" />
 	<field name="oe_mcu_index" descr="Optical engine MCU index. If system has no MCU on the OE, this field\;represent the OE index." access="RO" offset="0x44.24" size="0x0.7" />
@@ -5369,31 +5613,31 @@
 	<field name="ports_width" descr="Port’s width0 - per port&lt;x&gt;_width indexes1 - 1x2 - 2x4 - 4x8 - 8x" access="INDEX" offset="0x0.12" size="0x0.4" />
 	<field name="module" descr="Module number." access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="slot_index" descr="Reserved for HCASlot_indexSlot_index = 0 represent the onboard (motherboard).In case of non modular system only slot_index = 0 is available." access="INDEX" offset="0x0.24" size="0x0.4" />
-	<field name="port_num2" descr="Return the local_port value which can be assigned to the module." access="RO" offset="0x4.0" size="0x0.10" />
+	<field name="port_num2" descr="Return the local_port value which can be assigned to the module." access="RO" offset="0x4.0" size="0x0.12" />
 	<field name="port2_width" descr="port 2 width. valid only if port_width set to 0." access="INDEX" offset="0x4.12" size="0x0.4" />
-	<field name="port_num1" descr="Return the local_port value which can be assigned to the module.In case of more than one port, port&lt;x&gt; represent the /&lt;x&gt; port of the\;module.Example:port1 represent the &lt;label_port&gt; /1port2 represent the &lt;label_port&gt; /2port3 represent the &lt;label_port&gt; /3" access="RO" offset="0x4.16" size="0x0.10" />
+	<field name="port_num1" descr="Return the local_port value which can be assigned to the module.In case of more than one port, port&lt;x&gt; represent the /&lt;x&gt; port of the\;module.Example:port1 represent the &lt;label_port&gt; /1port2 represent the &lt;label_port&gt; /2port3 represent the &lt;label_port&gt; /3" access="RO" offset="0x4.16" size="0x0.12" />
 	<field name="port1_width" descr="port 1 width. valid only if port_width set to 0.1 - 1x2 - 2x4 - 4x8 - 8x" access="INDEX" offset="0x4.28" size="0x0.4" />
-	<field name="port_num4" descr="Return the local_port value which can be assigned to the module." access="RO" offset="0x8.0" size="0x0.10" />
+	<field name="port_num4" descr="Return the local_port value which can be assigned to the module." access="RO" offset="0x8.0" size="0x0.12" />
 	<field name="port4_width" descr="port 4 width. valid only if port_width set to 0." access="INDEX" offset="0x8.12" size="0x0.4" />
-	<field name="port_num3" descr="Return the local_port value which can be assigned to the module." access="RO" offset="0x8.16" size="0x0.10" />
+	<field name="port_num3" descr="Return the local_port value which can be assigned to the module." access="RO" offset="0x8.16" size="0x0.12" />
 	<field name="port3_width" descr="port 3 width. valid only if port_width set to 0." access="INDEX" offset="0x8.28" size="0x0.4" />
-	<field name="port_num6" descr="Return the local_port value which can be assigned to the module." access="RO" offset="0xc.0" size="0x0.10" />
+	<field name="port_num6" descr="Return the local_port value which can be assigned to the module." access="RO" offset="0xc.0" size="0x0.12" />
 	<field name="port6_width" descr="port 6 width. valid only if port_width set to 0." access="INDEX" offset="0xc.12" size="0x0.4" />
-	<field name="port_num5" descr="Return the local_port value which can be assigned to the module." access="RO" offset="0xc.16" size="0x0.10" />
+	<field name="port_num5" descr="Return the local_port value which can be assigned to the module." access="RO" offset="0xc.16" size="0x0.12" />
 	<field name="port5_width" descr="port 5 width. valid only if port_width set to 0." access="INDEX" offset="0xc.28" size="0x0.4" />
-	<field name="port_num8" descr="Return the local_port value which can be assigned to the module." access="RO" offset="0x10.0" size="0x0.10" />
+	<field name="port_num8" descr="Return the local_port value which can be assigned to the module." access="RO" offset="0x10.0" size="0x0.12" />
 	<field name="port8_width" descr="port 8 width. valid only if port_width set to 0." access="INDEX" offset="0x10.12" size="0x0.4" />
-	<field name="port_num7" descr="Return the local_port value which can be assigned to the module." access="RO" offset="0x10.16" size="0x0.10" />
+	<field name="port_num7" descr="Return the local_port value which can be assigned to the module." access="RO" offset="0x10.16" size="0x0.12" />
 	<field name="port7_width" descr="port 7 width. valid only if port_width set to 0." access="INDEX" offset="0x10.28" size="0x0.4" />
 </node>
 
 <node name="pmtm_reg_ext" descr="" size="0x10.0" >
-	<field name="module" descr="module number bits [7:0].\;." access="INDEX" offset="0x0.16" size="0x0.8" />
+	<field name="module" descr="module number bits [7:0]." access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="slot_index" descr="Reserved for HCASlot_indexSlot_index = 0 represent the onboard (motherboard).In case of non modular system only slot_index = 0 is available." access="INDEX" offset="0x0.24" size="0x0.4" />
-	<field name="module_type" descr="module_type:0: Backplane_with_4_lanes1: QSFP2: SFP3: No_Cage - [Obsolete]4: Backplane_with_single_lane8: Backplane_with_two_lanes10: Chip2Chip4x11: Chip2Chip2x12: Chip2Chip1x14: QSFP_DD15: OSFP16: SFP_DD17: DSFP18: Chip2Chip8x19: Twisted_Pair20: Backplane_with_8_lanes21: Loopback 22: OE_16x 23: OSFP_ELS24: QSFP_2x25: CPO_32x26: ELS_1627: CPO_64x" access="RW" enum="Backplane_with_4_lanes=0x0,QSFP=0x1,SFP=0x2,No_Cage=0x3,Backplane_with_single_lane=0x4,Backplane_with_two_lanes=0x8,Chip2Chip4x=0xa,Chip2Chip2x=0xb,Chip2Chip1x=0xc,QSFP_DD=0xe,OSFP=0xf,SFP_DD=0x10,DSFP=0x11,Chip2Chip8x=0x12,Twisted_Pair=0x13,Backplane_with_8_lanes=0x14,Loopback=0x15,OE_16x=0x16,OSFP_ELS=0x17,QSFP_2x=0x18,CPO_32x=0x19,ELS_16=0x1a,CPO_64x=0x1b" offset="0x4.0" size="0x0.5" />
+	<field name="module_type" descr="module_type:0: Backplane_with_4_lanes1: QSFP2: SFP3: No_Cage - [Obsolete]4: Backplane_with_single_lane8: Backplane_with_two_lanes10: Chip2Chip4x11: Chip2Chip2x12: Chip2Chip1x14: QSFP_DD15: OSFP16: SFP_DD17: DSFP18: Chip2Chip8x19: Twisted_Pair20: Backplane_with_8_lanes21: Loopback 22: OE_16x 23: OSFP_ELS24: QSFP_2x25: CPO_32x26: ELS_1627: CPO_64x28: QSFP_1x29: NPO_16x" access="RW" enum="Backplane_with_4_lanes=0x0,QSFP=0x1,SFP=0x2,No_Cage=0x3,Backplane_with_single_lane=0x4,Backplane_with_two_lanes=0x8,Chip2Chip4x=0xa,Chip2Chip2x=0xb,Chip2Chip1x=0xc,QSFP_DD=0xe,OSFP=0xf,SFP_DD=0x10,DSFP=0x11,Chip2Chip8x=0x12,Twisted_Pair=0x13,Backplane_with_8_lanes=0x14,Loopback=0x15,OE_16x=0x16,OSFP_ELS=0x17,QSFP_2x=0x18,CPO_32x=0x19,ELS_16=0x1a,CPO_64x=0x1b,QSFP_1x=0x1c,NPO_16x=0x1d" offset="0x4.0" size="0x0.5" />
 	<field name="module_width" descr="Number of module’s electrical lanes (in conjunction with\;module_width_hi).NOTE: For SET command, this value (in conjunction with module_width_hi)\;should match the module type width in module_type field" access="RW" offset="0x4.8" size="0x0.5" />
 	<field name="module_width_hi" descr="Number of module’s electrical lanes (in conjunction with module_width).NOTE: For SET command, this value (in conjunction with module_width)\;should match the module type width in module_type field" access="RW" offset="0x4.13" size="0x0.3" />
-	<field name="module_msb" descr="[Switch][DWIP]module number bits [15:8].\;." access="INDEX" offset="0x4.24" size="0x0.8" />
+	<field name="module_msb" descr="[Switch][DWIP]module number bits [15:8]." access="INDEX" offset="0x4.24" size="0x0.8" />
 </node>
 
 <node name="pmtu_reg_ext" descr="" size="0x10.0" >
@@ -5660,6 +5904,14 @@
 	<field name="plr_tx_max_outstanding_cell_low" descr="(see above)" access="RO" offset="0x68.0" size="0x4.0" />
 	<field name="plr_rx_block_cs_on_demand_activated_high" descr="Number of codewords that waited for CS decision, instead of being forwarded after KES.\;Counter is accumulative between link toggles.Counter is supported when indicated by PCAM.feature_cap_mask Bit 19 in group 1 is set." access="RO" offset="0x6c.0" size="0x4.0" />
 	<field name="plr_rx_block_cs_on_demand_activated_low" descr="(see above)" access="RO" offset="0x70.0" size="0x4.0" />
+	<field name="plr_rx_new_nack_received_high" descr="Number of NACKs received by the RX side, requesting remote retry of a\;lost block.Counter is supported when indicated by PCAM.feature_cap_mask Bit 21 in\;group 1 is set." access="RO" offset="0x74.0" size="0x4.0" />
+	<field name="plr_rx_new_nack_received_low" descr="(see above)" access="RO" offset="0x78.0" size="0x4.0" />
+	<field name="plr_tx_new_nack_sent_high" descr="Number of NACKs sent by the TX side, requesting retry from the remote\;sender.Counter is supported when indicated by PCAM.feature_cap_mask Bit 21 in\;group 1 is set." access="RO" offset="0x7c.0" size="0x4.0" />
+	<field name="plr_tx_new_nack_sent_low" descr="(see above)" access="RO" offset="0x80.0" size="0x4.0" />
+	<field name="plr_rx_block_flushed_due_to_csn_high" descr="Number of RX blocks flushed because the Cell Sequence Number (CSN)\;indicated an out-of-order or stale condition.Counter is supported when indicated by PCAM.feature_cap_mask Bit 21 in\;group 1 is set." access="RO" offset="0x84.0" size="0x4.0" />
+	<field name="plr_rx_block_flushed_due_to_csn_low" descr="(see above)" access="RO" offset="0x88.0" size="0x4.0" />
+	<field name="plr_rx_block_uncorrectable_by_prev_high" descr="Number of RX blocks determined uncorrectable because the preceding retry\;block (RLEC) could not repair them.Counter is supported when indicated by PCAM.feature_cap_mask Bit 21 in\;group 1 is set." access="RO" offset="0x8c.0" size="0x4.0" />
+	<field name="plr_rx_block_uncorrectable_by_prev_low" descr="(see above)" access="RO" offset="0x90.0" size="0x4.0" />
 </node>
 
 <node name="ppcnt_recovery_counters_ext" descr="" size="0xf4.0" >
@@ -6218,6 +6470,7 @@
 
 <node name="prod_3nm_serdes_gen_7p5_ext" descr="" size="0x48.0" >
 	<field name="ob_bad_stat" descr="Bitmask for bad ‘set’ status:Bit 0: tap0_is_out_of_rangeBit 1: tap1_is_out_of_rangeBit 2: tap2_is_out_of_rangeBit 3: tap3_is_out_of_rangeBit 4: tap4_is_out_of_rangeBit 5: tap5_is_out_of_rangeBit 6: tap6_is_out_of_rangeBit 7: tap7_is_out_of_rangeBit 8: tap8_is_out_of_rangeBit 9: tap9_is_out_of_rangeBit 10: tap10_is_out_of_rangeBit 11: tap11_is_out_of_rangeBit 12: sum_of_taps_is_out_of_range" access="RO" enum="tap0_is_out_of_range=0x1,tap1_is_out_of_range=0x2,tap2_is_out_of_range=0x4,tap3_is_out_of_range=0x8,tap4_is_out_of_range=0x10,tap5_is_out_of_range=0x20,tap6_is_out_of_range=0x40,tap7_is_out_of_range=0x80,tap8_is_out_of_range=0x100,tap9_is_out_of_range=0x200,tap10_is_out_of_range=0x400,tap11_is_out_of_range=0x800,sum_of_taps_is_out_of_range=0x1000" offset="0x0.0" size="0x0.16" />
+	<field name="status_invalid_reason" descr="Indicates the reason the get operation cannot return valid data. Populated\;only when status = 0 (Invalid); set to N/A when status = 1 (Valid).0: n_a - Default; no invalid condition applies, or unknown reason1: tx_disabled - Link is not yet active2: pending_lt - Link Training is in progress3: non_linear_settings - SerDes is operating with non-linear (LUT) tap\;settings; SLTP get is not supported in this state" access="RO" enum="n_a=0x0,tx_disabled=0x1,pending_lt=0x2,non_linear_settings=0x3" offset="0x0.16" size="0x0.4" />
 	<field name="mode_b_idx" descr="0: mode_a 1: mode_b" access="RO" enum="mode_a=0x0,mode_b=0x1" offset="0x0.23" size="0x0.1" />
 	<field name="lt_preset_sel" descr="Valid only when lt_preset_sel_cap is set, otherwise ignored0: no_preset_selected - changes Tx DB according to cable1-7: LT_index_preset_select - Tx will get / set LT preset" access="RW" offset="0x0.24" size="0x0.3" />
 	<field name="vs_peer_db" descr="relevant for when c_db is set, else field is ignored.for when direct drive module connected:0 - db to override is for Did vs Did1 - db to override if for Did vs retimed module" access="RW" offset="0x0.28" size="0x0.2" />
@@ -6253,23 +6506,14 @@
 	<field name="cycle_time" descr="Cycle time for cycle based ts, reserved when ts ≠ 2Cycle time will be 2^cycle_time*clk_timeclk_time (nSec) = 1000/QUERY_FW.core_clk (Mhz)" access="RW" offset="0xc.0" size="0x0.6" />
 </node>
 
-<node name="ptasv2_3nm_ext" descr="" size="0x30.0" >
-	<field name="lane0_seed_prbs31" descr="PRBS31 training sequence seed for lane 0." access="RW" offset="0x0.0" size="0x0.31" />
-	<field name="lane1_seed_prbs31" descr="PRBS31 training sequence seed for lane 1." access="RW" offset="0x4.0" size="0x0.31" />
-	<field name="lane2_seed_prbs31" descr="PRBS31 training sequence seed for lane 2." access="RW" offset="0x8.0" size="0x0.31" />
-	<field name="lane3_seed_prbs31" descr="PRBS31 training sequence seed for lane 3." access="RW" offset="0xc.0" size="0x0.31" />
-	<field name="lane4_seed_prbs31" descr="PRBS31 training sequence seed for lane 4." access="RW" offset="0x10.0" size="0x0.31" />
-	<field name="lane5_seed_prbs31" descr="PRBS31 training sequence seed for lane 5." access="RW" offset="0x14.0" size="0x0.31" />
-	<field name="lane6_seed_prbs31" descr="PRBS31 training sequence seed for lane 6." access="RW" offset="0x18.0" size="0x0.31" />
-	<field name="lane7_seed_prbs31" descr="PRBS31 training sequence seed for lane 7." access="RW" offset="0x1c.0" size="0x0.31" />
-	<field name="lane1_seed_prbs13" descr="PRBS13 training sequence seed for lane 1." access="RW" offset="0x20.0" size="0x0.13" />
-	<field name="lane0_seed_prbs13" descr="PRBS13 training sequence seed for lane 0." access="RW" offset="0x20.16" size="0x0.13" />
-	<field name="lane3_seed_prbs13" descr="PRBS13 training sequence seed for lane 3." access="RW" offset="0x24.0" size="0x0.13" />
-	<field name="lane2_seed_prbs13" descr="PRBS13 training sequence seed for lane 2." access="RW" offset="0x24.16" size="0x0.13" />
-	<field name="lane5_seed_prbs13" descr="PRBS13 training sequence seed for lane 5." access="RW" offset="0x28.0" size="0x0.13" />
-	<field name="lane4_seed_prbs13" descr="PRBS13 training sequence seed for lane 4." access="RW" offset="0x28.16" size="0x0.13" />
-	<field name="lane7_seed_prbs13" descr="PRBS13 training sequence seed for lane 7." access="RW" offset="0x2c.0" size="0x0.13" />
-	<field name="lane6_seed_prbs13" descr="PRBS13 training sequence seed for lane 6." access="RW" offset="0x2c.16" size="0x0.13" />
+<node name="ptasv2_3nm_ext" descr="" size="0x34.0" >
+	<field name="page_select" descr="Page select index.0: prbs_seeds1: APSU_control" access="INDEX" enum="prbs_seeds=0x0,APSU_control=0x1" offset="0x0.0" size="0x0.1" />
+	<field name="page_data" descr="PTASv2 3nm PRBS Seeds Page Fields PTASv2 3nm APSU Control Page Fields" subnode="ptasv2_3nm_page_data_auto_ext" access="RW" offset="0x4.0" size="0x30.0" union_selector="$(parent).page_select" />
+</node>
+
+<node name="ptasv2_3nm_page_data_auto_ext" descr="" attr_is_union="1" size="0x30.0" >
+	<field name="ef_ptasv2_3nm_apsu_ctrl_v1_ext" descr="" subnode="ef_ptasv2_3nm_apsu_ctrl_v1_ext" access="RW" offset="0x0.0" selected_by="APSU_control" size="0x18.0" />
+	<field name="ef_ptasv2_3nm_prbs_v1_ext" descr="" subnode="ef_ptasv2_3nm_prbs_v1_ext" access="RW" offset="0x0.0" selected_by="prbs_seeds" size="0x30.0" />
 </node>
 
 <node name="ptasv2_7nm_ext" descr="" size="0x44.0" >
@@ -6295,22 +6539,10 @@
 	<field name="iter_time_oper" descr="operational value of the time that each iteration will use. An iteration\;is defined as a the time of the BER measurement that comes after the\;equalization.10 msec granularity." access="RO" offset="0x1c.22" size="0x0.10" />
 	<field name="ber_target_coef_oper" descr="(see above)" access="RO" offset="0x20.0" size="0x0.4" />
 	<field name="ber_target_magnitude_oper" descr="operational value of BER target value.exit condition if BER target is met prior to end of all iterations,\;finish the algorithmBER_target = ber_target_coef *10^(-ber_target_magnitude)" access="RO" offset="0x20.8" size="0x0.8" />
-	<field name="max_wait_timer" descr="Maximum time to perform link training in 802.3dj in seconds. System\;parameter.0: Not limitedDefault: 30 for electrical interfaces, 60 for optical interfaces" access="RW" offset="0x2c.0" size="0x0.16" />
 	<field name="fec_measure_retry_local_fail_count" descr="Number of times the link quality by fec measure failed locally.A value of 0 means the link quality check didn’t fail locally.A value of 1 means the link quality check failed locally once, and so\;on." access="RO" offset="0x30.28" size="0x0.4" />
-	<field name="apsu_cap" descr="APSU (ILT/RTS) capability supported" access="RO" offset="0x34.0" size="0x0.1" />
-	<field name="hop_count_cap" descr="Hop count for TRO capability supported" access="RO" offset="0x34.3" size="0x0.1" />
-	<field name="lt_peer_det_cap" descr="Link training based peer vendor and configuration detection capability\;supported" access="RO" offset="0x34.6" size="0x0.1" />
-	<field name="nlut_cap" descr="nLUT training capability supported" access="RO" offset="0x34.9" size="0x0.1" />
-	<field name="training_en_cap" descr="Disable training option capability.Note that when disabled the ASPU protocol is still active but without\;link training frames." access="RO" offset="0x34.12" size="0x0.1" />
 	<field name="fec_measure_cap" descr="Set to 1 if fec measure cap feature is supported andfec_measure_retry_count, max_fec_measure_retry_count, fec_measure_time,\;fec_measure_en, fec_measure_fail_policy are valid." access="RO" offset="0x34.13" size="0x0.1" />
 	<field name="max_fec_measure_retry_count" descr="Maximum number of times the link quality by fec measure can be\;re-checked before applying fail_action_policy0: FW default" access="RW" offset="0x34.16" size="0x0.4" />
 	<field name="fec_measure_retry_count" descr="Number of times the link quality by fec measure re-checked before the\;link came up.A value of 0 means the link was ready after the first check.A value of 1 means the link needed to be checked twice, and so on." access="RO" offset="0x34.24" size="0x0.4" />
-	<field name="restart_training" descr="Set to restart APSU" access="WO" offset="0x34.31" size="0x0.1" />
-	<field name="apsu_ctl" descr="Control the APSU (ILT/RTS) activation if apsu_cap = 10: Use FW default. Default1: Enable2: Disable" access="RW" offset="0x38.0" size="0x0.2" />
-	<field name="hop_count_ctl" descr="Control the hop count for TRO activation if hop_count_cap = 10: Use FW default. Default1: Enable2: Disable" access="RW" offset="0x38.3" size="0x0.2" />
-	<field name="lt_peer_det_ctl" descr="Control the Link Training peer detection activation if lt_peer_det_cap =\;10: Use FW default. Default1: Enable2: Disable" access="RW" offset="0x38.6" size="0x0.2" />
-	<field name="nlut_ctl" descr="Control the nLUT activation if nlut_cap = 10: Use FW default. Default1: Enable2: Disable" access="RW" offset="0x38.9" size="0x0.2" />
-	<field name="training_en_ctl" descr="Control the training_en configuration if training_en_cap = 10: Use FW default. Default1: Enable training2: Disable training" access="RW" offset="0x38.12" size="0x0.2" />
 	<field name="fec_measure_time" descr="0: FW_default1-1023 - Sets in 10ms granularity the FEC measure time" access="RW" offset="0x38.16" size="0x0.10" />
 	<field name="mask_enable" descr="bit 0 - when set, configure only apsu_ctl" access="RW" offset="0x38.27" size="0x0.1" />
 	<field name="fec_measure_en" descr="0: FW_default1: Enable_fec_measure_after_lt2: Disable_fec_measure_after_lt" access="RW" enum="FW_default=0x0,Enable_fec_measure_after_lt=0x1,Disable_fec_measure_after_lt=0x2" offset="0x38.30" size="0x0.2" />
@@ -6340,7 +6572,7 @@
 </node>
 
 <node name="ptasv2_reg_page_data_auto_ext" descr="" attr_is_union="1" is_conditional="1" size="0x44.0" >
-	<field name="ptasv2_3nm_ext" descr="" subnode="ptasv2_3nm_ext" access="RW" condition="($(parent).version == products_3nm)" offset="0x0.0" size="0x30.0" />
+	<field name="ptasv2_3nm_ext" descr="" subnode="ptasv2_3nm_ext" access="RW" condition="($(parent).version == products_3nm)" offset="0x0.0" size="0x34.0" />
 	<field name="ptasv2_7nm_ext" descr="" subnode="ptasv2_7nm_ext" access="RW" condition="($(parent).version == products_7nm) | ($(parent).version == products_5nm)" offset="0x0.0" size="0x44.0" />
 </node>
 
@@ -6481,7 +6713,7 @@
 	<field name="access_reg_group" descr="Access Register ID groups0: First 128 REG_ID" access="INDEX" offset="0x0.0" size="0x0.8" />
 	<field name="feature_group" descr="Feature list mask index0: Enhanced features" access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="qos_access_reg_cap_mask" descr="Supported QoS access register bitmasks. Based on access_reg_group index.When bit is set, the register is supported in the device.For example:Bit 1: QCAP (0x4001)Bit 2: QPTS (0x4002)Bit 3: QDPM (0x4003)" access="RO" high_bound="3" low_bound="0" offset="0x8.0" size="0x10.0" />
-	<field name="qos_feature_cap_mask" descr="Supported QoS enhanced features based on feature_group index.When bit is set, the feature is supported in the deviceBit 0x0: QPTS_TRUST_BOTH - trust_both is supported in QPTS registerBit 0x1: QEEC supports max on port hierarchyBit 0x2: QEEC supports max on dwrr on traffic class hierarchyBit 0x3: QEEC supports max on tx hierarchyBit 0x4: QETCR and QSHR support max_bw_value_msb" access="RO" high_bound="3" low_bound="0" offset="0x28.0" size="0x10.0" />
+	<field name="qos_feature_cap_mask" descr="Supported QoS enhanced features based on feature_group index.When bit is set, the feature is supported in the device.Bit 0: QPTS_TRUST_BOTH - trust_both is supported in QPTS registerBit 1: QEEC_MAX_PORT - QEEC supports max on port hierarchyBit 2: QEEC_MAX_DWRR_TC - QEEC supports max on dwrr on traffic\;class hierarchyBit 3: QEEC_MAX_TX - QEEC supports max on tx hierarchyBit 4: QETCR_QSHR_MAX_BW_VALUE_MSB - QETCR and QSHR support max_bw_value_msbBit 5: QETCR_TRAFFIC_PROFILE - QETCR supports traffic_profile" access="RO" enum="QPTS_TRUST_BOTH=0x1,QEEC_MAX_PORT=0x2,QEEC_MAX_DWRR_TC=0x4,QEEC_MAX_TX=0x8,QETCR_QSHR_MAX_BW_VALUE_MSB=0x10,QETCR_TRAFFIC_PROFILE=0x20" high_bound="3" low_bound="0" offset="0x28.0" size="0x10.0" />
 </node>
 
 <node name="qeec_ext" descr="" size="0x20.0" >
@@ -6491,7 +6723,7 @@
 	<field name="element_index" descr="The index of the element in the hierarchy." access="INDEX" offset="0x4.0" size="0x0.8" />
 	<field name="element_hierarchy" descr="The hierarchy of the element0: Port - host1: Group2: Sub_Group - subgroup of queues, supported from ConnectX-8/bluefield-4.\;3: Traffic_Class - VoQ queueFor supported hierarchies see External Reference." access="INDEX" enum="Port=0x0,Group=0x1,Sub_Group=0x2,Traffic_Class=0x3" offset="0x4.16" size="0x0.4" />
 	<field name="next_element_index" descr="The index of the element in the lower hierarchy.Reserved when element_heirarchy ‘0’." access="RW" offset="0x8.0" size="0x0.8" />
-	<field name="max_shaper_rate" descr="Max shaper information ratebps mode, Units of 1000bpsGranularity is 200mbpsError is up to 3% from configuration (for example, when rate is\;configured to 200mbps, the actual rate may be 206mbps)Reading reveals the actual rate (e.g., 206 in the above example)On get, actual values are returned which might differ from the set\;valuesGranularity is 1000bpsError is up to 1% from configurationGranularity is 10 packet per secError is up to 1% from configurationValue of 0x7FFF_FFFF means “all allowed” or “shaper disabled”. Values\;above the maximum rate report disabled as well.Supported according to QCAM features" access="RW" offset="0x10.0" size="0x0.31" />
+	<field name="max_shaper_rate" descr="Max shaper information rateValue of 0x7FFF_FFFF means “all allowed” or “shaper disabled”. Values\;above the maximum rate report disabled as well.Supported according to QCAM features" access="RW" offset="0x10.0" size="0x0.31" />
 	<field name="mase" descr="Max shaper configuration enable. Enables configuration of\;max_shaper_rate, max_shaper_bs on this ETS element.0: disable1: enableReserved when element_hierarchy is 1Supported according to QCAM features" access="RW" enum="disable=0x0,enable=0x1" offset="0x10.31" size="0x0.1" />
 	<field name="dwrr_weight" descr="DWRR weight on the link going down from the ETS element:The percentage of bandwidth guaranteed to a ETS within its hierarchy.The sum of dwrr_weight values across all ETS elements within one\;hierarchy should equal 100.This field is reserved when dwrr is set to strict priority.Supported according to QCAM features" access="RW" offset="0x18.0" size="0x0.8" />
 	<field name="dwrr" descr="DWRR or strict priority on the link going down from the ETS element:0: strict priority1: DWRR" access="RW" offset="0x18.15" size="0x0.1" />
@@ -7284,7 +7516,7 @@
 <node name="slrg_5nm_ext" descr="" size="0x18.0" >
 	<field name="fom_measurement" descr="Bitmask for measurement activationBit 0 - Upper eyeBit 1 - Middle eyeBit 2 - Lower eyeBit 3- Composite eyeNote: NRZ only Bit 3 is valid" access="OP" offset="0x0.0" size="0x0.4" />
 	<field name="initial_fom" descr="measured EOM status after FEQ.valid only when SLRG.status is ‘1’" access="RO" offset="0x4.0" size="0x0.16" />
-	<field name="fom_mode" descr="fom mode:FOM eye mode to search0x0: FOM_MODE_EYE_OPEN0x1: FOM_MODE_EYEO_SNR0x2: FOM_MODE_NORM_SNR0x3: FOM_MODE_EYE_LVLN0x4: FOM_MODE_EYE_LVLP0x5: FOM_MODE_THRES_NERR0x6: FOM_MODE_CDR_NERR0x7: FOM_MODE_CSDET_NERR0x8: FOM_MODE_MLSE_NERR0x9: FOM_MODE_SFEC_NERR" access="RW" enum="FOM_MODE_EYE_OPEN=0x0,FOM_MODE_EYEO_SNR=0x1,FOM_MODE_NORM_SNR=0x2,FOM_MODE_EYE_LVLN=0x3,FOM_MODE_EYE_LVLP=0x4,FOM_MODE_THRES_NERR=0x5,FOM_MODE_CDR_NERR=0x6,FOM_MODE_CSDET_NERR=0x7,FOM_MODE_MLSE_NERR=0x8,FOM_MODE_SFEC_NERR=0x9" offset="0x4.16" size="0x0.4" />
+	<field name="fom_mode" descr="fom mode:FOM eye mode to search0x0: FOM_MODE_EYE_OPEN0x1: FOM_MODE_EYEO_SNR0x2: FOM_MODE_NORM_SNR0x3: FOM_MODE_EYE_LVLN0x4: FOM_MODE_EYE_LVLP0x5: FOM_MODE_THRES_NERR0x6: FOM_MODE_CDR_NERR0x7: FOM_MODE_CSDET_NERR0x8: FOM_MODE_MLSE_NERR0x9: FOM_MODE_SFEC_NERR0xA: FOM_MODE_MLSD_NERR" access="RW" enum="FOM_MODE_EYE_OPEN=0x0,FOM_MODE_EYEO_SNR=0x1,FOM_MODE_NORM_SNR=0x2,FOM_MODE_EYE_LVLN=0x3,FOM_MODE_EYE_LVLP=0x4,FOM_MODE_THRES_NERR=0x5,FOM_MODE_CDR_NERR=0x6,FOM_MODE_CSDET_NERR=0x7,FOM_MODE_MLSE_NERR=0x8,FOM_MODE_SFEC_NERR=0x9,FOM_MODE_MLSD_NERR=0xa" offset="0x4.16" size="0x0.4" />
 	<field name="fom_meas_type_read" descr="Indicate if the fom_measurement is of PAM4 or NRZ data0 - PAM4 (Upper, mid, low eye)1 - NRZ (Composite eye)" access="RO" offset="0x4.31" size="0x0.1" />
 	<field name="upper_eye" descr="last measured EOM-FOM status of upper eye.valid only if fom_measurement bit ‘0’ is set" access="RO" offset="0x8.0" size="0x0.16" />
 	<field name="last_fom" descr="last measured EOM-FOM status of composite eye.valid only if fom_measurement bit ‘3’ is set" access="RO" offset="0x8.16" size="0x0.16" />
@@ -7435,6 +7667,7 @@
 
 <node name="sltp_5nm_ext" descr="" size="0x48.0" >
 	<field name="ob_bad_stat" descr="Bitmask for bad ‘set’ status:Bit 0: tap0_is_out_of_rangeBit 1: tap1_is_out_of_rangeBit 2: tap2_is_out_of_rangeBit 3: tap3_is_out_of_rangeBit 4: tap4_is_out_of_rangeBit 5: tap5_is_out_of_rangeBit 6: tap6_is_out_of_rangeBit 7: tap7_is_out_of_rangeBit 8: tap8_is_out_of_rangeBit 9: tap9_is_out_of_rangeBit 10: tap10_is_out_of_rangeBit 11: tap11_is_out_of_rangeBit 12: sum_of_taps_is_out_of_range" access="RO" enum="tap0_is_out_of_range=0x1,tap1_is_out_of_range=0x2,tap2_is_out_of_range=0x4,tap3_is_out_of_range=0x8,tap4_is_out_of_range=0x10,tap5_is_out_of_range=0x20,tap6_is_out_of_range=0x40,tap7_is_out_of_range=0x80,tap8_is_out_of_range=0x100,tap9_is_out_of_range=0x200,tap10_is_out_of_range=0x400,tap11_is_out_of_range=0x800,sum_of_taps_is_out_of_range=0x1000" offset="0x0.0" size="0x0.16" />
+	<field name="status_invalid_reason" descr="Indicates the reason the get operation cannot return valid data. Populated\;only when status = 0 (Invalid); set to N/A when status = 1 (Valid).0: n_a - Default; no invalid condition applies, or unknown reason1: tx_disabled - Link is not yet active2: pending_lt - Link Training is in progress3: non_linear_settings - SerDes is operating with non-linear (LUT) tap\;settings; SLTP get is not supported in this state" access="RO" enum="n_a=0x0,tx_disabled=0x1,pending_lt=0x2,non_linear_settings=0x3" offset="0x0.16" size="0x0.4" />
 	<field name="lt_preset_sel" descr="Valid only when lt_preset_sel_cap is set, otherwise ignored0: no_preset_selected - changes Tx DB according to cable1-7: LT_index_preset_select - Tx will get / set LT preset" access="RW" offset="0x0.24" size="0x0.3" />
 	<field name="vs_peer_db" descr="relevant for when c_db is set, else field is ignored.for when direct drive module connected:0 - db to override is for Did vs Did1 - db to override if for Did vs retimed module" access="RW" offset="0x0.28" size="0x0.2" />
 	<field name="lt_preset_sel_cap" descr="When set, lt_preset_sel field is valid." access="RO" offset="0x0.30" size="0x0.1" />
@@ -7596,7 +7829,9 @@
 
 <node name="sltpv2_lut_5nm_ext" descr="" size="0x108.0" >
 	<field name="ob_bad_stat" descr="Bitmask for bad ‘set’ status:Bit 0:LUT_value_is_out_of_rangeBit 1: delay_0_invalidBit 2: delay_1_invalidBit 3: delay_2_invalid" access="RO" enum="LUT_value_is_out_of_range=0x1,delay_0_invalid=0x2,delay_1_invalid=0x4,delay_2_invalid=0x8" offset="0x0.0" size="0x0.16" />
+	<field name="status_invalid_reason" descr="Indicates the reason the get operation cannot return valid data. Populated\;only when status = 0 (Invalid); set to N/A when status = 1 (Valid).0: n_a - Default; no invalid condition applies, or unknown reason1: tx_disabled - Link is not yet active2: pending_lt - Link Training is in progress" access="RO" enum="n_a=0x0,tx_disabled=0x1,pending_lt=0x2" offset="0x0.16" size="0x0.4" />
 	<field name="lut_sel" descr="0: LUT_1 - taps 0-1 (16 entries), valid ranges per entry: [-16, 15]1: LUT_2 - taps 2-5 (256 entries), valid ranges per entry: [-64, 63]2: LUT_3 - taps 6-8 (64 entries), valid ranges per entry: [-16, 15]3: LUT_4 - taps 9-11 (64 entries), valid ranges per entry: [-16, 15]Note that only LUT_2 group has FW DB, hence c_db shall work only for\;LUT_2." access="INDEX" enum="LUT_1=0x0,LUT_2=0x1,LUT_3=0x2,LUT_4=0x3" offset="0x0.20" size="0x0.4" />
+	<field name="tx_conf_mode" descr="Active Tx configuration mode of the SerDes lane. Valid only when status = 1\;(Valid); returns 0 (N/A) when status = 0 (Invalid).0: n_a - Default; status is not valid1: linear - SerDes Tx is configured with linear (FIR) tap settings2: non_linear - SerDes Tx is configured with non-linear (LUT) tap settings" access="RO" enum="n_a=0x0,linear=0x1,non_linear=0x2" offset="0x0.24" size="0x0.2" />
 	<field name="vs_peer_db" descr="relevant for when c_db is set, else field is ignored.for when direct drive module connected:0 - db to override is for Did vs Did1 - db to override if for Did vs retimed module" access="RW" offset="0x0.28" size="0x0.2" />
 	<field name="no_db_set" descr="supported only if PCAM bit 96 in feature_cap_mask is set.When set, Tx DB will not be written into HW on linkup phase.When cleared, Tx DB is written into HW on linkup phase." access="RW" offset="0x0.31" size="0x0.1" />
 	<field name="delay0" descr="(see above)" access="RW" offset="0x4.0" size="0x0.6" />
@@ -7916,6 +8151,25 @@
 </node>
 
 <node name="sltr_non_periodic_non_destructive_7_5_ext" descr="" size="0x10.0" >
+	<field name="w_group_exist" descr="" access="RO" offset="0x0.30" size="0x0.1" />
+	<field name="e_group_exist" descr="" access="RO" offset="0x0.31" size="0x0.1" />
+	<field name="e_group6" descr="" access="RO" offset="0x4.0" size="0x0.8" />
+	<field name="e_group5" descr="" access="RO" offset="0x4.10" size="0x0.2" />
+	<field name="e_group4" descr="" access="RO" offset="0x4.13" size="0x0.3" />
+	<field name="e_group3" descr="" access="RO" offset="0x4.17" size="0x0.2" />
+	<field name="e_group2" descr="" access="RO" offset="0x4.20" size="0x0.2" />
+	<field name="e_group1" descr="" access="RO" offset="0x4.23" size="0x0.3" />
+	<field name="e_group0" descr="" access="RO" offset="0x4.27" size="0x0.5" />
+	<field name="w_group4" descr="" access="RO" offset="0x8.0" size="0x0.5" />
+	<field name="w_group3" descr="" access="RO" offset="0x8.5" size="0x0.5" />
+	<field name="w_group2" descr="" access="RO" offset="0x8.10" size="0x0.5" />
+	<field name="w_group1" descr="" access="RO" offset="0x8.15" size="0x0.5" />
+	<field name="w_group0" descr="" access="RO" offset="0x8.20" size="0x0.5" />
+	<field name="e_group8" descr="" access="RO" offset="0x8.26" size="0x0.2" />
+	<field name="e_group7" descr="" access="RO" offset="0x8.29" size="0x0.3" />
+	<field name="w_group7" descr="" access="RO" offset="0xc.17" size="0x0.5" />
+	<field name="w_group6" descr="" access="RO" offset="0xc.22" size="0x0.5" />
+	<field name="w_group5" descr="" access="RO" offset="0xc.27" size="0x0.5" />
 </node>
 
 <node name="sltr_non_periodic_non_destructive_ext" descr="" size="0x18.0" >
@@ -7958,6 +8212,155 @@
 </node>
 
 <node name="sltr_periodic_non_destructive_7_5_ext" descr="" size="0xd8.0" >
+	<field name="d_group_exist" descr="" access="RO" offset="0x0.23" size="0x0.1" />
+	<field name="c_group_exist" descr="" access="RO" offset="0x0.24" size="0x0.1" />
+	<field name="bs_group_exist" descr="" access="RO" offset="0x0.25" size="0x0.1" />
+	<field name="bc_group_exist" descr="" access="RO" offset="0x0.26" size="0x0.1" />
+	<field name="af_group_exist" descr="" access="RO" offset="0x0.27" size="0x0.1" />
+	<field name="afm_group_exist" descr="" access="RO" offset="0x0.28" size="0x0.1" />
+	<field name="f_group_exist" descr="" access="RO" offset="0x0.29" size="0x0.1" />
+	<field name="t_group_exist" descr="" access="RO" offset="0x0.31" size="0x0.1" />
+	<field name="af_group16" descr="" access="RO" offset="0x4.16" size="0x0.4" />
+	<field name="af_group15" descr="" access="RO" offset="0x4.20" size="0x0.4" />
+	<field name="af_group14" descr="" access="RO" offset="0x4.24" size="0x0.4" />
+	<field name="af_group13" descr="" access="RO" offset="0x4.28" size="0x0.4" />
+	<field name="afm_group5" descr="" access="RO" offset="0x8.3" size="0x0.7" />
+	<field name="afm_group6" descr="" access="RO" offset="0x8.11" size="0x0.7" />
+	<field name="afm_group7" descr="" access="RO" offset="0x8.18" size="0x0.6" />
+	<field name="afm_group8" descr="" access="RO" offset="0x8.25" size="0x0.4" />
+	<field name="afm_group9" descr="" access="RO" offset="0x8.29" size="0x0.3" />
+	<field name="f_group0" descr="" access="RO" offset="0xc.8" size="0x0.6" />
+	<field name="afm_group3" descr="" access="RO" offset="0xc.15" size="0x0.8" />
+	<field name="afm_group4" descr="" access="RO" offset="0xc.24" size="0x0.8" />
+	<field name="afm_group2" descr="" access="RO" offset="0x10.0" size="0x0.8" />
+	<field name="afm_group1" descr="" access="RO" offset="0x10.10" size="0x0.9" />
+	<field name="af_group1" descr="" access="RO" offset="0x10.21" size="0x0.8" />
+	<field name="af_group2" descr="" access="RO" offset="0x14.0" size="0x0.8" />
+	<field name="af_group3" descr="" access="RO" offset="0x14.10" size="0x0.7" />
+	<field name="af_group4" descr="" access="RO" offset="0x14.19" size="0x0.7" />
+	<field name="m_group0" descr="" access="RO" offset="0x14.28" size="0x0.4" />
+	<field name="af_group5" descr="" access="RO" offset="0x18.0" size="0x0.7" />
+	<field name="af_group6" descr="" access="RO" offset="0x18.9" size="0x0.6" />
+	<field name="af_group7" descr="" access="RO" offset="0x18.17" size="0x0.6" />
+	<field name="af_group8" descr="" access="RO" offset="0x18.25" size="0x0.6" />
+	<field name="af_group9" descr="" access="RO" offset="0x1c.0" size="0x0.6" />
+	<field name="af_group10" descr="" access="RO" offset="0x1c.8" size="0x0.5" />
+	<field name="af_group11" descr="" access="RO" offset="0x1c.15" size="0x0.5" />
+	<field name="af_group12" descr="" access="RO" offset="0x1c.22" size="0x0.5" />
+	<field name="bs_group0" descr="" access="RO" offset="0x20.0" size="0x0.6" />
+	<field name="bc_group0" descr="" access="RO" offset="0x20.6" size="0x0.4" />
+	<field name="bs_group1" descr="" access="RO" offset="0x20.11" size="0x0.6" />
+	<field name="bc_group1" descr="" access="RO" offset="0x20.17" size="0x0.4" />
+	<field name="bs_group2" descr="" access="RO" offset="0x20.22" size="0x0.6" />
+	<field name="bc_group2" descr="" access="RO" offset="0x20.28" size="0x0.4" />
+	<field name="bs_group3" descr="" access="RO" offset="0x24.0" size="0x0.6" />
+	<field name="bc_group3" descr="" access="RO" offset="0x24.6" size="0x0.4" />
+	<field name="bs_group4" descr="" access="RO" offset="0x24.11" size="0x0.6" />
+	<field name="bc_group4" descr="" access="RO" offset="0x24.17" size="0x0.4" />
+	<field name="bs_group5" descr="" access="RO" offset="0x24.22" size="0x0.6" />
+	<field name="bc_group5" descr="" access="RO" offset="0x24.28" size="0x0.4" />
+	<field name="bs_group6" descr="" access="RO" offset="0x28.0" size="0x0.6" />
+	<field name="bc_group6" descr="" access="RO" offset="0x28.6" size="0x0.4" />
+	<field name="bs_group7" descr="" access="RO" offset="0x28.11" size="0x0.6" />
+	<field name="bc_group7" descr="" access="RO" offset="0x28.17" size="0x0.4" />
+	<field name="bs_group8" descr="" access="RO" offset="0x28.22" size="0x0.6" />
+	<field name="bc_group8" descr="" access="RO" offset="0x28.28" size="0x0.4" />
+	<field name="bs_group9" descr="" access="RO" offset="0x2c.0" size="0x0.6" />
+	<field name="bc_group9" descr="" access="RO" offset="0x2c.6" size="0x0.4" />
+	<field name="bs_group10" descr="" access="RO" offset="0x2c.11" size="0x0.6" />
+	<field name="bc_group10" descr="" access="RO" offset="0x2c.17" size="0x0.4" />
+	<field name="bs_group11" descr="" access="RO" offset="0x2c.22" size="0x0.6" />
+	<field name="bc_group11" descr="" access="RO" offset="0x2c.28" size="0x0.4" />
+	<field name="bs_group12" descr="" access="RO" offset="0x30.0" size="0x0.6" />
+	<field name="bc_group12" descr="" access="RO" offset="0x30.6" size="0x0.4" />
+	<field name="bs_group13" descr="" access="RO" offset="0x30.11" size="0x0.6" />
+	<field name="bc_group13" descr="" access="RO" offset="0x30.17" size="0x0.4" />
+	<field name="bs_group14" descr="" access="RO" offset="0x30.22" size="0x0.6" />
+	<field name="bc_group14" descr="" access="RO" offset="0x30.28" size="0x0.4" />
+	<field name="bs_group15" descr="" access="RO" offset="0x34.0" size="0x0.6" />
+	<field name="bc_group15" descr="" access="RO" offset="0x34.6" size="0x0.4" />
+	<field name="c_group0" descr="" access="RO" offset="0x34.11" size="0x0.10" />
+	<field name="c_group1" descr="" access="RO" offset="0x34.22" size="0x0.10" />
+	<field name="c_group2" descr="" access="RO" offset="0x38.0" size="0x0.10" />
+	<field name="c_group3" descr="" access="RO" offset="0x38.11" size="0x0.10" />
+	<field name="c_group4" descr="" access="RO" offset="0x38.22" size="0x0.10" />
+	<field name="c_group5" descr="" access="RO" offset="0x3c.0" size="0x0.10" />
+	<field name="c_group6" descr="" access="RO" offset="0x3c.11" size="0x0.10" />
+	<field name="c_group7" descr="" access="RO" offset="0x3c.22" size="0x0.10" />
+	<field name="c_group8" descr="" access="RO" offset="0x40.0" size="0x0.10" />
+	<field name="c_group9" descr="" access="RO" offset="0x40.11" size="0x0.10" />
+	<field name="c_group10" descr="" access="RO" offset="0x40.22" size="0x0.10" />
+	<field name="c_group11" descr="" access="RO" offset="0x44.0" size="0x0.10" />
+	<field name="c_group12" descr="" access="RO" offset="0x44.11" size="0x0.10" />
+	<field name="d_group0" descr="" access="RO" offset="0x44.22" size="0x0.10" />
+	<field name="d_group1" descr="" access="RO" offset="0x48.0" size="0x0.10" />
+	<field name="d_group2" descr="" access="RO" offset="0x48.11" size="0x0.10" />
+	<field name="d_group3" descr="" access="RO" offset="0x48.22" size="0x0.10" />
+	<field name="d_group4" descr="" access="RO" offset="0x4c.0" size="0x0.10" />
+	<field name="d_group5" descr="" access="RO" offset="0x4c.11" size="0x0.10" />
+	<field name="d_group6" descr="" access="RO" offset="0x4c.22" size="0x0.10" />
+	<field name="d_group7" descr="" access="RO" offset="0x50.0" size="0x0.10" />
+	<field name="d_group8" descr="" access="RO" offset="0x50.11" size="0x0.10" />
+	<field name="d_group9" descr="" access="RO" offset="0x50.22" size="0x0.10" />
+	<field name="d_group10" descr="" access="RO" offset="0x54.0" size="0x0.10" />
+	<field name="d_group11" descr="" access="RO" offset="0x54.11" size="0x0.10" />
+	<field name="d_group12" descr="" access="RO" offset="0x54.22" size="0x0.10" />
+	<field name="za_group4" descr="" access="RO" offset="0x58.2" size="0x0.6" />
+	<field name="za_group3" descr="" access="RO" offset="0x58.8" size="0x0.6" />
+	<field name="za_group2" descr="" access="RO" offset="0x58.14" size="0x0.6" />
+	<field name="za_group1" descr="" access="RO" offset="0x58.20" size="0x0.6" />
+	<field name="za_group0" descr="" access="RO" offset="0x58.26" size="0x0.6" />
+	<field name="zd_group0" descr="" access="RO" offset="0x5c.20" size="0x0.5" />
+	<field name="za_group5" descr="" access="RO" offset="0x5c.26" size="0x0.6" />
+	<field name="x_group1" descr="" access="RO" offset="0x64.0" size="0x0.16" />
+	<field name="x_group0" descr="" access="RO" offset="0x64.16" size="0x0.16" />
+	<field name="x_group5" descr="" access="RO" offset="0x68.0" size="0x0.6" />
+	<field name="x_group4" descr="" access="RO" offset="0x68.6" size="0x0.4" />
+	<field name="x_group3" descr="" access="RO" offset="0x68.10" size="0x0.6" />
+	<field name="x_group2" descr="" access="RO" offset="0x68.16" size="0x0.16" />
+	<field name="x_group7" descr="" access="RO" offset="0x6c.15" size="0x0.13" />
+	<field name="x_group6" descr="" access="RO" offset="0x6c.28" size="0x0.4" />
+	<field name="u_group1" descr="" access="RO" offset="0x70.0" size="0x0.16" />
+	<field name="u_group0" descr="" access="RO" offset="0x70.16" size="0x0.16" />
+	<field name="u_group3" descr="" access="RO" offset="0x74.0" size="0x0.16" />
+	<field name="u_group2" descr="" access="RO" offset="0x74.16" size="0x0.16" />
+	<field name="u_group5" descr="" access="RO" offset="0x78.0" size="0x0.16" />
+	<field name="u_group4" descr="" access="RO" offset="0x78.16" size="0x0.16" />
+	<field name="u_group7" descr="" access="RO" offset="0x7c.0" size="0x0.16" />
+	<field name="u_group6" descr="" access="RO" offset="0x7c.16" size="0x0.16" />
+	<field name="u_group9" descr="" access="RO" offset="0x80.0" size="0x0.16" />
+	<field name="u_group8" descr="" access="RO" offset="0x80.16" size="0x0.16" />
+	<field name="u_group11" descr="" access="RO" offset="0x84.0" size="0x0.16" />
+	<field name="u_group10" descr="" access="RO" offset="0x84.16" size="0x0.16" />
+	<field name="u_group13" descr="" access="RO" offset="0x88.0" size="0x0.16" />
+	<field name="u_group12" descr="" access="RO" offset="0x88.16" size="0x0.16" />
+	<field name="u_group15" descr="" access="RO" offset="0x8c.0" size="0x0.16" />
+	<field name="u_group14" descr="" access="RO" offset="0x8c.16" size="0x0.16" />
+	<field name="ha_group" descr="" access="RO" high_bound="15" low_bound="0" offset="0x90.24" size="0x10.0" />
+	<field name="hb_group" descr="" access="RO" high_bound="15" low_bound="0" offset="0xa0.24" size="0x10.0" />
+	<field name="t_group1" descr="" access="RO" offset="0xb0.0" size="0x0.16" />
+	<field name="t_group0" descr="" access="RO" offset="0xb0.16" size="0x0.16" />
+	<field name="t_group4" descr="" access="RO" offset="0xb4.0" size="0x0.8" />
+	<field name="t_group3" descr="" access="RO" offset="0xb4.8" size="0x0.8" />
+	<field name="t_group2" descr="" access="RO" offset="0xb4.16" size="0x0.16" />
+	<field name="t_group5" descr="" access="RO" offset="0xb8.30" size="0x0.2" />
+	<field name="g_group1" descr="" access="RO" offset="0xbc.0" size="0x0.16" />
+	<field name="g_group0" descr="" access="RO" offset="0xbc.16" size="0x0.16" />
+	<field name="g_group3" descr="" access="RO" offset="0xc0.0" size="0x0.16" />
+	<field name="g_group2" descr="" access="RO" offset="0xc0.16" size="0x0.16" />
+	<field name="g_group5" descr="" access="RO" offset="0xc4.0" size="0x0.16" />
+	<field name="g_group4" descr="" access="RO" offset="0xc4.16" size="0x0.16" />
+	<field name="g_group7" descr="" access="RO" offset="0xc8.0" size="0x0.16" />
+	<field name="g_group6" descr="" access="RO" offset="0xc8.16" size="0x0.16" />
+	<field name="g_group9" descr="" access="RO" offset="0xcc.0" size="0x0.16" />
+	<field name="g_group8" descr="" access="RO" offset="0xcc.16" size="0x0.16" />
+	<field name="ah_group2" descr="" access="RO" offset="0xd0.6" size="0x0.5" />
+	<field name="ah_group1" descr="" access="RO" offset="0xd0.11" size="0x0.5" />
+	<field name="ah_group7" descr="" access="RO" offset="0xd4.6" size="0x0.4" />
+	<field name="ah_group6" descr="" access="RO" offset="0xd4.10" size="0x0.5" />
+	<field name="ah_group5" descr="" access="RO" offset="0xd4.15" size="0x0.4" />
+	<field name="ah_group4" descr="" access="RO" offset="0xd4.19" size="0x0.6" />
+	<field name="ah_group3" descr="" access="RO" offset="0xd4.25" size="0x0.7" />
 </node>
 
 <node name="sltr_periodic_non_destructive_ext" descr="" size="0x124.0" >
