@@ -387,7 +387,7 @@ bool load_matching_device_config(const std::string& path,
         return true;
     }
 
-    error = "No matching device config found for hw_dev_id=" + std::to_string(target_hw_dev_id) +
-            " chip_rev_id=" + std::to_string(target_chip_rev_id) + " part_number=" + target_part_number;
+    // hw_dev_id / chip_rev_id are kept in the MFT log by the caller, not in the user-facing error
+    error = "No matching config found for Part Number: " + target_part_number;
     return false;
 }
