@@ -507,7 +507,8 @@ int EfuseTool::Run()
         std::string part_number;
         if (!read_device_part_number(mf, part_number))
         {
-            fprintf(stderr, "-E- Failed to read part number from device (MQIS register).\n");
+            LOG.Error("Failed to read part number from device (MQIS register)");
+            fprintf(stderr, "-E- Failed to read part number from device.\n");
             goto cleanup;
         }
 
@@ -536,6 +537,8 @@ int EfuseTool::Run()
                                          schema_version,
                                          config_error))
         {
+            LOG.Error(config_error + " hw_dev_id=" + std::to_string(hw_dev_id) +
+                      " chip_rev_id=" + std::to_string(chip_rev));
             fprintf(stderr, "-E- %s\n", config_error.c_str());
             goto cleanup;
         }
