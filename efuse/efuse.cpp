@@ -156,6 +156,9 @@ struct MrfvEntry
     u_int8_t fuse_id;
     u_int8_t v;
     u_int8_t fm;
+    u_int8_t fm2;
+    // Selects which of fm/fm2 holds the mismatch status for the queried fuse_id.
+    u_int8_t fm_sel;
     // RAW_AND_VALUE layout
     u_int8_t value_valid;
     u_int32_t value_base;
@@ -266,6 +269,8 @@ static reg_access_status_t query_mrfv_switch(mfile* mf, int fuse_id, int inst, M
     entry.fuse_id = mrfv.fuse_id;
     entry.v = mrfv.v;
     entry.fm = mrfv.fm;
+    entry.fm2 = mrfv.fm2;
+    entry.fm_sel = mrfv.fm_sel;
     entry.value_valid = mrfv.data.MRFV_RAW_AND_VALUE_ext.value_valid;
     entry.value_base = mrfv.data.MRFV_RAW_AND_VALUE_ext.value_base;
     entry.value_exponent = mrfv.data.MRFV_RAW_AND_VALUE_ext.value_exponent;
@@ -297,6 +302,8 @@ static reg_access_status_t query_mrfv_hca(mfile* mf, int fuse_id, int inst, Mrfv
     entry.fuse_id = mrfv.fuse_id;
     entry.v = mrfv.v;
     entry.fm = mrfv.fm;
+    entry.fm2 = mrfv.fm2;
+    entry.fm_sel = mrfv.fm_sel;
     entry.value_valid = mrfv.data.MRFV_RAW_AND_VALUE_ext.value_valid;
     entry.value_base = mrfv.data.MRFV_RAW_AND_VALUE_ext.value_base;
     entry.value_exponent = mrfv.data.MRFV_RAW_AND_VALUE_ext.value_exponent;
@@ -347,15 +354,20 @@ static void
     // [CVB-DISABLED] was: is_cvb ? cvb_rail_name(voltage_type) : fuse.name;
     std::string rail = fuse.name;
 
-    if (mrfv.fm == 1)
+    // Per PRM, fm_sel picks which field reports the fuse mismatch for the queried fuse_id.
+    // Deliberately not gated on MCAM capability bit 95: FW predating fm2/fm_sel returns fm_sel=0,
+    // so we fall back to fm. Gate on the bit if older NICs ever need explicit support.
+    uint8_t fuse_mismatch = (mrfv.fm_sel == 1) ? mrfv.fm2 : mrfv.fm;
+
+    if (fuse_mismatch == 1)
     {
         readings.push_back({rail, instance_label(inst), true, 0.0});
         return;
     }
-    else if (mrfv.fm != 0)
+    else if (fuse_mismatch != 0)
     {
-        LOG.Debug("fuse_id=" + std::to_string(fuse.fuse_id) + " instance_id=" + std::to_string(inst) +
-                  " unexpected fm=" + std::to_string(mrfv.fm));
+        LOG.Debug("fuse_id=" + std::to_string(fuse.fuse_id) + " instance_id=" + std::to_string(inst) + " fm_sel=" +
+                  std::to_string(mrfv.fm_sel) + " unexpected fuse mismatch value=" + std::to_string(fuse_mismatch));
         return;
     }
 
