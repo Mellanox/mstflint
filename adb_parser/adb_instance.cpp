@@ -1431,7 +1431,7 @@ bool _AdbInstance_impl<e, O>::isConditionalNode()
 template<bool e, typename O>
 bool _AdbInstance_impl<e, O>::containsDynamicArray()
 {
-    if (!isNode())
+    if (!isNode() || subItems.empty())
     {
         return false;
     }
