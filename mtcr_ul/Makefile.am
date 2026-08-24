@@ -77,4 +77,4 @@ libraryinclude_HEADERS = $(top_srcdir)/include/mtcr_ul/mtcr.h  $(top_srcdir)/inc
 
 install-exec-hook:
 	rm -f $(DESTDIR)$(pkglibdir)/libmtcr_ul.so* $(DESTDIR)$(pkglibdir)/libmtcr_ul.la
-	ln -snf mstflint/libmtcr_ul.a $(DESTDIR)$(libdir)/
+	ln -snf mstflint/libmtcr_ul.a $(DESTDIR)$(libdir)/libmtcr_ul.a

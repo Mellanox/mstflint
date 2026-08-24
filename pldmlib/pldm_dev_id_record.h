@@ -40,8 +40,6 @@
 #include <vector>
 #include "pldm_record_descriptor.h"
 
-class PldmRecordDescriptor;
-
 class PldmDevIdRecord
 {
 public:
@@ -50,10 +48,12 @@ public:
     bool unpack(PldmBuffer& buff);
     int getComponentImageIndex() const;
     std::vector<u_int8_t> getComponentsIndexes() const;
+    std::vector<PldmRecordDescriptor*> getRecordDescriptors() const { return recordDescriptors; };
     std::string GetVendorDefinedValue(PldmRecordDescriptor::VendorDefinedType type) const;
-    std::string getDescription() const;
+    PldmRecordDescriptor* findVendorDefinedDescriptor(PldmRecordDescriptor::VendorDefinedType type) const;
+    std::string getComponentImageSetVersionString() const { return componentImageSetVersionString; };
     bool getDescriptor(u_int16_t type, u_int16_t& descriptor) const;
-    void print(FILE* fp);
+
     void reset();
 
 private:

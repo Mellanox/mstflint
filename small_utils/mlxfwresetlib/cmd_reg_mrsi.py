@@ -52,11 +52,13 @@ class CmdRegMrsi():
         {8, 'OS Crash Dump in progress'},
         {9, 'OS Crash Dump is complete'},
         {10, 'FW Fault Crash Dump in progress'},
-        {11, 'FW Fault Crash Dump is complete'}
+        {11, 'FW Fault Crash Dump is complete'},
+        {12, 'Low-Power standby (BlueField4)'}
     ]
 
     OS_IS_RUNNING = 5
     LOW_POWER_STANDBY = 6
+    LOW_POWER_STANDBY_BF4 = 12
     EMBEDDED_CPU_DEVICE = 1
 
     def __init__(self, reg_access):

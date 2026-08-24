@@ -78,7 +78,7 @@ endif
 LOADLIBES   += -lcmdif -ldev_mgt -lreg_access -ltools_layouts -lmtcr_ul
 endif
 
-LOADLIBES   += -ldl -lpthread
+LOADLIBES   += -ldl -lpthread -lm
 
 ifeq ($(MACH), $(filter $(MACH), ppc64 ppc64le))
 CFLAGS += -m64

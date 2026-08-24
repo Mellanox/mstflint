@@ -124,6 +124,36 @@ static bool isMinorReserved(const std::string& minor)
     return (first == 'X' || first == 'Y' || first == 'Z');
 }
 
+bool areMajorCompatible(const char* devicePsid, const char* imagePsid)
+{
+    if (devicePsid == nullptr || imagePsid == nullptr)
+    {
+        return false;
+    }
+    if (strncmp(devicePsid, imagePsid, PSID_MAX_LEN) == 0)
+    {
+        return true;
+    }
+    if (!isPsidMajorMinorFormat(devicePsid) || !isPsidMajorMinorFormat(imagePsid))
+    {
+        return false;
+    }
+    if (getHeader(devicePsid) != getHeader(imagePsid))
+    {
+        return false;
+    }
+    if (getMajor(devicePsid) != getMajor(imagePsid))
+    {
+        return false;
+    }
+    std::string imageMinor = std::string(imagePsid + PSID_MINOR_OFFSET, PSID_MINOR_LEN);
+    if (isMinorReserved(imageMinor))
+    {
+        return false;
+    }
+    return true;
+}
+
 PsidValidator::PsidValidator(const char* devicePsid, const char* imagePsid, const MinorPsidLockStatus& lockStatus) :
     _lockStatus(lockStatus)
 {

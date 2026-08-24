@@ -514,22 +514,22 @@ def main():
         epilog="""
 Examples:
   # Generate binary files (default mode)
-  python3 generate_pgcb_commands.py --input input.txt
+  mstgenerate_pgcb_commands --input input.txt
 
   # Generate hex text files
-  python3 generate_pgcb_commands.py --input input.txt --mode hex
+  mstgenerate_pgcb_commands --input input.txt --mode hex
 
   # Generate binary files with custom prefix and output directory
-  python3 generate_pgcb_commands.py --input input.txt --output-prefix my_buffer --output ./output_dir
+  mstgenerate_pgcb_commands --input input.txt --output-prefix my_buffer --output ./output_dir
 
   # Generate shell script
-  python3 generate_pgcb_commands.py --input input.txt --mode script --output commands.sh
+  mstgenerate_pgcb_commands --input input.txt --mode script --output commands.sh
 
   # Use different device type
-  python3 generate_pgcb_commands.py --input input.txt --device-type hca
+  mstgenerate_pgcb_commands --input input.txt --device-type hca
 
   # Use custom mlxreg path
-  python3 generate_pgcb_commands.py --input input.txt --mlxreg-path /path/to/mlxreg
+  mstgenerate_pgcb_commands --input input.txt --mlxreg-path /path/to/mlxreg
 
 Input file format (one command per line):
   --get --reg_name SOME_REG --indexes "param1=0x1,param2=0x2"

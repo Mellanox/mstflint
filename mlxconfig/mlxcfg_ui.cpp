@@ -56,6 +56,8 @@
 #include "mlxcfg_utils.h"
 #include "mft_utils/mft_utils.h"
 #include "common/tools_string.h"
+#include "mlxfwops/lib/fs_pldm.h"
+#include "pldm_utils/pldm_utils.h"
 
 using nbu::mft::common::string_format;
 
@@ -867,10 +869,15 @@ mlxCfgStatus MlxCfg::queryDevCfg(Commander* commander,
 mlxCfgStatus MlxCfg::queryDevCfg(const char* dev, int devIndex, bool printNewCfg)
 {
     bool isWriteOperation = false;
-    Commander* commander = createCommander(string(dev), false, false);
+    Commander* commander = createCommander(string(dev), false, _mlxParams.force);
     if (!commander)
     {
         return MLX_CFG_ERROR;
+    }
+
+    if (_mlxParams.force)
+    {
+        commander->setSkipChecksLevel(SkipChecksLevel::RespectBlocklist);
     }
 
     mlxCfgStatus rc = queryDevCfg(commander, dev, isWriteOperation, devIndex, printNewCfg);
@@ -1103,6 +1110,11 @@ mlxCfgStatus MlxCfg::handlecompleteSetWithDefault(Commander* commander)
 
 mlxCfgStatus MlxCfg::setDevCfgWithParams(Commander* commander)
 {
+    if (_mlxParams.force)
+    {
+        commander->setSkipChecksLevel(SkipChecksLevel::RespectBlocklist);
+    }
+
     // check if there is a set of DISABLE_SLOT_POWER
     // for mlx_config_name
     for (vector<ParamView>::iterator p = _mlxParams.setParams.begin(); p != _mlxParams.setParams.end(); ++p)
@@ -1153,7 +1165,7 @@ mlxCfgStatus MlxCfg::setDevCfgWithParams(Commander* commander)
     if (_mlxParams.force)
     {
         printf("\n-W- Force flag specified, the validity of the Parameters will not be checked !\n");
-        printf("-W- Incorrect configuration might yield unexpected results. running in this mode is not recommended.");
+        printf("-W- Incorrect configuration might yield unexpected results. running in this mode is not recommended.\n");
     }
 
     if (!_mlxParams.completeSetWithDefault)
@@ -1169,7 +1181,7 @@ mlxCfgStatus MlxCfg::setDevCfgWithParams(Commander* commander)
     try
     {
         printf("Applying... ");
-        commander->setCfg(_mlxParams.setParams, _mlxParams.force);
+        commander->setCfg(_mlxParams.setParams);
         printf("Done!\n");
         const char* resetStr = commander->loadConfigurationGetStr();
         printf("-I- %s\n", resetStr);
@@ -1204,7 +1216,7 @@ Commander* MlxCfg::createCommander(const string& device, bool forceCreate, bool 
 
 mlxCfgStatus MlxCfg::setDevCfg()
 {
-    Commander* commander = createCommander(_mlxParams.device, false, false);
+    Commander* commander = createCommander(_mlxParams.device, false, _mlxParams.force);
     if (!commander)
     {
         return MLX_CFG_ERROR;
@@ -1507,7 +1519,7 @@ mlxCfgStatus MlxCfg::tlvLine2DwVec(const std::string& tlvStringLine, std::vector
 mlxCfgStatus MlxCfg::resetDevCfg(const char* dev)
 {
     mlxCfgStatus rc = MLX_CFG_OK;
-    Commander* commander = createCommander(string(dev), false, false);
+    Commander* commander = createCommander(string(dev), false, _mlxParams.force);
     if (!commander)
     {
         return MLX_CFG_ERROR;
@@ -1545,7 +1557,8 @@ mlxCfgStatus MlxCfg::showDevConfs()
 
     try
     {
-        commander = Commander::create(_mlxParams.device, _mlxParams.dbName, false, _mlxParams.deviceType, false);
+        bool useMaxPort = false || _mlxParams.force;
+        commander = Commander::create(_mlxParams.device, _mlxParams.dbName, false, _mlxParams.deviceType, useMaxPort);
         printf("\nList of configurations the device %s may support:\n", _mlxParams.device.c_str());
         commander->printLongDesc(stdout);
     }
@@ -1584,8 +1597,34 @@ mlxCfgStatus MlxCfg::readBinFile(string fileName, vector<u_int32_t>& buff)
     return MLX_CFG_OK;
 }
 
+bool MlxCfg::isPldmFile(const string& path)
+{
+    std::ifstream ifs(path.c_str(), std::ios::in | std::ios::binary);
+    u_int8_t header[16] = {0};
+    if (ifs)
+        ifs.read(reinterpret_cast<char*>(header), sizeof(header));
+    for (const auto& entry : PACKAGE_HEADER_FORMAT_REVISION_MAP)
+    {
+        const std::vector<u_int8_t>& id = entry.second;
+        if (std::equal(id.begin(), id.end(), header))
+            return true;
+    }
+    return false;
+}
+
 mlxCfgStatus MlxCfg::readNVInputFile(vector<u_int32_t>& buff)
 {
+    if (isPldmFile(_mlxParams.NVInputFile))
+    {
+        if (FsPldmOperations::GetComponentData(
+              _mlxParams.NVInputFile,
+              {ComponentIdentifier::Identifier_OEM_NVCONFIG_Comp, ComponentIdentifier::Identifier_MLNX_NVCONFIG_Comp},
+              buff))
+        {
+            return MLX_CFG_OK;
+        }
+        return err(true, "Failed to read PLDM file: %s", _mlxParams.NVInputFile.c_str());
+    }
     return readBinFile(_mlxParams.NVInputFile, buff);
 }
 
@@ -2303,9 +2342,10 @@ std::vector<std::pair<std::string, int>> MlxCfg::getAggregatedDeviceList(const s
 {
     std::vector<std::pair<std::string, int>> devices;
 
+    std::string aggregatedDevicePath = resolveAggregatedDeviceFilePath(aggregatedDevice);
     // Parse JSON array: [{"device": "name", "ga": 0}, ...]
 	Json::Value root;
-    ifstream jsonInputStream(aggregatedDevice);
+    ifstream jsonInputStream(aggregatedDevicePath);
     Json::CharReaderBuilder builder;
     builder["collectComments"] = true;
     JSONCPP_STRING errs;
@@ -2530,8 +2570,8 @@ mlxCfgStatus MlxCfg::setSingleDeviceSystemConf(const std::string& mstDevicePath,
         return MLX_CFG_ERROR;
     }
 
-    // For system configuration, ignore FW write support check to allow writing anyway
-    commander->setIgnoreWriteSupport(true);
+    // For system configuration, ignore FW write support check unconditionally
+    commander->setSkipChecksLevel(SkipChecksLevel::All);
     string devName = getDeviceName(commander->mf());
     std::shared_ptr<SystemConfiguration> config = commander->getSystemConfiguration(confName, confAsic, devName);
     if (!config)

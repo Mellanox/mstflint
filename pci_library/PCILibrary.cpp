@@ -216,7 +216,6 @@ namespace Regex = mstflint::common::regex;
             }
             if (dm_is_livefish_mode(mf) || !(dm_dev_is_hca(DeviceType)))
             {
-                printf("device name: %s\n", pciDevices[count].dev_name);
                 LOG.Info(std::string("Only Functional HCA devices are supported. Skipping device: ") +
                          pciDevices[count].dev_name);
                 mclose(mf);

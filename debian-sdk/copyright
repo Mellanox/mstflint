@@ -1,0 +1,20 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: mstflint
+Source: https://github.com/Mellanox/mstflint
+
+Files: *
+Copyright: 2002-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+License: BSD-2-clause or GPL-2
+
+License: BSD-2-clause
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the conditions of the OpenIB.org
+ BSD license are met.
+
+License: GPL-2
+ This program is free software; you can redistribute it and/or modify it under
+ the terms of the GNU General Public License version 2 as published by the Free
+ Software Foundation.
+ .
+ On Debian systems, the full text of the GNU General Public License version 2
+ can be found in the file /usr/share/common-licenses/GPL-2.

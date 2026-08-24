@@ -157,7 +157,7 @@ extern "C"
         DeviceBlueField_HwId = 0x211,
         DeviceBlueField2_HwId = 0x214,
         DeviceBlueField3_HwId = 0x21c,
-        DeviceBlueField4_HwId = 0x220,
+        DeviceBlueField4_HwId = 0x224,
         DeviceSwitchIB2_HwId = 0x24b,
         DeviceCableQSFP_HwId = 0x0d,
         DeviceCableQSFPaging_HwId = 0x11,
@@ -318,6 +318,13 @@ extern "C"
      * A predicate returning if the device is a gpu device
      */
     int dm_is_gpu(dm_dev_id_t type);
+
+    /**
+     * Reads MGIR.cpo_indication into *ptr_cpo_ind (1 = CPO system).
+     * Returns MFE_OK on success, MFE_ERROR on register-access failure
+     * (in which case *ptr_cpo_ind is left untouched).
+     */
+    int dm_is_cpo(mfile* mf, u_int8_t* ptr_cpo_ind);
 
     /**
      * A predicate returning if the device is a gr100

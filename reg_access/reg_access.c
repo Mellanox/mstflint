@@ -88,6 +88,7 @@
 #define REG_ID_MQIS      0x9064
 #define REG_ID_MTCQ      0x9065
 #define REG_ID_MKDC      0x9066
+#define REG_ID_MRFV      0x906d
 #define REG_ID_MCAM      0x907f
 /* TODO: get correct register ID for mfrl mfai */
 #define REG_ID_MFRL  0x9028
@@ -96,6 +97,8 @@
 
 #define REG_ID_MGPIR 0x9100
 #define REG_ID_MMTA  0x9113
+#define REG_ID_MTECR 0x9109
+#define REG_ID_MTSH  0x910a
 #define REG_ID_MDFCR 0x9101
 #define REG_ID_MDRCR 0x9102
 #define REG_ID_MDSR  0x9110
@@ -245,6 +248,23 @@ reg_access_status_t reg_access_mtmp(mfile* mf, reg_access_method_t method, struc
 reg_access_status_t reg_access_mmta(mfile* mf, reg_access_method_t method, struct reg_access_switch_mmta_reg_ext* mmta)
 {
     REG_ACCCESS(mf, method, REG_ID_MMTA, mmta, mmta_reg_ext, reg_access_switch);
+}
+
+/************************************
+* Function: reg_access_mtsh
+************************************/
+reg_access_status_t reg_access_mtsh(mfile* mf, reg_access_method_t method, struct reg_access_switch_mtsh_reg_ext* mtsh)
+{
+    REG_ACCCESS(mf, method, REG_ID_MTSH, mtsh, mtsh_reg_ext, reg_access_switch);
+}
+
+/************************************
+* Function: reg_access_mtecr_ext
+************************************/
+reg_access_status_t
+  reg_access_mtecr_ext(mfile* mf, reg_access_method_t method, struct reg_access_switch_mtecr_ext* mtecr)
+{
+    REG_ACCCESS(mf, method, REG_ID_MTECR, mtecr, mtecr_ext, reg_access_switch);
 }
 
 /************************************
@@ -517,6 +537,15 @@ reg_access_status_t reg_access_mcda(mfile* mf, reg_access_method_t method, struc
 reg_access_status_t reg_access_mqis(mfile* mf, reg_access_method_t method, struct reg_access_hca_mqis_reg_ext* mqis)
 {
     REG_ACCCESS(mf, method, REG_ID_MQIS, mqis, mqis_reg_ext, reg_access_hca);
+}
+
+/************************************
+* Function: reg_access_mrfv_switch
+************************************/
+reg_access_status_t
+  reg_access_mrfv_switch(mfile* mf, reg_access_method_t method, struct reg_access_switch_MRFV_ext* mrfv)
+{
+    REG_ACCCESS(mf, method, REG_ID_MRFV, mrfv, MRFV_ext, reg_access_switch);
 }
 
 /************************************

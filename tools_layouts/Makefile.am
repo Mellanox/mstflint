@@ -33,7 +33,15 @@
 # Makefile.am -- Process this file with automake to produce Makefile.in
 AM_CPPFLAGS = -I$(top_srcdir)/${MTCR_CONFIG_DIR} -I$(top_srcdir)/common
 AM_CFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC)
+# The SDK ships its PRM databases under a private data root ($(pkgdatadir)/sdk)
+# so its package does not clash with the main mstflint package (which owns
+# $(pkgdatadir)). getDefaultDBName() resolves databases relative to DATA_PATH,
+# so it must point at that same private root when building the SDK.
+if ENABLE_MSTFLINT_SDK
+AM_CXXFLAGS =  -DDATA_PATH=\"$(pkgdatadir)/sdk\"
+else
 AM_CXXFLAGS =  -DDATA_PATH=\"$(pkgdatadir)\"
+endif
 
 SUBDIRS = ${ADABE_DBS}
 
@@ -41,7 +49,7 @@ noinst_LTLIBRARIES = libadb_utils.la libtools_layouts.la libmlxarchive_layouts.l
 
 toolslayoutsincludedir = $(includedir)/mstflint/tools_layouts/
 
-toolslayoutsinclude_HEADERS = icmd_layouts.h icmd_hca_layouts.h adb_to_c_utils.h
+toolslayoutsinclude_HEADERS = icmd_layouts.h icmd_hca_layouts.h adb_to_c_utils.h hca_cap_types_enums.h
 libadb_utils_la_SOURCES = adb_to_c_utils.c
 
 libtools_layouts_la_SOURCES = prm_adb_db.cpp prm_adb_db.h \

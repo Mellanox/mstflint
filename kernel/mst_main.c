@@ -107,11 +107,7 @@ LIST_HEAD(mst_devices);
 #define BLUEFIELD_DPU_AUX_PCI_ID 49873
 #define BLUEFIELD3_PCI_ID 41692
 #define BLUEFIELD3_RMA_PCI_ID 541
-#define BLUEFIELD4_CRYPTO_ENABLED_PCI_ID     41693
-#define BLUEFIELD4_CRYPTO_DISABLED_PCI_ID    41694
 #define BLUEFIELD4_NETWORK_CONTROLLER_PCI_ID 41695
-#define BLUEFIELD4_MANAGMENT_INTERFACE_PCI_ID 49878
-#define BLUEFIELD4_PCI_ID 41695
 #define SWITCHIB_PCI_ID 52000
 #define SWITCHIB2_PCI_ID 53000
 #define QUANTUM_PCI_ID 54000
@@ -159,7 +155,7 @@ LIST_HEAD(mst_devices);
 #define LF_BLUEFIELD_PCI_ID 0x211
 #define LF_BLUEFIELD2_PCI_ID 0x214
 #define LF_BLUEFIELD3_PCI_ID 0x21c
-#define LF_BLUEFIELD4_PCI_ID 0x220
+#define LF_BLUEFIELD4_PCI_ID 0x224
 
 static struct pci_device_id mst_livefish_pci_table[] = {{PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, LF_SPECTRUM_PCI_ID)},
                                                         {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, LF_SWITCHIB2_PCI_ID)},
@@ -222,10 +218,7 @@ static struct pci_device_id supported_pci_devices[] = {{PCI_DEVICE(MST_MELLANOX_
                                                        {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, BLUEFIELD_DPU_AUX_PCI_ID)},
                                                        {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, BLUEFIELD3_PCI_ID)},
                                                        {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, BLUEFIELD3_RMA_PCI_ID)},
-                                                       {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, BLUEFIELD4_CRYPTO_ENABLED_PCI_ID)},
-                                                       {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, BLUEFIELD4_CRYPTO_DISABLED_PCI_ID)},
                                                        {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, BLUEFIELD4_NETWORK_CONTROLLER_PCI_ID)},
-                                                       {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, BLUEFIELD4_MANAGMENT_INTERFACE_PCI_ID)},
                                                        {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, SWITCHIB_PCI_ID)},
                                                        {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, SWITCHIB2_PCI_ID)},
                                                        {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, QUANTUM_PCI_ID)},
@@ -2335,8 +2328,8 @@ static int __init mst_init(void)
         if (!dev)
         {
             mst_err("failed to mst_device_create\n");
+            continue; /* PCICONF creation failed, no point creating a PCIMEM device */
         }
-        continue; /* PCICONF creation failed, no point creating a PCIMEM device */
 
         /*
          * for livefish devices we only allocate PCICONF

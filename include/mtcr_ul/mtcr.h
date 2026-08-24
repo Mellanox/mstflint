@@ -51,10 +51,7 @@ extern "C"
 #define INITIALIZING_BIT_OFFSET_IN_VSC_RECOVERY_SPACE 0
 #define AUTHENTICATION_FAILURE                        0xffa6
 
-#define BLUEFIELD4_PCI_DEVICE_ID_CRYPTO_ENABLED 0xA2DD
-#define BLUEFIELD4_PCI_DEVICE_ID_CRYPTO_DISABLED 0xA2DE
 #define BLUEFIELD4_PCI_DEVICE_ID_NETWORK_CONTROLLER 0xA2DF
-#define BLUEFIELD4_PCI_DEVICE_ID_MANAGMENT_INTERFACE 0xc2d6
 
 typedef enum mtcr_access_method {
     MTCR_ACCESS_ERROR  = MST_ERROR,
@@ -129,6 +126,8 @@ int mclose(mfile* mf);
 void get_pci_dev_rdma(mfile* mf, char* buf);
 
 unsigned char mset_i2c_secondary(mfile* mf, unsigned char new_i2c_secondary);
+unsigned char mget_i2c_secondary(mfile* mf);
+void set_force_i2c_address(int i2c_address);
 
 int mget_mdevs_flags(mfile* mf, u_int32_t* devs_flags);
 

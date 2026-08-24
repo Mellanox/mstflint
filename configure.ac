@@ -1,4 +1,4 @@
-# Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,7 +28,7 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-AC_INIT(mstflint, 4.36.0, akiselman-org@exchange.nvidia.com)
+AC_INIT(mstflint, 4.37.0, akiselman-org@exchange.nvidia.com)
 
 AC_DEFINE_UNQUOTED([PROJECT], ["mstflint"], [Firmware Burning and Diagnostics Tools for NVIDIA network devices.])
 AC_SUBST([PROJECT])
@@ -41,6 +41,18 @@ AM_INIT_AUTOMAKE([foreign subdir-objects])
 dnl Checks for programs
 AC_PROG_CC
 AC_PROG_CXX
+
+AC_MSG_CHECKING([whether the C library is musl])
+AC_EGREP_CPP([mstflint_is_musl],
+    [#include <stdlib.h>
+     #if defined(__linux__) && !defined(__GLIBC__)
+     mstflint_is_musl
+     #endif],
+    [mstflint_musl=yes], [mstflint_musl=no])
+AC_MSG_RESULT([$mstflint_musl])
+AS_IF([test "x$mstflint_musl" = xyes],
+    [CPPFLAGS="$CPPFLAGS -D_GNU_SOURCE"])
+
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 LT_INIT
 AC_CONFIG_HEADERS(config.h)
@@ -63,8 +75,9 @@ AC_COMPILE_IFELSE(
 OS=$(uname -s)
 KERNEL_VER=`uname -r | egrep -E -o '[[0-9]]+\.[[0-9]]+' | head -1`
 OFED_VER=`ofed_info -s | egrep -E -o '[[0-9]]+\.[[0-9]]+' | head -1`
-OFED_EXIST=`ofed_info -s`
-OFED_NOT_EXIST="ofed_info: command not found"
+MIN_OFED_VER="5.6"
+MIN_RDMA_CORE_VER="2607"
+RDMA_CORE_VER=`{ rpm -q rdma-core --queryformat '%{VERSION}\n' 2>/dev/null; dpkg-query -W -f='${Version}\n' rdma-core 2>/dev/null; } | egrep -E -o '^[[0-9]]+' | head -1`
 MTCR_CONF_DIR=""
 LDL=""
 LDFLAGS="$LDFLAGS -lstdc++"
@@ -73,13 +86,15 @@ default_en_rdmem="no"
 default_en_nvml="no"
 default_en_vfio="no"
 default_en_i2c="no"
+default_en_mstflint_sdk="no"
 OFED_VERSION_CHK=0
 KERNEL_BUILD_CHK=0
 
-if test "x$OFED_EXIST" != "x$OFED_NOT_EXIST"; then
-    if test $(echo $OFED_VER 5.6 | tr " " "\n" | sort -V | tail -n 1) == $OFED_VER ; then
-        OFED_VERSION_CHK=1
-    fi
+if test -n "$OFED_VER" && test $(echo $OFED_VER $MIN_OFED_VER | tr " " "\n" | sort -V | tail -n 1) == "$OFED_VER" ; then
+    OFED_VERSION_CHK=1
+fi
+if test -n "$RDMA_CORE_VER" && test $(echo $RDMA_CORE_VER $MIN_RDMA_CORE_VER | tr " " "\n" | sort -V | tail -n 1) == "$RDMA_CORE_VER" ; then
+    OFED_VERSION_CHK=1
 fi
 
 AM_CONDITIONAL(OFED_BUILD,[test ${OFED_VERSION_CHK} = 1])
@@ -124,6 +139,7 @@ ADABE_TOOLS=""
 ADABE_DBS=""
 ADABE_DBS_EXTRA_DIST=""
 DPA=""
+PLDM_PKG_GEN=""
 
 COMPILER_FPIC="-fPIC"
 AC_SUBST(COMPILER_FPIC)
@@ -259,7 +275,16 @@ AC_ARG_ENABLE(dpa,
 )
 AC_MSG_RESULT($enable_dpa)
 
-if test "x$enable_fw_mgr" = "xyes" || test "x$enable_adb_generic_tools" = "xyes" || test "x$enable_dpa" = "xyes"; then
+# mstpldm_pkg_gen
+AC_MSG_CHECKING(--enable-pldm-pkg-gen argument)
+AC_ARG_ENABLE(pldm-pkg-gen,
+    AS_HELP_STRING([--enable-pldm-pkg-gen], [enable compilation of the mstpldm_pkg_gen tool, requires curl/lzma [default=disabled]]),
+    [enable_pldm_pkg_gen="$enableval"],
+    [enable_pldm_pkg_gen="no"]
+)
+AC_MSG_RESULT($enable_pldm_pkg_gen)
+
+if test "x$enable_fw_mgr" = "xyes" || test "x$enable_adb_generic_tools" = "xyes" || test "x$enable_dpa" = "xyes" || test "x$enable_pldm_pkg_gen" = "xyes"; then
     AC_ARG_WITH([liblzma], AS_HELP_STRING([--with-liblzma=PATH], [use liblzma from the specified PATH]),
         [
             liblzma_dir="$withval"
@@ -283,6 +308,32 @@ if test "x$enable_fw_mgr" = "xyes" || test "x$enable_adb_generic_tools" = "xyes"
     AC_MSG_NOTICE([liblzma CFLAGS:'$liblzma_CFLAGS' LIBS:'$liblzma_LIBS'])
     AC_SUBST(liblzma_CFLAGS)
     AC_SUBST(liblzma_LIBS)
+fi
+
+if test "x$enable_pldm_pkg_gen" = "xyes" && test "x$enable_fw_mgr" != "xyes"; then
+    AC_ARG_WITH([libcurl], AS_HELP_STRING([--with-libcurl=PATH], [use libcurl from the specified PATH]),
+        [
+            libcurl_dir="$withval"
+            AC_MSG_NOTICE([Using libcurl from $libcurl_dir])
+            libcurl_CFLAGS="-I$libcurl_dir/include"
+            libcurl_LIBS="-L$libcurl_dir/lib -lcurl"
+        ],
+        [
+            AC_MSG_NOTICE([Looking for libcurl headers and libraries])
+            PKG_CHECK_MODULES([libcurl], [libcurl], [],
+                [
+                    AC_MSG_NOTICE([Looking for libcurl headers and libraries manually])
+                    AC_CHECK_HEADERS([curl/curl.h], [], [AC_MSG_ERROR([missed libcurl headers])])
+                    AC_CHECK_LIB([curl], [curl_easy_init], [], [AC_MSG_ERROR([libcurl not found])])
+                    libcurl_CFLAGS=""
+                    libcurl_LIBS="-lcurl"
+                ]
+            )
+        ]
+    )
+    AC_MSG_NOTICE([libcurl CFLAGS:'$libcurl_CFLAGS' LIBS:'$libcurl_LIBS'])
+    AC_SUBST(libcurl_CFLAGS)
+    AC_SUBST(libcurl_LIBS)
 fi
 
 
@@ -537,6 +588,86 @@ fi
 AM_CONDITIONAL(ENABLE_MST_DEV_I2C, [ test "x$enable_i2c" = "xyes" ])
 ##
 
+# Enable mstflint SDK:
+AC_MSG_CHECKING(--enable-mstflint-sdk argument)
+AC_ARG_ENABLE(mstflint-sdk,
+    AS_HELP_STRING([--enable-mstflint-sdk], [build the mstflint SDK shared library libmstflint_sdk.so (Linux only), requires --enable-adb-generic-tools]),
+    [enable_mstflint_sdk="$enableval"],
+    [enable_mstflint_sdk="$default_en_mstflint_sdk"]
+)
+AC_MSG_RESULT($enable_mstflint_sdk)
+MSTFLINT_SDK_DIR=""
+HCA_CAP_DIR=""
+MLXREG_SDK_DIR=""
+DEVICE_DIR=""
+LOAD_SHARED_LIB_DIR=""
+if test "x$enable_mstflint_sdk" = "xyes"; then
+    if test "x$enable_adb_generic_tools" != "xyes"; then
+        AC_MSG_ERROR([--enable-mstflint-sdk requires --enable-adb-generic-tools.])
+    fi
+    CXXFLAGS="$CXXFLAGS -DMFT_SDK_EXTERNAL -DMFT_SDK_STANDALONE_BUILD"
+    CFLAGS="$CFLAGS -DMFT_SDK_EXTERNAL -DMFT_SDK_STANDALONE_BUILD"
+    MSTFLINT_SDK_DIR="mft_sdk"
+    HCA_CAP_DIR="hca_capabilities"
+    MLXREG_SDK_DIR="mlxreg_sdk"
+    DEVICE_DIR="device"
+    # Link mtcr statically (whole-archive) into libmstflint_sdk.so so it carries
+    # no libmtcr_ul.so runtime dependency. Held as a substituted variable so
+    # automake does not reject the -Wl tokens in the SDK's _LIBADD.
+    MTCR_SDK_WHOLE_ARCHIVE="-Wl,--whole-archive \$(top_builddir)/$MTCR_CONF_DIR/.libs/libmtcr_ul.a -Wl,--no-whole-archive"
+    MSTREG_SDK_WHOLE_ARCHIVE="-Wl,--whole-archive \$(top_builddir)/mlxreg/mlxreg_lib/.libs/libmstreg_lib.a -Wl,--no-whole-archive"
+    AC_CONFIG_FILES(mft_sdk/Makefile)
+    AC_CONFIG_FILES(mft_sdk/mstflint_sdk.pc)
+    AC_CONFIG_FILES(hca_capabilities/Makefile)
+    AC_CONFIG_FILES(mlxreg/mlxreg_sdk/Makefile)
+    AC_CONFIG_FILES(mft_core/device/Makefile)
+    # NVML-backed GPU discovery is pulled in only when NVML is enabled; the SDK
+    # source gates its use of it on ENABLE_NVML to keep the build self-consistent.
+    if test "x$enable_nvml" = "xyes"; then
+        LOAD_SHARED_LIB_DIR="load_shared_library"
+        AC_CONFIG_FILES(mft_core/device/nvml/Makefile)
+        AC_CONFIG_FILES(mft_core/mft_core_utils/load_shared_library/Makefile)
+    fi
+fi
+
+# libmstflint_sdk.so is installed into a private directory ($(libdir)/mstflint/sdk)
+# that no dynamic linker searches by default, so consumers that link it by soname
+# only (e.g. libdoca_mgmt) cannot resolve it. Register that directory with
+# ldconfig by installing an ld.so.conf.d snippet naming it.
+#
+# The directory is NOT derived from $(sysconfdir): ldconfig reads /etc/ld.so.conf.d
+# unconditionally, so a relocated install (--prefix=/opt/...) must still drop the
+# snippet under /etc. Override with --with-ldsoconfdir=DIR, or skip the snippet
+# altogether with --without-ldsoconfdir.
+AC_MSG_CHECKING(--with-ldsoconfdir argument)
+AC_ARG_WITH(ldsoconfdir,
+    AS_HELP_STRING([--with-ldsoconfdir=DIR],
+        [directory for the mstflint SDK ld.so.conf.d snippet @<:@default=/etc/ld.so.conf.d@:>@; --without-ldsoconfdir installs no snippet]),
+    [with_ldsoconfdir="$withval"],
+    [with_ldsoconfdir="/etc/ld.so.conf.d"]
+)
+if test "x$with_ldsoconfdir" = "xyes"; then
+    with_ldsoconfdir="/etc/ld.so.conf.d"
+fi
+AC_MSG_RESULT($with_ldsoconfdir)
+LDSOCONFDIR=""
+if test "x$with_ldsoconfdir" != "xno"; then
+    LDSOCONFDIR="$with_ldsoconfdir"
+fi
+AC_SUBST(LDSOCONFDIR)
+AM_CONDITIONAL(INSTALL_SDK_LDSOCONF,
+    [ test "x$enable_mstflint_sdk" = "xyes" && test "x$with_ldsoconfdir" != "xno" ])
+
+AC_SUBST(MSTFLINT_SDK_DIR)
+AC_SUBST(MTCR_SDK_WHOLE_ARCHIVE)
+AC_SUBST(MSTREG_SDK_WHOLE_ARCHIVE)
+AC_SUBST(HCA_CAP_DIR)
+AC_SUBST(MLXREG_SDK_DIR)
+AC_SUBST(DEVICE_DIR)
+AC_SUBST(LOAD_SHARED_LIB_DIR)
+AM_CONDITIONAL(ENABLE_MSTFLINT_SDK, [ test "x$enable_mstflint_sdk" = "xyes" ])
+##
+
 AC_MSG_CHECKING(--enable-cs argument)
 AC_ARG_ENABLE(cs,
     AS_HELP_STRING([--enable-cs], [Enable the "checksum" command in mstflint, requires openssl [defailt=disabled]]),
@@ -667,10 +798,22 @@ elif test ${CCVER} \> 4.7.2 ; then
     CXXFLAGS="$CXXFLAGS -std=c++11"
 fi
 
+# Deprecation notice: as of January 2027 mstflint will be built as C++17,
+# which requires GCC 9 or newer. Warn users still on an older compiler.
+CC_MAJOR_VER=`${CC} -dumpversion 2>/dev/null | cut -d. -f1`
+AS_IF([test x"${CC_MAJOR_VER}" != x && expr "${CC_MAJOR_VER}" : '[[0-9]][[0-9]]*$' >/dev/null && test "${CC_MAJOR_VER}" -lt 9],
+      [AC_MSG_WARN([
+*******************************************************************************
+Detected compiler ${CC} version ${CC_MAJOR_VER}.
+Starting January 2027, the mstflint project will require C++17, and the
+minimal supported GCC version will be 9. Please upgrade your compiler.
+*******************************************************************************])])
+
 AM_CFLAGS="-Wall"
 AM_CXXFLAGS="-Wall"
 
 AC_CONFIG_FILES(mstflint.spec)
+AC_CONFIG_FILES(mstflint-sdk.spec)
 
 # We save and restore CFLAGS, after adding Wall and Werror
 # because AX_CHECK_COMPILE_FLAG doesn't work properly without it
@@ -709,9 +852,7 @@ AC_SUBST(MSTFLINT_VERSION_STR)
 AC_DEFINE([MSTFLINT_VERSION_STR], [], [The MSTFLINT version])
 AC_DEFINE_UNQUOTED(MSTFLINT_VERSION_STR, "$MSTFLINT_VERSION_STR")
 
-AS_IF([test "x$enable_cs" = "xyes" || test "x$enable_openssl" = "xyes"],
-    [AC_CONFIG_FILES(tools_crypto/Makefile)]
-)
+AC_CONFIG_FILES(tools_crypto/Makefile)
 
 AM_CONDITIONAL(ENABLE_NVFWRESET, [test "x$OS" != "xFreeBSD" && test "x$enable_nvfwreset" = "xyes" ])
 
@@ -735,6 +876,25 @@ else
     AC_SUBST(enable_nvfwreset)
     AC_SUBST(NVFWRESET_DIR)
 fi
+
+# ibdump
+IBDUMP_DIR=""
+AC_MSG_CHECKING(--with-ibdump argument)
+AC_ARG_WITH(ibdump,
+    AS_HELP_STRING([--with-ibdump], [enable compilation of ibdump, requires libibverbs [default=disabled]]),
+    [with_ibdump="$withval"],
+    [with_ibdump="no"]
+)
+AC_MSG_RESULT($with_ibdump)
+if test "x$with_ibdump" = "xyes"; then
+    AC_CHECK_HEADER(infiniband/verbs.h, [],
+        AC_MSG_ERROR([cannot find infiniband/verbs.h (omit --with-ibdump to remove this dependency).])
+    )
+    AC_CONFIG_FILES(ibdump/Makefile)
+    IBDUMP_DIR="ibdump"
+fi
+AM_CONDITIONAL(ENABLE_IBDUMP, [test "x$with_ibdump" = "xyes"])
+AC_SUBST(IBDUMP_DIR)
 
 AS_IF([test "x$enable_openssl" = "xyes"],
     [
@@ -771,6 +931,16 @@ AM_CONDITIONAL(ENABLE_DPA, [test "x$enable_dpa" = "xyes" ])
 
 AC_SUBST(DPA)
 
+AS_IF([test "x$enable_pldm_pkg_gen" = "xyes"],
+    [
+        AC_CONFIG_FILES(pldmgen/Makefile)
+        PLDM_PKG_GEN="pldmgen"
+    ]
+)
+
+AM_CONDITIONAL(ENABLE_PLDM_PKG_GEN, [test "x$enable_pldm_pkg_gen" = "xyes"])
+AC_SUBST(PLDM_PKG_GEN)
+
 if [ test "x$enable_openssl" = "xno" ] && \
     [ test "x$enable_dpa" = "xyes" ] ; then
     AC_MSG_ERROR([--enable-dpa cannot be used with --disabled-openssl.])
@@ -798,7 +968,7 @@ AS_IF([test "x$enable_adb_generic_tools" = "xyes"], [
 
 AM_CONDITIONAL([ADB_GENERIC_TOOLS_ENABLED], [test "x$enable_adb_generic_tools" = "xyes"])
 
-AS_IF([test "x$enable_fw_mgr" = "xyes" || test "x$enable_adb_generic_tools" = "xyes" || test "x$enable_dpa" = "xyes"],
+AS_IF([test "x$enable_fw_mgr" = "xyes" || test "x$enable_adb_generic_tools" = "xyes" || test "x$enable_dpa" = "xyes" || test "x$enable_pldm_pkg_gen" = "xyes"],
     [
         AC_CONFIG_FILES(xz_utils/Makefile)
         XZ_UTILS_DIR="xz_utils"
@@ -893,8 +1063,11 @@ AC_OUTPUT( \
     mstdump/crd_lib/Makefile \
     mstdump/crd_main/Makefile \
     mstdump/mstdump_dbs/Makefile \
+    efuse/Makefile \
+    efuse/efuse_dbs/Makefile \
     mtcr_py/Makefile \
     mvpd/Makefile \
+    pldm_utils/Makefile \
     pldmlib/Makefile \
     reg_access/Makefile \
     resourcetools/Makefile \

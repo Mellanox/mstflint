@@ -42,6 +42,7 @@ UserInput::UserInput()
     _labelPort = 1;
     _splitPort = 1;
     _secondSplitPort = 1;
+    _forceIpilValue = 0;
     _forceSplitValue = -1;
     _depth = 0;
     _pcieIndex = 0;
@@ -92,6 +93,8 @@ UserInput::UserInput()
     _txPolicy = false;
     _advancedMode = false;
     _portSpecified = false;
+    _multiPortSpecified = false;
+    _multiPortsList = {};
     _splitProvided = false;
     _secondSplitProvided = false;
     _forceSplit = false;
@@ -101,6 +104,7 @@ UserInput::UserInput()
     _write = false;
     _read = false;
     _showMultiPortInfo = false;
+    _allPorts = false;
     _showMultiPortModuleInfo = false;
     _showPlr = false;
     _setPlr = false;
@@ -115,7 +119,9 @@ UserInput::UserInput()
     _pmaosCmd = "";
     _pplmFec = "";
     _speedFec = "";
-    _pplrLB = "";
+    _loopbackMode = "";
+    _cableSide = "";
+    _pmlrState = "";
     _prbsMode = "";
     _pprtMode = "PRBS31";
     _ppttMode = "PRBS31";
@@ -199,4 +205,5 @@ UserInput::UserInput()
     _setRxPrecoding = "";
     _setTxPrecodingProvided = false;
     _setRxPrecodingProvided = false;
+    _showModuleCap = false;
 }

@@ -1,0 +1,13 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+# The SDK library and headers live under private mstflint/sdk subdirs (see
+# mft_sdk/Makefile.am): the .so in $(libdir)/mstflint/sdk and the headers in
+# $(includedir)/mstflint/sdk, consumed as <mft_sdk/...>.
+libdir=@libdir@/mstflint/sdk
+includedir=@includedir@/mstflint/sdk
+
+Name: mstflint_sdk
+Description: SDK shared library and headers for mstflint (NVIDIA Firmware Tools)
+Version: @PACKAGE_VERSION@
+Libs: -L${libdir} -lmstflint_sdk
+Cflags: -I${includedir}

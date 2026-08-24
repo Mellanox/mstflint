@@ -114,6 +114,16 @@ string getStringFromVector(vector<float> values)
     return deleteLastChar(s);
 }
 
+string bitsToPerLaneStr(u_int32_t bitmask, u_int32_t numOfLanes)
+{
+    vector<string> perLane;
+    for (u_int32_t i = 0; i < numOfLanes; i++)
+    {
+        perLane.push_back(to_string((bitmask >> i) & 1));
+    }
+    return getStringFromVector(perLane);
+}
+
 u_int64_t add32BitTo64(u_int32_t value1, u_int32_t value2)
 {
     return (((u_int64_t)value1) << 32 | value2);
@@ -781,21 +791,13 @@ string convertSpeedToNVLINK(const string& speed)
     {
         return "400g_2x_mode_b";
     }
-    if (speed == "360G_2X_MODE_B")
+    if (speed == "360G_2X_MODE_B" || speed == "378G_2X_MODE_B")
     {
         return "360g_2x_mode_b";
     }
-    if (speed == "328G_2X_MODE_B")
+    if (speed == "328G_2X_MODE_B" || speed == "345G_2X_MODE_B")
     {
         return "328g_2x_mode_b";
-    }
-    if (speed == "378G_2X_MODE_B")
-    {
-        return "378g_2x_mode_b";
-    }
-    if (speed == "345G_2X_MODE_B")
-    {
-        return "345g_2x_mode_b";
     }
     if (speed == "NDR")
     {
@@ -1215,6 +1217,9 @@ string getCableIdentifier(u_int32_t identifier)
         case IDENTIFIER_OSFP:
             identifierStr = "OSFP";
             break;
+        case IDENTIFIER_C2C:
+            identifierStr = "C2C";
+            break;
         case IDENTIFIER_DSFP:
             identifierStr = "DSFP";
             break;
@@ -1559,7 +1564,7 @@ string getCableLengthStr(u_int32_t cableLength, bool cmisCable)
     {
         snprintf(cableLengthStr, sizeof(cableLengthStr), "%d", cableLength);
     }
-    return string(cableLengthStr);
+    return string(cableLengthStr) != "" ? string(cableLengthStr) : "0";
 }
 
 string getRxTxCDRState(u_int32_t state, u_int32_t numOfLanes)
@@ -2084,6 +2089,21 @@ std::string string_format(const char* format, ...)
     va_end(args);
     return out;
 }
+
+u_int32_t prrMeasDataDwordsForType(u_int32_t measType)
+{
+    switch (measType)
+    {
+        case 6:
+        case 16:
+            return 32;
+        case 8:
+            return 4;
+        default:
+            return 80;
+    }
+}
+
 /* SW controlled module utilities */
 bool readBoolFromSysFs(const string& sysfsPath)
 {

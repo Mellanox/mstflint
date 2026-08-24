@@ -121,18 +121,21 @@ typedef enum StFlashCommand
     SFC_RDSR3_WINBOND = 0x15,           // Read status register 3 (WINBOND)
     SFC_SERPNV_ISSI = 0x85,             // write status extended read register
     SFC_RDERP_ISSI = 0x81,              // read status extended read register
-    SFC_WRSR3_MACRONIX_MX25K16XXX = 0x11, // Write status register 3 (MACRONIX)
-    SFC_RDSR3_MACRONIX_MX25K16XXX = 0x15, // Read status register 3 (MACRONIX)
+    SFC_WRSR3_MX25K16XXX_GD25LFXXX  = 0x11, // Write status register 3 (MACRONIX)
+    SFC_RDSR3_MX25K16XXX_GD25LFXXX = 0x15, // Read status register 3 (MACRONIX)
     SFC_RDSR4_MACRONIX_MX25UXXX = 0xBE,   // Read status register 4 (MACRONIX)
     SFC_WRSR4_MACRONIX_MX25UXXX = 0xBF,   // Write status register 4 (MACRONIX)
     SFC_WREN = 0x06,                    // Write enable
     SFC_RDNVR = 0xB5,
     SFC_RDCR = 0x15,                    // Read configuration register
-    SFC_WRNVR = 0xB1,
+    SFC_WRNVR = 0xB1,                   // Write nonvolatile configuration register
+    SFC_RDVR = 0x85,                       // Read volatile configuration register
+    SFC_WRVR = 0x81,                       // Write volatile configuration register
     SFC_WRSR = 0x01,                    // Write status register
     SFC_WRSR_GIGA = 0x31,               // Write status register (GIGA)
     SFC_RDFR = 0x48,
     SFC_WRFR = 0x42,
+    SFC_SRPV_ISSI_IS25LPXXX = 0xC0, // Set violatile read parameters
     SFC_RDRP_ISSI_IS25LPXXX = 0x61, // Read read parameters
     SFC_SFDP = 0x5A                // Read SFDP table
 } StFlashCommand_t;

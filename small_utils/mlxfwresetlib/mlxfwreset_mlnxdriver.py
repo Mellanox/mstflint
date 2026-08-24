@@ -75,7 +75,7 @@ class MlnxDriver(object):
         self.logger = logger
         self.driverStatus = driverStatus
 
-    def driverStart(self):
+    def driverStart(self, hotplug_enabled=False):
         raise NotImplementedError("driverStart() is not implemented")
 
     def driverStop(self):
@@ -177,8 +177,8 @@ class MlnxDriverLinux(MlnxDriver):
                 dbdf = mlxfwreset_utils.getDevDBDF(device, logger)
                 dbd = dbdf.split('.')[0]
 
-                # Reset virtual functions (reset pf1 is speculative - only if exists)
-                for pf_num in range(2):
+                # Reset virtual functions (reset pf1-7 is speculative - only if exists)
+                for pf_num in range(8):
                     num_vfs_file_path = '/sys/bus/pci/devices/{0}.{1}/sriov_numvfs'.format(dbd, pf_num)
                     if os.path.exists(num_vfs_file_path):
                         cmd = "echo 0 > {0} ".format(num_vfs_file_path)
@@ -219,7 +219,7 @@ class MlnxDriverLinux(MlnxDriver):
             self.logger.debug("driver {0}@{1} is up".format(driver_name, dbdf))
         return is_up
 
-    def driverStart(self):
+    def driverStart(self, hotplug_enabled=False):
         self.logger.info('MlnxDriverLinux driverStart()')
 
         driver_err, rshim_err = None, None
@@ -235,7 +235,7 @@ class MlnxDriverLinux(MlnxDriver):
             # start the driver even though the OS already triggered the driver start. In this case the tool gets error
             # from the CLI but we don't want the tool to exit with error. For that reason we added the retry mechanism
 
-            MAX_NUM_OF_TRIES = 10
+            MAX_NUM_OF_TRIES = 30 if hotplug_enabled else 10
             try_num = 1
             driver_err = False
             while try_num <= MAX_NUM_OF_TRIES:
@@ -315,7 +315,7 @@ class MlnxDriverFreeBSD(MlnxDriver):
                 self._knownModules[i] = (self._knownModules[i][0], True)
         super(MlnxDriverFreeBSD, self).__init__(logger, self.getDriverStatusAux())
 
-    def driverStart(self):
+    def driverStart(self, hotplug_enabled=False):
         self.logger.info('MlnxDriverFreeBSD driverStart()')
         for moduleName, isPresent in self._knownModules:
             if isPresent:
@@ -465,7 +465,7 @@ class MlnxDriverWindows(MlnxDriver):
             except StopIteration:
                 return
 
-        cmd = 'powershell.exe -c "Get-NetAdapterHardwareInfo | Format-List -Property Segment,Bus,Device,Name,InterfaceDescription'
+        cmd = 'powershell.exe -c "Get-NetAdapterHardwareInfo | Where-Object { $null -ne $_.Segment -and $null -ne $_.Bus -and $null -ne $_.Device } | Format-List -Property Segment,Bus,Device,Name,InterfaceDescription"'
         logger.debug(cmd)
         (rc, out, _) = cmdExec(cmd)
         if rc != 0:
@@ -540,7 +540,7 @@ class MlnxDriverWindows(MlnxDriver):
         driverStatus = MlnxDriver.DRIVER_LOADED if drivers_exist else MlnxDriver.DRIVER_IGNORE
         super(MlnxDriverWindows, self).__init__(logger, driverStatus)
 
-    def driverStart(self):
+    def driverStart(self, hotplug_enabled=False):
         self.logger.info('MlnxDriverWindows driverStart()')
 
         driver_err, rshim_err = None, None

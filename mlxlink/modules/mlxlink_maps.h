@@ -42,9 +42,11 @@
 #include <fstream>
 #include <sstream>
 #include <iterator>
+#include <string>
 #include <vector>
 #include <mlxreg/mlxreg_lib/mlxreg_lib.h>
 #include <mlxreg/mlxreg_lib/mlxreg_parser.h>
+#include "mft_sdk/mft_sdk_telemetry_types.h"
 #include "mlxlink_user_input.h"
 #include "printutil/mlxlink_cmd_print.h"
 #include "mlxlink_enums.h"
@@ -59,6 +61,7 @@ struct PortGroup
         split = 0;
         secondSplit = 0;
         isFnm = false;
+        isBonusPort = false;
     }
     PortGroup(u_int32_t _localPort, u_int32_t _labelPort, u_int32_t _groupId, u_int32_t _split)
     {
@@ -68,6 +71,7 @@ struct PortGroup
         split = _split;
         secondSplit = 0;
         isFnm = false;
+        isBonusPort = false;
     }
     PortGroup(u_int32_t _localPort, u_int32_t _labelPort, u_int32_t _groupId, u_int32_t _split, u_int32_t _secondSplit)
     {
@@ -77,6 +81,7 @@ struct PortGroup
         split = _split;
         secondSplit = _secondSplit;
         isFnm = false;
+        isBonusPort = false;
     }
     PortGroup(u_int32_t _localPort,
               u_int32_t _labelPort,
@@ -91,6 +96,7 @@ struct PortGroup
         split = _split;
         secondSplit = _secondSplit;
         isFnm = _isFnm;
+        isBonusPort = false;
     }
     u_int32_t localPort;
     u_int32_t labelPort;
@@ -98,6 +104,7 @@ struct PortGroup
     u_int32_t split;
     u_int32_t secondSplit;
     bool isFnm;
+    bool isBonusPort;
 
     bool operator<(const PortGroup& b) const
     {
@@ -194,6 +201,19 @@ struct PRM_FIELD
     u_int32_t validationMask;
 };
 
+struct BonusPortTableFields
+{
+    std::string labelPortStr;
+    std::string stateStr;
+    u_int32_t plainStateLen = 0;
+    std::string speedStr;
+    std::string fecStr;
+    bool logicalLinkUp = false;
+};
+
+extern const std::vector<u_int32_t> bonusPortAllowedCommands;
+extern const std::vector<u_int32_t> bonusPortCounterGroups;
+
 class MlxlinkMaps
 {
 private:
@@ -255,6 +275,21 @@ private:
     void initTableHeaders();
     void initPlrRejectModeMapping();
     void initKrMapping();
+    void initHostClassMapping();
+    void initSDKMappings();
+    void initSdkOperationalInfoStateMapping();
+    void initSdkOperationalInfoPhysicalStateMapping();
+    void initSdkOperationalInfoLoopbackModeMapping();
+    void initSdkOperationalInfoAutoNegotiationMapping();
+    void initSdkOperationalInfoSpeedMapping();
+    void initSdkOperationalInfoFecMapping();
+    void initSdkCableTechnologyMapping();
+    void initSdkIdentifierMapping();
+    void initSdkCableTypeMapping();
+    void initSdkOuiMapping();
+    void initSdkModuleStateMapping();
+    void initSdkRxPowerTypeMapping();
+    void initSdkErrorCodeResponseMapping();
 
 public:
     static MlxlinkMaps* getInstance();
@@ -276,6 +311,21 @@ public:
     std::map<std::string, u_int32_t> _prbsModulationValue;
     std::map<u_int32_t, std::string> _prbsLaneRateList;
     std::map<std::string, CAP_VALUE> _prbsLaneRate;
+
+    // SDK Mappings (telemetry)
+    std::map<std::string, OperationalInfoState> _operationalInfoState;
+    std::map<std::string, OperationalInfoPhysicalState> _operationalInfoPhysicalState;
+    std::map<std::string, OperationalInfoLoopbackMode> _operationalInfoLoopbackMode;
+    std::map<std::string, OperationalInfoAutoNegotiation> _operationalInfoAutoNegotiation;
+    std::map<std::string, OperationalInfoSpeed> _operationalInfoSpeed;
+    std::map<std::string, OperationalInfoFec> _operationalInfoFec;
+    std::map<std::string, ModuleInfoCableTechnology> _cableTechnologySdk;
+    std::map<std::string, ModuleInfoIdentifier> _identifierSdk;
+    std::map<std::string, ModuleInfoCableType> _cableTypeSdk;
+    std::map<std::string, ModuleInfoOui> _ouiSdk;
+    std::map<std::string, ModuleInfoModuleState> _moduleStateSdk;
+    std::map<std::string, ModuleInfoRxPowerType> _rxPowerTypeSdk;
+    std::map<std::string, ModuleInfoErrorCodeResponse> _errorCodeResponseSdk;
     std::map<u_int32_t, std::string> _prbsLaneRateCap;
     std::map<u_int32_t, std::string> _prbsLaneRateCapExt;
     std::map<u_int32_t, std::string> _prbsTuningType;
@@ -296,6 +346,8 @@ public:
     std::map<ModuleAccess_t, std::string> _moduleScopeToStr;
     std::map<u_int32_t, std::string> _moduleRxAmp;
     std::map<u_int32_t, std::string> _moduleRxAmpCap;
+    std::map<u_int32_t, std::string> _precodingOverrideCntl;
+    std::map<u_int32_t, std::string> _precodingOverrideVal;
     std::map<u_int32_t, std::string> _pepcStatus;
     std::map<u_int32_t, string> _IBSpeed2Str;
     std::map<u_int32_t, string> _NVLINKLegacySpeed2Str;
@@ -328,9 +380,12 @@ public:
     std::map<u_int32_t, std::string> _plrMarginThMaskToStr;
     std::map<u_int32_t, std::string> _krExtOper;
     std::map<u_int32_t, std::string> _krPrbsType;
+    std::map<u_int32_t, std::string> _hostClass;
     std::map<u_int32_t, pair<string, string>> _fecModeMask;
     std::vector<pair<string, string>> _fecPerSpeed;
     std::map<u_int32_t, pair<string, string>> _loopbackModeList;
+    std::map<u_int32_t, std::string> _pmlrLoopbackCapMask;
+    std::map<u_int32_t, std::string> _pmlrLoopbackEn;
     std::map<u_int32_t, std::string> _anDisableList;
     std::map<u_int32_t, std::string> _tech;
     std::map<u_int32_t, std::string> _cableComplianceSfp;

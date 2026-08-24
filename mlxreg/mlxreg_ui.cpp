@@ -1158,8 +1158,7 @@ template<bool dynamic>
 void MlxRegUi::MlxRegUiImpl<dynamic>::printRegFields(AdbInstance* node)
 {
     _query_fields.clear();
-    _mlxRegLib->getAdb().traverse_layout(node, "", 0, nullptr, 0, QueryField::on_traverse, (void*)this, false, false,
-                                         _ui->_full_path);
+    node->traverse_layout("", 0, nullptr, 0, QueryField::on_traverse, (void*)this, false, false, _ui->_full_path);
     if (_ui->_advanced)
     {
         printQueryFieldsAdvanced(_query_fields, _ui->_field_name);
@@ -1260,8 +1259,8 @@ template<bool dynamic>
 void MlxRegUi::MlxRegUiImpl<dynamic>::printAdbContext(AdbInstance* node, const std::vector<u_int32_t>& buff)
 {
     _parsed_fields.clear();
-    _mlxRegLib->getAdb().traverse_layout(node, "", 0, (uint8_t*)&buff[0], buff.size() * sizeof(u_int32_t),
-                                         SentField::on_traverse, (void*)this, true, false, _ui->_full_path);
+    node->traverse_layout("", 0, (uint8_t*)&buff[0], buff.size() * sizeof(u_int32_t), SentField::on_traverse,
+                          (void*)this, true, false, _ui->_full_path);
     // Print the fields based on detailed flag
     if (_ui->_detailed)
     {
@@ -1368,8 +1367,8 @@ void MlxRegUi::MlxRegUiImpl<dynamic>::run()
                 regNode = _mlxRegLib->get_current_node();
             }
             typename MlxRegUiImpl<dynamic>::RegAccessParser parser(
-              _ui->_dataStr, _ui->_indexesStr, _ui->_opsStr, &_mlxRegLib->getAdb(), regNode,
-              _ui->_dataLen ? _ui->_dataLen : max_reg_size, false, _ui->_full_path);
+              _ui->_dataStr, _ui->_indexesStr, _ui->_opsStr, regNode, _ui->_dataLen ? _ui->_dataLen : max_reg_size,
+              false, _ui->_full_path);
             buff = parser.genBuff();
             if (!_ui->_gen_cmd_buffer_device_type.empty())
             {
@@ -1410,8 +1409,8 @@ void MlxRegUi::MlxRegUiImpl<dynamic>::run()
             }
             // Read current register data into buffer
             typename MlxRegUiImpl<dynamic>::RegAccessParser parserGet(
-              _ui->_dataStr, _ui->_indexesStr, _ui->_opsStr, &_mlxRegLib->getAdb(), regNode,
-              _ui->_dataLen ? _ui->_dataLen : max_reg_size, _ui->_ignore_ro, _ui->_full_path);
+              _ui->_dataStr, _ui->_indexesStr, _ui->_opsStr, regNode, _ui->_dataLen ? _ui->_dataLen : max_reg_size,
+              _ui->_ignore_ro, _ui->_full_path);
             buff = parserGet.genBuff();
             if (!_ui->_overwrite && _ui->_gen_cmd_buffer_device_type.empty())
             {
@@ -1426,8 +1425,7 @@ void MlxRegUi::MlxRegUiImpl<dynamic>::run()
             }
             // Update the register buffer with user inputs
             typename MlxRegUiImpl<dynamic>::RegAccessParser parser(_ui->_dataStr, _ui->_indexesStr, _ui->_opsStr,
-                                                                   &_mlxRegLib->getAdb(), regNode, buff,
-                                                                   _ui->_ignore_ro, _ui->_full_path);
+                                                                   regNode, buff, _ui->_ignore_ro, _ui->_full_path);
             buff = parser.genBuff();
             if (_ui->_output_file != "")
             {

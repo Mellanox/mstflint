@@ -119,6 +119,7 @@ class PrivilegeMgr(object):
     BLUE_FIELD_DEV_ID = 0x211
     BLUE_FIELD2_DEV_ID = 0x214
     BLUE_FIELD3_DEV_ID = 0x21c
+    BLUE_FIELD4_DEV_ID = 0x224
 
     PRIVILEGE = 0
     RESTRICT = 1
@@ -369,10 +370,14 @@ class PrivilegeMgr(object):
         exit_code = 0
         if self._isARM:
             for host in range(self._total_hosts):
+                rc = 0
                 if self._requested_level == self.RESTRICT:
-                    exit_code = self.setRestrictConf(host)
+                    rc = self.setRestrictConf(host)
                 elif self._requested_level == self.PRIVILEGE:
-                    exit_code = self.setPrivilegeConf(host)
+                    rc = self.setPrivilegeConf(host)
+                if rc:
+                    error("Failed to configure host %d", host)
+                    exit_code = rc
                 self._disable_out = True
         else:
             error("Operation is not permitted (refer to the DPU user manual)")
@@ -388,7 +393,8 @@ class PrivilegeMgr(object):
         dev_id = int(stdout, 16)
         if dev_id not in (self.BLUE_FIELD_DEV_ID,
                           self.BLUE_FIELD2_DEV_ID,
-                          self.BLUE_FIELD3_DEV_ID):
+                          self.BLUE_FIELD3_DEV_ID,
+                          self.BLUE_FIELD4_DEV_ID):
             raise PrivilegeException(
                 "Device '%s' is not supported, "
                 "only BlueField devices are supported!" %

@@ -62,4 +62,6 @@ int new_gw_st_spi_block_read_ex(mflash* mfl,
                                 bool verbose);
 int new_gw_spi_write_status_reg(mflash* mfl, u_int32_t status_reg, u_int8_t write_cmd, u_int8_t bytes_num);
 int new_gw_spi_read_sfdp(mflash* mfl, uint32_t sfdp_addr, uint8_t* data, uint8_t bytes_num);
+int new_gw_read_config_reg(mflash* mfl, u_int8_t read_cmd, u_int32_t reg_addr, u_int8_t* val);
+int new_gw_write_config_reg(mflash* mfl, u_int8_t write_cmd, u_int32_t reg_addr, u_int8_t val);
 #endif

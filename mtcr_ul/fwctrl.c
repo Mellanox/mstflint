@@ -293,3 +293,186 @@ void mlx5lib_free_umem_mkey_buff(mfile* mf)
         free(umem_buff);
     }
 }
+/* HCA capability query/set over fwctl (ported from MFT for the mstflint SDK). */
+const char* mlx5_cmd_status_str(uint8_t status)
+{
+    switch (status)
+    {
+        case MLX5_CMD_STAT_OK:
+            return "OK";
+
+        case MLX5_CMD_STAT_INT_ERR:
+            return "internal error";
+
+        case MLX5_CMD_STAT_BAD_OP_ERR:
+            return "bad operation";
+
+        case MLX5_CMD_STAT_BAD_PARAM_ERR:
+            return "bad parameter";
+
+        case MLX5_CMD_STAT_BAD_SYS_STATE_ERR:
+            return "bad system state";
+
+        case MLX5_CMD_STAT_BAD_RES_ERR:
+            return "bad resource";
+
+        case MLX5_CMD_STAT_RES_BUSY:
+            return "resource busy";
+
+        case MLX5_CMD_STAT_NOT_READY:
+            return "not ready, try again later";
+
+        case MLX5_CMD_STAT_LIM_ERR:
+            return "limits exceeded";
+
+        case MLX5_CMD_STAT_BAD_RES_STATE_ERR:
+            return "bad resource state";
+
+        case MLX5_CMD_STAT_IX_ERR:
+            return "bad index";
+
+        case MLX5_CMD_STAT_NO_RES_ERR:
+            return "no resources";
+
+        case MLX5_CMD_STAT_BAD_INP_LEN_ERR:
+            return "bad input length";
+
+        case MLX5_CMD_STAT_BAD_OUTP_LEN_ERR:
+            return "bad output length";
+
+        case MLX5_CMD_STAT_BAD_QP_STATE_ERR:
+            return "bad QP state";
+
+        case MLX5_CMD_STAT_BAD_PKT_ERR:
+            return "bad packet";
+
+        case MLX5_CMD_STAT_BAD_SIZE_OUTS_CQES_ERR:
+            return "bad size in outstanding CQEs";
+
+        default:
+            return "unknown FW command status";
+    }
+}
+
+static uint16_t fwctl_hca_cap_op_mod(__u16 capability_type, capability_mode cap_mode)
+{
+    return (uint16_t)((capability_type << 1) | cap_mode);
+}
+
+typedef void (*fwctl_get_cap_status_fn)(void* out, uint8_t* status, uint32_t* syndrome);
+
+static void get_query_hca_cap_status(void* out, uint8_t* status, uint32_t* syndrome)
+{
+    *status = MLX5_GET(query_hca_cap_out, out, status);
+    *syndrome = MLX5_GET(query_hca_cap_out, out, syndrome);
+}
+
+static void get_set_hca_cap_status(void* out, uint8_t* status, uint32_t* syndrome)
+{
+    *status = MLX5_GET(set_hca_cap_out, out, status);
+    *syndrome = MLX5_GET(set_hca_cap_out, out, syndrome);
+}
+
+static int fwctl_hca_cap_do_rpc(mfile* mf,
+                                void* in,
+                                size_t in_len,
+                                void* out,
+                                size_t out_len,
+                                __u16 capability_type,
+                                capability_mode cap_mode,
+                                fwctl_get_cap_status_fn get_status)
+{
+    struct fwctl_rpc rpc = (struct fwctl_rpc){
+      .size = sizeof(rpc),
+      .scope = 0,
+      .in_len = in_len,
+      .out_len = out_len,
+      .in = (uint64_t)(uintptr_t)in,
+      .out = (uint64_t)(uintptr_t)out,
+    };
+
+    int err = ioctl(mf->fd, FWCTL_RPC, &rpc);
+    if (err)
+    {
+        FWCTL_DEBUG_PRINT(mf, "FWCTL_IOCTL_CMD_RPC ioctl() failed: capability_type=0x%x, err=%d, errno=%d (%s)\n",
+                          capability_type, err, errno, strerror(errno));
+        return err;
+    }
+
+    uint8_t cmd_status = 0;
+    uint32_t syndrome = 0;
+    get_status(out, &cmd_status, &syndrome);
+
+    if (cmd_status)
+    {
+        mf->icmd.syndrome = syndrome;
+        FWCTL_DEBUG_PRINT(
+          mf,
+          "FWCTL_IOCTL_CMD_RPC returned error from FW: capability_type=0x%x, capability_mode=0x%x, cmd_status=0x%x, syndrome=0x%x\n",
+          capability_type, cap_mode, cmd_status, syndrome);
+        /* Return the raw FW command status; HCA cap is a general command, not a register access, so the
+         * register-access status strings would be misleading. The syndrome is kept in mf->icmd.syndrome. */
+        return cmd_status;
+    }
+
+    FWCTL_DEBUG_PRINT(mf, "FWCTL_IOCTL_CMD_RPC succeeded: capability_type=0x%x, capability_mode=0x%x\n",
+                      capability_type, cap_mode);
+    return MLX5_CMD_STAT_OK;
+}
+
+int fwctl_query_hca_capability(mfile* mf,
+                               void* data_out,
+                               unsigned int data_out_size,
+                               __u16 capability_type,
+                               capability_mode cap_mode,
+                               __u16 function_id,
+                               __u8 function_id_type,
+                               __u8 other_function)
+{
+    uint32_t in[MLX5_ST_SZ_DW(query_hca_cap_in)] = {0};
+    uint32_t out[MLX5_ST_SZ_DW(query_hca_cap_out)] = {0};
+    uint16_t op_mod = fwctl_hca_cap_op_mod(capability_type, cap_mode);
+
+    FWCTL_DEBUG_PRINT(mf, "op_mod = %x, function_id = %x, function_id_type = %x\n", op_mod, function_id,
+                      function_id_type);
+    MLX5_SET(query_hca_cap_in, in, opcode, MLX5_CMD_OP_QUERY_HCA_CAP);
+    MLX5_SET(query_hca_cap_in, in, op_mod, op_mod);
+    MLX5_SET(query_hca_cap_in, in, function_id, function_id);
+    MLX5_SET(query_hca_cap_in, in, function_id_type, function_id_type);
+    MLX5_SET(query_hca_cap_in, in, other_function, other_function);
+
+    int err =
+      fwctl_hca_cap_do_rpc(mf, in, sizeof(in), out, sizeof(out), capability_type, cap_mode, get_query_hca_cap_status);
+    if (err != MLX5_CMD_STAT_OK)
+        return err;
+
+    memcpy(data_out, MLX5_ADDR_OF(query_hca_cap_out, out, capability), data_out_size);
+    return MLX5_CMD_STAT_OK;
+}
+
+int fwctl_set_hca_capability(mfile* mf,
+                             void* data_in,
+                             unsigned int data_in_size,
+                             __u16 capability_type,
+                             capability_mode cap_mode,
+                             __u16 function_id,
+                             __u8 function_id_type,
+                             __u8 other_function)
+{
+    uint32_t in[MLX5_ST_SZ_DW(set_hca_cap_in)] = {0};
+    uint32_t out[MLX5_ST_SZ_DW(set_hca_cap_out)] = {0};
+    uint16_t op_mod = fwctl_hca_cap_op_mod(capability_type, cap_mode);
+
+    FWCTL_DEBUG_PRINT(mf, "op_mod = %x, function_id = %x, function_id_type = %x\n", op_mod, function_id,
+                      function_id_type);
+    MLX5_SET(set_hca_cap_in, in, opcode, MLX5_CMD_OP_SET_HCA_CAP);
+    MLX5_SET(set_hca_cap_in, in, op_mod, op_mod);
+    MLX5_SET(set_hca_cap_in, in, function_id, function_id);
+    MLX5_SET(set_hca_cap_in, in, function_id_type, function_id_type);
+    MLX5_SET(set_hca_cap_in, in, other_function, other_function);
+
+    memcpy(MLX5_ADDR_OF(set_hca_cap_in, in, capability), data_in, data_in_size);
+
+    return fwctl_hca_cap_do_rpc(mf, in, sizeof(in), out, sizeof(out), capability_type, cap_mode,
+                                get_set_hca_cap_status);
+}

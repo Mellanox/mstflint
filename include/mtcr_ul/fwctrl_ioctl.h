@@ -55,6 +55,40 @@ void fwctl_set_device_id(mfile* mf);
 struct mlx5_umem_buff* mlx5lib_alloc_umem_mkey_buff(mfile* mf, size_t size, int page_size);
 void mlx5lib_free_umem_mkey_buff(mfile* mf);
 
+/* HCA capability query/set over fwctl (ported from MFT for the mstflint SDK). */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* Human-readable string for an MLX5_CMD_STAT_* FW command status. */
+const char* mlx5_cmd_status_str(__u8 status);
+
+typedef enum capability_mode_t {
+    CAPABILITY_MODE_MAX = 0x0,
+    CAPABILITY_MODE_CURRENT = 0x1,
+} capability_mode;
+
+int fwctl_query_hca_capability(mfile* mf,
+                               void* data_out,
+                               unsigned int data_out_size,
+                               __u16 capability_type,
+                               capability_mode cap_mode,
+                               __u16 function_id,
+                               __u8 function_id_type,
+                               __u8 other_function);
+int fwctl_set_hca_capability(mfile* mf,
+                             void* data_in,
+                             unsigned int data_in_size,
+                             __u16 capability_type,
+                             capability_mode cap_mode,
+                             __u16 function_id,
+                             __u8 function_id_type,
+                             __u8 other_function);
+
+#ifdef __cplusplus
+}
+#endif
+
 #define FWCTL_TYPE 0x9A
 
 /**

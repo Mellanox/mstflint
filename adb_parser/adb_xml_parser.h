@@ -147,7 +147,6 @@ private:
       parse_size(const string& s, T_OFFSET& res, AdbParser* adbParser, bool size_or_offset, bool node_or_field);
     static T_OFFSET aligned_word(T_OFFSET offset, uint8_t alignment = 32);
     static uint32_t startBit(T_OFFSET offset, uint8_t alignment = 32);
-    static bool raiseException(bool allowMultipleExceptions, string exceptionTxt, string addedMsg, const string expType);
 
 private:
     // MEMBERS

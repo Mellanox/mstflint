@@ -284,16 +284,11 @@ bool AdbParser<e, O>::load(bool is_main)
     }
     catch (AdbException& exp)
     {
+        _lastError = exp.what_s();
         if (exp.what_s().find("in file:") == string::npos)
         {
             int line = XML_GetCurrentLineNumber(_xmlParser);
-            int column = XML_GetCurrentColumnNumber(_xmlParser);
-            _lastError = exp.what_s() + " in file: " + _fileName + " at line: " + to_string(line) +
-                         " column: " + to_string(column);
-        }
-        else
-        {
-            _lastError = exp.what_s();
+            ExceptionHolder::appendLocationSuffix(_lastError, _fileName, line);
         }
         if (allowMultipleExceptions)
         {
@@ -328,9 +323,8 @@ bool AdbParser<e, O>::load(bool is_main)
     catch (...)
     {
         int line = XML_GetCurrentLineNumber(_xmlParser);
-        int column = XML_GetCurrentColumnNumber(_xmlParser);
-        _lastError = string("An exception raised during the loading of the file: ") + _fileName +
-                     " at line: " + to_string(line) + " column: " + to_string(column);
+        _lastError = "An exception raised during the loading of the file";
+        ExceptionHolder::appendLocationSuffix(_lastError, _fileName, line);
         if (allowMultipleExceptions)
         {
             xmlStatus = false;
@@ -364,16 +358,11 @@ bool AdbParser<e, O>::loadFromString(const char* adbString)
     }
     catch (AdbException& exp)
     {
+        _lastError = exp.what_s();
         if (exp.what_s().find("in file:") == string::npos)
         {
             int line = XML_GetCurrentLineNumber(_xmlParser);
-            int column = XML_GetCurrentColumnNumber(_xmlParser);
-            _lastError = exp.what_s() + " in file: " + _fileName + " at line: " + to_string(line) +
-                         " column: " + to_string(column);
-        }
-        else
-        {
-            _lastError = exp.what_s();
+            ExceptionHolder::appendLocationSuffix(_lastError, _fileName, line);
         }
 
         _lastError += string("\nNOTE: this project is configured to work with: \"") +
@@ -388,9 +377,8 @@ bool AdbParser<e, O>::loadFromString(const char* adbString)
     catch (...)
     {
         int line = XML_GetCurrentLineNumber(_xmlParser);
-        int column = XML_GetCurrentColumnNumber(_xmlParser);
-        _lastError = string("An exception raised during the loading of the file: ") + _fileName +
-                     " at line: " + to_string(line) + " column: " + to_string(column);
+        _lastError = "An exception raised during the loading of the file";
+        ExceptionHolder::appendLocationSuffix(_lastError, _fileName, line);
         return false;
     }
 
@@ -538,34 +526,40 @@ bool AdbParser<e, T_OFFSET>::parse_size(const string& s,
     int lineNumber = XML_GetCurrentLineNumber(adbParser->_xmlParser);
 
     bool exception_raised = false;
+    string error_message;
 
     Regex::smatch match;
+    // Matches "[0x]H[.D]" — hex bytes (group 1) with optional dot + decimal bits (group 4).
+    // Permissive on purpose; edge cases (.D, 0x.D, H.) are caught below.
     static Regex::regex correctHEXExpr("^\\s*((0[xX])?[0-9A-Fa-f]*)(\\.([0-9]*))?\\s*$");
     if (!regex_match(s, match, correctHEXExpr))
     {
-        exception_raised = raiseException(allowMultipleExceptions,
-                                          "Failed parsing " + tag_name + " " + attribute_name + ", " + s + "\", " +
-                                            "invalid format, valid formats are: \"0xH.D\", \"D.D\", \"0xH\", \".D\".",
-                                          ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                          ExceptionHolder::FATAL_EXCEPTION);
+        error_message = "Failed parsing " + tag_name + " " + attribute_name + ", " + s + "\", " +
+                        "invalid format, valid formats are: \"0xH.D\", \"D.D\", \"0xH\", \".D\".";
+        exception_raised = ExceptionHolder::handle_exception(
+          allowMultipleExceptions, error_message, ExceptionHolder::FATAL_EXCEPTION, adbParser->_fileName, lineNumber);
         res = static_cast<T_OFFSET>(-1);
         return false;
     }
 
     auto num_bytes_str = match[1].str();
     Algorithm::to_lower(num_bytes_str);
+
     auto num_bits_str = match[4].str();
+
     unsigned long long num_bytes = 0;
     unsigned long long num_bits = 0;
+
+    // Catch "0x.5" — bare 0x prefix with no hex digits
     if (num_bytes_str == "0x")
     {
         if (adbParser->_enforceExtraChecks)
         {
-            exception_raised = raiseException(
-              allowMultipleExceptions,
-              "Invalid format of " + tag_name + "'s " + attribute_name + ", \"" + s + "\". 0x.D is an invalid format",
-              ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-              ExceptionHolder::WARN_EXCEPTION);
+            error_message =
+              "Invalid format of " + tag_name + "'s " + attribute_name + ", \"" + s + "\". 0x.D is an invalid format";
+            exception_raised =
+              ExceptionHolder::handle_exception(allowMultipleExceptions, error_message, ExceptionHolder::WARN_EXCEPTION,
+                                                adbParser->_fileName, lineNumber);
         }
         num_bytes_str = "0";
     }
@@ -585,6 +579,7 @@ bool AdbParser<e, T_OFFSET>::parse_size(const string& s,
         {
             num_bytes = 0;
         }
+
         if (!num_bits_str.empty())
         {
             num_bits = stoull(num_bits_str, &end, 10);
@@ -600,21 +595,18 @@ bool AdbParser<e, T_OFFSET>::parse_size(const string& s,
     }
     catch (std::invalid_argument&)
     {
-        exception_raised = raiseException(allowMultipleExceptions,
-                                          "Failed parsing " + tag_name + " " + attribute_name + ", " + s + "\", " +
-                                            "invalid format, valid formats are: \"0xH.D\", \"D.D\", \"0xH\", \".D\".",
-                                          ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                          ExceptionHolder::FATAL_EXCEPTION);
+        error_message = "Failed parsing " + tag_name + " " + attribute_name + ", " + s + "\", " +
+                        "invalid format, valid formats are: \"0xH.D\", \"D.D\", \"0xH\", \".D\".";
+        exception_raised = ExceptionHolder::handle_exception(
+          allowMultipleExceptions, error_message, ExceptionHolder::FATAL_EXCEPTION, adbParser->_fileName, lineNumber);
         res = static_cast<T_OFFSET>(-1);
         return false;
     }
     catch (std::out_of_range&)
     {
-        exception_raised =
-          raiseException(allowMultipleExceptions,
-                         "Failed parsing " + tag_name + " " + attribute_name + ", " + s + "\", " + "out of range.",
-                         ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                         ExceptionHolder::FATAL_EXCEPTION);
+        error_message = "Failed parsing " + tag_name + " " + attribute_name + ", " + s + "\", " + "out of range.";
+        exception_raised = ExceptionHolder::handle_exception(
+          allowMultipleExceptions, error_message, ExceptionHolder::FATAL_EXCEPTION, adbParser->_fileName, lineNumber);
         res = static_cast<T_OFFSET>(-1);
         return false;
     }
@@ -623,23 +615,23 @@ bool AdbParser<e, T_OFFSET>::parse_size(const string& s,
     {
         if (num_bytes % 4 != 0)
         {
+            error_message = "Failed parsing " + tag_name + " " + attribute_name + ", " + s + ", " +
+                            "invalid format, address part must be dword aligned, while given, " + num_bytes_str;
             exception_raised =
-              raiseException(allowMultipleExceptions,
-                             "Failed parsing " + tag_name + " " + attribute_name + ", " + s + ", " +
-                               "invalid format, address part must be dword aligned, while given, " + num_bytes_str,
-                             ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                             ExceptionHolder::WARN_EXCEPTION);
+              ExceptionHolder::handle_exception(allowMultipleExceptions, error_message, ExceptionHolder::WARN_EXCEPTION,
+                                                adbParser->_fileName, lineNumber);
         }
+
         if (num_bits > 31)
         {
+            error_message = "Failed parsing " + tag_name + " " + attribute_name + ", " + s + ", " +
+                            "invalid format, offset part must in range [0,31], while given, " + num_bits_str;
             exception_raised =
-              raiseException(allowMultipleExceptions,
-                             "Failed parsing " + tag_name + " " + attribute_name + ", " + s + ", " +
-                               "invalid format, offset part must in range [0,31], while given, " + num_bits_str,
-                             ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                             ExceptionHolder::WARN_EXCEPTION);
+              ExceptionHolder::handle_exception(allowMultipleExceptions, error_message, ExceptionHolder::WARN_EXCEPTION,
+                                                adbParser->_fileName, lineNumber);
         }
     }
+
     res = num_bytes * 8 + num_bits;
     return !exception_raised;
 }
@@ -793,10 +785,15 @@ void AdbParser<e, O>::includeAllFilesInDir(AdbParser* adbParser, string dirPath,
 
 /**
  *  Function AdbParser::checkSpecialChars
+ *
+ *  Validates that a node/field/enum name is a valid C identifier, optionally
+ *  followed by an array subscript (e.g. "my_field[3]").
+ *  Allowed pattern: [_A-Za-z][_A-Za-z0-9]*  with optional  [<digits>]  suffix.
  */
 template<bool e, typename O>
 bool AdbParser<e, O>::checkSpecialChars(string tagName)
 {
+    // Uses explicit character classes instead of \w / \d for POSIX ERE compatibility (USE_STDLIB_REGEX).
     static Regex::regex validNameExpr("[_A-Za-z][_A-Za-z0-9]*(\\[[0-9]+\\])?$");
     Regex::smatch match;
     return !tagName.empty() && Regex::regex_match(tagName, match, validNameExpr);
@@ -839,13 +836,13 @@ template<bool e, typename O>
 void AdbParser<e, O>::startEnumElement(const XML_Char** atts, AdbParser<e, O>* adbParser, const int lineNumber)
 {
     bool expFound = false;
+    string error_message;
     if (!adbParser->_currentConfig || !adbParser->_currentConfig->attrs.count("type") ||
         TAG_ATTR_ENUM.compare(adbParser->_currentConfig->attrs["type"]))
     {
-        expFound = raiseException(allowMultipleExceptions,
-                                  "\"enum\" tag must be inside relevant \"config\" tag",
-                                  ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                  ExceptionHolder::ERROR_EXCEPTION);
+        error_message = "\"enum\" tag must be inside relevant \"config\" tag";
+        expFound = ExceptionHolder::handle_exception(
+          allowMultipleExceptions, error_message, ExceptionHolder::ERROR_EXCEPTION, adbParser->_fileName, lineNumber);
     }
 
     string tagName = attrValue(atts, "name");
@@ -854,18 +851,17 @@ void AdbParser<e, O>::startEnumElement(const XML_Char** atts, AdbParser<e, O>* a
     {
         if (!AdbParser::checkSpecialChars(tagName))
         {
-            expFound = raiseException(allowMultipleExceptions,
-                                      "Invalid character in enum name, in enum: \"" + tagName + "\"",
-                                      ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                      ExceptionHolder::WARN_EXCEPTION);
+            error_message = "Invalid character in enum name, in enum: \"" + tagName + "\"";
+            expFound =
+              ExceptionHolder::handle_exception(allowMultipleExceptions, error_message, ExceptionHolder::WARN_EXCEPTION,
+                                                adbParser->_fileName, lineNumber);
         }
     }
     if (tagName.empty() || value.empty())
     {
-        expFound = raiseException(allowMultipleExceptions,
-                                  "Both \"name\" and \"value\" attributes must be specified",
-                                  ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                  ExceptionHolder::ERROR_EXCEPTION);
+        error_message = "Both \"name\" and \"value\" attributes must be specified";
+        expFound = ExceptionHolder::handle_exception(
+          allowMultipleExceptions, error_message, ExceptionHolder::ERROR_EXCEPTION, adbParser->_fileName, lineNumber);
     }
     if (!expFound)
     {
@@ -879,12 +875,13 @@ void AdbParser<e, O>::startConfigElement(const XML_Char** atts, AdbParser<e, O>*
     bool expFound = false;
     bool is_field_attribute = false;
 
+    string error_message;
+
     if (adbParser->_currentConfig)
     {
-        expFound = raiseException(allowMultipleExceptions,
-                                  "config tag can't appear within other config",
-                                  ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                  ExceptionHolder::FATAL_EXCEPTION);
+        error_message = "config tag can't appear within other config";
+        expFound = ExceptionHolder::handle_exception(
+          allowMultipleExceptions, error_message, ExceptionHolder::FATAL_EXCEPTION, adbParser->_fileName, lineNumber);
     }
 
     adbParser->_currentConfig = new AdbConfig;
@@ -913,11 +910,10 @@ void AdbParser<e, O>::startConfigElement(const XML_Char** atts, AdbParser<e, O>*
                 static Regex::regex pattern(TAG_ATTR_DEFINE_PATTERN);
                 if (!Regex::regex_match(aValue, result, pattern))
                 {
-                    expFound =
-                      raiseException(allowMultipleExceptions,
-                                     string("Bad define format: \"") + aName + "\" attribute value: \"" + aValue + "\"",
-                                     ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                     ExceptionHolder::ERROR_EXCEPTION);
+                    error_message = "Bad define format: \"" + aName + "\" attribute value: \"" + aValue + "\"";
+                    expFound = ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                                 ExceptionHolder::ERROR_EXCEPTION, adbParser->_fileName,
+                                                                 lineNumber);
                 }
                 else
                 {
@@ -926,12 +922,11 @@ void AdbParser<e, O>::startConfigElement(const XML_Char** atts, AdbParser<e, O>*
 
                     if (adbParser->_adbCtxt->defines_map.find(define_key) != adbParser->_adbCtxt->defines_map.end())
                     {
-                        expFound =
-                          raiseException(allowMultipleExceptions,
-                                         string("Multiple definition of preprocessor variable: \"") + define_key +
-                                           "\" attribute name: \"" + aName + "\"",
-                                         ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                         ExceptionHolder::ERROR_EXCEPTION);
+                        error_message = "Multiple definition of preprocessor variable: \"" + define_key +
+                                        "\" attribute name: \"" + aName + "\"";
+                        expFound = ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                                     ExceptionHolder::ERROR_EXCEPTION,
+                                                                     adbParser->_fileName, lineNumber);
                     }
                     else
                     {
@@ -946,11 +941,10 @@ void AdbParser<e, O>::startConfigElement(const XML_Char** atts, AdbParser<e, O>*
                 // check that the field_attr is unique
                 if (adbParser->field_attr_names_set.find(aValue) != adbParser->field_attr_names_set.end())
                 {
-                    expFound = raiseException(
-                      allowMultipleExceptions,
-                      string("Redefinition of field_attr: \"") + aName + "\" attribute name: \"" + aValue + "\"",
-                      ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                      ExceptionHolder::ERROR_EXCEPTION);
+                    error_message = "Redefinition of field_attr: \"" + aName + "\" attribute name: \"" + aValue + "\"";
+                    expFound = ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                                 ExceptionHolder::ERROR_EXCEPTION, adbParser->_fileName,
+                                                                 lineNumber);
                 }
                 else
                 {
@@ -963,34 +957,30 @@ void AdbParser<e, O>::startConfigElement(const XML_Char** atts, AdbParser<e, O>*
                 // check attr 'type' is configured only when attr 'field_attr' is configured as well
                 if (field_attr.empty())
                 {
-                    expFound =
-                      raiseException(allowMultipleExceptions,
-                                     "Attribute \"type\" is supported only for attributes definition \"config\" tag",
-                                     "line: " + to_string(lineNumber),
-                                     ExceptionHolder::WARN_EXCEPTION);
+                    error_message = "Attribute \"type\" is supported only for attributes definition \"config\" tag";
+                    expFound = ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                                 ExceptionHolder::WARN_EXCEPTION, "", lineNumber);
                 }
 
                 // check that attr 'type' was provided and not empty
                 if (attr_type.empty())
                 {
-                    expFound =
-                      raiseException(allowMultipleExceptions,
-                                     string("field_attr type must be specified (not empty): \"") + aName +
-                                       "\" attribute value: \"" + aValue + "\"",
-                                     ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                     ExceptionHolder::ERROR_EXCEPTION);
+                    error_message = "field_attr type must be specified (not empty): \"" + aName +
+                                    "\" attribute value: \"" + aValue + "\"";
+                    expFound = ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                                 ExceptionHolder::ERROR_EXCEPTION, adbParser->_fileName,
+                                                                 lineNumber);
                 }
                 else
                 {
                     // check that type 'multival' has a 'fw_label' value
                     if (!attr_type.compare("multival") && aValue.compare("fw_label"))
                     {
-                        expFound =
-                          raiseException(allowMultipleExceptions,
-                                         string("Type \"multival\" is supported only for \"fw_label\" not for: \"") +
-                                           aName + "\" attribute value: \"" + aValue + "\"",
-                                         ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                         ExceptionHolder::ERROR_EXCEPTION);
+                        error_message = "Type \"multival\" is supported only for \"fw_label\" not for: \"" + aName +
+                                        "\" attribute value: \"" + aValue + "\"";
+                        expFound = ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                                     ExceptionHolder::ERROR_EXCEPTION,
+                                                                     adbParser->_fileName, lineNumber);
                     }
                 }
 
@@ -999,11 +989,10 @@ void AdbParser<e, O>::startConfigElement(const XML_Char** atts, AdbParser<e, O>*
                 // check that attr 'used_for' was not provided empty
                 if (checkAttrExist(atts, "used_for") && attr_used_for.empty())
                 {
-                    expFound = raiseException(
-                      allowMultipleExceptions,
-                      string("used_for is invalid: \"") + aName + "\" attribute value: \"" + aValue + "\"",
-                      ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                      ExceptionHolder::ERROR_EXCEPTION);
+                    error_message = "used_for is invalid: \"" + aName + "\" attribute value: \"" + aValue + "\"";
+                    expFound = ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                                 ExceptionHolder::ERROR_EXCEPTION, adbParser->_fileName,
+                                                                 lineNumber);
                 }
 
                 // check if 'pattern' was provided
@@ -1018,12 +1007,11 @@ void AdbParser<e, O>::startConfigElement(const XML_Char** atts, AdbParser<e, O>*
                     }
                     catch (...)
                     {
-                        expFound =
-                          raiseException(allowMultipleExceptions,
-                                         string("Bad attribute pattern: \"") + aValue + "\" name Pattern: \"" +
-                                           attrValue(atts, "pattern") + "\"",
-                                         ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                         ExceptionHolder::ERROR_EXCEPTION);
+                        error_message = "Bad attribute pattern: \"" + aValue + "\" name Pattern: \"" +
+                                        attrValue(atts, "pattern") + "\"";
+                        expFound = ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                                     ExceptionHolder::ERROR_EXCEPTION,
+                                                                     adbParser->_fileName, lineNumber);
                     }
                 }
             }
@@ -1040,12 +1028,11 @@ void AdbParser<e, O>::startConfigElement(const XML_Char** atts, AdbParser<e, O>*
                 }
                 catch (...)
                 {
-                    expFound =
-                      raiseException(allowMultipleExceptions,
-                                     string("Bad node name pattern: \"") + aValue + "\" pattern: \"" +
-                                       attrValue(atts, "nname_pattern") + "\"",
-                                     ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                     ExceptionHolder::ERROR_EXCEPTION);
+                    error_message =
+                      "Bad node name pattern: \"" + aValue + "\" pattern: \"" + attrValue(atts, "nname_pattern") + "\"";
+                    expFound = ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                                 ExceptionHolder::ERROR_EXCEPTION, adbParser->_fileName,
+                                                                 lineNumber);
                 }
             }
 
@@ -1061,23 +1048,22 @@ void AdbParser<e, O>::startConfigElement(const XML_Char** atts, AdbParser<e, O>*
                 }
                 catch (...)
                 {
-                    expFound =
-                      raiseException(allowMultipleExceptions,
-                                     string("Bad field name pattern: \"") + aValue + "\" pattern: \"" +
-                                       attrValue(atts, "fname_pattern") + "\"",
-                                     ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                     ExceptionHolder::ERROR_EXCEPTION);
+                    error_message = "Bad field name pattern: \"" + aValue + "\" pattern: \"" +
+                                    attrValue(atts, "fname_pattern") + "\"";
+                    expFound = ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                                 ExceptionHolder::ERROR_EXCEPTION, adbParser->_fileName,
+                                                                 lineNumber);
                 }
             }
             else if (!aName.compare("type") or !aName.compare("used_for") or !aName.compare("pattern"))
             {
                 if (!is_field_attribute)
                 {
-                    raiseException(
-                      allowMultipleExceptions,
-                      "Attribute \"" + aName + "\" is supported only for field_attr definition in \"config\" tag",
-                      " line: " + to_string(lineNumber),
-                      ExceptionHolder::WARN_EXCEPTION);
+                    error_message =
+                      "Attribute \"" + aName + "\" is supported only for field_attr definition in \"config\" tag";
+                    ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                      ExceptionHolder::WARN_EXCEPTION, adbParser->_fileName,
+                                                      lineNumber);
                 }
             }
             else if (aName.compare("sw_export") and aName.compare("disable_exports"))
@@ -1096,11 +1082,10 @@ void AdbParser<e, O>::startConfigElement(const XML_Char** atts, AdbParser<e, O>*
             }
             catch (std::exception&)
             {
+                error_message = "Filed to parse the \"" + aName + "\" attribute value: \"" + aValue + "\"";
                 expFound =
-                  raiseException(allowMultipleExceptions,
-                                 string("Filed to parse the \"") + aName + "\" attribute value: \"" + aValue + "\"",
-                                 ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                 ExceptionHolder::ERROR_EXCEPTION);
+                  ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                    ExceptionHolder::ERROR_EXCEPTION, adbParser->_fileName, lineNumber);
             }
         }
 
@@ -1113,11 +1098,10 @@ void AdbParser<e, O>::startConfigElement(const XML_Char** atts, AdbParser<e, O>*
             }
             catch (std::exception&)
             {
+                error_message = "Filed to parse the \"" + aName + "\" attribute value: \"" + aValue + "\"";
                 expFound =
-                  raiseException(allowMultipleExceptions,
-                                 string("Filed to parse the \"") + aName + "\" attribute value: \"" + aValue + "\"",
-                                 ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                 ExceptionHolder::ERROR_EXCEPTION);
+                  ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                    ExceptionHolder::ERROR_EXCEPTION, adbParser->_fileName, lineNumber);
             }
         }
 
@@ -1146,10 +1130,9 @@ void AdbParser<e, O>::startConfigElement(const XML_Char** atts, AdbParser<e, O>*
         }
         else if (!is_valid_att)
         {
-            raiseException(allowMultipleExceptions,
-                           "Attribute \"" + aName + "\" for config tag is not supported.",
-                           " line: " + to_string(lineNumber),
-                           ExceptionHolder::WARN_EXCEPTION);
+            error_message = "Attribute \"" + aName + "\" for config tag is not supported.";
+            ExceptionHolder::handle_exception(allowMultipleExceptions, error_message, ExceptionHolder::WARN_EXCEPTION,
+                                              adbParser->_fileName, lineNumber);
         }
     }
 }
@@ -1173,16 +1156,17 @@ void AdbParser<e, O>::startIncludeElement(const XML_Char** atts, AdbParser<e, O>
         Algorithm::trim(includeAttr);
 
         bool expFound = false;
+        string error_message;
         if (includeAttr == "file")
         {
             string fname = attrValue(atts, "file");
             Algorithm::trim(fname);
             if (fname.empty())
             {
-                expFound = raiseException(allowMultipleExceptions,
-                                          string() + "File attribute isn't given within " + TAG_INCLUDE + " tag",
-                                          ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                          ExceptionHolder::FATAL_EXCEPTION);
+                error_message = "File attribute isn't given within " + TAG_INCLUDE + " tag";
+                expFound =
+                  ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                    ExceptionHolder::FATAL_EXCEPTION, adbParser->_fileName, lineNumber);
             }
             if (!expFound)
                 includeFile(adbParser, fname, lineNumber);
@@ -1193,10 +1177,10 @@ void AdbParser<e, O>::startIncludeElement(const XML_Char** atts, AdbParser<e, O>
             Algorithm::trim(includeAllDirPath);
             if (includeAllDirPath.empty())
             {
-                expFound = raiseException(allowMultipleExceptions,
-                                          string() + "Directory to include isn't given within " + TAG_INCLUDE + " tag",
-                                          ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                          ExceptionHolder::FATAL_EXCEPTION);
+                error_message = "Directory to include isn't given within " + TAG_INCLUDE + " tag";
+                expFound =
+                  ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                    ExceptionHolder::FATAL_EXCEPTION, adbParser->_fileName, lineNumber);
             }
 
             if (!expFound)
@@ -1204,10 +1188,10 @@ void AdbParser<e, O>::startIncludeElement(const XML_Char** atts, AdbParser<e, O>
         }
         else
         {
-            expFound = raiseException(allowMultipleExceptions,
-                                      string() + "Include is called without file or dir attribute.",
-                                      ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                      ExceptionHolder::ERROR_EXCEPTION);
+            error_message = "Include is called without file or dir attribute.";
+            expFound =
+              ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                ExceptionHolder::ERROR_EXCEPTION, adbParser->_fileName, lineNumber);
         }
     }
 }
@@ -1221,10 +1205,9 @@ void AdbParser<e, O>::startAttrReplaceElement(const XML_Char** atts,
     string path = attrValue(atts, "path");
     if (path.empty())
     {
-        raiseException(allowMultipleExceptions,
-                       "path attribute is missing in attr_replace operation",
-                       ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                       ExceptionHolder::ERROR_EXCEPTION);
+        string message = "path attribute is missing in attr_replace operation";
+        ExceptionHolder::handle_exception(allowMultipleExceptions, message, ExceptionHolder::ERROR_EXCEPTION,
+                                          adbParser->_fileName, lineNumber);
         return;
     }
 
@@ -1248,12 +1231,12 @@ void AdbParser<e, T_OFFSET>::startNodeElement(const XML_Char** atts,
                                               AdbParser<e, T_OFFSET>* adbParser,
                                               const int lineNumber)
 {
+    string error_message;
     if (adbParser->_currentNode || adbParser->skipNode)
     {
-        raiseException(allowMultipleExceptions,
-                       "Nested nodes are not allowed",
-                       ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                       ExceptionHolder::FATAL_EXCEPTION);
+        error_message = "Nested nodes are not allowed";
+        ExceptionHolder::handle_exception(allowMultipleExceptions, error_message, ExceptionHolder::FATAL_EXCEPTION,
+                                          adbParser->_fileName, lineNumber);
     }
     bool cond = is_inst_ifdef_exist_and_correct_project(atts, adbParser);
 
@@ -1276,11 +1259,10 @@ void AdbParser<e, T_OFFSET>::startNodeElement(const XML_Char** atts,
             // check the node name is compatible with the nname_pattern
             if (!Regex::regex_match(nodeName, Regex::regex(adbParser->_nname_pattern)))
             {
-                raiseException(allowMultipleExceptions,
-                               "Illegal node name: \"" + nodeName + "\" doesn't match the given node name pattern: \"",
-                               adbParser->_nname_pattern + "\", in file: \"" + adbParser->_fileName +
-                                 "\" line: " + to_string(lineNumber),
-                               ExceptionHolder::WARN_EXCEPTION);
+                error_message = "Illegal node name: \"" + nodeName +
+                                "\" doesn't match the given node name pattern: \"" + adbParser->_nname_pattern + "\"";
+                ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                  ExceptionHolder::WARN_EXCEPTION, adbParser->_fileName, lineNumber);
             }
         }
 
@@ -1289,19 +1271,18 @@ void AdbParser<e, T_OFFSET>::startNodeElement(const XML_Char** atts,
         parse_size(size, node_size, adbParser, true, true);
         if (node_size == 0)
         {
-            raiseException(allowMultipleExceptions,
-                           "Node size is not allowed to be 0, in Node: \"" + nodeName + "\"",
-                           ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                           ExceptionHolder::FATAL_EXCEPTION);
+            error_message = "Node size is not allowed to be 0, in Node: \"" + nodeName + "\"";
+            ExceptionHolder::handle_exception(allowMultipleExceptions, error_message, ExceptionHolder::FATAL_EXCEPTION,
+                                              adbParser->_fileName, lineNumber);
         }
+
         if (adbParser->_enforceExtraChecks)
         {
             if (!AdbParser::checkSpecialChars(nodeName))
             {
-                raiseException(allowMultipleExceptions,
-                               "Invalid character in node name, in Node: \"" + nodeName + "\"",
-                               ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                               ExceptionHolder::WARN_EXCEPTION);
+                error_message = "Invalid character in node name, in Node: \"" + nodeName + "\"";
+                ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                  ExceptionHolder::WARN_EXCEPTION, adbParser->_fileName, lineNumber);
             }
         }
         string desc = descXmlToNative(attrValue(atts, "descr", override_attrs));
@@ -1309,20 +1290,18 @@ void AdbParser<e, T_OFFSET>::startNodeElement(const XML_Char** atts,
         // Check for mandatory attrs
         if (nodeName.empty())
         {
-            raiseException(allowMultipleExceptions,
-                           "Missing node name",
-                           ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                           ExceptionHolder::FATAL_EXCEPTION);
+            error_message = "Missing node name";
+            ExceptionHolder::handle_exception(allowMultipleExceptions, error_message, ExceptionHolder::FATAL_EXCEPTION,
+                                              adbParser->_fileName, lineNumber);
         }
         // Check for duplications
         if (adbParser->_adbCtxt->nodesMap.count(nodeName))
         {
-            raiseException(allowMultipleExceptions,
-                           "node \"" + nodeName + "\" is already defined in file: \"" +
-                             adbParser->_adbCtxt->nodesMap[nodeName]->fileName +
-                             "\" line: " + to_string(adbParser->_adbCtxt->nodesMap[nodeName]->lineNumber),
-                           ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                           ExceptionHolder::FATAL_EXCEPTION);
+            error_message = "node \"" + nodeName + "\" is already defined";
+            ExceptionHolder::appendLocationSuffix(error_message, adbParser->_adbCtxt->nodesMap[nodeName]->fileName,
+                                                  adbParser->_adbCtxt->nodesMap[nodeName]->lineNumber);
+            ExceptionHolder::handle_exception(allowMultipleExceptions, error_message, ExceptionHolder::FATAL_EXCEPTION,
+                                              adbParser->_fileName, lineNumber);
         }
 
         string unionAttrVal = attrValue(atts, "attr_is_union", override_attrs);
@@ -1372,22 +1351,23 @@ void AdbParser<e, T_OFFSET>::startFieldElement(const XML_Char** atts,
     bool invalid_offset = false;
     bool default_offset = false;
 
+    string error_message;
+
     if (!adbParser->_currentNode && !adbParser->skipNode)
     {
-        expFound = raiseException(allowMultipleExceptions,
-                                  "Field definition outside of node",
-                                  ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                  ExceptionHolder::FATAL_EXCEPTION);
+        error_message = "Field definition outside of node";
+        expFound = ExceptionHolder::handle_exception(
+          allowMultipleExceptions, error_message, ExceptionHolder::FATAL_EXCEPTION, adbParser->_fileName, lineNumber);
     }
 
     if (!adbParser->skipNode)
     {
         if (adbParser->_currentField)
         {
-            expFound = raiseException(allowMultipleExceptions,
-                                      "Nested fields are not allowed",
-                                      ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                      ExceptionHolder::FATAL_EXCEPTION);
+            error_message = "Nested fields are not allowed";
+            expFound =
+              ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                ExceptionHolder::FATAL_EXCEPTION, adbParser->_fileName, lineNumber);
         }
 
         string fieldName = attrValue(atts, "name");
@@ -1407,14 +1387,16 @@ void AdbParser<e, T_OFFSET>::startFieldElement(const XML_Char** atts,
         string size = attrValue(atts, "size", override_attrs);
 
         T_OFFSET field_size = 0;
+
         expFound = !parse_size(size, field_size, adbParser, true, false);
         invalid_size = field_size == static_cast<T_OFFSET>(-1);
+
         if (field_size == 0)
         {
-            expFound = raiseException(allowMultipleExceptions,
-                                      "Missing or zero field size, in field: \"" + fieldName + "\"",
-                                      ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                      ExceptionHolder::FATAL_EXCEPTION);
+            error_message = "Missing or zero field size, in field: \"" + fieldName + "\"";
+            expFound =
+              ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                ExceptionHolder::FATAL_EXCEPTION, adbParser->_fileName, lineNumber);
             invalid_size = true;
         }
 
@@ -1423,27 +1405,29 @@ void AdbParser<e, T_OFFSET>::startFieldElement(const XML_Char** atts,
         {
             default_offset = true;
         }
+
         T_OFFSET field_offset = 0;
         if (!default_offset)
         {
             expFound = expFound || !parse_size(offset, field_offset, adbParser, false, false);
         }
         invalid_offset = field_offset == static_cast<T_OFFSET>(-1);
+
         if (adbParser->_enforceExtraChecks)
         {
             if (!AdbParser::checkSpecialChars(fieldName))
             {
-                expFound = raiseException(allowMultipleExceptions,
-                                          "Invalid character in field name, in Field: \"" + fieldName + "\"",
-                                          ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                          ExceptionHolder::WARN_EXCEPTION);
+                error_message = "Invalid character in field name, in Field: \"" + fieldName + "\"";
+                expFound =
+                  ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                    ExceptionHolder::WARN_EXCEPTION, adbParser->_fileName, lineNumber);
             }
             if (!expFound && adbParser->_currentNode->isUnion && !default_offset && field_offset != 0)
             {
-                expFound = raiseException(allowMultipleExceptions,
-                                          "Offset must be 0x0.0 in Union fields",
-                                          ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                          ExceptionHolder::ERROR_EXCEPTION);
+                error_message = "Offset must be 0x0.0 in Union fields";
+                expFound =
+                  ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                    ExceptionHolder::ERROR_EXCEPTION, adbParser->_fileName, lineNumber);
             }
         }
 
@@ -1462,27 +1446,27 @@ void AdbParser<e, T_OFFSET>::startFieldElement(const XML_Char** atts,
             T_OFFSET entrySize = field_size / (high - low + 1);
             if (entrySize % 8 != 0 && entrySize > 8)
             {
-                expFound = raiseException(allowMultipleExceptions,
-                                          "Invalid size of array entries",
-                                          ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                          ExceptionHolder::ERROR_EXCEPTION);
+                error_message = "Invalid size of array entries";
+                expFound =
+                  ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                    ExceptionHolder::ERROR_EXCEPTION, adbParser->_fileName, lineNumber);
             }
             if (entrySize < 8 && entrySize != 4 && entrySize != 2 && entrySize != 1 &&
                 ((field_size > 32 && highBound != "VARIABLE") || highBound == "VARIABLE"))
             {
-                expFound = raiseException(allowMultipleExceptions,
-                                          "Array with entry size 3, 5, 6 or 7 bits and array size is larger than 32bit",
-                                          ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                          ExceptionHolder::ERROR_EXCEPTION);
+                error_message = "Array with entry size 3, 5, 6 or 7 bits and array size is larger than 32bit";
+                expFound =
+                  ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                    ExceptionHolder::ERROR_EXCEPTION, adbParser->_fileName, lineNumber);
             }
         }
         else if (adbParser->_enforceGuiChecks && (lowBound != "" || highBound != ""))
         {
-            expFound = raiseException(
-              allowMultipleExceptions,
-              "Field: \"" + adbParser->_currentField->name + "\": both low_bound or high_bound must be specified",
-              ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-              ExceptionHolder::WARN_EXCEPTION);
+            error_message =
+              "Field: \"" + adbParser->_currentField->name + "\": both low_bound or high_bound must be specified";
+            expFound =
+              ExceptionHolder::handle_exception(allowMultipleExceptions, error_message, ExceptionHolder::WARN_EXCEPTION,
+                                                adbParser->_fileName, lineNumber);
         }
 
         string subNode = attrValue(atts, "subnode", override_attrs);
@@ -1490,10 +1474,10 @@ void AdbParser<e, T_OFFSET>::startFieldElement(const XML_Char** atts,
         // Check for mandatory attrs
         if (fieldName.empty())
         {
-            expFound = raiseException(allowMultipleExceptions,
-                                      "Missing field name",
-                                      ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                      ExceptionHolder::FATAL_EXCEPTION);
+            error_message = "Missing field name";
+            expFound =
+              ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                ExceptionHolder::FATAL_EXCEPTION, adbParser->_fileName, lineNumber);
         }
 
         // Create new fields
@@ -1543,6 +1527,7 @@ void AdbParser<e, T_OFFSET>::startFieldElement(const XML_Char** atts,
         {
             throw AdbStopException();
         }
+
         // Check array element size
         if (adbParser->_currentField->array_type >= AdbField::ArrayType::definite &&
             adbParser->_currentField->array_type < AdbField::ArrayType::unlimited &&
@@ -1550,10 +1535,12 @@ void AdbParser<e, T_OFFSET>::startFieldElement(const XML_Char** atts,
         {
             std::stringstream ss;
             ss << "In field \"" << fieldName << "\" invalid array element size \""
-               << adbParser->_currentField->get_size() << "/" << adbParser->_currentField->arrayLen()
-               << "\" in file: \"" << adbParser->_fileName << "\" line: " << lineNumber;
+               << adbParser->_currentField->get_size() << "/" << adbParser->_currentField->arrayLen() << "\"";
 
-            expFound = raiseException(allowMultipleExceptions, ss.str(), "", ExceptionHolder::FATAL_EXCEPTION);
+            error_message = ss.str();
+            expFound =
+              ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                ExceptionHolder::FATAL_EXCEPTION, adbParser->_fileName, lineNumber);
         }
         if (default_offset)
         {
@@ -1597,12 +1584,12 @@ void AdbParser<e, T_OFFSET>::startFieldElement(const XML_Char** atts,
             adbParser->_currentField->offset + adbParser->_currentField->get_size() >
               adbParser->_currentNode->get_size())
         {
-            expFound = raiseException(allowMultipleExceptions,
-                                      "Node: " + adbParser->_currentNode->name + " size(" +
-                                        to_string(adbParser->_currentNode->get_size()) + ") - field (" +
-                                        adbParser->_currentField->name + ") continue over the node's end",
-                                      ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                      ExceptionHolder::ERROR_EXCEPTION);
+            error_message = "Node: " + adbParser->_currentNode->name + " size(" +
+                            to_string(adbParser->_currentNode->get_size()) + ") - field (" +
+                            adbParser->_currentField->name + ") continue over the node's end";
+            expFound =
+              ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                ExceptionHolder::ERROR_EXCEPTION, adbParser->_fileName, lineNumber);
         }
 
         // For DS alignment check
@@ -1610,37 +1597,37 @@ void AdbParser<e, T_OFFSET>::startFieldElement(const XML_Char** atts,
 
         if (!expFound && adbParser->_strict && adbParser->_currentNode->isUnion && adbParser->_currentField->isLeaf())
         {
-            expFound = raiseException(allowMultipleExceptions,
-                                      "Fields are not allowed in unions (only subnodes)",
-                                      ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                      ExceptionHolder::FATAL_EXCEPTION);
+            error_message = "Fields are not allowed in unions (only subnodes)";
+            expFound =
+              ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                ExceptionHolder::FATAL_EXCEPTION, adbParser->_fileName, lineNumber);
         }
 
         if (!expFound && adbParser->_strict && adbParser->_currentNode->isUnion &&
             adbParser->_currentField->get_size() % 32)
         {
-            expFound = raiseException(allowMultipleExceptions,
-                                      "Union is allowed to contains only dword aligned subnodes",
-                                      ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                      ExceptionHolder::FATAL_EXCEPTION);
+            error_message = "Union is allowed to contains only dword aligned subnodes";
+            expFound =
+              ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                ExceptionHolder::FATAL_EXCEPTION, adbParser->_fileName, lineNumber);
         }
 
         if (!expFound && adbParser->_currentNode->isUnion &&
             adbParser->_currentField->get_size() > adbParser->_currentNode->get_size())
         {
-            expFound = raiseException(allowMultipleExceptions,
-                                      "Field size is greater than the parent node size",
-                                      ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                      ExceptionHolder::FATAL_EXCEPTION);
+            error_message = "Field size is greater than the parent node size";
+            expFound =
+              ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                ExceptionHolder::FATAL_EXCEPTION, adbParser->_fileName, lineNumber);
         }
 
         if (!expFound && adbParser->_strict && !adbParser->_currentField->isArray() &&
             adbParser->_currentField->isLeaf() && adbParser->_currentField->get_size() > 32)
         {
-            expFound = raiseException(allowMultipleExceptions,
-                                      "Leaf fields can't be > 32 bits",
-                                      ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                      ExceptionHolder::FATAL_EXCEPTION);
+            error_message = "Leaf fields can't be > 32 bits";
+            expFound =
+              ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                ExceptionHolder::FATAL_EXCEPTION, adbParser->_fileName, lineNumber);
         }
 
         if (!expFound && adbParser->_checkDsAlign)
@@ -1649,13 +1636,13 @@ void AdbParser<e, T_OFFSET>::startFieldElement(const XML_Char** atts,
             if ((adbParser->_currentField->isLeaf() || adbParser->_currentField->subNode == "uint64") &&
                 (esize == 16 || esize == 32 || esize == 64) && adbParser->_currentField->offset % esize != 0)
             {
-                expFound = raiseException(allowMultipleExceptions,
-                                          "Field: " + adbParser->_currentField->name +
-                                            " in Node: " + adbParser->_currentNode->name + " offset(" +
-                                            to_string(adbParser->_currentField->offset) + ") is not aligned to size(" +
-                                            to_string(esize) + ")",
-                                          ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                          ExceptionHolder::ERROR_EXCEPTION);
+                error_message = "Field: " + adbParser->_currentField->name +
+                                " in Node: " + adbParser->_currentNode->name + " offset(" +
+                                to_string(adbParser->_currentField->offset) + ") is not aligned to size(" +
+                                to_string(esize) + ")";
+                expFound =
+                  ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                    ExceptionHolder::ERROR_EXCEPTION, adbParser->_fileName, lineNumber);
             }
         }
 
@@ -1666,31 +1653,30 @@ void AdbParser<e, T_OFFSET>::startFieldElement(const XML_Char** atts,
             {
                 if (!checkAttrExist(atts, adbParser->field_mand_attr[i].c_str()))
                 {
-                    expFound = raiseException(
-                      allowMultipleExceptions,
-                      "Atrribute: \"" + adbParser->field_mand_attr[i] + "\" for field must be specified.",
-                      " in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                      ExceptionHolder::ERROR_EXCEPTION);
+                    error_message = "Atrribute: \"" + adbParser->field_mand_attr[i] + "\" for field must be specified.";
+                    expFound = ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                                 ExceptionHolder::ERROR_EXCEPTION, adbParser->_fileName,
+                                                                 lineNumber);
                 }
             }
 
             // check if the field name is compatible with the fname pattern
             if (!Regex::regex_match(adbParser->_currentField->name, Regex::regex(adbParser->_fname_pattern)))
             {
-                expFound = raiseException(allowMultipleExceptions,
-                                          "Illegal field name: \"" + adbParser->_currentField->name +
-                                            "\" doesn't match the given field name pattern",
-                                          ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                          ExceptionHolder::WARN_EXCEPTION);
+                error_message = "Illegal field name: \"" + adbParser->_currentField->name +
+                                "\" doesn't match the given field name pattern";
+                expFound =
+                  ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                    ExceptionHolder::WARN_EXCEPTION, adbParser->_fileName, lineNumber);
             }
 
             // check if the field inside a union is an array
             if (!expFound && adbParser->_currentNode->isUnion && adbParser->_currentField->isArray())
             {
-                expFound = raiseException(allowMultipleExceptions,
-                                          "Arrays are not allowed in unions (only subnodes)",
-                                          ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                          ExceptionHolder::FATAL_EXCEPTION);
+                error_message = "Arrays are not allowed in unions (only subnodes)";
+                expFound =
+                  ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                    ExceptionHolder::FATAL_EXCEPTION, adbParser->_fileName, lineNumber);
             }
         }
 
@@ -1708,11 +1694,10 @@ void AdbParser<e, T_OFFSET>::startFieldElement(const XML_Char** atts,
                         adbParser->field_attr_names_set.find(aName) != adbParser->field_attr_names_set.end() &&
                         adbParser->field_spec_attr.find(aName) != adbParser->field_spec_attr.end())
                     {
-                        expFound =
-                          raiseException(allowMultipleExceptions,
-                                         "Unknown attribute: " + aName + " at field: " + adbParser->_currentField->name,
-                                         ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                         ExceptionHolder::ERROR_EXCEPTION);
+                        error_message = "Unknown attribute: " + aName + " at field: " + adbParser->_currentField->name;
+                        expFound = ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                                     ExceptionHolder::ERROR_EXCEPTION,
+                                                                     adbParser->_fileName, lineNumber);
                     }
 
                     if (!aName.compare("enum"))
@@ -1728,12 +1713,11 @@ void AdbParser<e, T_OFFSET>::startFieldElement(const XML_Char** atts,
                         {
                             if (!Regex::regex_match(entry, Regex::regex(adbParser->_enum_pattern)))
                             {
-                                expFound =
-                                  raiseException(allowMultipleExceptions,
-                                                 "Illegal value: \"" + aValue + "\" for attribute: \"" + aName + "\" ",
-                                                 "doesn't match the given attribute pattern, in file: \"" +
-                                                   adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                                 ExceptionHolder::ERROR_EXCEPTION);
+                                error_message = "Illegal value: \"" + aValue + "\" for attribute: \"" + aName +
+                                                "\" doesn't match the given attribute pattern";
+                                expFound = ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                                             ExceptionHolder::ERROR_EXCEPTION,
+                                                                             adbParser->_fileName, lineNumber);
                             }
                         }
                     }
@@ -1743,12 +1727,11 @@ void AdbParser<e, T_OFFSET>::startFieldElement(const XML_Char** atts,
                         if (adbParser->attr_pattern.find(aName) != adbParser->attr_pattern.end() &&
                             !Regex::regex_match(aValue, Regex::regex(adbParser->attr_pattern[aName])))
                         {
-                            expFound =
-                              raiseException(allowMultipleExceptions,
-                                             "Illegal value: \"" + aValue + "\" for attribute: \"" + aName + "\" ",
-                                             "doesn't match the given attribute pattern, in file: \"" +
-                                               adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                             ExceptionHolder::WARN_EXCEPTION);
+                            error_message = "Illegal value: \"" + aValue + "\" for attribute: \"" + aName +
+                                            "\" doesn't match the given attribute pattern";
+                            expFound = ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                                         ExceptionHolder::WARN_EXCEPTION,
+                                                                         adbParser->_fileName, lineNumber);
                         }
                     }
                 }
@@ -1768,6 +1751,8 @@ void AdbParser<e, O>::startElement(void* _adbParser, const XML_Char* name, const
 
     int lineNumber = XML_GetCurrentLineNumber(adbParser->_xmlParser);
     adbParser->_currentTagValue = "";
+
+    string error_message;
 
     if (TAG_NODES_DEFINITION == name)
     {
@@ -1809,10 +1794,9 @@ void AdbParser<e, O>::startElement(void* _adbParser, const XML_Char* name, const
         }
         else
         {
-            raiseException(allowMultipleExceptions,
-                           "Operation attr_replace must be defined within <instance_ops> element only.",
-                           ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                           ExceptionHolder::FATAL_EXCEPTION);
+            error_message = "Operation attr_replace must be defined within <instance_ops> element only.";
+            ExceptionHolder::handle_exception(allowMultipleExceptions, error_message, ExceptionHolder::FATAL_EXCEPTION,
+                                              adbParser->_fileName, lineNumber);
         }
     }
     else if (TAG_NODE == name)
@@ -1829,17 +1813,10 @@ void AdbParser<e, O>::startElement(void* _adbParser, const XML_Char* name, const
     }
     else
     {
-        string exceptionTxt = "Unsupported tag: " + string(name);
-        if (allowMultipleExceptions)
-        {
-            exceptionTxt = exceptionTxt + ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber);
-            ExceptionHolder::insertNewException(ExceptionHolder::FATAL_EXCEPTION, exceptionTxt);
-            return;
-        }
-        else
-        {
-            throw AdbException(exceptionTxt);
-        }
+        error_message = "Unsupported tag: " + string(name);
+        ExceptionHolder::handle_exception(allowMultipleExceptions, error_message, ExceptionHolder::FATAL_EXCEPTION,
+                                          adbParser->_fileName, lineNumber);
+        return;
     }
 }
 
@@ -1957,6 +1934,7 @@ void AdbParser<e, T_OFFSET>::endElement(void* _adbParser, const XML_Char* name)
 {
     AdbParser<e, T_OFFSET>* adbParser = static_cast<AdbParser<e, T_OFFSET>*>(_adbParser);
     int lineNumber = XML_GetCurrentLineNumber(adbParser->_xmlParser);
+    string error_message;
     /*
      * Config
      * ----
@@ -2064,20 +2042,12 @@ void AdbParser<e, T_OFFSET>::endElement(void* _adbParser, const XML_Char* name)
                 {
                     if (prevField->offset + prevField->get_size() > field->offset)
                     { // Overlapping
-                        string exceptionTxt = "Field: " + field->name + " " +
-                                              formatAddr(field->offset, field->get_size()) +
-                                              " overlaps with Field: " + prevField->name + " " +
-                                              formatAddr(prevField->offset, prevField->get_size());
-                        if (allowMultipleExceptions)
-                        {
-                            exceptionTxt = exceptionTxt + ", in file: \"" + adbParser->_fileName +
-                                           "\" line: " + to_string(lineNumber);
-                            ExceptionHolder::insertNewException(ExceptionHolder::ERROR_EXCEPTION, exceptionTxt);
-                        }
-                        else
-                        {
-                            throw AdbException(exceptionTxt);
-                        }
+                        error_message = "Field: " + field->name + " " + formatAddr(field->offset, field->get_size()) +
+                                        " overlaps with Field: " + prevField->name + " " +
+                                        formatAddr(prevField->offset, prevField->get_size());
+                        ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                          ExceptionHolder::ERROR_EXCEPTION, adbParser->_fileName,
+                                                          lineNumber);
                     }
                     T_OFFSET delta = field->offset - (prevField->offset + prevField->get_size());
                     if (delta > 0 && adbParser->_addReserved)
@@ -2132,12 +2102,11 @@ void AdbParser<e, T_OFFSET>::endElement(void* _adbParser, const XML_Char* name)
             if (adbParser->_checkDsAlign && max_leaf_size != 0 &&
                 adbParser->_currentNode->get_size() % max_leaf_size != 0)
             {
-                raiseException(allowMultipleExceptions,
-                               "Node: " + adbParser->_currentNode->name + " size(" +
-                                 to_string(adbParser->_currentNode->get_size()) +
-                                 ") is not aligned with largest leaf(" + to_string(max_leaf_size) + ")",
-                               ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                               ExceptionHolder::ERROR_EXCEPTION);
+                error_message = "Node: " + adbParser->_currentNode->name + " size(" +
+                                to_string(adbParser->_currentNode->get_size()) + ") is not aligned with largest leaf(" +
+                                to_string(max_leaf_size) + ")";
+                ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                  ExceptionHolder::ERROR_EXCEPTION, adbParser->_fileName, lineNumber);
             }
 
             // Re-fix fields offset
@@ -2249,18 +2218,11 @@ void AdbParser<e, T_OFFSET>::endElement(void* _adbParser, const XML_Char* name)
 
                 if (status < 0)
                 {
-                    string exceptionTxt = string("Error evaluating expression \"") + it->second.c_str() +
-                                          "\" : " + AdbExpr::statusStr(status);
-                    if (allowMultipleExceptions)
-                    {
-                        exceptionTxt =
-                          exceptionTxt + ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber);
-                        ExceptionHolder::insertNewException(ExceptionHolder::ERROR_EXCEPTION, exceptionTxt);
-                    }
-                    else
-                    {
-                        throw AdbException(exceptionTxt);
-                    }
+                    error_message =
+                      "Error evaluating expression \"" + it->second + "\" : " + AdbExpr::statusStr(status);
+                    ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                      ExceptionHolder::ERROR_EXCEPTION, adbParser->_fileName,
+                                                      lineNumber);
                 }
                 cond = !!res;
             }
@@ -2274,18 +2236,10 @@ void AdbParser<e, T_OFFSET>::endElement(void* _adbParser, const XML_Char* name)
                     {
                         if (!adbParser->_currentNode->fields[i]->name.compare(adbParser->_currentField->name))
                         {
-                            string exceptionTxt =
-                              "The field \"" + adbParser->_currentField->name + "\" isn't unique in node";
-                            if (allowMultipleExceptions)
-                            {
-                                exceptionTxt = exceptionTxt + ", in file: \"" + adbParser->_fileName +
-                                               "\" line: " + to_string(lineNumber);
-                                ExceptionHolder::insertNewException(ExceptionHolder::ERROR_EXCEPTION, exceptionTxt);
-                            }
-                            else
-                            {
-                                throw AdbException(exceptionTxt);
-                            }
+                            error_message = "The field \"" + adbParser->_currentField->name + "\" isn't unique in node";
+                            ExceptionHolder::handle_exception(allowMultipleExceptions, error_message,
+                                                              ExceptionHolder::ERROR_EXCEPTION, adbParser->_fileName,
+                                                              lineNumber);
                         }
                     }
                 }
@@ -2303,26 +2257,6 @@ void AdbParser<e, T_OFFSET>::endElement(void* _adbParser, const XML_Char* name)
             }
             adbParser->_currentField = 0;
         }
-    }
-}
-
-/**
- * Function: AdbParser::raiseException
- **/
-template<bool e, typename O>
-bool AdbParser<e, O>::raiseException(bool allowMultipleExceptions,
-                                     string exceptionTxt,
-                                     string addedMsg,
-                                     const string expType)
-{
-    if (allowMultipleExceptions)
-    {
-        ExceptionHolder::insertNewException(expType, exceptionTxt + addedMsg);
-        return false;
-    }
-    else
-    {
-        throw AdbException(exceptionTxt);
     }
 }
 

@@ -484,6 +484,10 @@ flash_info_t g_flash_info_arr[] = {{"M25PXxx", FV_ST, FMT_ST_M25PX, FD_LEGACY, M
                                    {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND_IM, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 1, 0, 0},
                                    {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND_IQ, 1 << FD_32, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 0, 0, 1, 0, 0},
                                    {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND_IM, 1 << FD_32, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 0, 0, 1, 0, 0},
+
+                                   // https://www.mouser.com/datasheet/2/949/w25q256jw_spi_revd_09042018-1489579.pdf?srsltid=AfmBOoogLLjBZgIyiOGGuM3skhT2O5XciLm6LmVNvT_Sr_kYhxQhvXoG
+                                   {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND_IQ, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 1, 0, 0},
+  
                                    {ATMEL_NAME, FV_ATMEL, FMT_ATMEL, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 0, 0, 0, 0, 0, 0, 0, 0},
                                    {S25FLXXXP_NAME, FV_S25FLXXXX, FMT_S25FLXXXP, FD_LEGACY, MCS_STSPI, SFC_SE, FSS_64KB, 0, 0, 0, 0, 0, 0, 0, 0},
                                    {S25FL116K_NAME, FV_S25FLXXXX, FMT_S25FL116K, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 0, 0, 0, 0},
@@ -510,6 +514,7 @@ flash_info_t g_flash_info_arr[] = {{"M25PXxx", FV_ST, FMT_ST_M25PX, FD_LEGACY, M
                                    /* https://www.issi.com/WW/pdf/25LP-WP512MG.pdf */
                                    {ISSI_NAME, FV_IS25LPXXX, FMT_IS25WPXXX, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 1, 0, 0},
 
+                                   {GIGA_1V8_NAME, FV_GD25QXXX, FVT_GD25LFXXX, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 1, 1, 0, 0},
                                    {GIGA_3V_NAME, FV_GD25QXXX, FVT_GD25QXXX, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 0, 0, 0},
                                    {GIGA_3V_NAME, FV_GD25QXXX, FVT_GD25QXXX, 1 << FD_128, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 1, 0, 0, 0},
                                    /* https://www.gigadevice.com.cn/Public/Uploads/uploadfile/files/20231213/DS-01012-GD25LB512MF-Rev1.0.pdf */
@@ -4048,6 +4053,11 @@ int is_macronix_mx25u51245g(mflash* mfl)
     return 0;
 }
 
+int is_gigadevice_gd25lfxxx_512(mflash* mfl)
+{
+    return mfl->attr.vendor == FV_GD25QXXX && mfl->attr.type == FVT_GD25LFXXX && mfl->attr.log2_bank_size == FD_512;
+}
+
 int is_macronix_mx25u51294g_mx25u51294gxdi08_wrapper(mflash* mfl)
 {
     return is_macronix_mx25u51294g_mx25u51294gxdi08(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size, mfl->attr.series_code);
@@ -4065,6 +4075,15 @@ int is_macronix_mx25u51294g_mx25u51294gxdi08(uint8_t vendor, uint16_t type, uint
     return 0;
 }
 
+int is_issi_special_case_for_dummy_cycles(mflash* mfl)
+{
+    if (mfl->attr.vendor == FV_IS25LPXXX && mfl->attr.type == FMT_IS25WPXXX && mfl->attr.log2_bank_size == FD_512)
+    {
+        return 1;
+    }
+    return 0;
+}
+
 int mf_read_modify_status_winbond(mflash* mfl, u_int8_t bank_num, u_int8_t is_first_status_reg, u_int8_t param, u_int8_t offset, u_int8_t size)
 {
     u_int8_t status1 = 0, status2 = 0, use_rdsr2 = 0;
@@ -4076,11 +4095,13 @@ int mf_read_modify_status_winbond(mflash* mfl, u_int8_t bank_num, u_int8_t is_fi
     CHECK_RC(rc);
     if (((mfl->attr.vendor == FV_WINBOND) && (mfl->attr.type == FMT_WINBOND)) || ((mfl->attr.vendor == FV_S25FLXXXX) && ((mfl->attr.type == FMT_S25FL116K) || (mfl->attr.type == FMT_S25FLXXXL))) ||
         ((mfl->attr.vendor == FV_MX25K16XXX) && (mfl->attr.type == FMT_MX25K16XXX)) || (is_macronix_special_case_for_driver_strength(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size)) ||
-        (is_macronix_mx25u51245g(mfl)))
+        (is_macronix_mx25u51245g(mfl) || (is_gigadevice_gd25lfxxx_512(mfl))))
     {
         /*
          * if we have 2 status registers, winbond are allowing us to write both of them
-         * in a single command WRSR  status_reg1 located in MSB, status_reg2 after status_reg1
+         * in a single command WRSR  status_reg1 located in MSB, status_reg2 after status_reg1.
+         * For GD25LF512MF the WRSR (01h) with a single byte would clear SR2 (S15:S8), so we must
+         * read-modify-write both SR1 and SR2 to preserve QE/CMP/etc.
          */
         use_rdsr2 = 1;
     }
@@ -4113,7 +4134,12 @@ int mf_read_modify_status_winbond(mflash* mfl, u_int8_t bank_num, u_int8_t is_fi
         status = status >> 8;
     }
     /* Write register status */
-    if (mfl->attr.vendor == FV_GD25QXXX)
+    if (is_gigadevice_gd25lfxxx_512(mfl))
+    {
+        // GD25LF512MF uses the standard WRSR (01h) to write SR1&2; 0x31 is not a WRSR opcode on this part.
+        rc = mfl->f_spi_write_status_reg(mfl, status, SFC_WRSR, bytes_to_write);
+    }
+    else if (mfl->attr.vendor == FV_GD25QXXX)
     {
         rc = mfl->f_spi_write_status_reg(mfl, status, SFC_WRSR_GIGA, bytes_to_write);
     }
@@ -4239,8 +4265,8 @@ int set_tb_for_ISSI_is25wj032(mflash* mfl, u_int8_t tb, u_int8_t bank_num)
 
 int mf_set_dummy_cycles_direct_access(mflash* mfl, u_int8_t num_of_cycles)
 {
-    u_int8_t lower_bound = is_macronix_special_case_for_dummy_cycles(mfl) ? MIN_NUM_OF_CYCLES_FOR_MX25UXXX : MIN_NUM_OF_CYCLES;
-    u_int8_t upper_bound = is_macronix_special_case_for_dummy_cycles(mfl) ? MAX_NUM_OF_CYCLES_FOR_MX25UXXX : MAX_NUM_OF_CYCLES;
+    u_int8_t lower_bound = (is_macronix_special_case_for_dummy_cycles(mfl) || is_issi_special_case_for_dummy_cycles(mfl) || is_gigadevice_gd25lfxxx_512(mfl)) ? MIN_NUM_OF_CYCLES_FOR_MX25UXXX_IS25LPXXX  : MIN_NUM_OF_CYCLES;
+    u_int8_t upper_bound = (is_macronix_special_case_for_dummy_cycles(mfl) || is_gigadevice_gd25lfxxx_512(mfl)) ? MAX_NUM_OF_CYCLES_FOR_MX25UXXX : MAX_NUM_OF_CYCLES;
     if (!mfl || num_of_cycles < lower_bound || num_of_cycles > upper_bound)
     {
         return MFE_BAD_PARAMS;
@@ -4262,6 +4288,19 @@ int mf_set_dummy_cycles_direct_access(mflash* mfl, u_int8_t num_of_cycles)
         else if (is_macronix_mx25u51245g(mfl))
         {
             rc = mf_read_modify_status_winbond(mfl, bank, 0, num_of_cycles, DUMMY_CYCLES_OFFSET_MX25U51245G, DUMMY_CYCLES_BIT_LEN_MACRONIX_MX25UXXX);
+            CHECK_RC(rc);
+        }
+        else if (is_issi_special_case_for_dummy_cycles(mfl))
+        {
+            rc = mf_read_modify_status_new(mfl, bank, SFC_RDRP_ISSI_IS25LPXXX, SFC_SRPV_ISSI_IS25LPXXX, num_of_cycles,
+                                           DUMMY_CYCLE_OFFSET_ISSI_IS25LPXXX, DUMMY_CYCLES_BIT_LEN_ISSI_IS25LPXXX, 1);
+            CHECK_RC(rc);
+        }
+        else if (is_gigadevice_gd25lfxxx_512(mfl))
+        {
+            rc = mf_read_modify_status_new(mfl, bank, SFC_RDSR3_MX25K16XXX_GD25LFXXX, SFC_WRSR3_MX25K16XXX_GD25LFXXX,
+                                           num_of_cycles, DUMMY_CYCLES_OFFSET_GIGADEVICE_GD25LFXXX,
+                                           DUMMY_CYCLES_BIT_LEN_GIGADEVICE_GD25LFXXX, 1);
             CHECK_RC(rc);
         }
         else
@@ -4296,6 +4335,17 @@ int mf_get_dummy_cycles_direct_access(mflash* mfl, u_int8_t* dummy_cycles_p)
         CHECK_RC(rc);
         *dummy_cycles_p = EXTRACT(status, DUMMY_CYCLES_OFFSET_MX25U51245G, DUMMY_CYCLES_BIT_LEN_MACRONIX_MX25UXXX);
     }
+    else if (is_issi_special_case_for_dummy_cycles(mfl))
+    {
+        rc = mf_get_param_int(mfl, dummy_cycles_p, SFC_RDRP_ISSI_IS25LPXXX, DUMMY_CYCLE_OFFSET_ISSI_IS25LPXXX,
+                              DUMMY_CYCLES_BIT_LEN_ISSI_IS25LPXXX, 1, 0);
+    }
+    else if (is_gigadevice_gd25lfxxx_512(mfl))
+    {
+        rc =
+          mf_get_param_int(mfl, dummy_cycles_p, SFC_RDSR3_MX25K16XXX_GD25LFXXX,
+                           DUMMY_CYCLES_OFFSET_GIGADEVICE_GD25LFXXX, DUMMY_CYCLES_BIT_LEN_GIGADEVICE_GD25LFXXX, 1, 0);
+    }
     else
     {
         rc = mf_get_param_int(mfl, dummy_cycles_p, SFC_RDNVR, DUMMY_CYCLES_OFFSET_ST, 4, 2, 0);
@@ -4326,6 +4376,26 @@ int mf_set_driver_strength_direct_access(mflash* mfl, u_int8_t driver_strength)
                                            DRIVER_STRENGTH_BIT_LEN_WINBOND, 1); /* driver-strength bit length, status-register byte len */
             CHECK_RC(rc);
         }
+        else if (is_gigadevice_gd25lfxxx_512(mfl)) // GIGADEVICE
+        {
+            // Driver strength lives in the addressed config registers (byte address <1>, bits [1:0]).
+            // Write the Volatile CR (81h) for immediate effect, and the Nonvolatile CR (B1h) so the
+            // setting survives reset. Read-modify-write to preserve the other bits of the register byte.
+            u_int8_t reg_val = 0;
+            rc = new_gw_read_config_reg(mfl, SFC_RDVR, DRIVER_STRENGTH_REG_ADDR_GIGADEVICE_GD25LFXXX, &reg_val);
+            CHECK_RC(rc);
+            reg_val = MERGE(reg_val, driver_strength, DRIVER_STRENGTH_OFFSET_GIGADEVICE_GD25LFXXX,
+                            DRIVER_STRENGTH_BIT_LEN_GIGADEVICE_GD25LFXXX);
+            rc = new_gw_write_config_reg(mfl, SFC_WRVR, DRIVER_STRENGTH_REG_ADDR_GIGADEVICE_GD25LFXXX, reg_val);
+            CHECK_RC(rc);
+
+            rc = new_gw_read_config_reg(mfl, SFC_RDNVR, DRIVER_STRENGTH_REG_ADDR_GIGADEVICE_GD25LFXXX, &reg_val);
+            CHECK_RC(rc);
+            reg_val = MERGE(reg_val, driver_strength, DRIVER_STRENGTH_OFFSET_GIGADEVICE_GD25LFXXX,
+                            DRIVER_STRENGTH_BIT_LEN_GIGADEVICE_GD25LFXXX);
+            rc = new_gw_write_config_reg(mfl, SFC_WRNVR, DRIVER_STRENGTH_REG_ADDR_GIGADEVICE_GD25LFXXX, reg_val);
+            CHECK_RC(rc);
+        }
         else if (mfl->attr.vendor == FV_ST)
         {                                                                      /* micron */
             rc = mf_read_modify_status_new(mfl, bank, SFC_RDNVR,               /* mflash, bank num, nonvolatile-configuration-register read cmd */
@@ -4344,8 +4414,8 @@ int mf_set_driver_strength_direct_access(mflash* mfl, u_int8_t driver_strength)
             else
             {
                 rc = mf_read_modify_status_new(mfl, bank,
-                                               SFC_RDSR3_MACRONIX_MX25K16XXX, // mflash, bank num, nonvolatile-configuration-register read cmd
-                                               SFC_WRSR3_MACRONIX_MX25K16XXX,
+                                               SFC_RDSR3_MX25K16XXX_GD25LFXXX, // mflash, bank num, nonvolatile-configuration-register read cmd
+                                               SFC_WRSR3_MX25K16XXX_GD25LFXXX,
                                                driver_strength,                            // nonvolatile-configuration-register write cmd, driver-strength new val
                                                DRIVER_STRENGTH_OFFSET_MACRONIX_MX25K16XXX, // driver-strength bit offset
                                                DRIVER_STRENGTH_BIT_LEN_MACRONIX_MX25K16XXX,
@@ -4391,6 +4461,15 @@ int mf_get_driver_strength_direct_access(mflash* mfl, u_int8_t* driver_strength_
                               DRIVER_STRENGTH_BIT_LEN_WINBOND,           /* driver-strength bit length */
                               1, 0);                                     /* status-register byte len, don't-care */
     }
+    else if (is_gigadevice_gd25lfxxx_512(mfl)) // GIGADEVICE
+    {
+        // Read the live driver strength from the Volatile CR (85h), byte address <1>, bits [1:0].
+        u_int8_t reg_val = 0;
+        rc = new_gw_read_config_reg(mfl, SFC_RDVR, DRIVER_STRENGTH_REG_ADDR_GIGADEVICE_GD25LFXXX, &reg_val);
+        CHECK_RC(rc);
+        *driver_strength_p =
+          EXTRACT(reg_val, DRIVER_STRENGTH_OFFSET_GIGADEVICE_GD25LFXXX, DRIVER_STRENGTH_BIT_LEN_GIGADEVICE_GD25LFXXX);
+    }
     else if (mfl->attr.vendor == FV_ST)
     {                                                         /* micron */
         rc = mf_get_param_int(mfl, driver_strength_p,         /* mflash, output pointer, */
@@ -4411,7 +4490,7 @@ int mf_get_driver_strength_direct_access(mflash* mfl, u_int8_t* driver_strength_
         else
         {
             rc = mf_get_param_int(mfl, driver_strength_p,                      // mflash, output pointer,
-                                  SFC_RDSR3_MACRONIX_MX25K16XXX,               // nonvolatile-configuration-register read cmd
+                                  SFC_RDSR3_MX25K16XXX_GD25LFXXX,               // nonvolatile-configuration-register read cmd
                                   DRIVER_STRENGTH_OFFSET_MACRONIX_MX25K16XXX,  // driver-strength bit offset
                                   DRIVER_STRENGTH_BIT_LEN_MACRONIX_MX25K16XXX, // driver-strength bit length
                                   1, 0);                                       // status-register byte len, don't-care
@@ -4435,6 +4514,13 @@ int mf_get_driver_strength_direct_access(mflash* mfl, u_int8_t* driver_strength_
     return rc;
 }
 
+int is_quad_en_constant_1(mflash* mfl)
+{
+    return is_macronix_mx25u51294g_mx25u51294gxdi08_wrapper(mfl) ||
+           (mfl->attr.vendor == FV_WINBOND && mfl->attr.type == FMT_WINBOND_IQ && mfl->attr.log2_bank_size == FD_256) ||
+           (is_gigadevice_gd25lfxxx_512(mfl));
+}
+
 int mf_set_quad_en_direct_access(mflash* mfl, u_int8_t quad_en)
 {
     if (!mfl)
@@ -4445,13 +4531,19 @@ int mf_set_quad_en_direct_access(mflash* mfl, u_int8_t quad_en)
 
     if (!(mfl->attr.quad_en_support && mfl->supp_sr_mod))
     {
-        if (is_macronix_mx25u51294g_mx25u51294gxdi08_wrapper(mfl) && quad_en == 1)
+        return MFE_NOT_SUPPORTED_OPERATION;
+    }
+
+    if (is_quad_en_constant_1(mfl))
+    {
+        if (quad_en == 1)
         {
             DPRINTF(("QE is constant 1, skipping\n"));
             return MFE_OK;
         }
         return MFE_NOT_SUPPORTED_OPERATION;
     }
+
     for (bank = 0; bank < mfl->attr.banks_num; bank++)
     {
         if ((mfl->attr.vendor == FV_WINBOND) && ((mfl->attr.type == FMT_WINBOND_3V) || (mfl->attr.type == FMT_WINBOND_IQ) || (mfl->attr.type == FMT_WINBOND_IM) || is_ISSI_is25wj032f(mfl)))
@@ -4496,6 +4588,12 @@ int mf_get_quad_en_direct_access(mflash* mfl, u_int8_t* quad_en_p)
     if (!(mfl->attr.quad_en_support && mfl->supp_sr_mod))
     {
         return MFE_NOT_SUPPORTED_OPERATION;
+    }
+    if (is_quad_en_constant_1(mfl))
+    {
+        // QE is permanently 1 on these flashes (see is_quad_en_constant_1); report it rather than erroring.
+        *quad_en_p = 1;
+        return MFE_OK;
     }
     if ((mfl->attr.vendor == FV_WINBOND) || (mfl->attr.vendor == FV_S25FLXXXX) || is_ISSI_is25wj032f(mfl))
     {
@@ -4719,8 +4817,9 @@ int mf_set_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
     }
     else if ((mfl->attr.vendor == FV_MX25K16XXX) || (mfl->attr.vendor == FV_IS25LPXXX) ||
              ((mfl->attr.vendor == FV_S25FLXXXX) && (mfl->attr.type == FMT_S25FLXXXL) && (mfl->attr.log2_bank_size == FD_256)) ||
-             ((mfl->attr.vendor == FV_WINBOND) && (mfl->attr.type == FMT_WINBOND_3V) && (mfl->attr.log2_bank_size == FD_256)) ||
-             (is_WINBOND_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size)))
+             ((mfl->attr.vendor == FV_WINBOND) && ((mfl->attr.type == FMT_WINBOND_3V) || (mfl->attr.type == FMT_WINBOND_IQ)) && (mfl->attr.log2_bank_size == FD_256)) ||
+             (is_WINBOND_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size)) ||
+             (is_gigadevice_gd25lfxxx_512(mfl)))
     {
         if (mfl->attr.vendor == FV_MX25K16XXX && !is_macronix_mx25u51294g_mx25u51294gxdi08_wrapper(mfl))
         {
@@ -4835,8 +4934,9 @@ int mf_get_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
     else
     {
         if (((mfl->attr.vendor == FV_S25FLXXXX) && (mfl->attr.type == FMT_S25FLXXXL) && (mfl->attr.log2_bank_size == FD_256)) ||
-            ((mfl->attr.vendor == FV_WINBOND) && (mfl->attr.type == FMT_WINBOND_3V) && (mfl->attr.log2_bank_size == FD_256)) ||
-            (is_WINBOND_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size)) || (is_macronix_mx25u51294g_mx25u51294gxdi08_wrapper(mfl)))
+            ((mfl->attr.vendor == FV_WINBOND) && ((mfl->attr.type == FMT_WINBOND_3V) || (mfl->attr.type == FMT_WINBOND_IQ)) && (mfl->attr.log2_bank_size == FD_256)) ||
+            (is_WINBOND_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size)) || (is_macronix_mx25u51294g_mx25u51294gxdi08_wrapper(mfl)) ||
+            is_gigadevice_gd25lfxxx_512(mfl)) // for this flash BP4 acts as TB
         {
             tb_offset = TB_OFFSET_CYPRESS_WINBOND_MACRONIX_256;
         }
@@ -4859,8 +4959,9 @@ int mf_get_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
     // determine BP_SIZE since in some flashes it's 3 bits and in some it's 4
     uint8_t flash_specific_bp_size = BP_SIZE;
     if (mfl->attr.vendor == FV_MX25K16XXX || mfl->attr.vendor == FV_IS25LPXXX || (mfl->attr.vendor == FV_S25FLXXXX && mfl->attr.type == FMT_S25FLXXXL && mfl->attr.log2_bank_size == FD_256) ||
-        (mfl->attr.vendor == FV_WINBOND && mfl->attr.type == FMT_WINBOND_3V && mfl->attr.log2_bank_size == FD_256) ||
-        (is_WINBOND_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size)))
+        ((mfl->attr.vendor == FV_WINBOND) && ((mfl->attr.type == FMT_WINBOND_3V) || (mfl->attr.type == FMT_WINBOND_IQ)) && (mfl->attr.log2_bank_size == FD_256)) ||
+        (is_WINBOND_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size)) ||
+        (is_gigadevice_gd25lfxxx_512(mfl)))
     {
         flash_specific_bp_size = BP_SIZE + 1;
     }
@@ -5592,6 +5693,7 @@ int mf_set_driver_strength(mflash* mfl, u_int8_t driver_strength)
         rc = mf_to_vendor_driver_strength(mfl->attr.vendor, driver_strength, &vendor_driver_strength);
     }
     CHECK_RC(rc);
+    DPRINTF(("setting vendor_driver_strength to: %d\n", vendor_driver_strength));
     return mfl->f_set_driver_strength(mfl, vendor_driver_strength);
 }
 
@@ -5600,6 +5702,7 @@ int mf_get_driver_strength(mflash* mfl, u_int8_t* driver_strength)
     u_int8_t value = 0;
     int rc = mfl->f_get_driver_strength(mfl, &value);
     CHECK_RC(rc);
+    DPRINTF(("driver_strength: %d\n", value));
     if ((is_macronix_special_case_for_driver_strength(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size) || is_macronix_mx25u51245g(mfl)))
     {
         rc = mf_from_vendor_driver_strength_for_mx25uxxx(value, driver_strength);
@@ -5645,19 +5748,15 @@ int modify_flash_info_if_needed(mflash* mfl, flash_info_t* f_info) // TODO: add 
     switch (series_code)
     {
         case MACRONIX_MX25U51245G:
-            break;
         case MACRONIX_MX25U51294G_MX25U51294GXDI08:
-            DPRINTF(("for this series code, quad enable is non-configurable setting\n"));
-            f_info->quad_en_support = 0;
+            f_info->series_code = series_code;
             break;
         default:
             DPRINTF(("Unknown Macronix series code: 0x%02X\n", series_code));
             rc = MFE_UNSUPPORTED_FLASH_TYPE;
             break;
     }
-    CHECK_RC(rc);
 
-    f_info->series_code = series_code;
     return rc;
 }
 

@@ -75,6 +75,7 @@ void MlxlinkUi::initPortInfo()
 void MlxlinkUi::initMlxlinkCommander()
 {
     createMlxlinkCommander();
+    _mlxlinkCommander->setRequestedCommands(_sendRegFuncMap);
 
     initPortInfo();
 }
@@ -93,12 +94,13 @@ void MlxlinkUi::printSynopsisHeader()
                                  "Perform operation for a specified mst device");
     MlxlinkRecord::printFlagLine(LABEL_PORT_FLAG_SHORT, LABEL_PORT_FLAG, "port_number", "Port Number");
     MlxlinkRecord::printFlagLine(PORT_TYPE_FLAG_SHORT, PORT_TYPE_FLAG, "port_type",
-                                 "Port Type [NETWORK(Default)/PCIE]");
+                                 "Port Type [NETWORK(Default)/PCIE] (PCIE on HCA/CPU/Switches with PCIe management)");
     MlxlinkRecord::printFlagLine(DEPTH_FLAG_SHORT, DEPTH_FLAG, "depth",
-                                 "depth level of the DUT of some hierarchy (PCIE only)");
+                                 "depth level of the DUT of some hierarchy (with --" PORT_TYPE_FLAG " PCIE)");
     MlxlinkRecord::printFlagLine(PCIE_INDEX_FLAG_SHORT, PCIE_INDEX_FLAG, "pcie_index",
-                                 "PCIe index number (Internal domain index) (PCIE only)");
-    MlxlinkRecord::printFlagLine(NODE_FLAG_SHORT, NODE_FLAG, "node", "the node within each depth (PCIE only)");
+                                 "PCIe index number (Internal domain index) (with --" PORT_TYPE_FLAG " PCIE)");
+    MlxlinkRecord::printFlagLine(NODE_FLAG_SHORT, NODE_FLAG, "node",
+                                 "the node within each depth (with --" PORT_TYPE_FLAG " PCIE)");
     MlxlinkRecord::printFlagLine(PRINT_JSON_OUTPUT_FLAG_SHORT, PRINT_JSON_OUTPUT_FLAG, "",
                                  "Print the output in json format");
 }
@@ -106,9 +108,11 @@ void MlxlinkUi::printSynopsisHeader()
 void MlxlinkUi::printSynopsisQueries()
 {
     printf(IDENT "QUERIES:\n");
-    MlxlinkRecord::printFlagLine(PCIE_LINKS_FLAG_SHORT, PCIE_LINKS_FLAG, "", "Show valid PCIe links (PCIE only)");
+    MlxlinkRecord::printFlagLine(PCIE_LINKS_FLAG_SHORT, PCIE_LINKS_FLAG, "",
+                                 "Show valid PCIe links (with --" PORT_TYPE_FLAG " PCIE)");
     MlxlinkRecord::printFlagLine(PLR_INFO_FLAG_SHORT, PLR_INFO_FLAG, "", "Show PLR Info");
     MlxlinkRecord::printFlagLine(KR_INFO_FLAG_SHORT, KR_INFO_FLAG, "", "Show KR Info");
+    MlxlinkRecord::printFlagLine(HOST_CLASS_FLAG_SHORT, HOST_CLASS_FLAG, "", "Show Host Class Info");
     MlxlinkRecord::printFlagLine(MODULE_INFO_FLAG_SHORT, MODULE_INFO_FLAG, "", "Show Module Info");
     MlxlinkRecord::printFlagLine(BER_FLAG_SHORT, BER_FLAG, "", "Show Physical Counters and BER Info");
     MlxlinkRecord::printFlagLine(EYE_OPENING_FLAG_SHORT, EYE_OPENING_FLAG, "", "Show Eye Opening Info");
@@ -123,11 +127,17 @@ void MlxlinkUi::printSynopsisQueries()
     "Show BKV Groups Info (requires --lane parameter)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(LANE_INDEX_FLAG_SHORT, LANE_INDEX_FLAG, "lane_index", "lane index (Required)");
+    MlxlinkRecord::printFlagLine(SHOW_PRR_FLAG_SHORT, SHOW_PRR_FLAG, "",
+                                 "Run PRR measurement on the given lane and dump meas_data "
+                                 "(destructive: a link toggle is required afterwards; requires --lane)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(LANE_INDEX_FLAG_SHORT, LANE_INDEX_FLAG, "lane_index", "lane index (Required)");
     MlxlinkRecord::printFlagLine(BKV_GROUP_FLAG_SHORT, BKV_GROUP_FLAG, "group_id", "Show BKV Group Info");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(DEVICE_DATA_FLAG_SHORT, DEVICE_DATA_FLAG, "", "General Device Info");
     MlxlinkRecord::printFlagLine(BER_MONITOR_INFO_FLAG_SHORT, BER_MONITOR_INFO_FLAG, "",
                                  "Show BER Monitor Info (not supported for HCA)");
+    MlxlinkRecord::printFlagLine(PHY_INFO_FLAG_SHORT, PHY_INFO_FLAG, "", "Show PHY Info");
     MlxlinkRecord::printFlagLine(PEPC_SHOW_FLAG_SHORT, PEPC_SHOW_FLAG, "",
                                  "Show External PHY Info (for Ethernet switches only)");
     MlxlinkRecord::printFlagLineWithAcronym(MULTI_PORT_INFO_FLAG_SHORT, MULTI_PORT_INFO_FLAG,
@@ -143,6 +153,9 @@ void MlxlinkUi::printSynopsisCommands()
     printf(IDENT "COMMANDS:\n");
     MlxlinkRecord::printFlagLine(PAOS_FLAG_SHORT, PAOS_FLAG, "port_state",
                                  "Configure Port State [UP(up)/DN(down)/TG(toggle)]");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(ALL_PORTS_FLAG_SHORT, ALL_PORTS_FLAG, "",
+                                 "Apply --port_state to all ports (only with --port_state)");
     MlxlinkRecord::printFlagLine(PMAOS_FLAG_SHORT, PMAOS_FLAG, "module_state",
                                 "Configure Module State [UP(up)/DN(down)/TG(toggle)]");
     MlxlinkRecord::printFlagLine(
@@ -154,15 +167,22 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(PTYS_LINK_MODE_FORCE_FLAG_SHORT, PTYS_LINK_MODE_FORCE_FLAG, "",
                                  "Configure Link Mode Force (Disable AN)");
     MlxlinkRecord::printFlagLine(
-      PPLR_FLAG_SHORT, PPLR_FLAG, "loopback",
+      LOOPBACK_FLAG_SHORT, LOOPBACK_FLAG, "loopback",
       "Configure Loopback Mode [NO(no loopback)/RM(phy remote Rx-to-Tx loopback)/PH(internal phy Tx-to-Rx "
-      "loopback)/EX(external loopback connector needed)/LL(link layer local loopback)]");
+      "loopback)/EX(external loopback connector needed)/LL(link layer local loopback)/"
+      "TRAN(transceiver-level loopback, requires --side and --state)]");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(PMLR_SIDE_FLAG_SHORT, PMLR_SIDE_FLAG, "side",
+                                 "Transceiver loopback side selector (only with -l TRAN) [host|media]");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(PMLR_STATE_FLAG_SHORT, PMLR_STATE_FLAG, "state",
+                                 "Transceiver loopback state (only with -l TRAN) [input|output|disable]");
     MlxlinkRecord::printFlagLine(
       PPLM_FLAG_SHORT, PPLM_FLAG, "fec_override",
       "Configure FEC [AU(Auto)/NF(No-FEC)/FC(FireCode "
-      "FEC)/RS(RS-FEC)/LL(LL-RS-FEC)/DF-RS(Interleaved_RS-FEC)/DF-LL(Interleaved_LL_RS-FEC)/"
-      "QUAD_KP4_FEC(Interleaved_Quad_RS-FEC_PLR)/OCTET_KP4_FEC(Interleaved_Octet_RS-FEC_PLR)/"
-      "Int_KP4_FEC_PLR(Interleaved_RS-FEC_PLR)]");
+      "FEC)/RS(RS-FEC (528,514))/RS-544Q(Interleaved_Quad_RS-FEC - (544,514))/LL(LL-RS-FEC (271,257))/DF-RS(Interleaved_RS-FEC (544,514))/RS-544(RS-FEC (544,514))/LL-272(LL-RS-FEC (272,257+1))/DF-LL(Interleaved_LL_RS-FEC (272,257+1))/"
+      "QUAD_KP4_FEC(Interleaved_Quad_RS-FEC (546,516) + PLR)/OCTET_KP4_FEC(Interleaved_Octet_RS-FEC (546,516) + PLR)/"
+      "Int_KP4_FEC_PLR(Interleaved_RS-FEC (544,514)+PLR)/PLR(RS-FEC (544,514)+PLR)/PLR(LL-FEC (271,257)+PLR)]");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(FEC_SPEED_FLAG_SHORT, FEC_SPEED_FLAG, "fec_speed",
                                  "Speed to Configure FEC "
@@ -240,9 +260,11 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(PLR_TX_CRC_FLAG_SHORT, PLR_TX_CRC_FLAG, "tx_crc",
                                  "TX CRC over PLR: 0/DS(disable), 1/EN(enable) (Optional)");
     MlxlinkRecord::printFlagLine(SET_TX_PRECODING_FLAG_SHORT, SET_TX_PRECODING_FLAG, "tx_precoding",
-                                 "Set TX Precoding [EN(enable)/DS(disable)]");
+                                 "Set TX Precoding [EN(enable)/DS(disable)]; with --" CABLE_FLAG
+                                 " operates at module level and requires --" PMLR_SIDE_FLAG " [host|line]");
     MlxlinkRecord::printFlagLine(SET_RX_PRECODING_FLAG_SHORT, SET_RX_PRECODING_FLAG, "rx_precoding",
-                                 "Set RX Precoding [EN(enable)/DS(disable)]");
+                                 "Set RX Precoding [EN(enable)/DS(disable)]; with --" CABLE_FLAG
+                                 " operates at module level and requires --" PMLR_SIDE_FLAG " [host|line]");
     MlxlinkRecord::printFlagLine(PRBS_MODE_FLAG_SHORT, PRBS_MODE_FLAG, "prbs_mode",
                                  "Physical Test Mode Configuration [EN(enable)/DS(disable)/TU(perform tuning)]");
     printf(IDENT);
@@ -411,6 +433,8 @@ void MlxlinkUi::printSynopsisCommands()
       CTRL_PARAM_RX_AMP_FLAG_SHORT, CTRL_PARAM_RX_AMP_FLAG, "value",
       "Set Module Rx Output Amplitude [0(100-400mV),1(300-600mV),2(400-800mV),3(600-1200mV)]");
 
+    MlxlinkRecord::printFlagLine(SHOW_MODULE_CAP_FLAG_SHORT, SHOW_MODULE_CAP_FLAG, "", "Show Module Capabilities");
+
     MlxlinkRecord::printFlagLine(MARGIN_SCAN_FLAG_SHORT, MARGIN_SCAN_FLAG, "", "Read the SerDes eye margins per lane");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(EYE_MEASURE_TIME_FLAG_SHORT, EYE_MEASURE_TIME_FLAG, "time",
@@ -436,7 +460,7 @@ void MlxlinkUi::printSynopsisCommands()
                                  "Show mixer offset 0 and mixer offset 1");
 
     MlxlinkRecord::printFlagLine(MPEINJ_PCIE_ERR_INJ_FLAG_SHORT, MPEINJ_PCIE_ERR_INJ_FLAG, "",
-                                 "Start/show PCIe error injection");
+                                 "Start/show PCIe error injection (HCA only)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(MPEINJ_ERR_TYPE_FLAG_SHORT, MPEINJ_ERR_TYPE_FLAG, "type",
                                  "PCIe error type [ABORT(0),BAD_DLLP_LCRC(1),BAD_TLP_LCRC(2),BAD_TLP_ECRC(3),"
@@ -551,7 +575,16 @@ void MlxlinkUi::validateMandatoryParams()
     }
     if ((_userInput._labelPort == 0) && (_userInput._portType != "PCIE"))
     {
-        throw MlxRegException("Please provide a valid port number");
+        if (_userInput._allPorts)
+        {
+            // --all iterates over every label port, default to port 1 so the initial
+            // labelToLocalPort() in updatePortInfo() succeeds before iteration.
+            _userInput._labelPort = 1;
+        }
+        else
+        {
+            throw MlxRegException("Please provide a valid port number");
+        }
     }
 }
 
@@ -626,6 +659,46 @@ void MlxlinkUi::validateGeneralCmdsParams()
     {
         throw MlxRegException("Please provide a valid paos command [UP(up)/DN(down)/TG(toggle)]");
     }
+    if (_userInput._allPorts)
+    {
+        if (!isIn(SEND_PAOS, _sendRegFuncMap))
+        {
+            throw MlxRegException("The --" ALL_PORTS_FLAG " flag can only be used with --" PAOS_FLAG " (-a)");
+        }
+        if (_userInput._multiPortSpecified)
+        {
+            throw MlxRegException("The -" + string(1, LABEL_PORT_FLAG_SHORT) +
+                                  "/--" LABEL_PORT_FLAG " port list and --" ALL_PORTS_FLAG
+                                  " options are mutually exclusive");
+        }
+        if (_userInput._portSpecified)
+        {
+            // Commander is not created yet at this stage, so use a local jsonRoot.
+            Json::Value warnJsonRoot;
+            MlxlinkRecord::printWar(
+              "--" ALL_PORTS_FLAG " is set; ignoring -" + string(1, LABEL_PORT_FLAG_SHORT) + "/--" LABEL_PORT_FLAG,
+              warnJsonRoot);
+            _userInput._portSpecified = false;
+        }
+    }
+    if (_userInput._multiPortSpecified)
+    {
+        if (!isIn(SEND_PAOS, _sendRegFuncMap))
+        {
+            throw MlxRegException("A port list passed via -" + string(1, LABEL_PORT_FLAG_SHORT) +
+                                  "/--" LABEL_PORT_FLAG " is currently supported only with --" PAOS_FLAG " (-a)");
+        }
+        for (auto opt : _sendRegFuncMap)
+        {
+            if (opt != SEND_PAOS && opt != SHOW_PDDR)
+            {
+                throw MlxRegException("A port list passed via -" + string(1, LABEL_PORT_FLAG_SHORT) +
+                                      "/--" LABEL_PORT_FLAG " is currently supported only with --" PAOS_FLAG " (-a)");
+            }
+        }
+        // Drop the default SHOW_PDDR action so the multi-port run focuses on PAOS only.
+        removeCmd(SHOW_PDDR);
+    }
     if (isIn(SEND_PMAOS, _sendRegFuncMap) && !checkPmaosCmd(_userInput._pmaosCmd))
     {
         throw MlxRegException("Please provide a valid pmaos command [UP(up)/DN(down)/TG(toggle)]");
@@ -633,6 +706,28 @@ void MlxlinkUi::validateGeneralCmdsParams()
     if (!isIn(SEND_PPLM, _sendRegFuncMap) && _userInput._speedFec != "")
     {
         throw MlxRegException("The --fec_speed flag is valid only with --fec flag");
+    }
+    bool transceiverLoopback =
+      isIn(HANDLE_LOOPBACK, _sendRegFuncMap) && _userInput._loopbackMode == LOOPBACK_TRAN_STR;
+    // --side is also reused by the --cable module precoding flow (host|line).
+    bool cablePrecoding =
+      _userInput._cable && (_userInput._setTxPrecodingProvided || _userInput._setRxPrecodingProvided);
+    if (!transceiverLoopback && !cablePrecoding && (!_userInput._cableSide.empty() || !_userInput._pmlrState.empty()))
+    {
+        throw MlxRegException("The --" PMLR_SIDE_FLAG " and --" PMLR_STATE_FLAG
+                              " flags are valid only with --" LOOPBACK_FLAG " " +
+                              string(LOOPBACK_TRAN_STR));
+    }
+    if (!transceiverLoopback && cablePrecoding && !_userInput._pmlrState.empty())
+    {
+        throw MlxRegException("The --" PMLR_STATE_FLAG " flag is valid only with --" LOOPBACK_FLAG " " +
+                              string(LOOPBACK_TRAN_STR));
+    }
+    if (transceiverLoopback && (_userInput._cableSide.empty() || _userInput._pmlrState.empty()))
+    {
+        throw MlxRegException("--" LOOPBACK_FLAG " " + string(LOOPBACK_TRAN_STR) +
+                              " requires --" PMLR_SIDE_FLAG " [host|media] and --" PMLR_STATE_FLAG
+                              " [input|output|disable]");
     }
     if (isIn(SEND_SLTP, _sendRegFuncMap))
     {
@@ -857,13 +952,36 @@ void MlxlinkUi::validateSpeedAndCSVBerParams()
 
 void MlxlinkUi::validateCableParams()
 {
+    // When --cable is combined with --set_tx_precoding/--set_rx_precoding, switch from the
+    // PLTC-based link precoding (SEND_PRECODING) to the PMCR-based module precoding path.
+    bool cablePrecoding = false;
+    if (_userInput._cable && isIn(SEND_PRECODING, _sendRegFuncMap))
+    {
+        removeCmd(SEND_PRECODING);
+        addCmd(CABLE_PRECODING);
+        cablePrecoding = true;
+        _userInput._uniqueCableCmds++;
+    }
+
+    // When --cable is combined with --show_module, switch from the PDDR-based module info
+    // (SHOW_MODULE) to the PMCR-based module info path.
+    bool cableShowModuleInfo = false;
+    if (_userInput._cable && isIn(SHOW_MODULE, _sendRegFuncMap))
+    {
+        removeCmd(SHOW_MODULE);
+        addCmd(CABLE_SHOW_MODULE_INFO);
+        cableShowModuleInfo = true;
+        _userInput._uniqueCableCmds++;
+    }
+
     bool readWriteFlags = _userInput._page >= 0 || _userInput._offset >= 0 || _userInput._len >= 0;
     bool prbsParamProvided = _userInput.modulePrbsParams.size();
     bool cablePrbsParamProvided = _userInput.isPrbsSelProvided || prbsParamProvided;
     bool cableConfigParamProvided = _userInput.isModuleConfigParamsProvided;
     bool paramSetProvided = _userInput.configParamsToSet.size();
     bool cableCommandProvided = _userInput._dump || _userInput._write || _userInput._read || _userInput._ddm ||
-                                cablePrbsParamProvided || cableConfigParamProvided;
+                                cablePrbsParamProvided || cableConfigParamProvided || _userInput._showModuleCap ||
+                                cablePrecoding || cableShowModuleInfo;
 
     if (!_userInput._cable && (cableCommandProvided || readWriteFlags))
     {
@@ -883,6 +1001,14 @@ void MlxlinkUi::validateCableParams()
         if (!cableConfigParamProvided && paramSetProvided)
         {
             throw MlxRegException("--" CTRL_PARAM_FLAG " should be specified!");
+        }
+        if (cablePrecoding)
+        {
+            if (_userInput._cableSide != "HOST" && _userInput._cableSide != "LINE")
+            {
+                throw MlxRegException("--" SET_TX_PRECODING_FLAG "/--" SET_RX_PRECODING_FLAG " with --" CABLE_FLAG
+                                      " requires --" PMLR_SIDE_FLAG " [host|line]");
+            }
         }
 
         if (readWriteFlags)
@@ -1063,6 +1189,18 @@ void MlxlinkUi::validateBkvParams()
     }
 }
 
+void MlxlinkUi::validatePrrParams()
+{
+    if (isIn(SHOW_PRR, _sendRegFuncMap))
+    {
+        if (!_userInput.laneSpecified)
+        {
+            throw MlxRegException("The --" LANE_INDEX_FLAG " parameter is required when using --" SHOW_PRR_FLAG
+                                  " flag");
+        }
+    }
+}
+
 void MlxlinkUi::validatePlrParams()
 {
     if (_userInput._setPlr)
@@ -1079,8 +1217,9 @@ void MlxlinkUi::validatePlrParams()
 void MlxlinkUi::strToInt32(char* str, u_int32_t& value)
 {
     char* endp;
+    errno = 0;
     value = strtol(str, &endp, 0);
-    if (*endp)
+    if (*endp || errno == ERANGE)
     {
         throw MlxRegException("Argument: %s is invalid.", str);
     }
@@ -1088,6 +1227,10 @@ void MlxlinkUi::strToInt32(char* str, u_int32_t& value)
 
 std::vector<string> MlxlinkUi::parseParamsFromLine(const string& paramsLine)
 {
+    if (!paramsLine.empty() && (paramsLine.front() == ',' || paramsLine.back() == ','))
+    {
+        throw MlxRegException("Wrong input format");
+    }
     std::vector<string> paramVector;
     string param;
     stringstream stream(paramsLine);
@@ -1192,6 +1335,7 @@ void MlxlinkUi::paramValidate()
     validatePCIeParams();
     validateGeneralCmdsParams();
     validateBkvParams();
+    validatePrrParams();
     validatePlrParams();
     validatePRBSParams();
     validatePhyRecoveryParams();
@@ -1215,7 +1359,9 @@ void MlxlinkUi::initCmdParser()
     AddOptions(DEPTH_FLAG, DEPTH_FLAG_SHORT, "depth", "depth");
     AddOptions(PCIE_INDEX_FLAG, PCIE_INDEX_FLAG_SHORT, "pcie_index", "PCIe Index");
     AddOptions(NODE_FLAG, NODE_FLAG_SHORT, "node", "node");
-    AddOptions(LABEL_PORT_FLAG, LABEL_PORT_FLAG_SHORT, "LabelPort", "Label Port");
+    AddOptions(LABEL_PORT_FLAG, LABEL_PORT_FLAG_SHORT, "LabelPort",
+               "Label Port (single port e.g. 3/2, or comma-separated list e.g. 1,2,3 - "
+               "list currently supported only with --" PAOS_FLAG " (-a))");
     AddOptions(PCIE_LINKS_FLAG, PCIE_LINKS_FLAG_SHORT, "", "Show valid PCIe links");
     AddOptions(EXTENDED_PCIE_FLAG, EXTENDED_PCIE_FLAG_SHORT, "", "Show extended PCIe link info");
     AddOptions(BER_FLAG, BER_FLAG_SHORT, "", "Show BER Info");
@@ -1224,6 +1370,7 @@ void MlxlinkUi::initCmdParser()
     AddOptions(PPCNT_CLEAR_FLAG, PPCNT_CLEAR_FLAG_SHORT, "", "Clear PPCNT Counters");
     AddOptions(DEVICE_DATA_FLAG, DEVICE_DATA_FLAG_SHORT, "", "Device Info");
     AddOptions(BER_MONITOR_INFO_FLAG, BER_MONITOR_INFO_FLAG_SHORT, "", "Show BER Monitor Info");
+    AddOptions(PHY_INFO_FLAG, PHY_INFO_FLAG_SHORT, "", "Show PHY Info");
     AddOptions(PEPC_SHOW_FLAG, PEPC_SHOW_FLAG_SHORT, "", "Show External PHY Info");
     AddOptions(PRINT_JSON_OUTPUT_FLAG, PRINT_JSON_OUTPUT_FLAG_SHORT, "", "Print the output in json format");
     AddOptions(MULTI_PORT_INFO_FLAG, MULTI_PORT_INFO_FLAG_SHORT, "", "Show multi ports info table");
@@ -1240,6 +1387,7 @@ void MlxlinkUi::initCmdParser()
     AddOptions(PLR_TX_CRC_FLAG, PLR_TX_CRC_FLAG_SHORT, "PLR_TX_CRC",
                "TX CRC over PLR: 0/DS(disable), 1/EN(enable) (Optional)");
     AddOptions(KR_INFO_FLAG, KR_INFO_FLAG_SHORT, "", "Show KR Info");
+    AddOptions(HOST_CLASS_FLAG, HOST_CLASS_FLAG_SHORT, "", "Show Host Class Info");
     AddOptions(PERIODIC_EQ_FLAG, PERIODIC_EQ_FLAG_SHORT, "", "Show Link PEQ (Periodic Equalization) Info");
     AddOptions(RX_RECOVERY_COUNTERS_FLAG, RX_RECOVERY_COUNTERS_FLAG_SHORT, "", "Show Rx Recovery Counters");
     AddOptions(LINK_TRAINING_FLAG, LINK_TRAINING_FLAG_SHORT, "Mode", "Enable/Disable/Enable_Extra Link Training");
@@ -1266,12 +1414,17 @@ void MlxlinkUi::initCmdParser()
     AddOptions(SET_RX_PRECODING_FLAG, SET_RX_PRECODING_FLAG_SHORT, "EN|DS", "Set RX Precoding (EN=Enable, DS=Disable)");
     AddOptions(FEC_DATA_FLAG, FEC_DATA_FLAG_SHORT, "", "FEC Data");
     AddOptions(PAOS_FLAG, PAOS_FLAG_SHORT, "PAOS", "Send PAOS");
+    AddOptions(ALL_PORTS_FLAG, ALL_PORTS_FLAG_SHORT, "", "Apply --port_state to all ports of the device");
     AddOptions(PMAOS_FLAG, PMAOS_FLAG_SHORT, "PMAOS", "Send PMAOS");
     AddOptions(PTYS_FLAG, PTYS_FLAG_SHORT, "PTYS", "Send PTYS");
     AddOptions(PTYS_LINK_MODE_FORCE_FLAG, PTYS_LINK_MODE_FORCE_FLAG_SHORT, "", "Set Link Mode Force");
     AddOptions(PPLM_FLAG, PPLM_FLAG_SHORT, "PPLM", "Send PPLM");
     AddOptions(FEC_SPEED_FLAG, FEC_SPEED_FLAG_SHORT, "FECSPEED", "Send PPLM with Speed");
-    AddOptions(PPLR_FLAG, PPLR_FLAG_SHORT, "PPLR", "Send PPLR");
+    AddOptions(LOOPBACK_FLAG, LOOPBACK_FLAG_SHORT, "LoopBack", "Get into LoopBack Mode");
+    AddOptions(PMLR_SIDE_FLAG, PMLR_SIDE_FLAG_SHORT, "side",
+               "Transceiver loopback side selector (only with -l TRAN) [host|media]");
+    AddOptions(PMLR_STATE_FLAG, PMLR_STATE_FLAG_SHORT, "state",
+               "Transceiver loopback state (only with -l TRAN) [input|output|disable]");
     AddOptions(BER_COLLECT_FLAG, BER_COLLECT_FLAG_SHORT, "BERCollectFile", "BER Collection csv file");
     AddOptions(AMBER_COLLECT_FLAG, AMBER_COLLECT_FLAG_SHORT, "AMBERCollectFile", "AMBER Collection csv file");
     AddOptions(BER_LIMIT_FLAG, BER_LIMIT_FLAG_SHORT, "Mode", "Test Mode of Ber Collect (Nominal/Corner/Drift)");
@@ -1326,6 +1479,7 @@ void MlxlinkUi::initCmdParser()
     AddOptions(CTRL_PARAM_RX_EMPH_FLAG, CTRL_PARAM_RX_EMPH_FLAG_SHORT, "value", "RX Emp override");
     AddOptions(CTRL_PARAM_RX_POST_EMPH_FLAG, CTRL_PARAM_RX_POST_EMPH_FLAG_SHORT, "value", "RX post emp");
     AddOptions(CTRL_PARAM_RX_AMP_FLAG, CTRL_PARAM_RX_AMP_FLAG_SHORT, "value", "RX Amp");
+    AddOptions(SHOW_MODULE_CAP_FLAG, SHOW_MODULE_CAP_FLAG_SHORT, "", "Show Module Capabilities");
 
     AddOptions(SHOW_TX_GROUP_MAP_FLAG, SHOW_TX_GROUP_MAP_FLAG_SHORT, "group_num",
                "Display all label ports mapped to group <group_num>");
@@ -1333,6 +1487,8 @@ void MlxlinkUi::initCmdParser()
     AddOptions(TX_GROUP_PORTS_FLAG, TX_GROUP_PORTS_FLAG_SHORT, "ports", "Ports to be mapped [1,2,3,4,..,128]");
 
     AddOptions(SLTP_SHOW_FLAG, SLTP_SHOW_FLAG_SHORT, "", "get SLTP");
+    AddOptions(SHOW_PRR_FLAG, SHOW_PRR_FLAG_SHORT, "",
+               "Run PRR measurement and dump meas_data (destructive; requires --lane)");
     AddOptions(SLTP_SET_FLAG, SLTP_SET_FLAG_SHORT, "set", "set SLTP");
     AddOptions(SLTP_SET_ADVANCED_FLAG, SLTP_SET_ADVANCED_FLAG_SHORT, "", "set SLTP");
     AddOptions(SLTP_TX_POLICY_FLAG, SLTP_TX_POLICY_FLAG_SHORT, "", "set TX Policy");
@@ -1400,6 +1556,9 @@ void MlxlinkUi::commandsCaller()
             case SHOW_SLTP:
                 _mlxlinkCommander->showSltp();
                 break;
+            case SHOW_PRR:
+                _mlxlinkCommander->showPrr();
+                break;
             case SHOW_BKV:
                 _mlxlinkCommander->showBkv();
                 break;
@@ -1417,6 +1576,9 @@ void MlxlinkUi::commandsCaller()
                 break;
             case SHOW_BER_MONITOR:
                 _mlxlinkCommander->showBerMonitorInfo();
+                break;
+            case SHOW_PHY_INFO:
+                _mlxlinkCommander->showPhyInfo();
                 break;
             case SHOW_EXTERNAL_PHY:
                 _mlxlinkCommander->showExternalPhy();
@@ -1442,8 +1604,8 @@ void MlxlinkUi::commandsCaller()
             case SEND_PPLM:
                 _mlxlinkCommander->sendPplm();
                 break;
-            case SEND_PPLR:
-                _mlxlinkCommander->sendPplr();
+            case HANDLE_LOOPBACK:
+                _mlxlinkCommander->sendLoopback();
                 break;
             case SEND_PHY_RECOVERY:
                 _mlxlinkCommander->handlePhyRecovery();
@@ -1496,6 +1658,15 @@ void MlxlinkUi::commandsCaller()
             case CABLE_CTRL_PARM:
                 _mlxlinkCommander->performControlParams();
                 break;
+            case CABLE_SHOW_MODULE_CAP:
+                _mlxlinkCommander->performShowModuleCap();
+                break;
+            case CABLE_SHOW_MODULE_INFO:
+                _mlxlinkCommander->performShowModuleInfo();
+                break;
+            case CABLE_PRECODING:
+                _mlxlinkCommander->performModulePrecoding();
+                break;
             case PCIE_ERROR_INJ:
                 _mlxlinkCommander->handlePCIeErrInj();
                 break;
@@ -1513,6 +1684,9 @@ void MlxlinkUi::commandsCaller()
                 break;
             case SHOW_KR:
                 _mlxlinkCommander->showKr();
+                break;
+            case SHOW_HOST_CLASS:
+                _mlxlinkCommander->showHostClass();
                 break;
             case SHOW_RX_RECOVERY_COUNTERS:
                 _mlxlinkCommander->showRxRecoveryCounters();
@@ -1540,6 +1714,15 @@ void MlxlinkUi::addCmd(OPTION_TYPE option)
     if (!isIn(option, _sendRegFuncMap))
     {
         _sendRegFuncMap.push_back(option);
+    }
+}
+
+void MlxlinkUi::removeCmd(OPTION_TYPE option)
+{
+    auto it = std::find(_sendRegFuncMap.begin(), _sendRegFuncMap.end(), option);
+    if (it != _sendRegFuncMap.end())
+    {
+        _sendRegFuncMap.erase(it);
     }
 }
 
@@ -1656,6 +1839,11 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _userInput._showKr = true;
         return PARSE_OK;
     }
+    else if (name == HOST_CLASS_FLAG)
+    {
+        addCmd(SHOW_HOST_CLASS);
+        return PARSE_OK;
+    }
     else if (name == RX_RECOVERY_COUNTERS_FLAG)
     {
         addCmd(SHOW_RX_RECOVERY_COUNTERS);
@@ -1696,6 +1884,11 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     {
         addCmd(SHOW_SLTP);
         _userInput._showSltp = true;
+        return PARSE_OK;
+    }
+    else if (name == SHOW_PRR_FLAG)
+    {
+        addCmd(SHOW_PRR);
         return PARSE_OK;
     }
     else if (name == BKV_GROUPS_FLAG)
@@ -1817,8 +2010,21 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     }
     else if (name == LABEL_PORT_FLAG)
     {
-        checkStrLength(value);
-        handlePortStr(_userInput, value);
+        if (value.find(',') != string::npos)
+        {
+            _userInput._multiPortsList = parseParamsFromLine(value);
+            for (const auto& p : _userInput._multiPortsList)
+            {
+                checkStrLength(p);
+            }
+            _userInput._multiPortSpecified = true;
+            handlePortStr(_userInput, _userInput._multiPortsList.front());
+        }
+        else
+        {
+            checkStrLength(value);
+            handlePortStr(_userInput, value);
+        }
         return PARSE_OK;
     }
     else if (name == DEPTH_FLAG)
@@ -1868,6 +2074,11 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _userInput._uniqueCmds++;
         return PARSE_OK;
     }
+    else if (name == ALL_PORTS_FLAG)
+    {
+        _userInput._allPorts = true;
+        return PARSE_OK;
+    }
     else if (name == PMAOS_FLAG)
     {
         addCmd(SEND_PMAOS);
@@ -1894,11 +2105,21 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _userInput._speedFec = toLowerCase(value);
         return PARSE_OK;
     }
-    else if (name == PPLR_FLAG)
+    else if (name == LOOPBACK_FLAG)
     {
-        addCmd(SEND_PPLR);
-        _userInput._pplrLB = toUpperCase(value);
+        addCmd(HANDLE_LOOPBACK);
+        _userInput._loopbackMode = toUpperCase(value);
         _userInput._uniqueCmds++;
+        return PARSE_OK;
+    }
+    else if (name == PMLR_SIDE_FLAG)
+    {
+        _userInput._cableSide = toUpperCase(value);
+        return PARSE_OK;
+    }
+    else if (name == PMLR_STATE_FLAG)
+    {
+        _userInput._pmlrState = toUpperCase(value);
         return PARSE_OK;
     }
     else if (name == PHY_RECOVERY_FLAG)
@@ -2032,6 +2253,11 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     else if (name == BER_MONITOR_INFO_FLAG)
     {
         addCmd(SHOW_BER_MONITOR);
+        return PARSE_OK;
+    }
+    else if (name == PHY_INFO_FLAG)
+    {
+        addCmd(SHOW_PHY_INFO);
         return PARSE_OK;
     }
     else if (name == PEPC_SHOW_FLAG)
@@ -2315,6 +2541,13 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _userInput.configParamsToSet.push_back(make_pair(CABLE_CONTROL_PARAMETERS_SET_RX_AMP, value));
         return PARSE_OK;
     }
+    else if (name == SHOW_MODULE_CAP_FLAG)
+    {
+        addCmd(CABLE_SHOW_MODULE_CAP);
+        _userInput._showModuleCap = true;
+        _userInput._uniqueCableCmds++;
+        return PARSE_OK;
+    }
     else if (name == MPEINJ_PCIE_ERR_INJ_FLAG)
     {
         addCmd(PCIE_ERROR_INJ);
@@ -2381,10 +2614,18 @@ int MlxlinkUi::run(int argc, char** argv)
         throw MlxRegException("failed to parse arguments. " + string(_cmdParser.GetErrDesc()));
     }
 
-    if (_userInput._forceSplit && !_userInput._secondSplitProvided)
+    if (_userInput._forceSplit)
     {
-        _userInput._secondSplitProvided = _userInput._forceSplit;
-        _userInput._secondSplitPort = _userInput._forceSplitValue;
+        if (_userInput._forceIpilValue != 0 && !_userInput._secondSplitProvided)
+        {
+            _userInput._secondSplitProvided = true;
+            _userInput._secondSplitPort = _userInput._forceSplitValue;
+        }
+        else if (_userInput._forceIpilValue == 0 && !_userInput._splitProvided)
+        {
+            _userInput._splitProvided = true;
+            _userInput._splitPort = _userInput._forceSplitValue;
+        }
     }
 
     paramValidate();

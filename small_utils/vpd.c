@@ -58,7 +58,10 @@ void print_field(char* key, char* val)
 {
     if (strcmp(key, "RV") == 0)
     {
-        return;
+        // RV holds the checksum byte (followed by RO-area padding).
+        // Print only the first byte as a hex value, to match mlxvpd output.
+        unsigned checksum_val = (unsigned)(*val) & 0xff;
+        printf("%s:      0x%02x\n", key, checksum_val);
     }
     else if (strlen(val))
     {
@@ -314,10 +317,13 @@ int main(int argc, char** argv)
     }
     if (!strcmp("-", name))
     {
-        if (fread(d, VPD_MAX_SIZE, 1, stdin) != 1)
+        ssize_t nbytes = read(STDIN_FILENO, d, VPD_MAX_SIZE);
+
+        if (nbytes <= 0)
         {
             return 3;
         }
+        mvpd_len = (int)nbytes;
     }
     else
     {
@@ -330,10 +336,12 @@ int main(int argc, char** argv)
         rc = mvpd_get_vpd_size(mf, &mvpd_len);
         if (rc != 0)
         {
+            mclose(mf);
             fprintf(stderr, "-E- Failed to get VPD size from %s!\n", name);
             return MVPD_ERR;
         }
         rc = mvpd_get_raw_vpd(mf, (u_int8_t*)d, mvpd_len);
+        mclose(mf);
         if (rc)
         {
             fprintf(stderr, "-E- Failed to read VPD from %s!\n", name);

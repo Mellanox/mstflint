@@ -595,9 +595,9 @@ static int dm_get_device_id_inner(mfile* mf, dm_dev_id_t* ptr_dm_dev_id, u_int32
     int rc;
     u_int32_t dev_flags;
 
-    if (mf->pci_device_id == DeviceBlueField4_HwId)
+    if (is_bluefield4_pci_device(mf->pci_device_id))
     {
-        *ptr_hw_dev_id = mf->pci_device_id;
+        *ptr_hw_dev_id = DeviceBlueField4_HwId;
         *ptr_hw_rev = 0;
         *ptr_dm_dev_id = DeviceBlueField4;
         return CHECK_PTR_DEV_ID;
@@ -1035,6 +1035,22 @@ int dm_is_gr100(dm_dev_id_t type)
 int dm_is_gpu(dm_dev_id_t type)
 {
     return (dm_is_gb100(type) || dm_is_gr100(type));
+}
+
+int dm_is_cpo(mfile* mf, u_int8_t* ptr_cpo_ind)
+{
+    reg_access_status_t rc;
+    struct reg_access_hca_mgir_ext mgir;
+    memset(&mgir, 0, sizeof(mgir));
+    rc = reg_access_mgir(mf, REG_ACCESS_METHOD_GET, &mgir);
+
+    if (rc)
+    {
+        return MFE_ERROR;
+    }
+
+    *ptr_cpo_ind = mgir.hw_info.cpo_indication;
+    return MFE_OK;
 }
 
 int dm_is_cx7(dm_dev_id_t type)

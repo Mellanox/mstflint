@@ -77,15 +77,32 @@
 
 int parseAndRun(int argc, char** argv);
 
-/* MMTA helper functions */
-int read_mmta_sensors(mfile* mf,
-                      td_temp_unit_t requested_unit,
-                      td_data_mmta** mmta_data_p,
-                      bool* mmta_supported,
-                      bool no_modules);
-void print_temperature_table_header(bool mmta_supported);
+/* CPO module sensor helpers (gated on MGIR.cpo_indication; see read_cpo_module_sensors). */
+int read_cpo_module_sensors(mfile* mf,
+                            td_temp_unit_t requested_unit,
+                            td_data_mmta** mmta_data_p,
+                            bool* cpo_supported,
+                            bool no_modules);
+void print_temperature_table_header(bool cpo_supported);
 void display_mmta_sensor_verbose(td_data_mmta* sensor, int decimals, int* row_num);
 int include_mmta_in_max_temp(td_data_mmta* mmta_data, int mmta_modules_read, int current_max);
-void display_internal_sensors_verbose(td_data_fw* data, bool mmta_supported, int* row_num);
+void display_internal_sensors_verbose(td_data_fw* data, bool cpo_supported, int* row_num);
+
+/* Print all thermal zones to stdout.
+ *
+ * Capability handling:
+ *   - On unsupported devices, always prints a one-line note to stderr.
+ *   - If unsupported_is_warning is false (bare -z), returns 1 (the user got nothing they asked for).
+ *   - If unsupported_is_warning is true (composed paths like -v -z), returns 0 — the verbose
+ *     section already ran; missing zones is a non-fatal capability gap.
+ *
+ * Read failures always print to stderr and return 1, regardless of unsupported_is_warning. */
+int handle_zones_request(mfile* mf, bool unsupported_is_warning);
+
+/* Print the cumulative time spent in each thermal state per sensor.
+ * Output is a wide table: one row per sensor, with one column per thermal state
+ * (Normal, High Warning, High Critical, Low Critical). Returns 1 on unsupported
+ * device or read failure (with an error to stderr), 0 on success. */
+int handle_state_durations_request(mfile* mf);
 
 #endif /* MGET_TEMP_H */

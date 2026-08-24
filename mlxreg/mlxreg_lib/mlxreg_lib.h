@@ -72,7 +72,6 @@ public:
     AdbInstance* getAdbTable() { return _regAccessRootNode; };
     AdbInstance* get_current_node() { return _currentNode; };
     void set_current_node(string name) { _currentNode = findAdbNode(name); }
-    Adb& getAdb() { return *_adb; };
     /* * * * * * * *
      * library API *
      * * * * * * * */
@@ -107,7 +106,7 @@ protected:
     static map<dm_dev_id_t, Adb*> _adbDBs;
     static const int RETRIES_COUNT;
     static const int SLEEP_INTERVAL;
-    Adb* _adb;
+    Adb* _adb{nullptr};
     AdbInstance* _regAccessRootNode;
     AdbInstance* _regAccessUnionNode;
     std::map<string, u_int64_t> _regAccessMap;

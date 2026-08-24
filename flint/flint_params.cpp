@@ -124,6 +124,7 @@ FlintParams::FlintParams()
     cert_uuid = "";
     skip_if_same = false;
     pending = false;
+    package_info = false;
 }
 
 FlintParams::~FlintParams() {}
