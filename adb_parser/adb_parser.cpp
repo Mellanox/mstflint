@@ -1492,6 +1492,7 @@ void _Adb_impl<eval_expr, T_OFFSET>::traverse_layout(
             _trvrs_handle_enums(instance, element_path, element_offset_shift, buffer, func, context);
         }
         // Handle nodes with sub-items (structs/unions) - similar to field.subItems handling
+
         else if (instance->isNode() && !instance->subItems.empty())
         {
             // For unions, handle selected items (simplified version of _get_union_selected_items)
@@ -1548,7 +1549,7 @@ void _Adb_impl<eval_expr, T_OFFSET>::traverse_layout(
             }
         }
         // Handle leaf fields - similar to the final else clause in _parse_seg_field
-        else
+        else if (instance->isLeaf())
         {
             T_OFFSET field_offset = instance->offset + element_offset_shift;
             uint64_t value = 0;
