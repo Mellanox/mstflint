@@ -4,7 +4,7 @@
         {
             "match": {
                 "hw_dev_id": 628,
-                "hw_rev_id": 0,
+                "chip_rev_id": 0,
                 "part_number": ""
             },
             "fuses": [
@@ -16,7 +16,7 @@
         {
             "match": {
                 "hw_dev_id": 548,
-                "hw_rev_id": 0,
+                "chip_rev_id": 0,
                 "part_number": ""
             },
             "fuses": [

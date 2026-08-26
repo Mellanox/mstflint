@@ -312,12 +312,12 @@ static std::vector<FuseReading> read_fuse_values(mfile* mf, const DeviceConfig& 
 
 static void print_fuse_readings(dm_dev_id_t dev_type,
                                 u_int32_t hw_dev_id,
-                                u_int32_t hw_rev,
+                                u_int32_t chip_rev,
                                 const std::string& part_number,
                                 const std::vector<FuseReading>& readings)
 {
     printf("Device:       %s\n", dm_dev_type2str(dev_type));
-    printf("HW ID:        %u (rev %u)\n", hw_dev_id, hw_rev);
+    printf("HW ID:        %u (rev %u)\n", hw_dev_id, chip_rev);
     if (!part_number.empty())
     {
         printf("Part number:  %s\n", part_number.c_str());
@@ -410,13 +410,17 @@ int EfuseTool::Run()
     {
         dm_dev_id_t dev_type = DeviceUnknown;
         u_int32_t hw_dev_id = 0;
-        u_int32_t hw_rev = 0;
-        if (dm_get_device_id(mf, &dev_type, &hw_dev_id, &hw_rev))
+        u_int32_t dm_hw_rev = 0; // unused; tools_dev_types hw_rev_id is not the chip stepping
+        if (dm_get_device_id(mf, &dev_type, &hw_dev_id, &dm_hw_rev))
         {
             fprintf(stderr, "-E- Failed to identify device.\n");
             goto cleanup;
         }
-        hw_rev = mf->rev_id;
+        (void)dm_hw_rev;
+        // Match efuse_config.json by the raw chip revision reported by the device
+        // (mfile::rev_id), not by tools_dev_types' hw_rev_id, which is normalized
+        // (e.g. forced to 0 on the MGIR path) and does not reflect the silicon stepping.
+        u_int32_t chip_rev = mf->rev_id;
 
         std::string part_number;
         if (!read_device_part_number(mf, part_number))
@@ -442,8 +446,13 @@ int EfuseTool::Run()
         DeviceConfig device_config;
         int schema_version = 0;
         std::string config_error;
-        if (!load_matching_device_config(
-              config_path, hw_dev_id, static_cast<int>(hw_rev), part_number, device_config, schema_version, config_error))
+        if (!load_matching_device_config(config_path,
+                                         hw_dev_id,
+                                         static_cast<int>(chip_rev),
+                                         part_number,
+                                         device_config,
+                                         schema_version,
+                                         config_error))
         {
             fprintf(stderr, "-E- %s\n", config_error.c_str());
             goto cleanup;
@@ -456,7 +465,7 @@ int EfuseTool::Run()
         }
 
         std::vector<FuseReading> readings = read_fuse_values(mf, device_config);
-        print_fuse_readings(dev_type, hw_dev_id, hw_rev, part_number, readings);
+        print_fuse_readings(dev_type, hw_dev_id, chip_rev, part_number, readings);
         ret = 0;
     }
 

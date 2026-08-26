@@ -47,14 +47,16 @@ struct FuseConfig
 struct DeviceConfig
 {
     uint32_t hw_dev_id;
-    int hw_rev_id;
+    // Chip revision as reported by the device (mfile::rev_id, raw silicon stepping).
+    // Not the same as mft's tools_dev_types hw_rev_id, which is a device-table matching key.
+    int chip_rev_id;
     std::string part_number;
     std::vector<FuseConfig> fuses;
 };
 
 bool load_matching_device_config(const std::string& path,
                                  uint32_t hw_dev_id,
-                                 int hw_rev_id,
+                                 int chip_rev_id,
                                  const std::string& part_number,
                                  DeviceConfig& device,
                                  int& schema_version,
