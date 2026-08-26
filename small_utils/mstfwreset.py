@@ -99,7 +99,6 @@ except Exception as e:
 hot_reset_flow = None
 drivers_safety_check_manager = None
 rp_pio_dpc_block_checker = None
-hotplug_enabled = False
 
 
 class SyncOwner():
@@ -109,6 +108,9 @@ class SyncOwner():
 
 
 MLNX_DEVICES = [
+    dict(name="ConnectX3", devid=0x1f5),
+    dict(name="ConnectX3Pro", devid=0x1f7),
+    dict(name="ConnectIB", devid=0x1ff, status_config_not_done=(0xb0004, 31)),
     dict(name="ConnectX4", devid=0x209, status_config_not_done=(0xb0004, 31)),
     dict(name="ConnectX4LX", devid=0x20b, status_config_not_done=(0xb0004, 31)),
     dict(name="ConnectX5", devid=0x20d, status_config_not_done=(0xb5e04, 31)),
@@ -145,15 +147,13 @@ MLNX_DEVICES = [
     dict(name="Spectrum-5-RMA", devid=0x271, status_config_not_done=(0x100010, 0)),
     dict(name="Spectrum-6", devid=0x274, status_config_not_done=(0x110010, 0)),
     dict(name="Spectrum-6-RMA", devid=0x275, status_config_not_done=(0x110010, 0)),
-    dict(name="Spectrum-7", devid=0x2a2, status_config_not_done=(0x400010, 0)),
-    dict(name="Spectrum-7-RMA", devid=0x2a3, status_config_not_done=(0x400010, 0)),
 
 ]
 
-BLUEFIELD4_PCI_DEVICE_ID = [0xA2DF]
+BLUEFIELD4_PCI_DEVICE_ID = [0xA2DE, 0xA2DF]
 
 # Supported devices.
-SUPP_DEVICES = ["ConnectX4", "ConnectX4LX", "ConnectX5", "BlueField",
+SUPP_DEVICES = ["ConnectIB", "ConnectX4", "ConnectX4LX", "ConnectX5", "BlueField",
                 "ConnectX6", "ConnectX6DX", "ConnectX6LX", "BlueField2", "ConnectX7", "BlueField3", "ConnectX8", "ConnectX8-RMA", "BlueField4",
                 "ConnectX9", "ConnectX9-RMA", "ConnectX10", "ConnectX10-RMA", "ConnectX8-Pure-PCIe-Switch", "ConnectX8-Pure-PCIe-Switch-RMA", "ConnectX9-Pure-PCIe-Switch", "ConnectX9-Pure-PCIe-Switch-RMA"]
 SUPP_SWITCH_DEVICES = ["Spectrum", "Spectrum-2", "Spectrum-3", "Switch-IB", "Switch-IB-2", "Quantum", "Quantum-2"]
@@ -231,8 +231,7 @@ is_bluefield4 = False
 logger = None
 device_global = None
 
-pciModuleName = "mst_ppc_pci_reset.ko"
-pathToPciModuleDir = "/etc/mft/mlxfwreset"
+pciModuleName = "mst_ppc_pci_reset"
 
 SUPPORTED_DEVICES_WITH_SWITCHES = [
     "15b3", "10ee", "1af4"]  # 1af4 for Red Hat (virtio)
@@ -856,16 +855,6 @@ class MlnxPciOpFreeBSD(MlnxPciOp):
             return True
         return False
 
-    def parsePciBridgeName(self, secbusLine):
-        # Derive the pciconf node name <driver><idx> from a sysctl secbus line
-        # "dev.<driver>.<idx>.secbus: <bus>". Works for standard FreeBSD ("pcib")
-        # and vendor switch drivers (e.g. ONTAP's "pm40xxx_port", "plxsw87xx").
-        match = re.search(r"dev\.(.+)\.(\d+)\.secbus:", secbusLine)
-        if not match:
-            raise RuntimeError(
-                "Failed to parse PCI bridge from secbus output: %s" % secbusLine)
-        return "%s%s" % (match.group(1), match.group(2))
-
     def getPciBridgeAddr(self, devAddr):
         if self.bridgeAddr:  # user specified bridge addr
             return self.bridgeAddr
@@ -885,7 +874,7 @@ class MlnxPciOpFreeBSD(MlnxPciOp):
         if (linesCount > 1):
             raise RuntimeError(
                 "Found more than one secbus with the value: %s" % busNum)
-        hostBridge = self.parsePciBridgeName(out)
+        hostBridge = "pcib%s" % (out.split("pcib.")[1].split(".")[0])
 
         # get pci address of hostBridge
         cmd = "pciconf -l | grep {0}".format(hostBridge)
@@ -1129,22 +1118,6 @@ def isSwitchDevice(device):
         return True
     return False
 
-######################################################################
-# Description: Get All PCI Module Paths
-# OS Support : Linux
-######################################################################
-
-
-def getAllPciModulePaths():
-    global pciModuleName
-    global pathToPciModuleDir
-    paths = []
-    for f in os.listdir(pathToPciModuleDir):
-        if os.path.isdir(os.path.join(pathToPciModuleDir, f)):
-            p = os.path.join(pathToPciModuleDir, f, pciModuleName)
-            if os.path.isfile(p):
-                paths.append(p)
-    return paths
 
 ######################################################################
 # Description: Get PCI Module Path
@@ -1154,17 +1127,12 @@ def getAllPciModulePaths():
 
 def getPciModulePath():
     global pciModuleName
-    global pathToPciModuleDir
-    cmd = "uname -r"
-    (rc, unameOutput, _) = cmdExec(cmd)
+    get_ko_path_cmd = "modinfo -n %s" % pciModuleName
+    (rc, out, err) = cmdExec(get_ko_path_cmd)
     if rc != 0:
-        return (False, getAllPciModulePaths())
-    pathToModule = os.path.join(
-        pathToPciModuleDir, unameOutput.strip(), pciModuleName)
-    if os.path.isfile(pathToModule):
-        return (True, pathToModule)
-    else:
-        return (False, getAllPciModulePaths())
+        return (False, "Failed to locate %s path using 'modinfo -n %s', output: %s, error: %s"
+                % (pciModuleName, pciModuleName, out, err))
+    return (True, out.strip())
 
 ######################################################################
 # Description: Run PPC Pci Reset Module
@@ -1318,11 +1286,7 @@ def resetPciAddr(device, devicesSD, driverObj, cmdLineArgs):
     isPPC = "ppc64" in platform.machine()
     isWindows = platform.system() == "Windows"
 
-    global hotplug_enabled
-    hotplug_enabled = False
-
     busId = DevDBDF
-    root_pci_devices_by_dbdf = {}
 
     # Determine the pci-device to poll (first Mellanox device in the pci tree)
     if isWindows is False:
@@ -1336,20 +1300,8 @@ def resetPciAddr(device, devicesSD, driverObj, cmdLineArgs):
             pci_device_bridge3 = PciOpsObj.getPciBridgeAddr(pci_device_bridge2)
 
             pci_devices_to_poll_devid.append(pci_device_bridge3)
-            root_pci_device = PCIDeviceFactory().get(pci_device_bridge3, "debug")
-            root_pci_devices.append(root_pci_device)
-            if not isPPC:
-                root_pci_devices_by_dbdf[DevDBDF] = root_pci_device
-                for dev in devicesSD:
-                    logger.debug('In internal host: Detected BF Socket Direct device')
-                    dbdf = mlxfwreset_utils.getDevDBDF(dev, logger)
-                    pci_device_bridge1 = PciOpsObj.getPciBridgeAddr(dbdf)
-                    pci_device_bridge2 = PciOpsObj.getPciBridgeAddr(pci_device_bridge1)
-                    pci_device_bridge3 = PciOpsObj.getPciBridgeAddr(pci_device_bridge2)
-
-                    pci_devices_to_poll_devid.append(pci_device_bridge3)
-                    root_pci_device = PCIDeviceFactory().get(pci_device_bridge3, "debug")
-                    root_pci_devices_by_dbdf[dbdf] = root_pci_device
+            root_pci_devices.append(
+                PCIDeviceFactory().get(pci_device_bridge3, "debug"))
         else:
             for dev in [device] + devicesSD:
                 dbdf = mlxfwreset_utils.getDevDBDF(dev, logger)
@@ -1357,9 +1309,8 @@ def resetPciAddr(device, devicesSD, driverObj, cmdLineArgs):
 
                 if not isPPC:  # PPC can run on VM (no PCI bridge device)
                     pci_device_bridge = PciOpsObj.getPciBridgeAddr(dbdf)
-                    root_pci_device = PCIDeviceFactory().get(pci_device_bridge, "debug")
-                    root_pci_devices.append(root_pci_device)
-                    root_pci_devices_by_dbdf[dbdf] = root_pci_device
+                    root_pci_devices.append(
+                        PCIDeviceFactory().get(pci_device_bridge, "debug"))
 
         for pci_device_to_poll_devid in pci_devices_to_poll_devid:
             logger.info('pci_device_to_poll_devid={0}'.format(
@@ -1381,12 +1332,6 @@ def resetPciAddr(device, devicesSD, driverObj, cmdLineArgs):
             pci_device_object = PCIDeviceFactory().get(pciDev, "debug")
             pci_device_dict[pciDev] = pci_device_object
             PciOpsObj.savePCIConfigurationSpace(pciDev, pci_device_object)
-
-            # getMFDeviceList() may return sibling functions on the same root port.
-            # Map each returned PCI device to the root-port object collected for the
-            # requested device so restore decisions can be made per PCI device later.
-            if not isPPC:
-                root_pci_devices_by_dbdf[pciDev] = root_pci_devices_by_dbdf[busId]
         # Socket Direct - save all buses and PCI configuration for all "other" devices in SD
         busIdsSD = []
         devListsSD = []
@@ -1394,21 +1339,14 @@ def resetPciAddr(device, devicesSD, driverObj, cmdLineArgs):
             busIdSD = mlxfwreset_utils.getDevDBDF(deviceSD, logger)
             busIdsSD.append(busIdSD)
             busIdSD_list = PciOpsObj.getMFDeviceList(busIdSD)
-            logger.debug('Socket Direct List is {0}'.format(busIdSD_list))
+            logger.debug('Socket Direct List is {0}'.format(devList))
             logger.debug("Saving socket direct list ...")
             for pciDev in busIdSD_list:
                 pci_device_object = PCIDeviceFactory().get(pciDev, "debug")
                 pci_device_dict[pciDev] = pci_device_object
                 PciOpsObj.savePCIConfigurationSpace(pciDev, pci_device_object)
-
-                # getMFDeviceList() may return sibling functions on the same root port.
-                # Map each returned PCI device to the root-port object collected for this
-                # Socket Direct device so restore decisions can be made per PCI device later.
-                if not isPPC:
-                    root_pci_devices_by_dbdf[pciDev] = root_pci_devices_by_dbdf[busIdSD]
             devListsSD += busIdSD_list
 
-    logger.debug('root_pci_devices_by_dbdf: {0}'.format(root_pci_devices_by_dbdf))
     # update FWResetStatusChecker
     FWResetStatusChecker.UpdateUptimeBeforeReset()
 
@@ -1559,21 +1497,15 @@ def resetPciAddr(device, devicesSD, driverObj, cmdLineArgs):
         else:
             logger.debug(
                 'Indication for re-enumeration is by HotPlug on bridge')
+            to_restore_pci_conf = not (
+                root_pci_devices[0].hotplug_capable and root_pci_devices[0].hotplug_interrupt_enable)
+            logger.debug('hotplug_capable={0}'.format(
+                root_pci_devices[0].hotplug_capable))
+            logger.debug('hotplug_interrupt_enable={0}'.format(
+                root_pci_devices[0].hotplug_interrupt_enable))
+            logger.debug('to_restore_pci_conf={0}'.format(to_restore_pci_conf))
             for pciDev in devList + devListsSD:
-                logger.debug("checking if to restore PCI configuration for device {0}".format(pciDev))
                 verifyDeviceIsFunctional(pciDev)
-                root_pci_device = root_pci_devices_by_dbdf[pciDev]
-                pci_hotplug_enabled = root_pci_device.hotplug_capable and root_pci_device.hotplug_interrupt_enable
-                to_restore_pci_conf = not pci_hotplug_enabled
-
-                hotplug_enabled = hotplug_enabled or pci_hotplug_enabled
-
-                logger.debug('{0} (root port of {1}):hotplug_capable={2}'.format(
-                    root_pci_device.dbdf, pciDev, root_pci_device.hotplug_capable))
-                logger.debug('{0} (root port of {1}):hotplug_interrupt_enable={2}'.format(
-                    root_pci_device.dbdf, pciDev, root_pci_device.hotplug_interrupt_enable))
-                logger.debug('{0} (root port of {1}):to_restore_pci_conf={2}'.format(
-                    root_pci_device.dbdf, pciDev, to_restore_pci_conf))
                 pci_device_object = pci_device_dict[pciDev]
                 if to_restore_pci_conf:
                     PciOpsObj.loadPCIConfigurationSpace(
@@ -1701,7 +1633,7 @@ def is_pcie_switch_device(devid, reg_access_obj=None):
     return res
 
 
-def assert_supported_psid(devid, mfrl, mroq, tool_owner_support):
+def assert_supported_psid(devid, mfrl, mroq, tool_owner_support, command):
     if devid in UNSUPPORTED_PSIDS_PER_DEV_ID:
         psid = RegAccessObj.getPSID()
         logger.debug("{0} devid with PSID: {1}".format(devid, psid))
@@ -1710,7 +1642,9 @@ def assert_supported_psid(devid, mfrl, mroq, tool_owner_support):
             mfrl.disable_unsupported_reset_levels()
             mroq.disable_all_syncs()
 
-            if mroq.mroq_is_supported() and not mfrl.is_any_reset_level_supported(mroq.is_any_sync_supported(tool_owner_support)):
+            # 'status' only reports what the device needs, so let it run and recommend a power cycle
+            # instead of failing the query.
+            if command != "status" and mroq.mroq_is_supported() and not mfrl.is_any_reset_level_supported(mroq.is_any_sync_supported(tool_owner_support)):
                 raise RuntimeError("No reset level is supported")
 
 ######################################################################
@@ -2223,8 +2157,7 @@ def post_reset_flow(driverObj, device, driverStat, mst_restart_required=True):
     if driverStat == MlnxDriver.DRIVER_LOADED:
         printAndFlush("-I- %-40s-" % ("Starting Driver"), endChar="")
         logger.debug('[Timing Test] Driver Bind')
-        global hotplug_enabled
-        driverObj.driverStart(hotplug_enabled)
+        driverObj.driverStart()
         printAndFlush("Done")
 
     logger.debug('UpdateUptimeAfterReset')
@@ -2435,6 +2368,7 @@ def status_pending_nvconfig(device):
 
 FULL_POWER_CYCLE = "Full power cycle"
 
+
 def determine_required_reset(has_pending_fw, has_pending_nvconfig, mfrl, is_any_sync_supported, sync_2_only_supported):
     """
     Determine the required reset type based on pending FW and NVCONFIG changes.
@@ -2496,7 +2430,7 @@ def status_command(device, mfrl, is_any_sync_supported, sync_2_only_supported, d
         command_required = None  # we can't say how to perform power cycle as it's system dependent
     elif pci_rescan_required:
         description_action = "PCI rescan is required"
-        command_required = "Reboot external host is required" # System Level Reset (SLR) - arm shutdown followed by warm reboot
+        command_required = "Reboot external host is required"  # System Level Reset (SLR) - arm shutdown followed by warm reboot
         # command_required = "echo 1 > /sys/bus/pci/rescan" // Missing FW implementation.
         reset_info['reset_needed'] = True
         reset_info['reasons'].append("PCI rescan is required")
@@ -2518,7 +2452,9 @@ def status_command(device, mfrl, is_any_sync_supported, sync_2_only_supported, d
                 command_required = "mlxfwreset -d %s reset --level %d --type %d" % (
                     device, default_level, default_type)
         except CmdNotSupported:
-            raise RuntimeError("Failed to determine the reset parameters")
+            # No reset level is supported, so there is no mlxfwreset command to suggest.
+            # determine_required_reset() already described the action as a full power cycle.
+            command_required = None
     else:
         description_action = "No action required"
         command_required = None
@@ -2721,13 +2657,16 @@ def reset_flow_host(device, args, command):
     sync_2_only_supported = False
     if mroq.mroq_is_supported():
         if not mfrl.is_any_reset_level_supported(mroq.is_any_sync_supported(tool_owner_support)):
-            raise RuntimeError("No reset level is supported")
+            # 'status' only reports what the device needs, so let it run and recommend a power cycle
+            # instead of failing the query.
+            if command != "status":
+                raise RuntimeError("No reset level is supported")
 
         sync_2_only_supported = mroq.is_sync2_only_supported(tool_owner_support)
         if sync_2_only_supported:
             logger.debug("Sync 2 is the only supported sync, will not be the default.")
 
-    assert_supported_psid(devid, mfrl, mroq, tool_owner_support)  # leaving for BWC, to be removed
+    assert_supported_psid(devid, mfrl, mroq, tool_owner_support, command)  # leaving for BWC, to be removed
 
     if command == "query":
         if mroq.mroq_is_supported():
@@ -2787,10 +2726,10 @@ def reset_flow_host(device, args, command):
             reset_sync = SyncOwner.TOOL  # in case reset level != PCI_RESET, we'll send default sync (0) in MFRL
 
         if reset_sync == SyncOwner.TOOL and is_uefi_secureboot() \
-                and reset_level not in [CmdRegMfrl.WARM_REBOOT, CmdRegMfrl.IMMEDIATE_RESET, CmdRegMfrl.LIVE_PATCH]:                                 # The tool is using sysfs to access PCI config
+                and reset_level not in [CmdRegMfrl.WARM_REBOOT, CmdRegMfrl.IMMEDIATE_RESET]:                                 # The tool is using sysfs to access PCI config
             # and it's restricted on UEFI secure boot
             raise RuntimeError(
-                "The tool supports only reset-level {0}, {1}, {2} on UEFI Secure Boot".format(CmdRegMfrl.WARM_REBOOT, CmdRegMfrl.IMMEDIATE_RESET, CmdRegMfrl.LIVE_PATCH))
+                "The tool supports only reset-level {0} or {1} on UEFI Secure Boot".format(CmdRegMfrl.WARM_REBOOT, CmdRegMfrl.IMMEDIATE_RESET))
 
         if is_pcie_switch:
             if args.reset_level is None:
@@ -3148,10 +3087,8 @@ def main():
     command_group.add_argument('command',
                                nargs=1,
                                choices=["q", "query", "r",
-                                        "reset", "reset_fsm_register",
-                                        "s", "status"],
-                               help=':  query: Query reset Level.\n status: Query pending FW and NVCONFIG changes.\n'
-                                    ' reset: Execute reset.\n reset_fsm_register: Reset the fsm register.')
+                                        "reset", "reset_fsm_register", "status"],
+                               help=':  query: Query reset Level.\n reset: Execute reset.\n reset_fsm_register: Reset the fsm register.')
     args = parser.parse_args()
 
     device = args.device
