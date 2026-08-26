@@ -53,6 +53,7 @@
 #include "common/tools_time.h"
 #include <stdlib.h>
 #include "tools_dev_types.h"
+#include "mft_core/device/device_info/device_properties_api.h"
 
 #include <unistd.h>
 
@@ -195,11 +196,16 @@ int read_device_id(mfile* mf, u_int32_t* device_id)
 
     unsigned hw_id_address = mf->cr_space_offset + HW_ID_ADDR;
 
-    mf->rev_id = EXTRACT(*device_id, 16, 4);
-    *device_id = (*device_id & 0xffff);
-    mf->hw_dev_id = (*device_id & 0xffff);
+    int rc = mread4(mf, hw_id_address, device_id);
 
-    return mread4(mf, hw_id_address, device_id);
+    /* Derive after the read: these used to run before mread4() and so read the
+     * caller's uninitialized stack. *device_id stays raw because
+     * mtcr_check_signature() compares the full 32-bit word. */
+    mf->rev_id = EXTRACT(*device_id, 16, 4);
+    mf->hw_dev_id = (*device_id & 0xffff);
+    mf->functional_device_id = resolve_functional_device_id(mf->hw_dev_id, mf->rev_id, mf->pci_device_id);
+
+    return rc;
 }
 
 int mtcr_check_signature(mfile* mf)
