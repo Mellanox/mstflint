@@ -36,12 +36,12 @@
 """
 
 from __future__ import print_function
+import glob
+import os
 import subprocess
 import platform
 import re
 import time
-import glob
-import os
 
 
 ######################################################################
