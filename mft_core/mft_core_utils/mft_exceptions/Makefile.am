@@ -36,7 +36,7 @@ AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe -Werror $(COMPILER_FPIC)
 
 noinst_LTLIBRARIES = libmftexceptions.la
 
-libmftexceptions_la_SOURCES = MftGeneralException.h MftGeneralException.cpp
+libmftexceptions_la_SOURCES = MftGeneralException.h MftGeneralException.cpp DevicePropertyNotFoundException.h
 
 libmftexceptions_la_DEPENDENCIES = ../operating_system_api/lib_os_api.la
 libmftexceptions_la_LIBADD = $(LIBSTD_CPP_SO) $(libmftexceptions_la_DEPENDENCIES)

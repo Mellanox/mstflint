@@ -1,0 +1,79 @@
+{
+  "0x247": {
+    "general_info": {
+      "device_name": "SwitchIB",
+      "device_short_name": "sib",
+      "fw_name": "Pelican",
+      "device_type": "Switch",
+      "fw_major": 11,
+      "image_layout_format": "fs3",
+      "pci_device_id_list": [
+        52000
+      ],
+      "vendor": "Mellanox",
+      "device_family": "SwitchIB",
+      "is_secured": false,
+      "supports_eth": false,
+      "supports_ib": true,
+      "ports_num": 36,
+      "series": "SwitchIB",
+      "series_index": 0
+    },
+    "dump_tools_info": {
+      "number_of_clusters": 18,
+      "pcie_uc_supported": false,
+      "phy_uc_supported": true,
+      "sx_dump_supported": false,
+      "rx_dump_supported": false,
+      "valid_cluster_indexes": 4,
+      "cmas_context_node_name": "tpt_cmas_context",
+      "hw_sxdc_valid_field_name": "valid",
+      "ignore_steering_last_qp_field": false
+    },
+    "tracers_info": {
+      "ptr_chunk_size": 8,
+      "fifo_events_in_row": 1,
+      "fifo_size": 1024,
+      "ts_id": 1023,
+      "g_event_ts_offs": 56,
+      "g_event_ts_size": 7,
+      "g_event_lost_bit_offs": 63,
+      "g_event_data_offs": 0,
+      "g_event_data_size": 46,
+      "g_event_id_offs": 46,
+      "g_event_id_size": 10,
+      "g_event_unrel_bit_offs": 45,
+      "supports_dynamic_db": false,
+      "fw_str_db_signature_exists": false,
+      "maxMainIrisc": 4,
+      "maxAPU": 0,
+      "maxNumOfTiles": 0,
+      "maxIriscPerTile": 0,
+      "IriscStartAddr": 655388,
+      "IriscStep": 512,
+      "TileStart": 33554432,
+      "TileStep": 2097152,
+      "ApuStartAddr": 0,
+      "ApuStep": 0,
+      "ApuMaxNumOfSteps": 0,
+      "supportPhyUc": false,
+      "is_dynamic_device_without_irisc_id": false,
+      "support_nvrisc": false
+    },
+    "devmon_info": {
+      "market_name": "SwitchIB",
+      "project_name": "pelican",
+      "hw_rev_id": -1
+    },
+    "mtcr_icmd_info": {
+      "cmd_ptr_address": 524288,
+      "cmd_ptr_bitlen": 24,
+      "semaphore_address": 664824,
+      "static_cfg_not_done_address": 524304,
+      "static_cfg_not_done_offset": 0,
+      "version_bit_offset": 24,
+      "version_bitlen": 8,
+      "version_address": 524288
+    }
+  }
+}

@@ -34,4 +34,4 @@ if ENABLE_NVML
 MAYBE_NVML = nvml
 endif
 
-SUBDIRS = $(MAYBE_NVML)
+SUBDIRS = device_info $(MAYBE_NVML)

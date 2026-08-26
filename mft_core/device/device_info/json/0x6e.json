@@ -1,0 +1,18 @@
+{
+    "0x6e": {
+        "general_info": {
+            "device_name": "Ardbeg",
+            "device_type": "LinkX",
+            "vendor": "Mellanox"
+        },
+        "linkx_info": {
+            "i2c_secondary" : 102,
+            "addr_width" : 2
+        },
+        "devmon_info": {
+          "market_name": "",
+          "project_name": "ardbeg",
+          "hw_rev_id": -1
+        }
+    }
+}
