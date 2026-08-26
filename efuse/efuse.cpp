@@ -148,6 +148,10 @@ struct FuseReading
     double voltage_mv;
 };
 
+// [CVB-DISABLED] cx9 now uses the RAW_AND_VALUE MRFV layout. The CVB layout code paths
+// are gated behind EFUSE_CVB_ENABLED (not deleted) so they can be re-enabled if a future
+// device needs the MRFV CVB layout. Define EFUSE_CVB_ENABLED to restore.
+#ifdef EFUSE_CVB_ENABLED
 static const char* cvb_rail_name(int voltage_type)
 {
     switch (voltage_type)
@@ -162,6 +166,7 @@ static const char* cvb_rail_name(int voltage_type)
             return "unknown";
     }
 }
+#endif // EFUSE_CVB_ENABLED
 
 static void decode_raw_and_value(const struct reg_access_switch_MRFV_ext& mrfv,
                                  const std::string& rail,
@@ -198,6 +203,7 @@ static void decode_raw_and_value(const struct reg_access_switch_MRFV_ext& mrfv,
     readings.push_back({rail, instance_label(inst), false, voltage_mv});
 }
 
+#ifdef EFUSE_CVB_ENABLED
 static void decode_cvb(const struct reg_access_switch_MRFV_ext& mrfv,
                        const std::string& rail,
                        int inst,
@@ -218,28 +224,25 @@ static void decode_cvb(const struct reg_access_switch_MRFV_ext& mrfv,
     // RAW_AND_VALUE layout, which encodes base * 10^exponent volts and is converted to mV above).
     readings.push_back({rail, instance_label(inst), false, static_cast<double>(d.cvb_voltage)});
 }
+#endif // EFUSE_CVB_ENABLED
 
-// Query one MRFV reading and append the decoded value to `readings`. For the CVB
-// layout (fuse_id == 0 per PRM), `voltage_type` selects DVDD/AVDD/VDD; it is unused
-// for the RAW_AND_VALUE layout.
-static void query_one_fuse(mfile* mf,
-                           const FuseConfig& fuse,
-                           int inst,
-                           bool is_cvb,
-                           int voltage_type,
-                           std::vector<FuseReading>& readings)
+// Query one MRFV reading and append the decoded value to `readings`.
+// [CVB-DISABLED] Only the RAW_AND_VALUE layout is active. To restore the CVB layout,
+// re-add `bool is_cvb, int voltage_type` parameters and the EFUSE_CVB_ENABLED branches below.
+static void query_one_fuse(mfile* mf, const FuseConfig& fuse, int inst, std::vector<FuseReading>& readings)
 {
     struct reg_access_switch_MRFV_ext mrfv;
     memset(&mrfv, 0, sizeof(mrfv));
     mrfv.fuse_id = static_cast<u_int8_t>(fuse.fuse_id);
     mrfv.instance_id = static_cast<u_int8_t>(inst);
+#ifdef EFUSE_CVB_ENABLED
     if (is_cvb)
     {
         mrfv.data.MRFV_CVB_ext.voltage_type = static_cast<u_int8_t>(voltage_type);
     }
+#endif // EFUSE_CVB_ENABLED
 
-    LOG.Debug("Querying fuse_id=" + std::to_string(fuse.fuse_id) + " instance_id=" + std::to_string(inst) +
-              (is_cvb ? (" voltage_type=" + std::to_string(voltage_type)) : ""));
+    LOG.Debug("Querying fuse_id=" + std::to_string(fuse.fuse_id) + " instance_id=" + std::to_string(inst));
 
     reg_access_status_t rc = reg_access_mrfv_switch(mf, REG_ACCESS_METHOD_GET, &mrfv);
 
@@ -257,7 +260,8 @@ static void query_one_fuse(mfile* mf,
         return;
     }
 
-    std::string rail = is_cvb ? cvb_rail_name(voltage_type) : fuse.name;
+    // [CVB-DISABLED] was: is_cvb ? cvb_rail_name(voltage_type) : fuse.name;
+    std::string rail = fuse.name;
 
     if (mrfv.fm == 1)
     {
@@ -271,6 +275,10 @@ static void query_one_fuse(mfile* mf,
         return;
     }
 
+    // [CVB-DISABLED] This unconditional call replaces the is_cvb ? decode_cvb : decode_raw_and_value
+    // dispatch in the EFUSE_CVB_ENABLED block below. Restore the branch when re-enabling CVB.
+    decode_raw_and_value(mrfv, rail, inst, readings);
+#ifdef EFUSE_CVB_ENABLED
     if (is_cvb)
     {
         decode_cvb(mrfv, rail, inst, voltage_type, readings);
@@ -279,31 +287,20 @@ static void query_one_fuse(mfile* mf,
     {
         decode_raw_and_value(mrfv, rail, inst, readings);
     }
+#endif // EFUSE_CVB_ENABLED
 }
 
 static std::vector<FuseReading> read_fuse_values(mfile* mf, const DeviceConfig& config)
 {
     std::vector<FuseReading> readings;
 
+    // [CVB-DISABLED] Only the RAW_AND_VALUE layout is active. To restore the CVB layout,
+    // dispatch on `fuse.fuse_id == 0` and iterate `fuse.voltage_types` per PRM.
     for (const auto& fuse : config.fuses)
     {
-        // fuse_id == 0 selects the CVB MRFV layout (per PRM); voltage_types is required for it
-        // and validated by the config parser.
-        bool is_cvb = (fuse.fuse_id == 0);
-
         for (int inst : fuse.instance_ids)
         {
-            if (is_cvb)
-            {
-                for (int voltage_type : fuse.voltage_types)
-                {
-                    query_one_fuse(mf, fuse, inst, true, voltage_type, readings);
-                }
-            }
-            else
-            {
-                query_one_fuse(mf, fuse, inst, false, 0, readings);
-            }
+            query_one_fuse(mf, fuse, inst, readings);
         }
     }
 
