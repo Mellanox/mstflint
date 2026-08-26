@@ -38,6 +38,8 @@
 #include <json/reader.h>
 #include <json/value.h>
 
+#define NUMBER_OF_VOLTAGE_TYPES 3 // 0=DVDD, 1=AVDD, 2=VDD
+
 static bool parse_instance_ids(const Json::Value& instance_ids_node, std::vector<int>& instance_ids, std::string& error)
 {
     if (!instance_ids_node.isArray() || instance_ids_node.empty())
@@ -127,6 +129,54 @@ static bool parse_fuse_entry(const Json::Value& fuse_node,
     if (!parse_instance_ids(fuse_node["instance_ids"], fuse.instance_ids, instance_error))
     {
         error = instance_error + " in " + path;
+        return false;
+    }
+
+    // fuse_id == 0 is reserved by the PRM for the CVB MRFV layout and selects it at runtime;
+    // any other fuse_id uses the RAW_AND_VALUE layout. 'voltage_types' is required iff fuse_id == 0.
+    if (fuse_node.isMember("voltage_types"))
+    {
+        if (fuse.fuse_id != 0)
+        {
+            error =
+              "JSON config format error: " + path + ".voltage_types is only allowed when fuse_id == 0 (CVB layout)";
+            return false;
+        }
+        if (fuse.instance_ids.size() != 1 || fuse.instance_ids[0] != 0)
+        {
+            error = "JSON config format error: " + path + ".instance_ids must be [0] for CVB layout (fuse_id == 0)";
+            return false;
+        }
+        const Json::Value& vt_node = fuse_node["voltage_types"];
+        if (!vt_node.isArray() || vt_node.empty())
+        {
+            error = "JSON config format error: " + path + ".voltage_types must be a non-empty array";
+            return false;
+        }
+        for (Json::ArrayIndex idx = 0; idx < vt_node.size(); idx++)
+        {
+            const Json::Value& v = vt_node[idx];
+            if (!v.isInt())
+            {
+                error = "JSON config format error: " + path + ".voltage_types entry at index " + std::to_string(idx) +
+                        " must be an integer";
+                return false;
+            }
+            int val = v.asInt();
+            if (val < 0 || val >= NUMBER_OF_VOLTAGE_TYPES)
+            {
+                error = "JSON config format error: " + path + ".voltage_types entry at index " + std::to_string(idx) +
+                        " value " + std::to_string(val) + " out of valid range [0.." +
+                        std::to_string(NUMBER_OF_VOLTAGE_TYPES - 1) + "] (0=DVDD, 1=AVDD, 2=VDD)";
+                return false;
+            }
+            fuse.voltage_types.push_back(val);
+        }
+    }
+    else if (fuse.fuse_id == 0)
+    {
+        error =
+          "JSON config format error: " + path + " missing required field 'voltage_types' for CVB layout (fuse_id == 0)";
         return false;
     }
 

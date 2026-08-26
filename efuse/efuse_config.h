@@ -41,6 +41,7 @@ struct FuseConfig
     int fuse_id;
     std::string name;
     std::vector<int> instance_ids;
+    std::vector<int> voltage_types; // required iff fuse_id == 0 (CVB layout)
 };
 
 struct DeviceConfig
