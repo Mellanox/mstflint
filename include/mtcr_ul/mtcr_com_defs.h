@@ -118,6 +118,8 @@ typedef long long int64_t;
 #endif /* ifdef __WIN__ */
 
 #define DEV_NAME_SZ 512
+/* "dddddddd:bb:dd.f" - the PCI domain is 32 bits, so up to 8 hex digits. */
+#define PCI_DBDF_STR_SZ 20
 #define MAX_PAGES_SIZE 8
 #define SMP_SEMAPHOE_LOCK_CMD 0xff53
 #define ADDRESS_OUT_OF_RANGE 0x3 /* syndrome_code value */
@@ -396,7 +398,7 @@ typedef enum
 typedef struct vf_info_t
 {
     char dev_name[512];
-    u_int16_t domain;
+    u_int32_t domain;
     u_int8_t bus;
     u_int8_t dev;
     u_int8_t func;
@@ -414,7 +416,7 @@ typedef struct dev_info_t
     {
         struct
         {
-            u_int16_t domain;
+            u_int32_t domain;
             u_int8_t bus;
             u_int8_t dev;
             u_int8_t func;
