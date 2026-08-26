@@ -141,6 +141,7 @@ typedef enum
 #define DBDF "%4.4x:%2.2x:%2.2x.%1.1x"
 #define DRIVER_CR_NAME "/dev/" DBDF "_mstcr"
 #define DRIVER_CONF_NAME "/dev/" DBDF "_mstconf"
+#define NET_DEV_PREFIX "net-"
 
 /* Forward decl*/
 static int get_inband_dev_from_pci(char* inband_dev, char* pci_dev);
@@ -3010,6 +3011,45 @@ int change_i2c_secondary_address(mfile* mf, DType dtype)
 }
 #endif /* ifdef ENABLE_MST_DEV_I2C */
 
+/* Network interface name to PCI address.
+ * Returns 0 on success with domain/bus/dev/func populated, -1 on failure.
+ */
+static int mtcr_resolve_net_device_pci(const char* name, unsigned* domain, unsigned* bus, unsigned* dev, unsigned* func)
+{
+    char mbuf[4048] = {0};
+    char pbuf[4048] = {0};
+    char* base;
+    int r, scnt;
+
+    r = snprintf(mbuf, sizeof(mbuf) - 1, "/sys/class/net/%s/device", name);
+    if ((r <= 0) || (r >= (int)sizeof(mbuf)))
+    {
+        fprintf(stderr, "Unable to print device name %s\n", name);
+        return -1;
+    }
+
+    r = readlink(mbuf, pbuf, sizeof(pbuf) - 1);
+    if (r < 0)
+    {
+        return -1;
+    }
+    pbuf[r] = '\0';
+
+    base = basename(pbuf);
+    if (!base)
+    {
+        return -1;
+    }
+
+    scnt = sscanf(base, "%x:%x:%x.%x", domain, bus, dev, func);
+    if (scnt != 4)
+    {
+        return -1;
+    }
+
+    return 0;
+}
+
 static MType mtcr_parse_name(const char* name, int* force, unsigned* domain_p, unsigned* bus_p, unsigned* dev_p, unsigned* func_p)
 {
     unsigned my_domain = 0;
@@ -3151,6 +3191,13 @@ static MType mtcr_parse_name(const char* name, int* force, unsigned* domain_p, u
         {
             force_config = 1;
         }
+        goto name_parsed;
+    }
+
+    if (!strncmp(name, NET_DEV_PREFIX, strlen(NET_DEV_PREFIX)) &&
+        mtcr_resolve_net_device_pci(name + strlen(NET_DEV_PREFIX), &my_domain, &my_bus, &my_dev, &my_func) == 0)
+    {
+        force_config = 1;
         goto name_parsed;
     }
 
