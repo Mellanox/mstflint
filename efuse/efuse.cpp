@@ -148,80 +148,159 @@ struct FuseReading
     double voltage_mv;
 };
 
+// [CVB-DISABLED] cx9 now uses the RAW_AND_VALUE MRFV layout. The CVB layout code paths
+// are gated behind EFUSE_CVB_ENABLED (not deleted) so they can be re-enabled if a future
+// device needs the MRFV CVB layout. Define EFUSE_CVB_ENABLED to restore.
+#ifdef EFUSE_CVB_ENABLED
+static const char* cvb_rail_name(int voltage_type)
+{
+    switch (voltage_type)
+    {
+        case 0:
+            return "dvdd";
+        case 1:
+            return "avdd";
+        case 2:
+            return "vdd";
+        default:
+            return "unknown";
+    }
+}
+#endif // EFUSE_CVB_ENABLED
+
+static void decode_raw_and_value(const struct reg_access_switch_MRFV_ext& mrfv,
+                                 const std::string& rail,
+                                 int inst,
+                                 std::vector<FuseReading>& readings)
+{
+    uint8_t value_valid = mrfv.data.MRFV_RAW_AND_VALUE_ext.value_valid;
+    uint32_t value_base_raw = mrfv.data.MRFV_RAW_AND_VALUE_ext.value_base;
+    uint8_t value_exponent_raw = mrfv.data.MRFV_RAW_AND_VALUE_ext.value_exponent;
+    uint8_t raw_fuses_highest_bit = mrfv.data.MRFV_RAW_AND_VALUE_ext.raw_fuses_highest_bit;
+
+    if (raw_fuses_highest_bit > 31)
+    {
+        LOG.Error("raw_fuses_highest_bit=" + std::to_string(raw_fuses_highest_bit) +
+                  " out of range for fuse_id=" + std::to_string(mrfv.fuse_id) + " instance_id=" + std::to_string(inst));
+        return;
+    }
+
+    uint32_t raw_fuses = EXTRACT(mrfv.data.MRFV_RAW_AND_VALUE_ext.raw_fuses, 0, raw_fuses_highest_bit + 1);
+
+    LOG.Debug("fuse_id=" + std::to_string(mrfv.fuse_id) + " instance_id=" + std::to_string(inst) +
+              " value_valid=" + std::to_string(value_valid) + " value_base=" + std::to_string(value_base_raw) +
+              " value_exponent=" + std::to_string(value_exponent_raw) + " raw_fuses=" + std::to_string(raw_fuses) +
+              " raw_fuses_highest_bit=" + std::to_string(raw_fuses_highest_bit));
+
+    if (value_valid != 1)
+    {
+        return;
+    }
+
+    int32_t base = sign_extend_26bit(value_base_raw);
+    int32_t exponent = sign_extend_6bit(value_exponent_raw);
+    double voltage_mv = base * pow(10.0, exponent) * 1000.0;
+    readings.push_back({rail, instance_label(inst), false, voltage_mv});
+}
+
+#ifdef EFUSE_CVB_ENABLED
+static void decode_cvb(const struct reg_access_switch_MRFV_ext& mrfv,
+                       const std::string& rail,
+                       int inst,
+                       int voltage_type,
+                       std::vector<FuseReading>& readings)
+{
+    const auto& d = mrfv.data.MRFV_CVB_ext;
+    LOG.Debug("fuse_id=" + std::to_string(mrfv.fuse_id) + " instance_id=" + std::to_string(inst) +
+              " voltage_type=" + std::to_string(voltage_type) + " selector=" + std::to_string(d.selector) +
+              " selector_cause=" + std::to_string(d.selector_cause) + " cvb_voltage=" + std::to_string(d.cvb_voltage));
+
+    if (d.selector != 1 || d.selector_cause != 0)
+    {
+        LOG.Debug("Skipping CVB reading: selector/selector_cause not ready");
+        return;
+    }
+    // Per switch PRM, MRFV CVB layout reports cvb_voltage directly in mV (unlike the
+    // RAW_AND_VALUE layout, which encodes base * 10^exponent volts and is converted to mV above).
+    readings.push_back({rail, instance_label(inst), false, static_cast<double>(d.cvb_voltage)});
+}
+#endif // EFUSE_CVB_ENABLED
+
+// Query one MRFV reading and append the decoded value to `readings`.
+// [CVB-DISABLED] Only the RAW_AND_VALUE layout is active. To restore the CVB layout,
+// re-add `bool is_cvb, int voltage_type` parameters and the EFUSE_CVB_ENABLED branches below.
+static void query_one_fuse(mfile* mf, const FuseConfig& fuse, int inst, std::vector<FuseReading>& readings)
+{
+    struct reg_access_switch_MRFV_ext mrfv;
+    memset(&mrfv, 0, sizeof(mrfv));
+    mrfv.fuse_id = static_cast<u_int8_t>(fuse.fuse_id);
+    mrfv.instance_id = static_cast<u_int8_t>(inst);
+#ifdef EFUSE_CVB_ENABLED
+    if (is_cvb)
+    {
+        mrfv.data.MRFV_CVB_ext.voltage_type = static_cast<u_int8_t>(voltage_type);
+    }
+#endif // EFUSE_CVB_ENABLED
+
+    LOG.Debug("Querying fuse_id=" + std::to_string(fuse.fuse_id) + " instance_id=" + std::to_string(inst));
+
+    reg_access_status_t rc = reg_access_mrfv_switch(mf, REG_ACCESS_METHOD_GET, &mrfv);
+
+    if (rc != ME_OK)
+    {
+        LOG.Error("reg_access_mrfv_switch failed for fuse_id=" + std::to_string(fuse.fuse_id) +
+                  " instance_id=" + std::to_string(inst) + " error=" + std::to_string(rc));
+        return;
+    }
+
+    if (mrfv.v != 1)
+    {
+        LOG.Debug("fuse_id=" + std::to_string(fuse.fuse_id) + " instance_id=" + std::to_string(inst) +
+                  " v=" + std::to_string(mrfv.v) + " (not valid). Skipping this fuse reading.");
+        return;
+    }
+
+    // [CVB-DISABLED] was: is_cvb ? cvb_rail_name(voltage_type) : fuse.name;
+    std::string rail = fuse.name;
+
+    if (mrfv.fm == 1)
+    {
+        readings.push_back({rail, instance_label(inst), true, 0.0});
+        return;
+    }
+    else if (mrfv.fm != 0)
+    {
+        LOG.Debug("fuse_id=" + std::to_string(fuse.fuse_id) + " instance_id=" + std::to_string(inst) +
+                  " unexpected fm=" + std::to_string(mrfv.fm));
+        return;
+    }
+
+    // [CVB-DISABLED] This unconditional call replaces the is_cvb ? decode_cvb : decode_raw_and_value
+    // dispatch in the EFUSE_CVB_ENABLED block below. Restore the branch when re-enabling CVB.
+    decode_raw_and_value(mrfv, rail, inst, readings);
+#ifdef EFUSE_CVB_ENABLED
+    if (is_cvb)
+    {
+        decode_cvb(mrfv, rail, inst, voltage_type, readings);
+    }
+    else
+    {
+        decode_raw_and_value(mrfv, rail, inst, readings);
+    }
+#endif // EFUSE_CVB_ENABLED
+}
+
 static std::vector<FuseReading> read_fuse_values(mfile* mf, const DeviceConfig& config)
 {
     std::vector<FuseReading> readings;
 
+    // [CVB-DISABLED] Only the RAW_AND_VALUE layout is active. To restore the CVB layout,
+    // dispatch on `fuse.fuse_id == 0` and iterate `fuse.voltage_types` per PRM.
     for (const auto& fuse : config.fuses)
     {
         for (int inst : fuse.instance_ids)
         {
-            struct reg_access_switch_MRFV_ext mrfv;
-            memset(&mrfv, 0, sizeof(mrfv));
-            mrfv.fuse_id = static_cast<u_int8_t>(fuse.fuse_id);
-            mrfv.instance_id = static_cast<u_int8_t>(inst);
-
-            LOG.Debug("Querying fuse_id=" + std::to_string(fuse.fuse_id) + " instance_id=" + std::to_string(inst));
-
-            reg_access_status_t rc = reg_access_mrfv_switch(mf, REG_ACCESS_METHOD_GET, &mrfv);
-
-            if (rc != ME_OK)
-            {
-                LOG.Error("reg_access_mrfv_switch failed for fuse_id=" + std::to_string(fuse.fuse_id) +
-                          " instance_id=" + std::to_string(inst) + " error=" + std::to_string(rc));
-                continue;
-            }
-
-            if (mrfv.v != 1)
-            {
-                LOG.Debug("fuse_id=" + std::to_string(fuse.fuse_id) + " instance_id=" + std::to_string(inst) +
-                          " v=" + std::to_string(mrfv.v) + " (not valid). Skipping this fuse reading.");
-                continue;
-            }
-
-            std::string die_label = instance_label(inst);
-
-            if (mrfv.fm == 1)
-            {
-                readings.push_back({fuse.name, die_label, true, 0.0});
-                continue;
-            }
-            else if (mrfv.fm != 0)
-            {
-                LOG.Debug("fuse_id=" + std::to_string(fuse.fuse_id) + " instance_id=" + std::to_string(inst) +
-                          " unexpected fm=" + std::to_string(mrfv.fm));
-                continue;
-            }
-
-            uint8_t value_valid = mrfv.data.MRFV_RAW_AND_VALUE_ext.value_valid;
-            uint32_t value_base_raw = mrfv.data.MRFV_RAW_AND_VALUE_ext.value_base;
-            uint8_t value_exponent_raw = mrfv.data.MRFV_RAW_AND_VALUE_ext.value_exponent;
-            uint8_t raw_fuses_highest_bit = mrfv.data.MRFV_RAW_AND_VALUE_ext.raw_fuses_highest_bit;
-
-            if (raw_fuses_highest_bit > 31)
-            {
-                LOG.Error("raw_fuses_highest_bit=" + std::to_string(raw_fuses_highest_bit) +
-                          " out of range for fuse_id=" + std::to_string(fuse.fuse_id) +
-                          " instance_id=" + std::to_string(inst));
-                continue;
-            }
-
-            uint32_t raw_fuses = EXTRACT(mrfv.data.MRFV_RAW_AND_VALUE_ext.raw_fuses, 0, raw_fuses_highest_bit + 1);
-
-            LOG.Debug("fuse_id=" + std::to_string(fuse.fuse_id) + " instance_id=" + std::to_string(inst) +
-                      " value_valid=" + std::to_string(value_valid) + " value_base=" + std::to_string(value_base_raw) +
-                      " value_exponent=" + std::to_string(value_exponent_raw) + " raw_fuses=" +
-                      std::to_string(raw_fuses) + " raw_fuses_highest_bit=" + std::to_string(raw_fuses_highest_bit));
-
-            if (value_valid != 1)
-            {
-                continue;
-            }
-
-            int32_t base = sign_extend_26bit(value_base_raw);
-            int32_t exponent = sign_extend_6bit(value_exponent_raw);
-            double voltage_mv = base * pow(10.0, exponent) * 1000.0;
-            readings.push_back({fuse.name, die_label, false, voltage_mv});
+            query_one_fuse(mf, fuse, inst, readings);
         }
     }
 
@@ -230,12 +309,12 @@ static std::vector<FuseReading> read_fuse_values(mfile* mf, const DeviceConfig& 
 
 static void print_fuse_readings(dm_dev_id_t dev_type,
                                 u_int32_t hw_dev_id,
-                                u_int32_t hw_rev,
+                                u_int32_t chip_rev,
                                 const std::string& part_number,
                                 const std::vector<FuseReading>& readings)
 {
     printf("Device:       %s\n", dm_dev_type2str(dev_type));
-    printf("HW ID:        %u (rev %u)\n", hw_dev_id, hw_rev);
+    printf("HW ID:        %u (rev %u)\n", hw_dev_id, chip_rev);
     if (!part_number.empty())
     {
         printf("Part number:  %s\n", part_number.c_str());
@@ -328,13 +407,17 @@ int EfuseTool::Run()
     {
         dm_dev_id_t dev_type = DeviceUnknown;
         u_int32_t hw_dev_id = 0;
-        u_int32_t hw_rev = 0;
-        if (dm_get_device_id(mf, &dev_type, &hw_dev_id, &hw_rev))
+        u_int32_t dm_hw_rev = 0; // unused; tools_dev_types hw_rev_id is not the chip stepping
+        if (dm_get_device_id(mf, &dev_type, &hw_dev_id, &dm_hw_rev))
         {
             fprintf(stderr, "-E- Failed to identify device.\n");
             goto cleanup;
         }
-        hw_rev = mf->rev_id;
+        (void)dm_hw_rev;
+        // Match efuse_config.json by the raw chip revision reported by the device
+        // (mfile::rev_id), not by tools_dev_types' hw_rev_id, which is normalized
+        // (e.g. forced to 0 on the MGIR path) and does not reflect the silicon stepping.
+        u_int32_t chip_rev = mf->rev_id;
 
         std::string part_number;
         if (!read_device_part_number(mf, part_number))
@@ -360,8 +443,13 @@ int EfuseTool::Run()
         DeviceConfig device_config;
         int schema_version = 0;
         std::string config_error;
-        if (!load_matching_device_config(
-              config_path, hw_dev_id, static_cast<int>(hw_rev), part_number, device_config, schema_version, config_error))
+        if (!load_matching_device_config(config_path,
+                                         hw_dev_id,
+                                         static_cast<int>(chip_rev),
+                                         part_number,
+                                         device_config,
+                                         schema_version,
+                                         config_error))
         {
             fprintf(stderr, "-E- %s\n", config_error.c_str());
             goto cleanup;
@@ -374,7 +462,7 @@ int EfuseTool::Run()
         }
 
         std::vector<FuseReading> readings = read_fuse_values(mf, device_config);
-        print_fuse_readings(dev_type, hw_dev_id, hw_rev, part_number, readings);
+        print_fuse_readings(dev_type, hw_dev_id, chip_rev, part_number, readings);
         ret = 0;
     }
 
