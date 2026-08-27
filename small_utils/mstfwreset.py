@@ -509,6 +509,7 @@ def isBluefieldNicMode(device_path):
 
     # Run mlxconfig command
     cmd = "%s -d %s -e q %s" % (MLXCONFIG, device_path, parameter_name)
+    logger.debug("Running command: {0}".format(cmd))
     (rc, stdout, stderr) = cmdExec(cmd)
     if rc:
         raise RuntimeError("Error while checking Bluefield NIC mode during run of: %s: %s" % (cmd, str(stderr)))
@@ -1080,6 +1081,17 @@ def getDevidFromDevice(device):
 
 
 ######################################################################
+# Description:  Check if the device is a fwctl device
+# OS Support :  Linux
+######################################################################
+
+def is_fwctl_device(device):
+    '''Check if the device is a fwctl device (e.g. "fwctl0" or "/dev/fwctl/fwctl0").
+    fwctl exposes register access only - no CR-space (except the HW-id address,
+    which mtcr serves from the id it cached when the device was opened) and no ICMD.'''
+    return "fwctl" in device
+
+######################################################################
 # Description:  Check if device is supported
 # OS Support :  Linux/Windows.
 ######################################################################
@@ -1617,7 +1629,7 @@ def is_pcie_switch_device(devid, reg_access_obj=None):
     except Exception as e:
         logger.info('is_pcie_switch_device: Failed to get device dict: {0}'.format(e))
         return res
-    logger.debug(f"devDict['name']: {devDict['name']}")
+    logger.debug("devDict['name']: {0}".format(devDict['name']))
     if devDict['name'] in PCIE_SWITCH_DEVICES_ALL:
         reg_access_obj = RegAccessObj if reg_access_obj is None else reg_access_obj
         logger.debug('is_pcie_switch_device: checking port type for device {0} with pcie index 0'.format(devDict['name']))
@@ -2323,6 +2335,7 @@ def status_pending_nvconfig(device):
     """
     json_file = "/tmp/mlxconfig_query_%d.json" % os.getpid()
     cmd = "%s -d %s -j %s -e query" % (MLXCONFIG, device, json_file)
+    logger.debug("Running command: {0}".format(cmd))
     (rc, stdout, stderr) = cmdExec(cmd)
     if rc:
         raise RuntimeError("Failed to query NVCONFIG using %s: %s" % (MLXCONFIG, stderr.strip()))
@@ -3127,8 +3140,11 @@ def main():
             print("-W- --method argument is ignored: --all only performs reset-method {0} (Link Disable)".format(ResetReqMethod.LINK_DISABLE))
         return reboot_all_flow(args)
 
-    if "fwctl" in device:
-        raise RuntimeError("mlxfwreset is not supported for fwctl devices")
+    # fwctl exposes register access only (no CR-space, no ICMD, no PCI reset), so 'status'
+    # is the only command that can be served over it.
+    if is_fwctl_device(device) and command != "status":
+        raise RuntimeError(
+            "mlxfwreset '{0}' command is not supported for fwctl devices, only 'status' is supported".format(command))
 
     # Insert Flow here
     if isSwitchDevice(device):
