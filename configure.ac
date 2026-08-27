@@ -764,12 +764,17 @@ AM_CONDITIONAL([USE_LOCAL_INIPARSER], [test "$INIPARSER_SYSTEM_AVAILABLE" = no])
 AS_IF([test "x$INIPARSER_SYSTEM_AVAILABLE" = "xyes" ], [
     CXXFLAGS="$CXXFLAGS -DHAVE_INI_PARSER"])
 
-PKG_CHECK_MODULES([JSON], [jsoncpp], [JSON_SYSTEM_AVAILABLE="yes"],[
-    JSON_SYSTEM_AVAILABLE="no"
-    JSON_CFLAGS='-I$(top_srcdir)/ext_libs/json'
-    AC_SUBST(JSON_CFLAGS)
-    JSON_LIBS='$(top_builddir)/ext_libs/json/libjson.la'
-    AC_SUBST(JSON_LIBS)])
+# mtcr uses ceilf, so every program needs -lm. Without this the FreeBSD build fails.
+AC_SEARCH_LIBS([ceilf], [m])
+
+# Always use the jsoncpp copy in ext_libs/json. The tools are linked -static and
+# no package declares a jsoncpp dependency, so linking a system libjsoncpp would
+# leave a runtime dependency nothing installs.
+JSON_SYSTEM_AVAILABLE="no"
+JSON_CFLAGS='-I$(top_srcdir)/ext_libs/json'
+AC_SUBST(JSON_CFLAGS)
+JSON_LIBS='$(top_builddir)/ext_libs/json/libjson.la'
+AC_SUBST(JSON_LIBS)
 AM_CONDITIONAL([USE_LOCAL_JSON], [test "$JSON_SYSTEM_AVAILABLE" = no])
 
 AC_SEARCH_LIBS([mupCreateVar], [muparser], [MUPARSER_SYSTEM_AVAILABLE="yes"],[

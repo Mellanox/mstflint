@@ -67,7 +67,6 @@ msttokengenerator_DEPENDENCIES = \
 							    $(top_builddir)/dev_mgt/libdev_mgt.la \
                                 $(top_builddir)/fw_comps_mgr/libfw_comps_mgr.la \
                                 $(SQLITE_LIBS) \
-                                $(JSON_LIBS) \
                                 $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la
 
 if ENABLE_DPA
@@ -86,7 +85,7 @@ msttokengenerator_DEPENDENCIES += \
     $(top_builddir)/ext_libs/minixz/libminixz.la
 endif
 
-msttokengenerator_LDADD = $(msttokengenerator_DEPENDENCIES) ${LDL}
+msttokengenerator_LDADD = $(msttokengenerator_DEPENDENCIES) $(JSON_LIBS) ${LDL}
 
 if DISABLE_XML2
 AM_CXXFLAGS += -DDISABLE_XML2

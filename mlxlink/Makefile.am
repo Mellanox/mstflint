@@ -68,9 +68,8 @@ mstlink_DEPENDENCIES = \
     $(top_builddir)/reg_access/libreg_access.la \
     $(top_builddir)/mft_core/mft_core_utils/operating_system_api/lib_os_api.la \
     $(top_builddir)/mft_core/mft_core_utils/logger/liblogger.la \
-    $(top_builddir)/mft_core/mft_core_utils/mft_exceptions/libmftexceptions.la \
-    $(JSON_LIBS)
+    $(top_builddir)/mft_core/mft_core_utils/mft_exceptions/libmftexceptions.la
 
-mstlink_LDADD = $(mstlink_DEPENDENCIES) $(liblzma_LIBS) ${LDL} $(expat_LIBS)
+mstlink_LDADD = $(mstlink_DEPENDENCIES) $(JSON_LIBS) $(liblzma_LIBS) ${LDL} $(expat_LIBS)
 
 mstlink_LDFLAGS = -static
