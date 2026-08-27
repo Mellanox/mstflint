@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <dlfcn.h>
+#include <errno.h>
 #include <stdbool.h>
 #include "mtcr_cables.h"
 #include "mtcr_int_defs.h"
@@ -131,6 +132,52 @@ int cable_access_reg_rw(mfile    * mf,
     return 0;
 }
 
+#ifdef ENABLE_MST_DEV_I2C
+int cable_access_mtusb_rw(mfile* mf, u_int8_t page_num, u_int8_t page_off, u_int8_t size, u_int32_t* data, rw_op_t _rw)
+{
+    unsigned char i2c_secondary = ((cable_ctx*)(mf->cable_ctx))->i2c_addr;
+    u_int8_t addr_width = 1;
+
+    int rc = 0;
+    /* write page selector */
+
+    unsigned int page_sel = 0x7f;
+    int num_of_retries = NUM_OF_WRITE_PAGE_RETRIES;
+    do
+    {
+        rc = mwrite_i2cblock(mf, i2c_secondary, addr_width, page_sel, &page_num, 1);
+        num_of_retries -= 1;
+    } while ((rc != 1) && (num_of_retries > 0));
+
+    if (1 != rc)
+    {
+        DBG_PRINTF("Failed to write page_sel. rc=%d,  page_num=%d\n", rc, page_num);
+        return MCABLES_MTUSB_FAILED;
+    }
+    if (WRITE_OP == _rw)
+    {
+        rc = mwrite_i2cblock(mf, i2c_secondary, addr_width, page_off, data, size);
+        if (size != rc)
+        {
+            DBG_PRINTF("Failed to write block, rc=%d\n", rc);
+            return MCABLES_MTUSB_FAILED;
+        }
+    }
+    else if (READ_OP == _rw)
+    {
+        rc = mread_i2cblock(mf, i2c_secondary, addr_width, page_off, data, size);
+        if (size != rc)
+        {
+            DBG_PRINTF("Failed to read block, rc=%d, %s\n", rc, strerror(errno));
+            DBG_PRINTF("page_off=0x%x, size=0x%x\n", page_off, size);
+            return MCABLES_MTUSB_FAILED;
+        }
+    }
+
+    return 0;
+}
+#endif /* ENABLE_MST_DEV_I2C */
+
 int cable_access_rw(mfile* mf, u_int32_t addr, u_int32_t len, u_int32_t* data, rw_op_t _rw)
 {
     MCABLES_ERROR ret = MCABLES_OK;
@@ -176,7 +223,18 @@ int cable_access_rw(mfile* mf, u_int32_t addr, u_int32_t len, u_int32_t* data, r
                 goto cleanup;
             }
             break;
-
+#ifdef ENABLE_MST_DEV_I2C
+        case MLXCABLES_MTUSB_ACCESS:
+            {
+                if (cable_access_mtusb_rw(mf, (u_int8_t)(page_num + page_i), (u_int8_t)(device_addr + addr_i),
+                                          (u_int8_t)tmp_size, data + i / 4, _rw))
+                {
+                    ret = MCABLES_MTUSB_FAILED;
+                    goto cleanup;
+                }
+            }
+            break;
+#endif /* ENABLE_MST_DEV_I2C */
         default:
             break;
         }
@@ -218,7 +276,18 @@ int mcables_open(mfile* mf, int port)
     memset(cbl, 0, sizeof(cable_ctx));
     cbl->port = port;
     cbl->src_tp = mf->tp;
-    cbl->cable_access = MLXCABLES_REG_ACCESS;
+    switch (mf->tp)
+    {
+#ifdef ENABLE_MST_DEV_I2C
+        case MST_USB_DIMAX:
+        case MST_DEV_I2C:
+            cbl->cable_access = MLXCABLES_MTUSB_ACCESS;
+            break;
+#endif
+        default:
+            cbl->cable_access = MLXCABLES_REG_ACCESS;
+            break;
+    }
     cbl->i2c_addr = CABLE_I2C_DEVICE_ADDR;
     mf->tp = MST_CABLE;
     switch_access_funcs(mf);

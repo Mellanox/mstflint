@@ -363,6 +363,8 @@ extern "C"
     A predicate returning if the device needs dword swap for MCAM.mng_feature_cap_mask
     */
     int dm_dev_is_mcam_dword_swap_needed(dm_dev_id_t type);
+
+    int dm_dev_is_vmdl(mfile* mf, dm_dev_id_t type, u_int8_t* ptr_vmdl_ind);
 #ifdef __cplusplus
 } /* end of 'extern "C"' */
 #endif
