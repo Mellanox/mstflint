@@ -2377,6 +2377,10 @@ static int mtcr_pciconf_open(mfile* mf, const char* name, u_int32_t adv_opt)
                 ctx->mread4_block = (f_mread4_block)mread4_block_pciconf;
                 ctx->mwrite4_block = (f_mwrite4_block)mwrite4_block_pciconf;
             }
+            else
+            {
+                mf->functional_vsec_supp = 0;
+            }
 
             mf->pxir_vsec_supp = 0;
             if ((mf->vsec_cap_mask & (1 << space_to_cap_offset(AS_PCI_CRSPACE))) && (mf->vsec_cap_mask & (1 << space_to_cap_offset(AS_PCI_ALL_ICMD))) &&
