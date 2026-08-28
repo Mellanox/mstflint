@@ -103,8 +103,10 @@ dev_info* mdevices_info(int mask, int* len)
         mfile* mf = mopen(dev_info_all[counter].dev_name);
         if (!mf)
         {
+            int dev_count = *len;
             *len = 0;
             free(dev_info_new);
+            mdevices_info_destroy(dev_info_all, dev_count);
             return NULL;
         }
         if (is_pcie_switch_device(mf) && !mf->functional_vsec_supp)
