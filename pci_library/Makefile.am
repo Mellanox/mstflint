@@ -30,7 +30,8 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-AM_CXXFLAGS = -I$(srcdir) -I$(top_srcdir) -Wall -W -g -MP -MD  -pipe $(COMPILER_FPIC)
+AM_CXXFLAGS = -I$(srcdir) -I$(top_srcdir) -I$(top_srcdir)/mft_core/mft_core_utils \
+              -Wall -W -g -MP -MD  -pipe $(COMPILER_FPIC)
 
 noinst_LTLIBRARIES = libpci_library.la
 

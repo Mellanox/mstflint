@@ -30,7 +30,7 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-AM_CPPFLAGS = -I$(top_srcdir)
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/mft_core/mft_core_utils
 
 AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe -Werror $(COMPILER_FPIC)
 
@@ -38,5 +38,9 @@ noinst_LTLIBRARIES = libmftexceptions.la
 
 libmftexceptions_la_SOURCES = MftGeneralException.h MftGeneralException.cpp
 
-libmftexceptions_la_DEPENDENCIES = ../operating_system_api/lib_os_api.la
-libmftexceptions_la_LIBADD = $(LIBSTD_CPP_SO) $(libmftexceptions_la_DEPENDENCIES)
+# LOG_AND_THROW_MFT_ERROR logs on the MFT_CORE layer. Build-order only: the
+# logger objects reach the final link through libmtcr_ul, which every consumer
+# links, so folding a second copy in here would be dead weight.
+libmftexceptions_la_DEPENDENCIES = ../operating_system_api/lib_os_api.la \
+                                   ../mft_logger/libmft_logger.la
+libmftexceptions_la_LIBADD = $(LIBSTD_CPP_SO) ../operating_system_api/lib_os_api.la

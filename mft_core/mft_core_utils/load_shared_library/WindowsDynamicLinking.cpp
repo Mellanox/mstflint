@@ -14,7 +14,7 @@
 
 #include <stdexcept>
 
-#include "mft_core/mft_core_utils/logger/Logger.h"
+#include "mft_logger/mft_logger.h"
 
 WindowsDynamicLinking::~WindowsDynamicLinking()
 {
@@ -29,7 +29,7 @@ void* WindowsDynamicLinking::GetFunctionAddress(const std::string& oFunctionName
     void* pvFunctionAddress = NULL;
     if (!m_poLibraryHandle)
     {
-        LOG.Error("No dynamic library loaded");
+        MFT_LOG_ERROR(mft_logger::Layer::MFT_CORE, "No dynamic library loaded");
     }
 
     else
@@ -39,7 +39,7 @@ void* WindowsDynamicLinking::GetFunctionAddress(const std::string& oFunctionName
         {
             if (!bIgnoreFailure)
             {
-                LOG.Error("Failed to load dynamic function " + oFunctionName);
+                MFT_LOG_ERROR(mft_logger::Layer::MFT_CORE, ("Failed to load dynamic function " + oFunctionName).c_str());
             }
         }
     }
@@ -49,17 +49,17 @@ void* WindowsDynamicLinking::GetFunctionAddress(const std::string& oFunctionName
 
 int WindowsDynamicLinking::LoadDynamicLibrary(const std::string& poLibraryName)
 {
-    LOG.Info("Loading dynamic library: " + poLibraryName);
+    MFT_LOG_INFO(mft_logger::Layer::MFT_CORE, ("Loading dynamic library: " + poLibraryName).c_str());
 
     m_poLibraryHandle = LoadLibrary(poLibraryName.c_str());
 
     if (!m_poLibraryHandle)
     {
-        LOG.Error("Failed to load the dynamic library: " + poLibraryName);
+        MFT_LOG_ERROR(mft_logger::Layer::MFT_CORE, ("Failed to load the dynamic library: " + poLibraryName).c_str());
         return -1;
     }
 
-    LOG.Info("Dynamic library loaded successfully: " + poLibraryName);
+    MFT_LOG_INFO(mft_logger::Layer::MFT_CORE, ("Dynamic library loaded successfully: " + poLibraryName).c_str());
 
     return 0;
 }
