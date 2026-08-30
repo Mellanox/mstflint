@@ -6289,7 +6289,7 @@ void MlxlinkCommander::checkPrbsRegsCap(const string& prbsReg, const string& lan
     const CAP_VALUE& prbsLaneCap = _mlxlinkMaps->_prbsLaneRate[laneRate];
     bool invalidRateStr = !laneRate.empty() && !prbsLaneCap.capMask && !prbsLaneCap.capExtMask;
 
-    u_int32_t laneRateCap = prbsLaneCap.capMask ? prbsLaneCap.capMask : (u_int32_t)LANE_RATE_EDR_CAP;
+    u_int32_t laneRateCap = prbsLaneCap.anyCapSupported() ? prbsLaneCap.capMask : (u_int32_t)LANE_RATE_EDR_CAP;
 
     string laneRateStr = laneRate.empty() ? "EDR/25G/50G/100G (25.78125 Gb/s)" : laneRate;
 
