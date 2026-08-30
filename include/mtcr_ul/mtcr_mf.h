@@ -139,6 +139,7 @@ struct mfile_t {
     void        * cable_ctx;
     unsigned int  linkx_chip_devid;
     void        * cable_chip_ctx; /* TODO change the name */
+    virtual_module_info vmdl_info;
     f_mpci_change mpci_change;
     /* Amos gear-box */
     gearbox_info gb_info;

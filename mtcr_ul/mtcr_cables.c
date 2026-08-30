@@ -292,6 +292,11 @@ int mcables_open(mfile* mf, int port)
     mf->tp = MST_CABLE;
     switch_access_funcs(mf);
 
+    if (mf->dev_name && (strstr(mf->dev_name, VMDL_DEVICE_STR) != NULL)) {
+        mf->vmdl_info.is_vmdl_device = 1;
+        mf->vmdl_info.local_module_num = (u_int8_t)port;
+    }
+
     /* // Create the semaphore object. */
     /* cbl->semaphore_handle = create_semaphore(); */
     /* if (!cbl->semaphore_handle) */
@@ -308,16 +313,6 @@ int mcables_open(mfile* mf, int port)
     /*     cbl->semaphore_handle = NULL; */
     /*     free(cbl); */
     /*     return MCABLES_SEM_INIT_FAILED; */
-    /* } */
-
-    /* ret_value = semaphore_lock(cbl->semaphore_handle); */
-    /* if (ret_value) */
-    /* { */
-    /*     DPRINTF("failed to lock cables semaphore\n"); */
-    /*     free(cbl->semaphore_handle); */
-    /*     cbl->semaphore_handle = NULL; */
-    /*     free(cbl); */
-    /*     return MCABLES_SEM_LOCK_FAILED; */
     /* } */
 
     mf->cable_ctx = cbl;
@@ -554,6 +549,14 @@ void mcables_set_burn_flow(bool burn_flow)
     is_cable_burn_flow = burn_flow;
 }
 
+#ifdef ENABLE_MST_DEV_I2C
+int mcables_is_i2c_vmdl(mfile* mf)
+{
+    MType src_tp = mcables_get_tp(mf);
+    return mf->vmdl_info.is_vmdl_device && (src_tp == MST_DEV_I2C || src_tp == MST_USB_DIMAX);
+}
+#endif
+
 MType mcables_get_tp(mfile* mf)
 {
     cable_ctx* ctx = (cable_ctx*)(mf->cable_ctx);
@@ -562,4 +565,23 @@ MType mcables_get_tp(mfile* mf)
         return 0;
     }
     return ctx->src_tp;
+}
+
+int mcables_lock_vmdl_els_sempahore(mfile* mf, bool use_els)
+{
+    // Add semaphore functionality once the semaphore backend is available
+    // For now, just set the vmdl_els_mode flag.
+    if (!mf->vmdl_info.is_vmdl_device) {
+        return MCABLES_BAD_PARAMS;
+    }
+
+    if (mf->vmdl_info.vmdl_els_mode == use_els) {
+        return MCABLES_OK;
+    }
+    if (use_els) {
+        mf->vmdl_info.vmdl_els_mode = 1;
+    } else {
+        mf->vmdl_info.vmdl_els_mode = 0;
+    }
+    return MCABLES_OK;
 }
