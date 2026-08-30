@@ -2292,6 +2292,14 @@ bool is_cable_device(const char* name)
     {
         return false;
     }
+    if (strlen(name) < sizeof(VMDL_DEVICE_STR))
+    {
+        return false;
+    }
+    if (strstr(name, VMDL_DEVICE_STR) != NULL)
+    {
+        return true;
+    }
     if (strlen(name) < sizeof(CABLE_DEVICE_STR))
     {
         return false;
@@ -2306,12 +2314,18 @@ bool is_cable_device(const char* name)
 int get_cable_port(const char* name)
 {
 #ifdef CABLES_SUPPORT
-    char* cable_name_ptr = strstr(name, CABLE_DEVICE_STR);
+    const char* dev_str = CABLE_DEVICE_STR;
+    char* cable_name_ptr = strstr(name, dev_str);
+    if (!cable_name_ptr)
+    {
+        dev_str = VMDL_DEVICE_STR;
+        cable_name_ptr = strstr(name, dev_str);
+    }
 
     if (cable_name_ptr)
     {
         char* endptr;
-        int port = strtol(cable_name_ptr + (sizeof(CABLE_DEVICE_STR) - 1), &endptr, 10);
+        int port = strtol(cable_name_ptr + strlen(dev_str), &endptr, 10);
         if ((*endptr != '\0') || (port < 0))
         {
             DBG_PRINTF("Invalid cable port: %s\n", name);
@@ -2799,6 +2813,8 @@ void safe_free(mfile** pmf)
 
 static int mtcr_i2c_open(mfile* mf, const char* name)
 {
+    char name_buf[512];
+    memset(name_buf, 0, sizeof(name_buf));
     ul_ctx_t* ctx = mf->ul_ctx;
 
     mf->tp = MST_DEV_I2C;
@@ -2811,6 +2827,14 @@ static int mtcr_i2c_open(mfile* mf, const char* name)
     ctx->mread4_block = (f_mread4_block)mtcr_i2c_mread_chunks;
     ctx->mwrite4_block = (f_mwrite4_block)mtcr_i2c_mwrite_chunks;
 
+    if (is_cable_device(mf->dev_name))
+    {
+        snprintf(name_buf, sizeof(name_buf), "/dev/%s", name);
+        char *p = strchr(name_buf, '_');
+        *p = '\0';
+        name = name_buf;
+    }
+
     if ((mf->fd = open(name, O_RDWR | O_SYNC)) < 0)
     {
         safe_free(&mf);
@@ -2819,7 +2843,7 @@ static int mtcr_i2c_open(mfile* mf, const char* name)
     }
 
     /* Support functional devices from secure generation (CX7, Quantum2 and above) */
-    if (change_i2c_secondary_address(mf, mf->dtype))
+    if (!is_cable_device(mf->dev_name) && !change_i2c_secondary_address(mf, mf->dtype))
     {
         DBG_PRINTF("mtcr_i2c_open: failed to determine i2c secondary address\n");
         return -1;
@@ -3090,8 +3114,9 @@ static MType mtcr_parse_name(const char* name, int* force, unsigned* domain_p, u
     }
 
 #ifdef ENABLE_MST_DEV_I2C
-    if (strstr(name, "/dev/i2c"))
+    if (strstr(name, "/dev/i2c") || strstr(name, "i2c-"))
     {
+        *force = 0;
         return MST_DEV_I2C;
     }
 #endif
@@ -3515,7 +3540,7 @@ int mdevices_v_ul(char* buf, int len, int mask, int verbosity)
                     continue;
                 }
 
-                if (strstr(mstflint_entry->d_name, "cable_") != NULL)
+                if (strstr(mstflint_entry->d_name, "cable_") != NULL || strstr(mstflint_entry->d_name, "vmdl_") != NULL)
                 {
                     int sz = strlen(mstflint_entry->d_name);
                     int rsz = sz + 1; /* dev name size + place for Null char */
@@ -3882,6 +3907,22 @@ dev_info* mdevices_info_v_ul(int mask, int* len, int verbosity)
     dev_name = devs;
     for (i = 0; i < rc; i++)
     {
+        // Divergence from MFT since here we can have non PCI devices in UL
+        unsigned _domain = 0, _bus = 0, _dev = 0, _func = 0;
+        int _force = 0;
+
+        MType type = mtcr_parse_name(dev_name, &_force, &_domain, &_bus, &_dev, &_func);
+
+#ifdef ENABLE_MST_DEV_I2C
+        if (type == MST_DEV_I2C)
+        {
+            dev_info_arr[i].ul_mode = 1;
+            dev_info_arr[i].type = (Mdevs)MDEVS_DEV_I2C;
+            strncpy(dev_info_arr[i].dev_name, dev_name, sizeof(dev_info_arr[i].dev_name) - 1);
+            goto next;
+        }
+#endif
+
         unsigned int domain = 0;
         unsigned int bus = 0;
         unsigned int dev = 0;
@@ -4168,13 +4209,26 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
     if (return_mf)
     {
 #ifdef CABLES_SUPPORT
+#ifdef ENABLE_MST_DEV_I2C
+        if (dev_type == MST_DEV_I2C && is_cable_device(name))
+        {
+            int cable_port = get_cable_port(name);
+            rc = mcables_open(mf, cable_port);
+            if (rc)
+            {
+                goto open_failed;
+            }
+        }
+        return mf;
+#else
         if (!is_cable_device(name))
         {
             return mf;
         }
+#endif /* ENABLE_MST_DEV_I2C */
 #else
         return mf;
-#endif
+#endif /* CABLES_SUPPORT */
     }
 
     if (dev_type == MST_ERROR)

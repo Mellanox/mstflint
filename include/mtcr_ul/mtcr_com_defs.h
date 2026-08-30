@@ -589,6 +589,14 @@ typedef struct cables_info_t
     int slave_addr_additional_offset;
 } cables_info;
 
+typedef struct virtual_module_info_t
+{
+    u_int8_t is_vmdl_device;
+    u_int8_t local_module_num; /* Local module number for FW to send MCIA */
+    // void   * vmdl_els_mode_semaphore;
+    u_int8_t vmdl_els_mode;
+} virtual_module_info;
+
 #define HW_ID_ADDR 0xf0014
 
 #define VSEC_MIN_SUPPORT_UL(mf)                                                                                                                                                     \

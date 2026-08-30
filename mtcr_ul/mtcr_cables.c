@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <dlfcn.h>
+#include <errno.h>
 #include <stdbool.h>
 #include "mtcr_cables.h"
 #include "mtcr_int_defs.h"
@@ -131,6 +132,52 @@ int cable_access_reg_rw(mfile    * mf,
     return 0;
 }
 
+#ifdef ENABLE_MST_DEV_I2C
+int cable_access_mtusb_rw(mfile* mf, u_int8_t page_num, u_int8_t page_off, u_int8_t size, u_int32_t* data, rw_op_t _rw)
+{
+    unsigned char i2c_secondary = ((cable_ctx*)(mf->cable_ctx))->i2c_addr;
+    u_int8_t addr_width = 1;
+
+    int rc = 0;
+    /* write page selector */
+
+    unsigned int page_sel = 0x7f;
+    int num_of_retries = NUM_OF_WRITE_PAGE_RETRIES;
+    do
+    {
+        rc = mwrite_i2cblock(mf, i2c_secondary, addr_width, page_sel, &page_num, 1);
+        num_of_retries -= 1;
+    } while ((rc != 1) && (num_of_retries > 0));
+
+    if (1 != rc)
+    {
+        DBG_PRINTF("Failed to write page_sel. rc=%d,  page_num=%d\n", rc, page_num);
+        return MCABLES_MTUSB_FAILED;
+    }
+    if (WRITE_OP == _rw)
+    {
+        rc = mwrite_i2cblock(mf, i2c_secondary, addr_width, page_off, data, size);
+        if (size != rc)
+        {
+            DBG_PRINTF("Failed to write block, rc=%d\n", rc);
+            return MCABLES_MTUSB_FAILED;
+        }
+    }
+    else if (READ_OP == _rw)
+    {
+        rc = mread_i2cblock(mf, i2c_secondary, addr_width, page_off, data, size);
+        if (size != rc)
+        {
+            DBG_PRINTF("Failed to read block, rc=%d, %s\n", rc, strerror(errno));
+            DBG_PRINTF("page_off=0x%x, size=0x%x\n", page_off, size);
+            return MCABLES_MTUSB_FAILED;
+        }
+    }
+
+    return 0;
+}
+#endif /* ENABLE_MST_DEV_I2C */
+
 int cable_access_rw(mfile* mf, u_int32_t addr, u_int32_t len, u_int32_t* data, rw_op_t _rw)
 {
     MCABLES_ERROR ret = MCABLES_OK;
@@ -176,7 +223,18 @@ int cable_access_rw(mfile* mf, u_int32_t addr, u_int32_t len, u_int32_t* data, r
                 goto cleanup;
             }
             break;
-
+#ifdef ENABLE_MST_DEV_I2C
+        case MLXCABLES_MTUSB_ACCESS:
+            {
+                if (cable_access_mtusb_rw(mf, (u_int8_t)(page_num + page_i), (u_int8_t)(device_addr + addr_i),
+                                          (u_int8_t)tmp_size, data + i / 4, _rw))
+                {
+                    ret = MCABLES_MTUSB_FAILED;
+                    goto cleanup;
+                }
+            }
+            break;
+#endif /* ENABLE_MST_DEV_I2C */
         default:
             break;
         }
@@ -218,10 +276,26 @@ int mcables_open(mfile* mf, int port)
     memset(cbl, 0, sizeof(cable_ctx));
     cbl->port = port;
     cbl->src_tp = mf->tp;
-    cbl->cable_access = MLXCABLES_REG_ACCESS;
+    switch (mf->tp)
+    {
+#ifdef ENABLE_MST_DEV_I2C
+        case MST_USB_DIMAX:
+        case MST_DEV_I2C:
+            cbl->cable_access = MLXCABLES_MTUSB_ACCESS;
+            break;
+#endif
+        default:
+            cbl->cable_access = MLXCABLES_REG_ACCESS;
+            break;
+    }
     cbl->i2c_addr = CABLE_I2C_DEVICE_ADDR;
     mf->tp = MST_CABLE;
     switch_access_funcs(mf);
+
+    if (mf->dev_name && (strstr(mf->dev_name, VMDL_DEVICE_STR) != NULL)) {
+        mf->vmdl_info.is_vmdl_device = 1;
+        mf->vmdl_info.local_module_num = (u_int8_t)port;
+    }
 
     /* // Create the semaphore object. */
     /* cbl->semaphore_handle = create_semaphore(); */
@@ -239,16 +313,6 @@ int mcables_open(mfile* mf, int port)
     /*     cbl->semaphore_handle = NULL; */
     /*     free(cbl); */
     /*     return MCABLES_SEM_INIT_FAILED; */
-    /* } */
-
-    /* ret_value = semaphore_lock(cbl->semaphore_handle); */
-    /* if (ret_value) */
-    /* { */
-    /*     DPRINTF("failed to lock cables semaphore\n"); */
-    /*     free(cbl->semaphore_handle); */
-    /*     cbl->semaphore_handle = NULL; */
-    /*     free(cbl); */
-    /*     return MCABLES_SEM_LOCK_FAILED; */
     /* } */
 
     mf->cable_ctx = cbl;
@@ -485,6 +549,14 @@ void mcables_set_burn_flow(bool burn_flow)
     is_cable_burn_flow = burn_flow;
 }
 
+#ifdef ENABLE_MST_DEV_I2C
+int mcables_is_i2c_vmdl(mfile* mf)
+{
+    MType src_tp = mcables_get_tp(mf);
+    return mf->vmdl_info.is_vmdl_device && (src_tp == MST_DEV_I2C || src_tp == MST_USB_DIMAX);
+}
+#endif
+
 MType mcables_get_tp(mfile* mf)
 {
     cable_ctx* ctx = (cable_ctx*)(mf->cable_ctx);
@@ -493,4 +565,23 @@ MType mcables_get_tp(mfile* mf)
         return 0;
     }
     return ctx->src_tp;
+}
+
+int mcables_lock_vmdl_els_sempahore(mfile* mf, bool use_els)
+{
+    // Add semaphore functionality once the semaphore backend is available
+    // For now, just set the vmdl_els_mode flag.
+    if (!mf->vmdl_info.is_vmdl_device) {
+        return MCABLES_BAD_PARAMS;
+    }
+
+    if (mf->vmdl_info.vmdl_els_mode == use_els) {
+        return MCABLES_OK;
+    }
+    if (use_els) {
+        mf->vmdl_info.vmdl_els_mode = 1;
+    } else {
+        mf->vmdl_info.vmdl_els_mode = 0;
+    }
+    return MCABLES_OK;
 }
