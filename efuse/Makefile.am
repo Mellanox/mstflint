@@ -37,6 +37,7 @@ AM_CPPFLAGS = \
     -I$(top_srcdir) \
     -I$(top_srcdir)/${MTCR_CONF_DIR} \
     -I$(top_srcdir)/include/mtcr_ul \
+    -I$(top_srcdir)/mft_core/mft_core_utils \
     $(COMPILER_FPIC)
 
 AM_CPPFLAGS += $(JSON_CFLAGS)
@@ -55,7 +56,6 @@ mstefuse_DEPENDENCIES = \
     $(top_builddir)/tools_layouts/libtools_layouts.la \
     $(top_builddir)/common/libcommon.la \
     $(top_builddir)/mft_core/mft_core_utils/operating_system_api/lib_os_api.la \
-    $(top_builddir)/mft_core/mft_core_utils/logger/liblogger.la \
     $(top_builddir)/mft_core/mft_core_utils/mft_exceptions/libmftexceptions.la \
     $(JSON_LIBS)
 

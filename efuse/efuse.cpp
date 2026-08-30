@@ -46,7 +46,7 @@
 #include <tools_layouts/reg_access_hca_layouts.h>
 #include <tools_layouts/reg_access_switch_layouts.h>
 #include <dev_mgt/tools_dev_types.h>
-#include <mft_core/mft_core_utils/logger/Logger.h>
+#include "mft_logger/mft_logger.h"
 #include <common/bit_slice.h>
 
 #ifndef DATA_PATH
@@ -97,7 +97,7 @@ static bool read_device_part_number(mfile* mf, std::string& part_number)
     reg_access_status_t rc = reg_access_mqis(mf, REG_ACCESS_METHOD_GET, &mqis);
     if (rc != ME_OK)
     {
-        LOG.Error("reg_access_mqis failed for part number, rc=" + std::to_string(rc));
+        MFT_LOG_ERROR(mft_logger::Layer::EFUSE, ("reg_access_mqis failed for part number, rc=" + std::to_string(rc)).c_str());
         return false;
     }
 
@@ -121,14 +121,13 @@ static bool read_device_part_number(mfile* mf, std::string& part_number)
         rc = reg_access_mqis(mf, REG_ACCESS_METHOD_GET, &mqis);
         if (rc != ME_OK || mqis.read_length == 0)
         {
-            LOG.Error("reg_access_mqis failed for part number, rc=" + std::to_string(rc));
+            MFT_LOG_ERROR(mft_logger::Layer::EFUSE, ("reg_access_mqis failed for part number, rc=" + std::to_string(rc)).c_str());
             return false;
         }
         if (mqis.read_offset + mqis.read_length > total_len)
         {
-            LOG.Error(
-              "mqis.read_offset + mqis.read_length > total_len, read_offset=" + std::to_string(mqis.read_offset) +
-              " read_length=" + std::to_string(mqis.read_length) + " total_len=" + std::to_string(total_len));
+            MFT_LOG_ERROR(mft_logger::Layer::EFUSE, ("mqis.read_offset + mqis.read_length > total_len, read_offset=" + std::to_string(mqis.read_offset) +
+              " read_length=" + std::to_string(mqis.read_length) + " total_len=" + std::to_string(total_len)).c_str());
             return false;
         }
         memcpy(buf.data() + mqis.read_offset, mqis.info_string, mqis.read_length);
@@ -136,7 +135,7 @@ static bool read_device_part_number(mfile* mf, std::string& part_number)
     }
 
     part_number = buf.data();
-    LOG.Debug("part_number: " + part_number);
+    MFT_LOG_DEBUG(mft_logger::Layer::EFUSE, ("part_number: " + part_number).c_str());
     return true;
 }
 
@@ -161,21 +160,21 @@ static std::vector<FuseReading> read_fuse_values(mfile* mf, const DeviceConfig& 
             mrfv.fuse_id = static_cast<u_int8_t>(fuse.fuse_id);
             mrfv.instance_id = static_cast<u_int8_t>(inst);
 
-            LOG.Debug("Querying fuse_id=" + std::to_string(fuse.fuse_id) + " instance_id=" + std::to_string(inst));
+            MFT_LOG_DEBUG(mft_logger::Layer::EFUSE, ("Querying fuse_id=" + std::to_string(fuse.fuse_id) + " instance_id=" + std::to_string(inst)).c_str());
 
             reg_access_status_t rc = reg_access_mrfv_switch(mf, REG_ACCESS_METHOD_GET, &mrfv);
 
             if (rc != ME_OK)
             {
-                LOG.Error("reg_access_mrfv_switch failed for fuse_id=" + std::to_string(fuse.fuse_id) +
-                          " instance_id=" + std::to_string(inst) + " error=" + std::to_string(rc));
+                MFT_LOG_ERROR(mft_logger::Layer::EFUSE, ("reg_access_mrfv_switch failed for fuse_id=" + std::to_string(fuse.fuse_id) +
+                          " instance_id=" + std::to_string(inst) + " error=" + std::to_string(rc)).c_str());
                 continue;
             }
 
             if (mrfv.v != 1)
             {
-                LOG.Debug("fuse_id=" + std::to_string(fuse.fuse_id) + " instance_id=" + std::to_string(inst) +
-                          " v=" + std::to_string(mrfv.v) + " (not valid). Skipping this fuse reading.");
+                MFT_LOG_DEBUG(mft_logger::Layer::EFUSE, ("fuse_id=" + std::to_string(fuse.fuse_id) + " instance_id=" + std::to_string(inst) +
+                          " v=" + std::to_string(mrfv.v) + " (not valid). Skipping this fuse reading.").c_str());
                 continue;
             }
 
@@ -188,8 +187,8 @@ static std::vector<FuseReading> read_fuse_values(mfile* mf, const DeviceConfig& 
             }
             else if (mrfv.fm != 0)
             {
-                LOG.Debug("fuse_id=" + std::to_string(fuse.fuse_id) + " instance_id=" + std::to_string(inst) +
-                          " unexpected fm=" + std::to_string(mrfv.fm));
+                MFT_LOG_DEBUG(mft_logger::Layer::EFUSE, ("fuse_id=" + std::to_string(fuse.fuse_id) + " instance_id=" + std::to_string(inst) +
+                          " unexpected fm=" + std::to_string(mrfv.fm)).c_str());
                 continue;
             }
 
@@ -200,18 +199,18 @@ static std::vector<FuseReading> read_fuse_values(mfile* mf, const DeviceConfig& 
 
             if (raw_fuses_highest_bit > 31)
             {
-                LOG.Error("raw_fuses_highest_bit=" + std::to_string(raw_fuses_highest_bit) +
+                MFT_LOG_ERROR(mft_logger::Layer::EFUSE, ("raw_fuses_highest_bit=" + std::to_string(raw_fuses_highest_bit) +
                           " out of range for fuse_id=" + std::to_string(fuse.fuse_id) +
-                          " instance_id=" + std::to_string(inst));
+                          " instance_id=" + std::to_string(inst)).c_str());
                 continue;
             }
 
             uint32_t raw_fuses = EXTRACT(mrfv.data.MRFV_RAW_AND_VALUE_ext.raw_fuses, 0, raw_fuses_highest_bit + 1);
 
-            LOG.Debug("fuse_id=" + std::to_string(fuse.fuse_id) + " instance_id=" + std::to_string(inst) +
+            MFT_LOG_DEBUG(mft_logger::Layer::EFUSE, ("fuse_id=" + std::to_string(fuse.fuse_id) + " instance_id=" + std::to_string(inst) +
                       " value_valid=" + std::to_string(value_valid) + " value_base=" + std::to_string(value_base_raw) +
                       " value_exponent=" + std::to_string(value_exponent_raw) + " raw_fuses=" +
-                      std::to_string(raw_fuses) + " raw_fuses_highest_bit=" + std::to_string(raw_fuses_highest_bit));
+                      std::to_string(raw_fuses) + " raw_fuses_highest_bit=" + std::to_string(raw_fuses_highest_bit)).c_str());
 
             if (value_valid != 1)
             {
