@@ -3344,6 +3344,12 @@ int mf_opend_int(mflash** pmfl, void* access_dev, int num_of_banks, flash_params
         u_int32_t chip_rev;
         rc = dm_get_device_id((*pmfl)->mf, &((*pmfl)->dm_dev_id), &dev_id, &chip_rev);
         CHECK_RC(rc);
+
+        /* BlueField4 uses ConnectX9 flash parameters. */
+        if ((*pmfl)->dm_dev_id == DeviceBlueField4)
+        {
+            (*pmfl)->dm_dev_id = DeviceConnectX9;
+        }
     }
     else if (access_type == MFAT_UEFI)
     {
