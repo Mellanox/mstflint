@@ -122,6 +122,8 @@ enum MODULE_PAGE
     PAGE_16 = 0x16,
     PAGE_17 = 0x17,
     PAGE_19 = 0x19,
+    PAGE_1A = 0x1A,
+    PAGE_1B = 0x1B,
     PAGE_20 = 0x20,
     PAGE_21 = 0x21,
     PAGE_2D = 0x2d,
@@ -134,6 +136,10 @@ enum MODULE_PAGE
     PAGE_A7 = 0xA7,
     PAGE_AB = 0xAB,
     PAGE_AF = 0xAF,
+    PAGE_B0 = 0xB0,
+    PAGE_B1 = 0xB1,
+    PAGE_B2 = 0xB2,
+    PAGE_BF = 0xBF,
     PAGE_LAST
 };
 
@@ -150,7 +156,9 @@ public:
     cable_ddm_q_t& getCableDDMInfo();
     void writeToEEPROM(u_int16_t page, u_int16_t offset, vector<u_int8_t>& bytesToWrite);
     MlxlinkCmdPrint readFromEEPRM(u_int16_t page, u_int16_t offset, u_int16_t length);
+    void saveLaserSetpoint(uint16_t powerSetpoint, const std::vector<uint32_t>& laserIdxs);
 
+    void checkElsModuleReady();
     void handlePrbsTestMode(const string& ctrl, ModuleAccess_t moduleAccess);
     void showPrbsTestMode();
     void showPrpsDiagInfo();
@@ -168,6 +176,7 @@ public:
     u_int32_t _moduleNumber;
     u_int32_t _slotIndex;
     u_int32_t _cableIdentifier;
+    u_int32_t _protoActive;
     bool _sfp51Paging;
     bool _passiveQsfp;
     u_int32_t _numOfLanes;
@@ -185,6 +194,7 @@ private:
                    u_int8_t* data,
                    u_int32_t i2cAddress);
     void initValidPages();
+    void loadVmodElsValidPages();
     void loadEEPRMPage(u_int32_t pageNum, u_int32_t offset, u_int8_t* data, u_int32_t i2cAddress = I2C_ADDR_LOW);
     void bytesToInt16(u_int16_t* bytes);
     void convertThreshold(ddm_threshold_t& field);
@@ -234,6 +244,8 @@ private:
     string getPMCRCapValueStr(u_int32_t valueCap, ControlParam paramId);
     void checkPMCRFieldsCap(vector<pair<ControlParam, string>>& params);
     string buildPMCRRequest(ControlParam paramId, const string& value);
+    void outputFiberChecked(const std::vector<uint32_t>& laserIdxs);
+    bool pollElsLasersOn(const std::vector<uint32_t>& laserIdxs);
 
     Json::Value& _jsonRoot;
     vector<page_t> _validPages;

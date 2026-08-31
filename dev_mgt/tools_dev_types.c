@@ -1060,6 +1060,11 @@ int dm_is_gr100(dm_dev_id_t type)
     return (type == DeviceGR100);
 }
 
+int dm_is_qt3(dm_dev_id_t type)
+{
+    return (type == DeviceQuantum3);
+}
+
 int dm_is_gpu(dm_dev_id_t type)
 {
     return (dm_is_gb100(type) || dm_is_gr100(type));

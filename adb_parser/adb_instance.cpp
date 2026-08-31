@@ -477,6 +477,15 @@ bool _AdbInstance_impl<e, O>::isNode()
 }
 
 /**
+ * Function: _AdbInstance_impl::get_array_size
+ **/
+template<bool e, typename T_OFFSET>
+T_OFFSET _AdbInstance_impl<e, T_OFFSET>::get_array_size()
+{
+    return fieldDesc ? fieldDesc->get_size() : 0;
+}
+
+/**
  * Function: _AdbInstance_impl::isNode
  **/
 template<bool e, typename O>

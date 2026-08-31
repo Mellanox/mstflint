@@ -31,6 +31,7 @@
  */
 
 #include "mlxlink_cables_commander.h"
+#include "common/tools_time.h"
 
 MlxlinkCablesCommander::MlxlinkCablesCommander(Json::Value& jsonRoot) : _jsonRoot(jsonRoot)
 {
@@ -582,6 +583,8 @@ void MlxlinkCablesCommander::readCableDDMInfo()
         case IDENTIFIER_C2C:
         case IDENTIFIER_DSFP:
         case IDENTIFIER_QSFP_CMIS:
+        case IDENTIFIER_CPO:
+        case IDENTIFIER_ELS:
             prepareQsfpddDdmInfo();
             break;
         default:
@@ -803,7 +806,8 @@ void MlxlinkCablesCommander::initValidPages()
     bool qsfpCable = (_cableIdentifier == IDENTIFIER_QSFP28 || _cableIdentifier == IDENTIFIER_QSFP_PLUS);
     bool cmisCable = (_cableIdentifier == IDENTIFIER_SFP_DD || _cableIdentifier == IDENTIFIER_QSFP_DD ||
                       _cableIdentifier == IDENTIFIER_OSFP || _cableIdentifier == IDENTIFIER_DSFP ||
-                      _cableIdentifier == IDENTIFIER_C2C || _cableIdentifier == IDENTIFIER_QSFP_CMIS);
+                      _cableIdentifier == IDENTIFIER_C2C || _cableIdentifier == IDENTIFIER_QSFP_CMIS ||
+                      _cableIdentifier == IDENTIFIER_CPO || _cableIdentifier == IDENTIFIER_ELS);
     if (cmisCable || qsfpCable || _sfp51Paging)
     {
         p = page_t{PAGE_0, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
@@ -1033,7 +1037,24 @@ void MlxlinkCablesCommander::initValidPages()
             }
         }
     }
+    loadVmodElsValidPages();
     std::sort(_validPages.begin(), _validPages.end(), [](const page_t& a, const page_t& b) { return a.page < b.page; });
+}
+
+void MlxlinkCablesCommander::loadVmodElsValidPages()
+{
+    page_t p;
+    // Once there is an indicator in the VMOD EEPROM itself that the ELS pages exist, use that instead
+    if (_cableIdentifier == IDENTIFIER_CPO && _protoActive == ETH)
+    {
+        for (u_int32_t page = PAGE_B0; page <= PAGE_B2; page++)
+        {
+            p = page_t{page, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
+            _validPages.push_back(p);
+        }
+        p = page_t{PAGE_BF, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
+        _validPages.push_back(p);
+    }
 }
 
 // Query dump EEPROM pages
@@ -1143,6 +1164,110 @@ MlxlinkCmdPrint MlxlinkCablesCommander::readFromEEPRM(u_int16_t page, u_int16_t 
     free(pageL);
     free(pageH);
     return bytesOutput;
+}
+
+void MlxlinkCablesCommander::checkElsModuleReady()
+{
+    u_int8_t dword[4] = {0};
+    readMCIA(PAGE_0, sizeof(dword), ELS_MODULE_STATE_DWORD_ADDRESS, dword, I2C_ADDR_LOW);
+    u_int8_t moduleState = extractMCIAModuleState(dword[ELS_MODULE_STATE_BYTE]);
+    if (moduleState != ELS_MODULE_STATE_READY)
+    {
+        throw MlxRegException("module not in ready state (current state: %u)", (unsigned)moduleState);
+    }
+}
+
+// Verify OutputFiberCheckedFlag bit is set for every requested laser via MCIA.
+// Per OIF-ELSFP-CMIS-01.0: page 0x1A, byte 223 holds a per-laser bitmask (bit i = laser i).
+void MlxlinkCablesCommander::outputFiberChecked(const std::vector<uint32_t>& laserIdxs)
+{
+    u_int8_t dword[4] = {0};
+    readMCIA(PAGE_1A, sizeof(dword), ELS_OUTPUT_FIBER_CHECK_DWORD_ADDRESS, dword, I2C_ADDR_LOW);
+    u_int8_t fiberCheckByte = dword[ELS_OUTPUT_FIBER_CHECK_BYTE];
+    u_int8_t laserMask = getElsLaserMaskFromList(laserIdxs);
+    if ((fiberCheckByte & laserMask) != laserMask)
+    {
+        throw MlxRegException("laser fiber check not passed");
+    }
+}
+
+// Save ELS laser power setpoints directly to the cable EEPROM via MCIA.
+// Caller is expected to have verified module-ready state via checkElsModuleReady().
+// Layout (per OIF-ELSFP-CMIS-01.0):
+//   - OutputFiberCheckedFlag: page 0x1A, byte 223, per-laser bitmask
+//   - OptPowerSetpoint: page 0x1B, bytes 144-159, 2 bytes per laser (BE), 10 uW resolution
+//   - LaneState: page 0x1A, bytes 221-222, 2 bits per laser (4 lasers per byte), state 2 = ON
+void MlxlinkCablesCommander::saveLaserSetpoint(uint16_t powerSetpoint, const std::vector<uint32_t>& laserIdxs)
+{
+    // 1) Verify per-laser OutputFiberCheckedFlag bit is set.
+    outputFiberChecked(laserIdxs);
+
+    // 2) Read existing 16 bytes of per-laser power setpoints to preserve unselected lasers.
+    u_int8_t setpointBytes[ELS_LASER_NUM * ELS_LASER_SETPOINT_BYTES_PER_LASER] = {0};
+    readMCIA(PAGE_1B, sizeof(setpointBytes), ELS_LASER_SETPOINT_OFFSET, setpointBytes, I2C_ADDR_LOW);
+
+    // 3) Patch the bytes for the requested lasers (16-bit big-endian, 10 uW units).
+    for (uint32_t laserIdx : laserIdxs)
+    {
+        uint32_t pos = laserIdx * ELS_LASER_SETPOINT_BYTES_PER_LASER;
+        WORD_TO_BYTES_BE(&setpointBytes[pos], &powerSetpoint);
+    }
+
+    // Write back the updated 16 bytes
+    vector<u_int8_t> bytesToWrite(setpointBytes, setpointBytes + sizeof(setpointBytes));
+    writeToEEPROM(PAGE_1B, ELS_LASER_SETPOINT_OFFSET, bytesToWrite);
+
+    // 4) Wait for all requested lasers to reach the ON lane state.
+    if (!pollElsLasersOn(laserIdxs))
+    {
+        throw MlxRegException("laser timeout (lane state did not reach ON within %u ms)", ELS_POLL_TIMEOUT_MS);
+    }
+}
+
+// Poll lane_state at page 0x1A bytes 221-222 every ELS_POLL_INTERVAL_MS until all
+// requested lasers report state ELS_LANE_STATE_ON, with a total timeout of
+// ELS_POLL_TIMEOUT_MS. Returns true on success, false on timeout.
+bool MlxlinkCablesCommander::pollElsLasersOn(const std::vector<uint32_t>& laserIdxs)
+{
+    static constexpr const char* PROGRESS_LABEL = "Saving laser setpoint -";
+    const u_int32_t maxIterations = ELS_POLL_TIMEOUT_MS / ELS_POLL_INTERVAL_MS;
+    for (u_int32_t iter = 0; iter < maxIterations; iter++)
+    {
+        msleep(ELS_POLL_INTERVAL_MS);
+        u_int8_t laneStateDword[4] = {0};
+        readMCIA(PAGE_1A, sizeof(laneStateDword), ELS_LANE_STATE_DWORD_ADDRESS, laneStateDword, I2C_ADDR_LOW);
+        u_int8_t laneStateBytes[2] = {laneStateDword[ELS_LANE_STATE_BYTE], laneStateDword[ELS_LANE_STATE_BYTE + 1]};
+
+        bool allOn = true;
+        for (uint32_t laserIdx : laserIdxs)
+        {
+            u_int8_t byteVal = laneStateBytes[laserIdx / ELS_LANE_STATE_LASERS_PER_BYTE];
+            u_int32_t shift = (laserIdx % ELS_LANE_STATE_LASERS_PER_BYTE) * ELS_LANE_STATE_BITS;
+            u_int8_t laneState = (byteVal >> shift) & ((1 << ELS_LANE_STATE_BITS) - 1);
+            if (laneState != ELS_LANE_STATE_ON)
+            {
+                allOn = false;
+                break;
+            }
+        }
+
+        // Update progress bar
+        if (!MlxlinkRecord::jsonFormat)
+        {
+            int progress = (iter + 1) * PROGRESS_DONE / maxIterations;
+            printProgressBar(progress, PROGRESS_LABEL, "");
+        }
+
+        if (allOn)
+        {
+            if (!MlxlinkRecord::jsonFormat)
+            {
+                printProgressBar(PROGRESS_DONE, PROGRESS_LABEL, "");
+            }
+            return true;
+        }
+    }
+    return false;
 }
 
 u_int32_t MlxlinkCablesCommander::getModeAdminFromStr(u_int32_t cap, const string& adminStr, ModuleAccess_t moduleAccess)

@@ -214,6 +214,9 @@ struct BonusPortTableFields
 extern const std::vector<u_int32_t> bonusPortAllowedCommands;
 extern const std::vector<u_int32_t> bonusPortCounterGroups;
 
+const std::vector<u_int32_t>& getElsModuleSupportedFunctions();
+const std::vector<u_int32_t>& getCpuSupportedFunctions();
+
 class MlxlinkMaps
 {
 private:
@@ -252,6 +255,7 @@ private:
     void initCableTechnologyMapping();
     void initCablePowerClassMapping();
     void cmisModuleStMapping();
+    void pemiModuleStMapping();
     void tempFlagsMapping();
     void vccFlagsMapping();
     void dataPathStateMapping();
@@ -275,8 +279,10 @@ private:
     void initTableHeaders();
     void initPlrRejectModeMapping();
     void initKrMapping();
+    void initPmpeModuleStatusMapping();
     void initHostClassMapping();
     void initSDKMappings();
+    void initElsMapping();
     void initSdkOperationalInfoStateMapping();
     void initSdkOperationalInfoPhysicalStateMapping();
     void initSdkOperationalInfoLoopbackModeMapping();
@@ -395,6 +401,7 @@ public:
     std::map<u_int32_t, std::string> _vccFlags;
     std::map<u_int32_t, std::string> _dataPathSt;
     std::map<u_int32_t, std::string> _moduleOperSt;
+    std::map<u_int32_t, std::string> _elsOperState;
     std::map<u_int32_t, std::string> _moduleErrType;
     std::map<u_int32_t, std::string> _errorCodeRes;
     std::map<u_int32_t, std::string> _cimsCableBreakout;
@@ -420,6 +427,7 @@ public:
     std::map<u_int32_t, std::string> _fastLinkUpStatus;
     std::map<u_int32_t, std::string> _localReasonOpcode;
     std::map<u_int32_t, std::string> _cimsModuleSt;
+    std::map<u_int32_t, std::string> _pemiModuleSt;
     std::map<u_int32_t, std::string> _mmfCompliance;
     std::map<u_int32_t, std::string> _smfCompliance;
     std::map<u_int32_t, std::string> _activeCableCompliance;
@@ -457,11 +465,18 @@ public:
     std::map<u_int32_t, std::string> _fecModeActiveForTableDispaly;
     std::map<u_int32_t, std::string> _cableTypeForTableDisplay;
     std::map<u_int32_t, std::string> _phyMgrStateForTableDisplay;
+    std::map<u_int32_t, std::string> _pmpeModuleStatusForTableDisplay;
     std::map<u_int32_t, std::string> _precodingOperStatus;
+
+    // ELS operation maps
+    std::map<std::string, u_int32_t> _elsOperationToVal;
+    std::map<u_int32_t, std::string> _elsValToOperation;
+    std::map<u_int32_t, std::string> _pmlseOperStatusToStr;
 
     // Vectors
     std::vector<std::pair<std::string, u_int32_t>> _multiPortInfoTableHeader;
     std::vector<std::pair<std::string, u_int32_t>> _multiPortModuleInfoTableHeader;
+    std::vector<std::pair<std::string, u_int32_t>> _multiPortCpoInfoTableHeader;
     std::vector<std::pair<std::string, u_int32_t>> _bkvGroupsTableHeader;
     std::vector<std::pair<std::string, u_int32_t>> _bkvGroupEntriesTableHeader;
 

@@ -34,6 +34,7 @@
 
 #include "mlxlink_ui.h"
 #include <mlxreg/mlxreg_lib/mlxreg_parser.h>
+#include <algorithm>
 MlxlinkUi::MlxlinkUi() : CommandLineRequester(MLXLINK_EXEC " OPTIONS"), _cmdParser(MLXLINK_EXEC)
 {
     _mlxlinkCommander = nullptr;
@@ -72,12 +73,31 @@ void MlxlinkUi::initPortInfo()
     _mlxlinkCommander->updatePortInfo();
 }
 
+void MlxlinkUi::initElsInfo()
+{
+    _mlxlinkCommander->checkElsModuleCommands();
+    _mlxlinkCommander->updateCpoStatus();
+
+    // Verify CPO switch
+    if (!_mlxlinkCommander->_isCpo || !isSwitch())
+    {
+        throw MlxRegException("ELS operation is not supported on this device");
+    }
+}
+
 void MlxlinkUi::initMlxlinkCommander()
 {
     createMlxlinkCommander();
     _mlxlinkCommander->setRequestedCommands(_sendRegFuncMap);
 
-    initPortInfo();
+    if (_userInput._elsModuleProvided)
+    {
+        initElsInfo();
+    }
+    else
+    {
+        initPortInfo();
+    }
 }
 
 void MlxlinkUi::printSynopsisHeader()
@@ -93,6 +113,10 @@ void MlxlinkUi::printSynopsisHeader()
     MlxlinkRecord::printFlagLine(DEVICE_FLAG_SHORT, DEVICE_FLAG, "device",
                                  "Perform operation for a specified mst device");
     MlxlinkRecord::printFlagLine(LABEL_PORT_FLAG_SHORT, LABEL_PORT_FLAG, "port_number", "Port Number");
+    MlxlinkRecord::printFlagLine(
+      ELS_MODULE_FLAG_SHORT, ELS_MODULE_FLAG, "module_index",
+      "ELS module index (use with operations that works directly on an ELS module on CPO systems). Mutually exclusive with --" LABEL_PORT_FLAG
+      ")");
     MlxlinkRecord::printFlagLine(PORT_TYPE_FLAG_SHORT, PORT_TYPE_FLAG, "port_type",
                                  "Port Type [NETWORK(Default)/PCIE] (PCIE on HCA/CPU/Switches with PCIe management)");
     MlxlinkRecord::printFlagLine(DEPTH_FLAG_SHORT, DEPTH_FLAG, "depth",
@@ -103,6 +127,10 @@ void MlxlinkUi::printSynopsisHeader()
                                  "the node within each depth (with --" PORT_TYPE_FLAG " PCIE)");
     MlxlinkRecord::printFlagLine(PRINT_JSON_OUTPUT_FLAG_SHORT, PRINT_JSON_OUTPUT_FLAG, "",
                                  "Print the output in json format");
+    MlxlinkRecord::printFlagLine(LINKX_ELS_FLAG_SHORT, LINKX_ELS_FLAG, "",
+                                 "Module type ELS, provide information on ELS port");
+    MlxlinkRecord::printFlagLine(LINKX_OE_FLAG_SHORT, LINKX_OE_FLAG, "",
+                                 "Module type OE, provide information on OE port");
 }
 
 void MlxlinkUi::printSynopsisQueries()
@@ -146,6 +174,9 @@ void MlxlinkUi::printSynopsisQueries()
     MlxlinkRecord::printFlagLineWithAcronym(
       MULTI_PORT_MODULE_INFO_FLAG_SHORT, MULTI_PORT_MODULE_INFO_FLAG, MULTI_PORT_MODULE_INFO_ACRONYM_FLAG_SHORT,
       MULTI_PORT_MODULE_INFO_ACRONYM_FLAG, "", "Show Multi Port Module Info Table");
+    MlxlinkRecord::printFlagLineWithAcronym(MULTI_PORT_CPO_INFO_FLAG_SHORT, MULTI_PORT_CPO_INFO_FLAG,
+                                            MULTI_PORT_CPO_INFO_ACRONYM_FLAG_SHORT, MULTI_PORT_CPO_INFO_ACRONYM_FLAG,
+                                            "", "Show Multi Port Module CPO Info Table");
 }
 
 void MlxlinkUi::printSynopsisCommands()
@@ -157,7 +188,8 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(ALL_PORTS_FLAG_SHORT, ALL_PORTS_FLAG, "",
                                  "Apply --port_state to all ports (only with --port_state)");
     MlxlinkRecord::printFlagLine(PMAOS_FLAG_SHORT, PMAOS_FLAG, "module_state",
-                                "Configure Module State [UP(up)/DN(down)/TG(toggle)]");
+                                "Configure Module State [UP(up)/DN(down)/TG(toggle)] for the port (default) or for ELS module directly: use with --" ELS_MODULE_FLAG
+                                " instead of --" LABEL_PORT_FLAG);
     MlxlinkRecord::printFlagLine(
       PTYS_FLAG_SHORT, PTYS_FLAG, "speeds",
       "Configure Speeds "
@@ -248,6 +280,19 @@ void MlxlinkUi::printSynopsisCommands()
     printf(IDENT);
     MlxlinkRecord::printFlagLine(CONSTANT_ROLE_FLAG_SHORT, CONSTANT_ROLE_FLAG, "EN/DS",
         "Keep primary/secondary role constant [EN(enable)/DS(disable)] (Optional, use with --set_primary or --set_secondary)");
+    MlxlinkRecord::printFlagLine(ELS_OPERATION_FLAG_SHORT, ELS_OPERATION_FLAG, "operation",
+                                 "ELS operation [FC(fiber_check)/LT(laser_tuning)/WLT(laser_wl_tuning)/UP(laser_up)"
+                                 "], works on the ELS module directly, provide --" ELS_MODULE_FLAG);
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(ELS_LASER_FLAG_SHORT, ELS_LASER_FLAG, "lasers",
+                                 "Lasers to operate on (comma-separated) [0,1,2,3,4,5,6,7]");
+    MlxlinkRecord::printFlagLine(SAVE_LASER_SETPOINT_FLAG_SHORT, SAVE_LASER_SETPOINT_FLAG, "power_setpoint",
+                                 "CPO ELS: save laser power setpoint for specified lasers"
+                                 " (PRM units: 0.01 mW; works on the ELS module directly, provide --" ELS_MODULE_FLAG
+                                 ")");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(ELS_LASER_FLAG_SHORT, ELS_LASER_FLAG, "lasers",
+                                 "Lasers to operate on (comma-separated) [0,1,2,3,4,5,6,7]");
     MlxlinkRecord::printFlagLine(SET_PLR_FLAG_SHORT, SET_PLR_FLAG, "", "Set PLR Configuration");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(
@@ -370,6 +415,15 @@ void MlxlinkUi::printSynopsisCommands()
     printf(IDENT2);
     MlxlinkRecord::printFlagLine(WRITE_OFFSET_FLAG_SHORT, WRITE_OFFSET_FLAG, "offset",
                                  "Specific page offset to read/write");
+
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(SAVE_LASER_SETPOINT_FLAG_SHORT, SAVE_LASER_SETPOINT_FLAG, "power_setpoint",
+                                 "Save ELS laser power setpoint to cable EEPROM via MCIA "
+                                 "(OptPowerSetpoint, page 0x1B bytes 144-159, 10 uW per LSB) "
+                                 "(requires --" ELS_MODULE_FLAG " and --" ELS_LASER_FLAG ")");
+    printf(IDENT2);
+    MlxlinkRecord::printFlagLine(ELS_LASER_FLAG_SHORT, ELS_LASER_FLAG, "lasers",
+                                 "Lasers to operate on (comma-separated) [0,1,2,3,4,5,6,7]");
 
     printf(IDENT);
     MlxlinkRecord::printFlagLine(CABLE_PRBS_SELECT_SHORT, CABLE_PRBS_SELECT, "side",
@@ -512,6 +566,8 @@ void MlxlinkUi::printHelp()
     printf(IDENT "Examples:\n");
     printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "get info of <device>, <port_number>",
            MLXLINK_EXEC " -d <device> -p <port_number>");
+    printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "get info of <device>, <port_number>, <module_type_els>",
+           MLXLINK_EXEC " -d <device> -p <port_number> -m --linkx_els");
     printf(IDENT2 "%-40s: \n" IDENT3 "%s\n",
            "get info of <device>, <port_number> and BER Counters",
            MLXLINK_EXEC " -d <device> -p <port_number> -c");
@@ -530,6 +586,14 @@ void MlxlinkUi::printHelp()
            "--tx_rate 10G)");
     printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Perform PRBS Tuning",
            MLXLINK_EXEC " -d <device> -p <port_number> --test_mode TU");
+    printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "ELS Laser Operations",
+           MLXLINK_EXEC " -d <device> --" ELS_OPERATION_FLAG " <operation> --" ELS_MODULE_FLAG
+                        " <module_index> --" ELS_LASER_FLAG " <lasers>");
+    printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Save ELS Laser Power Setpoint",
+           MLXLINK_EXEC " -d <device> --" SAVE_LASER_SETPOINT_FLAG " <power_setpoint> --" ELS_MODULE_FLAG
+                        " <module_index> --" ELS_LASER_FLAG " <lasers>");
+    printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "ELS module state (PMAOS on module, e.g. reset)",
+           MLXLINK_EXEC " -d <device> --" PMAOS_FLAG " <module_state> --" ELS_MODULE_FLAG " <module_index>");
     printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Cable operations", MLXLINK_EXEC " -d <device> --cable options");
     printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Dump cable EEPROM pages", MLXLINK_EXEC " -d <device> --cable --dump");
     printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Get cable DDM info", MLXLINK_EXEC " -d <device> --cable --ddm");
@@ -539,6 +603,9 @@ void MlxlinkUi::printHelp()
     printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Write to cable",
            MLXLINK_EXEC
            " -d <device> --cable --write <bytes separated by comma> --page <page number> --offset <bytes offset> ");
+    printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Save ELS Laser Power Setpoint to Cable EEPROM (via MCIA)",
+           MLXLINK_EXEC " -d <device> --" CABLE_FLAG " --" SAVE_LASER_SETPOINT_FLAG
+                        " <power_setpoint> --" ELS_MODULE_FLAG " <module_index> --" ELS_LASER_FLAG " <lasers>");
     if (_userInput._advancedMode)
     {
         printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Configure Transmitter Parameters (on lane, to database)",
@@ -564,6 +631,10 @@ void MlxlinkUi::validateMandatoryParams()
     {
         throw MlxRegException("Please provide a device name");
     }
+    if (_userInput._portSpecified && _userInput._elsModuleProvided)
+    {
+        throw MlxRegException("The --" LABEL_PORT_FLAG " (-p) and --" ELS_MODULE_FLAG " options are mutually exclusive");
+    }
     if (_userInput._links && _userInput._portType != "PCIE")
     {
         throw MlxRegException("The --" PCIE_LINKS_FLAG " option is valid only with --port_type PCIE");
@@ -573,7 +644,7 @@ void MlxlinkUi::validateMandatoryParams()
     {
         throw MlxRegException("No options allowed to use while querying --" PCIE_LINKS_FLAG);
     }
-    if ((_userInput._labelPort == 0) && (_userInput._portType != "PCIE"))
+    if ((_userInput._labelPort == 0) && (_userInput._portType != "PCIE") && !_userInput._elsModuleProvided)
     {
         if (_userInput._allPorts)
         {
@@ -952,6 +1023,17 @@ void MlxlinkUi::validateSpeedAndCSVBerParams()
 
 void MlxlinkUi::validateCableParams()
 {
+    bool cableSaveLaserSetpoint = false;
+    // When --cable is combined with --save_laser_setpoint, switch from the PMMP-based
+    // SAVE_LASER_SETPOINT path to the EEPROM/MCIA-based CABLE_SAVE_LASER_SETPOINT path.
+    if (_userInput._cable && isIn(SAVE_LASER_SETPOINT, _sendRegFuncMap))
+    {
+        removeCmd(SAVE_LASER_SETPOINT);
+        addCmd(CABLE_SAVE_LASER_SETPOINT);
+        cableSaveLaserSetpoint = true;
+        _userInput._uniqueCableCmds++;
+    }
+
     // When --cable is combined with --set_tx_precoding/--set_rx_precoding, switch from the
     // PLTC-based link precoding (SEND_PRECODING) to the PMCR-based module precoding path.
     bool cablePrecoding = false;
@@ -980,8 +1062,8 @@ void MlxlinkUi::validateCableParams()
     bool cableConfigParamProvided = _userInput.isModuleConfigParamsProvided;
     bool paramSetProvided = _userInput.configParamsToSet.size();
     bool cableCommandProvided = _userInput._dump || _userInput._write || _userInput._read || _userInput._ddm ||
-                                cablePrbsParamProvided || cableConfigParamProvided || _userInput._showModuleCap ||
-                                cablePrecoding || cableShowModuleInfo;
+                                cablePrbsParamProvided || cableConfigParamProvided || cableSaveLaserSetpoint ||
+                                _userInput._showModuleCap || cablePrecoding || cableShowModuleInfo;
 
     if (!_userInput._cable && (cableCommandProvided || readWriteFlags))
     {
@@ -1146,11 +1228,99 @@ void MlxlinkUi::validatePortInfoParams()
     }
 }
 
+void MlxlinkUi::validatePortInfoCpoParams() {
+    if (!_userInput._showModule && (_userInput._isEls || _userInput._isOe))
+    {
+        throw MlxRegException("When using OE/ELS flags, the --" MODULE_INFO_FLAG "/-m flag must be specified!");
+    }
+    if (_userInput._isEls && _userInput._isOe)
+    {
+        throw MlxRegException("Please provide one of module type options: "
+                              "--" LINKX_ELS_FLAG " or --" LINKX_OE_FLAG);
+    }
+}
+
+void MlxlinkUi::validateElsParams()
+{
+    const bool saveLaserSetpoint =
+      isIn(SAVE_LASER_SETPOINT, _sendRegFuncMap) || isIn(CABLE_SAVE_LASER_SETPOINT, _sendRegFuncMap);
+    const bool handleElsOperation = isIn(HANDLE_ELS_OPERATION, _sendRegFuncMap);
+
+    if (!handleElsOperation && !saveLaserSetpoint)
+    {
+        if (_userInput._elsLaserIdxs.empty())
+        {
+            // If no ELS flags specified, nothing to validate
+            return;
+        }
+        else
+        {
+            throw MlxRegException("--" ELS_LASER_FLAG " must be specified only with --" ELS_OPERATION_FLAG
+                                  " or --" SAVE_LASER_SETPOINT_FLAG);
+        }
+    }
+
+    if (!_userInput._elsModuleProvided || _userInput._elsLaserIdxs.empty())
+    {
+        throw MlxRegException("--" ELS_OPERATION_FLAG " or --" SAVE_LASER_SETPOINT_FLAG
+                              " must be specified together with --" ELS_MODULE_FLAG " and --" ELS_LASER_FLAG);
+    }
+
+    // Validate laser indexes
+    bool firstLaserIdx = true;
+    uint32_t prevLaserIdx = 0;
+    for (uint32_t laserIdx : _userInput._elsLaserIdxs)
+    {
+        // Validate laser index is in valid range
+        if (laserIdx >= ELS_LASER_NUM)
+        {
+            throw MlxRegException("Invalid laser number: %u. Valid range is [0-%d]", laserIdx, ELS_LASER_NUM - 1);
+        }
+
+        // Validate no duplicate laser indices (assuming list is sorted)
+        if (!firstLaserIdx && laserIdx == prevLaserIdx)
+        {
+            throw MlxRegException("Duplicate laser number: %u", laserIdx);
+        }
+        prevLaserIdx = laserIdx;
+        firstLaserIdx = false;
+    }
+
+    // Validate operation value
+    if (handleElsOperation && !isValidElsOperation(_userInput._elsOperation))
+    {
+        throw MlxRegException("Invalid ELS operation '%s'. See --help for valid operations",
+                              _userInput._elsOperation.c_str());
+    }
+
+    if (saveLaserSetpoint && _userInput._saveLaserSetpoint > (uint16_t)-1)
+    {
+        throw MlxRegException("Invalid power setpoint value: %u. Valid range is [0-65535]",
+                              _userInput._saveLaserSetpoint);
+    }
+}
+
+bool MlxlinkUi::isValidElsOperation(const string& op)
+{
+    return (op == ELS_OPERATION_FIBER_CHECK_STR || op == ELS_OPERATION_LASER_TUNING_STR ||
+            op == ELS_OPERATION_LASER_WL_TUNING_STR || op == ELS_OPERATION_LASER_UP_STR);
+}
+
+void MlxlinkUi::validateAmberCollectParams()
+{
+    if (_userInput._csvBer != "" && (_userInput._isEls || _userInput._isOe))
+    {
+        throw MlxRegException("Amber collect is not supported for specific OE \\ ELS!");
+    }
+}
+
 void MlxlinkUi::validateMultiPortInfoParams()
 {
-    if ((_userInput._showMultiPortInfo || _userInput._showMultiPortModuleInfo) && _userInput._portSpecified)
+    if ((_userInput._showMultiPortInfo || _userInput._showMultiPortModuleInfo || _userInput._showMultiPortCpoInfo) &&
+        _userInput._portSpecified)
     {
-        throw MlxRegException("When using " MULTI_PORT_INFO_FLAG " or " MULTI_PORT_MODULE_INFO_FLAG " flags, "
+        throw MlxRegException("When using " MULTI_PORT_INFO_FLAG ", " MULTI_PORT_MODULE_INFO_FLAG
+                              ", or " MULTI_PORT_CPO_INFO_FLAG " flags, "
                               "the port flag must not be specified!");
     }
 }
@@ -1348,6 +1518,10 @@ void MlxlinkUi::paramValidate()
     validateGradeScanParams();
     validateErrInjParams();
     validatePortInfoParams();
+    validatePortInfoCpoParams();
+    validateElsParams();
+    validateAmberCollectParams();
+    validateMultiPortInfoParams();
 }
 
 void MlxlinkUi::initCmdParser()
@@ -1362,11 +1536,21 @@ void MlxlinkUi::initCmdParser()
     AddOptions(LABEL_PORT_FLAG, LABEL_PORT_FLAG_SHORT, "LabelPort",
                "Label Port (single port e.g. 3/2, or comma-separated list e.g. 1,2,3 - "
                "list currently supported only with --" PAOS_FLAG " (-a))");
+    AddOptions(ELS_MODULE_FLAG, ELS_MODULE_FLAG_SHORT, "module_index", "CPO-ELS module index for laser operations flows");
     AddOptions(PCIE_LINKS_FLAG, PCIE_LINKS_FLAG_SHORT, "", "Show valid PCIe links");
     AddOptions(EXTENDED_PCIE_FLAG, EXTENDED_PCIE_FLAG_SHORT, "", "Show extended PCIe link info");
     AddOptions(BER_FLAG, BER_FLAG_SHORT, "", "Show BER Info");
     AddOptions(EYE_OPENING_FLAG, EYE_OPENING_FLAG_SHORT, "", "Show Eye Opening Info");
     AddOptions(MODULE_INFO_FLAG, MODULE_INFO_FLAG_SHORT, "", "Show Module Info");
+    AddOptions(LINKX_ELS_FLAG, LINKX_ELS_FLAG_SHORT, "", "Module type ELS, provide information on ELS port");
+    AddOptions(LINKX_OE_FLAG, LINKX_OE_FLAG_SHORT, "", "Module type OE, provide information on OE port");
+    AddOptions(ELS_LASER_FLAG, ELS_LASER_FLAG_SHORT, "els lasers",
+               "Lasers to operate on (comma-separated) [0,1,2,3,4,5,6,7]");
+    AddOptions(ELS_OPERATION_FLAG, ELS_OPERATION_FLAG_SHORT, "els operation",
+               "ELS operation [FC(fiber_check)/LT(laser_tuning)/WLT(laser_wl_tuning)/UP(laser_up)]");
+    AddOptions(SAVE_LASER_SETPOINT_FLAG, SAVE_LASER_SETPOINT_FLAG_SHORT, "power_setpoint",
+               "CPO ELS: write laser power setpoint to EEPROM via PMMP for each --" ELS_LASER_FLAG
+               " (PRM units: 0.01 mW; requires --" ELS_MODULE_FLAG " and --" ELS_LASER_FLAG ")");
     AddOptions(PPCNT_CLEAR_FLAG, PPCNT_CLEAR_FLAG_SHORT, "", "Clear PPCNT Counters");
     AddOptions(DEVICE_DATA_FLAG, DEVICE_DATA_FLAG_SHORT, "", "Device Info");
     AddOptions(BER_MONITOR_INFO_FLAG, BER_MONITOR_INFO_FLAG_SHORT, "", "Show BER Monitor Info");
@@ -1378,6 +1562,9 @@ void MlxlinkUi::initCmdParser()
     AddOptions(MULTI_PORT_MODULE_INFO_FLAG, MULTI_PORT_MODULE_INFO_FLAG_SHORT, "", "Show multi port module info table");
     AddOptions(MULTI_PORT_MODULE_INFO_ACRONYM_FLAG, MULTI_PORT_MODULE_INFO_ACRONYM_FLAG_SHORT, "",
                "Show multi port module info table");
+    AddOptions(MULTI_PORT_CPO_INFO_FLAG, MULTI_PORT_CPO_INFO_FLAG_SHORT, "", "Show multi port CPO info table");
+    AddOptions(MULTI_PORT_CPO_INFO_ACRONYM_FLAG, MULTI_PORT_CPO_INFO_ACRONYM_FLAG_SHORT, "",
+               "Show multi port CPO info table");
     AddOptions(PLR_INFO_FLAG, PLR_INFO_FLAG_SHORT, "", "Show PLR Info");
     AddOptions(SET_PLR_FLAG, SET_PLR_FLAG_SHORT, "", "Set PLR configuration");
     AddOptions(PLR_REJECT_MODE_FLAG, PLR_REJECT_MODE_FLAG_SHORT, "PLR_REJECT_MODE",
@@ -1667,6 +1854,9 @@ void MlxlinkUi::commandsCaller()
             case CABLE_PRECODING:
                 _mlxlinkCommander->performModulePrecoding();
                 break;
+            case CABLE_SAVE_LASER_SETPOINT:
+                _mlxlinkCommander->cableSaveLaserSetpoint();
+                break;
             case PCIE_ERROR_INJ:
                 _mlxlinkCommander->handlePCIeErrInj();
                 break;
@@ -1675,6 +1865,9 @@ void MlxlinkUi::commandsCaller()
                 break;
             case SHOW_MULTI_PORT_MODULE_INFO:
                 _mlxlinkCommander->showMultiPortModuleInfo();
+                break;
+            case SHOW_MULTI_PORT_CPO_INFO:
+                _mlxlinkCommander->showMultiPortCpoInfo();
                 break;
             case SHOW_PLR:
                 _mlxlinkCommander->showPlr();
@@ -1702,6 +1895,12 @@ void MlxlinkUi::commandsCaller()
                 break;
             case SEND_PRECODING:
                 _mlxlinkCommander->setPrecoding();
+                break;
+            case SAVE_LASER_SETPOINT:
+                _mlxlinkCommander->handleSaveLaserSetpoint();
+                break;
+            case HANDLE_ELS_OPERATION:
+                _mlxlinkCommander->handleElsOperation();
                 break;
             default:
                 break;
@@ -1773,6 +1972,45 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     else if (name == DEVICE_FLAG)
     {
         _userInput._device = value;
+        return PARSE_OK;
+    }
+    else if (name == LINKX_ELS_FLAG)
+    {
+        _userInput._isEls = true;
+        return PARSE_OK;
+    }
+    else if (name == LINKX_OE_FLAG)
+    {
+        _userInput._isOe = true;
+        return PARSE_OK;
+    }
+    else if (name == ELS_MODULE_FLAG)
+    {
+        checkStrLength(value);
+        _userInput._elsModuleProvided = true;
+        mlxreg::RegAccessParser::strToUint32((char*)value.c_str(), _userInput._elsModule);
+        return PARSE_OK;
+    }
+    else if (name == ELS_LASER_FLAG)
+    {
+        std::vector<string> laserParams = parseParamsFromLine(toUpperCase(value));
+        _userInput._elsLaserIdxs = getIdxsFromParams(laserParams);
+        return PARSE_OK;
+    }
+    else if (name == ELS_OPERATION_FLAG)
+    {
+        addCmd(HANDLE_ELS_OPERATION);
+        _userInput._elsOperation = toUpperCase(value);
+        _userInput._uniqueCmds++;
+        return PARSE_OK;
+    }
+    else if (name == SAVE_LASER_SETPOINT_FLAG)
+    {
+        validateNonEmptyValue(value, "--" SAVE_LASER_SETPOINT_FLAG);
+        checkStrLength(value);
+        RegAccessParser::strToUint32((char*)value.c_str(), _userInput._saveLaserSetpoint);
+        addCmd(SAVE_LASER_SETPOINT);
+        _userInput._uniqueCmds++;
         return PARSE_OK;
     }
     else if (name == MODULE_INFO_FLAG)
@@ -2594,6 +2832,13 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _userInput._uniqueCmds++;
         return PARSE_OK;
     }
+    else if (name == MULTI_PORT_CPO_INFO_ACRONYM_FLAG || name == MULTI_PORT_CPO_INFO_FLAG)
+    {
+        addCmd(SHOW_MULTI_PORT_CPO_INFO);
+        _userInput._showMultiPortCpoInfo = true;
+        _userInput._uniqueCmds++;
+        return PARSE_OK;
+    }
     return PARSE_ERROR;
 }
 
@@ -2626,6 +2871,12 @@ int MlxlinkUi::run(int argc, char** argv)
             _userInput._splitProvided = true;
             _userInput._splitPort = _userInput._forceSplitValue;
         }
+    }
+
+    // Remove SHOW_PDDR command if ELS flags are specified
+    if (_userInput._elsModuleProvided)
+    {
+        removeCmd(SHOW_PDDR);
     }
 
     paramValidate();
