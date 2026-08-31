@@ -151,6 +151,8 @@
 #define BKV_WDATA_FLAG_SHORT ' '
 #define BKV_WMASK_FLAG "wmask"
 #define BKV_WMASK_FLAG_SHORT ' '
+#define PHY_INFO_FLAG "show_phy_info"
+#define PHY_INFO_FLAG_SHORT ' '
 #define SHOW_PRR_FLAG "show_prr"
 #define SHOW_PRR_FLAG_SHORT ' '
 #define PERIODIC_EQ_FLAG "show_peq"
@@ -402,6 +404,7 @@ enum OPTION_TYPE
     SHOW_MODULE,
     SHOW_DEVICE,
     SHOW_BER_MONITOR,
+    SHOW_PHY_INFO,
     SHOW_EXTERNAL_PHY,
     SHOW_LINK_DOWN_BLAME,
     SHOW_TX_GROUP_MAP,
@@ -556,6 +559,7 @@ public:
                       uint32_t entryId = (uint32_t)-1);
     void showDeviceData();
     void showBerMonitorInfo();
+    void showPhyInfo();
     void showExternalPhy();
     void showPcie();
     void showPcieLinks();
@@ -703,6 +707,7 @@ public:
     MlxlinkCmdPrint _sltpInfoCmd;
     MlxlinkCmdPrint _showDeviceInfoCmd;
     MlxlinkCmdPrint _showBerMonitorInfo;
+    MlxlinkCmdPrint _phyInfoCmd;
     MlxlinkCmdPrint _extPhyInfoCmd;
     MlxlinkCmdPrint _linkBlameInfoCmd;
     MlxlinkCmdPrint _validPcieLinks;

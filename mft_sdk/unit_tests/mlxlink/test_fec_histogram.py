@@ -55,7 +55,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from mlxlink_fields import FIELD_HISTOGRAM_OF_FEC_ERRORS
 from utils import (
     RED, GREEN, BLUE, YELLOW, RESET,
-    BaseConfig, clean_value, format_sdk_command,
+    BaseConfig, clean_value, format_sdk_command, MFT_SDK_LINK_TOOL,
     CommandRunner,
     BaseCTestRunner, BaseCppTestRunner, BaseMlxlinkRunner,
     BaseTestSuite,
@@ -214,8 +214,8 @@ class ComparisonTable(object):
         sdk_cmd = format_sdk_command(
             binary_path=[Config.C_TEST_BIN, Config.CPP_TEST_BIN],
             keywords=["FecHistogram"])
-        mlxlink_cmd = "mlxlink_ext -d " + self.device + " " + \
-            Config.MLXLINK_HISTOGRAM_ARGS if self.device else "mlxlink_ext"
+        mlxlink_cmd = MFT_SDK_LINK_TOOL + " -d " + self.device + " " + \
+            Config.MLXLINK_HISTOGRAM_ARGS if self.device else MFT_SDK_LINK_TOOL
         print("{}SDK command:    {}{}".format(BLUE, sdk_cmd, RESET))
         print("{}mlxlink command: {}{}".format(BLUE, mlxlink_cmd, RESET))
 
@@ -371,7 +371,8 @@ class MlxlinkHistogramRunner(BaseMlxlinkRunner):
         return FecHistogramParser.parse_mlxlink(self.output)
 
     def print_histogram_only(self):
-        self.success, self.output = CommandRunner.run_quiet(self._cmd())
+        self.success, self.output = CommandRunner.run_quiet(
+            self._cmd(), strip_ansi_escapes=True)
         result = self.get_histogram()
         if result.supported:
             print(FIELD_HISTOGRAM_OF_FEC_ERRORS)
@@ -398,10 +399,6 @@ class TestSuite(BaseTestSuite):
         self.c_runner = CTestRunner(self.device)
         self.cpp_runner = CppTestRunner(self.device)
         self.mlxlink_runner = MlxlinkHistogramRunner(self.device)
-
-    def _get_mlxlink_cmd(self):
-        cmd = "mlxlink_ext -d " + self.device if self.device else "mlxlink_ext"
-        return cmd + " " + Config.MLXLINK_HISTOGRAM_ARGS
 
     @staticmethod
     def _print_raw_output(label, output):

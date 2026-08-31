@@ -56,6 +56,10 @@
 #define BUF_MAX 4096
 #define MAX_NET_DEVS_DISPLAY 5
 #define MAX_PCI_INFO_LENGTH 16384
+#define MST_WIDTH_UL_MODE 9
+#define MST_WIDTH_KERNEL_MODE 30
+#define PCI_WIDTH_WITH_DOMAIN 16
+#define PCI_WIDTH_NO_DOMAIN 10
 
 #ifdef __FreeBSD__
 mfile* mopen_ul(const char* name)
@@ -311,6 +315,18 @@ int get_max_net_column_width(dev_info* devs, int len)
     return max_width + 1; // +1 for space
 }
 
+/* Single source for the PCI address text, so the column width and the printed
+ * value can never disagree. Returns the length written, as snprintf does. */
+static int format_pci_addr(char* buf, size_t size, const dev_info* dev, int domain_needed)
+{
+    if (domain_needed)
+    {
+        return snprintf(buf, size, "%04x:%02x:%02x.%x", dev->pci.domain, dev->pci.bus, dev->pci.dev, dev->pci.func);
+    }
+
+    return snprintf(buf, size, "%02x:%02x.%x", dev->pci.bus, dev->pci.dev, dev->pci.func);
+}
+
 void find_all_fwctl_devices(dev_info* devs, int dev_count)
 {
 #ifdef __linux__
@@ -318,7 +334,7 @@ void find_all_fwctl_devices(dev_info* devs, int dev_count)
     struct dirent* ent;
     char device_path[PATH_MAX];
     char absolute_device_path[PATH_MAX];
-    char pci_addr[32];
+    char pci_addr[PCI_DBDF_STR_SZ];
     int i;
     int idx;
 
@@ -373,7 +389,7 @@ void find_all_fwctl_devices(dev_info* devs, int dev_count)
         {
             unsigned int domain, bus, dev, func;
             // Parse PCI address (format: DDDD:BB:DD.F)
-            if (sscanf(pci_name, "%x:%x:%x.%x", &domain, &bus, &dev, &func) == 4)
+            if (sscanf(pci_name, "%8x:%x:%x.%x", &domain, &bus, &dev, &func) == 4)
             {
                 snprintf(pci_addr, sizeof(pci_addr), "%04x:%02x:%02x.%x", domain, bus, dev, func);
                 // printf("find_all_fwctl_devices: Extracted PCI address: %s\n", pci_addr);
@@ -382,8 +398,8 @@ void find_all_fwctl_devices(dev_info* devs, int dev_count)
                 {
                     if (devs[i].type == MDEVS_TAVOR_CR)
                     {
-                        char dev_pci_addr[32];
-                        snprintf(dev_pci_addr, sizeof(dev_pci_addr), "%04x:%02x:%02x.%x", devs[i].pci.domain, devs[i].pci.bus, devs[i].pci.dev, devs[i].pci.func);
+                        char dev_pci_addr[PCI_DBDF_STR_SZ];
+                        format_pci_addr(dev_pci_addr, sizeof(dev_pci_addr), &devs[i], 1);
 
                         if (strcmp(dev_pci_addr, pci_addr) == 0)
                         {
@@ -429,22 +445,45 @@ void find_fwctl_device(dev_info* dev)
     find_all_fwctl_devices(dev, 1);
 }
 
-void print_pci_info(dev_info* dev, int domain_needed, mfile* mf, int net_width)
+/* Calculate the PCI column width. A domain wider than 4 hex digits overflows the
+ * legacy fixed column, so grow it to the widest domain actually present; the
+ * legacy widths are the floor, keeping single-domain output byte-identical. */
+static int get_pci_column_width(dev_info* devs, int len, int domain_needed)
 {
-    char dbdf[MAX_PCI_INFO_LENGTH] = {0};
+    char dbdf[PCI_DBDF_STR_SZ];
+    int max_width = PCI_WIDTH_WITH_DOMAIN;
+    int i;
+
+    if (!domain_needed)
+    {
+        return PCI_WIDTH_NO_DOMAIN;
+    }
+
+    for (i = 0; i < len; i++)
+    {
+        if (devs[i].type != MDEVS_TAVOR_CR)
+        {
+            continue;
+        }
+
+        int width = format_pci_addr(dbdf, sizeof(dbdf), &devs[i], 1) + 1; /* +1 for space */
+        if (width > max_width)
+        {
+            max_width = width;
+        }
+    }
+
+    return max_width;
+}
+
+void print_pci_info(dev_info* dev, int domain_needed, mfile* mf, int pci_width, int net_width)
+{
+    char dbdf[PCI_DBDF_STR_SZ] = {0};
     char fmt[MAX_PCI_INFO_LENGTH] = {0};
 
     /* Add PCI info */
-    if (domain_needed)
-    {
-        sprintf(dbdf, "%04x:%02x:%02x.%x", dev->pci.domain, dev->pci.bus, dev->pci.dev, dev->pci.func);
-        printf("%-16s", dbdf);
-    }
-    else
-    {
-        sprintf(dbdf, "%02x:%02x.%x", dev->pci.bus, dev->pci.dev, dev->pci.func);
-        printf("%-10s", dbdf);
-    }
+    format_pci_addr(dbdf, sizeof(dbdf), dev, domain_needed);
+    printf("%-*s", pci_width, dbdf);
 
     int hasIB = fmt_ib_dev(dev, fmt);
     // Initialize the net_buf for seperating the net devices from the rdma bond device prints
@@ -639,91 +678,30 @@ int main(int argc, char** argv)
 #ifndef __FreeBSD__
         ul_mode = devs[0].ul_mode;
 #endif
+        int mst_width = ul_mode ? MST_WIDTH_UL_MODE : MST_WIDTH_KERNEL_MODE;
+        int pci_width = get_pci_column_width(devs, len, domain_needed);
         int net_width = 0;
         if (verbose)
         {
             // Calculate dynamic NET column width
             net_width = get_max_net_column_width(devs, len);
-            if (domain_needed)
-            {
-                if (ul_mode)
-                {
-                    printf("%-24s%-9s%-16s%-16s%-*s%-6s%-18s%-25s%-12s\n",
-                           "DEVICE_TYPE",
-                           "MST",
-                           "PCI",
-                           "RDMA",
-                           net_width,
-                           "NET",
-                           "NUMA",
+            printf("%-24s%-*s%-*s%-16s%-*s%-6s%-18s%-25s%-12s\n",
+                   "DEVICE_TYPE",
+                   mst_width,
+                   "MST",
+                   pci_width,
+                   "PCI",
+                   "RDMA",
+                   net_width,
+                   "NET",
+                   "NUMA",
 #ifdef ENABLE_VFIO
-                           "VFIO",
+                   "VFIO",
 #else
-                           "",
+                   "",
 #endif
-                           "FWCTL",
-                           "STATE");
-                }
-                else
-                {
-                    printf("%-24s%-30s%-16s%-16s%-*s%-6s%-18s%-25s%-12s\n",
-                           "DEVICE_TYPE",
-                           "MST",
-                           "PCI",
-                           "RDMA",
-                           net_width,
-                           "NET",
-                           "NUMA",
-#ifdef ENABLE_VFIO
-                           "VFIO",
-#else
-                           "",
-#endif
-                           "FWCTL",
-                           "STATE");
-                }
-                /* printf("%-30s%-16s%-16s%-8s%-20s\n", "---", "-----------", "---", "----", "---"); */
-            }
-            else
-            {
-                if (ul_mode)
-                {
-                    printf("%-24s%-9s%-10s%-16s%-*s%-6s%-18s%-25s%-12s\n",
-                           "DEVICE_TYPE",
-                           "MST",
-                           "PCI",
-                           "RDMA",
-                           net_width,
-                           "NET",
-                           "NUMA",
-#ifdef ENABLE_VFIO
-                           "VFIO",
-#else
-                           "",
-#endif
-                           "FWCTL",
-                           "STATE");
-                }
-                else
-                {
-                    printf("%-24s%-30s%-10s%-16s%-*s%-6s%-18s%-25s%-12s\n",
-                           "DEVICE_TYPE",
-                           "MST",
-                           "PCI",
-                           "RDMA",
-                           net_width,
-                           "NET",
-                           "NUMA",
-#ifdef ENABLE_VFIO
-                           "VFIO",
-#else
-                           "",
-#endif
-                           "FWCTL",
-                           "STATE");
-                }
-                /* printf("%-30s%-16s%-10s%-8s%-20s\n", "---", "-----------", "---", "----", "---"); */
-            }
+                   "FWCTL",
+                   "STATE");
         }
 
         /* dev_lst = devs; */
@@ -772,19 +750,19 @@ int main(int argc, char** argv)
                         printf("%-24s", dev_type);
                         if (ul_mode)
                         {
-                            printf("%-9s", "NA");
+                            printf("%-*s", mst_width, "NA");
                         }
                         else
                         {
-                            printf("%-30s", devs[i].pci.conf_dev);
+                            printf("%-*s", mst_width, devs[i].pci.conf_dev);
                         }
-                        print_pci_info(&devs[i], domain_needed, mf, net_width);
+                        print_pci_info(&devs[i], domain_needed, mf, pci_width, net_width);
                     }
                     if (cr_exist)
                     {
                         printf("%-24s", dev_type);
-                        printf("%-30s", devs[i].pci.cr_dev);
-                        print_pci_info(&devs[i], domain_needed, mf, net_width);
+                        printf("%-*s", mst_width, devs[i].pci.cr_dev);
+                        print_pci_info(&devs[i], domain_needed, mf, pci_width, net_width);
                     }
                 }
                 else
@@ -797,32 +775,32 @@ int main(int argc, char** argv)
                         {
                             if (verbose)
                             {
-                                printf("%-9s", "NA");
+                                printf("%-*s", mst_width, "NA");
                             }
                             else
                             {
-                                printf("%-9s", devs[i].pci.cr_dev);
+                                printf("%-*s", mst_width, devs[i].pci.cr_dev);
                             }
                         }
                         else
                         {
-                            printf("%-30s", devs[i].pci.conf_dev);
+                            printf("%-*s", mst_width, devs[i].pci.conf_dev);
                         }
                     }
                     if (cr_exist)
                     {
                         if (conf_exist)
                         {
-                            print_pci_info(&devs[i], domain_needed, mf, net_width);
+                            print_pci_info(&devs[i], domain_needed, mf, pci_width, net_width);
                             printf("\n");
                         }
                         printf("%-24s", dev_type);
-                        printf("%-30s", devs[i].pci.cr_dev);
+                        printf("%-*s", mst_width, devs[i].pci.cr_dev);
                     }
 
                     if (verbose)
                     {
-                        print_pci_info(&devs[i], domain_needed, mf, net_width);
+                        print_pci_info(&devs[i], domain_needed, mf, pci_width, net_width);
                     }
                 }
                 printf("\n");

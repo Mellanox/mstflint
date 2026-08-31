@@ -55,6 +55,9 @@ AS_IF([test "x$mstflint_musl" = xyes],
 
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 LT_INIT
+dnl Python is optional: only needed to run the Device Properties Python unit
+dnl tests via "make check". Build itself has no Python prerequisite.
+AM_PATH_PYTHON([2.7],, [:])
 AC_CONFIG_HEADERS(config.h)
 
 PKG_PROG_PKG_CONFIG
@@ -620,7 +623,6 @@ if test "x$enable_mstflint_sdk" = "xyes"; then
     AC_CONFIG_FILES(mft_sdk/mstflint_sdk.pc)
     AC_CONFIG_FILES(hca_capabilities/Makefile)
     AC_CONFIG_FILES(mlxreg/mlxreg_sdk/Makefile)
-    AC_CONFIG_FILES(mft_core/device/Makefile)
     # NVML-backed GPU discovery is pulled in only when NVML is enabled; the SDK
     # source gates its use of it on ENABLE_NVML to keep the build self-consistent.
     if test "x$enable_nvml" = "xyes"; then
@@ -629,6 +631,35 @@ if test "x$enable_mstflint_sdk" = "xyes"; then
         AC_CONFIG_FILES(mft_core/mft_core_utils/load_shared_library/Makefile)
     fi
 fi
+
+# libmstflint_sdk.so is installed into a private directory ($(libdir)/mstflint/sdk)
+# that no dynamic linker searches by default, so consumers that link it by soname
+# only (e.g. libdoca_mgmt) cannot resolve it. Register that directory with
+# ldconfig by installing an ld.so.conf.d snippet naming it.
+#
+# The directory is NOT derived from $(sysconfdir): ldconfig reads /etc/ld.so.conf.d
+# unconditionally, so a relocated install (--prefix=/opt/...) must still drop the
+# snippet under /etc. Override with --with-ldsoconfdir=DIR, or skip the snippet
+# altogether with --without-ldsoconfdir.
+AC_MSG_CHECKING(--with-ldsoconfdir argument)
+AC_ARG_WITH(ldsoconfdir,
+    AS_HELP_STRING([--with-ldsoconfdir=DIR],
+        [directory for the mstflint SDK ld.so.conf.d snippet @<:@default=/etc/ld.so.conf.d@:>@; --without-ldsoconfdir installs no snippet]),
+    [with_ldsoconfdir="$withval"],
+    [with_ldsoconfdir="/etc/ld.so.conf.d"]
+)
+if test "x$with_ldsoconfdir" = "xyes"; then
+    with_ldsoconfdir="/etc/ld.so.conf.d"
+fi
+AC_MSG_RESULT($with_ldsoconfdir)
+LDSOCONFDIR=""
+if test "x$with_ldsoconfdir" != "xno"; then
+    LDSOCONFDIR="$with_ldsoconfdir"
+fi
+AC_SUBST(LDSOCONFDIR)
+AM_CONDITIONAL(INSTALL_SDK_LDSOCONF,
+    [ test "x$enable_mstflint_sdk" = "xyes" && test "x$with_ldsoconfdir" != "xno" ])
+
 AC_SUBST(MSTFLINT_SDK_DIR)
 AC_SUBST(MTCR_SDK_WHOLE_ARCHIVE)
 AC_SUBST(MSTREG_SDK_WHOLE_ARCHIVE)
@@ -733,12 +764,17 @@ AM_CONDITIONAL([USE_LOCAL_INIPARSER], [test "$INIPARSER_SYSTEM_AVAILABLE" = no])
 AS_IF([test "x$INIPARSER_SYSTEM_AVAILABLE" = "xyes" ], [
     CXXFLAGS="$CXXFLAGS -DHAVE_INI_PARSER"])
 
-AC_SEARCH_LIBS([JSON], [jsoncpp], [JSON_SYSTEM_AVAILABLE="yes"],[
-    JSON_SYSTEM_AVAILABLE="no"
-    JSON_CFLAGS='-I$(top_srcdir)/ext_libs/json'
-    AC_SUBST(JSON_CFLAGS)
-    JSON_LIBS='$(top_builddir)/ext_libs/json/libjson.la'
-    AC_SUBST(JSON_LIBS)])
+# mtcr uses ceilf, so every program needs -lm. Without this the FreeBSD build fails.
+AC_SEARCH_LIBS([ceilf], [m])
+
+# Always use the jsoncpp copy in ext_libs/json. The tools are linked -static and
+# no package declares a jsoncpp dependency, so linking a system libjsoncpp would
+# leave a runtime dependency nothing installs.
+JSON_SYSTEM_AVAILABLE="no"
+JSON_CFLAGS='-I$(top_srcdir)/ext_libs/json'
+AC_SUBST(JSON_CFLAGS)
+JSON_LIBS='$(top_builddir)/ext_libs/json/libjson.la'
+AC_SUBST(JSON_LIBS)
 AM_CONDITIONAL([USE_LOCAL_JSON], [test "$JSON_SYSTEM_AVAILABLE" = no])
 
 AC_SEARCH_LIBS([mupCreateVar], [muparser], [MUPARSER_SYSTEM_AVAILABLE="yes"],[
@@ -1063,4 +1099,6 @@ AC_OUTPUT( \
     mft_core/mft_core_utils/operating_system_api/Makefile \
     mft_core/mft_core_utils/mft_exceptions/Makefile \
     mft_core/mft_core_utils/mft_logger/Makefile \
+    mft_core/device/Makefile \
+    mft_core/device/device_info/Makefile \
  )

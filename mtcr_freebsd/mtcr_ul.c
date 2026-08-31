@@ -3299,7 +3299,7 @@ int is_zombiefish_device(mfile* mf)
     }
 }
 
-void set_fwctl_dev(char* fwctl_dev, u_int16_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func)
+void set_fwctl_dev(char* fwctl_dev, u_int32_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func)
 {
     (void)fwctl_dev;
     (void)domain;
@@ -3308,7 +3308,7 @@ void set_fwctl_dev(char* fwctl_dev, u_int16_t domain, u_int8_t bus, u_int8_t dev
     (void)func;
 }
 
-void open_fwctl_dev(mfile* mf, u_int16_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func)
+void open_fwctl_dev(mfile* mf, u_int32_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func)
 {
     (void)mf;
     (void)domain;

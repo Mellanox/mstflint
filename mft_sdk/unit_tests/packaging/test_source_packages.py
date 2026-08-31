@@ -22,7 +22,9 @@ mstflint-sdk-local, version 4.37.0, release 1.60.g6523381:
     mstflint-sdk-local-4.37.0-1.60.g6523381.<dist>.<arch>.rpm
     mstflint-sdk-local-4.37.0-1.60.g6523381.src.rpm          (no dist tag)
     mstflint-sdk-local_4.37.0-1.60.g6523381_<arch>.deb
-    mstflint-sdk-local_4.37.0-1.60.g6523381.dsc + .orig.tar.* + .debian.tar.*
+    mstflint-sdk-local_4.37.0-1.60.g6523381.dsc + .debian.tar.*
+    mstflint-sdk-local_4.37.0.orig.tar.xz, holding exactly one top-level
+        directory (mstflint-sdk-local-4.37.0/)
 
 mstflint-SDK-ONLY suite, and the first fully OFFLINE one: no device, no sudo, no
 installed package, no package cache. It drives build_sdk.sh in a scratch dir and
@@ -47,6 +49,7 @@ Env:
 
 from __future__ import print_function
 import os
+import socket
 import platform
 import re
 import shutil
@@ -176,8 +179,12 @@ DPKG_STUB = r'''#!/bin/bash
   echo "parent=$(ls -1 .. 2>/dev/null | paste -sd, -)"
   orig=$(ls -1 ../*.orig.tar.* 2>/dev/null | head -1)
   if [[ -n "$orig" ]]; then
-      echo "origtop=$(tar tzf "$orig" 2>/dev/null | cut -d/ -f2 | sort -u | grep -v '^$' | paste -sd, -)"
+      # tar tf, not tzf: the orig tarball is xz. origroot is the archive's top
+      # level, origtop what that single directory holds.
+      echo "origroot=$(tar tf "$orig" 2>/dev/null | cut -d/ -f1 | sort -u | grep -v '^$' | paste -sd, -)"
+      echo "origtop=$(tar tf "$orig" 2>/dev/null | cut -d/ -f2 | sort -u | grep -v '^$' | paste -sd, -)"
   else
+      echo "origroot="
       echo "origtop="
   fi
 } >> "$DPKG_LOG"
@@ -497,16 +504,24 @@ class SourcePackageSuite(object):
         if "debian" in rec.get("origtop", [""])[0].split(","):
             return self._record("deb_invocations", "FAIL",
                                 "orig tarball contains debian/, corrupting the quilt diff")
+        # A tarbomb exposes every root entry -- ibdump/ above all -- as a source
+        # component of its own.
+        roots = [r for r in rec.get("origroot", [""])[0].split(",") if r]
+        want_root = "{}-{}".format(TEST_NAME, self.version)
+        if roots != [want_root]:
+            return self._record("deb_invocations", "FAIL",
+                                "orig tarball top level is {}, want [{}]"
+                                .format(roots[:5], want_root))
         want = ["{}_{}.debian.tar.xz".format(TEST_NAME, full),
                 "{}_{}.dsc".format(TEST_NAME, full),
-                "{}_{}.orig.tar.gz".format(TEST_NAME, self.version),
+                "{}_{}.orig.tar.xz".format(TEST_NAME, self.version),
                 "{}_{}_{}.deb".format(TEST_NAME, full, _deb_arch())]
         missing = [w for w in want if w not in produced]
         if missing:
             return self._record("deb_invocations", "FAIL",
                                 "missing {}; got {}".format(missing, produced))
         return self._record("deb_invocations", "PASS",
-                            "-b/-F, quilt, all 4 deb artifacts collected")
+                            "-b/-F, quilt, rooted at {}/, all 4 artifacts".format(want_root))
 
     # -- real build --------------------------------------------------------
     def rpm_build(self):
@@ -710,8 +725,9 @@ class SourcePackageSuite(object):
     def deb_tarball_split(self):
         """The upstream/packaging split must be clean.
 
-        .debian.tar.* holds only debian/, and the orig tarball holds none of it;
-        otherwise the quilt diff is corrupt even though both files exist.
+        .debian.tar.* holds only debian/, and the orig tarball holds none of it
+        and exactly one top-level source directory; otherwise the quilt diff is
+        corrupt, or every root entry reads as a source component of its own.
         """
         if _no_output(self.deb_out):
             return self._record("deb_tarball_split", "SKIP", "no deb build")
@@ -731,8 +747,15 @@ class SourcePackageSuite(object):
         if "debian" in out.split():
             return self._record("deb_tarball_split", "FAIL",
                                 "{} contains debian/".format(orig_tar))
+        rc, out = _run("tar tf {} | cut -d/ -f1 | sort -u"
+                       .format(os.path.join(self.deb_out, orig_tar)))
+        roots = out.split()
+        if roots != ["{}-{}".format(TEST_NAME, self.version)]:
+            return self._record("deb_tarball_split", "FAIL",
+                                "{} top level: {}".format(orig_tar, roots[:5]))
         return self._record("deb_tarball_split", "PASS",
-                            "debian/ only in {}".format(deb_tar))
+                            "debian/ only in {}, {} rooted at {}"
+                            .format(deb_tar, orig_tar, roots[0]))
 
     def deb_orig_clean(self):
         """The orig tarball must not carry packaging output from an earlier run.
@@ -904,7 +927,11 @@ def main():
         root = os.environ.get("SDKV_TMP_ROOT", "/data/tmp")
         if not (os.path.isdir(root) and os.access(root, os.W_OK)):
             root = os.path.expanduser("~")
-        workdir = os.path.join(root, "sdkv_source_pkg_test")
+        # Host+pid namespaced: the fallback root is $HOME, one NFS export
+        # shared by the whole fleet, so a fixed name lets two machines running
+        # this suite in parallel rmtree each other's tree mid-build.
+        workdir = os.path.join(root, "sdkv_source_pkg_test_{}_{}".format(
+            socket.gethostname().split(".")[0], os.getpid()))
     if os.path.isdir(workdir):
         shutil.rmtree(workdir)
     os.makedirs(workdir)

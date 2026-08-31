@@ -1,0 +1,27 @@
+{
+    "0x82": {
+        "general_info": {
+            "device_name": "ArcusESddv",
+            "device_type": "LinkX",
+            "vendor": "Mellanox"
+        },
+        "linkx_info": {
+            "i2c_secondary" : 72,
+            "addr_width" : 4
+        },
+        "devmon_info": {
+          "market_name": "",
+          "project_name": "arcuse_sddv",
+          "hw_rev_id": -1
+        },
+        "mtcr_icmd_info": {
+          "cmd_ptr_address": 527364,
+          "cmd_ptr_bitlen": 24,
+          "semaphore_address": 527360,
+          "static_cfg_not_done_address": 1048848,
+          "static_cfg_not_done_offset": 0,
+          "version_bit_offset": 0,
+          "version_address": 1048900
+        }
+    }
+}

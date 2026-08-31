@@ -8,6 +8,9 @@
 .libs/
 __pycache__/
 
+__pycache__/
+*.py[cod]
+
 Makefile
 Makefile.in
 

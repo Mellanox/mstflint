@@ -1,0 +1,13 @@
+{
+    "0x70": {
+        "general_info": {
+            "device_name": "Ardbeg Mirrored",
+            "device_type": "LinkX",
+            "vendor": "Mellanox"
+        },
+        "linkx_info": {
+            "i2c_secondary" : 103,
+            "addr_width" : 2
+        }
+    }
+}

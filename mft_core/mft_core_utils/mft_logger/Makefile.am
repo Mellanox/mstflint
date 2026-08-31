@@ -81,8 +81,12 @@ libmft_logger_la_SOURCES = \
     mft_logger_c.h
 libmft_logger_la_CXXFLAGS = $(AM_CXXFLAGS) $(SPDLOG_CXXFLAGS)
 libmft_logger_la_LDFLAGS = -pthread
+# lib_os_api is a build-order dependency only. Embedding it here too would put
+# its objects in both libmft_logger.a and libdevice_info.a, and libmtcr_ul links
+# both - that is a multiple-definition link failure. Final links get lib_os_api
+# from their own dependency on it; the .so rule below names it explicitly.
 libmft_logger_la_DEPENDENCIES = libmft_log_config.la $(OS_API_LA)
-libmft_logger_la_LIBADD = libmft_log_config.la $(OS_API_LA) -lstdc++
+libmft_logger_la_LIBADD = libmft_log_config.la -lstdc++
 
 libmft_log_config_ui_la_SOURCES = \
     log_config_ui.cpp \
@@ -112,8 +116,9 @@ MFT_LOGGER_SO = libmft_logger.so
 
 $(MFT_LOGGER_SO): libmft_logger.la
 	$(CXX) -shared -pthread $(CXXFLAGS) $(LDFLAGS) $(COMPILER_FPIC) -o $@ \
-	  -Wl,--whole-archive .libs/libmft_logger.a -Wl,--no-whole-archive \
-	  $(MFT_LOGGER_JSON_SO_LIBS) -lstdc++
+	  -Wl,--whole-archive .libs/libmft_logger.a \
+	    $(top_builddir)/mft_core/mft_core_utils/operating_system_api/.libs/lib_os_api.a \
+	  -Wl,--no-whole-archive $(MFT_LOGGER_JSON_SO_LIBS) -lstdc++
 
 all-local: $(MFT_LOGGER_SO)
 

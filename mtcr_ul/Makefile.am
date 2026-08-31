@@ -51,7 +51,8 @@ libmtcr_ul_la_CFLAGS = -W -Wall -g -MP -MD -fPIC -DMTCR_API="" -DMST_UL
 # The MTCR layer of the central MFT logger. Every tool links libmtcr_ul, so
 # this is what puts mft_log() in reach of the whole suite. -lstdc++ is already
 # in LDFLAGS below, so the C++ logger adds no new link requirement.
-libmtcr_ul_la_DEPENDENCIES = $(top_builddir)/mft_core/mft_core_utils/mft_logger/libmft_logger.la
+libmtcr_ul_la_DEPENDENCIES = $(top_builddir)/mft_core/device/device_info/libdevice_info.la \
+                             $(top_builddir)/mft_core/mft_core_utils/mft_logger/libmft_logger.la
 
 if ENABLE_INBAND
 libmtcr_ul_la_SOURCES += mtcr_ib_ofed.c
@@ -81,4 +82,4 @@ libraryinclude_HEADERS = $(top_srcdir)/include/mtcr_ul/mtcr.h  $(top_srcdir)/inc
 
 install-exec-hook:
 	rm -f $(DESTDIR)$(pkglibdir)/libmtcr_ul.so* $(DESTDIR)$(pkglibdir)/libmtcr_ul.la
-	ln -snf mstflint/libmtcr_ul.a $(DESTDIR)$(libdir)/
+	ln -snf mstflint/libmtcr_ul.a $(DESTDIR)$(libdir)/libmtcr_ul.a

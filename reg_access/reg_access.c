@@ -549,6 +549,14 @@ reg_access_status_t
 }
 
 /************************************
+* Function: reg_access_mrfv
+************************************/
+reg_access_status_t reg_access_mrfv(mfile* mf, reg_access_method_t method, struct reg_access_hca_MRFV_ext* mrfv)
+{
+    REG_ACCCESS(mf, method, REG_ID_MRFV, mrfv, MRFV_ext, reg_access_hca);
+}
+
+/************************************
 * Function: reg_access_mtrc_cap
 ************************************/
 reg_access_status_t reg_access_mtrc_cap(mfile                                 * mf,

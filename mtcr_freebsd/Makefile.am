@@ -77,6 +77,10 @@ if ENABLE_INBAND
 libmtcr_ul_la_SOURCES += $(top_srcdir)/mtcr_ul/mtcr_ib_ofed.c
 endif
 
+libmtcr_ul_la_DEPENDENCIES = $(top_builddir)/mft_core/device/device_info/libdevice_info.la
+
+libmtcr_ul_la_LIBADD = $(libmtcr_ul_la_DEPENDENCIES)
+
 libraryincludedir=$(includedir)/mstflint
 
 libraryinclude_HEADERS = \

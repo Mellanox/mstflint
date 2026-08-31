@@ -32,6 +32,7 @@ RPM_OUTPUT=""
 RPM_NAME=""
 RPM_RELEASE=""
 BUILD_RPM_SRC=0
+LDSOCONFDIR=""
 
 usage() {
     cat <<'EOF'
@@ -53,6 +54,9 @@ Options:
   --with-nvml-include-dir DIR
                            Path to nvml.h (implies --with-nvml)
   --with-vfio              Enable VFIO device access in the SDK
+  --ldsoconfdir DIR        Directory for the ld.so.conf.d snippet that registers
+                           the SDK library dir with ldconfig (default: /etc/ld.so.conf.d)
+  --no-ldsoconf            Do not install the ld.so.conf.d snippet
   -j, --jobs N             Parallel build jobs (default: nproc)
   --no-configure           Skip autogen/configure; reuse the existing configuration
   --build-only             Build the SDK but do not install it
@@ -66,7 +70,7 @@ Options:
   --deb-name NAME          Override the .deb package name (default: mstflint-sdk);
                            only changes package identity, not install paths
   --deb-version V          Debian version (default: from debian-sdk/changelog)
-  --deb-source             Also build the .dsc + .orig.tar.gz + .debian.tar.*
+  --deb-source             Also build the .dsc + .orig.tar.xz + .debian.tar.*
   --deb-output DIR         Directory to place the built .deb (default: repo root)
   -h, --help               Show this help
 
@@ -112,8 +116,8 @@ build_rpm() {
         --transform "s,^\./,mstflint-$version/," \
         --exclude=.git --exclude='*.o' --exclude='*.lo' --exclude='*.la' \
         --exclude='*.a' --exclude=.libs --exclude=.deps --exclude='*.tar.gz' \
-        --exclude=./configure~ --exclude=config.status --exclude=config.log \
-        --exclude=autom4te.cache \
+        --exclude='*.tar.xz' --exclude=./configure~ --exclude=config.status \
+        --exclude=config.log --exclude=autom4te.cache \
         -C "$SCRIPT_DIR" . 2>/dev/null
     cp "$spec" "$top/SPECS/mstflint-sdk.spec"
 
@@ -171,12 +175,20 @@ build_deb() {
     mkdir -p "$out"
     out="$(cd "$out" && pwd)"
 
-    local work src
+    # The staged tree is named <source>-<upstream>, which is also the orig
+    # tarball's single top-level directory -- so resolve both before staging.
+    local work src name ver upstream
+    name="${DEB_NAME:-mstflint-sdk}"
+    ver="${DEB_VERSION:-$(sed -nE '1s/^[^ ]+ \(([^)]*)\).*/\1/p' "$SCRIPT_DIR/debian-sdk/changelog")}"
+    upstream="${ver%-*}"       # drop the Debian revision
+    upstream="${upstream#*:}"  # and the epoch
     work="$(mktemp -d)"
-    src="$work/mstflint-sdk"
+    src="$work/$name-$upstream"
     mkdir -p "$src"
 
-    echo ">> staging isolated source tree"
+    echo ">> staging isolated source tree as $name-$upstream"
+    # ibdump/ stays: automake traces AC_CONFIG_FILES(ibdump/Makefile) statically,
+    # so excluding it silently breaks autogen.sh.
     tar -c \
         --exclude=.git --exclude='*.o' --exclude='*.lo' --exclude='*.la' \
         --exclude='*.a' --exclude=.libs --exclude=.deps \
@@ -184,6 +196,7 @@ build_deb() {
         --exclude=config.status --exclude=config.log --exclude=autom4te.cache \
         --exclude='*.deb' --exclude='*.dsc' --exclude='*.tar.xz' \
         --exclude='*.changes' --exclude='*.buildinfo' --exclude='*.rpm' \
+        --exclude="./$name-$upstream" \
         -C "$SCRIPT_DIR" . | tar -x -C "$src"
     cp -r "$SCRIPT_DIR/debian-sdk" "$src/debian"
     cp "$SCRIPT_DIR/debian/mstflint.install.in" "$src/debian/"
@@ -227,11 +240,12 @@ build_deb() {
     local flags=(-b)
     if [[ "$BUILD_DEB_SRC" -eq 1 ]]; then
         # debian-sdk/ is native, which has no .orig/.debian split; quilt needs an orig tarball.
-        local name ver
-        name="${DEB_NAME:-mstflint-sdk}"
-        ver="$(sed -nE '1s/^[^ ]+ \(([^)]*)\).*/\1/p' "$src/debian/changelog")"
         echo "3.0 (quilt)" > "$src/debian/source/format"
-        tar czf "$work/${name}_${ver%-*}.orig.tar.gz" --exclude=./debian -C "$src" .
+        # Archive the directory BY NAME: "-C $src ." would store every member as
+        # ./<path>, leaving the tarball with no top-level directory (a tarbomb).
+        tar cJf "$work/${name}_${upstream}.orig.tar.xz" \
+            --anchored --exclude="$name-$upstream/debian" \
+            -C "$work" "$name-$upstream"
         flags=(-F)
     fi
 
@@ -256,6 +270,8 @@ while [[ $# -gt 0 ]]; do
         --with-nvml)           ENABLE_NVML=1; shift ;;
         --with-nvml-include-dir) ENABLE_NVML=1; NVML_INCLUDE_DIR="$2"; shift 2 ;;
         --with-vfio)           ENABLE_VFIO=1; shift ;;
+        --ldsoconfdir)         LDSOCONFDIR="$2"; shift 2 ;;
+        --no-ldsoconf)         LDSOCONFDIR="no"; shift ;;
         -j|--jobs)             JOBS="$2"; shift 2 ;;
         --no-configure)        DO_CONFIGURE=0; shift ;;
         --build-only)          INSTALL=0; shift ;;
@@ -293,6 +309,13 @@ if [[ "$DO_CONFIGURE" -eq 1 ]]; then
         [[ -n "$NVML_INCLUDE_DIR" ]] && CONFIGURE_FLAGS+=(--with-nvml-include-dir="$NVML_INCLUDE_DIR")
     fi
     [[ "$ENABLE_VFIO" -eq 1 ]] && CONFIGURE_FLAGS+=(--enable-vfio)
+    # --without-ldsoconfdir drops the ld.so.conf.d snippet entirely; anything
+    # else is taken as the directory to install it into.
+    if [[ "$LDSOCONFDIR" == "no" ]]; then
+        CONFIGURE_FLAGS+=(--without-ldsoconfdir)
+    elif [[ -n "$LDSOCONFDIR" ]]; then
+        CONFIGURE_FLAGS+=(--with-ldsoconfdir="$LDSOCONFDIR")
+    fi
 
     echo ">> ./autogen.sh"
     ./autogen.sh

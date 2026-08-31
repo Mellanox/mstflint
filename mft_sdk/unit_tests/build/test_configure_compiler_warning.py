@@ -31,6 +31,7 @@ from __future__ import print_function
 import os
 import re
 import shutil
+import socket
 import subprocess
 import sys
 
@@ -46,7 +47,7 @@ VERSIONS = ["4.8.5", "6.3.0", "7", "8", "8.5.0", "9", "9.3.0", "10", "13", "16",
 # Compilers that answer nothing useful: none may warn, none may error.
 HOSTILE = ["", "   ", "apple-clang-15", "gcc\n8"]
 
-GREEN, RED, RESET = "\033[92m", "\033[91m", "\033[0m"
+GREEN, RED, YELLOW, RESET = "\033[92m", "\033[91m", "\033[93m", "\033[0m"
 fails = []
 
 
@@ -58,6 +59,10 @@ def check(name, ok, detail=""):
         fails.append(name)
 
 
+def skip(name, reason):
+    print("  {:24s}: {}SKIP{}  ({})".format(name, YELLOW, RESET, reason))
+
+
 def run(cmd, cwd=None):
     p = subprocess.Popen(cmd, shell=True, cwd=cwd,
                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -65,13 +70,29 @@ def run(cmd, cwd=None):
     return p.returncode, out
 
 
+def have(tool):
+    return run("command -v {} >/dev/null 2>&1".format(tool))[0] == 0
+
+
 def build_harness(workdir):
-    """Micro configure.ac wrapping the block verbatim; returns the built script."""
+    """Micro configure.ac wrapping the block verbatim; returns the built script.
+
+    Returns the workdir on success, None on a real failure, and the string
+    "skip" when the machine simply has no autoconf -- autoconf is a declared
+    Build-Depends/BuildRequires, so its absence is an environment gap, not a
+    defect in configure.ac (same rule test_source_packages.py applies to
+    rpmbuild/dpkg-buildpackage and test_ldconfig.py to autoconf/make/gcc).
+    """
     block = re.search(r"^CC_MAJOR_VER=.*?\n(?:.*\n)*?.*?\]\)\]\)\s*?\n",
                       open(CONFIGURE_AC).read(), re.M)
+    # Pure text extraction from configure.ac -- worth running even with no
+    # autoconf, since it is what catches the block being renamed or removed.
     check("block_present", bool(block), CONFIGURE_AC)
     if not block:
         return None
+    if not have("autoconf"):
+        skip("harness_build", "no autoconf on this machine")
+        return "skip"
     os.makedirs(workdir)
     open(os.path.join(workdir, "block.m4"), "w").write(block.group(0))
     open(os.path.join(workdir, "configure.ac"), "w").write(
@@ -119,7 +140,13 @@ def main():
     root = os.environ.get("SDKV_TMP_ROOT", "/data/tmp")
     if not (os.path.isdir(root) and os.access(root, os.W_OK)):
         root = os.path.expanduser("~")
-    work = os.path.join(root, "sdkv_configure_warning_test")
+    # Namespaced by host+pid, because the fallback root above is $HOME and
+    # $HOME (/labhome/<user>) is ONE NFS export shared by every lab machine.
+    # With machines tested in parallel, a fixed name means two hosts rmtree
+    # each other's tree mid-build ("Stale file handle"). This suite is
+    # per-machine by design; the name just has to say so.
+    work = os.path.join(root, "sdkv_configure_warning_test_{}_{}".format(
+        socket.gethostname().split(".")[0], os.getpid()))
     shutil.rmtree(work, ignore_errors=True)
 
     cc = os.environ.get("CC") or "gcc"
@@ -130,6 +157,13 @@ def main():
 
     try:
         harness = build_harness(os.path.join(work, "h"))
+        if harness == "skip":
+            # No autoconf: the three checks below all need the generated
+            # shell. Name them so the report shows why, rather than a suite
+            # that silently ran two rows out of five.
+            for name in ("version_matrix", "odd_compilers", "host_compiler"):
+                skip(name, "no autoconf harness")
+            return 0
         if not harness:
             return 1
 
