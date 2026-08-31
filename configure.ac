@@ -41,8 +41,23 @@ AM_INIT_AUTOMAKE([foreign subdir-objects])
 dnl Checks for programs
 AC_PROG_CC
 AC_PROG_CXX
+
+AC_MSG_CHECKING([whether the C library is musl])
+AC_EGREP_CPP([mstflint_is_musl],
+    [#include <stdlib.h>
+     #if defined(__linux__) && !defined(__GLIBC__)
+     mstflint_is_musl
+     #endif],
+    [mstflint_musl=yes], [mstflint_musl=no])
+AC_MSG_RESULT([$mstflint_musl])
+AS_IF([test "x$mstflint_musl" = xyes],
+    [CPPFLAGS="$CPPFLAGS -D_GNU_SOURCE"])
+
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 LT_INIT
+dnl Python is optional: only needed to run the Device Properties Python unit
+dnl tests via "make check". Build itself has no Python prerequisite.
+AM_PATH_PYTHON([2.7],, [:])
 AC_CONFIG_HEADERS(config.h)
 
 PKG_PROG_PKG_CONFIG
@@ -63,8 +78,9 @@ AC_COMPILE_IFELSE(
 OS=$(uname -s)
 KERNEL_VER=`uname -r | egrep -E -o '[[0-9]]+\.[[0-9]]+' | head -1`
 OFED_VER=`ofed_info -s | egrep -E -o '[[0-9]]+\.[[0-9]]+' | head -1`
-OFED_EXIST=`ofed_info -s`
-OFED_NOT_EXIST="ofed_info: command not found"
+MIN_OFED_VER="5.6"
+MIN_RDMA_CORE_VER="2607"
+RDMA_CORE_VER=`{ rpm -q rdma-core --queryformat '%{VERSION}\n' 2>/dev/null; dpkg-query -W -f='${Version}\n' rdma-core 2>/dev/null; } | egrep -E -o '^[[0-9]]+' | head -1`
 MTCR_CONF_DIR=""
 LDL=""
 LDFLAGS="$LDFLAGS -lstdc++"
@@ -77,10 +93,11 @@ default_en_mstflint_sdk="no"
 OFED_VERSION_CHK=0
 KERNEL_BUILD_CHK=0
 
-if test "x$OFED_EXIST" != "x$OFED_NOT_EXIST"; then
-    if test $(echo $OFED_VER 5.6 | tr " " "\n" | sort -V | tail -n 1) == $OFED_VER ; then
-        OFED_VERSION_CHK=1
-    fi
+if test -n "$OFED_VER" && test $(echo $OFED_VER $MIN_OFED_VER | tr " " "\n" | sort -V | tail -n 1) == "$OFED_VER" ; then
+    OFED_VERSION_CHK=1
+fi
+if test -n "$RDMA_CORE_VER" && test $(echo $RDMA_CORE_VER $MIN_RDMA_CORE_VER | tr " " "\n" | sort -V | tail -n 1) == "$RDMA_CORE_VER" ; then
+    OFED_VERSION_CHK=1
 fi
 
 AM_CONDITIONAL(OFED_BUILD,[test ${OFED_VERSION_CHK} = 1])
@@ -606,7 +623,6 @@ if test "x$enable_mstflint_sdk" = "xyes"; then
     AC_CONFIG_FILES(mft_sdk/mstflint_sdk.pc)
     AC_CONFIG_FILES(hca_capabilities/Makefile)
     AC_CONFIG_FILES(mlxreg/mlxreg_sdk/Makefile)
-    AC_CONFIG_FILES(mft_core/device/Makefile)
     # NVML-backed GPU discovery is pulled in only when NVML is enabled; the SDK
     # source gates its use of it on ENABLE_NVML to keep the build self-consistent.
     if test "x$enable_nvml" = "xyes"; then
@@ -615,6 +631,35 @@ if test "x$enable_mstflint_sdk" = "xyes"; then
         AC_CONFIG_FILES(mft_core/mft_core_utils/load_shared_library/Makefile)
     fi
 fi
+
+# libmstflint_sdk.so is installed into a private directory ($(libdir)/mstflint/sdk)
+# that no dynamic linker searches by default, so consumers that link it by soname
+# only (e.g. libdoca_mgmt) cannot resolve it. Register that directory with
+# ldconfig by installing an ld.so.conf.d snippet naming it.
+#
+# The directory is NOT derived from $(sysconfdir): ldconfig reads /etc/ld.so.conf.d
+# unconditionally, so a relocated install (--prefix=/opt/...) must still drop the
+# snippet under /etc. Override with --with-ldsoconfdir=DIR, or skip the snippet
+# altogether with --without-ldsoconfdir.
+AC_MSG_CHECKING(--with-ldsoconfdir argument)
+AC_ARG_WITH(ldsoconfdir,
+    AS_HELP_STRING([--with-ldsoconfdir=DIR],
+        [directory for the mstflint SDK ld.so.conf.d snippet @<:@default=/etc/ld.so.conf.d@:>@; --without-ldsoconfdir installs no snippet]),
+    [with_ldsoconfdir="$withval"],
+    [with_ldsoconfdir="/etc/ld.so.conf.d"]
+)
+if test "x$with_ldsoconfdir" = "xyes"; then
+    with_ldsoconfdir="/etc/ld.so.conf.d"
+fi
+AC_MSG_RESULT($with_ldsoconfdir)
+LDSOCONFDIR=""
+if test "x$with_ldsoconfdir" != "xno"; then
+    LDSOCONFDIR="$with_ldsoconfdir"
+fi
+AC_SUBST(LDSOCONFDIR)
+AM_CONDITIONAL(INSTALL_SDK_LDSOCONF,
+    [ test "x$enable_mstflint_sdk" = "xyes" && test "x$with_ldsoconfdir" != "xno" ])
+
 AC_SUBST(MSTFLINT_SDK_DIR)
 AC_SUBST(MTCR_SDK_WHOLE_ARCHIVE)
 AC_SUBST(MSTREG_SDK_WHOLE_ARCHIVE)
@@ -719,12 +764,17 @@ AM_CONDITIONAL([USE_LOCAL_INIPARSER], [test "$INIPARSER_SYSTEM_AVAILABLE" = no])
 AS_IF([test "x$INIPARSER_SYSTEM_AVAILABLE" = "xyes" ], [
     CXXFLAGS="$CXXFLAGS -DHAVE_INI_PARSER"])
 
-AC_SEARCH_LIBS([JSON], [jsoncpp], [JSON_SYSTEM_AVAILABLE="yes"],[
-    JSON_SYSTEM_AVAILABLE="no"
-    JSON_CFLAGS='-I$(top_srcdir)/ext_libs/json'
-    AC_SUBST(JSON_CFLAGS)
-    JSON_LIBS='$(top_builddir)/ext_libs/json/libjson.la'
-    AC_SUBST(JSON_LIBS)])
+# mtcr uses ceilf, so every program needs -lm. Without this the FreeBSD build fails.
+AC_SEARCH_LIBS([ceilf], [m])
+
+# Always use the jsoncpp copy in ext_libs/json. The tools are linked -static and
+# no package declares a jsoncpp dependency, so linking a system libjsoncpp would
+# leave a runtime dependency nothing installs.
+JSON_SYSTEM_AVAILABLE="no"
+JSON_CFLAGS='-I$(top_srcdir)/ext_libs/json'
+AC_SUBST(JSON_CFLAGS)
+JSON_LIBS='$(top_builddir)/ext_libs/json/libjson.la'
+AC_SUBST(JSON_LIBS)
 AM_CONDITIONAL([USE_LOCAL_JSON], [test "$JSON_SYSTEM_AVAILABLE" = no])
 
 AC_SEARCH_LIBS([mupCreateVar], [muparser], [MUPARSER_SYSTEM_AVAILABLE="yes"],[
@@ -754,6 +804,17 @@ if test ${CCVER} \> 5.0.0 ; then
 elif test ${CCVER} \> 4.7.2 ; then
     CXXFLAGS="$CXXFLAGS -std=c++11"
 fi
+
+# Deprecation notice: as of January 2027 mstflint will be built as C++17,
+# which requires GCC 9 or newer. Warn users still on an older compiler.
+CC_MAJOR_VER=`${CC} -dumpversion 2>/dev/null | cut -d. -f1`
+AS_IF([test x"${CC_MAJOR_VER}" != x && expr "${CC_MAJOR_VER}" : '[[0-9]][[0-9]]*$' >/dev/null && test "${CC_MAJOR_VER}" -lt 9],
+      [AC_MSG_WARN([
+*******************************************************************************
+Detected compiler ${CC} version ${CC_MAJOR_VER}.
+Starting January 2027, the mstflint project will require C++17, and the
+minimal supported GCC version will be 9. Please upgrade your compiler.
+*******************************************************************************])])
 
 AM_CFLAGS="-Wall"
 AM_CXXFLAGS="-Wall"
@@ -1037,4 +1098,6 @@ AC_OUTPUT( \
     mft_core/mft_core_utils/logger/Makefile \
     mft_core/mft_core_utils/operating_system_api/Makefile \
     mft_core/mft_core_utils/mft_exceptions/Makefile \
+    mft_core/device/Makefile \
+    mft_core/device/device_info/Makefile \
  )

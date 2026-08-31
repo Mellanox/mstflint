@@ -73,7 +73,7 @@ namespace mft
 
             case Reason::MEM_MODE_NOT_SUPPORTED:
                 message =
-              "Mem Mode is not supported, unsopported OS or device, or the driver is down, or the driver's version is not supported.";
+              "Mem Mode is not supported, unsupported OS or device, or the driver is down, or the driver's version is not supported.";
                 break;
 
             case Reason::SEND_REG_ACCESS_FAILED:

@@ -151,6 +151,10 @@
 #define BKV_WDATA_FLAG_SHORT ' '
 #define BKV_WMASK_FLAG "wmask"
 #define BKV_WMASK_FLAG_SHORT ' '
+#define PHY_INFO_FLAG "show_phy_info"
+#define PHY_INFO_FLAG_SHORT ' '
+#define SHOW_PRR_FLAG "show_prr"
+#define SHOW_PRR_FLAG_SHORT ' '
 #define PERIODIC_EQ_FLAG "show_peq"
 #define PERIODIC_EQ_FLAG_SHORT ' '
 
@@ -395,10 +399,12 @@ enum OPTION_TYPE
     SHOW_BKV_GROUP,
     SET_BKV_GROUP,
     SET_BKV_ENTRY,
+    SHOW_PRR,
     SHOW_SLRP,
     SHOW_MODULE,
     SHOW_DEVICE,
     SHOW_BER_MONITOR,
+    SHOW_PHY_INFO,
     SHOW_EXTERNAL_PHY,
     SHOW_LINK_DOWN_BLAME,
     SHOW_TX_GROUP_MAP,
@@ -480,6 +486,7 @@ public:
     void updateSysFsPath();
     void checkRegCmd();
     bool isBackplane();
+    bool isC2C();
     bool errorObserved();
     std::string getAllUnhandledErrors();
     void validatePortToLC();
@@ -489,7 +496,6 @@ public:
     void checkLocalPortDPNMapping(u_int32_t localPort);
     int getLocalPortFromMPIR(DPN& dpn);
     void checkValidFW();
-    u_int32_t getTechnologyFromMGIR();
     void getProductTechnology();
     bool checkPortStatus(u_int32_t localPort);
     void checkAllPortsStatus();
@@ -544,6 +550,8 @@ public:
     virtual void showBkvGroup(bool showEntries = true, u_int32_t entryFilter = (u_int32_t)-1);
     virtual void setBkvGroup();
     virtual void setBkvEntry();
+    virtual void showPrr();
+    void dumpPrrMeasData(u_int32_t measType);
     void queryBkvCaps(uint8_t& numGroups, uint32_t groupId = (uint32_t)-1);
     void queryBkvCaps(uint8_t& numGroups,
                       uint8_t& numEntries,
@@ -551,6 +559,7 @@ public:
                       uint32_t entryId = (uint32_t)-1);
     void showDeviceData();
     void showBerMonitorInfo();
+    void showPhyInfo();
     void showExternalPhy();
     void showPcie();
     void showPcieLinks();
@@ -593,6 +602,20 @@ public:
     void updateSwControlStatus();
     void initSwControledModule();
     void updateNvlinkModeBStatus();
+    void updateBonusPortStatus();
+    bool isBonusPort() const;
+    bool deviceSupportsBonusPort() const;
+    void appendBonusPortToSmpiTable(const PortGroup& portInfo, vector<string>& tableData);
+    void appendBonusPortToSmpmiTable(const PortGroup& portInfo, vector<string>& tableData);
+    void collectBonusPortTableFields(const PortGroup& portInfo, BonusPortTableFields& fields);
+    bool isBonusPortPplrLoopbackEnabled();
+    string getBonusPortSmpiPlainState(bool& logicalLinkUp);
+    string getBonusPortOperationalState(bool& logicalLinkUp);
+    void operatingInfoPageForBonusPort();
+    void supportedInfoPageForBonusPort();
+    virtual void checkBonusPortAllowedCommands();
+    void setRequestedCommands(const std::vector<OPTION_TYPE>& requestedCommands);
+    bool probeLocalPortForBonusPort(u_int32_t localPort, u_int32_t& labelPort);
     u_int32_t getNumberOfPorts();
     bool checkDPNvSupport();
     bool checkPcieMgmtSupport();
@@ -684,12 +707,14 @@ public:
     MlxlinkCmdPrint _sltpInfoCmd;
     MlxlinkCmdPrint _showDeviceInfoCmd;
     MlxlinkCmdPrint _showBerMonitorInfo;
+    MlxlinkCmdPrint _phyInfoCmd;
     MlxlinkCmdPrint _extPhyInfoCmd;
     MlxlinkCmdPrint _linkBlameInfoCmd;
     MlxlinkCmdPrint _validPcieLinks;
     MlxlinkCmdPrint _cableDumpRawCmd;
     MlxlinkCmdPrint _cableDDMCmd;
     MlxlinkCmdPrint _portGroupMapping;
+    MlxlinkCmdPrint _prrInfoCmd;
     MlxlinkCmdPrint _plrInfoCmd;
     MlxlinkCmdPrint _krInfoCmd;
     MlxlinkCmdPrint _hostClassCmd;
@@ -836,6 +861,8 @@ public:
     bool _isSwControled;
     bool _isSwControledStandAlone;
     bool _pcieMgmtSupported;
+    bool _isBonusPort;
+    std::vector<OPTION_TYPE> _requestedCommands;
     bool _ignoreIbFECCheck;
     bool _isNVLINK;
     bool _isNvlinkModeA;

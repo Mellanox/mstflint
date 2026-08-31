@@ -2,6 +2,7 @@
 #include <string>
 #include <algorithm>
 #include <vector>
+#include <cstring>
 
 #include "pldm_buff.h"
 #include "pldm_record_descriptor.h"
@@ -55,14 +56,17 @@ bool PldmRecordDescriptor::extractVendorDefined()
         std::string descriptorName((char*)vendoreDefinedPtr + 1, prefixlen);
         vendoreDefinedPtr++;
         vendoreDefinedPtr += prefixlen;
+        u_int16_t dataLen = (descriptorLength > (u_int16_t)(2 + prefixlen)) ? descriptorLength - 2 - prefixlen : 0;
         if (descriptorName == "PSID")
         {
-            vendorDefinedStringValue = std::string(reinterpret_cast<const char*>(vendoreDefinedPtr));
+            size_t actualLen = strnlen(reinterpret_cast<const char*>(vendoreDefinedPtr), dataLen);
+            vendorDefinedStringValue = std::string(reinterpret_cast<const char*>(vendoreDefinedPtr), actualLen);
             vendorDefinedType = VendorDefinedType::PSID;
         }
         else if (descriptorName == "recovery")
         {
-            vendorDefinedStringValue = std::string(reinterpret_cast<const char*>(vendoreDefinedPtr));
+            size_t actualLen = strnlen(reinterpret_cast<const char*>(vendoreDefinedPtr), dataLen);
+            vendorDefinedStringValue = std::string(reinterpret_cast<const char*>(vendoreDefinedPtr), actualLen);
             vendorDefinedType = VendorDefinedType::RECOVERY;
         }
         else if (descriptorName == "APSKU")
@@ -201,8 +205,13 @@ void PldmRecordDescriptor::printFormatted() const
             printf("%-*s0x%02x%02x\n", LABEL_WIDTH, "IANA Enterprise ID:", descriptorData[1], descriptorData[0]);
             break;
         case FD_UUID:
-            printf("%-*s%s\n", LABEL_WIDTH, "FD UUID:", descriptorData);
+        {
+            const u_int8_t* d = descriptorData;
+            printf("%-*s0x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n", LABEL_WIDTH,
+                   "FD UUID:", d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7], d[8], d[9], d[10], d[11], d[12], d[13],
+                   d[14], d[15]);
             break;
+        }
         case PnP_Vendor_ID:
             printf("%-*s0x%02x%02x\n", LABEL_WIDTH, "PnP Vendor ID:", descriptorData[1], descriptorData[0]);
             break;

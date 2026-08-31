@@ -44,6 +44,43 @@
 #define MAX_NUM_OF_BINS 32
 #define MAX_NUM_OF_CHANNELS 8
 
+#define MST_TELEMETRY_PORT_MAX_LENGTH 32
+
+/**
+ * @brief Telemetry context options, passed by pointer to the SDK.
+ *
+ * @ref size MUST be the first member and MUST equal sizeof(MstTelemetryContext).
+ * It lets the SDK detect the ABI/version the caller compiled against: when this
+ * struct is extended with new fields, a newer SDK can tell how many fields an
+ * older (smaller) caller actually provided and never reads past the caller's
+ * struct. Always initialize with MST_TELEMETRY_CONTEXT_INIT() (which zeroes the
+ * struct and stamps @ref size); an empty @ref label_port selects the device
+ * default port. Pass NULL to a telemetry function to use the device defaults.
+ *
+ * @code
+ *   MstTelemetryContext context;
+ *   MST_TELEMETRY_CONTEXT_INIT(&context);
+ *   // optional: snprintf(context.label_port, sizeof(context.label_port), "1/1/1");
+ *   mstGetTelemetryOperationalInfo(dev, &context, &info);
+ * @endcode
+ */
+typedef struct MstTelemetryContext_t
+{
+    unsigned int size; /**< Must be first; set to sizeof(MstTelemetryContext) before use. */
+    char label_port[MST_TELEMETRY_PORT_MAX_LENGTH]; /**< Port label (e.g. "1/1/1"); empty string => device default. */
+} MstTelemetryContext;
+
+/**
+ * @brief Zero-initialize an MstTelemetryContext and stamp its size field.
+ * @param a Pointer to the MstTelemetryContext to initialize.
+ */
+#define MST_TELEMETRY_CONTEXT_INIT(a) \
+    do                                \
+    {                                 \
+        memset((a), 0, sizeof(*(a))); \
+        (a)->size = sizeof(*(a));     \
+    } while (0)
+
 // Telemetry Operational info capability bits:
 #define TELEMETRY_OP_INFO_STATE 0            // State of the device.
 #define TELEMETRY_OP_INFO_PHYSICAL_STATE 1   // Physical state of the device.
@@ -354,6 +391,7 @@ typedef enum ModuleInfoIdentifier_t
     MODULE_INFO_IDENTIFIER_QSFP_DD,
     MODULE_INFO_IDENTIFIER_QSFP_CMIS,
     MODULE_INFO_IDENTIFIER_OSFP,
+    MODULE_INFO_IDENTIFIER_C2C,
     MODULE_INFO_IDENTIFIER_DSFP,
     MODULE_INFO_IDENTIFIER_QSFP_SPLIT_CABLE,
     MODULE_INFO_IDENTIFIER_CPO,

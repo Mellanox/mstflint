@@ -34,6 +34,25 @@
 
 #include "mlxlink_maps.h"
 #include "mlxlink_fields.h"
+#include "mlxlink_commander.h"
+
+const std::vector<u_int32_t> bonusPortAllowedCommands = {SHOW_PDDR,
+                                                         SEND_PAOS,
+                                                         SEND_PTYS,
+                                                         HANDLE_LOOPBACK,
+                                                         SEND_CLEAR_COUNTERS,
+                                                         SHOW_MULTI_PORT_INFO,
+                                                         SHOW_MULTI_PORT_MODULE_INFO};
+
+const std::vector<u_int32_t> bonusPortCounterGroups = {PPCNT_IEEE_802_3_COUNTERS_GROUP,
+                                                       PPCNT_RFC_2863_GROUP,
+                                                       PPCNT_RFC_2819_GROUP,
+                                                       PPCNT_RFC_3635_GROUP,
+                                                       PPCNT_ETHERNET_EXTENDED_GROUP,
+                                                       PPCNT_DISC_COUNTERS_GROUP,
+                                                       PPCNT_PER_PRIORITY_COUNTERS_GROUP,
+                                                       PPCNT_PER_TRAFFIC_CLASS_COUNTERS_GROUP,
+                                                       PPCNT_PER_TRAFFIC_CLASS_CONGESTION_COUNTERS_GROUP};
 
 MlxlinkMaps* MlxlinkMaps::instance = NULL;
 
@@ -1883,7 +1902,7 @@ void MlxlinkMaps::initEnhancedDebugMapping()
     _localReasonOpcode[LOCAL_REASON_OPCODE_THERMAL_SHUTDOWN] = "Thermal_shutdown";
     _localReasonOpcode[LOCAL_REASON_OPCODE_CURRENT_ISSUE] = "Current_issue";
     _localReasonOpcode[LOCAL_REASON_OPCODE_POWER_BUDGET] = "Power_budget";
-    _localReasonOpcode[LOCAL_REASON_OPCODE_FAST_RECOVERY_EFFECTIVE_BER] = "Fast_recovery_raw_ber";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_FAST_RECOVERY_RAW_BER] = "Fast_recovery_raw_ber";
     _localReasonOpcode[LOCAL_REASON_OPCODE_FAST_RECOVERY_EFFECTIVE_BER] = "Fast_recovery_effective_ber";
     _localReasonOpcode[LOCAL_REASON_OPCODE_FAST_RECOVERY_SYMBOL_BER] = "Fast_recovery_symbol_ber";
     _localReasonOpcode[LOCAL_REASON_OPCODE_FAST_RECOVERY_CREDIT_WATCHDOG] = "Fast_recovery_credit_watchdog";
@@ -2115,6 +2134,7 @@ void MlxlinkMaps::initSdkIdentifierMapping()
     _identifierSdk[IDENTIFIER_STR_QSFP_DD] = MODULE_INFO_IDENTIFIER_QSFP_DD;
     _identifierSdk[IDENTIFIER_STR_QSFP_CMIS] = MODULE_INFO_IDENTIFIER_QSFP_CMIS;
     _identifierSdk[IDENTIFIER_STR_OSFP] = MODULE_INFO_IDENTIFIER_OSFP;
+    _identifierSdk[IDENTIFIER_STR_C2C] = MODULE_INFO_IDENTIFIER_C2C;
     _identifierSdk[IDENTIFIER_STR_DSFP] = MODULE_INFO_IDENTIFIER_DSFP;
     _identifierSdk[IDENTIFIER_STR_CPO] = MODULE_INFO_IDENTIFIER_CPO;
     _identifierSdk[IDENTIFIER_STR_OE] = MODULE_INFO_IDENTIFIER_OE;

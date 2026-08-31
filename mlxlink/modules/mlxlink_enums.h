@@ -36,7 +36,7 @@
 #include "mlxlink_fields.h"
 
 // Common definitions
-#define AMBER_VERSION "7.1"
+#define AMBER_VERSION "7.5"
 #define NA_FIELD_VALUE "N/A"
 
 #define ACCESS_REG_MCIA "MCIA"
@@ -56,6 +56,7 @@
 #define ACCESS_REG_MVCR "MVCR"
 #define ACCESS_REG_PAOS "PAOS"
 #define ACCESS_REG_PCAM "PCAM"
+#define ACCESS_REG_PCCT "PCCT"
 #define ACCESS_REG_PDDR "PDDR"
 #define ACCESS_REG_PEPC "PEPC"
 #define ACCESS_REG_PEMI "PEMI"
@@ -84,6 +85,7 @@
 #define ACCESS_REG_PREI "PREI"
 #define ACCESS_REG_PRTL "PRTL"
 #define ACCESS_REG_PTYS "PTYS"
+#define ACCESS_REG_SLPRR "SLPRR"
 #define ACCESS_REG_SLRED "SLRED"
 #define ACCESS_REG_SLRG "SLRG"
 #define ACCESS_REG_SLTP "SLTP"
@@ -116,6 +118,22 @@
 #define SLRG_PCIE_7NM_SLEEP 10
 #define SLRG_PCIE_7NM_TIMEOUT SLRG_PCIE_7NM_SLEEP * 50
 #define SLTP_LANE_SPEED_SLEEP 250
+
+// SLPRR (PRR measurement) status enum values - mirror the ADB enum for the SLPRR.status field
+#define SLPRR_STATUS_NO_MEAS 0
+#define SLPRR_STATUS_MEASUREMENT_PROGRESS 1
+#define SLPRR_STATUS_MEASUREMENT_DONE 2
+#define SLPRR_STATUS_MEASUREMENT_ERROR 3
+
+// SLPRR (PRR measurement) timing constants
+// HLD: wait ~0.5s for FW readiness before triggering the measurement (exact value still TBD by HLD)
+#define SLPRR_FW_READY_DELAY_MS 500
+#define SLPRR_POLL_INTERVAL_MS 100
+#define SLPRR_POLL_TIMEOUT_MS 10000
+
+// SLPRR meas_data layout: the SLPRR register has a 16-byte header followed by a 320-byte meas_data
+// payload (offset 0x10, size 0x140 = 80 DWORDs). The DWORDs reside in _buffer[SLPRR_MEAS_DATA_DWORD_OFFSET ..].
+#define SLPRR_MEAS_DATA_DWORD_OFFSET 4
 // cables parse definition
 
 #define SHIFT_0 0
@@ -470,7 +488,10 @@ struct DPN
         bdf = _bdf;
     }
 
-    bool operator==(DPN dpn) { return (dpn.depth == depth && dpn.pcieIndex == pcieIndex && dpn.node == node); }
+    bool operator==(const DPN& dpn) const
+    {
+        return (dpn.depth == depth && dpn.pcieIndex == pcieIndex && dpn.node == node);
+    }
 
     u_int32_t depth;
     u_int32_t pcieIndex;
@@ -679,10 +700,17 @@ enum PDDR_PAGES
 {
     PDDR_OPERATIONAL_INFO_PAGE = 0,
     PDDR_TROUBLESHOOTING_INFO_PAGE = 1,
+    PDDR_PHY_INFO_PAGE = 2,
     PDDR_MODULE_INFO_PAGE = 3,
     PDDR_MODULE_LINK_DOWN_INFO_PAGE = 6,
     PDDR_MODULE_LINK_UP_INFO_PAGE = 8,
     PDDR_MODULE_LATCHED_FLAG_INFO_PAGE = 9,
+};
+
+enum PCCT_PAGES
+{
+    PCCT_PLU_GENERAL_TRACER_PAGE = 0,
+    PCCT_PLU_LATCHED_COUNTERS_PAGE = 1,
 };
 
 enum DOWN_BLAME
@@ -2069,7 +2097,8 @@ enum PRODUCT_TECHNOLOGY
     PRODUCT_16NM = 3,
     PRODUCT_7NM = 4,
     PRODUCT_5NM = 5,
-    SERDES_GEN_8 = 6
+    SERDES_GEN_8 = 6,
+    PRODUCT_3NM = 7
 };
 
 enum STATUS_OPCODE
@@ -2566,6 +2595,10 @@ const char* const EXTERNAL_LOOPBACK = "External Local Loopback";
 const char* const LINK_LAYER_LOOPBACK = "Link Layer Local Loopback";
 const char* const NEAR_END_ANALOG_LOOPBACK = "Near End Analog Loopback";
 const char* const NEAR_END_DIGITAL_LOOPBACK = "Near End Digital Loopback";
+
+// Loopback bonus port register values
+const uint32_t PMTM_MODULE_TYPE_LOOPBACK = 0x15;
+const uint32_t PMDR_STATUS_VALID = 1;
 
 // Loopback mode mnemonic strings (used on the command line)
 const char* const LOOPBACK_NO_STR = "NO";

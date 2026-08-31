@@ -36,9 +36,9 @@
  
 
 /***
-         *** This file was generated at "2026-04-21 10:13:29"
+         *** This file was generated at "2026-08-27 14:48:42"
          *** by:
-         ***    > /usr/lib64/mft/adbtools/adabe_plugins/adb2c/adb2pack.py --input /home/jenkins/agent/workspace/automatic_prm_update/user/tools_layouts/adb/prm/switch/ext/reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils -o /home/jenkins/agent/workspace/automatic_prm_update/user/tools_layouts
+         ***    > [REDACTED]/adb2pack.py --input reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils -o user/tools_layouts
          ***/
 #ifndef REG_ACCESS_SWITCH_LAYOUTS_H
 #define REG_ACCESS_SWITCH_LAYOUTS_H
@@ -91,8 +91,12 @@ The minimum value of ISM cnt_out value, normalized by VDD value, which is used t
 	/* access: RO */
 	u_int8_t tav_cvb_voltage_msb;
 	/* Description - [DWIP] [Internal]
-Valid only if selector = 1.
-0: Fuses are valid.
+If selector = 0:
+0: LUT used.
+1: Default fuse value used.
+
+If selector = 1:
+0: Fuses are valid (either non-default or default value).
 1: Fuses are invalid but LUT entry not located. */
 	/* 0x0.30 - 0x0.30 */
 	/* access: RO */
@@ -103,8 +107,8 @@ Valid only if selector = 1.
 
 
 [Arcus2]:
-0: cvb_data_index is valid, and cvb_voltage exposes the value in LUT.
-1: cvb_data_index is not valid, and cvb_voltage exposes values from fuses (if selector_cause = 0). */
+0: cvb_data_index is valid, and cvb_voltage exposes the value in LUT or the default fuse values.
+1: cvb_data_index is not valid, and cvb_voltage exposes non-default values from fuses (if selector_cause = 0). */
 	/* 0x0.31 - 0x0.31 */
 	/* access: RO */
 	u_int8_t selector;
@@ -169,13 +173,15 @@ For example, if raw_fuses [15:0] contains the fuse data, this field's value is 1
 0: value_base and value_exponent are NOT valid.
 1: value_base and value_exponent are valid.
 
+[SwitchOnly]:
 For the following fuse_ids (assuming a valid instance_id is provided), the value is valid:
 11: raw_and_value_vdd.
 12: raw_and_value_pl_avdd.
 13: raw_and_value_pl_dvdd.
-14: raw_and_value_p_avdd.
-15: raw_and_value_p_dvdd.
 16: raw_and_value_dvdd_sg.
+[SwitchOnly][Internal]:
+For SPC6, the returned value for fuse_ids 11-13, 16 is:
+raw_fuses[11:0] x 10^(-3)
  */
 	/* 0x0.31 - 0x0.31 */
 	/* access: RO */
@@ -560,7 +566,7 @@ struct reg_access_switch_mgpir_hw_info_ext {
 	/* 0x0.0 - 0x0.7 */
 	/* access: RO */
 	u_int8_t num_of_devices;
-	/* Description - Total number of modules within the specific ASIC.
+	/* Description - Total number of modules within the specific ASIC, Bits [7:0].
 
 Note: 
 For multi ASIC platforms, this field will provide the total number of modules for all ASICs combined together.
@@ -588,7 +594,7 @@ For QM-3 CPO (Taipan), return the total num of ELS and OE_MCU together. First in
 	/* access: INDEX */
 	u_int8_t slot_index;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - Number of modules within the specific ASIC.
+	/* Description - Number of modules within the specific ASIC, bits [7:0].
  */
 	/* 0x4.0 - 0x4.7 */
 	/* access: RO */
@@ -597,7 +603,7 @@ For QM-3 CPO (Taipan), return the total num of ELS and OE_MCU together. First in
 	/* 0x4.8 - 0x4.15 */
 	/* access: RO */
 	u_int8_t num_of_slots;
-	/* Description - Maximum number of modules that can be connected per slot. Includes internal and external modules. */
+	/* Description - Maximum number of modules that can be connected per slot, bits [7:0]. Includes internal and external modules. */
 	/* 0x4.16 - 0x4.23 */
 	/* access: RO */
 	u_int8_t max_modules_per_slot;
@@ -623,6 +629,84 @@ Other values are reserved */
 	/* 0x8.24 - 0x8.27 */
 	/* access: RO */
 	u_int8_t max_sub_modules_index;
+/*---------------- DWORD[3] (Offset 0xc) ----------------*/
+	/* Description - [Switch][DWIP][DWIP]
+Bits [15:8] of number of all modules on ASIC (chip/package). */
+	/* 0xc.0 - 0xc.7 */
+	/* access: RO */
+	u_int8_t num_of_modules_msb;
+	/* Description - [Switch][DWIP][DWIP]
+Bits [15:8] of number of all modules on system (tray). */
+	/* 0xc.8 - 0xc.15 */
+	/* access: RO */
+	u_int8_t num_of_modules_per_system_msb;
+	/* Description - [Switch][DWIP]
+Bits [15:8] of number of top-level modules (e.g not including OEs and ELSes) on ASIC (chip/package). */
+	/* 0xc.16 - 0xc.23 */
+	/* access: RO */
+	u_int8_t max_modules_per_slot_msb;
+/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+	/* Description - [Switch][DWIP][DWIP]
+Number of ELSes connected to ASIC (chip/package). */
+	/* 0x10.0 - 0x10.15 */
+	/* access: RO */
+	u_int16_t els_count_local;
+	/* Description - [Switch][DWIP][DWIP]
+Number of Optical Engines on ASIC (chip/package). */
+	/* 0x10.16 - 0x10.31 */
+	/* access: RO */
+	u_int16_t oe_count_local;
+/*---------------- DWORD[5] (Offset 0x14) ----------------*/
+	/* Description - [Switch][DWIP][DWIP]
+Number of ELSes connected to system (tray). */
+	/* 0x14.0 - 0x14.15 */
+	/* access: RO */
+	u_int16_t els_count_global;
+	/* Description - [Switch][DWIP][DWIP]
+Number of Optical Engines on system (tray). */
+	/* 0x14.16 - 0x14.31 */
+	/* access: RO */
+	u_int16_t oe_count_global;
+};
+
+/* Description -   */
+/* Size in bytes - 16 */
+struct reg_access_switch_mgpir_hw_metadata_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - [DWIP]
+.Top Level Modules base index for ASIC (chip/package).
+ */
+	/* 0x0.0 - 0x0.15 */
+	/* access: RO */
+	u_int16_t tl_module_base_index_local;
+	/* Description - [DWIP]
+.Top Level Modules base index for system (tray).
+ */
+	/* 0x0.16 - 0x0.31 */
+	/* access: RO */
+	u_int16_t tl_module_base_index_global;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - [DWIP]
+.ELS base index for ASIC (chip/package). */
+	/* 0x4.0 - 0x4.15 */
+	/* access: RO */
+	u_int16_t els_base_index_local;
+	/* Description - [DWIP]
+ELS base index for system (tray). */
+	/* 0x4.16 - 0x4.31 */
+	/* access: RO */
+	u_int16_t els_base_index_global;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - [DWIP]
+.Optical Engines base index for ASIC (chip/package). */
+	/* 0x8.0 - 0x8.15 */
+	/* access: RO */
+	u_int16_t oe_base_index_local;
+	/* Description - [DWIP]
+.Optical Engines base index for system (tray). */
+	/* 0x8.16 - 0x8.31 */
+	/* access: RO */
+	u_int16_t oe_base_index_global;
 };
 
 /* Description -   */
@@ -736,6 +820,11 @@ Units defined at temp_unit field */
 /* Size in bytes - 24 */
 struct reg_access_switch_mmta_temprature_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - 1: ref_module field valid.
+This bit is set only when the <module_msb, module> concatenation refers to the index of a top-level module. In such a case, the ref_module field refers to the index of the component with the highest current temperature of that component type. */
+	/* 0x0.25 - 0x0.25 */
+	/* access: RO */
+	u_int8_t ref_module_valid;
 	/* Description - Temperature measurement units
 0: units of 0.125 Celsius degrees
 1: units of 1/256 Celsius degrees
@@ -804,6 +893,11 @@ Units defined at temp_unit field */
 	/* 0xc.16 - 0xc.31 */
 	/* access: RW */
 	u_int16_t temperature_alarm_high;
+/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+	/* Description - Indicates the index of the OE or ELS component, whose information is reflected in this structure. */
+	/* 0x10.0 - 0x10.15 */
+	/* access: RO */
+	u_int16_t ref_module;
 };
 
 /* Description -   */
@@ -820,12 +914,19 @@ struct reg_access_switch_uint64 {
 /* Size in bytes - 16 */
 struct reg_access_switch_MMAM_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - (Global) Module number
-Switch: Range 0 .. MGPIR.max_modules_per_slot -1
+	/* Description - (Global) Module number bits [7:0].
+Switch: Range 0 .. MGPIR.num_of_modules_per_system -1
  */
 	/* 0x0.16 - 0x0.23 */
 	/* access: INDEX */
 	u_int8_t module;
+	/* Description - [Switch][DWIP]
+(Global) Module number bits [15:8].
+Switch: Range 0 .. MGPIR.num_of_modules_per_system -1
+ */
+	/* 0x0.24 - 0x0.31 */
+	/* access: INDEX */
+	u_int8_t module_msb;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - Geographical Address of the ASIC which controls the module
 
@@ -834,10 +935,15 @@ Reserved when module type is chip2chip or backplane. */
 	/* access: RO */
 	u_int8_t ga;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - Local module number */
+	/* Description - Local module number bits [7:0]. */
 	/* 0x8.0 - 0x8.7 */
 	/* access: RO */
 	u_int8_t local_module;
+	/* Description - [Switch][DWIP]
+Local module number bits [15:8]. */
+	/* 0x8.8 - 0x8.15 */
+	/* access: RO */
+	u_int8_t local_module_msb;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description - module_type:
 0: Backplane_with_4_lanes
@@ -860,7 +966,9 @@ Reserved when module type is chip2chip or backplane. */
 22: OE_16x
 23: OSFP_ELS
 24: QSFP_2x
-25: CPO_32x */
+25: CPO_32x
+26: ELS_16
+27: CPO_64x */
 	/* 0xc.0 - 0xc.7 */
 	/* access: RO */
 	u_int8_t module_type;
@@ -882,14 +990,30 @@ struct reg_access_switch_MRFV_ext {
 8: vdd_tile_5 - (used in SPC-4, SPC-5)
 9: vdd_tile_6 - (used in SPC-4, SPC-5)
 10: vdd_tile_7 - (used in SPC-4, SPC-5)
-[DWIP]:
+[SwitchOnly][DWIP]:
 11: raw_and_value_vdd - Use instance_id for the specific instance. Valid on SPC6.
 12: raw_and_value_pl_avdd - Use instance_id for the specific instance. Valid on SPC6.
 13: raw_and_value_pl_dvdd - Use instance_id for the specific instance. Valid on SPC6.
-14: raw_and_value_p_avdd - Use instance_id for the specific instance. Valid on SPC6.
-15: raw_and_value_p_dvdd - Use instance_id for the specific instance. Valid on SPC6.
+15: raw_and_value_opt_fuse_rev - Valid on SPC6 CPO.
 16: raw_and_value_dvdd_sg - Use instance_id for the specific instance. Valid on SPC6 CPO.
-Other values reserved */
+17: raw_and_value_opt_lot_code_0 - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.
+18: raw_and_value_opt_lot_code_1 - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.
+19: raw_and_value_opt_ops_reserved - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.
+20: raw_and_value_opt_vendor_code - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.
+21: raw_and_value_opt_wafer_id - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.
+22: raw_and_value_opt_x_coordinate - Use entity_index to specify the Optical Engine index - Valid on SPC6 CPO.
+23: raw_and_value_opt_y_coordinate - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.
+24: raw_and_value_opt_fab_code - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.
+[Retimer][Switch_internal_and_adabe_only]
+25: raw_and_value_ws_tp_version_0_31 - Valid starting SPC6, QM5, ArcusE.
+[Internal]: yu_boot.fuse_gw_production.desc0.ws_tp_version_0
+26: raw_and_value_ft_tp_version_0_31 - Valid starting SPC6, QM5, ArcusE.
+[Internal]: yu_boot.fuse_gw_production.desc0.ft_tp_version_0
+27: raw_and_value_fuse_ver_0_3 - Use instance_id for the specific instance. Valid starting SPC6, QM5, ArcusE.
+[Internal]: yu_boot.fuse_gw_production.desc0.fuse_ver_x
+28: raw_and_value_fuse_ver_4_7 - Use instance_id for the specific instance. Valid starting SPC6, QM5, ArcusE.
+[Internal]: yu_boot.fuse_gw_production.desc0.fuse_ver_4
+ Other values reserved. */
 	/* 0x0.0 - 0x0.7 */
 	/* access: INDEX */
 	u_int8_t fuse_id;
@@ -907,6 +1031,11 @@ For a given fuse_id, if an invalid instance_id is provided, fm field will have a
 	/* 0x0.24 - 0x0.25 */
 	/* access: RO */
 	u_int8_t fm;
+	/* Description - [DWIP]
+1: module_index_msb and module_index fields contain a valid index. */
+	/* 0x0.29 - 0x0.29 */
+	/* access: INDEX */
+	u_int8_t module_index_valid;
 	/* Description - Valid bit
 0: Fuse reading is not supported for this system
 1: Response is valid
@@ -915,13 +1044,26 @@ Reserved (0) when fm = 1 */
 	/* 0x0.30 - 0x0.31 */
 	/* access: RO */
 	u_int8_t v;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - [DWIP]:
+<module_index_msb, module_index> specifies the element in which the fuse resides, if not part of the ASIC itself.
+Currently only valid elements are Optical Engines. */
+	/* 0x4.0 - 0x4.7 */
+	/* access: INDEX */
+	u_int8_t module_index;
+	/* Description - [DWIP]:
+<module_index_msb, module_index> specifies the element in which the fuse resides, if not part of the ASIC itself.
+Currently only valid elements are Optical Engines. */
+	/* 0x4.8 - 0x4.15 */
+	/* access: INDEX */
+	u_int8_t module_index_msb;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - Data
-See Table 733, "MRFV entry - CVB Layout," on page 1179
-See Table 735, "MRFV entry - ULT Layout," on page 1181
-See Table 737, "MRFV entry - VDD_MAIN Layout," on page 1182
-See Table 739, "MRFV entry - VDD_Tile Layout," on page 1183
-See Table 741, "MRFV entry - RAW_AND_VALUE Layout," on page 1184
+See Table 749, "MRFV entry - CVB Layout," on page 1230
+See Table 751, "MRFV entry - ULT Layout," on page 1232
+See Table 753, "MRFV entry - VDD_MAIN Layout," on page 1233
+See Table 755, "MRFV entry - VDD_Tile Layout," on page 1234
+See Table 757, "MRFV entry - RAW_AND_VALUE Layout," on page 1235
 Reserved when fm = 1 */
 	/* 0x10.0 - 0x18.31 */
 	/* access: RO */
@@ -943,32 +1085,31 @@ Reserved for HCA */
 	/* access: INDEX */
 	u_int8_t local_port;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - [DWIP]
-Indicate whether asymmetry is enabled or not.
+	/* Description - Indicate whether asymmetry is enabled or not.
+0: DISABLED
+1: ENABLED
 
 For HCA, reserved if PPCR.asymmetry_enable_supported=0 */
 	/* 0x4.30 - 0x4.30 */
 	/* access: RO */
 	u_int8_t asymmetry_enable;
-	/* Description - [DWIP]
-Indicate whether asymmetry_enable supported or not.
+	/* Description - Indicate whether asymmetry_enable supported or not.
 Reserved for switch.
- */
+0: NOT_SUPPORTED
+1: SUPPORTED */
 	/* 0x4.31 - 0x4.31 */
 	/* access: RO */
 	u_int8_t asymmetry_enable_supported;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - Aggregated Port number to be reflected in MAD.
 0 means N/A
-
-Reserved for HCA */
+ */
 	/* 0x8.0 - 0x8.7 */
 	/* access: RW */
 	u_int8_t aggregated_port;
 	/* Description - Plane number to be reflected in MAD.
 0 means N/A
-
-Reserved for HCA */
+ */
 	/* 0x8.16 - 0x8.18 */
 	/* access: RW */
 	u_int8_t plane;
@@ -993,8 +1134,7 @@ Reserved for HCA */
 	/* 0xc.0 - 0xc.7 */
 	/* access: RW */
 	u_int8_t num_of_planes;
-	/* Description - [DWIP]
-Planarization Type
+	/* Description - Planarization Type
 0: non planarized
 1: planirized_gen1
 2-7: Reserved */
@@ -1093,9 +1233,9 @@ Note: This field is not reflecting any validity of the data while accessing a no
 	u_int8_t data_valid;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - Properties of that field are based on query_type.
-For slot information query_type data - see Table 577, "MDDQ slot_info Layout," on page 1051
-For devices on slot query_type data - see Table 579, "MDDQ device_info Register Layout," on page 1052
-For slot name query_type data - see Table 581, "MDDQ slot_name Layout," on page 1054 */
+For slot information query_type data - see Table 587, "MDDQ slot_info Layout," on page 1094
+For devices on slot query_type data - see Table 589, "MDDQ device_info Register Layout," on page 1095
+For slot name query_type data - see Table 591, "MDDQ slot_name Layout," on page 1097 */
 	/* 0x10.0 - 0x2c.31 */
 	/* access: RO */
 	union reg_access_switch_mddq_data_auto_ext data;
@@ -1130,9 +1270,9 @@ struct reg_access_switch_mddt_reg_ext {
 	u_int8_t read_size;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description - Payload
-For PRM Register type payload - See Table 569, "PRM Register Payload Layout," on page 1047
-For Command type payload - See Table 571, "Command Payload Layout," on page 1047
-For CrSpace type payload - See Table 573, "CrSpace access Payload Layout," on page 1048 */
+For PRM Register type payload - See Table 579, "PRM Register Payload Layout," on page 1090
+For Command type payload - See Table 581, "Command Payload Layout," on page 1090
+For CrSpace type payload - See Table 583, "CrSpace access Payload Layout," on page 1091 */
 	/* 0xc.0 - 0x10c.31 */
 	/* access: RW */
 	union reg_access_switch_mddt_reg_payload_auto_ext payload;
@@ -1196,6 +1336,11 @@ For any other status, field should be zero */
 	/* 0x8.0 - 0x8.31 */
 	/* access: RO */
 	u_int32_t time_left;
+/*---------------- DWORD[3] (Offset 0xc) ----------------*/
+	/* Description - First DW of token config TLV value, set to 0 if no token config. */
+	/* 0xc.0 - 0xc.31 */
+	/* access: RO */
+	u_int32_t token_config;
 };
 
 /* Description -   */
@@ -1272,10 +1417,16 @@ Reserved if not supported by the device */
 /* Size in bytes - 160 */
 struct reg_access_switch_mgpir_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Hardware Information, see Table 587, "Hardware Info Layout," on page 1056 */
+	/* Description - Hardware Information, see Table 597, "Hardware Info Layout," on page 1100 */
 	/* 0x0.0 - 0x1c.31 */
 	/* access: RW */
 	struct reg_access_switch_mgpir_hw_info_ext hw_info;
+/*---------------- DWORD[8] (Offset 0x20) ----------------*/
+	/* Description - [Switch][DWIP]
+Hardware meta-data, see Table 599, "Hardware Metadata Layout," on page 1102 */
+	/* 0x20.0 - 0x2c.31 */
+	/* access: RW */
+	struct reg_access_switch_mgpir_hw_metadata_ext hw_metadata;
 };
 
 /* Description -   */
@@ -1312,14 +1463,23 @@ Other values are Reserved. */
 /* Size in bytes - 144 */
 struct reg_access_switch_mmta_reg_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - module number */
+	/* Description - module number bits [7:0].
+Supported concatenated module number range is 
+0 .. <MGPIR.num_of_modules_msb, MGPIR.num_of_modules> - 1. */
 	/* 0x0.0 - 0x0.7 */
 	/* access: INDEX */
 	u_int8_t module;
+	/* Description - module number bits [15:8].
+Supported concatenated module number range is 
+0 .. <MGPIR.num_of_modules_msb, MGPIR.num_of_modules> - 1. */
+	/* 0x0.8 - 0x0.15 */
+	/* access: INDEX */
+	u_int8_t module_msb;
 	/* Description - Supported measurements bit mask
-0: Temperature - ELS
-1: TEC Power
-2: Second Temperature - Optical Engines. Other are reserved */
+Bit 0: Temperature - ELS. Only set if the concatenation of <module_msb, module> refers to the index of a top-level module or ELS.
+Bit 1: TEC Power. Only set if the concatenation of <module_msb, module> refers to the index of a top-level module.
+Bit 2: Second Temperature - Optical Engines. Only set if the concatenation of <module_msb, module> refers to the index of a top-level module or OE.
+Other are reserved. */
 	/* 0x0.24 - 0x0.27 */
 	/* access: RO */
 	u_int8_t supported_measurements;
@@ -1334,17 +1494,17 @@ struct reg_access_switch_mmta_reg_ext {
 	/* access: RO */
 	u_int32_t module_name_lo;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
-	/* Description - Temperature, see Table 539, "Module Temperature Layout," on page 1024 */
+	/* Description - Temperature, see Table 547, "Module Temperature Layout," on page 1061 */
 	/* 0xc.0 - 0x20.31 */
 	/* access: RW */
 	struct reg_access_switch_mmta_temprature_ext module_temperature;
 /*---------------- DWORD[9] (Offset 0x24) ----------------*/
-	/* Description - TEC Power, see Table 541, "Module TEC Power Layout," on page 1026 */
+	/* Description - TEC Power, see Table 549, "Module TEC Power Layout," on page 1063 */
 	/* 0x24.0 - 0x40.31 */
 	/* access: RW */
 	struct reg_access_switch_mmta_tec_power_ext module_tec_power;
 /*---------------- DWORD[17] (Offset 0x44) ----------------*/
-	/* Description - Second Temperature, see Table 539, "Module Temperature Layout," on page 1024.
+	/* Description - Second Temperature, see Table 547, "Module Temperature Layout," on page 1061.
 Note: When there is more than one Optical Engine:
 1) The "temperature" field shall be populated by the highest of the current OE temperatures.
 2) The "max_temperature" field shall be populated by the highest of any temperatures that had been measured, over all OEs.
@@ -1352,6 +1512,103 @@ Note: When there is more than one Optical Engine:
 	/* 0x44.0 - 0x58.31 */
 	/* access: RW */
 	struct reg_access_switch_mmta_temprature_ext module_second_temperature;
+};
+
+/* Description -   */
+/* Size in bytes - 48 */
+struct reg_access_switch_mord_v2_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - See Resource Dump section in the Adapters PRM. */
+	/* 0x0.0 - 0x0.15 */
+	/* access: INDEX */
+	u_int16_t segment_type;
+	/* Description - Sequence number. 0 on first call of dump and incremented on each more dump. */
+	/* 0x0.16 - 0x0.19 */
+	/* access: INDEX */
+	u_int8_t seq_num;
+	/* Description - If set, then vhca_id field is valid. Otherwise dump resources on my vhca_id.
+Not supported in Switch. */
+	/* 0x0.29 - 0x0.29 */
+	/* access: WO */
+	u_int8_t vhca_id_valid;
+	/* Description - If set, data is dumped in the register in inline_data field. otherwise dump to mkey.
+Supports only inline dump = 1 */
+	/* 0x0.30 - 0x0.30 */
+	/* access: OP */
+	u_int8_t inline_dump;
+	/* Description - If set, the device has additional information that has not been dumped yet. */
+	/* 0x0.31 - 0x0.31 */
+	/* access: RO */
+	u_int8_t more_dump;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - vhca_id where the resource is allocated.
+Not supported in Switch. */
+	/* 0x4.0 - 0x4.15 */
+	/* access: WO */
+	u_int16_t vhca_id;
+	/* Description - Number of data records. */
+	/* 0x4.16 - 0x4.28 */
+	/* access: OP */
+	u_int16_t data_size;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - First object index to be dumped when supported by the object.
+SW shall read this field upon command done and shall provide it on the next call in case dump_more==1. */
+	/* 0x8.0 - 0x8.31 */
+	/* access: INDEX */
+	u_int32_t index1;
+/*---------------- DWORD[3] (Offset 0xc) ----------------*/
+	/* Description - Second object index to be dumped when supported by the object.
+SW shall read this field upon command done and shall provide it on the next call in case dump_more==1. */
+	/* 0xc.0 - 0xc.31 */
+	/* access: INDEX */
+	u_int32_t index2;
+/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+	/* Description - The amount of objects to dump starting for index 2.
+SW shall read this field upon command done and shall provide it on the next call in case dump_more==1. 
+Range is 0..0xfff0. When the segment's num_of_obj2_supports_all is set, the special value of 0xffff represents "all". When the segment's num_of_objx_supports_active is set, the special value of 0xfffe represents "active". The  value of 0x0 and 0x1 are allowed even if the supported_num_of_obj2 is "0". */
+	/* 0x10.0 - 0x10.15 */
+	/* access: INDEX */
+	u_int16_t num_of_obj2;
+	/* Description - The amount of objects to dump starting for index 1
+SW shall read this field upon command done and shall provide it on the next call in case dump_more==1. 
+Range is 0..0xfff0. When the segment's num_of_obj1_supports_all is set, the special value of 0xffff represents "all". When the segment's num_of_objx_supports_active is set, the special value of 0xfffe represents "active". The value of 0x0 and 0x1 are allowed even if the supported_num_of_obj1 is "0". */
+	/* 0x10.16 - 0x10.31 */
+	/* access: INDEX */
+	u_int16_t num_of_obj1;
+/*---------------- DWORD[6] (Offset 0x18) ----------------*/
+	/* Description - An opaque provided by the device. SW shall read the device_opaque upon command done and shall provide it on the next call in case dump_more==1. On first call, device_opaque shall be 0.
+ */
+	/* 0x18.0 - 0x1c.31 */
+	/* access: INDEX */
+	u_int64_t device_opaque;
+/*---------------- DWORD[8] (Offset 0x20) ----------------*/
+	/* Description - Memory key to dump to. 
+Valid when inline_dump==0.
+Not supported in Switch. */
+	/* 0x20.0 - 0x20.31 */
+	/* access: WO */
+	u_int32_t mkey;
+/*---------------- DWORD[9] (Offset 0x24) ----------------*/
+	/* Description - In write, the size of maximum allocated buffer that the device can use.
+In read, the actual written size.
+In granularity of Bytes.
+Not supported in Switch. */
+	/* 0x24.0 - 0x24.31 */
+	/* access: RO */
+	u_int32_t size;
+/*---------------- DWORD[10] (Offset 0x28) ----------------*/
+	/* Description - VA address (absolute address) of memory where to start dumping. 
+Valid when inline_dump==0.
+Not supported in Switch. */
+	/* 0x28.0 - 0x2c.31 */
+	/* access: WO */
+	u_int64_t address;
+/*---------------- DWORD[12] (Offset 0x30) ----------------*/
+	/* Description - Data that is dumped in case of inline mode.
+Valid when inline_dump==1. */
+	/* 0x30.0 - 0x30.31 */
+	/* access: RO */
+	u_int32_t *inline_data;
 };
 
 /* Description -   */
@@ -1536,7 +1793,7 @@ Bit 5: Transaction_Pending */
 /* Size in bytes - 16 */
 struct reg_access_switch_mpir_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Number of PCIe buses available for the host to connect ot the device.
+	/* Description - Number of PCIe buses available for the host to connect to the device.
 '0' when operating in non-Socket-Direct mode. */
 	/* 0x0.0 - 0x0.3 */
 	/* access: RO */
@@ -1634,11 +1891,13 @@ reserved when pcie_segment is not set in MPCAM */
 /* Size in bytes - 8 */
 struct reg_access_switch_mrsr_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Reset/shutdown command
-0: clear state of reset_at_pci_disable
-1: software reset immediate (switch soft reset).
-6: reset_at_pci_disable - reset will be done at PCI_DISABLE. See MCAM bit48. Note: when no PCI (e.g. unmanaged switches or for Retimers) will do reset without waiting for PCI_DISABLE
-7: fw_link_reset_at_pci_disable - PCIe FW Link Reset, core is up [DWIP] */
+	/* Description - Reset/shutdown command:
+0: clear state of reset_at_pci_disable, and return to default, which is Hot Reset. In case of Unmanaged Switch, returns BAD_PARAM.
+
+1: Immediate software reset (switch soft reset).
+ of 6: reset_at_pci_disable - All reset will be done at PCI_DISABLE. See MCAM bit48. Note: when no PCI (e.g. unmanaged switches or for Retimers) will do All Reset without waiting for PCI_DISABLE
+7: fw_link_reset_at_pci_disable - PCIe FW Link Reset, core is up [SPC-4 onwards, QM-3 onwards]. In case of Unmanaged Switch, returns BAD_PARAM.
+ */
 	/* 0x0.0 - 0x0.3 */
 	/* access: RW */
 	u_int8_t command;
@@ -1697,7 +1956,7 @@ struct reg_access_switch_mspmer_ext {
 0: Notification only. Prevention is disabled 
 1: Prevention is enabled
 
-In Spectrum-4 only, controlled by NV_SWITCH_PHY_SEC_CONF.pvpm. See Table 380, "NV_SWITCH_PHY_SEC_CONF Layout," on page 866 */
+In Spectrum-4 only, controlled by NV_SWITCH_PHY_SEC_CONF.pvpm. See Table 388, "NV_SWITCH_PHY_SEC_CONF Layout," on page 897 */
 	/* 0x4.24 - 0x4.24 */
 	/* access: RO */
 	u_int8_t prev_en;
@@ -1828,6 +2087,99 @@ Valid only for RMCS. */
 
 /* Description -   */
 /* Size in bytes - 96 */
+struct reg_access_switch_mtecr_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Number of sensors supported by the ASIC+platform
+This includes the ASIC, ambient sensors, module sensors, Gearboxes etc.
+This actually is equal to sum of all '1' in sensor_map
+
+Known sensors:
+See MTMP.sensor_index description. */
+	/* 0x0.0 - 0x0.11 */
+	/* access: RO */
+	u_int16_t sensor_count;
+	/* Description - Last sensor index that is available in the system to read from.
+e.g. when 32modules: 64+32-1 = 95 */
+	/* 0x0.16 - 0x0.27 */
+	/* access: RO */
+	u_int16_t last_sensor;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Number of sensors supported by the device that are on the ASIC. 
+Exposes how many ASIC diodes exist. 
+The FW exposes all of them as sensor[0] */
+	/* 0x4.0 - 0x4.6 */
+	/* access: RO */
+	u_int8_t internal_sensor_count;
+	/* Description - Slot index
+0: Main board */
+	/* 0x4.28 - 0x4.31 */
+	/* access: INDEX */
+	u_int8_t slot_index;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - Mapping of system sensors supported by the device. Each bit represents a sensor.
+This field is size variable based on the last_sensor field and in granularity of 32bits.
+Per bit:
+0: Not connected or not supported
+1: Supports temperature measurements
+
+In case of last_sensor = 704 (22*32):
+sensor_warning[0] bit31 is sensor_warning[703]
+sensor_warning[0] bit0 is sensor_warning[703-31]
+sensor_warning[21] bit31 is sensor_warning[31]
+sensor_warning[21] bit0 is sensor_warning[0]
+
+In case if last_sensor = 259 (22*32):
+Note: roundup(259,32)=288
+sensor_warning[0] bit31 is sensor_warning[287]
+sensor_warning[0] bit0 is sensor_warning[287-31=256]
+sensor_warning[8] bit31 is sensor_warning[31]
+sensor_warning[8] bit0 is sensor_warning[0]
+sensor_warning[9..21] are not used
+
+64-192 of sensor_index are mapped to the modules sequentially (module 0 is mapped to sensor_index 64, module 1 to sensor_index 65 and so on). */
+	/* 0x8.0 - 0x5c.31 */
+	/* access: RO */
+	u_int32_t sensor_map[22];
+};
+
+/* Description -   */
+/* Size in bytes - 48 */
+struct reg_access_switch_mtsh_reg_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Unit time of time which each bin is counting. Unit is equal to 
+time_measure_unit in time_unit
+
+For exmple:
+time_unit = 0
+time_measure_unit = 500
+Each bit tick is 500 useconds */
+	/* 0x0.0 - 0x0.15 */
+	/* access: RO */
+	u_int16_t time_measure_unit;
+	/* Description - See MTMP.sensor_index (for MTMP.i = 0 and MTMP.ig = 0). */
+	/* 0x0.16 - 0x0.27 */
+	/* access: INDEX */
+	u_int16_t sensor_index;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Unit time of
+0 - useconds
+1 - miliseconds */
+	/* 0x4.0 - 0x4.1 */
+	/* access: RO */
+	u_int8_t time_unit;
+/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+	/* Description - Each element indicates the duration that the device was in this thermal state. The total time equals to the element value * unit_time_measure.
+thermal_state[0]: Normal
+thermal_state[1]: High Warning.
+thermal_state[2]: High Critical.
+thermal_state[3]: Low Critical. */
+	/* 0x10.0 - 0x2c.31 */
+	/* access: RO */
+	u_int32_t thermal_state[8];
+};
+
+/* Description -   */
+/* Size in bytes - 96 */
 struct reg_access_switch_pguid_reg_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Local port number [9:8] */
@@ -1890,7 +2242,10 @@ Note: ib_port number can only be updated when a port admin state is DISABLED. */
 	u_int8_t local_port;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - Valid only for Ethernet Switches. 
-Label split mapping for local_port */
+Label split mapping for local_port
+Valid values:
+For Spectrum 1 to 4: 1, 2, 4, 8
+For Spectrum 5, 6: 1...6, 8 */
 	/* 0x4.0 - 0x4.3 */
 	/* access: RW */
 	u_int8_t split_num;
@@ -1915,11 +2270,35 @@ MOLP provides the 16bit mirror header value */
 	/* 0x0.16 - 0x0.23 */
 	/* access: INDEX */
 	u_int8_t local_port;
+	/* Description - Defines the split permutation state of each IPIL into local ports by the following format: total number of ports, Lanes 1-4 configuration, Lanes 5-8 configuration
+0: See split_num, see split_stat, see split_stat
+1: 1, -, - (One port of 8x according to speed capability)
+2: 2, 1 port of 4x, 1 port of 4x
+3: 3, 1 port of 4x, 2 ports of 2x
+4: 3, 2 ports of 2x, 1 port of 4x
+5: 4, 2 ports of 2x, 2 ports of 2x
+6: 5, 1 port of 4x, 4 ports of 1x
+7: 5, 4 ports of 1x, 1 port of 4x
+8: 6, 2 ports of 2x, 4 ports of 1x
+9: 6, 4 ports of 1x, 2 ports of 2x
+10: 7, -, -
+11: 8, 4 ports of 1x, 4 ports of 1x
+15: undefined configuration 
+
+Supported from SPC5 onward
+Note: This field is valid only when the sum of local ports width in the IPIL is 8 otherwise split_info return undefined value */
+	/* 0x0.24 - 0x0.27 */
+	/* access: RO */
+	u_int8_t split_info;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - The position of this local port within each split IPIL port.
 When no split: split_num should be 0
 When split to 2: split_num should be 0,1
+When split to 3: split_num should be 0   2
 When split to 4: split_num should be 0   3
+When split to 5: split_num should be 0   4
+When split to 6: split_num should be 0   5
+When split to 7: split_num should be 0   6
 When split to 8: split_num should be 0   7
 Split to 8 exists only for ETH */
 	/* 0x4.0 - 0x4.3 */
@@ -1944,6 +2323,11 @@ When ipil_stat is 3: ipil_num should be 1   8 */
 1: split to 2 local ports
 2: split to 4 local ports
 3: split to 8 local ports
+4: split to 3 local ports
+5: split to 5 local ports
+6: split to 6local ports
+7: split to 7local ports
+
  */
 	/* 0x4.16 - 0x4.19 */
 	/* access: RO */
@@ -1963,6 +2347,16 @@ Slot_number mapping for local_port */
 	/* 0x8.0 - 0x8.3 */
 	/* access: RO */
 	u_int8_t slot_num;
+	/* Description - [DWIP]
+ELS index, bits [7:0]. */
+	/* 0x8.8 - 0x8.15 */
+	/* access: RO */
+	u_int8_t els_index;
+	/* Description - [DWIP]
+ELS index, bits [15:8]. */
+	/* 0x8.24 - 0x8.31 */
+	/* access: RO */
+	u_int8_t els_index_msb;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description - Connectivity Type
 0: N/A
@@ -2004,6 +2398,21 @@ Spectrum: Only relevant value is 0. */
 	/* 0xc.17 - 0xc.17 */
 	/* access: RO */
 	u_int8_t maf;
+	/* Description - [DWIP]
+module_msb and module fields are valid. */
+	/* 0xc.18 - 0xc.18 */
+	/* access: RO */
+	u_int8_t module_valid;
+	/* Description - [DWIP]
+els_index_msb and els_index fields are valid. */
+	/* 0xc.19 - 0xc.19 */
+	/* access: RO */
+	u_int8_t els_valid;
+	/* Description - [DWIP]
+Top-level module ID, bits [15:8]. */
+	/* 0xc.24 - 0xc.31 */
+	/* access: RO */
+	u_int8_t module_msb;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - 0: N/A (when FW has no info)
 1: ETH (for Eth devices)
@@ -2021,8 +2430,7 @@ Indicates start offset of module lanes in 8x granularity */
 	/* access: RO */
 	u_int8_t sub_module;
 	/* Description - [DWIP]
-Module ID.
-Range: 0 .. MGPIR.max_modules_per_slot -1 */
+Top-level module ID, bits [7:0]. */
 	/* 0x10.24 - 0x10.31 */
 	/* access: RO */
 	u_int8_t module;
@@ -2056,6 +2464,11 @@ struct reg_access_switch_pmaos_reg_ext {
 	/* 0x0.0 - 0x0.3 */
 	/* access: RO */
 	u_int8_t oper_status;
+	/* Description - [Retimer][Switch]
+1: SeRBI check failure indication. */
+	/* 0x0.4 - 0x0.4 */
+	/* access: RO */
+	u_int8_t serbi_failure;
 	/* Description - Module administrative state (the desired state of the module):
 1: enabled
 2: disabled_by_configuration
@@ -2070,7 +2483,9 @@ Note 4 - Disabling OE in QM3-CPO will cause the ELS to go down as well as part o
 	/* 0x0.8 - 0x0.11 */
 	/* access: RW */
 	u_int8_t admin_status;
-	/* Description - Module number. */
+	/* Description - Module number bits [7:0].
+Switch: Supported concatenated module number range is 
+MGPIR.tl_modules_base_index .. MGPIR.tl_modules_base_index ..+ <MGPIR.max_modules_per_slot_msb, MGPIR.max_modules_per_slot> - 1. */
 	/* 0x0.16 - 0x0.23 */
 	/* access: INDEX */
 	u_int8_t module;
@@ -2095,6 +2510,11 @@ Not supported by secondary ASICs. */
 	/* 0x4.0 - 0x4.1 */
 	/* access: RW */
 	u_int8_t e;
+	/* Description - [Switch][DWIP]
+1: ref_module field valid. */
+	/* 0x4.2 - 0x4.2 */
+	/* access: RO */
+	u_int8_t ref_module_valid;
 	/* Description - Module error details:
 0x0: Power_Budget_Exceeded
 0x1: Long_Range_for_non_MLNX_cable_or_module
@@ -2110,7 +2530,7 @@ Not supported by secondary ASICs. */
 [DWIP] 0xf: Boot_error
 [DWIP] 0x10: Recovery_error
 [DWIP] 0x11: Submodule_failure
-
+[DWIP] 0x12: serbi_check_failure
 [DWIP] 0x13: els_critical_indication
 Valid only when oper_status = 4'b0011 */
 	/* 0x4.8 - 0x4.12 */
@@ -2123,6 +2543,13 @@ Valid only when oper_status = 4'b0001. */
 	/* 0x4.16 - 0x4.19 */
 	/* access: RO */
 	u_int8_t operational_notification;
+	/* Description - [Switch][DWIP]
+Module number bits [15:8].
+Switch: Supported concatenated module number range is 
+MGPIR.tl_modules_base_index .. MGPIR.tl_modules_base_index ..+ <MGPIR.max_modules_per_slot_msb, MGPIR.max_modules_per_slot> - 1. */
+	/* 0x4.20 - 0x4.27 */
+	/* access: INDEX */
+	u_int8_t module_msb;
 	/* Description - When in multi ASIC module sharing systems,
 This flag will be asserted in case primary and secondary FW versions are not compatible. */
 	/* 0x4.28 - 0x4.28 */
@@ -2141,6 +2568,12 @@ Not supported by secondary ASICs. */
 	/* 0x4.31 - 0x4.31 */
 	/* access: WO */
 	u_int8_t ase;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - [Switch][DWIP]
+Reference module index. */
+	/* 0x8.0 - 0x8.15 */
+	/* access: RO */
+	u_int16_t ref_module;
 };
 
 /* Description -   */
@@ -2237,7 +2670,11 @@ Bit 7: Lane 7 */
 0 - split to 1
 1 - split to 2
 2 - split to 4
-3 - split to 8 */
+3 - split to 8
+4 - split to 3
+5 - split to 5
+6 - split to 6
+7 - split to 7 */
 	/* 0x8.24 - 0x8.26 */
 	/* access: RO */
 	u_int8_t split;
@@ -2584,7 +3021,7 @@ Bit 7: Lane 7
 
 Note: supported only if indication by PCAM.feature_group=1.bit 6. */
 	/* 0x44.16 - 0x44.23 */
-	/* access: RW */
+	/* access: RO */
 	u_int8_t active_module_lane_mask;
 	/* Description - Optical engine MCU index. If system has no MCU on the OE, this field represent the OE index. */
 	/* 0x44.24 - 0x44.30 */
@@ -2655,21 +3092,33 @@ Up to 8 SerDes in a module can be mapped to a local port. */
 union reg_access_switch_reg_access_switch_Nodes {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
+	/* 0x0.0 - 0x14.31 */
+	/* access: RW */
+	struct reg_access_switch_icam_reg_ext icam_reg_ext;
+	/* Description -  */
 	/* 0x0.0 - 0x3c.31 */
 	/* access: RW */
-	struct reg_access_switch_pmlp_reg_ext pmlp_reg_ext;
+	struct reg_access_switch_MRFV_ext MRFV_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x5c.31 */
+	/* access: RW */
+	struct reg_access_switch_pguid_reg_ext pguid_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0xc.31 */
+	/* access: RW */
+	struct reg_access_switch_PPCR_ext PPCR_ext;
+	/* Description -  */
+	/* 0x0.0 - 0xc.31 */
+	/* access: RW */
+	struct reg_access_switch_pmaos_reg_ext pmaos_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x18.31 */
 	/* access: RW */
 	struct reg_access_switch_mfmc_reg_ext mfmc_reg_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x10c.31 */
+	/* 0x0.0 - 0x6c.31 */
 	/* access: RW */
-	struct reg_access_switch_mddt_reg_ext mddt_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x14.31 */
-	/* access: RW */
-	struct reg_access_switch_pllp_reg_ext pllp_reg_ext;
+	struct reg_access_switch_mtcq_reg_ext mtcq_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x9c.31 */
 	/* access: RW */
@@ -2679,33 +3128,21 @@ union reg_access_switch_reg_access_switch_Nodes {
 	/* access: RW */
 	struct reg_access_switch_icsr_ext icsr_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x28.31 */
+	/* 0x0.0 - 0x30.31 */
 	/* access: RW */
-	struct reg_access_switch_mkdc_reg_ext mkdc_reg_ext;
+	struct reg_access_switch_mord_v2_ext mord_v2_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x2c.31 */
 	/* access: RW */
-	struct reg_access_switch_mdsr_reg_ext mdsr_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x4.31 */
-	/* access: RW */
-	struct reg_access_switch_mrsr_ext mrsr_ext;
-	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
-	/* access: RW */
-	struct reg_access_switch_PPCR_ext PPCR_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x14.31 */
-	/* access: RW */
-	struct reg_access_switch_icam_reg_ext icam_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x2c.31 */
-	/* access: RW */
-	struct reg_access_switch_mspmer_ext mspmer_ext;
+	struct reg_access_switch_mddq_ext mddq_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x3c.31 */
 	/* access: RW */
-	struct reg_access_switch_MRFV_ext MRFV_ext;
+	struct reg_access_switch_pmlp_reg_ext pmlp_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0xc.31 */
+	/* access: RW */
+	struct reg_access_switch_plib_reg_ext plib_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x2c.31 */
 	/* access: RW */
@@ -2713,43 +3150,51 @@ union reg_access_switch_reg_access_switch_Nodes {
 	/* Description -  */
 	/* 0x0.0 - 0xc.31 */
 	/* access: RW */
-	struct reg_access_switch_MMAM_ext MMAM_ext;
-	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
-	/* access: RW */
 	struct reg_access_switch_mpir_ext mpir_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x5c.31 */
-	/* access: RW */
-	struct reg_access_switch_pguid_reg_ext pguid_reg_ext;
-	/* Description -  */
 	/* 0x0.0 - 0xc.31 */
 	/* access: RW */
-	struct reg_access_switch_pmaos_reg_ext pmaos_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x7c.31 */
-	/* access: RW */
-	struct reg_access_switch_msgi_ext msgi_ext;
+	struct reg_access_switch_MMAM_ext MMAM_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x8c.31 */
 	/* access: RW */
 	struct reg_access_switch_mmta_reg_ext mmta_reg_ext;
 	/* Description -  */
+	/* 0x0.0 - 0x2c.31 */
+	/* access: RW */
+	struct reg_access_switch_mdsr_reg_ext mdsr_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x10c.31 */
+	/* access: RW */
+	struct reg_access_switch_mddt_reg_ext mddt_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x2c.31 */
+	/* access: RW */
+	struct reg_access_switch_mspmer_ext mspmer_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x7c.31 */
+	/* access: RW */
+	struct reg_access_switch_msgi_ext msgi_ext;
+	/* Description -  */
 	/* 0x0.0 - 0x44.31 */
 	/* access: RW */
 	struct reg_access_switch_pmdr_reg_ext pmdr_reg_ext;
 	/* Description -  */
+	/* 0x0.0 - 0x4.31 */
+	/* access: RW */
+	struct reg_access_switch_mrsr_ext mrsr_ext;
+	/* Description -  */
 	/* 0x0.0 - 0x2c.31 */
 	/* access: RW */
-	struct reg_access_switch_mddq_ext mddq_ext;
+	struct reg_access_switch_mtsh_reg_ext mtsh_reg_ext;
 	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
+	/* 0x0.0 - 0x28.31 */
 	/* access: RW */
-	struct reg_access_switch_plib_reg_ext plib_reg_ext;
+	struct reg_access_switch_mkdc_reg_ext mkdc_reg_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x6c.31 */
+	/* 0x0.0 - 0x14.31 */
 	/* access: RW */
-	struct reg_access_switch_mtcq_reg_ext mtcq_reg_ext;
+	struct reg_access_switch_pllp_reg_ext pllp_reg_ext;
 };
 
 
@@ -2866,6 +3311,13 @@ void reg_access_switch_mgpir_hw_info_ext_print(const struct reg_access_switch_mg
 unsigned int reg_access_switch_mgpir_hw_info_ext_size(void);
 #define REG_ACCESS_SWITCH_MGPIR_HW_INFO_EXT_SIZE    (0x20)
 void reg_access_switch_mgpir_hw_info_ext_dump(const struct reg_access_switch_mgpir_hw_info_ext *ptr_struct, FILE *fd);
+/* mgpir_hw_metadata_ext */
+void reg_access_switch_mgpir_hw_metadata_ext_pack(const struct reg_access_switch_mgpir_hw_metadata_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_mgpir_hw_metadata_ext_unpack(struct reg_access_switch_mgpir_hw_metadata_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_mgpir_hw_metadata_ext_print(const struct reg_access_switch_mgpir_hw_metadata_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_mgpir_hw_metadata_ext_size(void);
+#define REG_ACCESS_SWITCH_MGPIR_HW_METADATA_EXT_SIZE    (0x10)
+void reg_access_switch_mgpir_hw_metadata_ext_dump(const struct reg_access_switch_mgpir_hw_metadata_ext *ptr_struct, FILE *fd);
 /* mmta_tec_power_ext */
 void reg_access_switch_mmta_tec_power_ext_pack(const struct reg_access_switch_mmta_tec_power_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_switch_mmta_tec_power_ext_unpack(struct reg_access_switch_mmta_tec_power_ext *ptr_struct, const u_int8_t *ptr_buff);
@@ -2971,6 +3423,13 @@ void reg_access_switch_mmta_reg_ext_print(const struct reg_access_switch_mmta_re
 unsigned int reg_access_switch_mmta_reg_ext_size(void);
 #define REG_ACCESS_SWITCH_MMTA_REG_EXT_SIZE    (0x90)
 void reg_access_switch_mmta_reg_ext_dump(const struct reg_access_switch_mmta_reg_ext *ptr_struct, FILE *fd);
+/* mord_v2_ext */
+void reg_access_switch_mord_v2_ext_pack(const struct reg_access_switch_mord_v2_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_mord_v2_ext_unpack(struct reg_access_switch_mord_v2_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_mord_v2_ext_print(const struct reg_access_switch_mord_v2_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_mord_v2_ext_size(void);
+#define REG_ACCESS_SWITCH_MORD_V2_EXT_SIZE    (0x30)
+void reg_access_switch_mord_v2_ext_dump(const struct reg_access_switch_mord_v2_ext *ptr_struct, FILE *fd);
 /* mpein_reg_ext */
 void reg_access_switch_mpein_reg_ext_pack(const struct reg_access_switch_mpein_reg_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_switch_mpein_reg_ext_unpack(struct reg_access_switch_mpein_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
@@ -3013,6 +3472,20 @@ void reg_access_switch_mtcq_reg_ext_print(const struct reg_access_switch_mtcq_re
 unsigned int reg_access_switch_mtcq_reg_ext_size(void);
 #define REG_ACCESS_SWITCH_MTCQ_REG_EXT_SIZE    (0x70)
 void reg_access_switch_mtcq_reg_ext_dump(const struct reg_access_switch_mtcq_reg_ext *ptr_struct, FILE *fd);
+/* mtecr_ext */
+void reg_access_switch_mtecr_ext_pack(const struct reg_access_switch_mtecr_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_mtecr_ext_unpack(struct reg_access_switch_mtecr_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_mtecr_ext_print(const struct reg_access_switch_mtecr_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_mtecr_ext_size(void);
+#define REG_ACCESS_SWITCH_MTECR_EXT_SIZE    (0x60)
+void reg_access_switch_mtecr_ext_dump(const struct reg_access_switch_mtecr_ext *ptr_struct, FILE *fd);
+/* mtsh_reg_ext */
+void reg_access_switch_mtsh_reg_ext_pack(const struct reg_access_switch_mtsh_reg_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_mtsh_reg_ext_unpack(struct reg_access_switch_mtsh_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_mtsh_reg_ext_print(const struct reg_access_switch_mtsh_reg_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_mtsh_reg_ext_size(void);
+#define REG_ACCESS_SWITCH_MTSH_REG_EXT_SIZE    (0x30)
+void reg_access_switch_mtsh_reg_ext_dump(const struct reg_access_switch_mtsh_reg_ext *ptr_struct, FILE *fd);
 /* pguid_reg_ext */
 void reg_access_switch_pguid_reg_ext_pack(const struct reg_access_switch_pguid_reg_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_switch_pguid_reg_ext_unpack(struct reg_access_switch_pguid_reg_ext *ptr_struct, const u_int8_t *ptr_buff);

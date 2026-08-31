@@ -42,6 +42,7 @@
 #include <fstream>
 #include <sstream>
 #include <iterator>
+#include <string>
 #include <vector>
 #include <mlxreg/mlxreg_lib/mlxreg_lib.h>
 #include <mlxreg/mlxreg_lib/mlxreg_parser.h>
@@ -60,6 +61,7 @@ struct PortGroup
         split = 0;
         secondSplit = 0;
         isFnm = false;
+        isBonusPort = false;
     }
     PortGroup(u_int32_t _localPort, u_int32_t _labelPort, u_int32_t _groupId, u_int32_t _split)
     {
@@ -69,6 +71,7 @@ struct PortGroup
         split = _split;
         secondSplit = 0;
         isFnm = false;
+        isBonusPort = false;
     }
     PortGroup(u_int32_t _localPort, u_int32_t _labelPort, u_int32_t _groupId, u_int32_t _split, u_int32_t _secondSplit)
     {
@@ -78,6 +81,7 @@ struct PortGroup
         split = _split;
         secondSplit = _secondSplit;
         isFnm = false;
+        isBonusPort = false;
     }
     PortGroup(u_int32_t _localPort,
               u_int32_t _labelPort,
@@ -92,6 +96,7 @@ struct PortGroup
         split = _split;
         secondSplit = _secondSplit;
         isFnm = _isFnm;
+        isBonusPort = false;
     }
     u_int32_t localPort;
     u_int32_t labelPort;
@@ -99,6 +104,7 @@ struct PortGroup
     u_int32_t split;
     u_int32_t secondSplit;
     bool isFnm;
+    bool isBonusPort;
 
     bool operator<(const PortGroup& b) const
     {
@@ -194,6 +200,19 @@ struct PRM_FIELD
     bool isSigned;
     u_int32_t validationMask;
 };
+
+struct BonusPortTableFields
+{
+    std::string labelPortStr;
+    std::string stateStr;
+    u_int32_t plainStateLen = 0;
+    std::string speedStr;
+    std::string fecStr;
+    bool logicalLinkUp = false;
+};
+
+extern const std::vector<u_int32_t> bonusPortAllowedCommands;
+extern const std::vector<u_int32_t> bonusPortCounterGroups;
 
 class MlxlinkMaps
 {

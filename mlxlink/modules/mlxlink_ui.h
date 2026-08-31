@@ -74,6 +74,7 @@ protected:
     virtual void validatePeriodicEqParams();
     virtual void validateMultiPortInfoParams();
     virtual void validateBkvParams();
+    virtual void validatePrrParams();
     virtual void validatePlrParams();
     virtual void paramValidate();
     virtual void createMlxlinkCommander();

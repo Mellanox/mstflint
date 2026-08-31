@@ -61,7 +61,7 @@ std::string to_string(T toConvert)
 #endif
 
 template<typename T>
-bool isIn(const T& val, std::vector<T>& vect)
+bool isIn(const T& val, const std::vector<T>& vect)
 {
     auto it = find(vect.begin(), vect.end(), val);
     return (it != vect.end());
@@ -74,6 +74,7 @@ void termHandler(int sig);
 string deleteLastChar(const string& s, u_int32_t numOfCharsToRemove = 1);
 string getStringFromVector(std::vector<std::string> values);
 string getStringFromVector(std::vector<float> values);
+string bitsToPerLaneStr(u_int32_t bitmask, u_int32_t numOfLanes);
 float convertFloatPrec(float value);
 u_int64_t add32BitTo64(u_int32_t value1, u_int32_t value2);
 string getFullString(u_int64_t intVal);
@@ -190,6 +191,8 @@ void updateColumnWidthPopulateTable(std::vector<std::pair<std::string, u_int32_t
                                     bool isActive = true);
 void printProgressBar(int completion, const std::string& preStr, const std::string& endStr);
 std::string string_format(const char* format, ...);
+
+u_int32_t prrMeasDataDwordsForType(u_int32_t measType);
 
 bool readBoolFromSysFs(const string& sysfsPath);
 bool isModulePresent(const string& modulePath);

@@ -239,6 +239,7 @@ struct tools_open_nv_hdr_fifth_gen {
 	/* 0x0.0 - 0x0.8 */
 	u_int16_t length;
 	/* Description - tlv writer host index */
+	/*host_id_valid is bit 9 of writer_host_id*/
 	/* 0x0.9 - 0x0.11 */
 	u_int8_t writer_host_id;
 	/* Description - Configuration item version */

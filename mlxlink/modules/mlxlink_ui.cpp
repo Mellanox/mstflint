@@ -75,6 +75,7 @@ void MlxlinkUi::initPortInfo()
 void MlxlinkUi::initMlxlinkCommander()
 {
     createMlxlinkCommander();
+    _mlxlinkCommander->setRequestedCommands(_sendRegFuncMap);
 
     initPortInfo();
 }
@@ -126,11 +127,17 @@ void MlxlinkUi::printSynopsisQueries()
     "Show BKV Groups Info (requires --lane parameter)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(LANE_INDEX_FLAG_SHORT, LANE_INDEX_FLAG, "lane_index", "lane index (Required)");
+    MlxlinkRecord::printFlagLine(SHOW_PRR_FLAG_SHORT, SHOW_PRR_FLAG, "",
+                                 "Run PRR measurement on the given lane and dump meas_data "
+                                 "(destructive: a link toggle is required afterwards; requires --lane)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(LANE_INDEX_FLAG_SHORT, LANE_INDEX_FLAG, "lane_index", "lane index (Required)");
     MlxlinkRecord::printFlagLine(BKV_GROUP_FLAG_SHORT, BKV_GROUP_FLAG, "group_id", "Show BKV Group Info");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(DEVICE_DATA_FLAG_SHORT, DEVICE_DATA_FLAG, "", "General Device Info");
     MlxlinkRecord::printFlagLine(BER_MONITOR_INFO_FLAG_SHORT, BER_MONITOR_INFO_FLAG, "",
                                  "Show BER Monitor Info (not supported for HCA)");
+    MlxlinkRecord::printFlagLine(PHY_INFO_FLAG_SHORT, PHY_INFO_FLAG, "", "Show PHY Info");
     MlxlinkRecord::printFlagLine(PEPC_SHOW_FLAG_SHORT, PEPC_SHOW_FLAG, "",
                                  "Show External PHY Info (for Ethernet switches only)");
     MlxlinkRecord::printFlagLineWithAcronym(MULTI_PORT_INFO_FLAG_SHORT, MULTI_PORT_INFO_FLAG,
@@ -173,9 +180,9 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(
       PPLM_FLAG_SHORT, PPLM_FLAG, "fec_override",
       "Configure FEC [AU(Auto)/NF(No-FEC)/FC(FireCode "
-      "FEC)/RS(RS-FEC)/LL(LL-RS-FEC)/DF-RS(Interleaved_RS-FEC)/DF-LL(Interleaved_LL_RS-FEC)/"
-      "QUAD_KP4_FEC(Interleaved_Quad_RS-FEC_PLR)/OCTET_KP4_FEC(Interleaved_Octet_RS-FEC_PLR)/"
-      "Int_KP4_FEC_PLR(Interleaved_RS-FEC_PLR)]");
+      "FEC)/RS(RS-FEC (528,514))/RS-544Q(Interleaved_Quad_RS-FEC - (544,514))/LL(LL-RS-FEC (271,257))/DF-RS(Interleaved_RS-FEC (544,514))/RS-544(RS-FEC (544,514))/LL-272(LL-RS-FEC (272,257+1))/DF-LL(Interleaved_LL_RS-FEC (272,257+1))/"
+      "QUAD_KP4_FEC(Interleaved_Quad_RS-FEC (546,516) + PLR)/OCTET_KP4_FEC(Interleaved_Octet_RS-FEC (546,516) + PLR)/"
+      "Int_KP4_FEC_PLR(Interleaved_RS-FEC (544,514)+PLR)/PLR(RS-FEC (544,514)+PLR)/PLR(LL-FEC (271,257)+PLR)]");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(FEC_SPEED_FLAG_SHORT, FEC_SPEED_FLAG, "fec_speed",
                                  "Speed to Configure FEC "
@@ -1182,6 +1189,18 @@ void MlxlinkUi::validateBkvParams()
     }
 }
 
+void MlxlinkUi::validatePrrParams()
+{
+    if (isIn(SHOW_PRR, _sendRegFuncMap))
+    {
+        if (!_userInput.laneSpecified)
+        {
+            throw MlxRegException("The --" LANE_INDEX_FLAG " parameter is required when using --" SHOW_PRR_FLAG
+                                  " flag");
+        }
+    }
+}
+
 void MlxlinkUi::validatePlrParams()
 {
     if (_userInput._setPlr)
@@ -1198,8 +1217,9 @@ void MlxlinkUi::validatePlrParams()
 void MlxlinkUi::strToInt32(char* str, u_int32_t& value)
 {
     char* endp;
+    errno = 0;
     value = strtol(str, &endp, 0);
-    if (*endp)
+    if (*endp || errno == ERANGE)
     {
         throw MlxRegException("Argument: %s is invalid.", str);
     }
@@ -1315,6 +1335,7 @@ void MlxlinkUi::paramValidate()
     validatePCIeParams();
     validateGeneralCmdsParams();
     validateBkvParams();
+    validatePrrParams();
     validatePlrParams();
     validatePRBSParams();
     validatePhyRecoveryParams();
@@ -1349,6 +1370,7 @@ void MlxlinkUi::initCmdParser()
     AddOptions(PPCNT_CLEAR_FLAG, PPCNT_CLEAR_FLAG_SHORT, "", "Clear PPCNT Counters");
     AddOptions(DEVICE_DATA_FLAG, DEVICE_DATA_FLAG_SHORT, "", "Device Info");
     AddOptions(BER_MONITOR_INFO_FLAG, BER_MONITOR_INFO_FLAG_SHORT, "", "Show BER Monitor Info");
+    AddOptions(PHY_INFO_FLAG, PHY_INFO_FLAG_SHORT, "", "Show PHY Info");
     AddOptions(PEPC_SHOW_FLAG, PEPC_SHOW_FLAG_SHORT, "", "Show External PHY Info");
     AddOptions(PRINT_JSON_OUTPUT_FLAG, PRINT_JSON_OUTPUT_FLAG_SHORT, "", "Print the output in json format");
     AddOptions(MULTI_PORT_INFO_FLAG, MULTI_PORT_INFO_FLAG_SHORT, "", "Show multi ports info table");
@@ -1465,6 +1487,8 @@ void MlxlinkUi::initCmdParser()
     AddOptions(TX_GROUP_PORTS_FLAG, TX_GROUP_PORTS_FLAG_SHORT, "ports", "Ports to be mapped [1,2,3,4,..,128]");
 
     AddOptions(SLTP_SHOW_FLAG, SLTP_SHOW_FLAG_SHORT, "", "get SLTP");
+    AddOptions(SHOW_PRR_FLAG, SHOW_PRR_FLAG_SHORT, "",
+               "Run PRR measurement and dump meas_data (destructive; requires --lane)");
     AddOptions(SLTP_SET_FLAG, SLTP_SET_FLAG_SHORT, "set", "set SLTP");
     AddOptions(SLTP_SET_ADVANCED_FLAG, SLTP_SET_ADVANCED_FLAG_SHORT, "", "set SLTP");
     AddOptions(SLTP_TX_POLICY_FLAG, SLTP_TX_POLICY_FLAG_SHORT, "", "set TX Policy");
@@ -1532,6 +1556,9 @@ void MlxlinkUi::commandsCaller()
             case SHOW_SLTP:
                 _mlxlinkCommander->showSltp();
                 break;
+            case SHOW_PRR:
+                _mlxlinkCommander->showPrr();
+                break;
             case SHOW_BKV:
                 _mlxlinkCommander->showBkv();
                 break;
@@ -1549,6 +1576,9 @@ void MlxlinkUi::commandsCaller()
                 break;
             case SHOW_BER_MONITOR:
                 _mlxlinkCommander->showBerMonitorInfo();
+                break;
+            case SHOW_PHY_INFO:
+                _mlxlinkCommander->showPhyInfo();
                 break;
             case SHOW_EXTERNAL_PHY:
                 _mlxlinkCommander->showExternalPhy();
@@ -1854,6 +1884,11 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     {
         addCmd(SHOW_SLTP);
         _userInput._showSltp = true;
+        return PARSE_OK;
+    }
+    else if (name == SHOW_PRR_FLAG)
+    {
+        addCmd(SHOW_PRR);
         return PARSE_OK;
     }
     else if (name == BKV_GROUPS_FLAG)
@@ -2218,6 +2253,11 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     else if (name == BER_MONITOR_INFO_FLAG)
     {
         addCmd(SHOW_BER_MONITOR);
+        return PARSE_OK;
+    }
+    else if (name == PHY_INFO_FLAG)
+    {
+        addCmd(SHOW_PHY_INFO);
         return PARSE_OK;
     }
     else if (name == PEPC_SHOW_FLAG)

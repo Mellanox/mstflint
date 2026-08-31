@@ -56,25 +56,38 @@ void print_help()
     printf("-d <dev>       : mst device name\n");
     printf("-v             : print a table of all thermal diode data\n");
     printf("-z             : print a table of all thermal zones\n");
+    printf("--states       : print a table of thermal state durations\n");
     printf("--precision <unit> : temperature display resolution for module sensors\n");
     printf("                     Valid values: 0: 0.125°C (default) | 1: 1/256°C (high precision)\n");
     printf("--no-modules   : do not read or display module sensors\n");
     printf("--version      : display version info\n");
 }
 
-/* MMTA helper functions */
-int read_mmta_sensors(mfile* mf,
-                      td_temp_unit_t requested_unit,
-                      td_data_mmta** mmta_data_p,
-                      bool* mmta_supported,
-                      bool no_modules)
+/* CPO module sensor helpers. Reads are gated on MGIR.cpo_indication because MMTA is
+ * MCAM-valid on non-CPO devices too, where its module rows describe no real hardware. */
+int read_cpo_module_sensors(mfile* mf,
+                            td_temp_unit_t requested_unit,
+                            td_data_mmta** mmta_data_p,
+                            bool* cpo_supported,
+                            bool no_modules)
 {
     int mmta_sensors_read = 0;
 
-    reg_access_status_t rc = isRegisterValidAccordingToMcamReg(mf, REG_ID_MMTA, mmta_supported);
-    *mmta_supported = *mmta_supported && (rc == ME_OK);
+    reg_access_status_t rc = isRegisterValidAccordingToMcamReg(mf, REG_ID_MMTA, cpo_supported);
+    *cpo_supported = *cpo_supported && (rc == ME_OK);
 
-    if (*mmta_supported && !no_modules)
+    // MMTA module sensors (ELS/OE/TEC) only map to real hardware on CPO systems. On non-CPO
+    // devices MMTA is still MCAM-valid and MGPIR still reports a module count, so probing every
+    // index would emit phantom "modN_ELS" rows. Gate on MGIR.cpo_indication; dm_is_cpo leaves
+    // cpo_indication untouched on failure, so an unreadable MGIR is treated as non-CPO.
+    if (*cpo_supported)
+    {
+        u_int8_t cpo_indication = 0;
+        dm_is_cpo(mf, &cpo_indication);
+        *cpo_supported = (cpo_indication == 1);
+    }
+
+    if (*cpo_supported && !no_modules)
     {
         td_fw_result_t td_rc = td_fw_read_module_sensors(mf, requested_unit, &mmta_sensors_read, mmta_data_p);
         if (td_rc != TDFW_SUCCESS)
@@ -90,9 +103,9 @@ int read_mmta_sensors(mfile* mf,
     return mmta_sensors_read;
 }
 
-void print_temperature_table_header(bool mmta_supported)
+void print_temperature_table_header(bool cpo_supported)
 {
-    if (mmta_supported)
+    if (cpo_supported)
     {
         printf("%-5s %-20s %-20s %-15s %-15s %-15s %-15s", "#", "name", "type", "unit", "temp", "max", "thresh");
     }
@@ -164,9 +177,67 @@ int handle_zones_request(mfile* mf, bool unsupported_is_warning)
     return 0;
 }
 
-void display_internal_sensors_verbose(td_data_fw* data, bool mmta_supported, int* row_num)
+/* Buffer size for a formatted state duration ("Dd HH:MM:SS"). */
+#define STATE_DURATION_LEN 32
+
+/* Format a millisecond duration as "Dd HH:MM:SS", or "0" when the value is zero.
+ * buf must be at least STATE_DURATION_LEN bytes. */
+static void format_state_duration(u_int64_t ms, char* buf)
 {
-    if (mmta_supported)
+    if (ms == 0)
+    {
+        snprintf(buf, STATE_DURATION_LEN, "0");
+        return;
+    }
+    u_int64_t sec = ms / 1000;
+    snprintf(buf, STATE_DURATION_LEN, "%llud %02u:%02u:%02u", (unsigned long long)(sec / 86400),
+             (unsigned)((sec % 86400) / 3600), (unsigned)((sec % 3600) / 60), (unsigned)(sec % 60));
+}
+
+int handle_state_durations_request(mfile* mf)
+{
+    td_fw_state_durations_data_t* rows = NULL;
+    int count = 0;
+    int i;
+    bool mtsh_supported = false;
+    td_fw_result_t trc;
+    reg_access_status_t rrc;
+
+    rrc = isRegisterValidAccordingToMcamReg(mf, REG_ID_MTSH, &mtsh_supported);
+    if (rrc != ME_OK || !mtsh_supported)
+    {
+        fprintf(stderr, "-E- Thermal state histogram is not supported on this device.\n");
+        return 1;
+    }
+
+    trc = td_fw_read_all_state_durations(mf, &rows, &count);
+    if (trc != TDFW_SUCCESS || count == 0)
+    {
+        fprintf(stderr, "-E- Failed to read thermal state durations.\n");
+        td_fw_release_state_durations_data(rows);
+        return 1;
+    }
+
+    printf("Time spent per thermal state (Dd HH:MM:SS):\n");
+    printf("%-13s%-16s%-16s%-16s%s\n", "sensor", "Normal", "High Warning", "High Critical", "Low Critical");
+    for (i = 0; i < count; i++)
+    {
+        char normal[STATE_DURATION_LEN], high_warn[STATE_DURATION_LEN];
+        char high_crit[STATE_DURATION_LEN], low_crit[STATE_DURATION_LEN];
+        format_state_duration(rows[i].time_spent_ms[0], normal);
+        format_state_duration(rows[i].time_spent_ms[1], high_warn);
+        format_state_duration(rows[i].time_spent_ms[2], high_crit);
+        format_state_duration(rows[i].time_spent_ms[3], low_crit);
+        printf("%-13s%-16s%-16s%-16s%s\n", rows[i].sensor_name, normal, high_warn, high_crit, low_crit);
+    }
+
+    td_fw_release_state_durations_data(rows);
+    return 0;
+}
+
+void display_internal_sensors_verbose(td_data_fw* data, bool cpo_supported, int* row_num)
+{
+    if (cpo_supported)
     {
         printf("%-5d %-20s %-20s %-15s ", (*row_num)++, data->diode_name, "Internal", "1°C");
         (data->temp > TD_FW_INVALID_TEMP) ? printf("%-15.0f ", data->temp) : printf("%-15s ", "n/a");
@@ -187,7 +258,7 @@ int parseAndRun(int argc, char** argv)
     td_data_fw* data = NULL;
     td_data_mmta* mmta_data = NULL;
     int mmta_modules_read = 0;
-    bool mmta_supported = false;
+    bool cpo_supported = false;
     bool no_modules = false;
     td_fw_result_t rc = TDFW_SUCCESS;
     int diodes_read = 0;
@@ -197,6 +268,7 @@ int parseAndRun(int argc, char** argv)
     char* dev_name = NULL;
     char device[MAX_DEV_LEN] = {0};
     bool zones_request = false;
+    bool states_request = false;
     int ai;
     int i, j;
     int final_rc = 0;
@@ -228,6 +300,11 @@ int parseAndRun(int argc, char** argv)
         else if (strcmp(argv[ai], "-z") == 0)
         {
             zones_request = true;
+            ai += 1;
+        }
+        else if (strcmp(argv[ai], "--states") == 0)
+        {
+            states_request = true;
             ai += 1;
         }
         else if (strcmp(argv[ai], "--precision") == 0)
@@ -278,6 +355,13 @@ int parseAndRun(int argc, char** argv)
         exit(1);
     }
 
+    /* Mutually exclusive report modes; one table per invocation. */
+    if (states_request && (print_all_termal_diode || zones_request))
+    {
+        fprintf(stderr, "-E- --states is mutually exclusive with -v and -z.\n");
+        exit(1);
+    }
+
     strncpy(device, dev_name, MAX_DEV_LEN - 1);
     mf = mopen_adv(dev_name, (MType)(MST_DEFAULT | MST_LINKX_CHIP));
     if (!mf || (mf->tp == MST_LINKX_CHIP))
@@ -306,6 +390,14 @@ int parseAndRun(int argc, char** argv)
         }
     }
 
+    /* --states is a standalone report; skip diode/MMTA reads. */
+    if (states_request)
+    {
+        int trc2 = handle_state_durations_request(mf);
+        mclose(mf);
+        return trc2;
+    }
+
     /* -z alone: skip diode/MMTA reads. */
     if (zones_request && !print_all_termal_diode)
     {
@@ -324,7 +416,7 @@ int parseAndRun(int argc, char** argv)
         exit(1);
     }
 
-    mmta_modules_read = read_mmta_sensors(mf, requested_unit, &mmta_data, &mmta_supported, no_modules);
+    mmta_modules_read = read_cpo_module_sensors(mf, requested_unit, &mmta_data, &cpo_supported, no_modules);
     if (mmta_modules_read == -1)
     {
         fprintf(stderr, "Failed to read module sensors (%s)\n", td_fw_err_str);
@@ -337,13 +429,13 @@ int parseAndRun(int argc, char** argv)
     {
         /* verbose */
 
-        /* header for verbose mode - extended format when MMTA supported */
-        print_temperature_table_header(mmta_supported);
+        /* header for verbose mode - extended format on CPO devices */
+        print_temperature_table_header(cpo_supported);
         printf("\n");
 
         for (i = 0, j = 1; i < diodes_read; i++)
         {
-            display_internal_sensors_verbose(&data[i], mmta_supported, &j);
+            display_internal_sensors_verbose(&data[i], cpo_supported, &j);
             printf("\n");
         }
 

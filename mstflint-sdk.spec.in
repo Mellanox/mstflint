@@ -6,9 +6,21 @@
 %define mstflint_sdk_incdir %{_includedir}/mstflint/sdk
 %define mstflint_sdk_datadir %{_datadir}/mstflint/sdk
 
+# ld.so.conf.d snippet registering %%{mstflint_sdk_libdir} with ldconfig, so
+# consumers linking libmstflint_sdk.so by soname resolve it from its private
+# directory. Named after the package so a privately-named build (--define name
+# mstflint-sdk-local) can be installed alongside a distro mstflint-sdk without
+# a file conflict. The path is hardcoded to /etc rather than %%{_sysconfdir}:
+# ldconfig reads only the real /etc, and a relocated build redefines _prefix
+# (which _sysconfdir may derive from), which would put the snippet somewhere
+# ldconfig never looks.
+%define mstflint_sdk_ldsoconf /etc/ld.so.conf.d/%{name}.conf
+
 # The .so is stripped at install time (see mft_sdk/Makefile.am), so there is no
 # separate debug package to build.
 %define debug_package %{nil}
+
+%{!?ibmadlib: %define ibmadlib libibmad-devel}
 
 %if 0%{?suse_version}
 %define expat_devel_lib libexpat-devel
@@ -21,7 +33,7 @@
 Summary: mstflint SDK - standalone shared library and headers
 Name: %{name}
 Version: %{version}
-Release: %{release}
+Release: %{release}%{?dist}
 License: GPL/BSD
 Url: http://openfabrics.org
 Group: System Environment/Libraries
@@ -39,6 +51,8 @@ BuildRequires: %{expat_devel_lib}
 BuildRequires: %{openssl_devel_lib}
 BuildRequires: xz-devel
 BuildRequires: zlib-devel
+BuildRequires: %{ibmadlib}
+BuildRequires: libibverbs-devel
 
 %description
 The mstflint SDK is a self-contained shared library (libmstflint_sdk.so)
@@ -61,14 +75,21 @@ make %{?_smp_mflags} sdk
 
 %install
 rm -rf $RPM_BUILD_ROOT
-make install-sdk DESTDIR=$RPM_BUILD_ROOT
+make install-sdk DESTDIR=$RPM_BUILD_ROOT ldsoconffile=%{name}.conf
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
+%post
+/sbin/ldconfig
+
+%postun
+/sbin/ldconfig
+
 %files
 %defattr(-,root,root)
 %{mstflint_sdk_libdir}/libmstflint_sdk.so
+%config(noreplace) %{mstflint_sdk_ldsoconf}
 %{_libdir}/pkgconfig/mstflint_sdk.pc
 %{mstflint_sdk_incdir}
 %{mstflint_sdk_datadir}

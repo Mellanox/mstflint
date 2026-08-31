@@ -69,6 +69,9 @@ static const char* const FIELD_EFFECTIVE_PHYSICAL_BER = "Effective Physical BER"
 static const char* const FIELD_RAW_PHYSICAL_ERRORS_PER_LANE = "Raw Physical Errors Per Lane";
 static const char* const FIELD_RAW_PHYSICAL_BER = "Raw Physical BER";
 static const char* const FIELD_RAW_PHYSICAL_BER_PER_LANE = "Raw Physical BER Per Lane";
+static const char* const FIELD_RX_SIGNAL_DETECT = "RX Signal Detect Per Lane";
+static const char* const FIELD_RX_AM_LOCK = "RX AM Lock Per Lane";
+static const char* const FIELD_RX_AM_LOCK_LATCHED = "RX AM Lock Latched Per Lane";
 static const char* const FIELD_LINK_DOWN_COUNTER = "Link Down Counter";
 static const char* const FIELD_LINK_ERROR_RECOVERY_COUNTER = "Link Error Recovery Counter";
 
@@ -238,6 +241,7 @@ static const char* const IDENTIFIER_STR_SFP_DD = "SFP-DD";
 static const char* const IDENTIFIER_STR_QSFP_DD = "QSFP-DD";
 static const char* const IDENTIFIER_STR_QSFP_CMIS = "QSFP_CMIS";
 static const char* const IDENTIFIER_STR_OSFP = "OSFP";
+static const char* const IDENTIFIER_STR_C2C = "C2C";
 static const char* const IDENTIFIER_STR_DSFP = "DSFP";
 static const char* const IDENTIFIER_STR_CPO = "CPO";
 static const char* const IDENTIFIER_STR_OE = "OE";

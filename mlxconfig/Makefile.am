@@ -82,11 +82,10 @@ libmlxcfg_la_DEPENDENCIES = \
     $(top_builddir)/dev_mgt/libdev_mgt.la \
     $(top_builddir)/fw_comps_mgr/libfw_comps_mgr.la \
     $(top_builddir)/tools_res_mgmt/libtools_res_mgmt.la \
-    $(JSON_LIBS) \
     $(MUPARSER_LIBS) \
     $(SQLITE_LIBS)
 
-libmlxcfg_la_LIBADD = $(libmlxcfg_la_DEPENDENCIES) ${LDL}
+libmlxcfg_la_LIBADD = $(libmlxcfg_la_DEPENDENCIES) $(JSON_LIBS) ${LDL}
 
 mstconfig_DEPENDENCIES = \
     libmlxcfg.la \
@@ -109,7 +108,7 @@ mstconfig_DEPENDENCIES = \
 
 mstconfig_LDADD = $(mstconfig_DEPENDENCIES) ${LDL}
 
-mstconfig_LDFLAGS = -static -Wl,--gc-sections
+mstconfig_LDFLAGS = -static
 
 if DISABLE_XML2
 AM_CXXFLAGS += -DDISABLE_XML2

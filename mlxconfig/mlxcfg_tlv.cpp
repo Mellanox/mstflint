@@ -64,6 +64,7 @@ using namespace std;
 #define TLV_SIZE_HEADER "size"
 #define TLV_DESCRIPTION_HEADER "description"
 #define TLV_MLXCONFIG_NAME_HEADER "mlxconfig_name"
+#define TLV_FORCE_DISALLOWED_HEADER "force_disallowed"
 #define CHECK_IF_FIELD_FOUND(b, s)                                            \
     if (!b)                                                                   \
     {                                                                         \
@@ -88,7 +89,9 @@ TLVConf::TLVConf(int columnsCount, char** dataRow, char** headerRow) :
     _hostId(0),
     _pfIndex(0),
     _isHostIdValid(false),
-    _maxTlvVersionSuppByFw(0)
+    _maxTlvVersionSuppByFw(0),
+    _isReadOnly(false),
+    _forceDisallowed(false)
 {
     for (int i = 0; i < columnsCount; i++)
     {
@@ -144,6 +147,11 @@ TLVConf::TLVConf(int columnsCount, char** dataRow, char** headerRow) :
             _mlxconfigName = dataRow[i] ? dataRow[i] : "";
             _isMlxconfigNameFound = true;
         }
+        else if (strcmp(headerRow[i], TLV_FORCE_DISALLOWED_HEADER) == 0)
+        {
+            // Optional column. Older DBs without it leave _forceDisallowed at its default (false).
+            _forceDisallowed = (dataRow[i] && atoi(dataRow[i]) != 0);
+        }
         else
         {
             printf("UNKNOWN - %s = %s\n", headerRow[i], dataRow[i] ? dataRow[i] : "NULL");
@@ -180,8 +188,6 @@ TLVConf::TLVConf(int columnsCount, char** dataRow, char** headerRow) :
     _attrs[PRIORITY_ATTR] = "MLNX";
 
     _buff.resize(_size, 0);
-
-    _isReadOnly = false;
 }
 
 int TLVConf::getMaxPort(mfile* mf, bool forceMaxPort)
@@ -309,7 +315,7 @@ bool TLVConf::isFWSupported(mfile* mf, bool isWriteOperation)
     bool suppRead = false, suppWrite = false;
     // printf("-D- tlv=%s\n", _name.c_str());
 
-    if (nvqcCom5thGen(mf, getTlvTypeBe(), suppRead, suppWrite, _maxTlvVersionSuppByFw))
+    if (nvqcCom5thGen(mf, getTlvTypeBe(), suppRead, suppWrite, _maxTlvVersionSuppByFw, _isHostIdValid))
     {
         // Don't throw exception if we fail to run nvqc, maybe its an old fw
         return false;
@@ -418,6 +424,10 @@ u_int32_t TLVConf::getPerHostTypeBe()
     memset(&type, 0x0, sizeof(type));
     type.param_class = (u_int8_t)_tlvClass;
     type.param_idx = _id;
+    if (_isHostIdValid)
+    {
+        type.host = _hostId;
+    }
     tools_open_host_type_pack(&type, (u_int8_t*)&tlvType);
 
     return tlvType;
@@ -431,7 +441,7 @@ u_int32_t TLVConf::getPerHostFunctionTypeBe()
 
     memset(&type, 0, sizeof(struct tools_open_per_host_type));
     // user request specific host / pf
-    if (_hostId != 0 || _pfIndex != 0)
+    if (_isHostIdValid || _hostId != 0 || _pfIndex != 0)
     {
         type.param_class = Per_Host_Per_Function;
         type.host = _hostId;

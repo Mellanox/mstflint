@@ -82,7 +82,7 @@ MlxlinkAmBerCollector::MlxlinkAmBerCollector(Json::Value& jsonRoot) : _jsonRoot(
 
     _baseSheetsList[AMBER_SHEET_GENERAL] = FIELDS_COUNT{6, 6, 6};
     _baseSheetsList[AMBER_SHEET_INDEXES] = FIELDS_COUNT{8, 3, 4};
-    _baseSheetsList[AMBER_SHEET_LINK_STATUS] = FIELDS_COUNT{92, 99, 41};
+    _baseSheetsList[AMBER_SHEET_LINK_STATUS] = FIELDS_COUNT{97, 99, 41};
     _baseSheetsList[AMBER_SHEET_MODULE_STATUS] = FIELDS_COUNT{106, 117, 0};
     _baseSheetsList[AMBER_SHEET_SYSTEM] = FIELDS_COUNT{22, 19, 10};
     _baseSheetsList[AMBER_SHEET_SERDES_16NM] = FIELDS_COUNT{376, 736, 0};
@@ -98,7 +98,7 @@ MlxlinkAmBerCollector::MlxlinkAmBerCollector(Json::Value& jsonRoot) : _jsonRoot(
     _baseSheetsList[AMBER_SHEET_PHY_DEBUG_INFO] = FIELDS_COUNT{4, 4, 0};
     _baseSheetsList[AMBER_SHEET_EXT_MODULE_STATUS] = FIELDS_COUNT{191, 125, 0};
     _baseSheetsList[AMBER_SHEET_RECOVERY_COUNTERS] = FIELDS_COUNT{30, 25, 0};
-    _baseSheetsList[AMBER_SHEET_SERDES_5NM_GEN8] = FIELDS_COUNT{1284, 0, 0}; // NVLink only
+    _baseSheetsList[AMBER_SHEET_SERDES_5NM_GEN8] = FIELDS_COUNT{1482, 0, 0};
 
     for_each(_baseSheetsList.begin(), _baseSheetsList.end(),
              [&](pair<AMBER_SHEET, FIELDS_COUNT> sheet) {
@@ -916,7 +916,8 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
 
             resetLocalParser(ACCESS_REG_PTYS);
             updateField("local_port", _localPort);
-            updateField("proto_mask", _protoActive);
+            updateField("proto_mask",
+                        (_isNvlinkModeB || _isNvlinkModeA) ? (u_int32_t)PTYS_PROTO_MASK_NVLINK : _protoActive);
             sendRegister(ACCESS_REG_PTYS, MACCESS_REG_METHOD_GET);
 
             float dataRate = ((float)getFieldValue("data_rate_oper")) * 0.1;
@@ -1005,12 +1006,48 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
                 resetLocalParser(ACCESS_REG_PRTL);
                 updateField("local_port", _localPort);
                 sendRegister(ACCESS_REG_PRTL, MACCESS_REG_METHOD_GET);
-                roundTripLatency = getFieldStr("round_trip_latency");
+                roundTripLatency = getLocalFieldStr("round_trip_latency");
             }
             catch (MlxRegException& exc)
             {
             }
             fields.push_back(AmberField("round_trip_latency", roundTripLatency, _isPortIB));
+
+            if (_isPortIB)
+            {
+                string maxConsecCwBadCntFec0 = NA_FIELD_VALUE;
+                string maxConsecCwBadCntFec1 = NA_FIELD_VALUE;
+                string maxConsecCwBadCntFec2 = NA_FIELD_VALUE;
+                string maxConsecCwBadCntFec3 = NA_FIELD_VALUE;
+                string maxPlrRetryCntLatch = NA_FIELD_VALUE;
+                try
+                {
+                    resetLocalParser(ACCESS_REG_PCCT);
+                    updateField("local_port", _localPort);
+                    updateField("page_select", PCCT_PLU_GENERAL_TRACER_PAGE);
+                    sendRegister(ACCESS_REG_PCCT, MACCESS_REG_METHOD_GET);
+
+                    maxConsecCwBadCntFec0 = getLocalFieldStr("max_consec_cw_bad_cnt_fec0");
+                    maxConsecCwBadCntFec1 = getLocalFieldStr("max_consec_cw_bad_cnt_fec1");
+                    maxConsecCwBadCntFec2 = getLocalFieldStr("max_consec_cw_bad_cnt_fec2");
+                    maxConsecCwBadCntFec3 = getLocalFieldStr("max_consec_cw_bad_cnt_fec3");
+
+                    resetLocalParser(ACCESS_REG_PCCT);
+                    updateField("local_port", _localPort);
+                    updateField("page_select", PCCT_PLU_LATCHED_COUNTERS_PAGE);
+                    sendRegister(ACCESS_REG_PCCT, MACCESS_REG_METHOD_GET);
+
+                    maxPlrRetryCntLatch = getLocalFieldStr("max_plr_retry_cnt_latch");
+                }
+                catch (MlxRegException& exc)
+                {
+                }
+                fields.push_back(AmberField("max_consec_cw_bad_cnt_fec0", maxConsecCwBadCntFec0));
+                fields.push_back(AmberField("max_consec_cw_bad_cnt_fec1", maxConsecCwBadCntFec1));
+                fields.push_back(AmberField("max_consec_cw_bad_cnt_fec2", maxConsecCwBadCntFec2));
+                fields.push_back(AmberField("max_consec_cw_bad_cnt_fec3", maxConsecCwBadCntFec3));
+                fields.push_back(AmberField("max_plr_retry_cnt_latch", maxPlrRetryCntLatch));
+            }
         }
         else
         {
@@ -1518,6 +1555,56 @@ void MlxlinkAmBerCollector::getSltpGen8Fields(vector<AmberField>& fields)
     }
 }
 
+void MlxlinkAmBerCollector::pushSltrClFields(vector<AmberField>& fields,
+                                             u_int32_t lane,
+                                             const char* const fieldNames[],
+                                             u_int32_t numFields)
+{
+    string lanePrefix = "Lane" + to_string(lane) + "_";
+    for (u_int32_t i = 0; i < numFields; i++)
+    {
+        const char* fieldName = fieldNames[i];
+        fields.push_back(AmberField(lanePrefix + fieldName, getLocalFieldStr(fieldName)));
+    }
+}
+
+void MlxlinkAmBerCollector::handleSltrClP1Group(vector<AmberField>& fields, u_int32_t lane)
+{
+    const char* fieldNames[] = {
+      "p1csrg1_2",  "p1csrg1_1",  "p1csrg1_0",  "p1csrg0_31", "p1csrg0_30", "p1csrg0_29", "p1csrg0_28",
+      "p1csrg0_27", "p1csrg0_26", "p1csrg0_25", "p1csrg0_24", "p1csrg0_23", "p1csrg0_22", "p1csrg0_21",
+    };
+    const u_int32_t numFields = sizeof(fieldNames) / sizeof(fieldNames[0]);
+    pushSltrClFields(fields, lane, fieldNames, numFields);
+}
+
+void MlxlinkAmBerCollector::handleSltrClP0Group(vector<AmberField>& fields, u_int32_t lane)
+{
+    const char* fieldNames[] = {
+      "p0csrg1_2",  "p0csrg1_1",  "p0csrg1_0",  "p0csrg0_31", "p0csrg0_30", "p0csrg0_29", "p0csrg0_28",
+      "p0csrg0_27", "p0csrg0_26", "p0csrg0_25", "p0csrg0_24", "p0csrg0_23", "p0csrg0_22", "p0csrg0_21",
+    };
+    const u_int32_t numFields = sizeof(fieldNames) / sizeof(fieldNames[0]);
+    pushSltrClFields(fields, lane, fieldNames, numFields);
+}
+
+void MlxlinkAmBerCollector::handleSltrClLcsrgGroup(vector<AmberField>& fields, u_int32_t lane)
+{
+    const char* fieldNames[] = {
+      "lcsrg4_9",  "lcsrg4_8",   "lcsrg3_13", "lcsrg3_12", "lcsrg3_11", "lcsrg3_8",  "lcsrg2_5",  "lcsrg2_0",
+      "lcsrg1_26", "lcsrg1_25",  "lcsrg1_24", "lcsrg1_23", "lcsrg1_22", "lcsrg1_18", "lcsrg1_16", "lcsrg1_15",
+      "lcsrg1_14", "lcsrg1_13",  "lcsrg1_12", "lcsrg1_11", "lcsrg1_10", "lcsrg0_29", "lcsrg0_22", "lcsrg0_3",
+      "lcsrg7_27", "lcsrg7_26",  "lcsrg7_21", "lcsrg7_20", "lcsrg7_19", "lcsrg7_18", "lcsrg7_17", "lcsrg7_16",
+      "lcsrg7_15", "lcsrg7_14",  "lcsrg6_27", "lcsrg6_26", "lcsrg6_25", "lcsrg6_24", "lcsrg6_23", "lcsrg6_22",
+      "lcsrg6_21", "lcsrg6_20",  "lcsrg6_19", "lcsrg6_18", "lcsrg6_7",  "lcsrg6_6",  "lcsrg6_5",  "lcsrg6_4",
+      "lcsrg5_29", "lcsrg5_13",  "lcsrg5_1",  "lcsrg4_15", "lcsrg4_14", "lcsrg4_13", "lcsrg4_12", "lcsrg4_11",
+      "lcsrg11_1", "lcsrg10_30", "lcsrg8_8",  "lcsrg8_7",  "lcsrg8_6",  "lcsrg8_5",  "lcsrg8_4",  "lcsrg8_3",
+      "lcsrg8_2",  "lcsrg8_1",   "lcsrg8_0",  "lcsrg7_31", "lcsrg7_30", "lcsrg7_29", "lcsrg7_28",
+    };
+    const u_int32_t numFields = sizeof(fieldNames) / sizeof(fieldNames[0]);
+    pushSltrClFields(fields, lane, fieldNames, numFields);
+}
+
 void MlxlinkAmBerCollector::getSltrGen8Fields(vector<AmberField>& fields, u_int32_t measType)
 {
     // Query SLTR for each lane with the specified test type
@@ -1575,6 +1662,12 @@ void MlxlinkAmBerCollector::getSltrGen8Fields(vector<AmberField>& fields, u_int3
             handleSltrAbGroup(fields, lane);
             handleSltrYGroup(fields, lane);
         }
+        else if (measType == SLTR_MEAS_TYPE_CAUSE_LIST)
+        {
+            handleSltrClP1Group(fields, lane);
+            handleSltrClP0Group(fields, lane);
+            handleSltrClLcsrgGroup(fields, lane);
+        }
     }
 }
 
@@ -1598,7 +1691,7 @@ vector<AmberField> MlxlinkAmBerCollector::getSerdesGen8NVLink()
             // getSltrGen8Fields(fields, SLTR_MEAS_TYPE_PERIODIC_NON_DESTRUCTIVE_PART3);
             // getSltrGen8Fields(fields, SLTR_MEAS_TYPE_PERIODIC_NON_DESTRUCTIVE_PART4);
             getSltrGen8Fields(fields, SLTR_MEAS_TYPE_NON_PERIODIC_NON_DESTRUCTIVE);
-            // getSltrGen8Fields(fields, SLTR_MEAS_TYPE_CAUSE_LIST);
+            getSltrGen8Fields(fields, SLTR_MEAS_TYPE_CAUSE_LIST);
         }
     }
     catch (const std::exception& exc)
@@ -1624,6 +1717,7 @@ void MlxlinkAmBerCollector::initCableIdentifier(u_int32_t cableIdentifier)
         case IDENTIFIER_SFP_DD:
         case IDENTIFIER_QSFP_DD:
         case IDENTIFIER_OSFP:
+        case IDENTIFIER_C2C:
         case IDENTIFIER_DSFP:
         case IDENTIFIER_QSFP_CMIS:
             _isCmisCable = true;
@@ -1859,6 +1953,7 @@ string MlxlinkAmBerCollector::getDateCode(u_int64_t dateCode)
     string dateCodeStr;
     u_int64_t dateCodeRev = 0;
     u_int64_t tmpDateCode = dateCode;
+    bool onlySpaces = true;
 
     while (tmpDateCode)
     {
@@ -1873,6 +1968,10 @@ string MlxlinkAmBerCollector::getDateCode(u_int64_t dateCode)
             char ch = (char)(dateCodeRev >> i);
             if (ch)
             {
+                if (ch != ' ')
+                {
+                    onlySpaces = false;
+                }
                 dateCodeStr.push_back(ch);
                 if (i % 16 == 0)
                 {
@@ -1888,6 +1987,11 @@ string MlxlinkAmBerCollector::getDateCode(u_int64_t dateCode)
     else
     {
         dateCodeStr = NA_FIELD_VALUE;
+    }
+
+    if (onlySpaces)
+    {
+        return NA_FIELD_VALUE;
     }
 
     return dateCodeStr;
