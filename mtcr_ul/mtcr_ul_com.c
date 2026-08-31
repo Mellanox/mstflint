@@ -117,6 +117,7 @@
 #include "fwctrl_ioctl.h"
 #include "kernel/mst.h"
 #include "tools_dev_types.h"
+#include "mft_core/device/device_info/device_properties_api.h"
 #ifdef ENABLE_VFIO
 #include "vfio_driver_access/VFIODriverAccessWrapperC.h"
 #endif
@@ -5513,6 +5514,7 @@ int read_device_id(mfile* mf, u_int32_t* device_id)
     {
         *device_id = nvml_get_device_id(mf->nvml_device);
         mf->hw_dev_id = (*device_id & 0xffff);
+        mf->functional_device_id = resolve_functional_device_id(mf->hw_dev_id, mf->rev_id, mf->pci_device_id);
         return 4;
     }
 #endif
@@ -5537,6 +5539,7 @@ int read_device_id(mfile* mf, u_int32_t* device_id)
     }
     
     mf->hw_dev_id = (*device_id & 0xffff);
+    mf->functional_device_id = resolve_functional_device_id(mf->hw_dev_id, mf->rev_id, mf->pci_device_id);
     DBG_PRINTF("MTCR:read_device_id: mf->hw_dev_id:0x%x\n", mf->hw_dev_id);
     return rc;
 }

@@ -981,40 +981,13 @@ int icmd_send_command_enhanced(mfile* mf, IN int opcode, INOUT void* data, IN in
     }
 }
 
-/*
- * Resolve the functional device id that keys the device-properties catalog, and
- * reject the devices whose iCMD addresses cannot be looked up there: an id that
- * is missing from the catalog would leave every address at 0 and fail later on
- * a CR access at address 0.
- *
- * The catalog describes the iCMD registers only for the devices that have an
- * iCMD gateway, so the semaphore address doubles as the presence test. It is
- * read with the string accessor because get_property_as_* returns 0 both for a
- * missing property and for a legitimate zero.
- */
-static int icmd_get_catalog_device_id(mfile* mf, u_int32_t hw_id, u_int32_t* ptr_device_id)
-{
-    u_int32_t device_id = resolve_functional_device_id(hw_id, mf->rev_id, mf->pci_device_id);
-
-    if (get_property_as_cstring(device_id, PROP_SEMAPHORE_ADDRESS)[0] == '\0')
-    {
-        DBG_PRINTF("icmd: device id 0x%x has no iCMD properties in the device catalog.\n", device_id);
-        return ME_ICMD_NOT_SUPPORTED;
-    }
-
-    *ptr_device_id = device_id;
-    return ME_OK;
-}
-
 static int icmd_init_cr(mfile* mf)
 {
     int icmd_ver;
-    int prop_rc = ME_OK;
     u_int32_t hcr_address;
     u_int32_t cmd_ptr_addr;
     u_int32_t reg = 0x0;
     u_int32_t hw_id = 0x0;
-    u_int32_t device_id = 0x0;
     mf->icmd.syndrome = 0;
 
 #ifndef __FreeBSD__
@@ -1066,21 +1039,31 @@ static int icmd_init_cr(mfile* mf)
             break;
 
         default:
-            prop_rc = icmd_get_catalog_device_id(mf, hw_id, &device_id);
-            if (prop_rc != ME_OK)
+        {
+            u_int32_t did = mf->functional_device_id;
+            if (is_cable(did) || (is_linkx(did) && (did != ArcusESddv && !is_retimer(did))))
             {
-                return prop_rc;
+                DBG_PRINTF("icmd_init_cr: ICMD not supported for device type.\n");
+                return ME_ICMD_NOT_SUPPORTED;
             }
-            cmd_ptr_addr = get_property_as_uint(device_id, PROP_CMD_PTR_ADDRESS);
+            /* get_property_as_* returns 0 for a missing entry, which would leave
+               every address at 0 and fail later on a CR access at address 0. */
+            if (get_property_as_cstring(did, PROP_DEVICE_NAME)[0] == '\0')
+            {
+                DBG_PRINTF("icmd: device id 0x%x not in property catalog.\n", did);
+                return ME_ICMD_NOT_SUPPORTED;
+            }
+            cmd_ptr_addr = get_property_as_uint(did, PROP_CMD_PTR_ADDRESS);
             /* hcr_address is the "version address" */
-            hcr_address = get_property_as_uint(device_id, PROP_VERSION_ADDRESS);
-            mf->icmd.cmd_ptr_bitlen = get_property_as_int(device_id, PROP_CMD_PTR_BITLEN);
-            mf->icmd.version_bit_offset = get_property_as_int(device_id, PROP_VERSION_BIT_OFFSET);
-            mf->icmd.version_bitlen = get_property_as_int(device_id, PROP_VERSION_BITLEN);
-            mf->icmd.semaphore_addr = get_property_as_int(device_id, PROP_SEMAPHORE_ADDRESS);
-            mf->icmd.static_cfg_not_done_addr = get_property_as_int(device_id, PROP_STATIC_CFG_NOT_DONE_ADDRESS);
-            mf->icmd.static_cfg_not_done_offs = get_property_as_int(device_id, PROP_STATIC_CFG_NOT_DONE_OFFSET);
+            hcr_address = get_property_as_uint(did, PROP_VERSION_ADDRESS);
+            mf->icmd.cmd_ptr_bitlen = get_property_as_int(did, PROP_CMD_PTR_BITLEN);
+            mf->icmd.version_bit_offset = get_property_as_int(did, PROP_VERSION_BIT_OFFSET);
+            mf->icmd.version_bitlen = get_property_as_int(did, PROP_VERSION_BITLEN);
+            mf->icmd.semaphore_addr = get_property_as_int(did, PROP_SEMAPHORE_ADDRESS);
+            mf->icmd.static_cfg_not_done_addr = get_property_as_int(did, PROP_STATIC_CFG_NOT_DONE_ADDRESS);
+            mf->icmd.static_cfg_not_done_offs = get_property_as_int(did, PROP_STATIC_CFG_NOT_DONE_OFFSET);
             break;
+        }
     }
     mf->icmd.max_cmd_size = ICMD_MAX_CMD_SIZE;
     icmd_ver = get_version(mf, hcr_address);
@@ -1122,9 +1105,7 @@ static int icmd_init_cr(mfile* mf)
 
 static int icmd_init_vcr_crspace_addr(mfile* mf)
 {
-    int rc = ME_OK;
     u_int32_t hw_id = 0x0;
-    u_int32_t device_id = 0x0;
 
     /* get device specific addresses */
     if (read_device_id(mf, &hw_id) != 4)
@@ -1147,14 +1128,24 @@ static int icmd_init_vcr_crspace_addr(mfile* mf)
             break;
 
         default:
-            rc = icmd_get_catalog_device_id(mf, hw_id, &device_id);
-            if (rc != ME_OK)
+        {
+            u_int32_t did = mf->functional_device_id;
+            if (is_cable(did) || ((is_linkx(did) || is_retimer(did)) && did != ArcusESddv))
             {
-                return rc;
+                DBG_PRINTF("icmd_init_vcr_crspace: not supported for this device.\n");
+                return ME_ICMD_NOT_SUPPORTED;
             }
-            mf->icmd.static_cfg_not_done_addr = get_property_as_int(device_id, PROP_STATIC_CFG_NOT_DONE_ADDRESS);
-            mf->icmd.static_cfg_not_done_offs = get_property_as_int(device_id, PROP_STATIC_CFG_NOT_DONE_OFFSET);
+            /* MFT does not check this. Without it a device that is missing from
+               the catalog is accepted with the address left at 0. */
+            if (get_property_as_cstring(did, PROP_DEVICE_NAME)[0] == '\0')
+            {
+                DBG_PRINTF("icmd: device id 0x%x not in property catalog.\n", did);
+                return ME_ICMD_NOT_SUPPORTED;
+            }
+            mf->icmd.static_cfg_not_done_addr = get_property_as_int(did, PROP_STATIC_CFG_NOT_DONE_ADDRESS);
+            mf->icmd.static_cfg_not_done_offs = get_property_as_int(did, PROP_STATIC_CFG_NOT_DONE_OFFSET);
             break;
+        }
     }
     return ME_OK;
 }
