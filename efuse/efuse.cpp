@@ -148,6 +148,28 @@ struct FuseReading
     double voltage_mv;
 };
 
+// Device-neutral view of the MRFV fields this tool consumes. The HCA and switch PRM
+// databases declare MRFV as distinct C types whose layouts may diverge, so a reading is
+// copied here by the database-specific query and decoded only once.
+struct MrfvEntry
+{
+    u_int8_t fuse_id;
+    u_int8_t v;
+    u_int8_t fm;
+    // RAW_AND_VALUE layout
+    u_int8_t value_valid;
+    u_int32_t value_base;
+    u_int8_t value_exponent;
+    u_int32_t raw_fuses;
+    u_int8_t raw_fuses_highest_bit;
+#ifdef EFUSE_CVB_ENABLED
+    // CVB layout
+    u_int8_t selector;
+    u_int8_t selector_cause;
+    u_int16_t cvb_voltage;
+#endif // EFUSE_CVB_ENABLED
+};
+
 // [CVB-DISABLED] cx9 now uses the RAW_AND_VALUE MRFV layout. The CVB layout code paths
 // are gated behind EFUSE_CVB_ENABLED (not deleted) so they can be re-enabled if a future
 // device needs the MRFV CVB layout. Define EFUSE_CVB_ENABLED to restore.
@@ -168,15 +190,13 @@ static const char* cvb_rail_name(int voltage_type)
 }
 #endif // EFUSE_CVB_ENABLED
 
-static void decode_raw_and_value(const struct reg_access_switch_MRFV_ext& mrfv,
-                                 const std::string& rail,
-                                 int inst,
-                                 std::vector<FuseReading>& readings)
+static void
+  decode_raw_and_value(const MrfvEntry& mrfv, const std::string& rail, int inst, std::vector<FuseReading>& readings)
 {
-    uint8_t value_valid = mrfv.data.MRFV_RAW_AND_VALUE_ext.value_valid;
-    uint32_t value_base_raw = mrfv.data.MRFV_RAW_AND_VALUE_ext.value_base;
-    uint8_t value_exponent_raw = mrfv.data.MRFV_RAW_AND_VALUE_ext.value_exponent;
-    uint8_t raw_fuses_highest_bit = mrfv.data.MRFV_RAW_AND_VALUE_ext.raw_fuses_highest_bit;
+    uint8_t value_valid = mrfv.value_valid;
+    uint32_t value_base_raw = mrfv.value_base;
+    uint8_t value_exponent_raw = mrfv.value_exponent;
+    uint8_t raw_fuses_highest_bit = mrfv.raw_fuses_highest_bit;
 
     if (raw_fuses_highest_bit > 31)
     {
@@ -185,7 +205,7 @@ static void decode_raw_and_value(const struct reg_access_switch_MRFV_ext& mrfv,
         return;
     }
 
-    uint32_t raw_fuses = EXTRACT(mrfv.data.MRFV_RAW_AND_VALUE_ext.raw_fuses, 0, raw_fuses_highest_bit + 1);
+    uint32_t raw_fuses = EXTRACT(mrfv.raw_fuses, 0, raw_fuses_highest_bit + 1);
 
     LOG.Debug("fuse_id=" + std::to_string(mrfv.fuse_id) + " instance_id=" + std::to_string(inst) +
               " value_valid=" + std::to_string(value_valid) + " value_base=" + std::to_string(value_base_raw) +
@@ -204,51 +224,115 @@ static void decode_raw_and_value(const struct reg_access_switch_MRFV_ext& mrfv,
 }
 
 #ifdef EFUSE_CVB_ENABLED
-static void decode_cvb(const struct reg_access_switch_MRFV_ext& mrfv,
+static void decode_cvb(const MrfvEntry& mrfv,
                        const std::string& rail,
                        int inst,
                        int voltage_type,
                        std::vector<FuseReading>& readings)
 {
-    const auto& d = mrfv.data.MRFV_CVB_ext;
     LOG.Debug("fuse_id=" + std::to_string(mrfv.fuse_id) + " instance_id=" + std::to_string(inst) +
-              " voltage_type=" + std::to_string(voltage_type) + " selector=" + std::to_string(d.selector) +
-              " selector_cause=" + std::to_string(d.selector_cause) + " cvb_voltage=" + std::to_string(d.cvb_voltage));
+              " voltage_type=" + std::to_string(voltage_type) + " selector=" + std::to_string(mrfv.selector) +
+              " selector_cause=" + std::to_string(mrfv.selector_cause) +
+              " cvb_voltage=" + std::to_string(mrfv.cvb_voltage));
 
-    if (d.selector != 1 || d.selector_cause != 0)
+    if (mrfv.selector != 1 || mrfv.selector_cause != 0)
     {
         LOG.Debug("Skipping CVB reading: selector/selector_cause not ready");
         return;
     }
-    // Per switch PRM, MRFV CVB layout reports cvb_voltage directly in mV (unlike the
+    // Per PRM, MRFV CVB layout reports cvb_voltage directly in mV (unlike the
     // RAW_AND_VALUE layout, which encodes base * 10^exponent volts and is converted to mV above).
-    readings.push_back({rail, instance_label(inst), false, static_cast<double>(d.cvb_voltage)});
+    readings.push_back({rail, instance_label(inst), false, static_cast<double>(mrfv.cvb_voltage)});
 }
 #endif // EFUSE_CVB_ENABLED
 
-// Query one MRFV reading and append the decoded value to `readings`.
-// [CVB-DISABLED] Only the RAW_AND_VALUE layout is active. To restore the CVB layout,
-// re-add `bool is_cvb, int voltage_type` parameters and the EFUSE_CVB_ENABLED branches below.
-static void query_one_fuse(mfile* mf, const FuseConfig& fuse, int inst, std::vector<FuseReading>& readings)
+// Query MRFV through the switch PRM database and flatten the reading into `entry`.
+// [CVB-DISABLED] To restore the CVB layout, re-add the `bool is_cvb, int voltage_type` parameters,
+// set `mrfv.data.MRFV_CVB_ext.voltage_type` before the query, and gate each layout's copy on
+// `is_cvb` - `data` is a union and only the layout selected by fuse_id is unpacked.
+static reg_access_status_t query_mrfv_switch(mfile* mf, int fuse_id, int inst, MrfvEntry& entry)
 {
     struct reg_access_switch_MRFV_ext mrfv;
     memset(&mrfv, 0, sizeof(mrfv));
-    mrfv.fuse_id = static_cast<u_int8_t>(fuse.fuse_id);
+    mrfv.fuse_id = static_cast<u_int8_t>(fuse_id);
     mrfv.instance_id = static_cast<u_int8_t>(inst);
-#ifdef EFUSE_CVB_ENABLED
-    if (is_cvb)
+
+    reg_access_status_t rc = reg_access_mrfv_switch(mf, REG_ACCESS_METHOD_GET, &mrfv);
+    if (rc != ME_OK)
     {
-        mrfv.data.MRFV_CVB_ext.voltage_type = static_cast<u_int8_t>(voltage_type);
+        return rc;
     }
+
+    entry.fuse_id = mrfv.fuse_id;
+    entry.v = mrfv.v;
+    entry.fm = mrfv.fm;
+    entry.value_valid = mrfv.data.MRFV_RAW_AND_VALUE_ext.value_valid;
+    entry.value_base = mrfv.data.MRFV_RAW_AND_VALUE_ext.value_base;
+    entry.value_exponent = mrfv.data.MRFV_RAW_AND_VALUE_ext.value_exponent;
+    entry.raw_fuses = mrfv.data.MRFV_RAW_AND_VALUE_ext.raw_fuses;
+    entry.raw_fuses_highest_bit = mrfv.data.MRFV_RAW_AND_VALUE_ext.raw_fuses_highest_bit;
+#ifdef EFUSE_CVB_ENABLED
+    entry.selector = mrfv.data.MRFV_CVB_ext.selector;
+    entry.selector_cause = mrfv.data.MRFV_CVB_ext.selector_cause;
+    entry.cvb_voltage = mrfv.data.MRFV_CVB_ext.cvb_voltage;
 #endif // EFUSE_CVB_ENABLED
+    return rc;
+}
+
+// Query MRFV through the HCA PRM database and flatten the reading into `entry`.
+// [CVB-DISABLED] See query_mrfv_switch for how to restore the CVB layout.
+static reg_access_status_t query_mrfv_hca(mfile* mf, int fuse_id, int inst, MrfvEntry& entry)
+{
+    struct reg_access_hca_MRFV_ext mrfv;
+    memset(&mrfv, 0, sizeof(mrfv));
+    mrfv.fuse_id = static_cast<u_int8_t>(fuse_id);
+    mrfv.instance_id = static_cast<u_int8_t>(inst);
+
+    reg_access_status_t rc = reg_access_mrfv(mf, REG_ACCESS_METHOD_GET, &mrfv);
+    if (rc != ME_OK)
+    {
+        return rc;
+    }
+
+    entry.fuse_id = mrfv.fuse_id;
+    entry.v = mrfv.v;
+    entry.fm = mrfv.fm;
+    entry.value_valid = mrfv.data.MRFV_RAW_AND_VALUE_ext.value_valid;
+    entry.value_base = mrfv.data.MRFV_RAW_AND_VALUE_ext.value_base;
+    entry.value_exponent = mrfv.data.MRFV_RAW_AND_VALUE_ext.value_exponent;
+    entry.raw_fuses = mrfv.data.MRFV_RAW_AND_VALUE_ext.raw_fuses;
+    entry.raw_fuses_highest_bit = mrfv.data.MRFV_RAW_AND_VALUE_ext.raw_fuses_highest_bit;
+#ifdef EFUSE_CVB_ENABLED
+    entry.selector = mrfv.data.MRFV_CVB_ext.selector;
+    entry.selector_cause = mrfv.data.MRFV_CVB_ext.selector_cause;
+    entry.cvb_voltage = mrfv.data.MRFV_CVB_ext.cvb_voltage;
+#endif // EFUSE_CVB_ENABLED
+    return rc;
+}
+
+// Retimers are described by the switch PRM database; everything else uses the HCA one.
+static bool uses_switch_mrfv_layout(dm_dev_id_t dev_type)
+{
+    return dm_dev_is_switch(dev_type) || dm_dev_is_retimer(dev_type);
+}
+
+// Query one MRFV reading and append the decoded value to `readings`.
+// [CVB-DISABLED] Only the RAW_AND_VALUE layout is active. To restore the CVB layout,
+// re-add `bool is_cvb, int voltage_type` parameters and the `#if 0` branches below.
+static void
+  query_one_fuse(mfile* mf, dm_dev_id_t dev_type, const FuseConfig& fuse, int inst, std::vector<FuseReading>& readings)
+{
+    MrfvEntry mrfv;
+    memset(&mrfv, 0, sizeof(mrfv));
 
     LOG.Debug("Querying fuse_id=" + std::to_string(fuse.fuse_id) + " instance_id=" + std::to_string(inst));
 
-    reg_access_status_t rc = reg_access_mrfv_switch(mf, REG_ACCESS_METHOD_GET, &mrfv);
+    reg_access_status_t rc = uses_switch_mrfv_layout(dev_type) ? query_mrfv_switch(mf, fuse.fuse_id, inst, mrfv) :
+                                                                 query_mrfv_hca(mf, fuse.fuse_id, inst, mrfv);
 
     if (rc != ME_OK)
     {
-        LOG.Error("reg_access_mrfv_switch failed for fuse_id=" + std::to_string(fuse.fuse_id) +
+        LOG.Error("MRFV query failed for fuse_id=" + std::to_string(fuse.fuse_id) +
                   " instance_id=" + std::to_string(inst) + " error=" + std::to_string(rc));
         return;
     }
@@ -290,9 +374,12 @@ static void query_one_fuse(mfile* mf, const FuseConfig& fuse, int inst, std::vec
 #endif // EFUSE_CVB_ENABLED
 }
 
-static std::vector<FuseReading> read_fuse_values(mfile* mf, const DeviceConfig& config)
+static std::vector<FuseReading> read_fuse_values(mfile* mf, dm_dev_id_t dev_type, const DeviceConfig& config)
 {
     std::vector<FuseReading> readings;
+
+    LOG.Debug(std::string("device_type=") + dm_dev_type2str(dev_type) +
+              " using MRFV layout: " + (uses_switch_mrfv_layout(dev_type) ? "switch" : "hca"));
 
     // [CVB-DISABLED] Only the RAW_AND_VALUE layout is active. To restore the CVB layout,
     // dispatch on `fuse.fuse_id == 0` and iterate `fuse.voltage_types` per PRM.
@@ -300,7 +387,7 @@ static std::vector<FuseReading> read_fuse_values(mfile* mf, const DeviceConfig& 
     {
         for (int inst : fuse.instance_ids)
         {
-            query_one_fuse(mf, fuse, inst, readings);
+            query_one_fuse(mf, dev_type, fuse, inst, readings);
         }
     }
 
@@ -461,7 +548,7 @@ int EfuseTool::Run()
             goto cleanup;
         }
 
-        std::vector<FuseReading> readings = read_fuse_values(mf, device_config);
+        std::vector<FuseReading> readings = read_fuse_values(mf, dev_type, device_config);
         print_fuse_readings(dev_type, hw_dev_id, chip_rev, part_number, readings);
         ret = 0;
     }
