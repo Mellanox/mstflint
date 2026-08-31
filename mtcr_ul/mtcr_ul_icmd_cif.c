@@ -59,7 +59,7 @@
 
 /* _DEBUG_MODE   // un-comment this to enable debug prints */
 
-#define ICMD_DEFAULT_TIMEOUT 10000
+#define ICMD_DEFAULT_TIMEOUT 40000
 /* Kept for the devices that are not described by the device-properties
    catalog: ConnectIB and the Amos gearbox. Every other device takes these
    values from the catalog. */
