@@ -51,24 +51,15 @@ libdevice_info_la_LIBADD = \
     $(top_builddir)/mft_core/mft_core_utils/logger/liblogger.la \
     $(top_builddir)/mft_core/mft_core_utils/mft_exceptions/libmftexceptions.la
 
-# Build-host code generator (not installed). Uses jsoncpp - system if
-# available, otherwise the vendored ext_libs/json fallback selected in
-# configure.ac. When using the vendored copy we compile its .cpp files
-# directly into the generator: the top-level SUBDIRS ordering builds
-# mft_core before ext_libs, so libjson.la is not yet available here.
 noinst_PROGRAMS = generate_device_properties
 generate_device_properties_CPPFLAGS = $(JSON_CFLAGS)
-if USE_LOCAL_JSON
-generate_device_properties_SOURCES = \
-    generate_device_properties.cpp \
-    $(top_srcdir)/ext_libs/json/json_reader.cpp \
-    $(top_srcdir)/ext_libs/json/json_value.cpp \
-    $(top_srcdir)/ext_libs/json/json_writer.cpp
-generate_device_properties_LDADD =
-else
 generate_device_properties_SOURCES = generate_device_properties.cpp
 generate_device_properties_LDADD = $(JSON_LIBS)
-endif
+generate_device_properties_DEPENDENCIES = $(JSON_LIBS)
+
+# Build libjson.la on demand, so `make -C mft_core` works before ext_libs is built.
+$(top_builddir)/ext_libs/json/libjson.la:
+	cd $(top_builddir)/ext_libs/json && $(MAKE) $(AM_MAKEFLAGS) libjson.la
 
 DEVICE_PROPS_GENERATOR = generate_device_properties$(EXEEXT)
 DEVICE_PROPS_JSON_DIR = $(srcdir)/json
