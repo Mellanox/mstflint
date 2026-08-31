@@ -58,7 +58,7 @@
 
 /* _DEBUG_MODE   // un-comment this to enable debug prints */
 
-#define ICMD_DEFAULT_TIMEOUT 10000
+#define ICMD_DEFAULT_TIMEOUT 40000
 #define STAT_CFG_NOT_DONE_ADDR_CIB 0xb0004
 #define STAT_CFG_NOT_DONE_ADDR_CX4 0xb0004
 #define STAT_CFG_NOT_DONE_ADDR_SW_IB 0x80010
