@@ -32,6 +32,17 @@
  *
  */
 
+/* configure builds C as -std=c11 with _POSIX_C_SOURCE set, which turns
+   __BSD_VISIBLE off and hides the BSD-only declarations in <sys/memrange.h>,
+   <sys/agpio.h> and <dev/pci/pcireg.h>. Re-enable them, and raise
+   __POSIX_VISIBLE to POSIX.1-2008 for getline(). */
+#define __BSD_VISIBLE 1
+#undef _KERNEL
+#ifdef __POSIX_VISIBLE
+#undef __POSIX_VISIBLE
+#endif
+#define __POSIX_VISIBLE 200809L
+
 #include <sys/types.h>
 #include <sys/memrange.h>
 #include <sys/mman.h>
@@ -52,6 +63,7 @@
 #include "common/bit_slice.h"
 #include "common/tools_time.h"
 #include <stdlib.h>
+#include <malloc_np.h>
 #include "tools_dev_types.h"
 #include "mft_core/device/device_info/device_properties_api.h"
 
@@ -177,7 +189,7 @@ void mtcr_connectx_flush(void* ptr, int fdlock)
     *((u_int32_t*)((char*)ptr + 0xf0380)) = 0x0;
     do
     {
-        asm volatile("" ::: "memory");
+        __asm__ volatile("" ::: "memory");
         value = __be32_to_cpu(*((u_int32_t*)((char*)ptr + 0xf0380)));
     } while (value);
     rc = _flock_int(fdlock, LOCK_UN);
@@ -3009,7 +3021,7 @@ int get_dma_pages(mfile* mf, struct mtcr_page_info* page_info, int page_amount)
     for (page_counter = 0; page_counter < page_amount; page_counter++)
     {
         /* Allocate the buffer. */
-        char* current_page = aligned_alloc(PAGE_SIZE, PAGE_SIZE);
+        char* current_page = __aligned_alloc(PAGE_SIZE, PAGE_SIZE);
 
         /* Page allocated ? */
         if (!current_page)

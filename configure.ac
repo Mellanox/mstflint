@@ -796,11 +796,12 @@ AM_CONDITIONAL([USE_LOCAL_SQLITE], [test "$SQLITE_SYSTEM_AVAILABLE" = no])
 CFLAGS="$CFLAGS -DMST_UL"
 CXXFLAGS="$CXXFLAGS -DMST_UL"
 
+CFLAGS="$CFLAGS -std=c11 -D_XOPEN_SOURCE=700 -D_POSIX_C_SOURCE=200809L -D_DEFAULT_SOURCE"
+
 CCVER=`${CC} --version | grep ${CC} | grep -E -o "( )[[4-9]]\.[[0-9]]\.[[0-9]]" | head -1`
 AC_MSG_NOTICE(Compiler: ${CC}; version: ${CCVER};)
 if test ${CCVER} \> 5.0.0 ; then
     CXXFLAGS="$CXXFLAGS -std=c++14"
-    CFLAGS="$CFLAGS -fgnu89-inline"
 elif test ${CCVER} \> 4.7.2 ; then
     CXXFLAGS="$CXXFLAGS -std=c++11"
 fi
