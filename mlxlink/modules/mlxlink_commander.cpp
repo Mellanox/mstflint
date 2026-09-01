@@ -4226,7 +4226,7 @@ void MlxlinkCommander::showEye()
             showEyeTitle += " (PCIe)";
         }
         setPrintTitle(_eyeOpeningInfoCmd, showEyeTitle, EYE_OPENING_INFO_LAST);
-        if (_devID == DeviceSpectrum6)
+        if (_devID == DeviceSpectrum6 && !_userInput._pcie)
         {
             prepareSpc6EyeInfo(numOfLanesToUse);
         }
