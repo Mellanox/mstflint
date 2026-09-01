@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED
+ * Copyright (c) 2013-2026 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -54,6 +54,7 @@ vector<u_int8_t> DpaAppRemoveMetadata::Serialize()
     CPUTOn(_keypairUUID, sizeof(_keypairUUID) / 4);
     memcpy(serializedData.data() + DPA_APP_UUID_SIZE, _keypairUUID, KEY_PAIR_UUID_SIZE);
     serializedData[REMOVE_ALL_OFFSET] |= (_removeAll ? 1 : 0);
+    CPUTOn(serializedData.data() + REMOVE_ALL_OFFSET, 1);
 
     return serializedData;
 }
@@ -64,5 +65,8 @@ void DpaAppRemoveMetadata::Deserialize(vector<u_int8_t> buf)
     CPUTOn(_dpaAppUUID, sizeof(_dpaAppUUID) / 4);
     memcpy(_keypairUUID, buf.data() + DPA_APP_UUID_SIZE, KEY_PAIR_UUID_SIZE);
     CPUTOn(_keypairUUID, sizeof(_keypairUUID) / 4);
-    _removeAll = buf[REMOVE_ALL_OFFSET] & 1;
+    u_int32_t removeAllDword = 0;
+    memcpy(&removeAllDword, buf.data() + REMOVE_ALL_OFFSET, sizeof(removeAllDword));
+    CPUTOn(&removeAllDword, 1);
+    _removeAll = removeAllDword & 1;
 }
