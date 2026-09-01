@@ -2493,9 +2493,9 @@ void MlxlinkCommander::getPrecodingStatus()
     {
         // in case PLTC is not supported, do nothing and continue
     }
-    setPrintVal(_operatingInfoCmd, "TX Precoding Status",
+    setPrintVal(_operatingInfoCmd, "Tx Precoding Status",
                 getStrByValue(txPrecodingOper, _mlxlinkMaps->_precodingOperStatus), txColor, !_prbsTestMode, _linkUP);
-    setPrintVal(_operatingInfoCmd, "RX Precoding Status",
+    setPrintVal(_operatingInfoCmd, "Rx Precoding Status",
                 getStrByValue(rxPrecodingOper, _mlxlinkMaps->_precodingOperStatus), rxColor, !_prbsTestMode, _linkUP);
 }
 
