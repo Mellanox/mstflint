@@ -2665,7 +2665,6 @@ void BurnSubCommand::updateBurnParams()
     _burnParams.use_cpu_utilization = _flintParams.use_cpu_utilization;
 }
 
-#define VERSION_FORMAT(minor) minor < 100 ? "%d.%d.%04d" : "%d.%04d.%04d"
 bool BurnSubCommand::checkFwVersion(bool CreateFromImgInfo, u_int16_t fw_ver0, u_int16_t fw_ver1, u_int16_t fw_ver2)
 {
     FwVersion current = FwOperations::createFwVersion(&_devInfo.fw_info);
