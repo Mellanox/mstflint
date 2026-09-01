@@ -103,7 +103,6 @@ void MlxlinkCommander::updatePortInfo()
 
     labelToLocalPort();
     validatePortType(_userInput._portType);
-    updateSwControlStatus();
     updateNvlinkModeBStatus();
     updateCpoStatus();
     if (!_userInput._pcie)
@@ -111,6 +110,7 @@ void MlxlinkCommander::updatePortInfo()
         checkValidFW();
     }
 
+    updateSwControlStatus();
     updateBonusPortStatus();
 
     if (!(_mf->tp == MST_PCICONF && (dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))))
