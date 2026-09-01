@@ -302,7 +302,7 @@ static int mtcr_connectx_flush(void* ptr, int fdlock)
     *((u_int32_t*)((char*)ptr + 0xf0380)) = 0x0;
     do
     {
-        asm volatile("" ::: "memory");
+        __asm__ volatile("" ::: "memory");
         u_int32_t tmp = *((u_int32_t*)((char*)ptr + 0xf0380));
         value = __be32_to_cpu(tmp);
     } while (value);
