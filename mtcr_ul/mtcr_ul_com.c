@@ -5434,6 +5434,10 @@ static int check_zf_through_memory(mfile* mf)
             gis_address = 0x152080;
             break;
 
+        case DeviceSpectrum6_HwId:
+            gis_address = 0x155004;
+            break;
+
         default:
             return 0; /* Device does not support Zombiefish mode */
     }
@@ -5444,7 +5448,10 @@ static int check_zf_through_memory(mfile* mf)
         DBG_PRINTF("-E- Failed to read global_image_status from CR space (BAR0).\n");
         return 0;
     }
+
     gis = EXTRACT(gis, 0, 16); /* Extract the first 16 bits */
+    DBG_PRINTF("check_zf_through_memory: gis_address: 0x%zx, gis: 0x%x\n", gis_address, gis);
+
     return gis == AUTHENTICATION_FAILURE;
 }
 
@@ -5467,13 +5474,15 @@ static int check_zf_through_vsc(mfile* mf)
     uint32_t in_recovery = EXTRACT(first_dword, 1, 1);       /* Extract bit 1 */
     uint32_t flash_control_vld = EXTRACT(first_dword, 2, 1); /* Extract bit 2 */
     uint32_t initializing = EXTRACT(first_dword, 0, 1);      /* Extract bit 0 */
+    DBG_PRINTF("Reading from VSC space: 0x%x. in_recovery: %u, flash_control_vld: %u, initializing: %u\n",
+               mf->address_space, in_recovery, flash_control_vld, initializing);
 
     mf->vsc_recovery_space_flash_control_vld = flash_control_vld;
     mset_addr_space(mf, prev_address_space);
 
     if (in_recovery && initializing)
     {
-        DBG_PRINTF("Device with HW ID: %u is in ZombieFish mode. flash_control_vld: %u\n", mf->device_hw_id, flash_control_vld);
+        DBG_PRINTF("Device with HW ID: 0x%x is in ZombieFish mode. flash_control_vld: %u\n", mf->device_hw_id, flash_control_vld);
         return 1;
     }
 

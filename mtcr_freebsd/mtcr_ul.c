@@ -3222,6 +3222,10 @@ static int check_zf_through_memory(mfile* mf)
             gis_address = 0x152080;
             break;
 
+        case DeviceSpectrum6_HwId:
+            gis_address = 0x155004;
+            break;
+
         default:
             return 0; /* Device does not support Zombiefish mode */
     }
@@ -3283,7 +3287,8 @@ int is_zombiefish_device(mfile* mf)
     }
     if ((mf->device_hw_id != DeviceConnectX8_HwId) && (mf->device_hw_id != DeviceConnectX8_Pure_PCIe_Switch_HwId) && (mf->device_hw_id != DeviceQuantum3_HwId) &&
         (mf->device_hw_id != DeviceConnectX9_HwId) && (mf->device_hw_id != DeviceNVLink6_Switch_HwId) && (mf->device_hw_id != DeviceConnectX7_HwId) &&
-        (mf->device_hw_id != DeviceBlueField3_HwId) && (mf->device_hw_id != DeviceConnectX9_Pure_PCIe_Switch_HwId))
+        (mf->device_hw_id != DeviceBlueField3_HwId) && (mf->device_hw_id != DeviceConnectX9_Pure_PCIe_Switch_HwId) &&
+        (mf->device_hw_id != DeviceSpectrum6_HwId))
     {
         return 0;
     }
