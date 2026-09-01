@@ -1715,6 +1715,10 @@ int mtcr_pciconf_rw(mfile* mf, unsigned int offset, u_int32_t* data, int rw)
         WRITE4_PCI(mf, address, mf->vsec_addr + PCI_ADDR_OFFSET, "write offset", return ME_PCI_WRITE_ERROR);
         /* wait on flag */
         rc = mtcr_pciconf_wait_on_flag(mf, 0);
+        if (rc)
+        {
+            return rc;
+        }
     }
     else
     {
@@ -1722,6 +1726,10 @@ int mtcr_pciconf_rw(mfile* mf, unsigned int offset, u_int32_t* data, int rw)
         WRITE4_PCI(mf, address, mf->vsec_addr + PCI_ADDR_OFFSET, "write offset", return ME_PCI_WRITE_ERROR);
         /* wait on flag */
         rc = mtcr_pciconf_wait_on_flag(mf, 1);
+        if (rc)
+        {
+            return rc;
+        }
         /* read data */
         READ4_PCI(mf, data, mf->vsec_addr + PCI_DATA_OFFSET, "read value", return ME_PCI_READ_ERROR);
     }
