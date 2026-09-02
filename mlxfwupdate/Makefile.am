@@ -109,7 +109,6 @@ mstfwmanager_DEPENDENCIES = \
     $(top_builddir)/fw_comps_mgr/libfw_comps_mgr.la \
     $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
     $(top_builddir)/common/libcommon.la \
-    $(JSON_LIBS) \
     $(INIPARSER_LIBS) \
     $(MUPARSER_LIBS) \
     $(SQLITE_LIBS)
@@ -135,5 +134,5 @@ mstfwmanager_CXXFLAGS += -DENABLE_DPA
 mstfwmanager_DEPENDENCIES += $(top_builddir)/mlxdpa/libmstdpa.a
 endif
 
-mstfwmanager_LDADD = $(mstfwmanager_DEPENDENCIES) $(LDADD_mstfwmanager)
+mstfwmanager_LDADD = $(mstfwmanager_DEPENDENCIES) $(JSON_LIBS) $(LDADD_mstfwmanager)
 mstfwmanager_LDFLAGS = -static

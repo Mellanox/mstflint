@@ -36,7 +36,7 @@
  
 
 /***
-         *** This file was generated at "2026-07-01 18:29:26"
+         *** This file was generated at "2026-08-27 14:48:42"
          *** by:
          ***    > [REDACTED]/adb2pack.py --input reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils -o user/tools_layouts
          ***/

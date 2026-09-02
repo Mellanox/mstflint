@@ -6,6 +6,8 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/stat.h>
+#include <dirent.h>
+#include <unistd.h>
 #include <iostream>
 #include <stdexcept>
 #include "include/mtcr_ul/mtcr.h"
@@ -14,6 +16,7 @@
 #include "reg_access/reg_access.h"
 #include "tools_layouts/reg_access_hca_layouts.h"
 #include "mft_utils/mft_sig_handler.h"
+#include "tools_layouts/reg_access_switch_layouts.h"
 
 
 const std::string TOOL_NAME = "mstcable_discovery";
@@ -46,6 +49,25 @@ int checkModule(mfile* mf, u_int32_t localPort)
     return ret;
 }
 
+int isModuleSecondary(mfile* mf, u_int32_t module, bool* isSecondary)
+{
+    if (!mf || !isSecondary) {
+        return -1;
+    }
+
+    struct reg_access_switch_pmaos_reg_ext pmaos;
+    memset(&pmaos, 0, sizeof(pmaos));
+    pmaos.module = module;
+
+    reg_access_status_t rc = reg_access_pmaos(mf, REG_ACCESS_METHOD_GET, &pmaos);
+    if (rc) {
+        return -1;
+    }
+
+    *isSecondary = (pmaos.secondary != 0);
+    return 0;
+}
+
 void CreateDirectoryIfNotExist(const std::string& poNewDirectory)
 {
     if (mkdir(poNewDirectory.c_str(),
@@ -60,6 +82,24 @@ void CreateDirectoryIfNotExist(const std::string& poNewDirectory)
             return;
         }
     }
+}
+
+void ClearCableDeviceFiles()
+{
+    DIR* dir = opendir(MSTFLINT_DEV_DIR.c_str());
+    if (!dir) {
+        return;
+    }
+
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != NULL) {
+        if (strstr(entry->d_name, "cable_") == NULL) {
+            continue;
+        }
+        std::string path = MSTFLINT_DEV_DIR + entry->d_name;
+        unlink(path.c_str());
+    }
+    closedir(dir);
 }
 
 void CreateCableDeviceFile(const std::string& cable_name)
@@ -79,11 +119,21 @@ int main(int argc, char* argv[])
     int          ul_mode = 0;
     unsigned int cable_count = 0;
 
-    if (argc > 1)
+    bool filterSecondary = false;
+
+    for (int argIdx = 1; argIdx < argc; argIdx++)
     {
-        std::cout << "Invalid argument: " << argv[1] << std::endl;
-        std::cout << "Usage: " << TOOL_NAME << std::endl;
-        return 1;
+        std::string arg = argv[argIdx];
+        if (arg == "--filter_secondary")
+        {
+            filterSecondary = true;
+        }
+        else
+        {
+            std::cout << "Invalid argument: " << arg << std::endl;
+            std::cout << "Usage: " << TOOL_NAME << " [--filter_secondary]" << std::endl;
+            return 1;
+        }
     }
 
     /* The handler only raises a flag, which lets the in-flight access run to
@@ -91,6 +141,9 @@ int main(int argc, char* argv[])
      * where no semaphore is held. */
     mft_signal_set_msg(INTERRUPT_MSG);
     mft_signal_set_handling(1);
+
+    /* Refresh inventory: drop prior stubs before recreating the current set. */
+    ClearCableDeviceFiles();
 
     devs = mdevices_info_v(MDEVS_TAVOR, &device_count, 1);
 
@@ -133,6 +186,15 @@ int main(int argc, char* argv[])
             }
             else
             {
+                if (filterSecondary)
+                {
+                    bool isSecondary = false;
+                    if (isModuleSecondary(mf, (u_int32_t)num_ports, &isSecondary) == 0 && isSecondary)
+                    {
+                        mclose(mf);
+                        continue;
+                    }
+                }
                 std::string cable_name = std::string(devs[i].dev_name) + "_" + CABLE_DEVICE_STR + std::to_string(num_ports);
                 mfile* cable_mf = mopen_adv(cable_name.c_str(), (MType)(MST_DEFAULT | MST_CABLE));
                 if (cable_mf)
@@ -153,6 +215,14 @@ int main(int argc, char* argv[])
             num_ports = dm_get_hw_ports_num(devid_type);
             for (int port = 0; port < num_ports && !mft_signal_is_fired(); port++)
             {
+                if (filterSecondary)
+                {
+                    bool isSecondary = false;
+                    if (isModuleSecondary(mf, (u_int32_t)port, &isSecondary) == 0 && isSecondary)
+                    {
+                        continue;
+                    }
+                }
                 std::string cable_name = std::string(devs[i].dev_name) + "_" + CABLE_DEVICE_STR + std::to_string(port);
                 mfile     * cable_mf = mopen_adv(cable_name.c_str(), (MType)(MST_DEFAULT | MST_CABLE));
                 if (!cable_mf)

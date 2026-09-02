@@ -49,6 +49,7 @@
 #include "mlxlink_err_inj_commander.h"
 #include "mlxlink_port_info.h"
 #include "mlxlink_amBER_collector.h"
+#include <deque>
 
 #ifdef MST_UL
 #define MLXLINK_EXEC "mstlink"
@@ -113,6 +114,10 @@
 #define MULTI_PORT_INFO_FLAG_SHORT ' '
 #define MULTI_PORT_INFO_ACRONYM_FLAG "smpi"
 #define MULTI_PORT_INFO_ACRONYM_FLAG_SHORT ' '
+#define MULTI_PORT_CPO_INFO_FLAG "show_multi_port_cpo_info"
+#define MULTI_PORT_CPO_INFO_FLAG_SHORT ' '
+#define MULTI_PORT_CPO_INFO_ACRONYM_FLAG "smpci"
+#define MULTI_PORT_CPO_INFO_ACRONYM_FLAG_SHORT ' '
 #define PLR_INFO_FLAG "show_plr"
 #define PLR_INFO_FLAG_SHORT ' '
 #define SET_PLR_FLAG "set_plr"
@@ -239,6 +244,10 @@
 #define PEPC_AN_MODE_FLAG_SHORT ' '
 #define PTYS_LINK_MODE_FORCE_FLAG "link_mode_force"
 #define PTYS_LINK_MODE_FORCE_FLAG_SHORT ' '
+#define LINKX_ELS_FLAG "linkx_els"
+#define LINKX_ELS_FLAG_SHORT ' '
+#define LINKX_OE_FLAG "linkx_oe"
+#define LINKX_OE_FLAG_SHORT ' '
 #define PHY_RECOVERY_FLAG "phy_recovery"
 #define PHY_RECOVERY_FLAG_SHORT ' '
 #define PHY_RECOVERY_TYPE_FLAG "recovery_type"
@@ -255,6 +264,14 @@
 #define SET_SECONDARY_FLAG_SHORT ' '
 #define CONSTANT_ROLE_FLAG "constant_role"
 #define CONSTANT_ROLE_FLAG_SHORT ' '
+#define ELS_MODULE_FLAG "els_module"
+#define ELS_MODULE_FLAG_SHORT ' '
+#define ELS_LASER_FLAG "els_laser"
+#define ELS_LASER_FLAG_SHORT ' '
+#define ELS_OPERATION_FLAG "els_operation"
+#define ELS_OPERATION_FLAG_SHORT ' '
+#define SAVE_LASER_SETPOINT_FLAG "save_laser_setpoint"
+#define SAVE_LASER_SETPOINT_FLAG_SHORT ' '
 #define SET_TX_PRECODING_FLAG "set_tx_precoding"
 #define SET_TX_PRECODING_FLAG_SHORT ' '
 #define SET_RX_PRECODING_FLAG "set_rx_precoding"
@@ -417,6 +434,7 @@ enum OPTION_TYPE
     CABLE_SHOW_MODULE_CAP,
     CABLE_SHOW_MODULE_INFO,
     CABLE_PRECODING,
+    CABLE_SAVE_LASER_SETPOINT,
     SEND_BER_COLLECT,
     SEND_AMBER_COLLECT,
     SEND_PAOS,
@@ -437,6 +455,7 @@ enum OPTION_TYPE
     PCIE_ERROR_INJ,
     SHOW_MULTI_PORT_INFO,
     SHOW_MULTI_PORT_MODULE_INFO,
+    SHOW_MULTI_PORT_CPO_INFO,
     SHOW_PLR,
     SET_PLR,
     SHOW_KR,
@@ -448,16 +467,23 @@ enum OPTION_TYPE
     SET_PERIODIC_EQ,
     SET_PRIMARY,
     SEND_PRECODING,
+    SAVE_LASER_SETPOINT,
+    HANDLE_ELS_OPERATION,
 
     // Any new function's index should be added before FUNCTION_LAST in this enum
     FUNCTION_LAST
 };
 
 ///////////
-class ModuleField
+struct ModuleField
 {
-public:
-    ModuleField(string uiName, string amberName, bool multiVal, bool perLane, bool requireDdm, bool supported = true);
+    ModuleField(string uiName,
+                string amberName,
+                bool multiVal,
+                bool perLane,
+                bool requireDdm,
+                bool supported = true,
+                bool isAscii = false);
     ~ModuleField() = default;
 
     string uiName;
@@ -466,7 +492,22 @@ public:
     bool perLane;
     bool requireDdm;
     bool supported;
+    bool isAscii;
 };
+
+struct ModuleFieldValue
+{
+    ModuleFieldValue() = default;
+    ModuleFieldValue(string uiName, string fieldName, bool perLane, bool supported = true, bool isAscii = false);
+
+    ModuleField descriptor = ModuleField("", "", false, false, false, false, false);
+    std::string asciiValue;
+    std::vector<uint32_t> values{0};
+};
+
+using PageToModuleInfoFields = std::map<uint32_t, std::deque<ModuleFieldValue>>;
+using RegToModuleInfoFields = std::map<std::string, PageToModuleInfoFields>;
+using ModuleInfoFieldsOrdered = std::vector<ModuleFieldValue*>;
 
 using namespace std;
 
@@ -533,11 +574,13 @@ public:
     u_int32_t getPortGroup(u_int32_t localPort);
     string getValuesOfActiveLanes(const string& row, bool moduleLanes = false);
     bool checkIfModuleExtSupported();
+    void updateModuleType();
 
     // Mlxlink query functions
     virtual void showModuleInfo();
     virtual void operatingInfoPage();
     virtual void portInfoSection();
+    void cpoInfoPage();
     virtual void supportedInfoPage();
     virtual void troubInfoPage();
     void showPddr();
@@ -600,6 +643,8 @@ public:
     string fecMaskToUserInputStr(u_int32_t fecCapMask);
     string fecMaskToStr(u_int32_t mask);
     void updateSwControlStatus();
+    void updateCpoStatus();
+    void validateCpoParams();
     void initSwControledModule();
     void updateNvlinkModeBStatus();
     void updateBonusPortStatus();
@@ -607,6 +652,7 @@ public:
     bool deviceSupportsBonusPort() const;
     void appendBonusPortToSmpiTable(const PortGroup& portInfo, vector<string>& tableData);
     void appendBonusPortToSmpmiTable(const PortGroup& portInfo, vector<string>& tableData);
+    void appendBonusPortToSmpciTable(const PortGroup& portInfo, vector<string>& tableData);
     void collectBonusPortTableFields(const PortGroup& portInfo, BonusPortTableFields& fields);
     bool isBonusPortPplrLoopbackEnabled();
     string getBonusPortSmpiPlainState(bool& logicalLinkUp);
@@ -614,12 +660,26 @@ public:
     void operatingInfoPageForBonusPort();
     void supportedInfoPageForBonusPort();
     virtual void checkBonusPortAllowedCommands();
+    void checkElsModuleCommands();
     void setRequestedCommands(const std::vector<OPTION_TYPE>& requestedCommands);
     bool probeLocalPortForBonusPort(u_int32_t localPort, u_int32_t& labelPort);
     u_int32_t getNumberOfPorts();
     bool checkDPNvSupport();
     bool checkPcieMgmtSupport();
     void prepareBerModuleInfo(bool valid, const vector<AmberField>& moduleInfoFields);
+    void prepareAdditionalModuleInfo(bool valid);
+    void initModuleField(RegToModuleInfoFields& infoFields,
+                         ModuleInfoFieldsOrdered& infoFieldsOrdered,
+                         string reg,
+                         uint32_t page,
+                         string fieldName,
+                         string uiName,
+                         bool supported,
+                         bool perLane,
+                         bool isAscii = false);
+    void initAdditionalModuleInfoFields(RegToModuleInfoFields& infoFields, ModuleInfoFieldsOrdered& infoFieldsOrdered);
+    string getModuleStateForEls();
+    string getProductionTestRevision();
     void pushSnrModuleInfoFields(bool valid);
     void runningVersion();
     void prepare40_28_16nmEyeInfo(u_int32_t numOfLanesToUse);
@@ -627,6 +687,8 @@ public:
     void prepare5nmEyeInfo(u_int32_t numOfLanesToUse);
     void prepareSpc6EyeInfo(u_int32_t numOfLanesToUse);
     void getPddrOperInfo();
+    void queryPddrModuleInfoPage(const string = "");
+    uint32_t queryPemi(uint32_t pageSelect, bool getCap = false);
     void getPrecodingStatus();
     void setPrecoding();
     bool isTransmitAllowed(u_int32_t localPort, u_int32_t protoActive);
@@ -668,6 +730,15 @@ public:
     void printOuptputVector(vector<MlxlinkCmdPrint>& cmdOut);
     virtual void prepareJsonOut();
 
+    // ELS operation
+    void checkElsModuleReady();
+    void checkElsModuleReadyPmpe();
+    void checkElsModuleReadyPemi();
+    void handleElsOperation();
+    void handleSaveLaserSetpoint();
+    void pollElsOperationCompletion();
+    void showElsOperationResults();
+
     // Cable operation
     bool isPassiveQSFP();
     bool isSFP51Paging();
@@ -682,6 +753,7 @@ public:
     vector<u_int8_t> validateBytes(const vector<string>& strBytes);
     void writeCableEEPROM();
     void readCableEEPROM();
+    void cableSaveLaserSetpoint();
     void performModulePrbsCommands();
     void performControlParams();
     void performShowModuleCap();
@@ -694,6 +766,7 @@ public:
     MlxlinkCmdPrint _toolInfoCmd;
     MlxlinkCmdPrint _operatingInfoCmd;
     MlxlinkCmdPrint _portInfoCmd;
+    MlxlinkCmdPrint _cpoInfoCmd;
     MlxlinkCmdPrint _supportedInfoCmd;
     MlxlinkCmdPrint _troubInfoCmd;
     MlxlinkCmdPrint _testModeInfoCmd;
@@ -720,6 +793,8 @@ public:
     MlxlinkCmdPrint _hostClassCmd;
     MlxlinkCmdPrint _rxRecoveryCountersCmd;
     MlxlinkCmdPrint _periodicEqInfoCmd;
+    MlxlinkCmdPrint _elsOperationGeneralInfoCmd;
+    vector<MlxlinkCmdPrint> _elsOperationLaserInfoCmds;
 
     // Mlxlink config functions
     void clearCounters();
@@ -795,6 +870,7 @@ public:
     u_int32_t getRateFromPptt();
     void showMultiPortInfo();
     void showMultiPortModuleInfo();
+    void showMultiPortCpoInfo();
     string getBerString();
     void updateLocalPortGroup();
     std::string getSpeedStrForTableView();
@@ -859,6 +935,7 @@ public:
     bool _ignorePortStatus;
     bool _isGboxPort;
     bool _isSwControled;
+    bool _isCpo;
     bool _isSwControledStandAlone;
     bool _pcieMgmtSupported;
     bool _isBonusPort;
@@ -882,6 +959,8 @@ public:
     string _fomStr;
     string _attenuationTitle;
     bool _silentMode;
+    bool _elsOperationTimedOut;
+    u_int8_t _elsLaserMask;
 
 protected:
     vector<AmberField> _ppcntFields;

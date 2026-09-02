@@ -58,6 +58,7 @@ from mlxlink_fields import (
 from utils import (
     RED, GREEN, YELLOW, BLUE, RESET,
     BaseConfig, clean_value, format_sdk_command, is_known_missing,
+    MFT_SDK_LINK_TOOL,
     CommandRunner,
     BaseCTestRunner, BaseCppTestRunner, BaseMlxlinkRunner,
     BaseTestSuite,
@@ -180,7 +181,8 @@ class ComparisonTable(object):
         sdk_cmd = format_sdk_command(
             binary_path=[Config.C_TEST_BIN, Config.CPP_TEST_BIN],
             keywords=["OperationalInfo"])
-        mlxlink_cmd = "mlxlink_ext -d " + self.device if self.device else "mlxlink_ext"
+        mlxlink_cmd = (MFT_SDK_LINK_TOOL + " -d " + self.device
+                       if self.device else MFT_SDK_LINK_TOOL)
         print("{}SDK command:    {}{}".format(BLUE, sdk_cmd, RESET))
         print("{}mlxlink command: {}{}".format(BLUE, mlxlink_cmd, RESET))
         print("")
@@ -258,7 +260,8 @@ class MlxlinkRunner(BaseMlxlinkRunner):
         return OperationalInfoParser.parse(self.output)
 
     def print_operational_info_only(self):
-        self.success, self.output = CommandRunner.run_quiet(self._cmd())
+        self.success, self.output = CommandRunner.run_quiet(
+            self._cmd(), strip_ansi_escapes=True)
         print(OperationalInfoParser.extract_section(self.output))
         return 0 if self.success else 1
 

@@ -6,6 +6,12 @@
 
 export DH_OPTIONS
 
+# Name the /etc/ld.so.conf.d snippet after the package, so a privately-named
+# build (build_sdk.sh --deb-name mstflint-sdk-local) can be installed alongside
+# a distro mstflint-sdk without a file conflict. Taken from the changelog, which
+# --deb-name rewrites too.
+DEB_PKG := $(shell dpkg-parsechangelog -SSource)
+
 %:
 	dh $@ --parallel
 
@@ -17,13 +23,15 @@ override_dh_auto_build:
 	dh_auto_build -- sdk
 
 override_dh_auto_install:
-	$(MAKE) install-sdk DESTDIR=$(CURDIR)/debian/mstflint-sdk
+	$(MAKE) install-sdk DESTDIR=$(CURDIR)/debian/mstflint-sdk ldsoconffile=$(DEB_PKG).conf
 
 # The SDK-only build does not build the test suite.
 override_dh_auto_test:
 
 # libmstflint_sdk.so is an unversioned, self-contained private SDK library; no
 # shlibs file is needed for it (nothing depends on it via the shlibs system).
+# This also means debhelper adds no ldconfig trigger here -- the package ships
+# its own (debian/triggers) to refresh the cache for the ld.so.conf.d snippet.
 override_dh_makeshlibs:
 
 # dh_auto_clean would run `make distclean`, which needs a configured tree; keep

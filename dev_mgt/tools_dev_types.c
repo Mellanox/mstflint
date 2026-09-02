@@ -50,6 +50,7 @@
 #include "mflash/mflash_types.h"
 #include "mtcr_ul/mtcr_ul_com.h"
 #include "mtcr_ul/mtcr_common.h"
+#include "mft_core/device/device_info/device_properties_api.h"
 #ifdef CABLES_SUPPORT
 #include "mtcr_ul/mtcr_cables.h"
 #endif
@@ -703,6 +704,19 @@ static int dm_get_device_id_inner(mfile* mf, dm_dev_id_t* ptr_dm_dev_id, u_int32
     return CHECK_PTR_DEV_ID;
 }
 
+/*
+ * Covers the paths that never reach read_device_id(): BlueField4 by PCI, LinkX,
+ * cables and MGIR. Only the two codes below guarantee *ptr_hw_dev_id was
+ * written. mf->rev_id, not *ptr_hw_rev, which is always 0 on the CR-space path.
+ */
+static void update_functional_device_id(mfile* mf, int return_value, const u_int32_t* ptr_hw_dev_id)
+{
+    if (return_value == GET_DEV_ID_SUCCESS || return_value == CHECK_PTR_DEV_ID)
+    {
+        mf->functional_device_id = resolve_functional_device_id(*ptr_hw_dev_id, mf->rev_id, mf->pci_device_id);
+    }
+}
+
 /**
  * Returns 0 on success and 1 on failure.
  */
@@ -710,13 +724,21 @@ int dm_get_device_id(mfile* mf, dm_dev_id_t* ptr_dm_dev_id, u_int32_t* ptr_hw_de
 {
     int return_value = 1;
 
+    if (mf == NULL)
+    {
+        return MFE_ERROR;
+    }
+
     return_value = dm_get_device_id_inner(mf, ptr_dm_dev_id, ptr_hw_dev_id, ptr_hw_rev);
     if (return_value == CRSPACE_READ_ERROR)
     {
         printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno));
         return GET_DEV_ID_ERROR;
     }
-    else if (return_value == CHECK_PTR_DEV_ID)
+
+    update_functional_device_id(mf, return_value, ptr_hw_dev_id);
+
+    if (return_value == CHECK_PTR_DEV_ID)
     {
         if (*ptr_dm_dev_id == DeviceUnknown)
         {
@@ -738,7 +760,13 @@ int dm_get_device_id_without_prints(mfile* mf, dm_dev_id_t* ptr_dm_dev_id, u_int
 {
     int return_value = 1;
 
+    if (mf == NULL)
+    {
+        return MFE_ERROR;
+    }
+
     return_value = dm_get_device_id_inner(mf, ptr_dm_dev_id, ptr_hw_dev_id, ptr_hw_rev);
+    update_functional_device_id(mf, return_value, ptr_hw_dev_id);
     if (return_value == CHECK_PTR_DEV_ID)
     {
         if (*ptr_dm_dev_id == DeviceUnknown)
@@ -1030,6 +1058,11 @@ int dm_is_gb100(dm_dev_id_t type)
 int dm_is_gr100(dm_dev_id_t type)
 {
     return (type == DeviceGR100);
+}
+
+int dm_is_qt3(dm_dev_id_t type)
+{
+    return (type == DeviceQuantum3);
 }
 
 int dm_is_gpu(dm_dev_id_t type)

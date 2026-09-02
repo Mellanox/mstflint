@@ -238,6 +238,8 @@ bool FsCtrlOperations::FsIntQuery()
     _fsCtrlImgInfo.ini_file_version = fwQuery.ini_file_version;
     _fsCtrlImgInfo.geo_address = fwQuery.geo_address;
     _fsCtrlImgInfo.geo_address_valid = fwQuery.geo_address_valid;
+    _fsCtrlImgInfo.board_ga = fwQuery.board_ga;
+    _fsCtrlImgInfo.board_ga_valid = fwQuery.board_ga_valid;
     _fsCtrlImgInfo.independent_module = fwQuery.independent_module;
     std::vector<FwComponent> compsMap;
     if (!_fwCompsAccess->getFwComponents(compsMap, false))
@@ -1585,12 +1587,14 @@ bool FsCtrlOperations::getBFBComponentsVersions(std::map<std::string, std::strin
     if (pending)
     {
         FwVersion pending_fw_version = FwOperations::createFwVersion(&_fwImgInfo.ext_info);
-        name_to_version["BF3_NIC_FW"] = pending_fw_version.get_fw_version();
+        name_to_version["BF3_NIC_FW"] =
+          pending_fw_version.get_fw_version(VERSION_FORMAT(_fwImgInfo.ext_info.fw_ver[1]));
     }
     else
     {
         FwVersion running_fw_version = FwOperations::createRunningFwVersion(&_fwImgInfo.ext_info);
-        name_to_version["BF3_NIC_FW"] = running_fw_version.get_fw_version();
+        name_to_version["BF3_NIC_FW"] =
+          running_fw_version.get_fw_version(VERSION_FORMAT(_fwImgInfo.ext_info.running_fw_ver[1]));
     }
     DPRINTF(("Got NIC FW version: %s\n", name_to_version["BF3_NIC_FW"].c_str()));
 

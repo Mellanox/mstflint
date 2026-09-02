@@ -56,9 +56,8 @@ mstefuse_DEPENDENCIES = \
     $(top_builddir)/common/libcommon.la \
     $(top_builddir)/mft_core/mft_core_utils/operating_system_api/lib_os_api.la \
     $(top_builddir)/mft_core/mft_core_utils/logger/liblogger.la \
-    $(top_builddir)/mft_core/mft_core_utils/mft_exceptions/libmftexceptions.la \
-    $(JSON_LIBS)
+    $(top_builddir)/mft_core/mft_core_utils/mft_exceptions/libmftexceptions.la
 
-mstefuse_LDADD = $(mstefuse_DEPENDENCIES) -lm ${LDL}
+mstefuse_LDADD = $(mstefuse_DEPENDENCIES) $(JSON_LIBS) -lm ${LDL}
 
 mstefuse_LDFLAGS = -static

@@ -117,6 +117,7 @@
 #include "fwctrl_ioctl.h"
 #include "kernel/mst.h"
 #include "tools_dev_types.h"
+#include "mft_core/device/device_info/device_properties_api.h"
 #ifdef ENABLE_VFIO
 #include "vfio_driver_access/VFIODriverAccessWrapperC.h"
 #endif
@@ -141,6 +142,7 @@ typedef enum
 #define DBDF "%4.4x:%2.2x:%2.2x.%1.1x"
 #define DRIVER_CR_NAME "/dev/" DBDF "_mstcr"
 #define DRIVER_CONF_NAME "/dev/" DBDF "_mstconf"
+#define NET_DEV_PREFIX "net-"
 
 /* Forward decl*/
 static int get_inband_dev_from_pci(char* inband_dev, char* pci_dev);
@@ -268,15 +270,15 @@ cl_clean_up:
 
 static int _extract_dbdf_from_full_name(const char* name, unsigned* domain, unsigned* bus, unsigned* dev, unsigned* func)
 {
-    if (sscanf(name, "/sys/bus/pci/devices/%4x:%2x:%2x.%d/resource0", domain, bus, dev, func) == 4)
+    if (sscanf(name, "/sys/bus/pci/devices/%8x:%2x:%2x.%d/resource0", domain, bus, dev, func) == 4)
     {
         return 0;
     }
-    else if (sscanf(name, "/sys/bus/pci/devices/%4x:%2x:%2x.%d/config", domain, bus, dev, func) == 4)
+    else if (sscanf(name, "/sys/bus/pci/devices/%8x:%2x:%2x.%d/config", domain, bus, dev, func) == 4)
     {
         return 0;
     }
-    else if (sscanf(name, "/proc/bus/pci/%4x:%2x/%2x.%d", domain, bus, dev, func) == 4)
+    else if (sscanf(name, "/proc/bus/pci/%8x:%2x/%2x.%d", domain, bus, dev, func) == 4)
     {
         return 0;
     }
@@ -300,7 +302,7 @@ static int mtcr_connectx_flush(void* ptr, int fdlock)
     *((u_int32_t*)((char*)ptr + 0xf0380)) = 0x0;
     do
     {
-        asm volatile("" ::: "memory");
+        __asm__ volatile("" ::: "memory");
         u_int32_t tmp = *((u_int32_t*)((char*)ptr + 0xf0380));
         value = __be32_to_cpu(tmp);
     } while (value);
@@ -833,6 +835,7 @@ enum
 #define DEVID_OFFSET 0xf0014
 #define PCICONF_ADDR_OFF 0x58
 #define PCICONF_DATA_OFF 0x5c
+#define PCICONF_ADDR_NON_POSTED_MASK 0x80000000
 
 int mtcr_driver_mread4(mfile* mf, unsigned int offset, u_int32_t* value)
 {
@@ -1588,13 +1591,13 @@ int mtcr_pciconf_set_addr_space(mfile* mf, u_int16_t space)
     return ME_OK;
 }
 
-void set_fwctl_dev(char* fwctl_dev, u_int16_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func)
+void set_fwctl_dev(char* fwctl_dev, u_int32_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func)
 {
     DIR          * dir;
     struct dirent* ent;
     char           link_path[PATH_MAX];
     char           resolved_path[PATH_MAX];
-    char           dbdf[32];
+    char           dbdf[PCI_DBDF_STR_SZ];
     unsigned int   d, b, dv, f;
 
     if (!fwctl_dev) {
@@ -1626,7 +1629,7 @@ void set_fwctl_dev(char* fwctl_dev, u_int16_t domain, u_int8_t bus, u_int8_t dev
             continue;
         }
 
-        if (sscanf(pci_name, "%x:%x:%x.%x", &d, &b, &dv, &f) != 4) {
+        if (sscanf(pci_name, "%8x:%x:%x.%x", &d, &b, &dv, &f) != 4) {
             continue;
         }
 
@@ -1639,7 +1642,7 @@ void set_fwctl_dev(char* fwctl_dev, u_int16_t domain, u_int8_t bus, u_int8_t dev
     closedir(dir);
 }
 
-void open_fwctl_dev(mfile* mf, u_int16_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func)
+void open_fwctl_dev(mfile* mf, u_int32_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func)
 {
     DIR          * dir;
     struct dirent* ent;
@@ -1668,7 +1671,7 @@ void open_fwctl_dev(mfile* mf, u_int16_t domain, u_int8_t bus, u_int8_t dev, u_i
             continue;
         }
 
-        if (sscanf(pci_name, "%x:%x:%x.%x", &d, &b, &dv, &f) != 4) {
+        if (sscanf(pci_name, "%8x:%x:%x.%x", &d, &b, &dv, &f) != 4) {
             continue;
         }
 
@@ -1712,6 +1715,10 @@ int mtcr_pciconf_rw(mfile* mf, unsigned int offset, u_int32_t* data, int rw)
         WRITE4_PCI(mf, address, mf->vsec_addr + PCI_ADDR_OFFSET, "write offset", return ME_PCI_WRITE_ERROR);
         /* wait on flag */
         rc = mtcr_pciconf_wait_on_flag(mf, 0);
+        if (rc)
+        {
+            return rc;
+        }
     }
     else
     {
@@ -1719,6 +1726,10 @@ int mtcr_pciconf_rw(mfile* mf, unsigned int offset, u_int32_t* data, int rw)
         WRITE4_PCI(mf, address, mf->vsec_addr + PCI_ADDR_OFFSET, "write offset", return ME_PCI_WRITE_ERROR);
         /* wait on flag */
         rc = mtcr_pciconf_wait_on_flag(mf, 1);
+        if (rc)
+        {
+            return rc;
+        }
         /* read data */
         READ4_PCI(mf, data, mf->vsec_addr + PCI_DATA_OFFSET, "read value", return ME_PCI_READ_ERROR);
     }
@@ -2012,6 +2023,11 @@ int mtcr_pciconf_mread4_old(mfile* mf, unsigned int offset, u_int32_t* value)
     {
         new_offset |= 0x1;
     }
+
+    /* Mark the access non-posted so the device acknowledges it before responding on the data register.
+     * A posted read lets the data register be sampled before the device fetched the value, returning stale data. */
+    new_offset |= PCICONF_ADDR_NON_POSTED_MASK;
+
     /* adrianc: PCI registers always in le32 */
     offset = __cpu_to_le32(new_offset);
     rc = _flock_int(ctx->fdlock, LOCK_EX);
@@ -2047,6 +2063,9 @@ pciconf_read_cleanup:
     return rc;
 }
 
+/* Writes stay posted, unlike the non-posted read in mtcr_pciconf_mread4_old(): this gateway exposes no completion
+ * status, so an acknowledgement would have no consumer, while a device that never acknowledges stalls the PCI
+ * configuration write into a completion timeout - which is fatal to the host on the recovery flows this path serves. */
 int mtcr_pciconf_mwrite4_old(mfile* mf, unsigned int offset, u_int32_t value)
 {
     ul_ctx_t* ctx = mf->ul_ctx;
@@ -3001,6 +3020,45 @@ int change_i2c_secondary_address(mfile* mf, DType dtype)
 }
 #endif /* ifdef ENABLE_MST_DEV_I2C */
 
+/* Network interface name to PCI address.
+ * Returns 0 on success with domain/bus/dev/func populated, -1 on failure.
+ */
+static int mtcr_resolve_net_device_pci(const char* name, unsigned* domain, unsigned* bus, unsigned* dev, unsigned* func)
+{
+    char mbuf[4048] = {0};
+    char pbuf[4048] = {0};
+    char* base;
+    int r, scnt;
+
+    r = snprintf(mbuf, sizeof(mbuf) - 1, "/sys/class/net/%s/device", name);
+    if ((r <= 0) || (r >= (int)sizeof(mbuf)))
+    {
+        fprintf(stderr, "Unable to print device name %s\n", name);
+        return -1;
+    }
+
+    r = readlink(mbuf, pbuf, sizeof(pbuf) - 1);
+    if (r < 0)
+    {
+        return -1;
+    }
+    pbuf[r] = '\0';
+
+    base = basename(pbuf);
+    if (!base)
+    {
+        return -1;
+    }
+
+    scnt = sscanf(base, "%x:%x:%x.%x", domain, bus, dev, func);
+    if (scnt != 4)
+    {
+        return -1;
+    }
+
+    return 0;
+}
+
 static MType mtcr_parse_name(const char* name, int* force, unsigned* domain_p, unsigned* bus_p, unsigned* dev_p, unsigned* func_p)
 {
     unsigned my_domain = 0;
@@ -3050,7 +3108,7 @@ static MType mtcr_parse_name(const char* name, int* force, unsigned* domain_p, u
 #ifdef ENABLE_VFIO
     if (is_vfio)
     {
-        scnt = sscanf(name, "vfio-%x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
+        scnt = sscanf(name, "vfio-%8x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
         if (scnt != 4)
         {
             my_domain = 0;
@@ -3070,7 +3128,7 @@ static MType mtcr_parse_name(const char* name, int* force, unsigned* domain_p, u
 
     if (CheckifKernelLockdownIsEnabled() && CheckifVfioPciDriverIsLoaded())
     {
-        scnt = sscanf(name, "%x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
+        scnt = sscanf(name, "%8x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
         if (scnt != 4)
         {
             my_domain = 0;
@@ -3133,7 +3191,7 @@ static MType mtcr_parse_name(const char* name, int* force, unsigned* domain_p, u
         {
             goto parse_error;
         }
-        scnt = sscanf(base, "%x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
+        scnt = sscanf(base, "%8x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
         if (scnt != 4)
         {
             goto parse_error;
@@ -3145,6 +3203,13 @@ static MType mtcr_parse_name(const char* name, int* force, unsigned* domain_p, u
         goto name_parsed;
     }
 
+    if (!strncmp(name, NET_DEV_PREFIX, strlen(NET_DEV_PREFIX)) &&
+        mtcr_resolve_net_device_pci(name + strlen(NET_DEV_PREFIX), &my_domain, &my_bus, &my_dev, &my_func) == 0)
+    {
+        force_config = 1;
+        goto name_parsed;
+    }
+
     scnt = sscanf(name, "%x:%x.%x", &my_bus, &my_dev, &my_func);
     if (scnt == 3)
     {
@@ -3152,7 +3217,7 @@ static MType mtcr_parse_name(const char* name, int* force, unsigned* domain_p, u
         goto name_parsed;
     }
 
-    scnt = sscanf(name, "%x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
+    scnt = sscanf(name, "%8x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
     if (scnt == 4)
     {
         force_config = check_force_config(my_domain, my_bus, my_dev, my_func);
@@ -3166,7 +3231,7 @@ static MType mtcr_parse_name(const char* name, int* force, unsigned* domain_p, u
         goto name_parsed;
     }
 
-    scnt = sscanf(name, "pciconf-%x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
+    scnt = sscanf(name, "pciconf-%8x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
     if (scnt == 4)
     {
         force_config = 1;
@@ -3273,10 +3338,7 @@ static long supported_dev_ids[] = {0x1003, /* Connect-X3 */
                                    0xa2d2, /* MT416842 Family BlueField integrated ConnectX-5 network controller */
                                    0xa2d6, /* MT42822 Family BlueField2 integrated ConnectX-6DX network controller */
                                    0xa2dc, /* MT43244 Family BlueField3 integrated ConnectX-7 network controller */
-                                   0xa2dd, // BF4 Family BlueField4 Crypto Enabled
-                                   0xa2de, // BF4 Family BlueField4 Crypto Disabled
                                    0xa2df, // BF4 Family BlueField4 Network Controller
-                                   0xc2d6, // BF4 Family BlueField4 Management Interface
                                    0xcf70, /* Spectrum3 */
                                    0xcf80, /* Spectrum4 */
                                    0xcf82, /* Spectrum5 */
@@ -3492,7 +3554,7 @@ cleanup_dir_opened:
     return ndevs;
 }
 
-static int read_pci_config_header(u_int16_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func, u_int8_t data[0x40])
+static int read_pci_config_header(u_int32_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func, u_int8_t data[0x40])
 {
     char proc_dev[64];
 
@@ -3536,7 +3598,7 @@ int check_force_config(unsigned my_domain, unsigned my_bus, unsigned my_dev, uns
 #define IB_INF "infiniband:"
 #define ETH_INF "net:"
 
-static char** get_ib_net_devs(int domain, int bus, int dev, int func, int ib_eth_)
+static char** get_ib_net_devs(unsigned int domain, int bus, int dev, int func, int ib_eth_)
 {
     char** ib_net_devs = NULL;
     int i;
@@ -3624,7 +3686,7 @@ mem_error:
     return NULL;
 }
 
-static int get_vf_devs(int domain, int bus, int dev, int func, char* buf, int len)
+static int get_vf_devs(unsigned int domain, int bus, int dev, int func, char* buf, int len)
 {
     int count = 0;
     DIR* physfndir;
@@ -3662,7 +3724,7 @@ static int get_vf_devs(int domain, int bus, int dev, int func, char* buf, int le
 
 #define VIRTFN_LINK_NAME_SIZE 128
 #define VIRTFN_PATH_SIZE 128
-static void read_vf_info(vf_info* virtfn_info, u_int16_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func, char* virtfn)
+static void read_vf_info(vf_info* virtfn_info, u_int32_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func, char* virtfn)
 {
     char linkname[VIRTFN_LINK_NAME_SIZE];
     char virtfn_path[VIRTFN_PATH_SIZE];
@@ -3696,7 +3758,7 @@ static void read_vf_info(vf_info* virtfn_info, u_int16_t domain, u_int8_t bus, u
     virtfn_info->net_devs = get_ib_net_devs(vf_domain, vf_bus, vf_dev, vf_func, 0);
 }
 
-vf_info* get_vf_info(u_int16_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func, u_int16_t* len)
+vf_info* get_vf_info(u_int32_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func, u_int16_t* len)
 {
     int vf_count = 0;
     char* vf_devs = NULL;
@@ -3753,7 +3815,7 @@ vf_info* get_vf_info(u_int16_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func
     return vf_arr;
 }
 
-static void get_numa_node(u_int16_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func, char* data)
+static void get_numa_node(u_int32_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func, char* data)
 {
     char numa_path[64];
     int c;
@@ -3829,10 +3891,10 @@ dev_info* mdevices_info_v_ul(int mask, int* len, int verbosity)
     dev_name = devs;
     for (i = 0; i < rc; i++)
     {
-        int domain = 0;
-        int bus = 0;
-        int dev = 0;
-        int func = 0;
+        unsigned int domain = 0;
+        unsigned int bus = 0;
+        unsigned int dev = 0;
+        unsigned int func = 0;
 
         dev_info_arr[i].ul_mode = 1;
         dev_info_arr[i].type = (Mdevs)MDEVS_TAVOR_CR;
@@ -3844,7 +3906,7 @@ dev_info* mdevices_info_v_ul(int mask, int* len, int verbosity)
         strncpy(dev_info_arr[i].pci.cr_dev, dev_name, sizeof(dev_info_arr[i].pci.cr_dev) - 1);
 
         /* update dbdf */
-        if (sscanf(dev_name, "%x:%x:%x.%x", &domain, &bus, &dev, &func) != 4)
+        if (sscanf(dev_name, "%8x:%x:%x.%x", &domain, &bus, &dev, &func) != 4)
         {
             rc = -1;
             len = 0;
@@ -5143,7 +5205,7 @@ int mvpd_read4_ul_int(mfile* mf, unsigned int offset, u_int8_t value[4])
     {
         return mst_driver_vpd_read4(mf, offset, value);
     }
-    u_int16_t domain = (mf->dinfo)->pci.domain;
+    u_int32_t domain = (mf->dinfo)->pci.domain;
     u_int8_t bus = (mf->dinfo)->pci.bus;
     u_int8_t dev = (mf->dinfo)->pci.dev;
     u_int8_t func = (mf->dinfo)->pci.func;
@@ -5372,6 +5434,10 @@ static int check_zf_through_memory(mfile* mf)
             gis_address = 0x152080;
             break;
 
+        case DeviceSpectrum6_HwId:
+            gis_address = 0x155004;
+            break;
+
         default:
             return 0; /* Device does not support Zombiefish mode */
     }
@@ -5382,7 +5448,10 @@ static int check_zf_through_memory(mfile* mf)
         DBG_PRINTF("-E- Failed to read global_image_status from CR space (BAR0).\n");
         return 0;
     }
+
     gis = EXTRACT(gis, 0, 16); /* Extract the first 16 bits */
+    DBG_PRINTF("check_zf_through_memory: gis_address: 0x%zx, gis: 0x%x\n", gis_address, gis);
+
     return gis == AUTHENTICATION_FAILURE;
 }
 
@@ -5405,13 +5474,15 @@ static int check_zf_through_vsc(mfile* mf)
     uint32_t in_recovery = EXTRACT(first_dword, 1, 1);       /* Extract bit 1 */
     uint32_t flash_control_vld = EXTRACT(first_dword, 2, 1); /* Extract bit 2 */
     uint32_t initializing = EXTRACT(first_dword, 0, 1);      /* Extract bit 0 */
+    DBG_PRINTF("Reading from VSC space: 0x%x. in_recovery: %u, flash_control_vld: %u, initializing: %u\n",
+               mf->address_space, in_recovery, flash_control_vld, initializing);
 
     mf->vsc_recovery_space_flash_control_vld = flash_control_vld;
     mset_addr_space(mf, prev_address_space);
 
     if (in_recovery && initializing)
     {
-        DBG_PRINTF("Device with HW ID: %u is in ZombieFish mode. flash_control_vld: %u\n", mf->device_hw_id, flash_control_vld);
+        DBG_PRINTF("Device with HW ID: 0x%x is in ZombieFish mode. flash_control_vld: %u\n", mf->device_hw_id, flash_control_vld);
         return 1;
     }
 
@@ -5460,6 +5531,7 @@ int read_device_id(mfile* mf, u_int32_t* device_id)
     {
         *device_id = nvml_get_device_id(mf->nvml_device);
         mf->hw_dev_id = (*device_id & 0xffff);
+        mf->functional_device_id = resolve_functional_device_id(mf->hw_dev_id, mf->rev_id, mf->pci_device_id);
         return 4;
     }
 #endif
@@ -5484,6 +5556,7 @@ int read_device_id(mfile* mf, u_int32_t* device_id)
     }
     
     mf->hw_dev_id = (*device_id & 0xffff);
+    mf->functional_device_id = resolve_functional_device_id(mf->hw_dev_id, mf->rev_id, mf->pci_device_id);
     DBG_PRINTF("MTCR:read_device_id: mf->hw_dev_id:0x%x\n", mf->hw_dev_id);
     return rc;
 }

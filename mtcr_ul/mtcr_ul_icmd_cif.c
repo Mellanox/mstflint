@@ -47,6 +47,7 @@
 #include "mtcr_ib_res_mgt.h"
 #endif
 #include "tools_dev_types.h"
+#include "mft_core/device/device_info/device_properties_api.h"
 
 #include "mtcr_mem_ops.h"
 #include "mtcr_ul_com.h"
@@ -58,57 +59,22 @@
 
 /* _DEBUG_MODE   // un-comment this to enable debug prints */
 
-#define ICMD_DEFAULT_TIMEOUT 10000
+#define ICMD_DEFAULT_TIMEOUT 40000
+/* Kept for the devices that are not described by the device-properties
+   catalog: ConnectIB and the Amos gearbox. Every other device takes these
+   values from the catalog. */
 #define STAT_CFG_NOT_DONE_ADDR_CIB 0xb0004
-#define STAT_CFG_NOT_DONE_ADDR_CX4 0xb0004
-#define STAT_CFG_NOT_DONE_ADDR_SW_IB 0x80010
-#define STAT_CFG_NOT_DONE_ADDR_QUANTUM 0x100010
-#define STAT_CFG_NOT_DONE_ADDR_CX5 0xb5e04
 #define STAT_CFG_NOT_DONE_ADDR_CX6 0xb5f04
-#define STAT_CFG_NOT_DONE_ADDR_CX7 0xb5f04
-#define STAT_CFG_NOT_DONE_ADDR_CX8 656132
-#define STAT_CFG_NOT_DONE_ADDR_GPU 0x3100010
 #define STAT_CFG_NOT_DONE_BITOFF_CIB 31
-#define STAT_CFG_NOT_DONE_BITOFF_CX4 31
-#define STAT_CFG_NOT_DONE_BITOFF_SW_IB 0
 #define STAT_CFG_NOT_DONE_BITOFF_CX5 31
-#define STAT_CFG_NOT_DONE_BITOFF_CX7 31
-#define SEMAPHORE_ADDR_CIB 0xe27f8   /* sem62 */
-#define SEMAPHORE_ADDR_CX4 0xe250c   /* sem67 bit31 is the semaphore bit here (only one semaphore in this dword) */
-#define SEMAPHORE_ADDR_SW_IB 0xa24f8 /* sem 62 */
-#define SEMAPHORE_ADDR_QUANTUM 0xa68f8
-#define SEMAPHORE_ADDR_QUANTUM2 0xa52f8
-#define SEMAPHORE_ADDR_QUANTUM3 0xa52f8 /* 0x25b */
-#define SEMAPHORE_ADDR_NVLINK6_SWITCH 0x1550f8 /* 0x278 */
-#define SEMAPHORE_ADDR_GB100 0xa52f8
-#define SEMAPHORE_ADDR_CX5 0xe74e0
-#define SEMAPHORE_ADDR_CX7 0xe5660
-#define SEMAPHORE_ADDR_CX8 358016
-#define SEMAPHORE_ADDR_GPU 0x308F4F8
-#define SEMAPHORE_ADDR_GR100 0x30938F8
+#define SEMAPHORE_ADDR_CIB 0xe27f8 /* sem62 */
+#define SEMAPHORE_ADDR_CX4 0xe250c /* sem67 bit31 is the semaphore bit here (only one semaphore in this dword) */
 #define HCR_ADDR_CIB 0x0
-#define HCR_ADDR_CX4 HCR_ADDR_CIB
-#define HCR_ADDR_CX5 HCR_ADDR_CIB
-#define HCR_ADDR_CX7 HCR_ADDR_CIB
-#define HCR_ADDR_SW_IB 0x80000
-#define HCR_ADDR_QUANTUM 0x100000
-#define HCR_ADDR_GPU 0x3100044
 #define ICMD_VERSION_BITOFF 24
-#define ICMD_VERSION_BITOFF_GPU 0
 #define ICMD_VERSION_BITLEN 8
-#define ICMD_VERSION_BITLEN_CX8 4
 #define CMD_PTR_ADDR_CIB 0x0
-#define CMD_PTR_ADDR_SW_IB 0x80000
-#define CMD_PTR_ADDR_QUANTUM 0x100000
-#define CMD_PTR_ADDR_CX4 CMD_PTR_ADDR_CIB
-#define CMD_PTR_ADDR_CX5 CMD_PTR_ADDR_CIB
-#define CMD_PTR_ADDR_CX7 CMD_PTR_ADDR_CIB
-#define CMD_PTR_ADDR_CX8 27262976
-#define CMD_PTR_ADDR_GPU 0x3100000
 #define CMD_PTR_BITOFF 0
 #define CMD_PTR_BITLEN 24
-#define CMD_PTR_BITLEN_CX8 28
-#define CMD_PTR_BITLEN_GPU 32
 #define CTRL_OFFSET 0x3fc
 #define BUSY_BITOFF 0
 #define BUSY_BITLEN 1
@@ -290,41 +256,12 @@ enum
 
 /***********************************************
  *
- *  get correct addresses for : STAT_CCFG_NOT_DONE_ADDR, SEMAPHORE_ADDR, HCR_ADDR, CMD_PTR_ADDR
- *  according to Hw devid
+ *  STAT_CCFG_NOT_DONE_ADDR, SEMAPHORE_ADDR, HCR_ADDR and CMD_PTR_ADDR are read
+ *  from the device-properties catalog. Only the two devices that are absent
+ *  from it are still matched by HW devid here.
  */
 
-#define HW_ID_ADDR 0xf0014
 #define CIB_HW_ID 511
-#define CX4_HW_ID 521
-#define CX4LX_HW_ID 523
-#define CX5_HW_ID 525
-#define CX6_HW_ID 527
-#define CX6DX_HW_ID 530
-#define CX6LX_HW_ID 534
-#define CX7_HW_ID 536
-#define CX8_HW_ID 542
-#define CX9_HW_ID 548
-#define CX8_PURE_PCIE_SWITCH_HW_ID 546
-#define CX9_PURE_PCIE_SWITCH_HW_ID 552
-#define BF_HW_ID 529
-#define BF2_HW_ID 532
-#define BF3_HW_ID 540
-#define BF4_HW_ID 544
-#define SW_IB_HW_ID 583
-#define SW_EN_HW_ID 585
-#define SW_IB2_HW_ID 587
-#define QUANTUM_HW_ID 589
-#define SPECTRUM2_HW_ID 590
-#define SPECTRUM3_HW_ID 592
-#define QUANTUM2_HW_ID 599
-#define QUANTUM3_HW_ID 603 /* 0x25b */
-#define NVLINK6_SWITCH_HW_ID 632 /* 0x278 */
-#define GB100_HW_ID 0x2900
-#define GR100_HW_ID 0x3000
-#define SPECTRUM4_HW_ID 596
-#define SPECTRUM5_HW_ID 624
-#define SPECTRUM6_HW_ID 628
 #define AMOS_GBOX_HW_ID 594
 
 /***** GLOBALS *****/
@@ -1064,130 +1001,17 @@ static int icmd_init_cr(mfile* mf)
         return ME_ICMD_NOT_SUPPORTED;
     }
 
-    mf->icmd.cmd_ptr_bitlen = CMD_PTR_BITLEN;
-    mf->icmd.version_bit_offset = ICMD_VERSION_BITOFF;
     switch (hw_id & 0xffff)
     {
+        /* ConnectIB is not described by the device-properties catalog. */
         case (CIB_HW_ID):
             cmd_ptr_addr = CMD_PTR_ADDR_CIB;
             hcr_address = HCR_ADDR_CIB;
+            mf->icmd.cmd_ptr_bitlen = CMD_PTR_BITLEN;
+            mf->icmd.version_bit_offset = ICMD_VERSION_BITOFF;
             mf->icmd.semaphore_addr = SEMAPHORE_ADDR_CIB;
             mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CIB;
             mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CIB;
-            break;
-
-        case (CX4LX_HW_ID):
-        case (CX4_HW_ID):
-            cmd_ptr_addr = CMD_PTR_ADDR_CX4;
-            hcr_address = HCR_ADDR_CX4;
-            mf->icmd.semaphore_addr = SEMAPHORE_ADDR_CX4;
-            mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CX4;
-            mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CIB;
-            break;
-
-        case (CX5_HW_ID):
-        case (BF_HW_ID):
-            cmd_ptr_addr = CMD_PTR_ADDR_CX5;
-            hcr_address = HCR_ADDR_CX5;
-            mf->icmd.semaphore_addr = SEMAPHORE_ADDR_CX5;
-            mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CX5;
-            mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CIB;
-            break;
-
-        case (SW_IB_HW_ID):
-        case (SW_EN_HW_ID):
-        case (SW_IB2_HW_ID):
-            cmd_ptr_addr = CMD_PTR_ADDR_SW_IB;
-            hcr_address = HCR_ADDR_SW_IB;
-            mf->icmd.semaphore_addr = SEMAPHORE_ADDR_SW_IB;
-            mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_SW_IB;
-            mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_SW_IB;
-            break;
-
-        case (QUANTUM_HW_ID):
-        case (SPECTRUM2_HW_ID):
-        case (SPECTRUM3_HW_ID):
-            cmd_ptr_addr = CMD_PTR_ADDR_QUANTUM;
-            hcr_address = HCR_ADDR_QUANTUM;
-            mf->icmd.semaphore_addr = SEMAPHORE_ADDR_QUANTUM;
-            mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_QUANTUM;
-            mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_SW_IB;
-            break;
-
-        case (QUANTUM2_HW_ID):
-        case (SPECTRUM4_HW_ID):
-        case (SPECTRUM5_HW_ID):
-        case (SPECTRUM6_HW_ID):
-            cmd_ptr_addr = CMD_PTR_ADDR_QUANTUM;
-            hcr_address = HCR_ADDR_QUANTUM;
-            mf->icmd.semaphore_addr = SEMAPHORE_ADDR_QUANTUM2;
-            mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_QUANTUM;
-            mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_SW_IB;
-            break;
-
-        case (QUANTUM3_HW_ID):
-            cmd_ptr_addr = 0x200000;
-            hcr_address = 0x200000;
-            mf->icmd.semaphore_addr = 0x1550f8;
-            mf->icmd.static_cfg_not_done_addr = 0x200010;
-            mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_SW_IB;
-            break;
-
-        case (NVLINK6_SWITCH_HW_ID):
-            cmd_ptr_addr = 0x200000;
-            mf->icmd.cmd_ptr_bitlen = 24;
-            mf->icmd.semaphore_addr = SEMAPHORE_ADDR_NVLINK6_SWITCH;
-            mf->icmd.static_cfg_not_done_addr = 0x200010;
-            mf->icmd.static_cfg_not_done_offs = 0;
-            mf->icmd.version_bit_offset = 24;
-            mf->icmd.version_bitlen = 8;
-            hcr_address = 0x200000;
-            break;
-
-        case (GB100_HW_ID):
-        case (GR100_HW_ID):
-            cmd_ptr_addr = CMD_PTR_ADDR_GPU;
-            hcr_address = HCR_ADDR_GPU;
-            mf->icmd.semaphore_addr = hw_id == GR100_HW_ID ? SEMAPHORE_ADDR_GR100 : SEMAPHORE_ADDR_GPU;
-            mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_GPU;
-            mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_SW_IB;
-            mf->icmd.cmd_ptr_bitlen = CMD_PTR_BITLEN_GPU;
-            mf->icmd.version_bit_offset = ICMD_VERSION_BITOFF_GPU;
-            break;
-
-        case (CX6_HW_ID):
-        case (CX6DX_HW_ID):
-        case (CX6LX_HW_ID):
-        case (BF2_HW_ID):
-            cmd_ptr_addr = CMD_PTR_ADDR_CX5;
-            hcr_address = HCR_ADDR_CX5;
-            mf->icmd.semaphore_addr = SEMAPHORE_ADDR_CX5;
-            mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CX6;
-            mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CX5;
-            break;
-
-        case (CX7_HW_ID):
-        case (BF3_HW_ID):
-        case (BF4_HW_ID):
-            cmd_ptr_addr = CMD_PTR_ADDR_CX7;
-            hcr_address = HCR_ADDR_CX7;
-            mf->icmd.semaphore_addr = SEMAPHORE_ADDR_CX7;
-            mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CX7;
-            mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CX7;
-            break;
-
-        case (CX8_HW_ID):
-        case (CX9_HW_ID):
-        case (CX8_PURE_PCIE_SWITCH_HW_ID):
-        case (CX9_PURE_PCIE_SWITCH_HW_ID):
-            cmd_ptr_addr = CMD_PTR_ADDR_CX8;
-            mf->icmd.cmd_ptr_bitlen = CMD_PTR_BITLEN_CX8;
-            mf->icmd.semaphore_addr = SEMAPHORE_ADDR_CX8;
-            mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CX8;
-            mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CX7;
-            mf->icmd.version_bit_offset = CMD_PTR_BITLEN_CX8;
-            mf->icmd.version_bitlen = ICMD_VERSION_BITLEN_CX8;
-            hcr_address = CMD_PTR_ADDR_CX8; /* hcr_address is "version address" */
             break;
 
         case (AMOS_GBOX_HW_ID):
@@ -1215,7 +1039,31 @@ static int icmd_init_cr(mfile* mf)
             break;
 
         default:
-            return ME_ICMD_NOT_SUPPORTED;
+        {
+            u_int32_t did = mf->functional_device_id;
+            if (is_cable(did) || (is_linkx(did) && (did != ArcusESddv && !is_retimer(did))))
+            {
+                DBG_PRINTF("icmd_init_cr: ICMD not supported for device type.\n");
+                return ME_ICMD_NOT_SUPPORTED;
+            }
+            /* get_property_as_* returns 0 for a missing entry, which would leave
+               every address at 0 and fail later on a CR access at address 0. */
+            if (get_property_as_cstring(did, PROP_DEVICE_NAME)[0] == '\0')
+            {
+                DBG_PRINTF("icmd: device id 0x%x not in property catalog.\n", did);
+                return ME_ICMD_NOT_SUPPORTED;
+            }
+            cmd_ptr_addr = get_property_as_uint(did, PROP_CMD_PTR_ADDRESS);
+            /* hcr_address is the "version address" */
+            hcr_address = get_property_as_uint(did, PROP_VERSION_ADDRESS);
+            mf->icmd.cmd_ptr_bitlen = get_property_as_int(did, PROP_CMD_PTR_BITLEN);
+            mf->icmd.version_bit_offset = get_property_as_int(did, PROP_VERSION_BIT_OFFSET);
+            mf->icmd.version_bitlen = get_property_as_int(did, PROP_VERSION_BITLEN);
+            mf->icmd.semaphore_addr = get_property_as_int(did, PROP_SEMAPHORE_ADDRESS);
+            mf->icmd.static_cfg_not_done_addr = get_property_as_int(did, PROP_STATIC_CFG_NOT_DONE_ADDRESS);
+            mf->icmd.static_cfg_not_done_offs = get_property_as_int(did, PROP_STATIC_CFG_NOT_DONE_OFFSET);
+            break;
+        }
     }
     mf->icmd.max_cmd_size = ICMD_MAX_CMD_SIZE;
     icmd_ver = get_version(mf, hcr_address);
@@ -1267,70 +1115,37 @@ static int icmd_init_vcr_crspace_addr(mfile* mf)
 
     switch (hw_id & 0xffff)
     {
+        /* ConnectIB is not described by the device-properties catalog. */
         case (CIB_HW_ID):
             mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CIB;
             mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CIB;
             break;
 
-        case (CX4LX_HW_ID):
-        case (CX4_HW_ID):
-            mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CX4;
-            mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CIB;
-            break;
-
-        case (CX5_HW_ID):
-        case (BF_HW_ID):
-            mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CX5;
-            mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CIB;
-            break;
-
-        case (SW_IB_HW_ID):
-        case (SW_EN_HW_ID):
-        case (SW_IB2_HW_ID):
-            mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_SW_IB;
-            mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_SW_IB;
-            break;
-
-        case (QUANTUM_HW_ID):
-        case (SPECTRUM2_HW_ID):
-        case (SPECTRUM3_HW_ID):
-        case (QUANTUM2_HW_ID):
-        case (QUANTUM3_HW_ID):
-        case (NVLINK6_SWITCH_HW_ID):
-        case (GB100_HW_ID):
-        case (SPECTRUM4_HW_ID):
-        case (SPECTRUM5_HW_ID):
-        case (SPECTRUM6_HW_ID):
-            mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_QUANTUM;
-            mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_SW_IB;
-            break;
-
-        case (CX6_HW_ID):
-        case (CX6DX_HW_ID):
-        case (CX6LX_HW_ID):
-        case (BF2_HW_ID):
-        case (BF3_HW_ID):
-        case (CX7_HW_ID):
-        case (BF4_HW_ID):
-            mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CX6;
-            mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CX5; /* same bit offset as CX5 */
-            break;
-
-        case (CX8_HW_ID):
-        case (CX8_PURE_PCIE_SWITCH_HW_ID):
-        case (CX9_HW_ID):
-        case (CX9_PURE_PCIE_SWITCH_HW_ID):
-            mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CX8;
-            mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CX7;
-            break;
-
+        /* The gearbox reuses the CX6 address, it has no catalog entry of its own. */
         case (AMOS_GBOX_HW_ID):
             mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CX6;
             mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CX5; /* same bit offset as CX5 */
             break;
 
         default:
-            return ME_ICMD_NOT_SUPPORTED;
+        {
+            u_int32_t did = mf->functional_device_id;
+            if (is_cable(did) || ((is_linkx(did) || is_retimer(did)) && did != ArcusESddv))
+            {
+                DBG_PRINTF("icmd_init_vcr_crspace: not supported for this device.\n");
+                return ME_ICMD_NOT_SUPPORTED;
+            }
+            /* MFT does not check this. Without it a device that is missing from
+               the catalog is accepted with the address left at 0. */
+            if (get_property_as_cstring(did, PROP_DEVICE_NAME)[0] == '\0')
+            {
+                DBG_PRINTF("icmd: device id 0x%x not in property catalog.\n", did);
+                return ME_ICMD_NOT_SUPPORTED;
+            }
+            mf->icmd.static_cfg_not_done_addr = get_property_as_int(did, PROP_STATIC_CFG_NOT_DONE_ADDRESS);
+            mf->icmd.static_cfg_not_done_offs = get_property_as_int(did, PROP_STATIC_CFG_NOT_DONE_OFFSET);
+            break;
+        }
     }
     return ME_OK;
 }

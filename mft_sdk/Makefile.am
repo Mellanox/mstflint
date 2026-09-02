@@ -136,6 +136,32 @@ sdkinclude_HEADERS = \
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = mstflint_sdk.pc
 
+# ldconfig registration for the private SDK library directory.
+#
+# libmstflint_sdk.so lives in $(libdir)/mstflint/sdk, which no dynamic linker
+# searches by default, so a consumer that links it by soname alone (DOCA's
+# libdoca_mgmt does) fails with "libmstflint_sdk.so => not found". Ship an
+# ld.so.conf.d snippet naming that directory; the packaging then runs ldconfig
+# in its post-install scriptlet.
+#
+# ldsoconfdir is /etc/ld.so.conf.d and deliberately independent of $(sysconfdir)
+# -- ldconfig only reads the real /etc, so a --prefix=/opt install must still put
+# the snippet there. Configure it with --with[out]-ldsoconfdir. ldsoconffile is a
+# plain make variable so a package shipping under a private name (e.g.
+# mstflint-sdk-local, installed side by side with a distro mstflint-sdk) can pick
+# a non-colliding file name: make install-sdk ldsoconffile=mstflint-sdk-local.conf
+ldsoconfdir = @LDSOCONFDIR@
+ldsoconffile = mstflint-sdk.conf
+
+if INSTALL_SDK_LDSOCONF
+install-data-local:
+	$(MKDIR_P) $(DESTDIR)$(ldsoconfdir)
+	echo '$(sdklibdir)' > $(DESTDIR)$(ldsoconfdir)/$(ldsoconffile)
+
+uninstall-local:
+	rm -f $(DESTDIR)$(ldsoconfdir)/$(ldsoconffile)
+endif
+
 # The SDK ships as a redistributable binary: strip the installed shared object
 # and drop the libtool .la (nothing links against it, and .la files are not
 # wanted in a distribution).

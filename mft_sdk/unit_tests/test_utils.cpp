@@ -13,24 +13,181 @@
 #include "test_utils.h"
 
 #include <string>
-#include <map>
 #include <sys/types.h>
 
-#include "mlxlink/modules/mlxlink_maps.h"
+// mlxlink_enums.h names bare `string` in a couple of helper structs (every
+// mlxlink TU pulls std:: in unqualified before including it).
+using std::string;
+#include "mlxlink/modules/mlxlink_enums.h"
 
 namespace
 {
 
 thread_local std::string g_stringBuffer;
 
+/* Operational-info enum -> mlxlink display name.
+ *
+ * Deliberately NOT MlxlinkMaps::getInstance(). That singleton lives inside
+ * the SDK shared object and is reached through a C++ class layout and a
+ * std::string ABI that only agree when the harness and the .so were produced
+ * by the same toolchain from the same headers. They are not: this harness is
+ * built by MFT (pre-C++11 COW std::string, MFT's mlxlink_maps.h member
+ * order) and is also run against libmstflint_sdk.so (SSO std::string,
+ * mstflint's member order, MlxlinkMaps declared with a different member
+ * index). Both mismatches are silent - the read lands in-bounds on garbage -
+ * and every enum-decoded op-info field came out "Unknown(N)" even though the
+ * numeric value underneath was correct.
+ *
+ * The display STRINGS below are the same mlxlink_enums.h constants
+ * MlxlinkMaps::initSdkOperationalInfo*Mapping() uses, so an mlxlink rename
+ * still propagates here automatically; only the value<->name pairing is
+ * duplicated. Keep in sync with mlxlink/modules/mlxlink_maps.cpp.
+ */
 template<typename EnumType>
-std::string lookupEnum(const std::map<std::string, EnumType>& map, EnumType value)
+struct EnumName
 {
-    for (const auto& pair : map)
+    EnumType value;
+    const char* name;
+};
+
+const EnumName<OperationalInfoState> STATE_NAMES[] = {
+  {OPERATIONAL_INFO_STATE_DISABLE, PM_STATE_DISABLE},
+  {OPERATIONAL_INFO_STATE_PORT_PLL_DOWN, PM_STATE_PORT_PLL_DOWN},
+  {OPERATIONAL_INFO_STATE_POLLING, PM_STATE_POLLING},
+  {OPERATIONAL_INFO_STATE_ACTIVE, PM_STATE_ACTIVE},
+  {OPERATIONAL_INFO_STATE_CLOSE_PORT, PM_STATE_CLOSE_PORT},
+  {OPERATIONAL_INFO_STATE_PHYSICAL_LINKUP, PM_STATE_PHYSICAL_LINKUP},
+  {OPERATIONAL_INFO_STATE_SLEEP, PM_STATE_SLEEP},
+  {OPERATIONAL_INFO_STATE_RX_DISABLE, PM_STATE_RX_DISABLE},
+  {OPERATIONAL_INFO_STATE_SIGNAL_DETECT, PM_STATE_SIGNAL_DETECT},
+  {OPERATIONAL_INFO_STATE_RECEIVER_DETECT, PM_STATE_RECEIVER_DETECT},
+  {OPERATIONAL_INFO_STATE_SYNC_PEER, PM_STATE_SYNC_PEER},
+  {OPERATIONAL_INFO_STATE_NEGOTIATION, PM_STATE_NEGOTIATION},
+  {OPERATIONAL_INFO_STATE_TRAINING, PM_STATE_TRAINING},
+  {OPERATIONAL_INFO_STATE_SUB_FSM_ACTIVE, PM_STATE_SUB_FSM_ACTIVE},
+};
+
+const EnumName<OperationalInfoPhysicalState> PHYSICAL_STATE_NAMES[] = {
+  {OPERATIONAL_INFO_PHYSICAL_STATE_ETH_AN_FSM_ENABLE, ETH_AN_FSM_ENABLE},
+  {OPERATIONAL_INFO_PHYSICAL_STATE_ETH_AN_FSM_XMIT_DISABLE, ETH_AN_FSM_XMIT_DISABLE},
+  {OPERATIONAL_INFO_PHYSICAL_STATE_ETH_AN_FSM_ABILITY_DETECT, ETH_AN_FSM_ABILITY_DETECT},
+  {OPERATIONAL_INFO_PHYSICAL_STATE_ETH_AN_FSM_ACK_DETECT, ETH_AN_FSM_ACK_DETECT},
+  {OPERATIONAL_INFO_PHYSICAL_STATE_ETH_AN_FSM_COMPLETE_ACK, ETH_AN_FSM_COMPLETE_ACK},
+  {OPERATIONAL_INFO_PHYSICAL_STATE_ETH_AN_FSM_AN_GOOD_CHECK, ETH_AN_FSM_AN_GOOD_CHECK},
+  {OPERATIONAL_INFO_PHYSICAL_STATE_ETH_LINK_UP, ETH_LINK_UP},
+  {OPERATIONAL_INFO_PHYSICAL_STATE_ETH_AN_FSM_NEXT_PAGE_WAIT, ETH_AN_FSM_NEXT_PAGE_WAIT},
+  {OPERATIONAL_INFO_PHYSICAL_STATE_ETH_AN_FSM_LINK_STAT_CHECK, ETH_AN_FSM_LINK_STAT_CHECK},
+  {OPERATIONAL_INFO_PHYSICAL_STATE_ETH_AN_FSM_EXTRA_TUNE, ETH_AN_FSM_EXTRA_TUNE},
+  {OPERATIONAL_INFO_PHYSICAL_STATE_ETH_AN_FSM_FIX_REVERSALS, ETH_AN_FSM_FIX_REVERSALS},
+  {OPERATIONAL_INFO_PHYSICAL_STATE_ETH_AN_FSM_IB_FAIL, ETH_AN_FSM_IB_FAIL},
+  {OPERATIONAL_INFO_PHYSICAL_STATE_ETH_AN_FSM_POST_LOCK_TUNE, ETH_AN_FSM_POST_LOCK_TUNE},
+  {OPERATIONAL_INFO_PHYSICAL_STATE_IB_NA, IB_PHY_FSM_NA},
+  {OPERATIONAL_INFO_PHYSICAL_STATE_IB_INITIALIZING, IB_PHY_FSM_INITIALIZING},
+  {OPERATIONAL_INFO_PHYSICAL_STATE_IB_RECOVER_CONFIG, IB_PHY_FSM_RECOVER_CONFIG},
+  {OPERATIONAL_INFO_PHYSICAL_STATE_IB_CONFIG_TEST, IB_PHY_FSM_CONFIG_TEST},
+  {OPERATIONAL_INFO_PHYSICAL_STATE_IB_WAIT_REMOTE_TEST, IB_PHY_FSM_WAIT_REMOTE_TEST},
+  {OPERATIONAL_INFO_PHYSICAL_STATE_IB_WAIT_CFG_ENHANCED, IB_PHY_FSM_WAIT_CONFIG_ENHANCED},
+  {OPERATIONAL_INFO_PHYSICAL_STATE_IB_CONFIG_IDLE, IB_PHY_FSM_CONFIG_IDLE},
+  {OPERATIONAL_INFO_PHYSICAL_STATE_IB_LINK_UP, IB_PHY_FSM_LINK_UP},
+};
+
+const EnumName<OperationalInfoSpeed> SPEED_NAMES[] = {
+  {OPERATIONAL_INFO_SPEED_BASET10M, SPEED_BASET10M},
+  {OPERATIONAL_INFO_SPEED_BASETX100M, SPEED_BASETX100M},
+  {OPERATIONAL_INFO_SPEED_BASET1000M, SPEED_BASET1000M},
+  {OPERATIONAL_INFO_SPEED_10M, SPEED_10M},
+  {OPERATIONAL_INFO_SPEED_100M, SPEED_100M},
+  {OPERATIONAL_INFO_SPEED_CX, SPEED_CX},
+  {OPERATIONAL_INFO_SPEED_KX, SPEED_KX},
+  {OPERATIONAL_INFO_SPEED_CX4, SPEED_CX4},
+  {OPERATIONAL_INFO_SPEED_KX4, SPEED_KX4},
+  {OPERATIONAL_INFO_SPEED_BASET10G, SPEED_BASET10G},
+  {OPERATIONAL_INFO_SPEED_10GBE, SPEED_10GBE},
+  {OPERATIONAL_INFO_SPEED_20GBE, SPEED_20GBE},
+  {OPERATIONAL_INFO_SPEED_25GBE, SPEED_25GBE},
+  {OPERATIONAL_INFO_SPEED_40GBE, SPEED_40GBE},
+  {OPERATIONAL_INFO_SPEED_50GBE, SPEED_50GBE},
+  {OPERATIONAL_INFO_SPEED_56GBE, SPEED_56GBE},
+  {OPERATIONAL_INFO_SPEED_100GBE, SPEED_100GBE},
+  {OPERATIONAL_INFO_SPEED_1G, SPEED_1G},
+  {OPERATIONAL_INFO_SPEED_2_5G, SPEED_2_5G},
+  {OPERATIONAL_INFO_SPEED_5G, SPEED_5G},
+  {OPERATIONAL_INFO_SPEED_10G, SPEED_10G},
+  {OPERATIONAL_INFO_SPEED_25G, SPEED_25G},
+  {OPERATIONAL_INFO_SPEED_40G, SPEED_40G},
+  {OPERATIONAL_INFO_SPEED_50G, SPEED_50G},
+  {OPERATIONAL_INFO_SPEED_100G, SPEED_100G},
+  {OPERATIONAL_INFO_SPEED_200G, SPEED_200G},
+  {OPERATIONAL_INFO_SPEED_400G, SPEED_400G},
+  {OPERATIONAL_INFO_SPEED_800G, SPEED_800G},
+  {OPERATIONAL_INFO_SPEED_1600G, SPEED_1600G},
+  {OPERATIONAL_INFO_SPEED_IB_SDR, SPEED_IB_SDR},
+  {OPERATIONAL_INFO_SPEED_IB_DDR, SPEED_IB_DDR},
+  {OPERATIONAL_INFO_SPEED_IB_QDR, SPEED_IB_QDR},
+  {OPERATIONAL_INFO_SPEED_IB_FDR10, SPEED_IB_FDR10},
+  {OPERATIONAL_INFO_SPEED_IB_FDR, SPEED_IB_FDR},
+  {OPERATIONAL_INFO_SPEED_IB_EDR, SPEED_IB_EDR},
+  {OPERATIONAL_INFO_SPEED_IB_HDR, SPEED_IB_HDR},
+  {OPERATIONAL_INFO_SPEED_IB_NDR, SPEED_IB_NDR},
+  {OPERATIONAL_INFO_SPEED_IB_XDR, SPEED_IB_XDR},
+  {OPERATIONAL_INFO_SPEED_NVLINK_SDR, SPEED_NVLINK_SDR},
+  {OPERATIONAL_INFO_SPEED_NVLINK_DDR, SPEED_NVLINK_DDR},
+  {OPERATIONAL_INFO_SPEED_NVLINK_QDR, SPEED_NVLINK_QDR},
+  {OPERATIONAL_INFO_SPEED_NVLINK_FDR10, SPEED_NVLINK_FDR10},
+  {OPERATIONAL_INFO_SPEED_NVLINK_FDR, SPEED_NVLINK_FDR},
+  {OPERATIONAL_INFO_SPEED_NVLINK_EDR, SPEED_NVLINK_EDR},
+  {OPERATIONAL_INFO_SPEED_NVLINK_HDR, SPEED_NVLINK_HDR},
+  {OPERATIONAL_INFO_SPEED_NVLINK_NDR, SPEED_NVLINK_NDR},
+  {OPERATIONAL_INFO_SPEED_NVLINK_XDR, SPEED_NVLINK_XDR},
+  {OPERATIONAL_INFO_SPEED_NVLINK_400G_2X_MODE_B, SPEED_NVLINK_400G_2X_MODE_B},
+  {OPERATIONAL_INFO_SPEED_NVLINK_360G_2X_MODE_B, SPEED_NVLINK_360G_2X_MODE_B},
+  {OPERATIONAL_INFO_SPEED_NVLINK_328G_2X_MODE_B, SPEED_NVLINK_328G_2X_MODE_B},
+  {OPERATIONAL_INFO_SPEED_NVLINK_378G_2X_MODE_B, SPEED_NVLINK_378G_2X_MODE_B},
+  {OPERATIONAL_INFO_SPEED_NVLINK_345G_2X_MODE_B, SPEED_NVLINK_345G_2X_MODE_B},
+};
+
+const EnumName<OperationalInfoFec> FEC_NAMES[] = {
+  {OPERATIONAL_INFO_FEC_NO_FEC, FEC_NO_FEC},
+  {OPERATIONAL_INFO_FEC_FIRECODE_FEC, FEC_FIRECODE_FEC},
+  {OPERATIONAL_INFO_FEC_STANDARD_RS_FEC_528_514, FEC_STANDARD_RS_FEC_528_514},
+  {OPERATIONAL_INFO_FEC_STANDARD_LL_FEC_271_257, FEC_STANDARD_LL_FEC_271_257},
+  {OPERATIONAL_INFO_FEC_INTERLEAVED_QUAD_RS_FEC_544_514, FEC_INTERLEAVED_QUAD_RS_FEC_544_514},
+  {OPERATIONAL_INFO_FEC_INTERLEAVED_QUAD_RS_FEC_PLR_546_516, FEC_INTERLEAVED_QUAD_RS_FEC_PLR_546_516},
+  {OPERATIONAL_INFO_FEC_INTERLEAVED_STANDARD_RS_FEC_544_514, FEC_INTERLEAVED_STANDARD_RS_FEC_544_514},
+  {OPERATIONAL_INFO_FEC_STANDARD_RS_FEC_544_514, FEC_STANDARD_RS_FEC_544_514},
+  {OPERATIONAL_INFO_FEC_INTERLEAVED_OCTET_RS_FEC_PLR_546_516, FEC_INTERLEAVED_OCTET_RS_FEC_PLR_546_516},
+  {OPERATIONAL_INFO_FEC_ETHERNET_CONSORTIUM_LL_50G_RS_FEC_272_258, FEC_LL_50G_RS_FEC_272_258},
+  {OPERATIONAL_INFO_FEC_INTERLEAVED_ETHERNET_CONSORTIUM_LL_50G_RS_FEC_272_258, FEC_INTERLEAVED_LL_50G_RS_FEC_272_258},
+  {OPERATIONAL_INFO_FEC_INTERLEAVED_STANDARD_RS_FEC_PLR_544_514, FEC_INTERLEAVED_STANDARD_RS_FEC_PLR_544_514},
+  {OPERATIONAL_INFO_FEC_RS_FEC_544_514_PLR, FEC_RS_FEC_544_514_PLR},
+  {OPERATIONAL_INFO_FEC_LL_FEC_271_257_PLR, FEC_LL_FEC_271_257_PLR},
+  {OPERATIONAL_INFO_FEC_ETHERNET_CONSORTIUM_LL_50G_RS_FEC_PLR_272_258, FEC_LL_50G_RS_FEC_PLR_272_258},
+  {OPERATIONAL_INFO_FEC_INTERLEAVED_ETHERNET_CONSORTIUM_LL_50G_RS_FEC_PLR_272_258, FEC_INTERLEAVED_LL_50G_RS_FEC_PLR_272_258},
+};
+
+const EnumName<OperationalInfoLoopbackMode> LOOPBACK_MODE_NAMES[] = {
+  {OPERATIONAL_INFO_LOOPBACK_MODE_NO, NO_LOOPBACK},
+  {OPERATIONAL_INFO_LOOPBACK_MODE_PHY_REMOTE, PHY_REMOTE_LOOPBACK},
+  {OPERATIONAL_INFO_LOOPBACK_MODE_PHY_LOCAL, PHY_LOCAL_LOOPBACK},
+  {OPERATIONAL_INFO_LOOPBACK_MODE_EXTERNAL, EXTERNAL_LOOPBACK},
+  {OPERATIONAL_INFO_LOOPBACK_MODE_LINK_LAYER, LINK_LAYER_LOOPBACK},
+  {OPERATIONAL_INFO_LOOPBACK_MODE_NEAR_END_ANALOG, NEAR_END_ANALOG_LOOPBACK},
+  {OPERATIONAL_INFO_LOOPBACK_MODE_NEAR_END_DIGITAL, NEAR_END_DIGITAL_LOOPBACK},
+};
+
+const EnumName<OperationalInfoAutoNegotiation> AUTO_NEGOTIATION_NAMES[] = {
+  {OPERATIONAL_INFO_AUTO_NEGOTIATION_ENABLE, AUTO_NEGOTIATION_ON},
+  {OPERATIONAL_INFO_AUTO_NEGOTIATION_FORCE, AUTO_NEGOTIATION_FORCE},
+};
+
+template<typename EnumType, size_t N>
+std::string lookupEnum(const EnumName<EnumType> (&table)[N], EnumType value)
+{
+    for (size_t i = 0; i < N; i++)
     {
-        if (pair.second == value)
+        if (table[i].value == value)
         {
-            return pair.first;
+            return table[i].name;
         }
     }
     return "Unknown(" + std::to_string(static_cast<int>(value)) + ")";
@@ -96,25 +253,21 @@ extern "C"
 
         switch (field->fieldType)
         {
-            case 0: /* op-info enum → MlxlinkMaps lookup */
+            case 0: /* op-info enum -> mlxlink display name */
             {
-                MlxlinkMaps* maps = MlxlinkMaps::getInstance();
                 int v = *reinterpret_cast<const int*>(base + field->offset);
                 if (field->capabilityBit == TELEMETRY_OP_INFO_STATE)
-                    g_stringBuffer = lookupEnum(maps->_operationalInfoState, static_cast<OperationalInfoState>(v));
+                    g_stringBuffer = lookupEnum(STATE_NAMES, static_cast<OperationalInfoState>(v));
                 else if (field->capabilityBit == TELEMETRY_OP_INFO_PHYSICAL_STATE)
-                    g_stringBuffer =
-                      lookupEnum(maps->_operationalInfoPhysicalState, static_cast<OperationalInfoPhysicalState>(v));
+                    g_stringBuffer = lookupEnum(PHYSICAL_STATE_NAMES, static_cast<OperationalInfoPhysicalState>(v));
                 else if (field->capabilityBit == TELEMETRY_OP_INFO_SPEED)
-                    g_stringBuffer = lookupEnum(maps->_operationalInfoSpeed, static_cast<OperationalInfoSpeed>(v));
+                    g_stringBuffer = lookupEnum(SPEED_NAMES, static_cast<OperationalInfoSpeed>(v));
                 else if (field->capabilityBit == TELEMETRY_OP_INFO_FEC)
-                    g_stringBuffer = lookupEnum(maps->_operationalInfoFec, static_cast<OperationalInfoFec>(v));
+                    g_stringBuffer = lookupEnum(FEC_NAMES, static_cast<OperationalInfoFec>(v));
                 else if (field->capabilityBit == TELEMETRY_OP_INFO_LOOPBACK_MODE)
-                    g_stringBuffer =
-                      lookupEnum(maps->_operationalInfoLoopbackMode, static_cast<OperationalInfoLoopbackMode>(v));
+                    g_stringBuffer = lookupEnum(LOOPBACK_MODE_NAMES, static_cast<OperationalInfoLoopbackMode>(v));
                 else if (field->capabilityBit == TELEMETRY_OP_INFO_AUTO_NEGOTIATION)
-                    g_stringBuffer =
-                      lookupEnum(maps->_operationalInfoAutoNegotiation, static_cast<OperationalInfoAutoNegotiation>(v));
+                    g_stringBuffer = lookupEnum(AUTO_NEGOTIATION_NAMES, static_cast<OperationalInfoAutoNegotiation>(v));
                 else
                     g_stringBuffer = std::to_string(v);
                 return g_stringBuffer.c_str();

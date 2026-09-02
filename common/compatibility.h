@@ -407,6 +407,14 @@ typedef uint8_t u_int8_t;
         memcpy(bytes_dest, &tmp, 4);          \
     } while (0)
 
+#define WORD_TO_BYTES_BE(bytes_dest, w_src) \
+    do                                      \
+    {                                       \
+        u_int16_t tmp;                      \
+        tmp = __cpu_to_be16(*(w_src));      \
+        memcpy(bytes_dest, &tmp, 2);        \
+    } while (0)
+
 /*
  * Old GCC
  * -------

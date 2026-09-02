@@ -2665,7 +2665,6 @@ void BurnSubCommand::updateBurnParams()
     _burnParams.use_cpu_utilization = _flintParams.use_cpu_utilization;
 }
 
-#define VERSION_FORMAT(minor) minor < 100 ? "%d.%d.%04d" : "%d.%04d.%04d"
 bool BurnSubCommand::checkFwVersion(bool CreateFromImgInfo, u_int16_t fw_ver0, u_int16_t fw_ver1, u_int16_t fw_ver2)
 {
     FwVersion current = FwOperations::createFwVersion(&_devInfo.fw_info);
@@ -5036,6 +5035,11 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
     if (fwInfo.fs3_info.ini_file_version)
     {
         printf("INI revision:          0x%x\n", fwInfo.fs3_info.ini_file_version);
+    }
+
+    if (fwInfo.fs3_info.board_ga_valid)
+    {
+        printf("Board Geo Address:     BOARD %x\n", fwInfo.fs3_info.board_ga);
     }
 
     if (fwInfo.fs3_info.geo_address_valid)

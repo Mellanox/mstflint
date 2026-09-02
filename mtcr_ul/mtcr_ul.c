@@ -95,7 +95,19 @@ dev_info* mdevices_info(int mask, int* len)
     int counter, new_length = 0;
 
     dev_info* dev_info_all = mdevices_info_ul(mask, len);
+    if (!dev_info_all || !*len)
+    {
+        return dev_info_all;
+    }
+
     dev_info* dev_info_new = (dev_info*)malloc(sizeof(dev_info) * *len);
+    if (!dev_info_new)
+    {
+        mdevices_info_destroy(dev_info_all, *len);
+        *len = 0;
+        errno = ENOMEM;
+        return NULL;
+    }
 
     // Remove devices without VSEC supported.
     for (counter = 0; counter < *len; counter++)
