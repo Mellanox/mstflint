@@ -505,21 +505,34 @@ static void print_fuse_readings(dm_dev_id_t dev_type, u_int32_t hw_dev_id, u_int
         return;
     }
 
+    // Pad the columns to the widest entry so long rail or die names keep a gap to the
+    // next column instead of running into it.
+    const int column_gap = 2;
+    int rail_col = static_cast<int>(strlen("RAIL"));
+    int die_col = static_cast<int>(strlen("DIE"));
+    for (const auto& r : readings)
+    {
+        rail_col = std::max(rail_col, static_cast<int>(r.rail_name.size()));
+        die_col = std::max(die_col, static_cast<int>(r.die_label.size()));
+    }
+    rail_col += column_gap;
+    die_col += column_gap;
+
     printf("\nFuse Readings:\n");
-    printf("  %-16s%-16s%s\n", "RAIL", "DIE", "VALUE");
+    printf("  %-*s%-*s%s\n", rail_col, "RAIL", die_col, "DIE", "VALUE");
     for (const auto& r : readings)
     {
         if (r.fuse_mismatch)
         {
-            printf("  %-16s%-16sFuse mismatch detected\n", r.rail_name.c_str(), r.die_label.c_str());
+            printf("  %-*s%-*sFuse mismatch detected\n", rail_col, r.rail_name.c_str(), die_col, r.die_label.c_str());
         }
         else if (r.is_raw)
         {
-            printf("  %-16s%-16s0x%X\n", r.rail_name.c_str(), r.die_label.c_str(), r.raw_value);
+            printf("  %-*s%-*s0x%X\n", rail_col, r.rail_name.c_str(), die_col, r.die_label.c_str(), r.raw_value);
         }
         else
         {
-            printf("  %-16s%-16s%.1f mV\n", r.rail_name.c_str(), r.die_label.c_str(), r.voltage_mv);
+            printf("  %-*s%-*s%.1f mV\n", rail_col, r.rail_name.c_str(), die_col, r.die_label.c_str(), r.voltage_mv);
         }
     }
 }
