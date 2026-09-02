@@ -10,7 +10,16 @@
             "fuses": [
                 {"fuse_id": 11, "name": "vdd", "instance_ids": [0, 1, 2, 3, 4, 5, 6, 7, 8]},
                 {"fuse_id": 12, "name": "pl_avdd", "instance_ids": [1, 2, 3, 4, 5, 6, 7, 8]},
-                {"fuse_id": 13, "name": "pl_dvdd", "instance_ids": [1, 2, 3, 4, 5, 6, 7, 8]}
+                {"fuse_id": 13, "name": "pl_dvdd", "instance_ids": [1, 2, 3, 4, 5, 6, 7, 8]},
+                {"fuse_id": 15, "name": "opt_fuse_rev", "instance_ids": [0], "per_oe": true},
+                {"fuse_id": 17, "name": "opt_lot_code_0", "instance_ids": [0], "per_oe": true},
+                {"fuse_id": 18, "name": "opt_lot_code_1", "instance_ids": [0], "per_oe": true},
+                {"fuse_id": 19, "name": "opt_ops_reserved", "instance_ids": [0], "per_oe": true},
+                {"fuse_id": 20, "name": "opt_vendor_code", "instance_ids": [0], "per_oe": true},
+                {"fuse_id": 21, "name": "opt_wafer_id", "instance_ids": [0], "per_oe": true},
+                {"fuse_id": 22, "name": "opt_x_coordinate", "instance_ids": [0], "per_oe": true},
+                {"fuse_id": 23, "name": "opt_y_coordinate", "instance_ids": [0], "per_oe": true},
+                {"fuse_id": 24, "name": "opt_fab_code", "instance_ids": [0], "per_oe": true}
             ]
         },
         {

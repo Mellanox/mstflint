@@ -42,6 +42,10 @@ struct FuseConfig
     std::string name;
     std::vector<int> instance_ids;
     std::vector<int> voltage_types; // required iff fuse_id == 0 (CVB layout)
+    // When true, iterate the device's Optical Engine range (from MGPIR) and address each OE via
+    // the MRFV module_index fields (SPC6 CPO). Mutually exclusive with voltage_types; requires
+    // instance_ids == [0].
+    bool per_oe = false;
 };
 
 struct DeviceConfig
