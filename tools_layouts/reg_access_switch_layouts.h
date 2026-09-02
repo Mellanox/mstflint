@@ -344,6 +344,46 @@ struct reg_access_switch_mddq_slot_name_ext {
 };
 
 /* Description -   */
+/* Size in bytes - 4 */
+struct reg_access_switch_ppcl_cause_configurations_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - 0: fw_default1: clear2: do_not_clearDetermine whether the PHY cause link reset operation */
+	/* 0x0.0 - 0x0.1 */
+	/* access: RW */
+	u_int8_t clr_on_read_admin;
+	/* Description - 0: fw_default1: clear2: do_not_clearDetermine whether the PHY cause list will be cleared on
+cause_list_data read operation */
+	/* 0x0.3 - 0x0.4 */
+	/* access: RW */
+	u_int8_t clr_on_link_rst_admin;
+	/* Description - 0: do_not_clear1: clearIndicates whether the PHY cause list will be cleared on
+cause_list_data read operation */
+	/* 0x0.7 - 0x0.7 */
+	/* access: RO */
+	u_int8_t clr_on_read_oper;
+	/* Description - 0: do_not_clear1: clearIndicates whether the PHY cause list will be cleared on link
+reset operation */
+	/* 0x0.10 - 0x0.10 */
+	/* access: RO */
+	u_int8_t clr_on_link_rst_oper;
+};
+
+/* Description -   */
+/* Size in bytes - 20 */
+struct reg_access_switch_ppcl_cause_list_for_nvlink_phy_gen6_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.0 - 0x0.31 */
+	/* access: RO */
+	u_int32_t nvlink_phy6_cause_list1;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description -  */
+	/* 0x4.0 - 0x4.31 */
+	/* access: RO */
+	u_int32_t nvlink_phy6_cause_list2;
+};
+
+/* Description -   */
 /* Size in bytes - 260 */
 struct reg_access_switch_prm_register_payload_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
@@ -758,6 +798,20 @@ reflected in this structure. */
 };
 
 /* Description -   */
+/* Size in bytes - 20 */
+union reg_access_switch_ppcl_reg_page_data_auto_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.0 - 0x0.31 */
+	/* access: RW */
+	struct reg_access_switch_ppcl_cause_configurations_ext ppcl_cause_configurations_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x10.31 */
+	/* access: RW */
+	struct reg_access_switch_ppcl_cause_list_for_nvlink_phy_gen6_ext ppcl_cause_list_for_nvlink_phy_gen6_ext;
+};
+
+/* Description -   */
 /* Size in bytes - 8 */
 struct reg_access_switch_uint64 {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
@@ -855,9 +909,9 @@ resides, if not part of the ASIC itself.Currently only valid elements are Optica
 	/* access: INDEX */
 	u_int8_t module_index_msb;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
-	/* Description - DataSee 
-MRFV entry - CVB LayoutSee 
-MRFV entry - ULT LayoutSee 
+	/* Description - DataSee
+MRFV entry - CVB LayoutSee
+MRFV entry - ULT LayoutSee
 MRFV entry - VDD_MAIN LayoutSee
 
 MRFV entry - VDD_Tile LayoutSee
@@ -2472,6 +2526,49 @@ enable backward compatible implementation. */
 };
 
 /* Description -   */
+/* Size in bytes - 28 */
+struct reg_access_switch_ppcl_reg_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - 0: nvlink_phy_gen6 */
+	/* 0x0.0 - 0x0.3 */
+	/* access: RO */
+	u_int8_t generation;
+	/* Description - 0: Network Port1: Near-End Port (For Gearbox - Host side)2: internal IC Port3: Far-End Port (For Gearbox - Line side)4: Main Die to Die (USR / SCC)5: Tile Die to Die (USR / SCC) */
+	/* 0x0.8 - 0x0.11 */
+	/* access: INDEX */
+	u_int8_t port_type;
+	/* Description - Local port number [9:8] */
+	/* 0x0.12 - 0x0.13 */
+	/* access: INDEX */
+	u_int8_t lp_msb;
+	/* Description - Port number access type. determines the way local_port isinterpreted:0: Local_port_number1: IB_port_number */
+	/* 0x0.14 - 0x0.15 */
+	/* access: INDEX */
+	u_int8_t pnat;
+	/* Description - Local port number */
+	/* 0x0.16 - 0x0.23 */
+	/* access: INDEX */
+	u_int8_t local_port;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - 0: cause_list1: cause_configuration */
+	/* 0x4.0 - 0x4.5 */
+	/* access: INDEX */
+	u_int8_t page_select;
+	/* Description - Selects which cause list buffer is returned when reading the
+cause_list_data page.0: Current cause list - reflects all causes raised since the last clear
+operation.1: Link-down snapshot - a capture of the cause list saved at the moment
+of the last link-down event. */
+	/* 0x4.30 - 0x4.30 */
+	/* access: INDEX */
+	u_int8_t link_down_snapshot_sel;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - Page Data:PPCL - Cause List For NVLink PHY Gen 6 LayoutPPCL - Cause Configurations Layout */
+	/* 0x8.0 - 0x18.31 */
+	/* access: RW */
+	union reg_access_switch_ppcl_reg_page_data_auto_ext page_data;
+};
+
+/* Description -   */
 /* Size in bytes - 1040 */
 union reg_access_switch_reg_access_switch_Nodes {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
@@ -2583,6 +2680,10 @@ union reg_access_switch_reg_access_switch_Nodes {
 	/* 0x0.0 - 0x3c.31 */
 	/* access: RW */
 	struct reg_access_switch_pmlp_reg_ext pmlp_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x18.31 */
+	/* access: RW */
+	struct reg_access_switch_ppcl_reg_ext ppcl_reg_ext;
 };
 
 
@@ -2657,6 +2758,20 @@ void reg_access_switch_mddq_slot_name_ext_print(const struct reg_access_switch_m
 unsigned int reg_access_switch_mddq_slot_name_ext_size(void);
 #define REG_ACCESS_SWITCH_MDDQ_SLOT_NAME_EXT_SIZE    (0x20)
 void reg_access_switch_mddq_slot_name_ext_dump(const struct reg_access_switch_mddq_slot_name_ext *ptr_struct, FILE *fd);
+/* ppcl_cause_configurations_ext */
+void reg_access_switch_ppcl_cause_configurations_ext_pack(const struct reg_access_switch_ppcl_cause_configurations_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_ppcl_cause_configurations_ext_unpack(struct reg_access_switch_ppcl_cause_configurations_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_ppcl_cause_configurations_ext_print(const struct reg_access_switch_ppcl_cause_configurations_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_ppcl_cause_configurations_ext_size(void);
+#define REG_ACCESS_SWITCH_PPCL_CAUSE_CONFIGURATIONS_EXT_SIZE    (0x4)
+void reg_access_switch_ppcl_cause_configurations_ext_dump(const struct reg_access_switch_ppcl_cause_configurations_ext *ptr_struct, FILE *fd);
+/* ppcl_cause_list_for_nvlink_phy_gen6_ext */
+void reg_access_switch_ppcl_cause_list_for_nvlink_phy_gen6_ext_pack(const struct reg_access_switch_ppcl_cause_list_for_nvlink_phy_gen6_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_ppcl_cause_list_for_nvlink_phy_gen6_ext_unpack(struct reg_access_switch_ppcl_cause_list_for_nvlink_phy_gen6_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_ppcl_cause_list_for_nvlink_phy_gen6_ext_print(const struct reg_access_switch_ppcl_cause_list_for_nvlink_phy_gen6_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_ppcl_cause_list_for_nvlink_phy_gen6_ext_size(void);
+#define REG_ACCESS_SWITCH_PPCL_CAUSE_LIST_FOR_NVLINK_PHY_GEN6_EXT_SIZE    (0x14)
+void reg_access_switch_ppcl_cause_list_for_nvlink_phy_gen6_ext_dump(const struct reg_access_switch_ppcl_cause_list_for_nvlink_phy_gen6_ext *ptr_struct, FILE *fd);
 /* prm_register_payload_ext */
 void reg_access_switch_prm_register_payload_ext_pack(const struct reg_access_switch_prm_register_payload_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_switch_prm_register_payload_ext_unpack(struct reg_access_switch_prm_register_payload_ext *ptr_struct, const u_int8_t *ptr_buff);
@@ -2720,6 +2835,13 @@ void reg_access_switch_mmta_temprature_ext_print(const struct reg_access_switch_
 unsigned int reg_access_switch_mmta_temprature_ext_size(void);
 #define REG_ACCESS_SWITCH_MMTA_TEMPRATURE_EXT_SIZE    (0x18)
 void reg_access_switch_mmta_temprature_ext_dump(const struct reg_access_switch_mmta_temprature_ext *ptr_struct, FILE *fd);
+/* ppcl_reg_page_data_auto_ext */
+void reg_access_switch_ppcl_reg_page_data_auto_ext_pack(const union reg_access_switch_ppcl_reg_page_data_auto_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_ppcl_reg_page_data_auto_ext_unpack(union reg_access_switch_ppcl_reg_page_data_auto_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_ppcl_reg_page_data_auto_ext_print(const union reg_access_switch_ppcl_reg_page_data_auto_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_ppcl_reg_page_data_auto_ext_size(void);
+#define REG_ACCESS_SWITCH_PPCL_REG_PAGE_DATA_AUTO_EXT_SIZE    (0x14)
+void reg_access_switch_ppcl_reg_page_data_auto_ext_dump(const union reg_access_switch_ppcl_reg_page_data_auto_ext *ptr_struct, FILE *fd);
 /* uint64 */
 void reg_access_switch_uint64_pack(const u_int64_t *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_switch_uint64_unpack(u_int64_t *ptr_struct, const u_int8_t *ptr_buff);
@@ -2916,6 +3038,13 @@ void reg_access_switch_pmlp_reg_ext_print(const struct reg_access_switch_pmlp_re
 unsigned int reg_access_switch_pmlp_reg_ext_size(void);
 #define REG_ACCESS_SWITCH_PMLP_REG_EXT_SIZE    (0x40)
 void reg_access_switch_pmlp_reg_ext_dump(const struct reg_access_switch_pmlp_reg_ext *ptr_struct, FILE *fd);
+/* ppcl_reg_ext */
+void reg_access_switch_ppcl_reg_ext_pack(const struct reg_access_switch_ppcl_reg_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_ppcl_reg_ext_unpack(struct reg_access_switch_ppcl_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_ppcl_reg_ext_print(const struct reg_access_switch_ppcl_reg_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_ppcl_reg_ext_size(void);
+#define REG_ACCESS_SWITCH_PPCL_REG_EXT_SIZE    (0x1c)
+void reg_access_switch_ppcl_reg_ext_dump(const struct reg_access_switch_ppcl_reg_ext *ptr_struct, FILE *fd);
 /* reg_access_switch_Nodes */
 void reg_access_switch_reg_access_switch_Nodes_pack(const union reg_access_switch_reg_access_switch_Nodes *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_switch_reg_access_switch_Nodes_unpack(union reg_access_switch_reg_access_switch_Nodes *ptr_struct, const u_int8_t *ptr_buff);
