@@ -28,10 +28,6 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# ext_libs, common and cmdparser sit before mft_core because
-# mft_core/mft_core_utils/mft_logger links ext_libs/json/libjson.la and
-# cmdparser/libcmdparser.a, and includes common/tools_version.h, which
-# common's all: rule generates.
 SUBDIRS = $(NVML_DIR) ext_libs common cmdparser mft_core $(TOOLS_CRYPTO) tools_layouts $(VFIO_DRIVER_DIR) ${MTCR_CONF_DIR} mtcr_py $(MAD_IFC) $(XZ_UTILS_DIR) reg_access cmdif dev_mgt pci_library mft_utils $(CABLE_ACCESS_DIR) tools_res_mgmt mvpd mflash fw_comps_mgr libmfa pldm_utils pldmlib $(DPA) mlxfwops mlxconfig $(NVFWRESET_DIR) $(FW_MGR_TOOLS) $(PLDM_PKG_GEN) mlxtokengenerator flint small_utils mst_utils mstdump efuse ${ADABE_TOOLS} $(HCA_CAP_DIR) $(MSTFLINT_SDK_DIR) tracers resourcetools $(IBDUMP_DIR)
 
 DIST_SUBDIRS = tracers

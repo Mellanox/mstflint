@@ -109,6 +109,7 @@
 #include "fwctrl_ioctl.h"
 #include "kernel/mst.h"
 #include "tools_dev_types.h"
+#include "mft_core/device/device_info/device_properties_api.h"
 #ifdef ENABLE_VFIO
 #include "vfio_driver_access/VFIODriverAccessWrapperC.h"
 #endif
@@ -293,7 +294,7 @@ static int mtcr_connectx_flush(void* ptr, int fdlock)
     *((u_int32_t*)((char*)ptr + 0xf0380)) = 0x0;
     do
     {
-        asm volatile("" ::: "memory");
+        __asm__ volatile("" ::: "memory");
         u_int32_t tmp = *((u_int32_t*)((char*)ptr + 0xf0380));
         value = __be32_to_cpu(tmp);
     } while (value);
@@ -1706,6 +1707,10 @@ int mtcr_pciconf_rw(mfile* mf, unsigned int offset, u_int32_t* data, int rw)
         WRITE4_PCI(mf, address, mf->vsec_addr + PCI_ADDR_OFFSET, "write offset", return ME_PCI_WRITE_ERROR);
         /* wait on flag */
         rc = mtcr_pciconf_wait_on_flag(mf, 0);
+        if (rc)
+        {
+            return rc;
+        }
     }
     else
     {
@@ -1713,6 +1718,10 @@ int mtcr_pciconf_rw(mfile* mf, unsigned int offset, u_int32_t* data, int rw)
         WRITE4_PCI(mf, address, mf->vsec_addr + PCI_ADDR_OFFSET, "write offset", return ME_PCI_WRITE_ERROR);
         /* wait on flag */
         rc = mtcr_pciconf_wait_on_flag(mf, 1);
+        if (rc)
+        {
+            return rc;
+        }
         /* read data */
         READ4_PCI(mf, data, mf->vsec_addr + PCI_DATA_OFFSET, "read value", return ME_PCI_READ_ERROR);
     }
@@ -5417,6 +5426,10 @@ static int check_zf_through_memory(mfile* mf)
             gis_address = 0x152080;
             break;
 
+        case DeviceSpectrum6_HwId:
+            gis_address = 0x155004;
+            break;
+
         default:
             return 0; /* Device does not support Zombiefish mode */
     }
@@ -5427,7 +5440,10 @@ static int check_zf_through_memory(mfile* mf)
         MTCR_LOG_ERROR("Failed to read global_image_status from CR space (BAR0).");
         return 0;
     }
+
     gis = EXTRACT(gis, 0, 16); /* Extract the first 16 bits */
+    MTCR_LOG_DEBUG("check_zf_through_memory: gis_address: 0x%zx, gis: 0x%x", gis_address, gis);
+
     return gis == AUTHENTICATION_FAILURE;
 }
 
@@ -5450,13 +5466,15 @@ static int check_zf_through_vsc(mfile* mf)
     uint32_t in_recovery = EXTRACT(first_dword, 1, 1);       /* Extract bit 1 */
     uint32_t flash_control_vld = EXTRACT(first_dword, 2, 1); /* Extract bit 2 */
     uint32_t initializing = EXTRACT(first_dword, 0, 1);      /* Extract bit 0 */
+    MTCR_LOG_DEBUG("Reading from VSC space: 0x%x. in_recovery: %u, flash_control_vld: %u, initializing: %u",
+               mf->address_space, in_recovery, flash_control_vld, initializing);
 
     mf->vsc_recovery_space_flash_control_vld = flash_control_vld;
     mset_addr_space(mf, prev_address_space);
 
     if (in_recovery && initializing)
     {
-        MTCR_LOG_DEBUG("Device with HW ID: %u is in ZombieFish mode. flash_control_vld: %u", mf->device_hw_id, flash_control_vld);
+        MTCR_LOG_DEBUG("Device with HW ID: 0x%x is in ZombieFish mode. flash_control_vld: %u", mf->device_hw_id, flash_control_vld);
         return 1;
     }
 
@@ -5505,6 +5523,7 @@ int read_device_id(mfile* mf, u_int32_t* device_id)
     {
         *device_id = nvml_get_device_id(mf->nvml_device);
         mf->hw_dev_id = (*device_id & 0xffff);
+        mf->functional_device_id = resolve_functional_device_id(mf->hw_dev_id, mf->rev_id, mf->pci_device_id);
         return 4;
     }
 #endif
@@ -5529,6 +5548,7 @@ int read_device_id(mfile* mf, u_int32_t* device_id)
     }
     
     mf->hw_dev_id = (*device_id & 0xffff);
+    mf->functional_device_id = resolve_functional_device_id(mf->hw_dev_id, mf->rev_id, mf->pci_device_id);
     MTCR_LOG_DEBUG("MTCR:read_device_id: mf->hw_dev_id:0x%x", mf->hw_dev_id);
     return rc;
 }

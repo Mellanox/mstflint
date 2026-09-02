@@ -28,7 +28,7 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-AC_INIT(mstflint, 4.37.0, akiselman-org@exchange.nvidia.com)
+AC_INIT(mstflint, 4.38.0, akiselman-org@exchange.nvidia.com)
 
 AC_DEFINE_UNQUOTED([PROJECT], ["mstflint"], [Firmware Burning and Diagnostics Tools for NVIDIA network devices.])
 AC_SUBST([PROJECT])
@@ -796,11 +796,12 @@ AM_CONDITIONAL([USE_LOCAL_SQLITE], [test "$SQLITE_SYSTEM_AVAILABLE" = no])
 CFLAGS="$CFLAGS -DMST_UL"
 CXXFLAGS="$CXXFLAGS -DMST_UL"
 
+CFLAGS="$CFLAGS -std=c11 -D_XOPEN_SOURCE=700 -D_POSIX_C_SOURCE=200809L -D_DEFAULT_SOURCE"
+
 CCVER=`${CC} --version | grep ${CC} | grep -E -o "( )[[4-9]]\.[[0-9]]\.[[0-9]]" | head -1`
 AC_MSG_NOTICE(Compiler: ${CC}; version: ${CCVER};)
 if test ${CCVER} \> 5.0.0 ; then
     CXXFLAGS="$CXXFLAGS -std=c++14"
-    CFLAGS="$CFLAGS -fgnu89-inline"
 elif test ${CCVER} \> 4.7.2 ; then
     CXXFLAGS="$CXXFLAGS -std=c++11"
 fi

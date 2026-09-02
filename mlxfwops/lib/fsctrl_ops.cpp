@@ -1587,12 +1587,14 @@ bool FsCtrlOperations::getBFBComponentsVersions(std::map<std::string, std::strin
     if (pending)
     {
         FwVersion pending_fw_version = FwOperations::createFwVersion(&_fwImgInfo.ext_info);
-        name_to_version["BF3_NIC_FW"] = pending_fw_version.get_fw_version();
+        name_to_version["BF3_NIC_FW"] =
+          pending_fw_version.get_fw_version(VERSION_FORMAT(_fwImgInfo.ext_info.fw_ver[1]));
     }
     else
     {
         FwVersion running_fw_version = FwOperations::createRunningFwVersion(&_fwImgInfo.ext_info);
-        name_to_version["BF3_NIC_FW"] = running_fw_version.get_fw_version();
+        name_to_version["BF3_NIC_FW"] =
+          running_fw_version.get_fw_version(VERSION_FORMAT(_fwImgInfo.ext_info.running_fw_ver[1]));
     }
     DPRINTF(("Got NIC FW version: %s\n", name_to_version["BF3_NIC_FW"].c_str()));
 

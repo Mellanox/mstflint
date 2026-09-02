@@ -854,10 +854,11 @@ vector<CertContainerItem> MlxDpa::GetCertContainer(CertContainerType type)
  
      const string X = SINGLE_APP_DPA_FINGERPRINT;
  
-     DpaAppRemoveMetadata dpaAppRemovalMetadata(_dpaAppUUID, _keypairUUID, _removeAllDpaApps);
-     vector<u_int8_t> serializedMetadata = dpaAppRemovalMetadata.Serialize();
-     DpaAppStructHeader headerDpaAppRemovalMetadata(_priority, DpaAppStructHeader::StructType::DPA_APP_REMOVE_METADATA,
-                                                    serializedMetadata.size());
+    DpaAppRemoveMetadata dpaAppRemovalMetadata(_dpaAppUUID, _keypairUUID, _removeAllDpaApps);
+    vector<u_int8_t> serializedMetadata = dpaAppRemovalMetadata.Serialize();
+    CPUTOn(serializedMetadata.data(), serializedMetadata.size() / 4);
+    DpaAppStructHeader headerDpaAppRemovalMetadata(_priority, DpaAppStructHeader::StructType::DPA_APP_REMOVE_METADATA,
+                                                   serializedMetadata.size());
      vector<u_int8_t> headerDpaAppRemovalMetadataByteStream = CreateHeaderDataStream(headerDpaAppRemovalMetadata);
  
      serializedContainer.insert(end(serializedContainer), begin(X), end(X));

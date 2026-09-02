@@ -69,6 +69,9 @@ protected:
     virtual void validateGradeScanParams();
     virtual void validateErrInjParams();
     virtual void validatePortInfoParams();
+    virtual void validatePortInfoCpoParams();
+    virtual void validateElsParams();
+    virtual void validateAmberCollectParams();
     virtual void validatePhyRecoveryParams();
     virtual void validateLinkTrainingParams();
     virtual void validatePeriodicEqParams();
@@ -79,6 +82,8 @@ protected:
     virtual void paramValidate();
     virtual void createMlxlinkCommander();
     virtual void initPortInfo();
+    virtual void initElsInfo();
+    virtual bool isValidElsOperation(const string& op);
     virtual void updateSysFsPath(string& sysfsPath);
 
     void handlePortStr(UserInput& userInput, const string& portStr);

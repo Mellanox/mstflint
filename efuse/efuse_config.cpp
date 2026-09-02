@@ -196,6 +196,40 @@ static bool parse_fuse_entry(const Json::Value& fuse_node,
     }
 #endif // EFUSE_CVB_ENABLED
 
+    // per_oe (optional): read the fuse per Optical Engine. The tool resolves the OE range from
+    // MGPIR at runtime and addresses each OE via the MRFV module_index fields. It reads a single
+    // fuse template per OE, so instance_ids must be [0], and it is mutually exclusive with the
+    // CVB voltage_types layout (fuse_id == 0).
+    if (fuse_node.isMember("per_oe"))
+    {
+        const Json::Value& per_oe_node = fuse_node["per_oe"];
+        if (!per_oe_node.isBool())
+        {
+            error = "JSON config format error: " + path + ".per_oe must be a boolean";
+            return false;
+        }
+        fuse.per_oe = per_oe_node.asBool();
+    }
+
+    if (fuse.per_oe)
+    {
+        if (fuse.fuse_id == 0)
+        {
+            error = "JSON config format error: " + path + ".per_oe is not allowed with fuse_id == 0 (CVB layout)";
+            return false;
+        }
+        if (fuse_node.isMember("voltage_types"))
+        {
+            error = "JSON config format error: " + path + ".per_oe is mutually exclusive with voltage_types";
+            return false;
+        }
+        if (fuse.instance_ids.size() != 1 || fuse.instance_ids[0] != 0)
+        {
+            error = "JSON config format error: " + path + ".per_oe requires instance_ids to be [0]";
+            return false;
+        }
+    }
+
     return true;
 }
 

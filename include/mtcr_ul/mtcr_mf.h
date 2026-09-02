@@ -60,6 +60,8 @@ struct mfile_t {
     u_int16_t     hw_dev_id;
     u_int16_t     pci_device_id;
     u_int16_t     rev_id;
+    /* Key into the device-properties catalog, resolved once at device open. */
+    u_int32_t     functional_device_id;
     MType         tp; /*  type of driver */
     MType         orig_tp;
     MType         res_tp; /*  Will be used with HCR if need */

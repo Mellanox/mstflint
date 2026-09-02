@@ -32,6 +32,17 @@
  *
  */
 
+/* configure builds C as -std=c11 with _POSIX_C_SOURCE set, which turns
+   __BSD_VISIBLE off and hides the BSD-only declarations in <sys/memrange.h>,
+   <sys/agpio.h> and <dev/pci/pcireg.h>. Re-enable them, and raise
+   __POSIX_VISIBLE to POSIX.1-2008 for getline(). */
+#define __BSD_VISIBLE 1
+#undef _KERNEL
+#ifdef __POSIX_VISIBLE
+#undef __POSIX_VISIBLE
+#endif
+#define __POSIX_VISIBLE 200809L
+
 #include <sys/types.h>
 #include <sys/memrange.h>
 #include <sys/mman.h>
@@ -52,7 +63,9 @@
 #include "common/bit_slice.h"
 #include "common/tools_time.h"
 #include <stdlib.h>
+#include <malloc_np.h>
 #include "tools_dev_types.h"
+#include "mft_core/device/device_info/device_properties_api.h"
 
 #include <unistd.h>
 
@@ -178,7 +191,7 @@ void mtcr_connectx_flush(void* ptr, int fdlock)
     *((u_int32_t*)((char*)ptr + 0xf0380)) = 0x0;
     do
     {
-        asm volatile("" ::: "memory");
+        __asm__ volatile("" ::: "memory");
         value = __be32_to_cpu(*((u_int32_t*)((char*)ptr + 0xf0380)));
     } while (value);
     rc = _flock_int(fdlock, LOCK_UN);
@@ -197,11 +210,16 @@ int read_device_id(mfile* mf, u_int32_t* device_id)
 
     unsigned hw_id_address = mf->cr_space_offset + HW_ID_ADDR;
 
-    mf->rev_id = EXTRACT(*device_id, 16, 4);
-    *device_id = (*device_id & 0xffff);
-    mf->hw_dev_id = (*device_id & 0xffff);
+    int rc = mread4(mf, hw_id_address, device_id);
 
-    return mread4(mf, hw_id_address, device_id);
+    /* Derive after the read: these used to run before mread4() and so read the
+     * caller's uninitialized stack. *device_id stays raw because
+     * mtcr_check_signature() compares the full 32-bit word. */
+    mf->rev_id = EXTRACT(*device_id, 16, 4);
+    mf->hw_dev_id = (*device_id & 0xffff);
+    mf->functional_device_id = resolve_functional_device_id(mf->hw_dev_id, mf->rev_id, mf->pci_device_id);
+
+    return rc;
 }
 
 int mtcr_check_signature(mfile* mf)
@@ -3005,7 +3023,7 @@ int get_dma_pages(mfile* mf, struct mtcr_page_info* page_info, int page_amount)
     for (page_counter = 0; page_counter < page_amount; page_counter++)
     {
         /* Allocate the buffer. */
-        char* current_page = aligned_alloc(PAGE_SIZE, PAGE_SIZE);
+        char* current_page = __aligned_alloc(PAGE_SIZE, PAGE_SIZE);
 
         /* Page allocated ? */
         if (!current_page)
@@ -3218,6 +3236,10 @@ static int check_zf_through_memory(mfile* mf)
             gis_address = 0x152080;
             break;
 
+        case DeviceSpectrum6_HwId:
+            gis_address = 0x155004;
+            break;
+
         default:
             return 0; /* Device does not support Zombiefish mode */
     }
@@ -3279,7 +3301,8 @@ int is_zombiefish_device(mfile* mf)
     }
     if ((mf->device_hw_id != DeviceConnectX8_HwId) && (mf->device_hw_id != DeviceConnectX8_Pure_PCIe_Switch_HwId) && (mf->device_hw_id != DeviceQuantum3_HwId) &&
         (mf->device_hw_id != DeviceConnectX9_HwId) && (mf->device_hw_id != DeviceNVLink6_Switch_HwId) && (mf->device_hw_id != DeviceConnectX7_HwId) &&
-        (mf->device_hw_id != DeviceBlueField3_HwId) && (mf->device_hw_id != DeviceConnectX9_Pure_PCIe_Switch_HwId))
+        (mf->device_hw_id != DeviceBlueField3_HwId) && (mf->device_hw_id != DeviceConnectX9_Pure_PCIe_Switch_HwId) &&
+        (mf->device_hw_id != DeviceSpectrum6_HwId))
     {
         return 0;
     }

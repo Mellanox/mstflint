@@ -331,6 +331,8 @@ extern "C"
      */
     int dm_is_gr100(dm_dev_id_t type);
 
+    int dm_is_qt3(dm_dev_id_t type);
+
     int dm_is_4th_gen(dm_dev_id_t type);
 
     int dm_dev_is_fs5(dm_dev_id_t type);

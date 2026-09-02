@@ -61,6 +61,7 @@ public:
     u_int32_t _uniqueCableCmds;
     u_int32_t _uniquePcieCmds;
     u_int32_t _networkCmds;
+    u_int32_t _moduleIndType;
     int _pciSltpPort;
     bool _showModule;
     bool _sendPrbs;
@@ -87,6 +88,7 @@ public:
     bool _portSpecified;
     bool _multiPortSpecified;
     std::vector<std::string> _multiPortsList;
+    bool _elsModuleProvided;
     bool _splitProvided;
     bool _secondSplitProvided;
     bool _forceSplit;
@@ -105,6 +107,7 @@ public:
     bool _showMultiPortInfo;
     bool _allPorts;
     bool _showMultiPortModuleInfo;
+    bool _showMultiPortCpoInfo;
     bool _showPlr;
     bool _setPlr;
     bool _showKr;
@@ -179,6 +182,12 @@ public:
     int _setGroup;
     int _showGroup;
     int _slrgTestIterations;
+    bool _isEls;
+    bool _isOe;
+    uint32_t _elsModule;
+    std::vector<uint32_t> _elsLaserIdxs;
+    string _elsOperation;
+    uint32_t _saveLaserSetpoint;
     vector<string> _labelPorts;
 
     string eyeSelect;
