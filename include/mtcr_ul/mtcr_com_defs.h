@@ -117,6 +117,14 @@ typedef long long int64_t;
 #define MAX_RETRY_CNT 4096
 #endif /* ifdef __WIN__ */
 
+#ifdef __FreeBSD__
+/* Building as -std=c11 with _POSIX_C_SOURCE set clears __BSD_VISIBLE, so
+   <sys/types.h> above skips these. <sys/pciio.h>, included right after this
+   header by mtcr_mf.h, needs them. */
+typedef unsigned long u_long;
+typedef unsigned int u_int;
+#endif
+
 #define DEV_NAME_SZ 512
 /* "dddddddd:bb:dd.f" - the PCI domain is 32 bits, so up to 8 hex digits. */
 #define PCI_DBDF_STR_SZ 20
