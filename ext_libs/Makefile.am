@@ -52,8 +52,8 @@ if USE_LOCAL_SQLITE
 SUBDIRS += sqlite
 endif
 
-# spdlog (header-only, v1.15.0) backs the MFT logger in
-# mft_core/mft_core_utils/mft_logger/. It has no build step of its own -
+# spdlog (header-only, v1.15.0) backs the NVIDIA Tools logger in
+# mft_core/mft_core_utils/nvtoolslogger/. It has no build step of its own -
 # consumers just add -isystem $(top_srcdir)/ext_libs/spdlog/include - so it
 # only needs to be distributed.
 EXTRA_DIST = spdlog/include spdlog/LICENSE

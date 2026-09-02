@@ -98,7 +98,7 @@
 #include "tools_utils.h"
 #include "mtcr_ul_com.h"
 #include "mtcr_int_defs.h"
-#include "mft_logger/mft_logger_c.h"
+#include "nvtoolslogger/nvtoolslogger_c.h"
 #include "mtcr_ib.h"
 #include "mtcr_gpu.h"
 #include "packets_layout.h"

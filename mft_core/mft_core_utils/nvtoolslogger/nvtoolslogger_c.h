@@ -31,14 +31,14 @@
  */
 
 /*
- * Pure C interface for the MFT Logger.
+ * Pure C interface for the NVIDIA Tools Logger.
  */
 
-#ifndef MFT_LOGGER_C_H
-#define MFT_LOGGER_C_H
+#ifndef NVTOOLSLOGGER_C_H
+#define NVTOOLSLOGGER_C_H
 
-#include "mft_logger/layers.h"
-#include "mft_logger/log_config_defs.h"
+#include "nvtoolslogger/layers.h"
+#include "nvtoolslogger/log_config_defs.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -82,4 +82,4 @@ extern "C"
 #define MFT_LOG_C_FATALF(layer, fmt, ...) \
     mft_log_fmt(layer, MFT_SEV_FATAL, __FILE__, __LINE__, __func__, fmt, ##__VA_ARGS__)
 
-#endif /* MFT_LOGGER_C_H */
+#endif /* NVTOOLSLOGGER_C_H */

@@ -30,8 +30,8 @@
  * SOFTWARE.
  */
 
-#include "mft_logger/log_config.h"
-#include "mft_logger/layers.h"
+#include "nvtoolslogger/log_config.h"
+#include "nvtoolslogger/layers.h"
 
 #include "json/json.h"
 #include "json/reader.h"
@@ -84,7 +84,7 @@ static bool ensureParentDirExists(const std::string& filePath)
     return mkdirSingle(dir);
 }
 
-namespace mft_logger
+namespace nvtoolslogger
 {
 LogConfig::LogConfig()
 {
@@ -248,7 +248,7 @@ uint32_t LogConfig::getMaxLogDirFiles() const
 
 void LogConfig::show() const
 {
-    std::cout << "MFT Logger Configuration" << std::endl;
+    std::cout << "NVIDIA Tools Logger Configuration" << std::endl;
     std::cout << "========================" << std::endl;
     std::cout << std::endl;
 
@@ -404,4 +404,4 @@ bool LogConfig::fromJson(const std::string& jsonStr)
     return true;
 }
 
-} // namespace mft_logger
+} // namespace nvtoolslogger

@@ -37,13 +37,13 @@ noinst_LTLIBRARIES = libpci_library.la
 
 libpci_library_la_SOURCES = PCILibrary.cpp PCILibrary.h
 
-# libmft_logger is a build-order dependency only: PCILibrary logs on the COMMON
-# layer, but every consumer of this convenience library already links libmtcr_ul,
-# which carries the logger objects. Adding it to LIBADD as well would fold a
-# second copy of spdlog into the archive for nothing.
+# libnvtoolslogger is a build-order dependency only: PCILibrary logs on the
+# COMMON layer, but every consumer of this convenience library already links
+# libmtcr_ul, which carries the logger objects. Adding it to LIBADD as well
+# would fold a second copy of spdlog into the archive for nothing.
 libpci_library_la_DEPENDENCIES = $(top_builddir)/dev_mgt/libdev_mgt.la \
                                  $(top_builddir)/reg_access/libreg_access.la \
-                                 $(top_builddir)/mft_core/mft_core_utils/mft_logger/libmft_logger.la
+                                 $(top_builddir)/mft_core/mft_core_utils/nvtoolslogger/libnvtoolslogger.la
 libpci_library_la_LIBADD = $(top_builddir)/dev_mgt/libdev_mgt.la \
                            $(top_builddir)/reg_access/libreg_access.la
 libpci_library_la_LDFLAGS = -static

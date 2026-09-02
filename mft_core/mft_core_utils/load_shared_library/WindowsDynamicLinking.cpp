@@ -14,7 +14,7 @@
 
 #include <stdexcept>
 
-#include "mft_logger/mft_logger.h"
+#include "nvtoolslogger/NvToolsLogger.h"
 
 WindowsDynamicLinking::~WindowsDynamicLinking()
 {
@@ -29,7 +29,7 @@ void* WindowsDynamicLinking::GetFunctionAddress(const std::string& oFunctionName
     void* pvFunctionAddress = NULL;
     if (!m_poLibraryHandle)
     {
-        MFT_LOG_ERROR(mft_logger::Layer::MFT_CORE, "No dynamic library loaded");
+        MFT_LOG_ERROR(nvtoolslogger::Layer::MFT_CORE, "No dynamic library loaded");
     }
 
     else
@@ -39,7 +39,7 @@ void* WindowsDynamicLinking::GetFunctionAddress(const std::string& oFunctionName
         {
             if (!bIgnoreFailure)
             {
-                MFT_LOG_ERROR(mft_logger::Layer::MFT_CORE, ("Failed to load dynamic function " + oFunctionName).c_str());
+                MFT_LOG_ERROR(nvtoolslogger::Layer::MFT_CORE, ("Failed to load dynamic function " + oFunctionName).c_str());
             }
         }
     }
@@ -49,17 +49,17 @@ void* WindowsDynamicLinking::GetFunctionAddress(const std::string& oFunctionName
 
 int WindowsDynamicLinking::LoadDynamicLibrary(const std::string& poLibraryName)
 {
-    MFT_LOG_INFO(mft_logger::Layer::MFT_CORE, ("Loading dynamic library: " + poLibraryName).c_str());
+    MFT_LOG_INFO(nvtoolslogger::Layer::MFT_CORE, ("Loading dynamic library: " + poLibraryName).c_str());
 
     m_poLibraryHandle = LoadLibrary(poLibraryName.c_str());
 
     if (!m_poLibraryHandle)
     {
-        MFT_LOG_ERROR(mft_logger::Layer::MFT_CORE, ("Failed to load the dynamic library: " + poLibraryName).c_str());
+        MFT_LOG_ERROR(nvtoolslogger::Layer::MFT_CORE, ("Failed to load the dynamic library: " + poLibraryName).c_str());
         return -1;
     }
 
-    MFT_LOG_INFO(mft_logger::Layer::MFT_CORE, ("Dynamic library loaded successfully: " + poLibraryName).c_str());
+    MFT_LOG_INFO(nvtoolslogger::Layer::MFT_CORE, ("Dynamic library loaded successfully: " + poLibraryName).c_str());
 
     return 0;
 }

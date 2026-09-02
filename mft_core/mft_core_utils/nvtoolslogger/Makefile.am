@@ -30,14 +30,15 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-# The MFT logger. Three convenience libraries plus the mstlogger_config CLI:
+# The NVIDIA Tools logger. Three convenience libraries plus the mstflintlogger
+# CLI:
 #
 #   libmft_log_config.la     the JSON config file (reader + writer), shared by
 #                            the runtime and the CLI so the two cannot drift
-#   libmft_logger.la         the MftLogger singleton and the C ABI (spdlog)
-#   libmft_log_config_ui.la  the mstlogger_config command line
+#   libnvtoolslogger.la      the NvToolsLogger singleton and the C ABI (spdlog)
+#   libmft_log_config_ui.la  the mstflintlogger command line
 #
-# Sources include each other as "mft_logger/<file>.h" - the same spelling every
+# Sources include each other as "nvtoolslogger/<file>.h" - the same spelling every
 # consumer elsewhere in the tree uses - hence the -I on mft_core/mft_core_utils.
 # $(top_builddir) is needed for common/tools_version.h, which common/ generates.
 
@@ -50,80 +51,80 @@ AM_CPPFLAGS = \
 AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe -Werror $(COMPILER_FPIC)
 
 # spdlog is header-only and third party: -isystem keeps -Werror from tripping
-# over its headers. It is only needed by mft_logger.cpp.
+# over its headers. It is only needed by NvToolsLogger.cpp.
 SPDLOG_CXXFLAGS = -isystem $(top_srcdir)/ext_libs/spdlog/include -DSPDLOG_NO_THREAD_ID
 
 # The bundled jsoncpp is a libtool convenience library, so its objects are
-# already folded into .libs/libmft_logger.a and must not be linked twice into
+# already folded into .libs/libnvtoolslogger.a and must not be linked twice into
 # the .so. A system jsoncpp is a real shared library and still has to be named.
 if USE_LOCAL_JSON
-MFT_LOGGER_JSON_LIBS = $(top_builddir)/ext_libs/json/libjson.la
-MFT_LOGGER_JSON_SO_LIBS =
+NVTOOLSLOGGER_JSON_LIBS = $(top_builddir)/ext_libs/json/libjson.la
+NVTOOLSLOGGER_JSON_SO_LIBS =
 else
-MFT_LOGGER_JSON_LIBS = -ljsoncpp
-MFT_LOGGER_JSON_SO_LIBS = -ljsoncpp
+NVTOOLSLOGGER_JSON_LIBS = -ljsoncpp
+NVTOOLSLOGGER_JSON_SO_LIBS = -ljsoncpp
 endif
 
 OS_API_LA = $(top_builddir)/mft_core/mft_core_utils/operating_system_api/lib_os_api.la
 
-noinst_LTLIBRARIES = libmft_log_config.la libmft_logger.la libmft_log_config_ui.la
+noinst_LTLIBRARIES = libmft_log_config.la libnvtoolslogger.la libmft_log_config_ui.la
 
 libmft_log_config_la_SOURCES = \
     log_config.cpp \
     log_config.h \
     log_config_defs.h \
     layers.h
-libmft_log_config_la_LIBADD = $(MFT_LOGGER_JSON_LIBS) -lstdc++
+libmft_log_config_la_LIBADD = $(NVTOOLSLOGGER_JSON_LIBS) -lstdc++
 
-libmft_logger_la_SOURCES = \
-    mft_logger.cpp \
-    mft_logger.h \
-    mft_logger_c.h
-libmft_logger_la_CXXFLAGS = $(AM_CXXFLAGS) $(SPDLOG_CXXFLAGS)
-libmft_logger_la_LDFLAGS = -pthread
+libnvtoolslogger_la_SOURCES = \
+    NvToolsLogger.cpp \
+    NvToolsLogger.h \
+    nvtoolslogger_c.h
+libnvtoolslogger_la_CXXFLAGS = $(AM_CXXFLAGS) $(SPDLOG_CXXFLAGS)
+libnvtoolslogger_la_LDFLAGS = -pthread
 # lib_os_api is a build-order dependency only. Embedding it here too would put
-# its objects in both libmft_logger.a and libdevice_info.a, and libmtcr_ul links
+# its objects in both libnvtoolslogger.a and libdevice_info.a, and libmtcr_ul links
 # both - that is a multiple-definition link failure. Final links get lib_os_api
 # from their own dependency on it; the .so rule below names it explicitly.
-libmft_logger_la_DEPENDENCIES = libmft_log_config.la $(OS_API_LA)
-libmft_logger_la_LIBADD = libmft_log_config.la -lstdc++
+libnvtoolslogger_la_DEPENDENCIES = libmft_log_config.la $(OS_API_LA)
+libnvtoolslogger_la_LIBADD = libmft_log_config.la -lstdc++
 
 libmft_log_config_ui_la_SOURCES = \
     log_config_ui.cpp \
     log_config_ui.h
 libmft_log_config_ui_la_LIBADD = libmft_log_config.la -lstdc++
 
-bin_PROGRAMS = mstlogger_config
+bin_PROGRAMS = mstflintlogger
 
-mstlogger_config_SOURCES = main.cpp
-mstlogger_config_DEPENDENCIES = \
+mstflintlogger_SOURCES = main.cpp
+mstflintlogger_DEPENDENCIES = \
     libmft_log_config_ui.la \
     libmft_log_config.la \
     $(top_builddir)/cmdparser/libcmdparser.a
-mstlogger_config_LDADD = $(mstlogger_config_DEPENDENCIES) $(MFT_LOGGER_JSON_LIBS) -lstdc++
-mstlogger_config_LDFLAGS = -static
+mstflintlogger_LDADD = $(mstflintlogger_DEPENDENCIES) $(NVTOOLSLOGGER_JSON_LIBS) -lstdc++
+mstflintlogger_LDFLAGS = -static
 
 # ---------------------------------------------------------------------------
-# libmft_logger.so - the same logger exposed as a plain shared object so the
+# libnvtoolslogger.so - the same logger exposed as a plain shared object so the
 # Python facade can bind the mft_log C ABI through ctypes. Hand-rolled rather
 # than a libtool lib_LTLIBRARIES, matching cmtcr.so / ccmdif.so / rreg_access.so
 # elsewhere in the tree: one unversioned .so installed next to the module that
 # loads it. --whole-archive is required because nothing in the .so references
-# mft_log() - the ctypes caller does, at runtime. libtool has already folded
-# log_config, lib_os_api and the bundled jsoncpp into .libs/libmft_logger.a,
-# so that single archive is the whole logger.
-MFT_LOGGER_SO = libmft_logger.so
+# mft_log() - the ctypes caller does, at runtime. libtool has folded log_config
+# and the bundled jsoncpp into .libs/libnvtoolslogger.a; lib_os_api is named
+# separately below because it is only a build-order dependency (see above).
+NVTOOLSLOGGER_SO = libnvtoolslogger.so
 
-$(MFT_LOGGER_SO): libmft_logger.la
+$(NVTOOLSLOGGER_SO): libnvtoolslogger.la
 	$(CXX) -shared -pthread $(CXXFLAGS) $(LDFLAGS) $(COMPILER_FPIC) -o $@ \
-	  -Wl,--whole-archive .libs/libmft_logger.a \
+	  -Wl,--whole-archive .libs/libnvtoolslogger.a \
 	    $(top_builddir)/mft_core/mft_core_utils/operating_system_api/.libs/lib_os_api.a \
-	  -Wl,--no-whole-archive $(MFT_LOGGER_JSON_SO_LIBS) -lstdc++
+	  -Wl,--no-whole-archive $(NVTOOLSLOGGER_JSON_SO_LIBS) -lstdc++
 
-all-local: $(MFT_LOGGER_SO)
+all-local: $(NVTOOLSLOGGER_SO)
 
-CLEANFILES = $(MFT_LOGGER_SO)
+CLEANFILES = $(NVTOOLSLOGGER_SO)
 
-mft_logger_pylibdir = $(libdir)/mstflint/python_tools/
-mft_logger_pylib_DATA = $(MFT_LOGGER_SO)
-dist_mft_logger_pylib_DATA = mft_logger_api.py
+nvtoolslogger_pylibdir = $(libdir)/mstflint/python_tools/
+nvtoolslogger_pylib_DATA = $(NVTOOLSLOGGER_SO)
+dist_nvtoolslogger_pylib_DATA = nvtoolslogger_api.py

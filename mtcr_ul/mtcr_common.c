@@ -33,7 +33,7 @@
 
 #include "mtcr_common.h"
 #include "mtcr_int_defs.h"
-#include "mft_logger/mft_logger_c.h"
+#include "nvtoolslogger/nvtoolslogger_c.h"
 
 int is_bluefield4_pci_device(u_int16_t pci_device_id)
 {

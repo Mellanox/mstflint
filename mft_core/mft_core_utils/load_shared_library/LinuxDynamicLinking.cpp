@@ -16,7 +16,7 @@
 
 #include <stdexcept>
 
-#include "mft_logger/mft_logger.h"
+#include "nvtoolslogger/NvToolsLogger.h"
 #include "mft_core/mft_core_utils/mft_exceptions/MftGeneralException.h"
 
 LinuxDynamicLinking::~LinuxDynamicLinking()
@@ -32,7 +32,7 @@ int LinuxDynamicLinking::LoadDynamicLibrary(const std::string& poLibraryName)
     // The function dlopen() loads the dynamic library file named by
     //   the null-terminated string filename and returns
     //   an "handle" for the dynamic library.
-    MFT_LOG_INFO(mft_logger::Layer::MFT_CORE, ("dlopen function called, library name: " + poLibraryName).c_str());
+    MFT_LOG_INFO(nvtoolslogger::Layer::MFT_CORE, ("dlopen function called, library name: " + poLibraryName).c_str());
 
     m_pvLibraryHandle = dlopen(poLibraryName.c_str(), RTLD_LAZY);
 
@@ -43,7 +43,7 @@ int LinuxDynamicLinking::LoadDynamicLibrary(const std::string& poLibraryName)
                                 ", dlerror: " + std::string(pcReturnError));
     }
 
-    MFT_LOG_INFO(mft_logger::Layer::MFT_CORE, ("Dynamic library loaded successfully: " + poLibraryName).c_str());
+    MFT_LOG_INFO(nvtoolslogger::Layer::MFT_CORE, ("Dynamic library loaded successfully: " + poLibraryName).c_str());
     return 0;
 }
 
@@ -75,12 +75,12 @@ void* LinuxDynamicLinking::GetFunctionAddress(const std::string& poFunctionName,
     // The return value will be the address where that symbol is loaded into memory.
     pvFunctionAddress = dlsym(m_pvLibraryHandle, poFunctionName.c_str());
 
-    MFT_LOG_INFO(mft_logger::Layer::MFT_CORE, ("dlsym function called, function name: " + poFunctionName).c_str());
+    MFT_LOG_INFO(nvtoolslogger::Layer::MFT_CORE, ("dlsym function called, function name: " + poFunctionName).c_str());
     if ((pcReturnError = dlerror()) != NULL)
     {
         if (bIgnoreFailure)
         {
-            MFT_LOG_INFO(mft_logger::Layer::MFT_CORE, ("Failed to get the function address: " + poFunctionName).c_str());
+            MFT_LOG_INFO(nvtoolslogger::Layer::MFT_CORE, ("Failed to get the function address: " + poFunctionName).c_str());
         }
         else
         {

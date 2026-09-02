@@ -38,9 +38,9 @@ noinst_LTLIBRARIES = libmftexceptions.la
 
 libmftexceptions_la_SOURCES = MftGeneralException.h MftGeneralException.cpp DevicePropertyNotFoundException.h
 
-# LOG_AND_THROW_MFT_ERROR logs on the MFT_CORE layer, hence libmft_logger.
+# LOG_AND_THROW_MFT_ERROR logs on the MFT_CORE layer, hence libnvtoolslogger.
 libmftexceptions_la_DEPENDENCIES = ../operating_system_api/lib_os_api.la \
-                                   ../mft_logger/libmft_logger.la
+                                   ../nvtoolslogger/libnvtoolslogger.la
 # Both stay in _DEPENDENCIES for build ordering only. Embedding either here too
 # would place its objects in both libmftexceptions.a and the library it came
 # from, and a convenience library that pulls in both then ends up with duplicate

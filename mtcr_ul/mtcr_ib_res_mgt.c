@@ -36,7 +36,7 @@
 #include "packets_common.h"
 #include <string.h>
 #include "mtcr_int_defs.h"
-#include "mft_logger/mft_logger_c.h"
+#include "nvtoolslogger/nvtoolslogger_c.h"
 
 #define IB_SMP_DATA_SIZE 48
 

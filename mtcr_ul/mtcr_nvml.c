@@ -41,7 +41,7 @@
 #include "mtcr_gpu.h"
 #include "mtcr_common.h"
 #include "mtcr_int_defs.h"
-#include "mft_logger/mft_logger_c.h"
+#include "nvtoolslogger/nvtoolslogger_c.h"
 
 #define MY_DLSYM(dl_ctx, func_name)                               \
     do                                                            \

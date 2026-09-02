@@ -30,11 +30,11 @@
  * SOFTWARE.
  */
 
-#include "mft_logger/mft_logger.h"
-#include "mft_logger/mft_logger_c.h"
-#include "mft_logger/log_config.h"
-#include "mft_logger/log_config_defs.h"
-#include "mft_logger/layers.h"
+#include "nvtoolslogger/NvToolsLogger.h"
+#include "nvtoolslogger/nvtoolslogger_c.h"
+#include "nvtoolslogger/log_config.h"
+#include "nvtoolslogger/log_config_defs.h"
+#include "nvtoolslogger/layers.h"
 
 #include "mft_core/mft_core_utils/operating_system_api/FactoryOperatingSystemAPI.h"
 #include "common/tools_version.h"
@@ -127,21 +127,21 @@ static void cleanupOldLogFiles(std::string& logDir, size_t maxFiles)
     }
 }
 
-static spdlog::level::level_enum toSpdlogLevel(mft_logger::Severity severity)
+static spdlog::level::level_enum toSpdlogLevel(nvtoolslogger::Severity severity)
 {
     switch (severity)
     {
-        case mft_logger::Severity::Debug:
+        case nvtoolslogger::Severity::Debug:
             return spdlog::level::debug;
-        case mft_logger::Severity::Info:
+        case nvtoolslogger::Severity::Info:
             return spdlog::level::info;
-        case mft_logger::Severity::Warning:
+        case nvtoolslogger::Severity::Warning:
             return spdlog::level::warn;
-        case mft_logger::Severity::Error:
+        case nvtoolslogger::Severity::Error:
             return spdlog::level::err;
-        case mft_logger::Severity::Fatal:
+        case nvtoolslogger::Severity::Fatal:
             return spdlog::level::critical;
-        case mft_logger::Severity::Default:
+        case nvtoolslogger::Severity::Default:
             return spdlog::level::off;
         default:
             return spdlog::level::off;
@@ -150,7 +150,7 @@ static spdlog::level::level_enum toSpdlogLevel(mft_logger::Severity severity)
 
 static spdlog::level::level_enum toSpdlogLevel(int severity)
 {
-    return toSpdlogLevel(static_cast<mft_logger::Severity>(severity));
+    return toSpdlogLevel(static_cast<nvtoolslogger::Severity>(severity));
 }
 
 static std::string getProcessLogName()
@@ -168,9 +168,9 @@ static std::string getProcessLogName()
     return name + "_" + std::to_string(getpid());
 }
 
-namespace mft_logger
+namespace nvtoolslogger
 {
-struct MftLogger::Impl
+struct NvToolsLogger::Impl
 {
     bool _initialized;
     std::array<std::shared_ptr<spdlog::logger>, MFT_LAYER_COUNT> _loggers;
@@ -184,8 +184,8 @@ struct MftLogger::Impl
             return;
         }
 
-        mft_logger::LogConfig config;
-        bool success = config.load(mft_logger::DEFAULT_CONFIG_PATH);
+        nvtoolslogger::LogConfig config;
+        bool success = config.load(nvtoolslogger::DEFAULT_CONFIG_PATH);
         if (!success)
         {
             return;
@@ -202,13 +202,13 @@ struct MftLogger::Impl
         {
             switch (sink)
             {
-                case mft_logger::Sink::STDOUT:
+                case nvtoolslogger::Sink::STDOUT:
                     sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_st>());
                     break;
-                case mft_logger::Sink::STDERR:
+                case nvtoolslogger::Sink::STDERR:
                     sinks.push_back(std::make_shared<spdlog::sinks::stderr_color_sink_st>());
                     break;
-                case mft_logger::Sink::FILE_SINK:
+                case nvtoolslogger::Sink::FILE_SINK:
                 {
                     std::string logDir = getBaseLogDirectory();
                     cleanupOldLogFiles(logDir, config.getMaxLogDirFiles());
@@ -224,7 +224,7 @@ struct MftLogger::Impl
                     }
                     break;
                 }
-                case mft_logger::Sink::SYSLOG:
+                case nvtoolslogger::Sink::SYSLOG:
                     sinks.push_back(std::make_shared<spdlog::sinks::syslog_sink_st>("mft", LOG_PID, LOG_USER, false));
                     break;
                 default:
@@ -237,10 +237,10 @@ struct MftLogger::Impl
             sinks.push_back(std::make_shared<spdlog::sinks::stderr_color_sink_st>());
         }
 
-        const auto& layerTable = mft_logger::getLayerTable();
+        const auto& layerTable = nvtoolslogger::getLayerTable();
         for (const auto& entry : layerTable)
         {
-            if (entry.layer == mft_logger::Layer::ALL)
+            if (entry.layer == nvtoolslogger::Layer::ALL)
             {
                 continue;
             }
@@ -274,7 +274,7 @@ struct MftLogger::Impl
     // created.
     void logStartupInfo()
     {
-        const int layer = static_cast<int>(mft_logger::Layer::LOGGER);
+        const int layer = static_cast<int>(nvtoolslogger::Layer::LOGGER);
         auto& metaLogger = _loggers[layer];
         if (!metaLogger)
         {
@@ -316,7 +316,7 @@ struct MftLogger::Impl
 
         // Emit the banner under the label-free pattern, then restore the standard
         // pattern so all subsequent logging (through the shared sinks) is normal.
-        const int severity = static_cast<int>(mft_logger::Severity::Debug);
+        const int severity = static_cast<int>(nvtoolslogger::Severity::Debug);
         metaLogger->set_pattern(LOG_PATTERN_BANNER);
         log(layer, severity, __FILE__, __LINE__, __func__, pidLine.c_str());
         log(layer, severity, __FILE__, __LINE__, __func__, cmdLine.c_str());
@@ -357,64 +357,64 @@ struct MftLogger::Impl
     }
 };
 
-MftLogger& MftLogger::getInstance()
+NvToolsLogger& NvToolsLogger::getInstance()
 {
-    static MftLogger instance;
+    static NvToolsLogger instance;
     return instance;
 }
 
-MftLogger::MftLogger() : _impl(new Impl())
+NvToolsLogger::NvToolsLogger() : _impl(new Impl())
 {
     initialize();
 }
 
-MftLogger::~MftLogger()
+NvToolsLogger::~NvToolsLogger()
 {
     destroy();
     delete _impl;
 }
 
-void MftLogger::initialize()
+void NvToolsLogger::initialize()
 {
     _impl->initialize();
 }
 
-void MftLogger::destroy()
+void NvToolsLogger::destroy()
 {
     _impl->destroy();
 }
 
-void MftLogger::log(Layer layer, Severity severity, const char* message, const char* file, int line, const char* func)
+void NvToolsLogger::log(Layer layer, Severity severity, const char* message, const char* file, int line, const char* func)
 {
     _impl->log(static_cast<int>(layer), static_cast<int>(severity), file, line, func, message);
 }
 
-void MftLogger::debug(Layer layer, const char* message, const char* file, int line, const char* func)
+void NvToolsLogger::debug(Layer layer, const char* message, const char* file, int line, const char* func)
 {
     log(layer, Severity::Debug, message, file, line, func);
 }
 
-void MftLogger::info(Layer layer, const char* message, const char* file, int line, const char* func)
+void NvToolsLogger::info(Layer layer, const char* message, const char* file, int line, const char* func)
 {
     log(layer, Severity::Info, message, file, line, func);
 }
 
-void MftLogger::warning(Layer layer, const char* message, const char* file, int line, const char* func)
+void NvToolsLogger::warning(Layer layer, const char* message, const char* file, int line, const char* func)
 {
     log(layer, Severity::Warning, message, file, line, func);
 }
 
-void MftLogger::error(Layer layer, const char* message, const char* file, int line, const char* func)
+void NvToolsLogger::error(Layer layer, const char* message, const char* file, int line, const char* func)
 {
     log(layer, Severity::Error, message, file, line, func);
 }
 
-void MftLogger::fatal(Layer layer, const char* message, const char* file, int line, const char* func)
+void NvToolsLogger::fatal(Layer layer, const char* message, const char* file, int line, const char* func)
 {
     log(layer, Severity::Fatal, message, file, line, func);
 }
 
-void MftLogger::logf(Layer layer, Severity severity, const char* file, int line, const char* func, const char* fmt, ...)
+void NvToolsLogger::logf(Layer layer, Severity severity, const char* file, int line, const char* func, const char* fmt, ...)
 {
     if (fmt == nullptr)
     {
@@ -430,7 +430,7 @@ void MftLogger::logf(Layer layer, Severity severity, const char* file, int line,
     _impl->log(static_cast<int>(layer), static_cast<int>(severity), file, line, func, buffer);
 }
 
-} // namespace mft_logger
+} // namespace nvtoolslogger
 
 extern "C" void mft_log(int layer, int severity, const char* file, int line, const char* func, const char* message)
 {
@@ -442,8 +442,8 @@ extern "C" void mft_log(int layer, int severity, const char* file, int line, con
     {
         return;
     }
-    mft_logger::MftLogger::getInstance().log(static_cast<mft_logger::Layer>(layer),
-                                             static_cast<mft_logger::Severity>(severity), message, file, line, func);
+    nvtoolslogger::NvToolsLogger::getInstance().log(static_cast<nvtoolslogger::Layer>(layer),
+                                             static_cast<nvtoolslogger::Severity>(severity), message, file, line, func);
 }
 
 extern "C" void mft_log_fmt(int layer, int severity, const char* file, int line, const char* func, const char* fmt, ...)
@@ -463,6 +463,6 @@ extern "C" void mft_log_fmt(int layer, int severity, const char* file, int line,
     buffer[sizeof(buffer) - 1] = '\0';
     va_end(args);
 
-    mft_logger::MftLogger::getInstance().log(static_cast<mft_logger::Layer>(layer),
-                                             static_cast<mft_logger::Severity>(severity), buffer, file, line, func);
+    nvtoolslogger::NvToolsLogger::getInstance().log(static_cast<nvtoolslogger::Layer>(layer),
+                                             static_cast<nvtoolslogger::Severity>(severity), buffer, file, line, func);
 }

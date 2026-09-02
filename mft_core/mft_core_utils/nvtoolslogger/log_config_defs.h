@@ -30,8 +30,8 @@
  * SOFTWARE.
  */
 
-#ifndef MFT_LOGGER_CONFIG_DEFS_H
-#define MFT_LOGGER_CONFIG_DEFS_H
+#ifndef NVTOOLSLOGGER_CONFIG_DEFS_H
+#define NVTOOLSLOGGER_CONFIG_DEFS_H
 
 /* ── C-compatible severity definitions (usable from .c and .cpp) ── */
 
@@ -53,7 +53,7 @@ enum mft_severity
 #include <string>
 #include <vector>
 
-namespace mft_logger
+namespace nvtoolslogger
 {
 
 enum class Severity
@@ -164,12 +164,12 @@ inline bool parseSinkName(const std::string& name, Sink& out)
 // cannot be tampered with by non-root users. Deliberately under /var/lib/mstflint
 // rather than MFT's /var/lib/mft: the two products ship separate layer sets, and a
 // shared file would have each one dropping the other's unknown per-layer overrides.
-static constexpr const char* DEFAULT_CONFIG_PATH = "/var/lib/mstflint/mstflint_logger.json";
+static constexpr const char* DEFAULT_CONFIG_PATH = "/var/lib/mstflint/mstflintlogger.json";
 static const Severity DEFAULT_SEVERITY = Severity::Default;
 static const uint32_t DEFAULT_MAX_LOG_DIR_FILES = 100;
 static const int CONFIG_VERSION = 1;
 
-} // namespace mft_logger
+} // namespace nvtoolslogger
 
 #endif /* __cplusplus */
-#endif /* MFT_LOGGER_CONFIG_DEFS_H */
+#endif /* NVTOOLSLOGGER_CONFIG_DEFS_H */

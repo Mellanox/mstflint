@@ -8,7 +8,7 @@
 #include "reg_access/reg_access.h"
 #include "tools_layouts/cables_layouts.h"
 #include "mtcr_ul_com.h"
-#include "mft_logger/mft_logger_c.h"
+#include "nvtoolslogger/nvtoolslogger_c.h"
 
 
 #define MAX_PORT_NUM                                       128

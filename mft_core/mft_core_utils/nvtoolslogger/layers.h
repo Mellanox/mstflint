@@ -30,8 +30,8 @@
  * SOFTWARE.
  */
 
-#ifndef MFT_LOGGER_LAYERS_H
-#define MFT_LOGGER_LAYERS_H
+#ifndef NVTOOLSLOGGER_LAYERS_H
+#define NVTOOLSLOGGER_LAYERS_H
 
 /* C-compatible layer definitions (usable from .c and .cpp).
  * MFT_LAYER_COUNT is implicitly the number of real layers since it is the
@@ -65,7 +65,7 @@ enum mft_layer
 #include <algorithm>
 #include <cctype>
 
-namespace mft_logger
+namespace nvtoolslogger
 {
 
 enum class Layer
@@ -131,7 +131,7 @@ inline bool parseLayerName(const std::string& name, Layer& out)
     return false;
 }
 
-} // namespace mft_logger
+} // namespace nvtoolslogger
 
 #endif /* __cplusplus */
-#endif /* MFT_LOGGER_LAYERS_H */
+#endif /* NVTOOLSLOGGER_LAYERS_H */

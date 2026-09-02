@@ -89,7 +89,7 @@
 #include <dirent.h>
 #include <sys/file.h>
 #include "mtcr_int_defs.h"
-#include "mft_logger/mft_logger_c.h"
+#include "nvtoolslogger/nvtoolslogger_c.h"
 
 #define MST_VPD_DFLT_TIMEOUT 2000
 #define PCI_VPD_ADDR 0x2

@@ -1,14 +1,14 @@
-.TH MSTLOGGER_CONFIG "1" "August 2026" "mstflint" "User Commands"
+.TH MSTFLINTLOGGER "1" "September 2026" "mstflint" "User Commands"
 .SH NAME
-mstlogger_config \- configure the MFT logger used by the mstflint tools
+mstflintlogger \- configure the NVIDIA Tools logger used by the mstflint tools
 .SH DESCRIPTION
 NAME
 .IP
-mstlogger_config
+mstflintlogger
 .PP
 SYNOPSIS
 .IP
-mstlogger_config [OPTIONS]
+mstflintlogger [OPTIONS]
 .IP
 [\-l|\-\-set\-level <LEVEL>] [\-m|\-\-set\-module <MODULE:LEVEL>]
 [\-M|\-\-clear\-module <MODULE>] [\-o|\-\-enable\-output <SINK>]
@@ -18,8 +18,8 @@ mstlogger_config [OPTIONS]
 .PP
 DESCRIPTION
 .IP
-mstlogger_config configures the MFT logger used by the mstflint tools. It reads
-and writes a single JSON file, /var/lib/mstflint/mstflint_logger.json, which every tool
+mstflintlogger configures the NVIDIA Tools logger used by the mstflint tools. It reads
+and writes a single JSON file, /var/lib/mstflint/mstflintlogger.json, which every tool
 loads once at process start. Verbosity is therefore data, not code: no tool
 flag, no environment variable and no rebuild is involved, and one command
 changes what every tool logs.
@@ -40,7 +40,7 @@ work on an unprivileged copy.
 .PP
 OPTIONS
 .IP
-mstlogger_config [OPTIONS]
+mstflintlogger [OPTIONS]
 .TP
 \fB\-l\fR|\-\-set\-level <LEVEL>
 : Set the global severity threshold, used by every layer with no override
@@ -72,7 +72,7 @@ files beyond the cap are deleted when a new log file is opened
 .TP
 \fB\-c\fR|\-\-config\-file <PATH>
 : Operate on a different configuration file (default:
-/var/lib/mstflint/mstflint_logger.json)
+/var/lib/mstflint/mstflintlogger.json)
 .TP
 \fB\-h\fR|\-\-help
 : Show help message and exit
@@ -108,14 +108,14 @@ EXAMPLES
 Log the low\-level device access layer to a file, reproduce a failure, then put
 things back:
 .IP
-# mstlogger_config \-\-enable\-output file \-\-set\-module mtcr:debug
+# mstflintlogger \-\-enable\-output file \-\-set\-module mtcr:debug
 .IP
-# mstlogger_config \-\-show
+# mstflintlogger \-\-show
 .IP
 # mstflint \-d /dev/mst/mt4123_pciconf0 q
 .IP
 # less /var/log/mstflint/mstflint_<pid>.log
 .IP
-# mstlogger_config \-\-clear\-module mtcr \-\-disable\-output file
+# mstflintlogger \-\-clear\-module mtcr \-\-disable\-output file
 .SH "SEE ALSO"
 .B mstflint(1)

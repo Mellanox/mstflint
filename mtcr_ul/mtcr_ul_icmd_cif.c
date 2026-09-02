@@ -52,7 +52,7 @@
 #include "mtcr_mem_ops.h"
 #include "mtcr_ul_com.h"
 #include "mtcr_int_defs.h"
-#include "mft_logger/mft_logger_c.h"
+#include "nvtoolslogger/nvtoolslogger_c.h"
 
 #define ICMD_QUERY_CAP_CMD_ID 0x8400
 #define ICMD_QUERY_CAP_CMD_SZ 0x8

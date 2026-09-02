@@ -30,7 +30,7 @@
  * SOFTWARE.
  */
 
-#include "mft_logger/log_config_ui.h"
+#include "nvtoolslogger/log_config_ui.h"
 
 #include <iostream>
 #include <cstring>
@@ -70,9 +70,9 @@
 #define VERSION_FLAG "version"
 #define VERSION_FLAG_SHORT 'v'
 
-#define TOOL_NAME "mstlogger_config"
+#define TOOL_NAME "mstflintlogger"
 
-namespace mft_logger
+namespace nvtoolslogger
 {
 
 LogConfigUi::LogConfigUi() :
@@ -90,7 +90,7 @@ LogConfigUi::LogConfigUi() :
 
 void LogConfigUi::initCmdParser()
 {
-    AddDescription("MFT Logger configuration tool. Manages logging severity levels, output sinks, "
+    AddDescription("NVIDIA Tools Logger configuration tool. Manages logging severity levels, output sinks, "
                    "and per-module overrides.");
 
     AddOptions(SET_LEVEL_FLAG, SET_LEVEL_FLAG_SHORT, "LEVEL",
@@ -455,4 +455,4 @@ std::string LogConfigUi::buildValidSinkList() const
     return result;
 }
 
-} // namespace mft_logger
+} // namespace nvtoolslogger

@@ -33,60 +33,57 @@
 #pragma once
 
 #include <string>
+#include <map>
 #include <vector>
-#include <utility>
 
-#include "cmdparser/cmdparser.h"
-#include "mft_logger/log_config.h"
-#include "mft_logger/log_config_defs.h"
-#include "mft_logger/layers.h"
+#include "nvtoolslogger/log_config_defs.h"
 
-namespace mft_logger
+namespace nvtoolslogger
 {
 
-enum class Action
-{
-    NONE,
-    SHOW,
-    RESET
-};
-
-struct ModuleOverride
-{
-    std::string moduleName;
-    Severity level;
-};
-
-class LogConfigUi : public CommandLineRequester
+class LogConfig
 {
 public:
-    LogConfigUi();
-    ~LogConfigUi() override = default;
+    LogConfig();
 
-    ParseStatus HandleOption(std::string name, std::string value) override;
+    bool load(const std::string& path);
+    bool save(const std::string& path) const;
+    void reset();
 
-    int run(int argc, char** argv);
+    void setGlobalLevel(Severity level);
+    Severity getGlobalLevel() const;
+
+    void setModuleLevel(const std::string& moduleName, Severity level);
+    void clearModuleLevel(const std::string& moduleName);
+    const std::map<std::string, Severity>& getModuleLevels() const;
+
+    /* Single source of truth for what a layer actually logs at, shared by the
+       logger itself and by --show so the two can never disagree: a layer's
+       per-module override if one exists, otherwise the global level. */
+    Severity getEffectiveLevel(const std::string& layerName) const;
+
+    /* True when at least one tool layer is live, i.e. the session will produce
+       output. Excludes the logger's own meta layer, which is derived from this. */
+    bool isAnyLayerEnabled() const;
+
+    void enableSink(Sink sink);
+    void disableSink(Sink sink);
+    const std::vector<Sink>& getActiveSinks() const;
+
+    void setMaxLogDirFiles(uint32_t maxFiles);
+    uint32_t getMaxLogDirFiles() const;
+
+    void show() const;
 
 private:
-    void initCmdParser();
-    void printHelp();
-    bool isConfigurableModule(const std::string& moduleName, Layer& layer) const;
-    std::string buildValidLayerList() const;
-    std::string buildValidSeverityList() const;
-    std::string buildValidSinkList() const;
+    void initDefaults();
+    std::string toJson() const;
+    bool fromJson(const std::string& jsonStr);
 
-    CommandLineParser _cmdParser;
-    std::string _configFilePath;
-
-    Action _action;
-    bool _hasGlobalLevel;
     Severity _globalLevel;
-    bool _hasMaxLogDirFiles;
+    std::map<std::string, Severity> _moduleLevels;
+    std::vector<Sink> _activeSinks;
     uint32_t _maxLogDirFiles;
-    std::vector<ModuleOverride> _moduleOverrides;
-    std::vector<std::string> _modulesToClear;
-    std::vector<Sink> _sinksToEnable;
-    std::vector<Sink> _sinksToDisable;
 };
 
-} // namespace mft_logger
+} // namespace nvtoolslogger

@@ -64,19 +64,19 @@ class Layer(IntEnum):
     HCA_CAPS = 12
 
 
-_LIB_NAME = "libmft_logger.so"
+_LIB_NAME = "libnvtoolslogger.so"
 _HERE = os.path.dirname(os.path.realpath(__file__))
 
 
 def _candidate_paths():
-    """Where libmft_logger may live, most specific first.
+    """Where libnvtoolslogger may live, most specific first.
 
     An installed tool is launched through common/python_wrapper, which puts
     $(libdir)/mstflint/python_tools on PYTHONPATH and $(libdir) on
     LD_LIBRARY_PATH - so the bare name resolves. Running straight from the
     source tree, the .so sits next to this file.
     """
-    env = os.environ.get("MFT_LOGGER_LIBRARY_PATH")
+    env = os.environ.get("NVTOOLSLOGGER_LIBRARY_PATH")
     if env:
         yield env
     yield _LIB_NAME
@@ -94,7 +94,7 @@ def _load_library():
             return CDLL(path)
         except OSError as e:
             errors.append("{0}: {1}".format(path, e))
-    raise RuntimeError("Failed to load MFT logger library: {0}".format("; ".join(errors)))
+    raise RuntimeError("Failed to load NVIDIA Tools logger library: {0}".format("; ".join(errors)))
 
 
 _lib = _load_library()
@@ -116,7 +116,7 @@ _lib.mft_log.restype = None
 
 
 class Logger:
-    """Pythonic facade over the native mft_logger C ABI."""
+    """Pythonic facade over the native nvtoolslogger C ABI."""
 
     @staticmethod
     def _log_internal(layer, severity, message):

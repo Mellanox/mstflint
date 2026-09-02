@@ -38,7 +38,7 @@
 #include <sstream>
 #include <string>
 
-#include "mft_logger/mft_logger.h"
+#include "nvtoolslogger/NvToolsLogger.h"
 
 namespace mft_core
 {
@@ -58,7 +58,7 @@ private:
 #define LOG_AND_THROW_MFT_ERROR(oMessage)                             \
     std::stringstream oBuffer;                                        \
     oBuffer << oMessage << std::endl;                                 \
-    MFT_LOG_ERROR(mft_logger::Layer::MFT_CORE, oBuffer.str().c_str()); \
+    MFT_LOG_ERROR(nvtoolslogger::Layer::MFT_CORE, oBuffer.str().c_str()); \
     throw mft_core::MftGeneralException(oBuffer.str());
 
 }; // namespace mft_core

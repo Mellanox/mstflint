@@ -68,9 +68,9 @@ libmtcr_ul_la_SOURCES = \
 libmtcr_ul_la_CFLAGS = -W -Wall -g -MP -MD -fPIC -DMTCR_API="" -DMST_UL
 
 # This target compiles the shared mtcr_ul/*.c sources, which log on the MTCR
-# layer of the central MFT logger, so it needs the same dependency the Linux
-# libmtcr_ul has.
-libmtcr_ul_la_DEPENDENCIES = $(top_builddir)/mft_core/mft_core_utils/mft_logger/libmft_logger.la
+# layer of the central NVIDIA Tools logger, so it needs the same dependency
+# the Linux libmtcr_ul has.
+libmtcr_ul_la_DEPENDENCIES = $(top_builddir)/mft_core/mft_core_utils/nvtoolslogger/libnvtoolslogger.la
 libmtcr_ul_la_LIBADD = $(libmtcr_ul_la_DEPENDENCIES) -lstdc++
 
 if ENABLE_INBAND

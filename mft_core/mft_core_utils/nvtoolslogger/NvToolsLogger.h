@@ -32,33 +32,33 @@
 
 #pragma once
 
-#include "mft_logger/layers.h"
-#include "mft_logger/log_config_defs.h"
+#include "nvtoolslogger/layers.h"
+#include "nvtoolslogger/log_config_defs.h"
 
 /*
  * Compiler intrinsics used to auto-capture call-site information when the
  * log()/logf() default arguments are taken. Evaluated at the call site
  * (not at the function definition), so log("msg") records the caller's
- * file/line/function, not mft_logger.cpp's. GCC and Clang both provide them.
+ * file/line/function, not NvToolsLogger.cpp's. GCC and Clang both provide them.
  */
 #define MFT_LOG_DEFAULT_FILE __builtin_FILE()
 #define MFT_LOG_DEFAULT_LINE __builtin_LINE()
 #define MFT_LOG_DEFAULT_FUNC __builtin_FUNCTION()
 
-namespace mft_logger
+namespace nvtoolslogger
 {
 
 /*
- * MftLogger - process-wide singleton, public C++ entry point.
+ * NvToolsLogger - process-wide singleton, public C++ entry point.
  *
  * NOT thread safe: the underlying spdlog sinks are the lock-free _st variants,
  * chosen so an enabled layer costs a level compare rather than a mutex. Call
  * the MFT_LOG_* macros from a single thread per process.
  */
-class MftLogger
+class NvToolsLogger
 {
 public:
-    static MftLogger& getInstance();
+    static NvToolsLogger& getInstance();
 
     /* Plain message log. file/line/func default to the call site via
        compiler builtins, so `L.log(layer, sev, "msg")` works without
@@ -109,10 +109,10 @@ public:
       __attribute__((format(printf, 7, 8)));
 
 private:
-    MftLogger();
-    ~MftLogger();
-    MftLogger(const MftLogger&) = delete;
-    MftLogger& operator=(const MftLogger&) = delete;
+    NvToolsLogger();
+    ~NvToolsLogger();
+    NvToolsLogger(const NvToolsLogger&) = delete;
+    NvToolsLogger& operator=(const NvToolsLogger&) = delete;
 
     void initialize();
     void destroy();
@@ -121,48 +121,48 @@ private:
     Impl* _impl;
 };
 
-} // namespace mft_logger
+} // namespace nvtoolslogger
 
 /* ── Plain message macros: MFT_LOG_<SEVERITY>(layer, msg) ── */
 
 #define MFT_LOG_DEBUG(layer, msg)               \
-    ::mft_logger::MftLogger::getInstance().log( \
-      (layer), ::mft_logger::Severity::Debug, (msg), __FILE__, __LINE__, __func__)
+    ::nvtoolslogger::NvToolsLogger::getInstance().log( \
+      (layer), ::nvtoolslogger::Severity::Debug, (msg), __FILE__, __LINE__, __func__)
 
 #define MFT_LOG_INFO(layer, msg)                \
-    ::mft_logger::MftLogger::getInstance().log( \
-      (layer), ::mft_logger::Severity::Info, (msg), __FILE__, __LINE__, __func__)
+    ::nvtoolslogger::NvToolsLogger::getInstance().log( \
+      (layer), ::nvtoolslogger::Severity::Info, (msg), __FILE__, __LINE__, __func__)
 
 #define MFT_LOG_WARNING(layer, msg)             \
-    ::mft_logger::MftLogger::getInstance().log( \
-      (layer), ::mft_logger::Severity::Warning, (msg), __FILE__, __LINE__, __func__)
+    ::nvtoolslogger::NvToolsLogger::getInstance().log( \
+      (layer), ::nvtoolslogger::Severity::Warning, (msg), __FILE__, __LINE__, __func__)
 
 #define MFT_LOG_ERROR(layer, msg)               \
-    ::mft_logger::MftLogger::getInstance().log( \
-      (layer), ::mft_logger::Severity::Error, (msg), __FILE__, __LINE__, __func__)
+    ::nvtoolslogger::NvToolsLogger::getInstance().log( \
+      (layer), ::nvtoolslogger::Severity::Error, (msg), __FILE__, __LINE__, __func__)
 
 #define MFT_LOG_FATAL(layer, msg)               \
-    ::mft_logger::MftLogger::getInstance().log( \
-      (layer), ::mft_logger::Severity::Fatal, (msg), __FILE__, __LINE__, __func__)
+    ::nvtoolslogger::NvToolsLogger::getInstance().log( \
+      (layer), ::nvtoolslogger::Severity::Fatal, (msg), __FILE__, __LINE__, __func__)
 
 /* ── Format string macros: MFT_LOG_<SEVERITY>F(layer, fmt, ...) ── */
 
 #define MFT_LOG_DEBUGF(layer, fmt, ...)          \
-    ::mft_logger::MftLogger::getInstance().logf( \
-      (layer), ::mft_logger::Severity::Debug, __FILE__, __LINE__, __func__, (fmt), ##__VA_ARGS__)
+    ::nvtoolslogger::NvToolsLogger::getInstance().logf( \
+      (layer), ::nvtoolslogger::Severity::Debug, __FILE__, __LINE__, __func__, (fmt), ##__VA_ARGS__)
 
 #define MFT_LOG_INFOF(layer, fmt, ...)           \
-    ::mft_logger::MftLogger::getInstance().logf( \
-      (layer), ::mft_logger::Severity::Info, __FILE__, __LINE__, __func__, (fmt), ##__VA_ARGS__)
+    ::nvtoolslogger::NvToolsLogger::getInstance().logf( \
+      (layer), ::nvtoolslogger::Severity::Info, __FILE__, __LINE__, __func__, (fmt), ##__VA_ARGS__)
 
 #define MFT_LOG_WARNINGF(layer, fmt, ...)        \
-    ::mft_logger::MftLogger::getInstance().logf( \
-      (layer), ::mft_logger::Severity::Warning, __FILE__, __LINE__, __func__, (fmt), ##__VA_ARGS__)
+    ::nvtoolslogger::NvToolsLogger::getInstance().logf( \
+      (layer), ::nvtoolslogger::Severity::Warning, __FILE__, __LINE__, __func__, (fmt), ##__VA_ARGS__)
 
 #define MFT_LOG_ERRORF(layer, fmt, ...)          \
-    ::mft_logger::MftLogger::getInstance().logf( \
-      (layer), ::mft_logger::Severity::Error, __FILE__, __LINE__, __func__, (fmt), ##__VA_ARGS__)
+    ::nvtoolslogger::NvToolsLogger::getInstance().logf( \
+      (layer), ::nvtoolslogger::Severity::Error, __FILE__, __LINE__, __func__, (fmt), ##__VA_ARGS__)
 
 #define MFT_LOG_FATALF(layer, fmt, ...)          \
-    ::mft_logger::MftLogger::getInstance().logf( \
-      (layer), ::mft_logger::Severity::Fatal, __FILE__, __LINE__, __func__, (fmt), ##__VA_ARGS__)
+    ::nvtoolslogger::NvToolsLogger::getInstance().logf( \
+      (layer), ::nvtoolslogger::Severity::Fatal, __FILE__, __LINE__, __func__, (fmt), ##__VA_ARGS__)

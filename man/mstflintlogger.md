@@ -1,11 +1,11 @@
 
 # NAME
 
-mstlogger_config
+mstflintlogger
 
 # SYNPOSIS
 
-> mstlogger_config \[OPTIONS\]
+> mstflintlogger \[OPTIONS\]
 >
 > \[-l|-\-set-level \<LEVEL\>\] \[-m|-\-set-module \<MODULE:LEVEL\>\]
 > \[-M|-\-clear-module \<MODULE\>\] \[-o|-\-enable-output \<SINK\>\]
@@ -15,8 +15,8 @@ mstlogger_config
 
 # DESCRIPTION
 
-> mstlogger_config configures the MFT logger used by the mstflint tools. It
-> reads and writes a single JSON file, /var/lib/mstflint/mstflint_logger.json, which
+> mstflintlogger configures the NVIDIA Tools logger used by the mstflint tools. It
+> reads and writes a single JSON file, /var/lib/mstflint/mstflintlogger.json, which
 > every tool loads once at process start. Verbosity is therefore data, not
 > code: no tool flag, no environment variable and no rebuild is involved, and
 > one command changes what every tool logs.
@@ -37,7 +37,7 @@ mstlogger_config
 
 OPTIONS
 
-> mstlogger_config \[OPTIONS\]
+> mstflintlogger \[OPTIONS\]
 
   - **-l**|-\-set-level \<LEVEL\>
     : Set the global severity threshold, used by every layer with no override
@@ -69,7 +69,7 @@ OPTIONS
 
   - **-c**|-\-config-file \<PATH\>
     : Operate on a different configuration file
-    (default: /var/lib/mstflint/mstflint_logger.json)
+    (default: /var/lib/mstflint/mstflintlogger.json)
 
   - **-h**|-\-help
     : Show help message and exit
@@ -106,22 +106,22 @@ OPTIONS
 > Log the low-level device access layer to a file, reproduce a failure, then
 > put things back:
 >
-> \# mstlogger_config -\-enable-output file -\-set-module mtcr:debug
+> \# mstflintlogger -\-enable-output file -\-set-module mtcr:debug
 >
-> \# mstlogger_config -\-show
+> \# mstflintlogger -\-show
 >
 > \# mstflint -d /dev/mst/mt4123_pciconf0 q
 >
 > \# less /var/log/mstflint/mstflint_\<pid\>.log
 >
-> \# mstlogger_config -\-clear-module mtcr -\-disable-output file
+> \# mstflintlogger -\-clear-module mtcr -\-disable-output file
 
 # SEE ALSO
 
-The full documentation for **mstlogger_config,** is maintained as a Texinfo
-manual. If the **info** and **mstlogger_config,** programs are properly
+The full documentation for **mstflintlogger,** is maintained as a Texinfo
+manual. If the **info** and **mstflintlogger,** programs are properly
 installed at your site, the command
 
-> **info mstlogger_config,**
+> **info mstflintlogger,**
 
 should give you access to the complete manual.

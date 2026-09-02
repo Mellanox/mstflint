@@ -30,10 +30,10 @@
  * SOFTWARE.
  */
 
-#include "mft_logger/log_config_ui.h"
+#include "nvtoolslogger/log_config_ui.h"
 
 int main(int argc, char** argv)
 {
-    mft_logger::LogConfigUi ui;
+    nvtoolslogger::LogConfigUi ui;
     return ui.run(argc, argv);
 }
