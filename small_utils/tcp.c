@@ -126,6 +126,12 @@ typedef enum proto_type
     }
 #endif
 
+/* NI_MAXHOST is a BSD/glibc extension, not POSIX, so a strict feature-test
+   level can hide it. */
+#ifndef NI_MAXHOST
+#define NI_MAXHOST 1025
+#endif
+
 #undef COMP_READ
 
 #define COMP_ACCESS(s, b, l, p, f1, f2) (p == PT_UDP) ? f1(s, b, l) : f2(s, b, l);
@@ -365,7 +371,9 @@ INSIDE_MTCR int open_cli_connection(const char* host, const int port, proto_type
 {
     int SockFD;
     struct sockaddr_in serv_addr;
-    struct hostent* hent;
+    struct addrinfo hints;
+    struct addrinfo* addressinfo = NULL;
+    int ret = 0;
     int needs_bind = 0;
     int type = SOCK_STREAM, domain = AF_INET;
 
@@ -373,7 +381,6 @@ INSIDE_MTCR int open_cli_connection(const char* host, const int port, proto_type
     {
         needs_bind = 1;
         type = SOCK_DGRAM;
-        domain = PF_INET;
     }
 
     plog("open_connection(%s, %d)\n", host, port);
@@ -381,9 +388,15 @@ INSIDE_MTCR int open_cli_connection(const char* host, const int port, proto_type
     // Initialize Winsock
     WIN_INIT();
 
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_flags = AI_CANONNAME;
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = type;
+
     /*  Try to determinate server IP address */
-    if ((hent = gethostbyname(host)) == NULL)
+    if (0 != (ret = getaddrinfo(host, NULL, &hints, &addressinfo)))
     {
+        plog("getaddrinfo error: %s\n", gai_strerror(ret));
         errno = EINVAL;
         return -1;
     }
@@ -394,8 +407,10 @@ INSIDE_MTCR int open_cli_connection(const char* host, const int port, proto_type
      */
     memset((char*)&serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
-    memcpy(&serv_addr.sin_addr, (*(hent->h_addr_list)), sizeof(struct in_addr));
+    memcpy(&serv_addr.sin_addr, &((struct sockaddr_in*)addressinfo->ai_addr)->sin_addr, sizeof(struct in_addr));
     serv_addr.sin_port = (short)htons((short)port);
+
+    freeaddrinfo(addressinfo);
 
     /*  Open a TCP socket (an Internet stream socket). */
     if ((SockFD = socket(domain, type, 0)) < 0)
@@ -440,7 +455,7 @@ INSIDE_MTCR int open_cli_connection(const char* host, const int port, proto_type
 */
 INSIDE_MTCR int open_serv_connection(const int port)
 {
-    struct hostent* hent;
+    char node[NI_MAXHOST];
     struct sockaddr_in serv_addr;
     struct sockaddr_in cli_inet_addr;
     int SockFD, newsockfd;
@@ -510,8 +525,9 @@ INSIDE_MTCR int open_serv_connection(const int port)
             COMP_CLOSE(SockFD);
 
             /*  Determine the client host name */
-            hent = gethostbyaddr((char*)&cli_inet_addr.sin_addr, sizeof(cli_inet_addr.sin_addr), AF_INET);
-            plog("Accepted connection from host \"%s\" ", hent ? hent->h_name : "????");
+            int res = getnameinfo(
+              (struct sockaddr*)&cli_inet_addr, sizeof(cli_inet_addr), node, sizeof(node), NULL, 0, NI_NAMEREQD);
+            plog("Accepted connection from host \"%s\" ", 0 == res ? node : "????");
 
             /*  Determine the client host address */
             plog(" (%s)", inet_ntoa(cli_inet_addr.sin_addr));
