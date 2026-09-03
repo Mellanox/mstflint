@@ -203,9 +203,18 @@ void VFIODriverAccess::bindDeviceToVfioPciDriver(const std::string& dbdf)
         throw std::runtime_error(std::string("Failed to open new_id file: ") + VFIO_PCI_DRIVER_NEW_ID_PATH);
     }
 
+    errno = 0;
     new_id_file << "15b3 " + deviceId << std::endl;
     if (!new_id_file) {
-        throw std::runtime_error(std::string("Failed to write to ") + VFIO_PCI_DRIVER_NEW_ID_PATH);
+        int writeErrno = errno ? errno : EIO;
+        if (writeErrno != EEXIST) {
+            throw std::runtime_error(std::string("Failed to write to ") + VFIO_PCI_DRIVER_NEW_ID_PATH + ": " +
+                                     strerror(writeErrno));
+        }
+        if (!isDeviceBoundToVfioPci(dbdf)) {
+            throw std::runtime_error(std::string("PCI ID is registered with vfio-pci, but device ") + dbdf +
+                                     " is not bound to vfio-pci");
+        }
     }
 
     DBG_PRINTF("Device bound to vfio-pci successfully: %s\n", VFIO_PCI_DRIVER_NEW_ID_PATH);
