@@ -121,6 +121,24 @@
 #include "vfio_driver_access/VFIODriverAccessWrapperC.h"
 #endif
 
+static __thread char mtcr_last_err[256] = {0};
+
+const char* mtcr_get_last_err(void)
+{
+    return mtcr_last_err;
+}
+
+#ifdef ENABLE_VFIO
+static void mtcr_set_last_err(const char* err)
+{
+    if (err && err[0])
+    {
+        strncpy(mtcr_last_err, err, sizeof(mtcr_last_err) - 1);
+        mtcr_last_err[sizeof(mtcr_last_err) - 1] = '\0';
+    }
+}
+#endif
+
 #ifdef ENABLE_NVML
 #include "nvml_lib/nvml_c_wrapper.h"
 #endif
@@ -2229,6 +2247,7 @@ static int mtcr_vfio_device_open(mfile* mf, const char* name, unsigned domain, u
 
     if (GetStartOffsets(domain, bus, dev, func, &mf->fd, &mf->vsec_addr, &mf->address_region_addr) != 0)
     {
+        mtcr_set_last_err(GetVFIOLastError());
         return -1;
     }
 
@@ -4029,6 +4048,7 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
     int err;
     int rc;
 
+    mtcr_last_err[0] = '\0';
     if (geteuid() != 0)
     {
         errno = EACCES;

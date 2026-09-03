@@ -117,6 +117,8 @@ mfile* mopend(const char* name, DType dtype);
 
 mfile* mopen_adv(const char* name, MType mtype);
 
+const char* mtcr_get_last_err(void);
+
 /*
  * Close Mellanox driver
  * req. descriptor
