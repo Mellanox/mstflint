@@ -51,6 +51,8 @@
 
 #include "mtcr_mem_ops.h"
 #include "mtcr_ul_com.h"
+#include "mtcr_int_defs.h"
+#include "nvtoolslogger/nvtoolslogger_c.h"
 
 #define ICMD_QUERY_CAP_CMD_ID 0x8400
 #define ICMD_QUERY_CAP_CMD_SZ 0x8
@@ -129,14 +131,6 @@
     {                             \
         goto lable;               \
     }
-#define DBG_PRINTF(...)                   \
-    do                                    \
-    {                                     \
-        if (getenv("MFT_DEBUG") != NULL)  \
-        {                                 \
-            fprintf(stderr, __VA_ARGS__); \
-        }                                 \
-    } while (0)
 /*
  * Macros for accessing CR-Space
  */
@@ -164,7 +158,7 @@
 static int MWRITE4_ICMD(mfile* mf, int offset, u_int32_t value)
 {
     SET_SPACE_FOR_ICMD_ACCESS(mf);
-    DBG_PRINTF("-D- MWRITE4_ICMD: off: %x, addr_space: %x\n", offset, mf->address_space);
+    MTCR_LOG_DEBUG("MWRITE4_ICMD: off: %x, addr_space: %x", offset, mf->address_space);
     if (mwrite4(mf, offset, value) != 4)
     {
         mset_addr_space(mf, AS_CR_SPACE);
@@ -177,7 +171,7 @@ static int MWRITE4_ICMD(mfile* mf, int offset, u_int32_t value)
 static int MREAD4_ICMD(mfile* mf, int offset, u_int32_t* ptr)
 {
     SET_SPACE_FOR_ICMD_ACCESS(mf);
-    DBG_PRINTF("-D- MREAD4_ICMD: off: %x, addr_space: %x\r\n", offset, mf->address_space);
+    MTCR_LOG_DEBUG("MREAD4_ICMD: off: %x, addr_space: %x", offset, mf->address_space);
     if (mread4(mf, offset, ptr) != 4)
     {
         RESTORE_SPACE(mf);
@@ -187,30 +181,30 @@ static int MREAD4_ICMD(mfile* mf, int offset, u_int32_t* ptr)
     return ME_OK;
 }
 
-#define MWRITE_BUF_ICMD(mf, offset, data, byte_len, action_on_fail)                              \
-    do                                                                                           \
-    {                                                                                            \
-        DBG_PRINTF("-D- MWRITE_BUF_ICMD: off: %x, addr_space: %x\n", offset, mf->address_space); \
-        SET_SPACE_FOR_ICMD_ACCESS(mf);                                                           \
-        if ((unsigned)mwrite_buffer(mf, offset, data, byte_len) != (unsigned)byte_len)           \
-        {                                                                                        \
-            RESTORE_SPACE(mf);                                                                   \
-            action_on_fail;                                                                      \
-        }                                                                                        \
-        RESTORE_SPACE(mf);                                                                       \
+#define MWRITE_BUF_ICMD(mf, offset, data, byte_len, action_on_fail)                            \
+    do                                                                                         \
+    {                                                                                          \
+        MTCR_LOG_DEBUG("MWRITE_BUF_ICMD: off: %x, addr_space: %x", offset, mf->address_space); \
+        SET_SPACE_FOR_ICMD_ACCESS(mf);                                                         \
+        if ((unsigned)mwrite_buffer(mf, offset, data, byte_len) != (unsigned)byte_len)         \
+        {                                                                                      \
+            RESTORE_SPACE(mf);                                                                 \
+            action_on_fail;                                                                    \
+        }                                                                                      \
+        RESTORE_SPACE(mf);                                                                     \
     } while (0)
 
-#define MREAD_BUF_ICMD(mf, offset, data, byte_len, action_on_fail)                              \
-    do                                                                                          \
-    {                                                                                           \
-        DBG_PRINTF("-D- MREAD_BUF_ICMD: off: %x, addr_space: %x\n", offset, mf->address_space); \
-        SET_SPACE_FOR_ICMD_ACCESS(mf);                                                          \
-        if ((unsigned)mread_buffer(mf, offset, data, byte_len) != (unsigned)byte_len)           \
-        {                                                                                       \
-            RESTORE_SPACE(mf);                                                                  \
-            action_on_fail;                                                                     \
-        }                                                                                       \
-        RESTORE_SPACE(mf);                                                                      \
+#define MREAD_BUF_ICMD(mf, offset, data, byte_len, action_on_fail)                            \
+    do                                                                                        \
+    {                                                                                         \
+        MTCR_LOG_DEBUG("MREAD_BUF_ICMD: off: %x, addr_space: %x", offset, mf->address_space); \
+        SET_SPACE_FOR_ICMD_ACCESS(mf);                                                        \
+        if ((unsigned)mread_buffer(mf, offset, data, byte_len) != (unsigned)byte_len)         \
+        {                                                                                     \
+            RESTORE_SPACE(mf);                                                                \
+            action_on_fail;                                                                   \
+        }                                                                                     \
+        RESTORE_SPACE(mf);                                                                    \
     } while (0)
 
 /*
@@ -292,7 +286,7 @@ static int get_version(mfile* mf, u_int32_t hcr_address)
 
 static int check_busy_bit(mfile* mf, int busy_bit_offset, u_int32_t* reg)
 {
-    DBG_PRINTF("Check Go bit\n");
+    MTCR_LOG_DEBUG("Check Go bit");
     int rc = MREAD4_ICMD(mf, mf->icmd.ctrl_addr, reg);
     CHECK_RC(rc);
     int busy_bit = EXTRACT((*reg), busy_bit_offset, BUSY_BITLEN);
@@ -307,7 +301,7 @@ static MError set_busy_bit(mfile* mf, u_int32_t* reg, int busy_bit_offset)
 
 static MError get_syndrome(mfile* mf, u_int32_t* reg, int syndrome_bit_offset, int syndrome_bit_len)
 {
-    DBG_PRINTF("Reading syndrome from addr=0x%x\n", mf->icmd.syndrome_addr);
+    MTCR_LOG_DEBUG("Reading syndrome from addr=0x%x", mf->icmd.syndrome_addr);
     int rc = MREAD4_ICMD(mf, mf->icmd.syndrome_addr, reg);
     CHECK_RC(rc);
 
@@ -437,7 +431,7 @@ static int set_and_poll_on_busy_bit(mfile* mf, int enhanced, int busy_bit_offset
     /* set go bit */
     rc = set_busy_bit(mf, reg, busy_bit_offset);
     CHECK_RC(rc);
-    DBG_PRINTF("Busy-bit raised. Waiting for command to exec...\n");
+    MTCR_LOG_DEBUG("Busy-bit raised. Waiting for command to exec...");
 
     /* set sleep time if needed */
     int icmd_sleep = set_sleep();
@@ -460,13 +454,13 @@ static int set_and_poll_on_busy_bit(mfile* mf, int enhanced, int busy_bit_offset
         elapsed_ms = (ts_now.tv_sec - ts_start.tv_sec) * 1000 + (ts_now.tv_nsec - ts_start.tv_nsec) / 1000000;
         if (elapsed_ms > timeout_ms)
         {
-            DBG_PRINTF("Execution timed-out after %ld ms\n", elapsed_ms);
+            MTCR_LOG_DEBUG("Execution timed-out after %ld ms", elapsed_ms);
             return ME_ICMD_STATUS_EXECUTE_TO;
         }
         i++;
         if ((i < 100) || (i % 100 == 0))
         {
-            DBG_PRINTF("Waiting for busy-bit to clear (iteration #%d)...\n", i);
+            MTCR_LOG_DEBUG("Waiting for busy-bit to clear (iteration #%d)...", i);
         }
 
         if (icmd_sleep > 0)
@@ -515,7 +509,7 @@ static int set_and_poll_on_busy_bit(mfile* mf, int enhanced, int busy_bit_offset
         busy = check_busy_bit(mf, busy_bit_offset, reg);
     } while (busy);
 
-    DBG_PRINTF("Command completed!\n");
+    MTCR_LOG_DEBUG("Command completed!");
 
     return ME_OK;
 }
@@ -572,17 +566,17 @@ static int icmd_clear_semaphore_com(mfile* mf)
         {
             return ME_OK;
         }
-        DBG_PRINTF("VS_MAD SEM Release .. ");
+        MTCR_LOG_DEBUG("VS_MAD SEM Release ..");
         if (mib_semaphore_lock_vs_mad(mf, SMP_SEM_RELEASE, SMP_ICMD_SEM_ADDR, mf->icmd.lock_key, &(mf->icmd.lock_key), &is_leaseable, &lease_exp, SEM_LOCK_SET))
         {
-            DBG_PRINTF("Failed!\n");
+            MTCR_LOG_DEBUG("Failed!");
             return ME_ICMD_STATUS_CR_FAIL;
         }
         if (mf->icmd.lock_key != 0)
         {
             return ME_ICMD_STATUS_CR_FAIL;
         }
-        DBG_PRINTF("Succeeded!\n");
+        MTCR_LOG_DEBUG("Succeeded!");
     }
     else
 #endif
@@ -598,7 +592,7 @@ static int icmd_clear_semaphore_com(mfile* mf)
  */
 int icmd_clear_semaphore(mfile* mf)
 {
-    DBG_PRINTF("Clearing semaphore\n");
+    MTCR_LOG_DEBUG("Clearing semaphore");
     /* open icmd interface by demand */
     int ret = icmd_open(mf);
 
@@ -647,7 +641,7 @@ static int icmd_take_semaphore_com(mfile* mf, u_int32_t expected_read_val)
     u_int32_t read_val = 0x0;
     unsigned retries = 0;
 
-    DBG_PRINTF("Taking semaphore...\n");
+    MTCR_LOG_DEBUG("Taking semaphore...");
     do
     { /* loop while the semaphore is taken by someone else */
         if (++retries > 256)
@@ -659,11 +653,11 @@ static int icmd_take_semaphore_com(mfile* mf, u_int32_t expected_read_val)
         u_int8_t lease_exp;
         if (((mf->icmd.semaphore_addr == SEMAPHORE_ADDR_CIB) || (mf->icmd.semaphore_addr == SEMAPHORE_ADDR_CX4)) && mf->icmd.ib_semaphore_lock_supported)
         {
-            DBG_PRINTF("VS_MAD SEM LOCK .. ");
+            MTCR_LOG_DEBUG("VS_MAD SEM LOCK ..");
             read_val = mib_semaphore_lock_vs_mad(mf, SMP_SEM_LOCK, SMP_ICMD_SEM_ADDR, 0, &(mf->icmd.lock_key), &is_leaseable, &lease_exp, SEM_LOCK_SET);
             if (read_val && (read_val != ME_MAD_BUSY))
             {
-                DBG_PRINTF("Failed!\n");
+                MTCR_LOG_DEBUG("Failed!");
                 return ME_ICMD_STATUS_ICMD_NOT_READY;
             }
             /* Fail to obtain the lock */
@@ -671,19 +665,19 @@ static int icmd_take_semaphore_com(mfile* mf, u_int32_t expected_read_val)
             {
                 read_val = 1;
             }
-            DBG_PRINTF("Succeeded!\n");
+            MTCR_LOG_DEBUG("Succeeded!");
         }
         else
 #endif
         {
             if (mf->functional_vsec_supp)
             {
-                DBG_PRINTF("ICMD_SEMAPHORE: Writing expected_read_val=0x%x to semaphore\n", expected_read_val);
+                MTCR_LOG_DEBUG("ICMD_SEMAPHORE: Writing expected_read_val=0x%x to semaphore", expected_read_val);
                 MWRITE4_SEMAPHORE(mf, mf->icmd.semaphore_addr,
                                   expected_read_val); // Attempt to take the semaphore by writing the PID
             }
             MREAD4_SEMAPHORE(mf, mf->icmd.semaphore_addr, &read_val);
-            DBG_PRINTF("ICMD_SEMAPHORE: read_val=0x%x expected_read_val=0x%x\n", read_val, expected_read_val);
+            MTCR_LOG_DEBUG("ICMD_SEMAPHORE: read_val=0x%x expected_read_val=0x%x", read_val, expected_read_val);
             if (read_val == expected_read_val) // Semaphore was free (PID if VSC, 0 if non-VSC)
             {
                 if (!is_gw_access(mf))
@@ -692,9 +686,9 @@ static int icmd_take_semaphore_com(mfile* mf, u_int32_t expected_read_val)
                     MREAD4_SEMAPHORE(mf, mf->icmd.semaphore_addr, &read_val);
                     if (read_val != SEMAPHORE_62_LOCKED_INDICATOR)
                     {
-                        DBG_PRINTF("Failed to take ICMD semaphore (semaphore 62). "
+                        MTCR_LOG_DEBUG("Failed to take ICMD semaphore (semaphore 62). "
                                    "Semaphore was free (0) but HW failed to set it to locked state when we took it."
-                                   "This might indicate a FW or HW issue.\n");
+                                   "This might indicate a FW or HW issue.");
                         if (device_supports_sem_lock_verify(mf->hw_dev_id))
                         {
                             return ME_ICMD_UNABLE_TO_TAKE_SEMAOHORE;
@@ -708,7 +702,7 @@ static int icmd_take_semaphore_com(mfile* mf, u_int32_t expected_read_val)
     } while (read_val != expected_read_val);
 
     mf->icmd.took_semaphore = 1;
-    DBG_PRINTF("Semaphore taken successfully...\n");
+    MTCR_LOG_DEBUG("Semaphore taken successfully...");
 
     return ME_OK;
 }
@@ -741,8 +735,8 @@ static int check_msg_size(mfile* mf, int write_data_size, int read_data_size)
     /* check data size does not exceed mailbox size */
     if ((write_data_size > (int)mf->icmd.max_cmd_size) || (read_data_size > (int)mf->icmd.max_cmd_size))
     {
-        DBG_PRINTF("write_data_size <%x-%x> mf->icmd.max_cmd_size .. ", write_data_size, mf->icmd.max_cmd_size);
-        DBG_PRINTF("read_data_size <%x-%x> mf->icmd.max_cmd_size\n", read_data_size, mf->icmd.max_cmd_size);
+        MTCR_LOG_DEBUG("write_data_size <%x-%x> mf->icmd.max_cmd_size ..", write_data_size, mf->icmd.max_cmd_size);
+        MTCR_LOG_DEBUG("read_data_size <%x-%x> mf->icmd.max_cmd_size", read_data_size, mf->icmd.max_cmd_size);
         return ME_ICMD_SIZE_EXCEEDS_LIMIT;
     }
     return ME_OK;
@@ -773,7 +767,7 @@ static int icmd_send_command_com(mfile* mf, IN int opcode, INOUT void* data, IN 
 
     if (!skip_write)
     {
-        DBG_PRINTF("-D- Writing command to mailbox\n");
+        MTCR_LOG_DEBUG("Writing command to mailbox");
         if (mf->icmd.dma_icmd)
         {
             if (mtcr_memaccess(mf, 0, read_data_size, data, 1, MEM_ICMD))
@@ -818,7 +812,7 @@ static int icmd_send_command_com(mfile* mf, IN int opcode, INOUT void* data, IN 
 
     CHECK_RC_GO_TO(ret, cleanup);
 
-    DBG_PRINTF("-D- Reading command from mailbox");
+    MTCR_LOG_DEBUG("Reading command from mailbox");
 
     if (mf->icmd.dma_icmd)
     {
@@ -908,7 +902,7 @@ static int icmd_send_gbox_command_com(mfile* mf, INOUT void* data, IN int write_
     CHECK_RC(ret);
 
     /* write to data request section */
-    DBG_PRINTF("-D- Setting command GW");
+    MTCR_LOG_DEBUG("Setting command GW");
     data_start_off = mf->gb_info.data_req_addr + GBOX_MAX_DATA_SIZE - write_data_size;
     MWRITE_BUF_ICMD(mf, data_start_off, data, write_data_size, ret = ME_ICMD_STATUS_CR_FAIL; goto sem_cleanup;);
 
@@ -927,7 +921,7 @@ static int icmd_send_gbox_command_com(mfile* mf, INOUT void* data, IN int write_
     ret = EXTRACT(reg, GBOX_STATUS1_BITOFF, GBOX_STATUS1_BITLEN);
 
     /* read response */
-    DBG_PRINTF("-D- Reading command from mailbox");
+    MTCR_LOG_DEBUG("Reading command from mailbox");
     /* no need to read size, it is the same (fw dont change this field) - uncommnet if logic will change */
     /* int read_size = EXTRACT(reg, GBOX_READ_SIZE_BITOFF, GBOX_READ_SIZE_BITLEN); */
     /* read_size = read_size * 4; */
@@ -997,7 +991,7 @@ static int icmd_init_cr(mfile* mf)
     /* get device specific addresses */
     if (read_device_id(mf, &hw_id) != 4)
     {
-        DBG_PRINTF("icmd_init_cr: failed to read device ID.\n");
+        MTCR_LOG_DEBUG("icmd_init_cr: failed to read device ID.");
         return ME_ICMD_NOT_SUPPORTED;
     }
 
@@ -1043,14 +1037,14 @@ static int icmd_init_cr(mfile* mf)
             u_int32_t did = mf->functional_device_id;
             if (is_cable(did) || (is_linkx(did) && (did != ArcusESddv && !is_retimer(did))))
             {
-                DBG_PRINTF("icmd_init_cr: ICMD not supported for device type.\n");
+                MTCR_LOG_DEBUG("icmd_init_cr: ICMD not supported for device type.");
                 return ME_ICMD_NOT_SUPPORTED;
             }
             /* get_property_as_* returns 0 for a missing entry, which would leave
                every address at 0 and fail later on a CR access at address 0. */
             if (get_property_as_cstring(did, PROP_DEVICE_NAME)[0] == '\0')
             {
-                DBG_PRINTF("icmd: device id 0x%x not in property catalog.\n", did);
+                MTCR_LOG_DEBUG("icmd: device id 0x%x not in property catalog.", did);
                 return ME_ICMD_NOT_SUPPORTED;
             }
             cmd_ptr_addr = get_property_as_uint(did, PROP_CMD_PTR_ADDRESS);
@@ -1079,7 +1073,7 @@ static int icmd_init_cr(mfile* mf)
             mf->icmd.cmd_addr = EXTRACT(reg, CMD_PTR_BITOFF, mf->icmd.cmd_ptr_bitlen);
             mf->icmd.ctrl_addr = mf->icmd.cmd_addr + CTRL_OFFSET;
             mf->icmd.syndrome_addr = mf->icmd.cmd_addr + SYNDROME_OFFSET;
-            DBG_PRINTF("-D- iCMD syndrom addr: 0x%x\n", mf->icmd.syndrome_addr);
+            MTCR_LOG_DEBUG("iCMD syndrom addr: 0x%x", mf->icmd.syndrome_addr);
             break;
 
         case ME_ICMD_STATUS_CR_FAIL:
@@ -1132,14 +1126,14 @@ static int icmd_init_vcr_crspace_addr(mfile* mf)
             u_int32_t did = mf->functional_device_id;
             if (is_cable(did) || ((is_linkx(did) || is_retimer(did)) && did != ArcusESddv))
             {
-                DBG_PRINTF("icmd_init_vcr_crspace: not supported for this device.\n");
+                MTCR_LOG_DEBUG("icmd_init_vcr_crspace: not supported for this device.");
                 return ME_ICMD_NOT_SUPPORTED;
             }
             /* MFT does not check this. Without it a device that is missing from
                the catalog is accepted with the address left at 0. */
             if (get_property_as_cstring(did, PROP_DEVICE_NAME)[0] == '\0')
             {
-                DBG_PRINTF("icmd: device id 0x%x not in property catalog.\n", did);
+                MTCR_LOG_DEBUG("icmd: device id 0x%x not in property catalog.", did);
                 return ME_ICMD_NOT_SUPPORTED;
             }
             mf->icmd.static_cfg_not_done_addr = get_property_as_int(did, PROP_STATIC_CFG_NOT_DONE_ADDRESS);
@@ -1166,7 +1160,7 @@ static int icmd_init_vcr(mfile* mf)
     mf->icmd.semaphore_addr = VCR_SEMAPHORE62;
     mf->icmd.syndrome_addr = VCR_SYNDROME_OFFSET;
     mf->icmd.syndrome = 0;
-    DBG_PRINTF("-D- Getting VCR_CMD_SIZE_ADDR\n");
+    MTCR_LOG_DEBUG("Getting VCR_CMD_SIZE_ADDR");
 
     rc = icmd_take_semaphore_com(mf, pid);
     CHECK_RC(rc);
@@ -1183,12 +1177,12 @@ static int icmd_init_vcr(mfile* mf)
     CHECK_RC(rc);
 
     mf->icmd.icmd_opened = 1;
-    DBG_PRINTF("-D- iCMD command addr: 0x%x\n", mf->icmd.cmd_addr);
-    DBG_PRINTF("-D- iCMD ctrl addr: 0x%x\n", mf->icmd.ctrl_addr);
-    DBG_PRINTF("-D- iCMD syndrom addr: 0x%x\n", mf->icmd.syndrome_addr);
-    DBG_PRINTF("-D- iCMD semaphore addr(semaphore space): 0x%x\n", mf->icmd.semaphore_addr);
-    DBG_PRINTF("-D- iCMD max mailbox size: 0x%x  size %d\n", mf->icmd.max_cmd_size, size);
-    DBG_PRINTF("-D- iCMD stat_cfg_not_done addr: 0x%x:%d\n", mf->icmd.static_cfg_not_done_addr, mf->icmd.static_cfg_not_done_offs);
+    MTCR_LOG_DEBUG("iCMD command addr: 0x%x", mf->icmd.cmd_addr);
+    MTCR_LOG_DEBUG("iCMD ctrl addr: 0x%x", mf->icmd.ctrl_addr);
+    MTCR_LOG_DEBUG("iCMD syndrom addr: 0x%x", mf->icmd.syndrome_addr);
+    MTCR_LOG_DEBUG("iCMD semaphore addr(semaphore space): 0x%x", mf->icmd.semaphore_addr);
+    MTCR_LOG_DEBUG("iCMD max mailbox size: 0x%x  size %d", mf->icmd.max_cmd_size, size);
+    MTCR_LOG_DEBUG("iCMD stat_cfg_not_done addr: 0x%x:%d", mf->icmd.static_cfg_not_done_addr, mf->icmd.static_cfg_not_done_offs);
     return ME_OK;
 }
 
@@ -1318,7 +1312,7 @@ void icmd_close(mfile* mf)
         {
             if (icmd_clear_semaphore(mf))
             {
-                DBG_PRINTF("Failed to clear semaphore!\n");
+                MTCR_LOG_DEBUG("Failed to clear semaphore!");
             }
         }
         mf->icmd.icmd_opened = 0;

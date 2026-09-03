@@ -40,6 +40,8 @@
 #include "mtcr_nvml.h"
 #include "mtcr_gpu.h"
 #include "mtcr_common.h"
+#include "mtcr_int_defs.h"
+#include "nvtoolslogger/nvtoolslogger_c.h"
 
 #define MY_DLSYM(dl_ctx, func_name)                               \
     do                                                            \
@@ -48,7 +50,7 @@
         dl_ctx->func_name = dlsym(dl_ctx->dl_handle, #func_name); \
         if ((dl_error = dlerror()) != NULL)                       \
         {                                                         \
-            DBG_PRINTF(dl_error);                                 \
+            MTCR_LOG_DEBUG(dl_error);                             \
             return -1;                                            \
         }                                                         \
     } while (0)
@@ -73,7 +75,7 @@ int init_nvml_lib_handle(mfile* mf)
     nvml_dll_ctx* nvml_ctx = NULL;
 
     if (!(nvml_ctx = (nvml_dll_ctx*)malloc(sizeof(nvml_dll_ctx)))) {
-        DBG_PRINTF("Failed to allocate nvml_ctx");
+        MTCR_LOG_DEBUG("Failed to allocate nvml_ctx");
         return -1;
     }
     memset(nvml_ctx, 0, sizeof(*nvml_ctx));
@@ -154,7 +156,7 @@ int init_nvml_ifc(mfile* mf, const char* dev_name)
     mf->nvml_device = malloc(sizeof(nvmlDevice_t));
 
     if (!mf->nvml_device) {
-        DBG_PRINTF("Failed to allocate memory for NVML GPU device");
+        MTCR_LOG_DEBUG("Failed to allocate memory for NVML GPU device");
         return -1;
     }
 

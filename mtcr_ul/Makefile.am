@@ -30,7 +30,8 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common -I$(top_srcdir)/dev_mgt
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common -I$(top_srcdir)/dev_mgt \
+              -I$(top_srcdir)/mft_core/mft_core_utils
 
 pkglib_LTLIBRARIES = libmtcr_ul.la
 
@@ -47,7 +48,12 @@ libmtcr_ul_la_SOURCES = mtcr_ul.c mtcr_ib.h  mtcr_int_defs.h\
 			fwctrl.c fwctrl.h fwctrl_ioctl.h \
 			mtcr_gpu.c mtcr_gpu.h
 libmtcr_ul_la_CFLAGS = -W -Wall -g -MP -MD -fPIC -DMTCR_API="" -DMST_UL
-libmtcr_ul_la_DEPENDENCIES = $(top_builddir)/mft_core/device/device_info/libdevice_info.la
+# The MTCR layer of the central NVIDIA Tools logger. Every tool links
+# libmtcr_ul, so this is what puts mft_log() in reach of the whole suite.
+# -lstdc++ is already in LDFLAGS below, so the C++ logger adds no new link
+# requirement.
+libmtcr_ul_la_DEPENDENCIES = $(top_builddir)/mft_core/device/device_info/libdevice_info.la \
+                             $(top_builddir)/mft_core/mft_core_utils/nvtoolslogger/libnvtoolslogger.la
 
 if ENABLE_INBAND
 libmtcr_ul_la_SOURCES += mtcr_ib_ofed.c

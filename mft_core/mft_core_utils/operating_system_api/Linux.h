@@ -42,6 +42,7 @@ public:
     virtual ~Linux() = default;
     virtual int GetPID() override;
     virtual const std::string GetExecutableName() override;
+    virtual const std::string GetCommandLineString() override;
     virtual const std::string GetExecutablePath();
     virtual const std::string GetExecutableDir() override;
     virtual const std::string GetLogDirectory() override;

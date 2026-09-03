@@ -16,6 +16,7 @@
 
 #include <stdexcept>
 
+#include "nvtoolslogger/NvToolsLogger.h"
 #include "mft_core/mft_core_utils/mft_exceptions/MftGeneralException.h"
 
 LinuxDynamicLinking::~LinuxDynamicLinking()
@@ -31,7 +32,7 @@ int LinuxDynamicLinking::LoadDynamicLibrary(const std::string& poLibraryName)
     // The function dlopen() loads the dynamic library file named by
     //   the null-terminated string filename and returns
     //   an "handle" for the dynamic library.
-    LOG.Info("dlopen function called, library name: " + poLibraryName);
+    MFT_LOG_INFO(nvtoolslogger::Layer::MFT_CORE, ("dlopen function called, library name: " + poLibraryName).c_str());
 
     m_pvLibraryHandle = dlopen(poLibraryName.c_str(), RTLD_LAZY);
 
@@ -42,7 +43,7 @@ int LinuxDynamicLinking::LoadDynamicLibrary(const std::string& poLibraryName)
                                 ", dlerror: " + std::string(pcReturnError));
     }
 
-    LOG.Info("Dynamic library loaded successfully: " + poLibraryName);
+    MFT_LOG_INFO(nvtoolslogger::Layer::MFT_CORE, ("Dynamic library loaded successfully: " + poLibraryName).c_str());
     return 0;
 }
 
@@ -74,12 +75,12 @@ void* LinuxDynamicLinking::GetFunctionAddress(const std::string& poFunctionName,
     // The return value will be the address where that symbol is loaded into memory.
     pvFunctionAddress = dlsym(m_pvLibraryHandle, poFunctionName.c_str());
 
-    LOG.Info("dlsym function called, function name: " + poFunctionName);
+    MFT_LOG_INFO(nvtoolslogger::Layer::MFT_CORE, ("dlsym function called, function name: " + poFunctionName).c_str());
     if ((pcReturnError = dlerror()) != NULL)
     {
         if (bIgnoreFailure)
         {
-            LOG.Info("Failed to get the function address: " + poFunctionName);
+            MFT_LOG_INFO(nvtoolslogger::Layer::MFT_CORE, ("Failed to get the function address: " + poFunctionName).c_str());
         }
         else
         {

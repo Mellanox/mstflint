@@ -34,9 +34,12 @@
 #include "Linux.h"
 #include <sys/stat.h>
 #include <termios.h>
+#include <algorithm>
 #include <chrono>
 #include <climits>
+#include <fstream>
 #include <iostream>
+#include <iterator>
 #include <stdexcept>
 #include <thread>
 #include "common/compatibility.h"
@@ -77,6 +80,24 @@ const string Linux::GetExecutableName()
     return oFullPath.substr(iFound + 1);
 }
 
+const string Linux::GetCommandLineString()
+{
+    // /proc/self/cmdline holds the argv vector with a NUL byte after each
+    // argument; join them with spaces to reconstruct a readable command line.
+    std::ifstream cmdline("/proc/self/cmdline", std::ios::binary);
+    if (!cmdline)
+    {
+        return string();
+    }
+    string oCommandLine((std::istreambuf_iterator<char>(cmdline)), std::istreambuf_iterator<char>());
+    std::replace(oCommandLine.begin(), oCommandLine.end(), '\0', ' ');
+    while (!oCommandLine.empty() && oCommandLine.back() == ' ')
+    {
+        oCommandLine.pop_back();
+    }
+    return oCommandLine;
+}
+
 void Linux::CreateDirectoryIfNotExist(const string& poNewDirectory)
 {
     // mkdir() returns zero on success, or -1 if an error occurred.
@@ -103,7 +124,7 @@ int Linux::GetPID()
 
 const string Linux::GetLogDirectory()
 {
-    return "/var/log/mft/";
+    return "/var/log/mstflint/";
 }
 
 void Linux::LittleToBig32(uint32_t& uLittleEndianBuffer, const int iLength)

@@ -33,6 +33,7 @@
 
 #include "ResetDeviceCapabilities.h"
 #include "ResetParameterDefs.h"
+#include "mft_core/mft_core_utils/logger/Logger.h"
 #include "mft_core/mft_core_utils/mft_exceptions/MftGeneralException.h"
 #include "reg_access/reg_access.h"
 #include "reg_access/reg_ids.h"

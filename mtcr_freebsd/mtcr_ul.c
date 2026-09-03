@@ -88,6 +88,8 @@
 #include <dlfcn.h>
 #include <dirent.h>
 #include <sys/file.h>
+#include "mtcr_int_defs.h"
+#include "nvtoolslogger/nvtoolslogger_c.h"
 
 #define MST_VPD_DFLT_TIMEOUT 2000
 #define PCI_VPD_ADDR 0x2
@@ -2528,8 +2530,8 @@ int maccess_reg(mfile* mf, u_int16_t reg_id, maccess_reg_method_t reg_method, vo
             /* space */
             swap_pci_address_space(mf);
             rc = mreg_send_raw(mf, reg_id, reg_method, reg_data, reg_size, r_size_reg, w_size_reg, reg_status);
-            DBG_PRINTF(
-              "Entered PCI VSC space support flow. Second attempt to run mreg_send_raw with VSC address space: %d returned with rc: %d. Restoring address space back to CORE's address space\n",
+            MTCR_LOG_DEBUG(
+              "Entered PCI VSC space support flow. Second attempt to run mreg_send_raw with VSC address space: %d returned with rc: %d. Restoring address space back to CORE's address space",
               mf->address_space,
               rc);
         }

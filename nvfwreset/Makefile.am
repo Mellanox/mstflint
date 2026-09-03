@@ -34,6 +34,7 @@ AM_CPPFLAGS = \
     -I$(srcdir) \
     -I$(top_srcdir) \
     -I$(top_srcdir)/${MTCR_CONF_DIR} \
+    -I$(top_srcdir)/mft_core/mft_core_utils \
     -I$(top_srcdir)/include/mtcr_ul \
     -I$(top_srcdir)/common \
     -I$(top_builddir)/common \

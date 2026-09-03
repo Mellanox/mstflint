@@ -3,7 +3,10 @@
 *.la
 *.lo
 *.so
+*.lai
 .deps/
+.libs/
+__pycache__/
 
 __pycache__/
 *.py[cod]
@@ -27,6 +30,7 @@ config/
 flint/mstflint
 libtool
 /m4/*.m4
+/mft_core/mft_core_utils/nvtoolslogger/mstflintlogger
 /mlxconfig/mstconfig
 /mlxconfig/mstprivhost
 /mstdump/crd_main/mstregdump

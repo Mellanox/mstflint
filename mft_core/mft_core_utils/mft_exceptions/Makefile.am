@@ -30,7 +30,7 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-AM_CPPFLAGS = -I$(top_srcdir)
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/mft_core/mft_core_utils
 
 AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe -Werror $(COMPILER_FPIC)
 
@@ -38,8 +38,11 @@ noinst_LTLIBRARIES = libmftexceptions.la
 
 libmftexceptions_la_SOURCES = MftGeneralException.h MftGeneralException.cpp DevicePropertyNotFoundException.h
 
-libmftexceptions_la_DEPENDENCIES = ../operating_system_api/lib_os_api.la
-# lib_os_api stays in _DEPENDENCIES for build ordering only. Embedding it here
-# too would place its objects in both libmftexceptions.a and liblogger.a, and a
-# convenience library that pulls in both then ends up with duplicate symbols.
+# LOG_AND_THROW_MFT_ERROR logs on the MFT_CORE layer, hence libnvtoolslogger.
+libmftexceptions_la_DEPENDENCIES = ../operating_system_api/lib_os_api.la \
+                                   ../nvtoolslogger/libnvtoolslogger.la
+# Both stay in _DEPENDENCIES for build ordering only. Embedding either here too
+# would place its objects in both libmftexceptions.a and the library it came
+# from, and a convenience library that pulls in both then ends up with duplicate
+# symbols. The logger objects reach every final link through libmtcr_ul anyway.
 libmftexceptions_la_LIBADD = $(LIBSTD_CPP_SO)

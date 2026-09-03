@@ -39,7 +39,7 @@ import subprocess
 
 # Common Imports
 from binary_file import BinaryFile
-from mft_logger import LoggerFactory
+from nvtoolslogger import LoggerFactory
 
 # Common Constant
 CONFIG_SPACE_PTR_OFFSET = 0X34

@@ -32,7 +32,8 @@
 
 AM_CPPFLAGS = \
     -I$(srcdir) \
-    -I$(top_srcdir)
+    -I$(top_srcdir) \
+    -I$(top_srcdir)/mft_core/mft_core_utils
 
 AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC)
 

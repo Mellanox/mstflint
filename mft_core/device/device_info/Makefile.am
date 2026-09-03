@@ -30,7 +30,8 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-AM_CPPFLAGS = -I$(srcdir) -I$(top_srcdir) -I$(builddir)/generated $(JSON_CFLAGS)
+AM_CPPFLAGS = -I$(srcdir) -I$(top_srcdir) -I$(top_srcdir)/mft_core/mft_core_utils \
+              -I$(builddir)/generated $(JSON_CFLAGS)
 
 AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC)
 

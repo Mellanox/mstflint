@@ -46,7 +46,7 @@
 #include <tools_layouts/reg_access_hca_layouts.h>
 #include <tools_layouts/reg_access_switch_layouts.h>
 #include <dev_mgt/tools_dev_types.h>
-#include <mft_core/mft_core_utils/logger/Logger.h>
+#include "nvtoolslogger/NvToolsLogger.h"
 #include <common/bit_slice.h>
 
 #ifndef DATA_PATH
@@ -97,7 +97,7 @@ static bool read_device_part_number(mfile* mf, std::string& part_number)
     reg_access_status_t rc = reg_access_mqis(mf, REG_ACCESS_METHOD_GET, &mqis);
     if (rc != ME_OK)
     {
-        LOG.Error("reg_access_mqis failed for part number, rc=" + std::to_string(rc));
+        MFT_LOG_ERROR(nvtoolslogger::Layer::EFUSE, ("reg_access_mqis failed for part number, rc=" + std::to_string(rc)).c_str());
         return false;
     }
 
@@ -120,13 +120,13 @@ static bool read_device_part_number(mfile* mf, std::string& part_number)
         rc = reg_access_mqis(mf, REG_ACCESS_METHOD_GET, &mqis);
         if (rc != ME_OK || mqis.read_length == 0)
         {
-            LOG.Error("reg_access_mqis failed for part number, rc=" + std::to_string(rc));
+            MFT_LOG_ERROR(nvtoolslogger::Layer::EFUSE, ("reg_access_mqis failed for part number, rc=" + std::to_string(rc)).c_str());
             return false;
         }
         if (mqis.read_offset + mqis.read_length > total_len)
         {
-            LOG.Error("mqis.read_offset + mqis.read_length > total_len, read_offset=" + std::to_string(mqis.read_offset) + " read_length=" + std::to_string(mqis.read_length) +
-                      " total_len=" + std::to_string(total_len));
+            MFT_LOG_ERROR(nvtoolslogger::Layer::EFUSE, ("mqis.read_offset + mqis.read_length > total_len, read_offset=" + std::to_string(mqis.read_offset) +
+              " read_length=" + std::to_string(mqis.read_length) + " total_len=" + std::to_string(total_len)).c_str());
             return false;
         }
         memcpy(buf.data() + mqis.read_offset, mqis.info_string, mqis.read_length);
@@ -134,7 +134,7 @@ static bool read_device_part_number(mfile* mf, std::string& part_number)
     }
 
     part_number = buf.data();
-    LOG.Debug("part_number: " + part_number);
+    MFT_LOG_DEBUG(nvtoolslogger::Layer::EFUSE, ("part_number: " + part_number).c_str());
     return true;
 }
 
@@ -202,14 +202,14 @@ static void decode_raw_and_value(const MrfvEntry& mrfv, const std::string& rail,
 
     if (raw_fuses_highest_bit > 31)
     {
-        LOG.Error("raw_fuses_highest_bit=" + std::to_string(raw_fuses_highest_bit) + " out of range for fuse_id=" + std::to_string(mrfv.fuse_id) + " instance_id=" + std::to_string(inst));
+        MFT_LOG_ERROR(nvtoolslogger::Layer::EFUSE, ("raw_fuses_highest_bit=" + std::to_string(raw_fuses_highest_bit) + " out of range for fuse_id=" + std::to_string(mrfv.fuse_id) + " instance_id=" + std::to_string(inst)).c_str());
         return;
     }
 
     uint32_t raw_fuses = EXTRACT(mrfv.raw_fuses, 0, raw_fuses_highest_bit + 1);
 
-    LOG.Debug("fuse_id=" + std::to_string(mrfv.fuse_id) + " instance_id=" + std::to_string(inst) + " value_valid=" + std::to_string(value_valid) + " value_base=" + std::to_string(value_base_raw) +
-              " value_exponent=" + std::to_string(value_exponent_raw) + " raw_fuses=" + std::to_string(raw_fuses) + " raw_fuses_highest_bit=" + std::to_string(raw_fuses_highest_bit));
+    MFT_LOG_DEBUG(nvtoolslogger::Layer::EFUSE, ("fuse_id=" + std::to_string(mrfv.fuse_id) + " instance_id=" + std::to_string(inst) + " value_valid=" + std::to_string(value_valid) + " value_base=" + std::to_string(value_base_raw) +
+              " value_exponent=" + std::to_string(value_exponent_raw) + " raw_fuses=" + std::to_string(raw_fuses) + " raw_fuses_highest_bit=" + std::to_string(raw_fuses_highest_bit)).c_str());
 
     if (value_valid != 1)
     {
@@ -233,12 +233,12 @@ static void decode_raw_and_value(const MrfvEntry& mrfv, const std::string& rail,
 #ifdef EFUSE_CVB_ENABLED
 static void decode_cvb(const MrfvEntry& mrfv, const std::string& rail, int inst, int voltage_type, std::vector<FuseReading>& readings)
 {
-    LOG.Debug("fuse_id=" + std::to_string(mrfv.fuse_id) + " instance_id=" + std::to_string(inst) + " voltage_type=" + std::to_string(voltage_type) + " selector=" + std::to_string(mrfv.selector) +
-              " selector_cause=" + std::to_string(mrfv.selector_cause) + " cvb_voltage=" + std::to_string(mrfv.cvb_voltage));
+    MFT_LOG_DEBUG(nvtoolslogger::Layer::EFUSE, ("fuse_id=" + std::to_string(mrfv.fuse_id) + " instance_id=" + std::to_string(inst) + " voltage_type=" + std::to_string(voltage_type) + " selector=" + std::to_string(mrfv.selector) +
+              " selector_cause=" + std::to_string(mrfv.selector_cause) + " cvb_voltage=" + std::to_string(mrfv.cvb_voltage)).c_str());
 
     if (mrfv.selector != 1 || mrfv.selector_cause != 0)
     {
-        LOG.Debug("Skipping CVB reading: selector/selector_cause not ready");
+        MFT_LOG_DEBUG(nvtoolslogger::Layer::EFUSE, "Skipping CVB reading: selector/selector_cause not ready");
         return;
     }
     // Per PRM, MRFV CVB layout reports cvb_voltage directly in mV (unlike the
@@ -343,19 +343,19 @@ static void query_one_fuse(mfile* mf, dm_dev_id_t dev_type, const FuseConfig& fu
     MrfvEntry mrfv;
     memset(&mrfv, 0, sizeof(mrfv));
 
-    LOG.Debug("Querying fuse_id=" + std::to_string(fuse.fuse_id) + " instance_id=" + std::to_string(inst) + " module_index=" + std::to_string(module_index));
+    MFT_LOG_DEBUG(nvtoolslogger::Layer::EFUSE, ("Querying fuse_id=" + std::to_string(fuse.fuse_id) + " instance_id=" + std::to_string(inst) + " module_index=" + std::to_string(module_index)).c_str());
 
     reg_access_status_t rc = uses_switch_mrfv_layout(dev_type) ? query_mrfv_switch(mf, fuse.fuse_id, inst, module_index, mrfv) : query_mrfv_hca(mf, fuse.fuse_id, inst, module_index, mrfv);
 
     if (rc != ME_OK)
     {
-        LOG.Error("MRFV query failed for fuse_id=" + std::to_string(fuse.fuse_id) + " instance_id=" + std::to_string(inst) + " error=" + std::to_string(rc));
+        MFT_LOG_ERROR(nvtoolslogger::Layer::EFUSE, ("MRFV query failed for fuse_id=" + std::to_string(fuse.fuse_id) + " instance_id=" + std::to_string(inst) + " error=" + std::to_string(rc)).c_str());
         return;
     }
 
     if (mrfv.v != 1)
     {
-        LOG.Debug("fuse_id=" + std::to_string(fuse.fuse_id) + " instance_id=" + std::to_string(inst) + " v=" + std::to_string(mrfv.v) + " (not valid). Skipping this fuse reading.");
+        MFT_LOG_DEBUG(nvtoolslogger::Layer::EFUSE, ("fuse_id=" + std::to_string(fuse.fuse_id) + " instance_id=" + std::to_string(inst) + " v=" + std::to_string(mrfv.v) + " (not valid). Skipping this fuse reading.").c_str());
         return;
     }
 
@@ -374,7 +374,7 @@ static void query_one_fuse(mfile* mf, dm_dev_id_t dev_type, const FuseConfig& fu
     }
     else if (fuse_mismatch != 0)
     {
-        LOG.Debug("fuse_id=" + std::to_string(fuse.fuse_id) + " instance_id=" + std::to_string(inst) + " unexpected fm=" + std::to_string(mrfv.fm) + " fm_sel=" + std::to_string(mrfv.fm_sel));
+        MFT_LOG_DEBUG(nvtoolslogger::Layer::EFUSE, ("fuse_id=" + std::to_string(fuse.fuse_id) + " instance_id=" + std::to_string(inst) + " unexpected fm=" + std::to_string(mrfv.fm) + " fm_sel=" + std::to_string(mrfv.fm_sel)).c_str());
         return;
     }
 
@@ -411,10 +411,10 @@ static void resolve_oe_range(mfile* mf, bool& oe_enabled, int& oe_base, int& oe_
         fprintf(stderr, "-W- Failed to read MGIR register (rc=%d). Skipping per-Optical-Engine fuses.\n", rc);
         return;
     }
-    LOG.Debug("MGIR cpo_indication=" + std::to_string(mgir.hw_info.cpo_indication));
+    MFT_LOG_DEBUG(nvtoolslogger::Layer::EFUSE, ("MGIR cpo_indication=" + std::to_string(mgir.hw_info.cpo_indication)).c_str());
     if (mgir.hw_info.cpo_indication == 0)
     {
-        LOG.Debug("MGIR.cpo_indication == 0 (non-CPO): skipping per-OE fuses");
+        MFT_LOG_DEBUG(nvtoolslogger::Layer::EFUSE, "MGIR.cpo_indication == 0 (non-CPO): skipping per-OE fuses");
         return;
     }
 
@@ -435,12 +435,12 @@ static void resolve_oe_range(mfile* mf, bool& oe_enabled, int& oe_base, int& oe_
     oe_base = mgpir.hw_metadata.oe_base_index_local;
     oe_count = mgpir.hw_info.oe_count_local;
     oe_enabled = (oe_count > 0);
-    LOG.Debug("MGPIR oe_base_index_local=" + std::to_string(oe_base) + " oe_count_local=" + std::to_string(oe_count));
+    MFT_LOG_DEBUG(nvtoolslogger::Layer::EFUSE, ("MGPIR oe_base_index_local=" + std::to_string(oe_base) + " oe_count_local=" + std::to_string(oe_count)).c_str());
 }
 
 static bool read_fuse_values(mfile* mf, dm_dev_id_t dev_type, const DeviceConfig& config, std::vector<FuseReading>& readings, std::string& error)
 {
-    LOG.Debug(std::string("device_type=") + dm_dev_type2str(dev_type) + " using MRFV layout: " + (uses_switch_mrfv_layout(dev_type) ? "switch" : "hca"));
+    MFT_LOG_DEBUG(nvtoolslogger::Layer::EFUSE, (std::string("device_type=") + dm_dev_type2str(dev_type) + " using MRFV layout: " + (uses_switch_mrfv_layout(dev_type) ? "switch" : "hca")).c_str());
 
     // Resolve the OE range once, only if the matched device has any per-OE fuse.
     bool has_per_oe = std::any_of(config.fuses.begin(), config.fuses.end(), [](const FuseConfig& f) { return f.per_oe; });
@@ -470,7 +470,7 @@ static bool read_fuse_values(mfile* mf, dm_dev_id_t dev_type, const DeviceConfig
             if (!oe_enabled)
             {
                 // non-CPO or no OEs: skip per-OE fuses cleanly
-                LOG.Debug("Skipping per-OE fuse_id=" + std::to_string(fuse.fuse_id) + " (" + fuse.name + "): no Optical Engines reported (oe_count=" + std::to_string(oe_count) + ")");
+                MFT_LOG_DEBUG(nvtoolslogger::Layer::EFUSE, ("Skipping per-OE fuse_id=" + std::to_string(fuse.fuse_id) + " (" + fuse.name + "): no Optical Engines reported (oe_count=" + std::to_string(oe_count) + ")").c_str());
                 continue;
             }
             for (int i = oe_base; i < oe_base + oe_count; i++)
