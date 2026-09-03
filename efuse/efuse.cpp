@@ -344,13 +344,6 @@ static void
         return;
     }
 
-    if (mrfv.v != 1)
-    {
-        LOG.Debug("fuse_id=" + std::to_string(fuse.fuse_id) + " instance_id=" + std::to_string(inst) +
-                  " v=" + std::to_string(mrfv.v) + " (not valid). Skipping this fuse reading.");
-        return;
-    }
-
     // [CVB-DISABLED] was: is_cvb ? cvb_rail_name(voltage_type) : fuse.name;
     std::string rail = fuse.name;
 
@@ -359,6 +352,11 @@ static void
     // so we fall back to fm. Gate on the bit if older NICs ever need explicit support.
     uint8_t fuse_mismatch = (mrfv.fm_sel == 1) ? mrfv.fm2 : mrfv.fm;
 
+    LOG.Debug("fuse_id=" + std::to_string(fuse.fuse_id) + " instance_id=" + std::to_string(inst) +
+              " v=" + std::to_string(mrfv.v) + " fm=" + std::to_string(mrfv.fm) +
+              " fm2=" + std::to_string(mrfv.fm2) + " fm_sel=" + std::to_string(mrfv.fm_sel) +
+              " fuse_mismatch=" + std::to_string(fuse_mismatch));
+
     if (fuse_mismatch == 1)
     {
         readings.push_back({rail, instance_label(inst), true, 0.0});
@@ -366,8 +364,15 @@ static void
     }
     else if (fuse_mismatch != 0)
     {
-        LOG.Debug("fuse_id=" + std::to_string(fuse.fuse_id) + " instance_id=" + std::to_string(inst) + " fm_sel=" +
-                  std::to_string(mrfv.fm_sel) + " unexpected fuse mismatch value=" + std::to_string(fuse_mismatch));
+        LOG.Debug("Reserved fuse_mismatch=" + std::to_string(fuse_mismatch) + ". Skipping this fuse reading.");
+        return;
+    }
+
+    // Checked after the mismatch fields: per PRM, v is Reserved (0) when the fuse_id-related
+    // mismatch field is 1, so a v gate placed first would swallow every mismatch.
+    if (mrfv.v != 1)
+    {
+        LOG.Debug("Fuse reading is not supported for this system. Skipping this fuse reading.");
         return;
     }
 
