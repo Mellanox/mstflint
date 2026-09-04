@@ -138,7 +138,6 @@ struct config_t {
     int             with_erf;     /* -1 : default per proto */
     u_int8_t        jumbo_mtu;
     u_int8_t        use_a0_mode;
-    u_int8_t        contiguous_pages;
     u_int8_t        writer_thread;
     u_int8_t        mem_mode;
 };
@@ -158,7 +157,6 @@ struct config_t config = {
     0,
     0,
     -1,
-    0,
     0,
     0,
     0,                    /* writer_thread*/

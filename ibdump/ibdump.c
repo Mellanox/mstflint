@@ -520,60 +520,26 @@ static int resources_create(struct resources *res)
         return 1;
     }
 
-    if (!config.contiguous_pages) {
-        tmp = malloc(res->entry_size * config.entries_num + 0x1000); /* Add 4KB to ensure MR is page aligned */
-        if (!tmp) {
-            fprintf(stderr,
-                    "-E- failed to allocate %d bytes to memory buffer data\n",
-                    res->entry_size * config.entries_num);
-            return 1;
-        }
-
-        res->buf_alloc_ptr = tmp;
-        if ((u_int64_t)tmp & 0xfff) {
-            tmp = (char*)(((u_int64_t)tmp + 0x1000) & ~0xfff);
-        }
-        res->buf[0] = tmp;
-
-        /* register this memory buffer */
-        mr_flags = IBV_ACCESS_LOCAL_WRITE;
-        res->mr = ibv_reg_mr(res->pd, res->buf[0], res->entry_size * config.entries_num, mr_flags);
-        if (!res->mr) {
-            fprintf(stderr, "-E- ibv_reg_mr failed with mr_flags=0x%x\n", mr_flags);
-            return 1;
-        }
-    } else {
-#ifndef WIN_NOT_SUPPORTED
-
-#ifdef LIBS_EXP
-
-        struct ibv_exp_reg_mr_in in;
-        in.pd = res->pd;
-        in.addr = NULL;
-        in.length = res->entry_size * config.entries_num;
-        in.exp_access = IBV_EXP_ACCESS_LOCAL_WRITE | IBV_EXP_ACCESS_ALLOCATE_MR;
-        in.comp_mask = 0;
-        res->mr = ibv_exp_reg_mr(&in);
-        if (!res->mr) {
-            fprintf(stderr, "-E- ibv_exp_reg_mr failed\n");
-            return 1;
-        }
-        res->buf[0] = res->mr->addr;
-
-#else
-
-        res->mr = ibv_reg_mr(res->pd, NULL,
-                             res->entry_size * config.entries_num,
-                             IBV_ACCESS_LOCAL_WRITE);
-
-#endif
-
-        if (res->buf) {
-            free(res->buf);
-        }
-        fprintf(stderr, "-E- contiguous_pages is not supported in Windows\n");
+    tmp = malloc(res->entry_size * config.entries_num + 0x1000); /* Add 4KB to ensure MR is page aligned */
+    if (!tmp) {
+        fprintf(stderr,
+                "-E- failed to allocate %d bytes to memory buffer data\n",
+                res->entry_size * config.entries_num);
         return 1;
-#endif
+    }
+
+    res->buf_alloc_ptr = tmp;
+    if ((u_int64_t)tmp & 0xfff) {
+        tmp = (char*)(((u_int64_t)tmp + 0x1000) & ~0xfff);
+    }
+    res->buf[0] = tmp;
+
+    /* register this memory buffer */
+    mr_flags = IBV_ACCESS_LOCAL_WRITE;
+    res->mr = ibv_reg_mr(res->pd, res->buf[0], res->entry_size * config.entries_num, mr_flags);
+    if (!res->mr) {
+        fprintf(stderr, "-E- ibv_reg_mr failed with mr_flags=0x%x\n", mr_flags);
+        return 1;
     }
 
     memset(res->buf[0], 0, res->entry_size * config.entries_num); /* TODO: redundant. */
@@ -1137,7 +1103,6 @@ static void usage(const char *argv0)
             config.log2entries_num,
             1 << config.log2entries_num);
     fprintf(stdout, "  -s, --silent           do not print progress indication.\n");
-    fprintf(stdout, "  -T, --conti            Use contiguous pages.\n");
     fprintf(stdout, "  -M, --mem-mode <size>  when specified, packets are written to file only after the capture\n"
             "                         is stopped. It is faster than default mode (less chance for\n"
             "                         packet loss), but takes more memory. In this mode, ibdump\n"
@@ -1202,7 +1167,6 @@ int __WIN_CDECL main(int argc, char *argv[])
             { "decap",         0, NULL, 'E' },
             { "src_qp",        1, NULL, 'q' },
             { "silent",        0, NULL, 's' },
-            { "conti",         0, NULL, 'T' },
             { "jumbo-mtu",     0, NULL, 'j' },
             { "help",          0, NULL, 'h' },
             { "version",       0, NULL, 'v' },
@@ -1211,7 +1175,7 @@ int __WIN_CDECL main(int argc, char *argv[])
             { NULL,            0, NULL, '\0'}
         };
 
-        c = getopt_long(argc, argv, "p:w:d:i:o:b:hM:vC:EI:Lq:sm:jT", long_options, NULL);
+        c = getopt_long(argc, argv, "p:w:d:i:o:b:hM:vC:EI:Lq:sm:j", long_options, NULL);
         if (c == -1) {
             break;
         }
@@ -1270,10 +1234,6 @@ int __WIN_CDECL main(int argc, char *argv[])
         case 'j':
             config.jumbo_mtu = 1;
             break;
-
-        case 'T':
-            config.contiguous_pages = 1;
-        /* fall through */
 
         case 'q':
             config.src_qp_str = optarg;
