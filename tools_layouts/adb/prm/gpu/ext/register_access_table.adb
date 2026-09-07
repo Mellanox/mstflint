@@ -29,7 +29,7 @@
 <config  field_attr="capability" type="ascii" />
 <config  field_attr="target" type="ascii" />
 <config  field_attr="version" type="ascii" />
-<info source_doc_name="GPUNet_PRM" source_doc_version="0.10.064" />
+<info source_doc_name="GPUNet_PRM" source_doc_version="0.10.066" />
 <node name="High_bit_error_rate_configuration_page_ext" size="0x10.0" descr="" >
 	<field name="en"                              offset="0x0.31"   size="0x0.1" access="RW" descr="enable hi_ber monitoring" />
 </node>
@@ -142,14 +142,6 @@
 	<field name="pvs_tile_data"                   offset="0x0.0"    size="0x0.7" access="RO" descr="VDD tile Data. PVS” prefix in name exists due to historical reasons.Range 0.675 - 0.72Vdd = 750mV - (fuse value - 1)*5mV" />
 </node>
 
-<node name="MRFV_RAW_AND_VALUE_ext"               size="0xc.0" descr="" >
-	<field name="raw_fuses_highest_bit"           offset="0x0.0"    size="0x0.5" access="RO" descr="Raw Fuses Highest bit. Indicates the highest bit in raw_fuses field\;which is part of the fuse data.For example, if raw_fuses [15:0] contains the fuse data, this field’s\;value is 15." />
-	<field name="value_valid"                     offset="0x0.31"   size="0x0.1" access="RO" descr="Value valid.0: value_base and value_exponent are NOT valid.1: value_base and value_exponent are valid." />
-	<field name="raw_fuses"                       offset="0x4.0"    size="0x4.0" access="RO" descr="Raw fuses.The only valid bits are bits 0 to &lt;raw_fuses_highest_bit&gt;." />
-	<field name="value_exponent"                  offset="0x8.0"    size="0x0.6" access="RO" descr="The exponent part of the value.This field is signed, and negative values are represented using 2’s\;complement." />
-	<field name="value_base"                      offset="0x8.6"    size="0x0.26" access="RO" descr="The base part of the value.This field is signed, and negative values are represented using 2’s\;complement.The value is:value_base x 10 ^ value_exponent.Units:Power: [W].Voltage: [V].Time: [Sec].Current: [A].Capacitance: [F]." />
-</node>
-
 <node name="MRFV_ULT_ext"                         size="0xc.0" descr="" >
 	<field name="ult_lot_digit_1"                 offset="0x0.0"    size="0x0.8" access="RO" descr="" />
 	<field name="ult_lot_digit_2"                 offset="0x0.8"    size="0x0.8" access="RO" descr="" />
@@ -169,19 +161,20 @@
 	<field name="MRFV_CVB_ext"                    offset="0x0.0"    size="0x8.0" subnode="MRFV_CVB_ext" access="RW" condition="($(parent).fuse_id == cvb)" descr="" />
 	<field name="MRFV_PVS_MAIN_ext"               offset="0x0.0"    size="0x4.0" subnode="MRFV_PVS_MAIN_ext" access="RW" condition="($(parent).fuse_id == vdd_main_die)" descr="" />
 	<field name="MRFV_PVS_TILE_ext"               offset="0x0.0"    size="0x4.0" subnode="MRFV_PVS_TILE_ext" access="RW" condition="($(parent).fuse_id == vdd_tile_0 | $(parent).fuse_id == vdd_tile_1 | $(parent).fuse_id == vdd_tile_2 | $(parent).fuse_id == vdd_tile_3 | $(parent).fuse_id == vdd_tile_4 | $(parent).fuse_id == vdd_tile_5 | $(parent).fuse_id == vdd_tile_6 | $(parent).fuse_id == vdd_tile_7)" descr="" />
-	<field name="MRFV_RAW_AND_VALUE_ext"          offset="0x0.0"    size="0xc.0" subnode="MRFV_RAW_AND_VALUE_ext" access="RW" condition="($(parent).fuse_id == raw_and_value_vdd | $(parent).fuse_id == raw_and_value_pl_avdd | $(parent).fuse_id == raw_and_value_pl_dvdd | $(parent).fuse_id == raw_and_value_opt_fuse_rev | $(parent).fuse_id == raw_and_value_dvdd_sg | $(parent).fuse_id == raw_and_value_opt_lot_code_0 | $(parent).fuse_id == raw_and_value_opt_lot_code_1 | $(parent).fuse_id == raw_and_value_opt_ops_reserved | $(parent).fuse_id == raw_and_value_opt_vendor_code | $(parent).fuse_id == raw_and_value_opt_wafer_id | $(parent).fuse_id == raw_and_value_opt_x_coordinate | $(parent).fuse_id == raw_and_value_opt_y_coordinate | $(parent).fuse_id == raw_and_value_opt_fab_code | $(parent).fuse_id == raw_and_value_ws_tp_version_0_31 | $(parent).fuse_id == raw_and_value_ft_tp_version_0_31 | $(parent).fuse_id == raw_and_value_fuse_ver_0_3 | $(parent).fuse_id == raw_and_value_fuse_ver_4_7 | $(parent).fuse_id == raw_and_value_dvdd_avdd_version | $(parent).fuse_id == raw_and_value_dvdd | $(parent).fuse_id == raw_and_value_vddp)" descr="" />
 	<field name="MRFV_ULT_ext"                    offset="0x0.0"    size="0xc.0" subnode="MRFV_ULT_ext" access="RW" condition="($(parent).fuse_id == ULT)" descr="" />
 </node>
 
 <node name="MRFV_ext"                             size="0x40.0" descr="" >
 	<field name="fuse_id"                         offset="0x0.0"    size="0x0.8" access="INDEX" enum="cvb=0x0,ULT=0x1,vdd_main_die=0x2,vdd_tile_0=0x3,vdd_tile_1=0x4,vdd_tile_2=0x5,vdd_tile_3=0x6,vdd_tile_4=0x7,vdd_tile_5=0x8,vdd_tile_6=0x9,vdd_tile_7=0xa,raw_and_value_vdd=0xb,raw_and_value_pl_avdd=0xc,raw_and_value_pl_dvdd=0xd,raw_and_value_opt_fuse_rev=0xf,raw_and_value_dvdd_sg=0x10,raw_and_value_opt_lot_code_0=0x11,raw_and_value_opt_lot_code_1=0x12,raw_and_value_opt_ops_reserved=0x13,raw_and_value_opt_vendor_code=0x14,raw_and_value_opt_wafer_id=0x15,raw_and_value_opt_x_coordinate=0x16,raw_and_value_opt_y_coordinate=0x17,raw_and_value_opt_fab_code=0x18,raw_and_value_ws_tp_version_0_31=0x19,raw_and_value_ft_tp_version_0_31=0x1a,raw_and_value_fuse_ver_4_7=0x1c,raw_and_value_dvdd=0x1e,raw_and_value_vddp=0x1f" descr="Fuse Index0: cvb - CVB Main Die, used for Retimer1: ULT2: vdd_main_die - (used in SPC-4, SPC-5)3: vdd_tile_0 - (used in SPC-4, SPC-5)4: vdd_tile_1 - (used in SPC-4, SPC-5)5: vdd_tile_2 - (used in SPC-4, SPC-5)6: vdd_tile_3 - (used in SPC-4, SPC-5)7: vdd_tile_4 - (used in SPC-4, SPC-5)8: vdd_tile_5 - (used in SPC-4, SPC-5)9: vdd_tile_6 - (used in SPC-4, SPC-5)10: vdd_tile_7 - (used in SPC-4, SPC-5)[SwitchOnly][DWIP]:11: raw_and_value_vdd - Use instance_id for the specific instance. Valid on SPC6.12: raw_and_value_pl_avdd - Use instance_id for the specific instance. Valid on SPC6.13: raw_and_value_pl_dvdd - Use instance_id for the specific instance. Valid on SPC6.15: raw_and_value_opt_fuse_rev - Valid on SPC6 CPO.16: raw_and_value_dvdd_sg - Use instance_id for the specific instance. Valid on SPC6 CPO.17: raw_and_value_opt_lot_code_0 - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.18: raw_and_value_opt_lot_code_1 - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.19: raw_and_value_opt_ops_reserved - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.20: raw_and_value_opt_vendor_code - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.21: raw_and_value_opt_wafer_id Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.22: raw_and_value_opt_x_coordinate Use entity_index to specify the Optical Engine index Valid on SPC6 CPO.23: raw_and_value_opt_y_coordinate Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.24: raw_and_value_opt_fab_code\;Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO. -\; -\; -\;\;[NIC_only][DWIP]:30: raw_and_value_dvdd[NIC_only][DWIP]:31: raw_and_value_vddpOther values reserved." />
 	<field name="instance_id"                     offset="0x0.8"    size="0x0.8" access="INDEX" descr="[DWIP]:Instance ID. For a fuse that has multiple instances, this field provides\;the Instance ID.For the common case where it’s a single instance per asic, instance ID 0\;denotes the main/die [0] instance, and subsequent instance ID X denotes\;the instance of tile [X-1] / die [X].For a given fuse_id, if an invalid instance_id is provided, fm field\;will have a value of 1 (“Fuse mismatch found”)." />
-	<field name="fm"                              offset="0x0.24"   size="0x0.2" access="RO" descr="Fuse Mismatch0: No fuse mismatch1: Fuse mismatch found2-3: Reserved" />
+	<field name="fm"                              offset="0x0.24"   size="0x0.2" access="RO" descr="Fuse Mismatch0: No fuse mismatch1: Fuse mismatch found2-3: ReservedFor further details see fm_sel field." />
+	<field name="fm2"                             offset="0x0.26"   size="0x0.2" access="RO" descr="Fuse Mismatch 20: No fuse mismatch1: Fuse mismatch found2-3: ReservedFor further details see fm_sel field." />
+	<field name="fm_sel"                          offset="0x0.28"   size="0x0.1" access="RO" descr="Fuse Mismatch Selection0: fm field should be used to read Fuse Mismatch status relating to fuse_id field.\;1: fm2 field should be used to read Fuse Mismatch status relating to fuse_id field.\;For supporting platforms, fm field reflects HW status bit regarding fuse mismatch." />
 	<field name="module_index_valid"              offset="0x0.29"   size="0x0.1" access="INDEX" descr="[DWIP]1: module_index_msb and module_index fields contain a valid index." />
-	<field name="v"                               offset="0x0.30"   size="0x0.2" access="RO" descr="Valid bit0: Fuse reading is not supported for this system1: Response is valid2-3: ReservedReserved (0) when fm = 1" />
+	<field name="v"                               offset="0x0.30"   size="0x0.2" access="RO" descr="Valid bit0: Fuse reading is not supported for this system1: Response is valid2-3: ReservedReserved (0) when there is a value of 1 in fuse_id-related fuse mismatch field (fm or fm2, see definition of fm_sel)" />
 	<field name="module_index"                    offset="0x4.0"    size="0x0.8" access="INDEX" descr="[DWIP]:&lt;module_index_msb, module_index&gt; specifies the element in which the fuse\;resides, if not part of the ASIC itself." />
 	<field name="module_index_msb"                offset="0x4.8"    size="0x0.8" access="INDEX" descr="[DWIP]:&lt;module_index_msb, module_index&gt; specifies the element in which the fuse\;resides, if not part of the ASIC itself.Currently only valid elements are Optical Engines." />
-	<field name="data"                            offset="0x10.0"   size="0xc.0" subnode="MRFV_data_auto_ext" access="RO" condition="$(parent).fuse_id" descr="DataSee \;MRFV entry - CVB LayoutSee \;MRFV entry - ULT LayoutSee \;MRFV entry - VDD_MAIN LayoutSee\;\;MRFV entry - VDD_Tile LayoutSee\;\;MRFV entry - RAW_AND_VALUE LayoutReserved when fm = 1" />
+	<field name="data"                            offset="0x10.0"   size="0xc.0" subnode="MRFV_data_auto_ext" access="RO" condition="$(parent).fuse_id" descr="DataSee \;MRFV entry - CVB LayoutSee \;MRFV entry - ULT LayoutSee \;MRFV entry - VDD_MAIN LayoutSee\;\;MRFV entry - VDD_Tile LayoutReserved when fm = 1" />
 </node>
 
 <node name="MSECQ_reg_ext"                        size="0x40.0" descr="" >
@@ -260,7 +253,7 @@
 </node>
 
 <node name="access_reg_summary_ctrl_ext"          size="0x4.0" attr_is_union="1" descr="" >
-	<field name="id"                              offset="0x0.0"    size="0x4.0" subnode="enum_entry" access="RW" enum="MMDIO=0x9017,MLCR=0x902b,MGCR=0x903a,MJTAG=0x901f,MTPPS=0x9053,MTUTC=0x9055,MSECQ=0x9155,MSEES=0x9156,MCIA=0x9014,MCION=0x9052,PMAOS=0x5012,MMTA=0x9113,PMTM=0x5067,PMPC=0x501f,PMPE=0x5024,MELSRC=0x9046,MELSEQ=0x9047,MGPIR=0x9100,MILAQ=0x9187,MDRCR=0x9102,MTCAP=0x9009,MTECR=0x9109,MTMP=0x900a,MTWE=0x900b,MTEWE=0x910b,MTBR_V2=0x9167,MTDTH=0x9111,MVCAP=0x902e,MVCR=0x900c,MPSCR=0x910f,MTSR=0x9121,MLPC=0x9166,MSLCG=0x902c,MCQS=0x9060,MCQI=0x9061,MCC=0x9062,MCDA=0x9063,MCDD=0x905c,MIRC=0x9162,MQIS=0x9064,MGIR=0x9020,MSGI=0x9021,MSCI=0x902a,MDIR=0x911a,MIDFV=0x9018,MCAM=0x907f,MRFV=0x906d,MTEIR=0x9190,MDTR=0x9073,MDSR=0x9110,MFSV=0x9115,MTCQ=0x9065,MQDIK=0x9116,MKDC=0x9066,MFCDR=0x9178,MSGCR=0x9179,MNVDA=0x9024,MNVDI=0x9025,MNVQC=0x9030,MNVIA=0x9033,MNVGC=0x9034,MNVGN=0x9035,MGNLE=0x9036,MTRC_CAP=0x9040,MTRC_CONF=0x9041,MTRC_STDB=0x9042,MTRC_CTRL=0x9043,MTEIM=0x9118,MTIE=0x911b,MTIM=0x911c,MTDC=0x911d,MFPA=0x9010,MFBA=0x9011,MFBE=0x9012,MPCIR=0x905a,MERR=0x903c,MRPR=0x9117,MHMPR=0x905d,MISSUV=0x9191,PCAM=0x507f,PCAP=0x5001,PTYS=0x5004,PAOS=0x5006,PLTC=0x5046,PPCNT=0x5008,PUDE=0x5009,PGMR=0x5039,PTER=0x5055,PREI=0x5058,PPRM=0x5059,PMLP=0x5002,PMPR=0x5013,PMMP=0x5044,PMCR=0x5045,PMPT=0x5064,PMPD=0x5065,PMLR=0x506d,PMAC=0x507e,PLDS=0x5076,PPSC=0x5011,PRTL=0x5014,PPLR=0x5018,PPLM=0x5023,SLTP=0x5027,SLTPv2=0x502f,SLRG=0x5028,PTASv2=0x502e,SLSIR=0x502c,PDDR=0x5031,PPTT=0x5036,PPRT=0x5037,PMDR=0x503c,PPHCR=0x503e,PPAOS=0x5040,PPBMP=0x5051,PPBMC=0x5052,PPBME=0x5053,PGLF=0x5091,SLLM=0x505b,SLPRR=0x507b,PLCC=0x505e,PCCT=0x5086,SLTR=0x5081,PFLDC=0x5083,SLMTRD=0x5095,PEDCC=0x5087,PMTU=0x5003,PPAD=0x5005,PFCC=0x5007,PPFCG=0x50f1,PPWCC=0x50f2,PPWPT=0x50f3,PPWE=0x50f4,PPWDC=0x50f5,PPTB=0x500b,PBMC=0x500c,PGUID=0x5066,PVLC=0x500f,PHBR=0x5034,PHRR=0x5035,PBSR=0x5038,PCMR=0x5041,PFSC=0x5043,PPCR=0x504c,PPIR=0x50eb,PTSR=0x5400,PRTSR=0x5402,PTSB=0x5401,PLIB=0x500a,PLIBDB=0x50e1,PPSLC=0x50e2,PPSLS=0x50e3,PPSLD=0x50e4,PEVNT=0x50e6,PBWC=0x50e7,PBWR=0x50e8,PPDFD=0x50e9,PGCB=0x5103,PGRRS=0x5104,PRCCT=0x5400,MODCR=0x9099,MFDE=0x9200,MOFDE=0x9152,MORD=0x9153,MORD_V2=0x915b,MISG=0x915d,GNDR=0x6801,GHPKT=0x6802,GSGUID=0x6803,GPLID=0x6805,GFER=0x6808,UNWKM=0x6501,UNRSA=0x6502,UNRC=0x6503,UNDRI=0x6504,UKDRI=0x6506,UNDFD=0x6505" descr="" />
+	<field name="id"                              offset="0x0.0"    size="0x4.0" subnode="enum_entry" access="RW" enum="MMDIO=0x9017,MLCR=0x902b,MGCR=0x903a,MJTAG=0x901f,MTPPS=0x9053,MTUTC=0x9055,MSECQ=0x9155,MSEES=0x9156,MCIA=0x9014,MCION=0x9052,PMAOS=0x5012,MMTA=0x9113,PMTM=0x5067,PMPC=0x501f,PMPE=0x5024,MELSRC=0x9046,MELSEQ=0x9047,MGPIR=0x9100,MILAQ=0x9187,MDRCR=0x9102,MTCAP=0x9009,MTECR=0x9109,MTMP=0x900a,MTWE=0x900b,MTEWE=0x910b,MTBR_V2=0x9167,MVCAP=0x902e,MVCR=0x900c,MPSCR=0x910f,MTSR=0x9121,MLPC=0x9166,MSLCG=0x902c,MCQS=0x9060,MCQI=0x9061,MCC=0x9062,MCDA=0x9063,MCDD=0x905c,MIRC=0x9162,MQIS=0x9064,MGIR=0x9020,MSGI=0x9021,MSCI=0x902a,MDIR=0x911a,MIDFV=0x9018,MCAM=0x907f,MRFV=0x906d,MTEIR=0x9190,MDTR=0x9073,MDSR=0x9110,MFKV=0x9114,MFSV=0x9115,MTCQ=0x9065,MQDIK=0x9116,MKDC=0x9066,MFCDR=0x9178,MSGCR=0x9179,MNVDA=0x9024,MNVDI=0x9025,MNVQC=0x9030,MNVIA=0x9033,MNVGC=0x9034,MNVGN=0x9035,MGNLE=0x9036,MTRC_CAP=0x9040,MTRC_CONF=0x9041,MTRC_STDB=0x9042,MTRC_CTRL=0x9043,MTEIM=0x9118,MTIE=0x911b,MTIM=0x911c,MTDC=0x911d,MFPA=0x9010,MFBA=0x9011,MFBE=0x9012,MPCIR=0x905a,MERR=0x903c,MRPR=0x9117,MHMPR=0x905d,MISSUV=0x9191,PCAM=0x507f,PCAP=0x5001,PTYS=0x5004,PAOS=0x5006,PLTC=0x5046,PPCNT=0x5008,PUDE=0x5009,PGMR=0x5039,PTER=0x5055,PREI=0x5058,PPRM=0x5059,PMLP=0x5002,PMPR=0x5013,PMMP=0x5044,PMCR=0x5045,PMPT=0x5064,PMPD=0x5065,PMLR=0x506d,PMAC=0x507e,PLDS=0x5076,PPSC=0x5011,PRTL=0x5014,PPLR=0x5018,PPLM=0x5023,SLTP=0x5027,SLTPv2=0x502f,SLRG=0x5028,PTASv2=0x502e,SLSIR=0x502c,PDDR=0x5031,PPTT=0x5036,PPRT=0x5037,PMDR=0x503c,PPHCR=0x503e,PPAOS=0x5040,PPBMP=0x5051,PPBMC=0x5052,PPBME=0x5053,PGLF=0x5091,PGLME=0x509a,PERC=0x509b,SLLM=0x505b,PPCL=0x5094,SLPRR=0x507b,PLCC=0x505e,PCCT=0x5086,SLTR=0x5081,PFLDC=0x5083,SLMTRD=0x5095,PEDCC=0x5087,PMTU=0x5003,PPAD=0x5005,PFCC=0x5007,PPFCG=0x50f1,PPWCC=0x50f2,PPWPT=0x50f3,PPWE=0x50f4,PPWDC=0x50f5,PPTB=0x500b,PBMC=0x500c,PGUID=0x5066,PVLC=0x500f,PHBR=0x5034,PHRR=0x5035,PBSR=0x5038,PCMR=0x5041,PFSC=0x5043,PPCR=0x504c,PPIR=0x50eb,PTSR=0x5400,PRTSR=0x5402,PTSB=0x5401,PLIB=0x500a,PLIBDB=0x50e1,PPSLC=0x50e2,PPSLS=0x50e3,PPSLD=0x50e4,PEVNT=0x50e6,PBWC=0x50e7,PBWR=0x50e8,PPDFD=0x50e9,PGCB=0x5103,PGRRS=0x5104,PRCCT=0x5400,MODCR=0x9099,MFDE=0x9200,MOFDE=0x9152,MORD=0x9153,MORD_V2=0x915b,MISG=0x915d,GNDR=0x6801,GHPKT=0x6802,GSGUID=0x6803,GPLID=0x6805,GFER=0x6808,UNWKM=0x6501,UNRSA=0x6502,UNRC=0x6503,UNDRI=0x6504,UKDRI=0x6506,UNDFD=0x6505" descr="" />
 </node>
 
 <node name="access_reg_summary_ext"               size="0x410.0" attr_is_union="1" descr="" >
@@ -296,6 +289,7 @@
 	<field name="mfbe_reg"                        offset="0x0.0"    size="0xc.0" subnode="mfbe_reg_ext" access="RW" selected_by="MFBE" descr="" />
 	<field name="mfcdr_reg"                       offset="0x0.0"    size="0x8.0" subnode="mfcdr_reg_ext" access="RW" selected_by="MFCDR" descr="" />
 	<field name="mfde"                            offset="0x0.0"    size="0xb0.0" subnode="mfde_ext" access="RW" selected_by="MFDE" descr="" />
+	<field name="mfkv_reg"                        offset="0x0.0"    size="0x18.0" subnode="mfkv_reg_ext" access="RW" selected_by="MFKV" descr="" />
 	<field name="mfpa_reg"                        offset="0x0.0"    size="0x20.0" subnode="mfpa_reg_ext" access="RW" selected_by="MFPA" descr="" />
 	<field name="mfsv_reg"                        offset="0x0.0"    size="0x30.0" subnode="mfsv_reg_ext" access="RW" selected_by="MFSV" descr="" />
 	<field name="mgcr_reg"                        offset="0x0.0"    size="0x20.0" subnode="mgcr_reg_ext" access="RW" selected_by="MGCR" descr="" />
@@ -335,7 +329,6 @@
 	<field name="mtcap"                           offset="0x0.0"    size="0x10.0" subnode="mtcap_ext" access="RW" selected_by="MTCAP" descr="" />
 	<field name="mtcq_reg"                        offset="0x0.0"    size="0x70.0" subnode="mtcq_reg_ext" access="RW" selected_by="MTCQ" descr="" />
 	<field name="mtdc"                            offset="0x0.0"    size="0x20.0" subnode="mtdc_ext" access="RW" selected_by="MTDC" descr="" />
-	<field name="mtdth"                           offset="0x0.0"    size="0x18.0" subnode="mtdth_ext" access="RW" selected_by="MTDTH" descr="" />
 	<field name="mtecr"                           offset="0x0.0"    size="0x60.0" subnode="mtecr_ext" access="RW" selected_by="MTECR" descr="" />
 	<field name="mteim_reg"                       offset="0x0.0"    size="0x30.0" subnode="mteim_reg_ext" access="RW" selected_by="MTEIM" descr="" />
 	<field name="mteir_reg"                       offset="0x0.0"    size="0xc.0" subnode="mteir_reg_ext" access="RW" selected_by="MTEIR" descr="" />
@@ -363,12 +356,14 @@
 	<field name="pcmr_reg"                        offset="0x0.0"    size="0xc.0" subnode="pcmr_reg_ext" access="RW" selected_by="PCMR" descr="" />
 	<field name="pddr_reg"                        offset="0x0.0"    size="0x100.0" subnode="pddr_reg_ext" access="RW" selected_by="PDDR" descr="" />
 	<field name="pedcc_reg"                       offset="0x0.0"    size="0x64.0" subnode="pedcc_reg_ext" access="RW" selected_by="PEDCC" descr="" />
+	<field name="perc"                            offset="0x0.0"    size="0x24.0" subnode="perc_ext" access="RW" selected_by="PERC" descr="" />
 	<field name="pevnt"                           offset="0x0.0"    size="0x8.0" subnode="pevnt_ext" access="RW" selected_by="PEVNT" descr="" />
 	<field name="pfcc_reg"                        offset="0x0.0"    size="0x20.0" subnode="pfcc_reg_ext" access="RW" selected_by="PFCC" descr="" />
 	<field name="pfldc"                           offset="0x0.0"    size="0x24.0" subnode="pfldc_ext" access="RW" selected_by="PFLDC" descr="" />
 	<field name="pfsc_reg"                        offset="0x0.0"    size="0x10.0" subnode="pfsc_reg_ext" access="RW" selected_by="PFSC" descr="" />
 	<field name="pgcb"                            offset="0x0.0"    size="0x2a0.0" subnode="pgcb_ext" access="RW" selected_by="PGCB" descr="" />
 	<field name="pglf_reg"                        offset="0x0.0"    size="0x2c.0" subnode="pglf_reg_ext" access="RW" selected_by="PGLF" descr="" />
+	<field name="pglme"                           offset="0x0.0"    size="0x18.0" subnode="pglme_ext" access="RW" selected_by="PGLME" descr="" />
 	<field name="pgmr"                            offset="0x0.0"    size="0x2c.0" subnode="pgmr_ext" access="RW" selected_by="PGMR" descr="" />
 	<field name="pgrrs"                           offset="0x0.0"    size="0x90.0" subnode="pgrrs_ext" access="RW" selected_by="PGRRS" descr="" />
 	<field name="pguid_reg"                       offset="0x0.0"    size="0x60.0" subnode="pguid_reg_ext" access="RW" selected_by="PGUID" descr="" />
@@ -398,6 +393,7 @@
 	<field name="ppbmc_reg"                       offset="0x0.0"    size="0x10.0" subnode="ppbmc_reg_ext" access="RW" selected_by="PPBMC" descr="" />
 	<field name="ppbme_reg"                       offset="0x0.0"    size="0x10.0" subnode="ppbme_reg_ext" access="RW" selected_by="PPBME" descr="" />
 	<field name="ppbmp_reg"                       offset="0x0.0"    size="0x30.0" subnode="ppbmp_reg_ext" access="RW" selected_by="PPBMP" descr="" />
+	<field name="ppcl_reg"                        offset="0x0.0"    size="0x1c.0" subnode="ppcl_reg_ext" access="RW" selected_by="PPCL" descr="" />
 	<field name="ppcnt_reg"                       offset="0x0.0"    size="0x100.0" subnode="ppcnt_reg_ext" access="RW" selected_by="PPCNT" descr="" />
 	<field name="ppdfd"                           offset="0x0.0"    size="0xc.0" subnode="ppdfd_ext" access="RW" selected_by="PPDFD" descr="" />
 	<field name="ppfcg"                           offset="0x0.0"    size="0x8.0" subnode="ppfcg_ext" access="RW" selected_by="PPFCG" descr="" />
@@ -600,6 +596,28 @@
 	<field name="ber_based_in_progress"           offset="0x0.17"   size="0x0.1" access="RO" descr="BER-based flow in progress at snapshot." />
 </node>
 
+<node name="ef_pddr_apsu_lane_data_v1_ext"        size="0xc.0" descr="" >
+	<field name="train_ctl_state"                 offset="0x0.0"    size="0x0.4" access="RO" descr="The actual state of the Training control state diagram (IEEE 802.3dj Annex 178B Figure 178B-10).0: QUIET1: SEND_TRAINING2: TRAIN_START3: TRAIN_LOCAL4: TRAIN_REMOTE5: ISL_READY6: PATH_READY7: PATH_UP8: RECOVERY9: FAIL10: SEND_LOCAL11: RX_READY" />
+	<field name="local_mc_mode"                   offset="0x0.8"    size="0x0.2" access="RO" descr="Enumerated variable that indicates the training pattern modulation and coding.0: PAM21: Reserved2: PAM4 without precoding3: PAM4 with precoding." />
+	<field name="local_tp_mode"                   offset="0x0.10"   size="0x0.2" access="RO" descr="Enumerated variable that indicates the transmitted training pattern.0: synchronous PRBS131: free-running PRBS132: Reserved3: freerunningPRBS31" />
+	<field name="lane_training_status"            offset="0x0.12"   size="0x0.2" access="RO" descr="The status of the ILT function. Valid only if apsu_oper = Enabled.0: FAIL: Training failed1: OK: Training OK2: Reserved3: IN_PROGRESS: Lane is being trained" />
+	<field name="polarity_correction"             offset="0x0.18"   size="0x0.1" access="RO" descr="Set if the signal polarity was reverted" />
+	<field name="tx_disable"                      offset="0x0.19"   size="0x0.1" access="RO" descr="Set if the transmitter is disabled (squelch). Used only if training_en_oper = Disable" />
+	<field name="remote_rts"                      offset="0x0.20"   size="0x0.1" access="RO" descr="Set if the Not ready to send bit in the ILT received frame is clear." />
+	<field name="local_rts"                       offset="0x0.21"   size="0x0.1" access="RO" descr="Set if the local transmitter is ready to send PCS data" />
+	<field name="remote_rx_ready"                 offset="0x0.22"   size="0x0.1" access="RO" descr="Set if the Receiver ready bit in the ILT received frame is set." />
+	<field name="local_rx_ready"                  offset="0x0.23"   size="0x0.1" access="RO" descr="Set if the local receiver finished training." />
+	<field name="remote_tf_lock"                  offset="0x0.24"   size="0x0.1" access="RO" descr="Set if the Receiver frame lock bit in the ILT received frame is set." />
+	<field name="local_tf_lock"                   offset="0x0.25"   size="0x0.1" access="RO" descr="Set if the ILT frame position has been detected" />
+	<field name="rx_ok"                           offset="0x0.26"   size="0x0.1" access="RO" descr="Set if local receiver is receiving a good signal" />
+	<field name="invert_to_done"                  offset="0x0.28"   size="0x0.1" access="RO" descr="Set if the invert_to timer expired" />
+	<field name="training_failure"                offset="0x0.31"   size="0x0.1" access="RO" descr="Set if the training process failed" />
+	<field name="bcnl_rx_block_cnt"               offset="0x4.0"    size="0x0.10" access="RO" descr="nLUT backchannel number of transmitted blocks" />
+	<field name="bcnl_tx_block_cnt"               offset="0x4.16"   size="0x0.10" access="RO" descr="nLUT backchannel number of received blocks" />
+	<field name="bcnl_msg_rx_fail"                offset="0x4.30"   size="0x0.1" access="RO" descr="Set if nLUT backchannel message failed to be received" />
+	<field name="bcnl_msg_tx_fail"                offset="0x4.31"   size="0x0.1" access="RO" descr="Set if nLUT backchannel message failed to be transmitted" />
+</node>
+
 <node name="ef_ptasv2_3nm_apsu_ctrl_v1_ext"       size="0x18.0" descr="" >
 	<field name="apsu_cap"                        offset="0x0.0"    size="0x0.1" access="RO" descr="Set if APSU (ILT/RTS) capability is supported" />
 	<field name="apsu_ctl"                        offset="0x0.1"    size="0x0.2" access="RW" descr="Control the APSU (ILT/RTS) activation if apsu_cap = 10: Default. Default = 11: Enable2: Disable" />
@@ -624,11 +642,15 @@
 	<field name="quiet_timer"                     offset="0x8.28"   size="0x0.4" access="RW" descr="Squelch time before restarting APSU. System parameter.0: Disable.1 - 31: 10 msec to 310 msec timer in 10 msec granularity.Default = 20" />
 	<field name="invert_to"                       offset="0xc.0"    size="0x0.4" access="RW" descr="Invert to timer. System parameter.0: Disable.1 - 15: Number of millisecondsDefault = 5" />
 	<field name="tf_detect_timer"                 offset="0xc.6"    size="0x0.4" access="RW" descr="This timer limits the time synchronization on link training frames is searched after modulation_detect becomes true. Per system timer.0: Disable1-15: Number of milliseconds allowed to detect link train frames." />
+	<field name="peer_det_timer"                  offset="0xc.11"   size="0x0.4" access="RW" descr="This timer limits the peer detection protocol including the peer configuration detection. Per system timer.0: Disable.1-15: Number of 100’s of milliseconds allowed for the peer detection protocol.Default = 2" />
 	<field name="fail_timer"                      offset="0xc.16"   size="0x0.8" access="RW" descr="This timer limits the allowed failure time before an APSU restart is forced. It is started when modulation_detect = false is detected in any lane of the port. Per system timer.0: Disable1-255: of 10’s of milliseconds before restarting due to signal fail.Default = 100" />
 	<field name="validation_timer"                offset="0xc.26"   size="0x0.4" access="RW" descr="This timer limits the time local_tf_lock shall be true before APSU restart is forced. Relevant only if validation_en = 1. Per system timer.0: Disable.1-15: Number of 10’s of milliseconds local_tf_lock shall be stable.Default = 1" />
 	<field name="local_pattern_tx"                offset="0xc.31"   size="0x0.1" access="RW" descr="Select local pattern for APSU. System parameter.0: PRBS311: PCS data0: Default. Default = 0" />
 	<field name="restart_on_los"                  offset="0x10.6"   size="0x0.2" access="RW" descr="Select the behavior under signal los. System parameter0: Do not restart on signal los1: Restart on signal los2: Restart only on long signal losDefault = 1" />
 	<field name="validation_en"                   offset="0x10.9"   size="0x0.1" access="RW" descr="Allow received ILT frames validation timer. Relevant only if rx_fail_on_los = 0. System parameter.0: Validation disabled1: Validation enabled0: Default. Default = 0" />
+	<field name="max_hop_count"                   offset="0x10.26"  size="0x0.2" access="RW" descr="Maximum hop count value in D14 and D15 of the ILT frame that is transmitted.Default is 1 except for the case of a host connected to a TRO module in which case it is 0." />
+	<field name="hop_decrement"                   offset="0x10.28"  size="0x0.2" access="RW" descr="Amount to be decremented from the received ILT frame hop count field in D15 and D15Default is 0 except for the case of a host connected to a TRO module in which case it is 1." />
+	<field name="hop_count"                       offset="0x10.30"  size="0x0.2" access="RW" descr="Hop count to be transmitted in bits D14 and D15 of the ILT frame.Default is 0 except for the cases of a host connected to a TRO module and a TRO module, in which cases it is 1." />
 	<field name="bcnl_pages_retransmissions"      offset="0x14.0"   size="0x0.8" access="RW" descr="Number of times the nLUT backchannel pages are sent. System parameter.1-255: Retransmit each page timesDefault = 95" />
 </node>
 
@@ -729,38 +751,38 @@
 </node>
 
 <node name="eth_3635_cntrs_grp_data_layout_ext"   size="0xf8.0" descr="" >
-	<field name="dot3stats_alignment_errors_high" offset="0x0.0"    size="0x4.0" access="RW" descr="A count of frames received that are not an integral number of octets in\;length and do not pass the FCS check." />
-	<field name="dot3stats_alignment_errors_low"  offset="0x4.0"    size="0x4.0" access="RW" descr="(see above)" />
-	<field name="dot3stats_fcs_errors_high"       offset="0x8.0"    size="0x4.0" access="RW" descr="A count of frames received that are an integral number of octets in\;length but do not pass the FCS check. This count does not include frames\;received with frame-too-long or frame-too-short errors." />
-	<field name="dot3stats_fcs_errors_low"        offset="0xc.0"    size="0x4.0" access="RW" descr="(see above)" />
-	<field name="dot3stats_single_collision_frames_high" offset="0x10.0" size="0x4.0" access="RW" descr="A count of frames that are involved in a single collision, and are\;subsequently transmitted successfully.This counter does not increment when the interface is operating in\;full-duplex mode." />
-	<field name="dot3stats_single_collision_frames_low" offset="0x14.0" size="0x4.0" access="RW" descr="(see above)" />
-	<field name="dot3stats_multiple_collision_frames_high" offset="0x18.0" size="0x4.0" access="RW" descr="A count of frames that are involved in more than one collision and are\;subsequently transmitted successfully.This counter does not increment when the interface is operating in\;full-duplex mode." />
-	<field name="dot3stats_multiple_collision_frames_low" offset="0x1c.0" size="0x4.0" access="RW" descr="(see above)" />
-	<field name="dot3stats_sqe_test_errors_high"  offset="0x20.0"   size="0x4.0" access="RW" descr="A count of times that the SQE TEST ERROR is received on a particular\;interface.This counter does not increment on interfaces operating at speeds\;greater than 10 Mb/s, or on interfaces operating in full-duplex mode." />
-	<field name="dot3stats_sqe_test_errors_low"   offset="0x24.0"   size="0x4.0" access="RW" descr="(see above)" />
-	<field name="dot3stats_deferred_transmissions_high" offset="0x28.0" size="0x4.0" access="RW" descr="A count of frames for which the first transmission attempt on a\;particular interface is delayed because the medium is busy.This counter does not increment when the interface is operating in\;full-duplex mode." />
-	<field name="dot3stats_deferred_transmissions_low" offset="0x2c.0" size="0x4.0" access="RW" descr="(see above)" />
-	<field name="dot3stats_late_collisions_high"  offset="0x30.0"   size="0x4.0" access="RW" descr="The number of times that a collision is detected on a particular\;interface later than one slotTime into the transmission of a packet.This counter does not increment when the interface is operating in\;full-duplex mode." />
-	<field name="dot3stats_late_collisions_low"   offset="0x34.0"   size="0x4.0" access="RW" descr="(see above)" />
-	<field name="dot3stats_excessive_collisions_high" offset="0x38.0" size="0x4.0" access="RW" descr="A count of frames for which transmission on a particular interface fails\;due to excessive collisions.This counter does not increment when the interface is operating in\;full-duplex mode." />
-	<field name="dot3stats_excessive_collisions_low" offset="0x3c.0" size="0x4.0" access="RW" descr="(see above)" />
-	<field name="dot3stats_internal_mac_transmit_errors_high" offset="0x40.0" size="0x4.0" access="RW" descr="A count of frames for which transmission failed and were discarded even\;though no errors had been detected to prevent their being deliverable to\;a higher-layer protocol." />
-	<field name="dot3stats_internal_mac_transmit_errors_low" offset="0x44.0" size="0x4.0" access="RW" descr="(see above)" />
-	<field name="dot3stats_carrier_sense_errors_high" offset="0x48.0" size="0x4.0" access="RW" descr="The number of times that the carrier sense condition was lost or never\;asserted when attempting to transmit a frame on a particular interface.This counter does not increment when the interface is operating in\;full-duplex mode." />
-	<field name="dot3stats_carrier_sense_errors_low" offset="0x4c.0" size="0x4.0" access="RW" descr="(see above)" />
-	<field name="dot3stats_frame_too_longs_high"  offset="0x50.0"   size="0x4.0" access="RW" descr="A count of frames received that exceed the maximum permitted frame size." />
-	<field name="dot3stats_frame_too_longs_low"   offset="0x54.0"   size="0x4.0" access="RW" descr="(see above)" />
-	<field name="dot3stats_internal_mac_receive_errors_high" offset="0x58.0" size="0x4.0" access="RW" descr="A count of frames for which reception failed and were discarded even\;though no errors had been detected to prevent their being deliverable to\;a higher-layer protocol." />
-	<field name="dot3stats_internal_mac_receive_errors_low" offset="0x5c.0" size="0x4.0" access="RW" descr="(see above)" />
-	<field name="dot3stats_symbol_errors_high"    offset="0x60.0"   size="0x4.0" access="RW" descr="The number of times the receiving media is non-idle (a carrier event)\;for a period of time equal to or greater than minFrameSize, and during\;which there was at least one occurrence of an event that causes the PHY\;to indicate ‘Receive Error’." />
-	<field name="dot3stats_symbol_errors_low"     offset="0x64.0"   size="0x4.0" access="RW" descr="(see above)" />
-	<field name="dot3control_in_unknown_opcodes_high" offset="0x68.0" size="0x4.0" access="RW" descr="A count of MAC Control frames received that contain an opcode that is\;not supported." />
-	<field name="dot3control_in_unknown_opcodes_low" offset="0x6c.0" size="0x4.0" access="RW" descr="(see above)" />
-	<field name="dot3in_pause_frames_high"        offset="0x70.0"   size="0x4.0" access="RW" descr="A count of MAC Control frames received with an opcode indicating the\;PAUSE operation." />
-	<field name="dot3in_pause_frames_low"         offset="0x74.0"   size="0x4.0" access="RW" descr="(see above)" />
-	<field name="dot3out_pause_frames_high"       offset="0x78.0"   size="0x4.0" access="RW" descr="A count of MAC Control frames transmitted with an opcode indicating the\;PAUSE operation." />
-	<field name="dot3out_pause_frames_low"        offset="0x7c.0"   size="0x4.0" access="RW" descr="(see above)" />
+	<field name="dot3stats_alignment_errors_high" offset="0x0.0"    size="0x4.0" access="RO" descr="A count of frames received that are not an integral number of octets in\;length and do not pass the FCS check." />
+	<field name="dot3stats_alignment_errors_low"  offset="0x4.0"    size="0x4.0" access="RO" descr="(see above)" />
+	<field name="dot3stats_fcs_errors_high"       offset="0x8.0"    size="0x4.0" access="RO" descr="A count of frames received that are an integral number of octets in\;length but do not pass the FCS check. This count does not include frames\;received with frame-too-long or frame-too-short errors." />
+	<field name="dot3stats_fcs_errors_low"        offset="0xc.0"    size="0x4.0" access="RO" descr="(see above)" />
+	<field name="dot3stats_single_collision_frames_high" offset="0x10.0" size="0x4.0" access="RO" descr="A count of frames that are involved in a single collision, and are\;subsequently transmitted successfully.This counter does not increment when the interface is operating in\;full-duplex mode." />
+	<field name="dot3stats_single_collision_frames_low" offset="0x14.0" size="0x4.0" access="RO" descr="(see above)" />
+	<field name="dot3stats_multiple_collision_frames_high" offset="0x18.0" size="0x4.0" access="RO" descr="A count of frames that are involved in more than one collision and are\;subsequently transmitted successfully.This counter does not increment when the interface is operating in\;full-duplex mode." />
+	<field name="dot3stats_multiple_collision_frames_low" offset="0x1c.0" size="0x4.0" access="RO" descr="(see above)" />
+	<field name="dot3stats_sqe_test_errors_high"  offset="0x20.0"   size="0x4.0" access="RO" descr="A count of times that the SQE TEST ERROR is received on a particular\;interface.This counter does not increment on interfaces operating at speeds\;greater than 10 Mb/s, or on interfaces operating in full-duplex mode." />
+	<field name="dot3stats_sqe_test_errors_low"   offset="0x24.0"   size="0x4.0" access="RO" descr="(see above)" />
+	<field name="dot3stats_deferred_transmissions_high" offset="0x28.0" size="0x4.0" access="RO" descr="A count of frames for which the first transmission attempt on a\;particular interface is delayed because the medium is busy.This counter does not increment when the interface is operating in\;full-duplex mode." />
+	<field name="dot3stats_deferred_transmissions_low" offset="0x2c.0" size="0x4.0" access="RO" descr="(see above)" />
+	<field name="dot3stats_late_collisions_high"  offset="0x30.0"   size="0x4.0" access="RO" descr="The number of times that a collision is detected on a particular\;interface later than one slotTime into the transmission of a packet.This counter does not increment when the interface is operating in\;full-duplex mode." />
+	<field name="dot3stats_late_collisions_low"   offset="0x34.0"   size="0x4.0" access="RO" descr="(see above)" />
+	<field name="dot3stats_excessive_collisions_high" offset="0x38.0" size="0x4.0" access="RO" descr="A count of frames for which transmission on a particular interface fails\;due to excessive collisions.This counter does not increment when the interface is operating in\;full-duplex mode." />
+	<field name="dot3stats_excessive_collisions_low" offset="0x3c.0" size="0x4.0" access="RO" descr="(see above)" />
+	<field name="dot3stats_internal_mac_transmit_errors_high" offset="0x40.0" size="0x4.0" access="RO" descr="A count of frames for which transmission failed and were discarded even\;though no errors had been detected to prevent their being deliverable to\;a higher-layer protocol." />
+	<field name="dot3stats_internal_mac_transmit_errors_low" offset="0x44.0" size="0x4.0" access="RO" descr="(see above)" />
+	<field name="dot3stats_carrier_sense_errors_high" offset="0x48.0" size="0x4.0" access="RO" descr="The number of times that the carrier sense condition was lost or never\;asserted when attempting to transmit a frame on a particular interface.This counter does not increment when the interface is operating in\;full-duplex mode." />
+	<field name="dot3stats_carrier_sense_errors_low" offset="0x4c.0" size="0x4.0" access="RO" descr="(see above)" />
+	<field name="dot3stats_frame_too_longs_high"  offset="0x50.0"   size="0x4.0" access="RO" descr="A count of frames received that exceed the maximum permitted frame size." />
+	<field name="dot3stats_frame_too_longs_low"   offset="0x54.0"   size="0x4.0" access="RO" descr="(see above)" />
+	<field name="dot3stats_internal_mac_receive_errors_high" offset="0x58.0" size="0x4.0" access="RO" descr="A count of frames for which reception failed and were discarded even\;though no errors had been detected to prevent their being deliverable to\;a higher-layer protocol." />
+	<field name="dot3stats_internal_mac_receive_errors_low" offset="0x5c.0" size="0x4.0" access="RO" descr="(see above)" />
+	<field name="dot3stats_symbol_errors_high"    offset="0x60.0"   size="0x4.0" access="RO" descr="The number of times the receiving media is non-idle (a carrier event)\;for a period of time equal to or greater than minFrameSize, and during\;which there was at least one occurrence of an event that causes the PHY\;to indicate ‘Receive Error’." />
+	<field name="dot3stats_symbol_errors_low"     offset="0x64.0"   size="0x4.0" access="RO" descr="(see above)" />
+	<field name="dot3control_in_unknown_opcodes_high" offset="0x68.0" size="0x4.0" access="RO" descr="A count of MAC Control frames received that contain an opcode that is\;not supported." />
+	<field name="dot3control_in_unknown_opcodes_low" offset="0x6c.0" size="0x4.0" access="RO" descr="(see above)" />
+	<field name="dot3in_pause_frames_high"        offset="0x70.0"   size="0x4.0" access="RO" descr="A count of MAC Control frames received with an opcode indicating the\;PAUSE operation." />
+	<field name="dot3in_pause_frames_low"         offset="0x74.0"   size="0x4.0" access="RO" descr="(see above)" />
+	<field name="dot3out_pause_frames_high"       offset="0x78.0"   size="0x4.0" access="RO" descr="A count of MAC Control frames transmitted with an opcode indicating the\;PAUSE operation." />
+	<field name="dot3out_pause_frames_low"        offset="0x7c.0"   size="0x4.0" access="RO" descr="(see above)" />
 </node>
 
 <node name="eth_discard_cntrs_grp_ext"            size="0xf8.0" descr="" >
@@ -835,7 +857,7 @@
 	<field name="tx_stats_pkts4096to8191octets_low" offset="0x94.0" size="0x4.0" access="RO" descr="(see above)" />
 	<field name="tx_stats_pkts8192to10239octets_high" offset="0x98.0" size="0x4.0" access="RO" descr="The total number of packets (including bad packets) transmitted that\;were between 8192 and 10239 octets in length (excluding framing bits but\;including FCS octets).transmitted" />
 	<field name="tx_stats_pkts8192to10239octets_low" offset="0x9c.0" size="0x4.0" access="RO" descr="(see above)" />
-	<field name="ece_marked_high"                 offset="0xa0.0"   size="0x4.0" access="RO" descr="A count of packets marked as ECE or potentially marked as ECE." />
+	<field name="ece_marked_high"                 offset="0xa0.0"   size="0x4.0" access="RO" descr="A count of packets marked as ECE or potentially marked as ECE.Supported in Spectrum switches from Spectrum-4 through Spectrum-6 only." />
 	<field name="ece_marked_low"                  offset="0xa4.0"   size="0x4.0" access="RO" descr="(see above)" />
 	<field name="tx_int_cksm_err_high"            offset="0xa8.0"   size="0x4.0" access="RO" descr="Counter is incremented upon packet payload internal checksum error" />
 	<field name="tx_int_cksm_err_low"             offset="0xac.0"   size="0x4.0" access="RO" descr="(see above)" />
@@ -876,11 +898,12 @@
 </node>
 
 <node name="fatal_cause_ext"                      size="0xa0.0" descr="" >
-	<field name="cause_id"                        offset="0x0.0"    size="0x0.20" access="RO" descr="HW / FW cause IDFW Causes (When fw_cause = 1):1: Core PLL lock failureWhen test = 1 AND fw_cause = 0, cause ID = 0xCAFE" />
+	<field name="cause_id"                        offset="0x0.0"    size="0x0.20" access="RO" descr="HW / FW cause IDFW Causes (When fw_cause = 1):1: Core PLL lock failure2: vMCU boot failureWhen test = 1 AND fw_cause = 0, cause ID = 0xCAFE" />
 	<field name="fw_cause"                        offset="0x0.30"   size="0x0.1" access="RW" descr="0: cause_id reflects HW cause ID1: cause_id reflects FW cause (event)" />
 	<field name="test"                            offset="0x0.31"   size="0x0.1" access="RO" descr="Test:0: real cause ID1: test cause ID" />
 	<field name="tile_index"                      offset="0x4.16"   size="0x0.6" access="RO" descr="When tile_v=1 the tile_index that caused the assert.[DWIP] Superseded by top level tile_v and tile_index. Kept for\;backwards compatibility." />
 	<field name="tile_v"                          offset="0x4.23"   size="0x0.1" access="RO" descr="Tile valid:0: The assert was from main1: The assert was from a tile[DWIP] Superseded by top level tile_v and tile_index. Kept for\;backwards compatibility." />
+	<field name="vmcu_boot_fail_bitmap"           offset="0x8.0"    size="0x8.0" subnode="uint64" access="RO" descr="Per-vMCU boot failure indicator, one bit per vMCU instance.Bit i = 0 means vMCU instance i booted successfully. Bit i = 1 means\;vMCU instance i failed to boot.Only an implementation-defined subset of the 64 bits corresponds to\;populated vMCU instances; bits for unpopulated instances read 0.Valid only when fw_cause = 1 and cause_id = 2 (vMCU boot failure);\;otherwise this field reads 0.Field is big-endian. Bits 63:32 are at offset 08h. Bits 31:0 are at offset 0Ch." />
 </node>
 
 <node name="fw_assert_ext"                        size="0xa0.0" descr="" >
@@ -968,7 +991,7 @@
 	<field name="access_reg_group"                offset="0x0.0"    size="0x0.8" access="INDEX" enum="First_128_REG_ID=0x0,Register_IDs_0x9080=0x1,Register_IDs_0x9100=0x2,Register_IDs_0x9180=0x3" descr="Access Register ID groups0: First_128_REG_ID - Register IDs 0x9001 - 0x907F)1: Register_IDs_0x9080 - 0x90FF (bit 0 in mng_access_reg_cap_mask\;represent register ID 0x9080 while bit 127 represents register ID\;0x90FF).2: Register_IDs_0x9100 - 0x917F (bit 0 in mng_access_reg_cap_mask\;represent register ID 0x9100 while bit 127 represents register ID\;0x917F).3: Register_IDs_0x9180 - 0x91FF (bit 0 in mng_access_reg_cap_mask\;represent register ID 0x9180 while bit 127 represents register ID\;0x91FF)." />
 	<field name="feature_group"                   offset="0x0.16"   size="0x0.8" access="INDEX" enum="enhanced_features=0x0" descr="Feature list mask index:0: enhanced_features" />
 	<field name="mng_access_reg_cap_mask"         offset="0x8.0"    size="0x10.0" access="RO" enum="MFCR_0x9001=0x2,MFSC_0x9002=0x4,MFSM_0x9003=0x8,MFSL_0x9004=0x10,MGCR_0x903A=0x4000000,MPPF_0x9049=0x200,MCAP_0x907F=0x80000000" high_bound="3" low_bound="0" descr="Supported management’s access register bitmask. Based on\;access_reg_group index.When bit is set, the register is supported in the device.For example:Bit 1: MFCR_0x9001Bit 2: MFSC_0x9002Bit 3: MFSM_0x9003Bit 4: MFSL_0x9004Bit 58: MGCR_0x903ABit 73: MPPF_0x9049Bit 127: MCAP_0x907F" />
-	<field name="mng_feature_cap_mask"            offset="0x28.0"   size="0x10.0" access="RO" high_bound="3" low_bound="0" descr="Supported port’s enhanced features.Based on feature_group index.When bit is set, The feature is supported in the deviceBit 0: MPCNT counter group- PCIE performance counters supportedBit 1: mtpps_fs - If set, field_select field in MTPPS register is\;supported.Bit 2: mtpps_enhanced_out_periodic_adjustment - If set,\;enhanced_out_periodic_adjustment field in MTPPS register is supported.Bit 3: tx_lossy_overflow_oper - If set, tx_overflow_buffer_pkt counter\;in MPCNT register is supported.Bit 4: pcie_outbound_stalled - if set, outbound_stalled_reads,\;outbound_stalled_writes, outbound_stalled_reads_events and\;outbound_stalled_writes_events counters in MPCNT are supported.Bit 5: Management pass through is supportedBit 6: sensor_map - If set, sensor_map is supported in MTCAP register.Bit 7: if set, module_status bit 8 (Module Low Power) in MCION register\;is supported.Bit 8: beacon_capability_disable - If set, beacon feature, as appears in\;MLCR register, in not supported by the device.Bit 9: dynamic_tx_overflow - If set, tx_overflow_sense field is\;supported in MPEGC register.Bit 10: mark_tx_action_cqe is supported if set to ‘1’.Bit 11: mark_tx_action_cnp is supported if set to ‘1’.Bit 12: dev_info is supported in register is set to ‘1’.Bit 13: sensor_count field is 12bit size in MTMP and MTBRBit 14: cs_tokens_supported is supportedBit 15: debug_fw_tokens_supportedBit 16: long_keys is supportedBit 17: pwr_status and pci_power are supported in MPEINBit 18: If set, accessing through device_type and device_index is\;supported in MCC, MCQI and MCQSBit 19: pcie_sync_for_fw_update_supported is set to ‘1’Bit 20: ptpCyc2Realtime_modify - If set, the cycle to realtime\;translation offload is supportedBit 21: If set to ‘1’, reset_state in MFRL is supportedBit 22: If set to ‘1’, link_peer_max_speed is supported in MPEIN\;RegisterBit 23: If set to ‘1’, slot_index field is supported in: MCIA, MCAS,\;MCION, MQSP, MTCAP, MTECR, MTMP, MTEWE, MTBR, MVCAP, MVCR, MGPIR,\;MDDT.Bit 24: If set, transceiver burn flow is supported in MCC, MCQI and\;MCQS.Bit 26: If set, progress field is supported in MCQSBit 28: If set, number_of_slots field is supported in MGPIR.Bit 29: If set, virtual hot plug / unplug is supported in MPEGC.Bit 30: If set, my_pf_number is supported in MPPF.Bit 31: If set, sdee is supported in MTMPBit 34: If set, MCIA supports 32 D-words. Otherwise, 12 D-words.Bit 35: If set, MGIR.hw_info.technology is supported.Bit 37: If set, lp_msb is supported for MLCR, MPIR\;Bit 39: If set, MRCS and RMDT tokens are supported in MCQSBit 40: If set, ‘encryption’ field in MGIR is supportedBit 43: If set, MFCR supports tacho_active_msb fieldBit 44: If set, FORE supports fan_under_limit_msb and fan_over_limit_msb\;fieldsBit 45: If set, MFRL.pci_rescan_required is supportedBit 46: time_adjust_range_extended - if set, the MTUTC.time_adjustment\;range is extended to -\;Bit 47: If set, MTUTC.freq_adj_units=1 is supportedBit 48: If set, MRSRFT/MRSR.command=6 is supportedBit 49: If set, MCQS.identifier support CRCS and CRDT tokensBit 51: If set, MTUTC.freq_adj_units=2 is supported\;Bit 59: If set, MCC.component_specific_error_code is valid for LinkX\;devicesBit 60: If set, MGNLE.clr is supportedBit 61: If set, MGIR supports life_cycle_msb and pds fields in FW\;info and development field in HW info.\;\;Bit 65: If set, MVCR support current_sensor_value_msbBit 66: If set. MFRL supports pci_reset_req_method, pci_switch_exist\;fields. [DWIP]Bit 67: If set, MRSR.cmd = 6 works with SBRBit 70: If set, supports MTCAP support 8 bit internal_sensor_count\;[DWIP]Bit 71: If set, supports MVCAP supports sensor_map_type [DWIP]Bit 75: If set, PLLP supports oe_identifier and resource_labe_port\;[switch_internal][DWIP]bit 76: If set, MCQS supports the component_not_supported field\;[DWIP]Bit 77: If set, host_id field in MPIR is supportedBit 78: If set, MGIR supports 12 bit num_ports fieldbit 80: If set, MCQS,identifier supports the DPA_COMPONENT, DPA\;_COMPONENT_REMOVAL fields and MCQI supports DPA apps infoBit 81: If set, MFCDR supports module and query_type fields [DWIP]Bit 82: If set, MCIA supports async mode [DWIP][switch_internal]Bit 85: If set, MTDT token is supported Bit 88: If set, the following are supported:\;PEMI.laser_source_essential, PEMI.laser_source_advance, PEMI.module\;status, PEMI.optical_engine_telemetry_parameters, PEMI.cpo_module,\;PEMI.last_sub_module.Bit 89: If set, supports minimum temperatures, as well as alerts for low\;critical and high critical thresholds, in the following registers: MTMP,\;MTEWE, MTBR, MTBR_v2.Bit 91: If set, CPO Combined Model is supported.Bit 93: If set, MGIR.hw_info.board_ga is supported; ignore otherwise." />
+	<field name="mng_feature_cap_mask"            offset="0x28.0"   size="0x10.0" access="RO" high_bound="3" low_bound="0" descr="Supported port’s enhanced features.Based on feature_group index.When bit is set, The feature is supported in the deviceBit 0: MPCNT counter group- PCIE performance counters supportedBit 1: mtpps_fs - If set, field_select field in MTPPS register is\;supported.Bit 2: mtpps_enhanced_out_periodic_adjustment - If set,\;enhanced_out_periodic_adjustment field in MTPPS register is supported.Bit 3: tx_lossy_overflow_oper - If set, tx_overflow_buffer_pkt counter\;in MPCNT register is supported.Bit 4: pcie_outbound_stalled - if set, outbound_stalled_reads,\;outbound_stalled_writes, outbound_stalled_reads_events and\;outbound_stalled_writes_events counters in MPCNT are supported.Bit 5: Management pass through is supportedBit 6: sensor_map - If set, sensor_map is supported in MTCAP register.Bit 7: if set, module_status bit 8 (Module Low Power) in MCION register\;is supported.Bit 8: beacon_capability_disable - If set, beacon feature, as appears in\;MLCR register, in not supported by the device.Bit 9: dynamic_tx_overflow - If set, tx_overflow_sense field is\;supported in MPEGC register.Bit 10: mark_tx_action_cqe is supported if set to ‘1’.Bit 11: mark_tx_action_cnp is supported if set to ‘1’.Bit 12: dev_info is supported in register is set to ‘1’.Bit 13: sensor_count field is 12bit size in MTMP and MTBRBit 14: cs_tokens_supported is supportedBit 15: debug_fw_tokens_supportedBit 16: long_keys is supportedBit 17: pwr_status and pci_power are supported in MPEINBit 18: If set, accessing through device_type and device_index is\;supported in MCC, MCQI and MCQSBit 19: pcie_sync_for_fw_update_supported is set to ‘1’Bit 20: ptpCyc2Realtime_modify - If set, the cycle to realtime\;translation offload is supportedBit 21: If set to ‘1’, reset_state in MFRL is supportedBit 22: If set to ‘1’, link_peer_max_speed is supported in MPEIN\;RegisterBit 23: If set to ‘1’, slot_index field is supported in: MCIA, MCAS,\;MCION, MQSP, MTCAP, MTECR, MTMP, MTEWE, MTBR, MVCAP, MVCR, MGPIR,\;MDDT.Bit 24: If set, transceiver burn flow is supported in MCC, MCQI and\;MCQS.Bit 26: If set, progress field is supported in MCQSBit 28: If set, number_of_slots field is supported in MGPIR.Bit 29: If set, virtual hot plug / unplug is supported in MPEGC.Bit 30: If set, my_pf_number is supported in MPPF.Bit 31: If set, sdee is supported in MTMPBit 34: If set, MCIA supports 32 D-words. Otherwise, 12 D-words.Bit 35: If set, MGIR.hw_info.technology is supported.Bit 37: If set, lp_msb is supported for MLCR, MPIR\;Bit 39: If set, MRCS and RMDT tokens are supported in MCQSBit 40: If set, ‘encryption’ field in MGIR is supportedBit 43: If set, MFCR supports tacho_active_msb fieldBit 44: If set, FORE supports fan_under_limit_msb and fan_over_limit_msb\;fieldsBit 45: If set, MFRL.pci_rescan_required is supportedBit 46: time_adjust_range_extended - if set, the MTUTC.time_adjustment\;range is extended to -\;Bit 47: If set, MTUTC.freq_adj_units=1 is supportedBit 48: If set, MRSRFT/MRSR.command=6 is supportedBit 49: If set, MCQS.identifier support CRCS and CRDT tokensBit 51: If set, MTUTC.freq_adj_units=2 is supported\;Bit 59: If set, MCC.component_specific_error_code is valid for LinkX\;devicesBit 60: If set, MGNLE.clr is supportedBit 61: If set, MGIR supports life_cycle_msb and pds fields in FW\;info and development field in HW info.\;\;Bit 65: If set, MVCR support current_sensor_value_msbBit 66: If set. MFRL supports pci_reset_req_method, pci_switch_exist\;fields. [DWIP]Bit 67: If set, MRSR.cmd = 6 works with SBRBit 70: If set, supports MTCAP support 8 bit internal_sensor_count\;[DWIP]Bit 71: If set, supports MVCAP supports sensor_map_type [DWIP]Bit 75: If set, PLLP supports oe_identifier and resource_labe_port\;[switch_internal][DWIP]bit 76: If set, MCQS supports the component_not_supported field\;[DWIP]Bit 77: If set, host_id field in MPIR is supportedBit 78: If set, MGIR supports 12 bit num_ports fieldbit 80: If set, MCQS,identifier supports the DPA_COMPONENT, DPA\;_COMPONENT_REMOVAL fields and MCQI supports DPA apps infoBit 81: If set, MFCDR supports module and query_type fields [DWIP]Bit 82: If set, MCIA supports async mode [DWIP][switch_internal]Bit 85: If set, MTDT token is supported Bit 88: If set, the following are supported:\;PEMI.laser_source_essential, PEMI.laser_source_advance, PEMI.module\;status, PEMI.optical_engine_telemetry_parameters, PEMI.cpo_module,\;PEMI.last_sub_module.Bit 89: If set, supports minimum temperatures, as well as alerts for low\;critical and high critical thresholds, in the following registers: MTMP,\;MTEWE, MTBR, MTBR_v2.Bit 91: If set, CPO Combined Model is supported.Bit 93: If set, MGIR.hw_info.board_ga is supported; ignore otherwise.Bit 94: If set, MFKV is supported.Bit 95: If set, MRFV.fm2 and MRFV.fm_sel are supported." />
 </node>
 
 <node name="mcc_reg_ext"                          size="0x20.0" descr="" >
@@ -981,6 +1004,7 @@
 	<field name="no_stop_on_error"                offset="0x8.30"   size="0x0.1" access="RW" enum="stop_on_error=0x0,do_not_stop_on_error=0x1" descr="0x0: stop_on_error0x1: do_not_stop_on_error" />
 	<field name="auto_update"                     offset="0x8.31"   size="0x0.1" access="WO" descr="Auto-update to all matching downstream devices is requested." />
 	<field name="control_state"                   offset="0xc.0"    size="0x0.4" access="RO" enum="IDLE=0x0,LOCKED=0x1,INITIALIZE=0x2,DOWNLOAD=0x3,VERIFY=0x4,APPLY=0x5,ACTIVATE=0x6,UPLOAD=0x7,UPLOAD_PENDING=0x8,DOWNSRTEAM_DEVICE_TRANSFER=0x9" descr="Current Update FSM state0x0: IDLE0x1: LOCKED0x2: INITIALIZE0x3: DOWNLOAD0x4: VERIFY0x5: APPLY0x6: ACTIVATE0x7: UPLOAD0x8: UPLOAD_PENDING0x9: DOWNSRTEAM_DEVICE_TRANSFEROther values are reserved" />
+	<field name="error_count"                     offset="0xc.4"    size="0x0.4" access="RO" descr="Raw count of errors encountered during the current or last operation\;(0–15). Used also on legacy devices to indicate completion status." />
 	<field name="error_code"                      offset="0xc.8"    size="0x0.8" access="RO" descr="Indicates the successful completion of the instruction, or the reason it\;failed.0x0: OK0x1: ERROR0x2: REJECTED_DIGEST_ERR0x3: REJECTED_NOT_APPLICABLE0x4: REJECTED_UNKNOWN_KEY0x5: REJECTED_AUTH_FAILED0x6: REJECTED_UNSIGNED0x7: REJECTED_KEY_NOT_APPLICABLE0x8: REJECTED_BAD_FORMAT0x9: BLOCKED_PENDING_RESET0xA: REJECTED_NOT_A_SECURED_FW0xB: REJECTED_MFG_BASE_MAC_NOT_LISTED0xC: REJECTED_NO_DEBUG_TOKEN0xD: REJECTED_VERSION_NUM_MISMATCH0xE: REJECTED_USER_TIMESTAMP_MISMATCH0xF: REJECTED_FORBIDDEN_VERSION0x10: FLASH_ERASE_ERROR0x11: REJECTED_REBURN_RUNNING_AND_RETRY0x12: REJECTED_LINKX_TYPE_NOT_SUPPORTED0x13: REJECTED_HOST_STORAGE_IN_USE0x14: REJECTED_LINKX_TRANSFER (see module index in\;rejected_device_index)0x15: REJECTED_LINKX_ACTIVATE (see module index in\;rejected_device_index)0x16: REJECTED_INCOMPATIBLE_FLASH0x17: REJECTED_TOKEN_ALREADY_APPLIED0x18: REJECTED_FW_BURN_DRAM_NOT_AVAILABLE0x19: FW_BURN_REJECTED_INVALID_SECURITY_VERSION0x1A: FW_BURN_REJECTED_CERT_CER5090x1B: FW_BURN_REJECTED_CERT_SIGNATURE0x1C: FW_BURN_REJECTED_CERT_METADATA0x1D: FW_BURN_REJECTED_INTERNAL_ERROR_0\;0x1E: FW_BURN_REJECTED_NO_PLACE0x1F: FW_BURN_REJECTED_REMOVAL_NO_MATCH_UIDD0x20: FW_BURN_REJECTED_INTERNAL_ERROR_1\;0x21: FW_BURN_REJECTED_INTERNAL_ERROR_2\;0x22: FW_BURN_REJECTED_NUM_OF_SWAP0x23: FW_BURN_REJECTED_INTERNAL_ERROR_3\;0x24: FW_BURN_REJECTED_INTERNAL_ERROR_4\;0x25: FW_BURN_REJECTED_NOT_ALLOWED_SAME_UIDD0x26: FW_BURN_REJECTED_INTERNAL_ERROR_5\;0x27: FW_BURN_REJECTED_INTERNAL_ERROR_6\;0x28: FW_BURN_REJECTED_FLASH_WRITE_PROTECTED0x29: FW_BURN_REJECTED_INTERNAL_ERROR_7\;0x2A: FW_BURN_REJECTED_INTERNAL_ERROR_8\;0x2B: FW_BURN_REJECTED_INTERNAL_ERROR_90x2C: FW_BURN_REJECTED_DPA_ELF0x2D: FW_BURN_REJECTED_DPA_CRYPTO_BLOB0x2E: FW_BURN_REJECTED_DPA_APP_METADATA0x2F: FW_BURN_REJECTED_DPA_REMOVAL_SIGNATURE0x30: FW_BURN_REJECTED_DPA_CONTAINER_VERIFY0x31: FW_BURN_REJECTED_INTERNAL_ERROR_10\;0x32: REJECTED_DEV_IMAGE_ON_PROD_DEVICE0x33: FW_BURN_REJECTED_DPA_APP_MANIFESTOther values should be treated as an unknown error." />
 	<field name="control_progress"                offset="0xc.16"   size="0x0.7" access="RO" descr="Indicates the estimated progress status of the current operation\;executed by the FSM. Valid values are 0..100.101 indicates that progress reporting is not supported for this update\;state." />
 	<field name="handle_owner_host_id"            offset="0xc.24"   size="0x0.4" access="RO" descr="For handle_owner_type BMC, command-interface and ICMD, indicates the\;identifier of the host of the handle owner.Otherwise reserved" />
@@ -1272,6 +1296,17 @@
 	<field name="tile_v"                          offset="0x8.23"   size="0x0.1" access="RO" descr="Tile valid:0: The timeout was from main1: The timeout was from a tileNote: Supersedes event params’ tile_v" />
 	<field name="packet_state_sticky"             offset="0x8.27"   size="0x0.2" access="RO" descr="sticky indication of previous packet state (if at some point it was\;different then idle it will stick to that value):0: idle1: retry2: long processElse, reserved." />
 	<field name="event_params"                    offset="0x10.0"   size="0xa0.0" subnode="mfde_event_params_auto_ext" access="RW" union_selector="$(parent).event_id" descr="event parameters - layout is according to event_id value:See\;Event_params crspace_timeout LayoutSee\;Event_params kvd_im_stop LayoutSee\;Event_params fw_assert LayoutSee\;Event_params fatal_cause LayoutSee\;RiscV Exception Layout" />
+</node>
+
+<node name="mfkv_reg_ext"                         size="0x18.0" descr="" >
+	<field name="efuses_prog_en"                  offset="0x0.0"    size="0x0.1" access="RW" descr="When this bit is set, it indicates that it is allowed for the boot\;FW to program the FW key version related EFUSEs if needed.Once set to 1, this configuration will be relevant only for the\;upcoming boot, thus this configuration will be set back to 0 upon\;next boot." />
+	<field name="fw_key_ver_stat"                 offset="0x0.1"    size="0x0.2" access="RO" enum="equal=0x0,update_required=0x1,pending_image=0x2,reserved=0x3" descr="Firmware key version status.0: equal - EFUSEs value is equal to the currently running FW image\;maximal value. No change is possible.1: update_required - EFUSEs value is smaller than the currently\;running FW image maximal value. An update to the EFUSEs is\;required.2: pending_image - There is pending image, MFKV is rejected3: reserved - Reserved" />
+	<field name="revoke_efuse_prog"               offset="0x0.3"    size="0x0.1" access="RW" enum="do_not_revoke=0x0,revoke=0x1" descr="0: do_not_revoke - Do not revoke EFUSE programming (no-op)1: revoke - Revoke pending EFUSE programming. This command is\;possible only if reset did not occur from EFUSE programming\;request, and the EFUSE programming revocation request" />
+	<field name="pending_efuse_prog"              offset="0x0.4"    size="0x0.1" access="RO" enum="no_pending_prog=0x0,pending_prog=0x1" descr="0: no_pending_prog - No pending EFUSE programming command1: pending_prog - There is pending MFKV command" />
+	<field name="fuse_failure"                    offset="0x0.8"    size="0x0.2" access="RO" descr="" />
+	<field name="index"                           offset="0x0.16"   size="0x0.4" access="INDEX" enum="NCORE_FW=0x0,PSC_BL1=0x1,PSC_FW=0x2,OEM=0x3" descr="Index of the key to revoke.0: NCORE_FW1: PSC_BL12: PSC_FW3: OEMAll other values are reserved." />
+	<field name="efuses_key_ver"                  offset="0x0.24"   size="0x0.4" access="RO" descr="EFUSE key version" />
+	<field name="img_key_ver"                     offset="0x0.28"   size="0x0.4" access="RO" descr="Image key version" />
 </node>
 
 <node name="mfpa_reg_ext"                         size="0x20.0" descr="" >
@@ -1712,8 +1747,6 @@
 </node>
 
 <node name="mpcir_ext"                            size="0xa0.0" descr="" >
-	<field name="instance"                        offset="0x0.0"    size="0x0.16" access="INDEX" descr="Bitmask of which instance to select.Relevant only to vmod.0: update vmod 01: update vmod 1…" />
-	<field name="fw_entity"                       offset="0x0.16"   size="0x0.8" access="INDEX" descr="Bitmask of which FW entity to select.0: switch_fw1: virtual_modulenote - if all bits are zero fw_entity will be switch_fw (legacy)If more than one bit is set instance field will be ignored - update\;all instances." />
 	<field name="all"                             offset="0x0.30"   size="0x0.2" access="OP" descr="If set to ‘01’, activates the flow of preparation for FW ISSU, on all\;services. The values in op-codes for “per-service” are ignored.If set to ‘10’, returns to operational state on all services. The values\;in op-codes for “per-service” are ignored.11 - get_status for all services" />
 	<field name="ports"                           offset="0x4.0"    size="0x0.2" access="OP" descr="For each of the services, the following operations are available:0: N/A (no action)1: start preparation flow for FW ISSU2: return to operational service (end of FW ISSU flow)3: get statusWhen set to ‘3’, the current status will appear in corresponding _stat\;fields." />
 	<field name="ports_stat"                      offset="0xc.0"    size="0x0.2" access="RO" descr="Status for each of the services.0: not in FW ISSU flow state (FW ISSU flow is not initiated)1: done with preparations for FW ISSU flow2: Preparation for FW ISSU flow started but FW still not done service\;handling" />
@@ -1821,16 +1854,6 @@
 	<field name="tlb_addr_lsb"                    offset="0xc.12"   size="0x0.20" access="RW" descr="The lsb of the for the cyclic buffer address in the host memory." />
 	<field name="hw_pointer"                      offset="0x10.0"   size="0x4.0" access="RO" descr="Pointer of the current hw index the tracer is writing to." />
 	<field name="sw_pointer"                      offset="0x14.0"   size="0x4.0" access="RW" descr="Pointer to the last tracer event index that the software consumed." />
-</node>
-
-<node name="mtdth_ext"                            size="0x18.0" descr="" >
-	<field name="sensor_index"                    offset="0x0.0"    size="0x0.12" access="INDEX" descr="See MTMP.sensor_index." />
-	<field name="hardware_shutdown"               offset="0x4.0"    size="0x0.16" access="RO" descr="Temperature threshold for hardware shutdown.\;\;Units of 0.125 Celsius degrees.\;\;For negative values 2’s complement is used (for example: -3.25 Celsius\;will read as 0xFFE6)" />
-	<field name="firmware_shutdown"               offset="0x4.16"   size="0x0.16" access="RO" descr="Temperature threshold for firmware shutdown.\;\;Units of 0.125 Celsius degrees.\;\;For negative values 2’s complement is used (for example: -3.25 Celsius\;will read as 0xFFE6)" />
-	<field name="warning_high"                    offset="0x8.0"    size="0x0.16" access="RO" descr="Default temperature threshold for Warning High.\;\;Units of 0.125 Celsius degrees.\;\;For negative values 2’s complement is used (for example: -3.25 Celsius\;will read as 0xFFE6)" />
-	<field name="warning_low"                     offset="0x8.16"   size="0x0.16" access="RO" descr="Default temperature threshold for Warning Low.\;\;Units of 0.125 Celsius degrees.\;\;For negative values 2’s complement is used (for example: -3.25 Celsius\;will read as 0xFFE6)" />
-	<field name="critical_high"                   offset="0xc.0"    size="0x0.16" access="RO" descr="Default temperature threshold for Critical High.\;\;Units of 0.125 Celsius degrees.\;\;For negative values 2’s complement is used (for example: -3.25 Celsius\;will read as 0xFFE6)" />
-	<field name="critical_low"                    offset="0xc.16"   size="0x0.16" access="RO" descr="Default temperature threshold for Critical Low.\;\;Units of 0.125 Celsius degrees.\;\;For negative values 2’s complement is used (for example: -3.25 Celsius\;will read as 0xFFE6)" />
 </node>
 
 <node name="mtecr_ext"                            size="0x60.0" descr="" >
@@ -2043,6 +2066,7 @@
 
 <node name="pbwr_ext"                             size="0x94.0" attr_required_tlvs="index:m" descr="" >
 	<field name="local_port_bitmap"               offset="0x0.0"    size="0x80.0" access="INDEX" high_bound="31" low_bound="0" descr="Local portEach bit represents a local port.[DWIP] Bit &lt;i&gt; represents local port &lt;base_port+i&gt;.Ports order in the bitmask is from bottom to top.E.g, given\;base_port=0, for setting local port 1, bit 1\;in the last DWORD (offset 0x7Ch) should be set.CPU port is not supported.Router port is not supported.For GPU: above 36 ports set, there is not enough space to provide the\;bw_records; hence the query should be split into 36 ports masks. In\;case more than 36 ports were set, the operation will not be fulfilled\;and an error status will be returned." />
+	<field name="num_rec"                         offset="0x80.0"   size="0x0.11" access="OP" descr="Number of records.Range 0..1024.Range 1025..2047 is reserved." />
 	<field name="dir"                             offset="0x80.31"  size="0x0.1" access="INDEX" enum="ingress=0x0,egress=0x1" descr="Direction:0: ingress1: egress" />
 	<field name="base_port"                       offset="0x84.0"   size="0x0.16" access="INDEX" descr="[DWIP]Base local port for the local port bitmap.local_port_bitmap represents local ports from base_port to\;base_port+1023.bw_record[0] corresponds to base_port." />
 	<field name="bw_record"                       offset="0x90.0"   size="0x4.0" access="RO" arr_is_dynamic="1" high_bound="VARIABLE" low_bound="0" size_condition="$(parent).num_rec" descr="BW of the corresponding local port.Valid only if the corresponding bit at local_port_bitmap is set (1).[DWIP] bw_record[i] corresponds to bit i in local_port_bitmap, which\;corresponds to local port base_port+i.The units of the BW are determined by\;PBWC - Port BW Configuration Register Layout." />
@@ -2053,7 +2077,7 @@
 </node>
 
 <node name="pcam_feature_capability_mask_group1_ext" size="0x10.0" descr="" >
-	<field name="feature_cap_mask"                offset="0x0.0"    size="0x10.0" access="RO" high_bound="3" low_bound="0" descr="Bit 5: PPRM.link_down_timeout_default_supportedBit 6: PMDR.active_module_lane_mask_supportedBit 7: PPBMC.plr_bw_loss_negotation_supportedBit 8: PPCNT.port_up_time_supportedBit 9: PPCNT.IB_Routing_counters_supportedBit 10: PPLM.plr_to_default_read_supportBit 11: Uneven_port_split_is_supported (Note: even port split is\;mandatory within a 4x)Bit 12: PPCNT.recovery_counters_group_new_steps_counters_supportedBit 13: PPCNT.excessive_recoveries_counters_supportedBit 14: GMGDT,supportedBit 17: PPRM.phy_mode_idx_supportedBit 19: PPCNT.plr_rx_block_cs_on_demand_activated_supportedBit 20: SLTPv2.tx_policy_supportedBit 21: PPCNT.plr_nack_csn_counters_supported" />
+	<field name="feature_cap_mask"                offset="0x0.0"    size="0x10.0" access="RO" high_bound="3" low_bound="0" descr="Bit 5: PPRM.link_down_timeout_default_supportedBit 6: PMDR.active_module_lane_mask_supportedBit 7: PPBMC.plr_bw_loss_negotation_supportedBit 8: PPCNT.port_up_time_supportedBit 9: PPCNT.IB_Routing_counters_supportedBit 10: PPLM.plr_to_default_read_supportBit 11: Uneven_port_split_is_supported (Note: even port split is\;mandatory within a 4x)Bit 12: PPCNT.recovery_counters_group_new_steps_counters_supportedBit 13: PPCNT.excessive_recoveries_counters_supportedBit 14: GMGDT,supportedBit 17: PPRM.phy_mode_idx_supportedBit 19: PPCNT.plr_rx_block_cs_on_demand_activated_supportedBit 20: SLTPv2.tx_policy_supportedBit 21: PPCNT.plr_nack_csn_counters_supportedBit 22: PPCNT.recovery_counters_group.total_unsuccessful_recovery_events_supported" />
 </node>
 
 <node name="pcam_reg_ext"                         size="0x50.0" descr="" >
@@ -2126,7 +2150,7 @@
 	<field name="rts_tx_all"                      offset="0x4.11"   size="0x0.1" access="RO" descr="Set when all lanes in the port are ready to send PCS data" />
 	<field name="remote_host_iud"                 offset="0x4.25"   size="0x0.3" access="RO" descr="Remote host. Can be written by the FW in FW control mode and by the SW in independent mode.0: Spectrum1: ConnectX" />
 	<field name="uses_recovered_clock"            offset="0x4.31"   size="0x0.1" access="RO" descr="Indicates that interafce uses recovered clock for transmission.0: For hosts: Spectrum, Quantum, ConnectX1: For retimers: Arcus" />
-	<field name="lane_data"                       offset="0x8.0"    size="0xc.0" access="RW" high_bound="2" low_bound="0" descr="Per-lane APSU status. Array of 8 96-bit elements, 3 DWORDs each\;(lane_data[0] at 08h-10h, lane_data[7] at 5Ch-64h).\;See APSU Info Page Lane Data Fields." />
+	<field name="lane_data"                       offset="0x8.0"    size="0x60.0" subnode="ef_pddr_apsu_lane_data_v1_ext" access="RW" high_bound="7" low_bound="0" descr="Per-lane APSU status. Array of 8 96-bit elements, 3 DWORDs each\;(lane_data[0] at 08h-10h, lane_data[7] at 5Ch-64h)." />
 </node>
 
 <node name="pddr_c2p_link_enabled_eth_ext"        size="0x4.0" descr="" >
@@ -2201,7 +2225,7 @@
 	<field name="e2e_reason_opcode"               offset="0xc.0"    size="0x0.8" access="RO" descr="see local_reason_opcode for local reason opcodefor remote reason opcode: local_reason_opcode+100" />
 	<field name="ts1_opcode"                      offset="0xc.12"   size="0x0.4" access="RO" descr="TS1 opcode describes the reason the peer requested to ramp down the\;link:0x8: TS1.Sleep0x9: TS1.Disable0xA: TS1.PortLock0xB: TS1.Thermal0xC: TS1.Clean0xD : TS1.Force0xE: TS1.reset_reqNote: This field is valid in case the local_reason_opcode = 21 or 32-38" />
 	<field name="l1_failure_reason"               offset="0xc.16"   size="0x0.4" access="RO" descr="0: no_info_or_no_l1_failure1: HW_timeout2: FW_timeout3: Recovery_failure" />
-	<field name="last_recovery_state"             offset="0xc.20"   size="0x0.4" access="RO" descr="last unsuccessful recovery event state0: no_info1: Retrain - no local receiver lock2: WaitRMT - local receiver locked, peer not locked3: IDLE - both local and remote transmitter locked" />
+	<field name="last_recovery_state"             offset="0xc.20"   size="0x0.4" access="RO" descr="last unsuccessful recovery event state0: no_info1: Retrain - no local receiver lock2: WaitRMT - local receiver locked, peer not locked3: IDLE - both local and remote transmitter locked8: Serdes_recovery9: Fix_reversals10: recovery_phyUp" />
 	<field name="num_of_symbol_ber_alarms"        offset="0x10.0"   size="0x0.16" access="RO" descr="Number of Symbol BER Windows that crossed alarm threshold" />
 	<field name="last_raw_ber_magnitude"          offset="0x10.16"  size="0x0.8" access="RO" descr="(see above)" />
 	<field name="last_raw_ber_coef"               offset="0x10.24"  size="0x0.4" access="RO" descr="Last raw BER window calculated.Raw_BER = raw_ber_coef*10^(-raw_ber_magnitude)" />
@@ -2408,7 +2432,7 @@
 </node>
 
 <node name="pddr_monitor_opcode_ext"              size="0x4.0" descr="" >
-	<field name="monitor_opcode"                  offset="0x0.0"    size="0x0.16" access="RW" descr="Status opcode:PHY FW indication (0 - 1023):0 - No issue observed1 - Port is close by command (see PAOS).2,3,4,38,39,60,69 - AN failure5,6,7,8, 62,63,64,65,66 - Link training failure.9,10,11,12,13 - Logical mismatch between link partners14 - Remote fault received15,42,17,48,49,52, - Bad signal integrity16,24-32 - Cable compliance code mismatch (protocol mismatch between\;cable and port) 23,22,19,18,50,55- internal error34,35 - Speed degradation56 - module_lanes_frequency_not_synced57 - signal not detected60 - no partner detected for long time68 - reserved70- link not healthy, BER doesn’t meet criteria128 - Troubleshooting in process1023- Info not availableMNG FW issues (1024 - 2047):1024 - Cable is unplugged1025 - Long Range for non Mellanox cable/module1026 - Bus stuck (I2C Data or clock shorted)1027 - Bad/unsupported EEPROM1028 - Part number list1029 - Unsupported cable1030 - Module temperature shutdown1031 - Shorted cable1032 - Power budget exceeded1033 - Management forced down the port1034 - Module is disabled by command1035 - System Power is Exceeded therefore the module is powered off.1036 - Module’s PMD type is not enabled (see PMTPS).1040 - pcie system power slot Exceeded1042 - Module state machine fault1043,1044,1045,1046 - Module’s stamping speed degeneration1047, 1048 - Modules DataPath FSM fault1050, 1051, 1052, 1053- Module Boot Error1054 - Module Forced to Low Power by command1055 - ELS laser fiber is contaminated1056 - ELS laser power control failure1057 - ELS unplugged1058 - ELS laser rampling timeout failure1059 - ELS laser power exceeded allowed power range1060 - ELS laser power subceeded allowed power range1061 - ELS TEC control loop failure1062 - ELS laser power tuning failure1063 - ELS laser wavelength tuning failure1064 - ELS laser health indication - high path loss1065 - ELS laser high loss power drop" />
+	<field name="monitor_opcode"                  offset="0x0.0"    size="0x0.16" access="RW" descr="Status opcode:PHY FW indication (0 - 1023):0 - No issue observed1 - Port is close by command (see PAOS).2,3,4,38,39,60,69 - AN failure5,6,7,8, 62,63,64,65,66 - Link training failure.9,10,11,12,13 - Logical mismatch between link partners14 - Remote fault received15,42,17,48,49,52, - Bad signal integrity16,24-32 - Cable compliance code mismatch (protocol mismatch between\;cable and port) 23,22,19,18,50,55- internal error34,35 - Speed degradation56 - module_lanes_frequency_not_synced57 - signal not detected60 - no partner detected for long time68 - reserved70- link not healthy, BER doesn’t meet criteria71 - Invalid_Port_Speed_Configuration128 - Troubleshooting in process1023- Info not availableMNG FW issues (1024 - 2047):1024 - Cable is unplugged1025 - Long Range for non Mellanox cable/module1026 - Bus stuck (I2C Data or clock shorted)1027 - Bad/unsupported EEPROM1028 - Part number list1029 - Unsupported cable1030 - Module temperature shutdown1031 - Shorted cable1032 - Power budget exceeded1033 - Management forced down the port1034 - Module is disabled by command1035 - System Power is Exceeded therefore the module is powered off.1036 - Module’s PMD type is not enabled (see PMTPS).1040 - pcie system power slot Exceeded1042 - Module state machine fault1043,1044,1045,1046 - Module’s stamping speed degeneration1047, 1048 - Modules DataPath FSM fault1050, 1051, 1052, 1053- Module Boot Error1054 - Module Forced to Low Power by command1055 - ELS laser fiber is contaminated1056 - ELS laser power control failure1057 - ELS unplugged1058 - ELS laser rampling timeout failure1059 - ELS laser power exceeded allowed power range1060 - ELS laser power subceeded allowed power range1061 - ELS TEC control loop failure1062 - ELS laser power tuning failure1063 - ELS laser wavelength tuning failure1064 - ELS laser health indication - high path loss1065 - ELS laser high loss power drop" />
 </node>
 
 <node name="pddr_operation_info_page_cable_proto_cap_auto_ext" size="0x4.0" attr_is_union="1" descr="" >
@@ -2445,7 +2469,9 @@
 	<field name="phy_hst_link_enabled"            offset="0x28.0"   size="0x4.0" subnode="pddr_operation_info_page_phy_hst_link_enabled_auto_ext" access="RO" union_selector="$(parent).proto_active" descr="For IB:\;PDDR - HST Link Enabled IB LayoutFor Ethernet:\;PDDR - HST Link Enabled Eth LayoutFor NVLink:\;PDDR - HST Link Enabled NVLink Layout" />
 	<field name="eth_an_link_enabled"             offset="0x2c.0"   size="0x4.0" access="RO" descr="PDDR - ETH AN Link Enabled Eth Layout" />
 	<field name="link_health"                     offset="0x38.0"   size="0x0.4" access="RO" descr="0: N/A - not supported or not enabled1: Attention2: Healthy" />
-	<field name="attention_trigger"               offset="0x38.5"   size="0x0.8" access="RO" descr="Indicates the reason that caused the link health status to transition to\;Attention. This field is sticky - it retains its value until the link\;health status is cleared by the next link-up event resets it. Valid only\;when link_health = 1 (Attention)." />
+	<field name="attention_trigger"               offset="0x38.5"   size="0x0.8" access="RO" descr="" />
+	<field name="attention_trigger_metric"        offset="0x38.13"  size="0x0.7" access="RO" descr="" />
+	<field name="link_health_config_changed"      offset="0x38.20"  size="0x0.2" access="RO" descr="" />
 	<field name="test_mode_fsm_state"             offset="0x38.24"  size="0x0.8" access="RO" enum="Disable=0x0,Open_lane=0x1,Idle_mode_b=0x2,Close_lane=0x3,Receiver_detect=0x4,Idle_mode_a=0x5,Signal_detect=0x6,Auto_fix_reversal_polarity=0x7,Tuning_in_progress=0x8" descr="Test mode FSM state exposure is supported only if PCAM.feature_cap_mask\;bit 120 is set.Mode B links test mode FSM0: Disable - this state is shared by Mode A links and Mode B links\;test mode FSM1: Open_lane2: Idle_mode_b3: Close_lane- Mode A links test mode FSM4: Receiver_detect5: Idle_mode_a6: Signal_detect7: Auto_fix_reversal_polarity8: Tuning_in_progress" />
 	<field name="local_host_class"                offset="0x3c.0"   size="0x0.3" access="RO" descr="Local host class - Insertion loss0: Unspecified1: Host nominal (HN) - 4.45 to 13.95 dB2: Host low (HL) - 4.45 to 8.95 dB3: Host high (HH) - 4.55 to 18.5 dB4-7: Reserved" />
 	<field name="remote_host_class"               offset="0x3c.4"   size="0x0.3" access="RO" descr="Remote host class - Insertion loss0: Unspecified1: Host nominal (HN) - 4.45 to 13.95 dB2: Host low (HL) - 4.45 to 8.95 dB3: Host high (HH) - 4.55 to 18.5 dB4-7: Reserved" />
@@ -2640,6 +2666,7 @@
 </node>
 
 <node name="pedcc_data_collection_configuration_ext" size="0xc.0" descr="" >
+	<field name="linkup_collection_delay"         offset="0x4.0"    size="0x0.24" access="RW" descr="Configures the delay period for triggering the collection of the\;linkup_delayed_collection_trigger and any data groups configured to be\;collected with it.0: fw_defaultValue is in units of 1 [mSec]" />
 	<field name="tx_force_open_timeout_oper"      offset="0x8.0"    size="0x0.12" access="RO" descr="Indicates the Tx force open period WD timeout that was agreed upon after\;negotiation.During this period port Tx will keep transmitting, delaying the link\;drop even if required by usual behavior. This will be used in case there\;was a trigger to collect data when we entered recovery, and the recovery\;flow failed.If the timeout expired and collection was not completed, FW Phy will\;pass data collected so far, and any fields collection that hasn’t\;completed will be marked as invalid when passed to FW Core.Value is in units of 10 [msec]" />
 	<field name="tx_force_open_timeout_admin"     offset="0x8.16"   size="0x0.12" access="RW" descr="Configures the Tx force open period WD timeout.During this period port Tx will keep transmitting, delaying the link\;drop even if required by usual behavior. This will be used in case there\;was a trigger to collect data when we entered recovery, and the recovery\;flow failed.Configuration is set only after a port re-toggle.Value is in unit of 10 [msec]" />
 </node>
@@ -2721,7 +2748,7 @@
 	<field name="grp_prf_default_set"             offset="0x0.31"   size="0x0.1" access="WO" descr="When set, will return local_port profile group to FW default value." />
 </node>
 
-<node name="pedcc_reg_ext"                        size="0x64.0" attr_required_tlvs="index:s" descr="" >
+<node name="pedcc_reg_ext"                        size="0x64.0" attr_required_tlvs="index:s,index:m" descr="" >
 	<field name="plane_ind"                       offset="0x0.8"    size="0x0.4" access="INDEX" descr="Reserved for non-planarized port.Plane port index of the aggregated port. A value of 0 refers to the\;aggregated port only." />
 	<field name="lp_msb"                          offset="0x0.12"   size="0x0.2" access="INDEX" descr="Local port number [9:8]" />
 	<field name="pnat"                            offset="0x0.14"   size="0x0.2" access="INDEX" enum="Local_port_number=0x0,IB_port_number=0x1,Out_of_band_or_PCI=0x3" descr="Port number access type. determines the way local_port is interpreted:0: Local_port_number1: IB_port_number3: Out_of_band_or_PCI" />
@@ -2740,6 +2767,15 @@
 	<field name="pedcc_events_data_groups_ext"    offset="0x0.0"    size="0x58.0" subnode="pedcc_events_data_groups_ext" access="RW" selected_by="events_data_groups" descr="" />
 	<field name="pedcc_link_metrics_collection_configuration_ext" offset="0x0.0" size="0x24.0" subnode="pedcc_link_metrics_collection_configuration_ext" access="RW" selected_by="link_metrics_collection" descr="" />
 	<field name="pedcc_port_group_profile_config_ext" offset="0x0.0" size="0x8.0" subnode="pedcc_port_group_profile_config_ext" access="RW" selected_by="port_group_profile" descr="" />
+</node>
+
+<node name="perc_ext"                             size="0x24.0" descr="" >
+	<field name="event_generation_cooldown_cap"   offset="0x0.0"    size="0x0.1" access="RO" enum="not_supported=0x0,supported=0x1" descr="Indicates support for event-generation cooldown for the excessive\;recoveries feature.0: not_supported1: supported" />
+	<field name="group_profile_number"            offset="0x0.27"   size="0x0.5" access="INDEX" descr="Selects the group profile for which the excessive-recoveries metric\;association is configured.1: group_12: group_23: group_34: group_45: group_56: group_67: group_78: group_8Value 0 and values 9–31 are reserved." />
+	<field name="excessive_recovery_metric_oper"  offset="0x4.19"   size="0x0.5" access="RO" descr="Indicates which general link metric is currently associated with\;the excessive recoveries feature.Value 0 indicates no metric is associated." />
+	<field name="excessive_recovery_metric_admin" offset="0x4.27"   size="0x0.5" access="RW" enum="fw_default=0x0" descr="Controls which general link metric is associated with the excessive\;recoveries feature.When the associated metric exceeds its alarm threshold, FW generates a PGLME event and updates the relevant\;PPCNT counters.Value N associates metric N (valid range 1–15).0: fw_default" />
+	<field name="event_generation_cooldown_admin" offset="0x8.0"    size="0x0.16" access="RW" descr="Sets the cooldown for excessive-recovery event generation on the\;port. After an event is generated, FW will not generate another\;event for this port until the cooldown expires.Time granularity: 100 ms.Value 0 selects fw_default.Configuration applies to all ports under the selected group profile.Valid only when event_generation_cooldown_cap is set." />
+	<field name="event_generation_cooldown_oper"  offset="0x8.16"   size="0x0.16" access="RO" descr="Reports the operational cooldown for excessive-recovery event\;generation on the port.Time granularity: 100 ms.Valid only when event_generation_cooldown_cap is set." />
 </node>
 
 <node name="pevnt_ext"                            size="0x8.0" descr="" >
@@ -2768,7 +2804,7 @@
 	<field name="pfc_rx_timer_mode"               offset="0x18.16"  size="0x0.2" access="RW" enum="TIMER=0x0,FIXED_VALUE=0x1,DOUBLE_TIMER=0x2" descr="[DWIP] PFC RX timer mode0: TIMER - timer from packet.1: FIXED_VALUE - override value, take value of\;pfc_rx_timer_value2: DOUBLE_TIMER - double timer from packet. Supported from\;Spectrum-6Supported only from Spectrum-4.This field can be changed on the fly" />
 </node>
 
-<node name="pfldc_ext"                            size="0x24.0" attr_required_tlvs="index:s" descr="" >
+<node name="pfldc_ext"                            size="0x24.0" attr_required_tlvs="index:s,index:m" descr="" >
 	<field name="plane_ind"                       offset="0x0.8"    size="0x0.4" access="INDEX" descr="Reserved for non-planarized port.Plane port index of the aggregated port. A value of 0 refers to the\;aggregated port only." />
 	<field name="lp_msb"                          offset="0x0.12"   size="0x0.2" access="INDEX" descr="Local port number [9:8]" />
 	<field name="pnat"                            offset="0x0.14"   size="0x0.2" access="INDEX" enum="Local_port_number=0x0,IB_port_number=0x1,Out_of_band_or_PCI=0x3" descr="Port number access type. determines the way local_port is interpreted:0: Local_port_number1: IB_port_number3: Out_of_band_or_PCI" />
@@ -2900,6 +2936,17 @@
 	<field name="pglf_group_profile_metrics_parameters_page_ext" offset="0x0.0" size="0x20.0" subnode="pglf_group_profile_metrics_parameters_page_ext" access="RW" selected_by="group_profile_metrics_parameters_page" descr="" />
 	<field name="pglf_group_profile_status_page_ext" offset="0x0.0" size="0x20.0" subnode="pglf_group_profile_status_page_ext" access="RW" selected_by="group_profile_status_page" descr="" />
 	<field name="pglf_port_metrics_control_configuration_ext" offset="0x0.0" size="0x20.0" subnode="pglf_port_metrics_control_configuration_ext" access="RW" selected_by="port_metrics_control_configuration_page" descr="" />
+</node>
+
+<node name="pglme_ext"                            size="0x18.0" descr="" >
+	<field name="port_type"                       offset="0x0.4"    size="0x0.4" access="RO" enum="network_port=0x0,near_end_port=0x1,internal_ic_lr_port=0x2,far_end_port=0x3,usr_main=0x4,usr_tile=0x5" descr="Port type. For HCA, valid only when indicated by PCAM.0: network_port1: near_end_port - (Retimer/Gearbox host side)2: internal_ic_lr_port3: far_end_port - (Retimer/Gearbox line side)4: usr_main5: usr_tile" />
+	<field name="pnat"                            offset="0x0.14"   size="0x0.2" access="RO" enum="local_port_number=0x0,ib_port_number=0x1,out_of_band_or_pci=0x3" descr="Port number access type. Determines how local_port is interpreted.0: local_port_number1: ib_port_number3: out_of_band_or_pci" />
+	<field name="local_port"                      offset="0x0.16"   size="0x0.16" access="RO" descr="Local port number." />
+	<field name="metric_event_type"               offset="0x4.0"    size="0x0.4" access="RO" enum="general_metric=0x0,link_health=0x1,excessive_recoveries=0x2" descr="Category of the metric event.0: general_metric1: link_health2: excessive_recoveries" />
+	<field name="metric_state"                    offset="0x4.13"   size="0x0.3" access="RO" enum="n_a=0x0,normal=0x1,warning=0x2,alarm=0x3" descr="State of the metric at the time of the event.0: n_a1: normal2: warning3: alarm" />
+	<field name="metric_type"                     offset="0x4.20"   size="0x0.4" access="RO" enum="reserved=0x0,raw_ber=0x1,effective_ber=0x2,symbol_ber=0x3,plr_tx_bw_loss=0x4,plr_rx_bw_loss=0x5,recovery_bw_loss=0x6,port_total_bw_loss=0x7,link_down_count=0x8,symbol_error_count=0x9" descr="Type of the metric that triggered the event.0: reserved1: raw_ber2: effective_ber3: symbol_ber4: plr_tx_bw_loss5: plr_rx_bw_loss6: recovery_bw_loss7: port_total_bw_loss8: link_down_count9: symbol_error_count" />
+	<field name="metric_number"                   offset="0x4.27"   size="0x0.5" access="RO" descr="Metric number that triggered the event. Value N indicates metric N.\;Valid values: 1–15. Value 0 and values 16–31 are reserved." />
+	<field name="metric_last_value"               offset="0x8.16"   size="0x0.16" access="RO" descr="The last metric value calculated. Value depends on metric_type.BER metric types: the BER value is derived from a 12-bit field\;split into two components:Mantissa: Bits 11:8Exponent: Bits 7:0The final BER value is calculated as: BER = mantissa × 10^(-exponent)BW loss metric types: the value represents a percentage with a\;granularity of 0.01%. Valid range: 0–10000 (0.00%–100.00%).Counter metric types: the value is a direct decimal integer." />
 </node>
 
 <node name="pgmr_ext"                             size="0x2c.0" attr_required_tlvs="index:s" descr="" >
@@ -3109,6 +3156,7 @@
 	<field name="plr_retry_force"                 offset="0x0.5"    size="0x0.1" access="RW" descr="If set, force the plr_csn_retry_th value on the peer port" />
 	<field name="delayed_recovery_force"          offset="0x0.6"    size="0x0.1" access="RW" descr="If set, force the delayed_recovery_admin value on the peer port" />
 	<field name="delayed_recovery_cap"            offset="0x0.7"    size="0x0.1" access="RO" descr="When set, delayed_recovery fields are valid and configurable" />
+	<field name="linkup_delay_reporting_cap"      offset="0x0.8"    size="0x0.1" access="RO" descr="When set, linkup delay reporting time fields are valid and configurable." />
 	<field name="lp_msb"                          offset="0x0.12"   size="0x0.2" access="INDEX" descr="Local port number [9:8]." />
 	<field name="pnat"                            offset="0x0.14"   size="0x0.2" access="INDEX" descr="Port number access type, determines the way local_port is interpreted:0 - Local port number.1 - IB port number." />
 	<field name="local_port"                      offset="0x0.16"   size="0x0.8" access="INDEX" descr="Local port number." />
@@ -3133,6 +3181,8 @@
 	<field name="rs_fec_uncor_th_oper"            offset="0x10.25"  size="0x0.7" access="RO" descr="Operational value for the Link drop trigger for number of PLR retry on\;same CSN thresh.Valid only if plr_retry_force_cap is set." />
 	<field name="delayed_recovery_oper"           offset="0x14.0"   size="0x0.2" access="RO" descr="0: not_supported1: delayed_recovery_enable2: delayed_recovery_disable" />
 	<field name="delayed_recovery_admin"          offset="0x14.2"   size="0x0.2" access="RW" descr="0: Auto (based on FW default - INI)1: delayed_recovery_enable2: delayed_recovery_disable" />
+	<field name="linkup_delay_reporting_time_oper" offset="0x14.4"  size="0x0.8" access="RO" descr="Actual link-up delay reporting time agreed after negotiation agreement,\;in units of 10ms.Valid only when linkup_delay_reporting_cap is set." />
+	<field name="linkup_delay_reporting_time_admin" offset="0x14.12" size="0x0.8" access="RW" descr="Configures the delay before reporting link-up to the FW core and upper\;layers (PUDE register), in units of 10ms.0x00: fw_default0x01-0xFE: N × 10ms delay (10ms to 2540ms).0xFF: no_delayValid only when linkup_delay_reporting_cap is set." />
 </node>
 
 <node name="plib_reg_ext"                         size="0x10.0" descr="" >
@@ -3191,10 +3241,10 @@
 	<field name="Previous_2_FEC_block_histogram_fec1" offset="0x8.20" size="0x0.4" access="RO" descr="(see above)" />
 	<field name="Previous_1_FEC_block_histogram_fec1" offset="0x8.24" size="0x0.4" access="RO" descr="(see above)" />
 	<field name="Previous_0_FEC_block_histogram_fec1" offset="0x8.28" size="0x0.4" access="RO" descr="Histogram bin the i+1 previous FEC block belongs to in FEC engine 1.\;Latched when PLU general tracer stop condition is met" />
-	<field name="max_consec_cw_bad_cnt_fec3"      offset="0xc.4"    size="0x0.7" access="RO" descr="Holds the maximum number of consecutive uncorrectable FEC codewords (FEC\;blocks) that were received in FEC engine 3." />
-	<field name="max_consec_cw_bad_cnt_fec2"      offset="0xc.11"   size="0x0.7" access="RO" descr="Holds the maximum number of consecutive uncorrectable FEC codewords (FEC\;blocks) that were received in FEC engine 2." />
-	<field name="max_consec_cw_bad_cnt_fec1"      offset="0xc.18"   size="0x0.7" access="RO" descr="Holds the maximum number of consecutive uncorrectable FEC codewords (FEC\;blocks) that were received in FEC engine 1." />
-	<field name="max_consec_cw_bad_cnt_fec0"      offset="0xc.25"   size="0x0.7" access="RO" descr="Holds the maximum number of consecutive uncorrectable FEC codewords (FEC\;blocks) that were received in FEC engine 0." />
+	<field name="max_consec_cw_bad_cnt_fec3"      offset="0xc.4"    size="0x0.7" access="RO" descr="Holds the maximum number of uncorrectable FEC codewords (FEC\;blocks) measured within a 128 FEC codewords window in FEC engine 3." />
+	<field name="max_consec_cw_bad_cnt_fec2"      offset="0xc.11"   size="0x0.7" access="RO" descr="Holds the maximum number of uncorrectable FEC codewords (FEC\;blocks) measured within a 128 FEC codewords window in FEC engine 2." />
+	<field name="max_consec_cw_bad_cnt_fec1"      offset="0xc.18"   size="0x0.7" access="RO" descr="Holds the maximum number of uncorrectable FEC codewords (FEC\;blocks) measured within a 128 FEC codewords window in FEC engine 1." />
+	<field name="max_consec_cw_bad_cnt_fec0"      offset="0xc.25"   size="0x0.7" access="RO" descr="Holds the maximum number of uncorrectable FEC codewords (FEC\;blocks) measured within a 128 FEC codewords window in FEC engine 0." />
 </node>
 
 <node name="plu_latched_counters_page_ext"        size="0x18.0" descr="" >
@@ -3659,6 +3709,34 @@
 	<field name="ppbmp_monitor_parameters_ext"    offset="0x0.0"    size="0x8.0" subnode="ppbmp_monitor_parameters_ext" access="RW" condition="($(parent).monitor_group == Raw_BER_RS | $(parent).monitor_group == Raw_BER_FC | $(parent).monitor_group == Effective_BER | $(parent).monitor_group == Pre_FEC_BER | $(parent).monitor_group == Symbol_BER)" descr="" />
 </node>
 
+<node name="ppcl_cause_configurations_ext"        size="0x4.0" descr="" >
+	<field name="clr_on_read_admin"               offset="0x0.0"    size="0x0.2" access="RW" enum="fw_default=0x0,clear=0x1,do_not_clear=0x2" descr="0: fw_default1: clear2: do_not_clearDetermine whether the PHY cause link reset operation" />
+	<field name="clr_on_link_rst_admin"           offset="0x0.3"    size="0x0.2" access="RW" enum="fw_default=0x0,clear=0x1,do_not_clear=0x2" descr="0: fw_default1: clear2: do_not_clearDetermine whether the PHY cause list will be cleared on\;cause_list_data read operation" />
+	<field name="clr_on_read_oper"                offset="0x0.7"    size="0x0.1" access="RO" descr="0: do_not_clear1: clearIndicates whether the PHY cause list will be cleared on\;cause_list_data read operation" />
+	<field name="clr_on_link_rst_oper"            offset="0x0.10"   size="0x0.1" access="RO" descr="0: do_not_clear1: clearIndicates whether the PHY cause list will be cleared on link\;reset operation" />
+</node>
+
+<node name="ppcl_cause_list_for_nvlink_phy_gen6_ext" size="0x14.0" descr="" >
+	<field name="nvlink_phy6_cause_list1"         offset="0x0.0"    size="0x4.0" access="RO" descr="" />
+	<field name="nvlink_phy6_cause_list2"         offset="0x4.0"    size="0x4.0" access="RO" descr="" />
+</node>
+
+<node name="ppcl_reg_ext"                         size="0x1c.0" descr="" >
+	<field name="generation"                      offset="0x0.0"    size="0x0.4" access="RO" enum="nvlink_phy_gen6=0x0" descr="0: nvlink_phy_gen6" />
+	<field name="port_type"                       offset="0x0.8"    size="0x0.4" access="INDEX" descr="0: Network Port1: Near-End Port (For Gearbox - Host side)2: internal IC Port3: Far-End Port (For Gearbox - Line side)4: Main Die to Die (USR / SCC)5: Tile Die to Die (USR / SCC)" />
+	<field name="lp_msb"                          offset="0x0.12"   size="0x0.2" access="INDEX" descr="Local port number [9:8]" />
+	<field name="pnat"                            offset="0x0.14"   size="0x0.2" access="INDEX" descr="Port number access type. determines the way local_port isinterpreted:0: Local_port_number1: IB_port_number" />
+	<field name="local_port"                      offset="0x0.16"   size="0x0.8" access="INDEX" descr="Local port number" />
+	<field name="page_select"                     offset="0x4.0"    size="0x0.6" access="INDEX" enum="cause_list=0x0,cause_configuration=0x1" descr="0: cause_list1: cause_configuration" />
+	<field name="link_down_snapshot_sel"          offset="0x4.30"   size="0x0.1" access="INDEX" descr="Selects which cause list buffer is returned when reading the\;cause_list_data page.0: Current cause list - reflects all causes raised since the last clear\;operation.1: Link-down snapshot - a capture of the cause list saved at the moment\;of the last link-down event." />
+	<field name="page_data"                       offset="0x8.0"    size="0x14.0" subnode="ppcl_reg_page_data_auto_ext" access="RW" union_selector="$(parent).page_select" descr="Page Data:PPCL - Cause List For NVLink PHY Gen 6 LayoutPPCL - Cause Configurations Layout" />
+</node>
+
+<node name="ppcl_reg_page_data_auto_ext"          size="0x14.0" attr_is_union="1" descr="" >
+	<field name="ppcl_cause_configurations_ext"   offset="0x0.0"    size="0x4.0" subnode="ppcl_cause_configurations_ext" access="RW" selected_by="cause_configuration" descr="" />
+	<field name="ppcl_cause_list_for_nvlink_phy_gen6_ext" offset="0x0.0" size="0x14.0" subnode="ppcl_cause_list_for_nvlink_phy_gen6_ext" access="RW" selected_by="cause_list" descr="" />
+</node>
+
 <node name="ppcnt_infiniband_general_counter_ext" size="0xf8.0" descr="" >
 	<field name="rq_general_error_high"           offset="0x10.0"   size="0x4.0" access="RO" descr="The total number of packets that were dropped since it contained errors.\;Reasons for this include:dropped due to MPR mismatch.Supported only when indicated by PCAM." />
 	<field name="rq_general_error_low"            offset="0x14.0"   size="0x4.0" access="RO" descr="(see above)" />
@@ -3835,7 +3913,8 @@
 	<field name="total_time_in_step2"             offset="0x8c.0"   size="0x4.0" access="RO" descr="(see above)" />
 	<field name="total_step1_count"               offset="0x90.0"   size="0x4.0" access="RO" descr="Valid only if PPRM.oper_recovery = phy_recovery_steps and\;PCAM.feature_cap_mask Bit 12 in group 1 is setCounter of the total times each recovery type flow happened and\;succeeded to recovery.Accumulative between link flaps" />
 	<field name="total_step2_count"               offset="0x94.0"   size="0x4.0" access="RO" descr="(see above)" />
-	<field name="excessive_recoveries_events_since_device_reset" offset="0x98.0" size="0x0.16" access="RO" descr="Number of excessive recovery events since last device reset.Note: Field is valid only when PCAM.feature_group=1.feature_cap_mask\;- bit 13 is set" />
+	<field name="excessive_recoveries_events_since_device_reset" offset="0x98.0" size="0x0.16" access="RO" descr="Number of excessive recovery events since last device reset.Note: Field is valid only when PCAM.feature_group=1.feature_cap_mask\;bit 13 is set" />
+	<field name="total_unsuccessful_recovery_events" offset="0x9c.0" size="0x4.0" access="RO" descr="Number of total failed recovery events of any of the recovery types during device reset cycle (does not clear on link down)Note: Field is valid only when PCAM.feature_group=1.feature_cap_mask\;bit 22 is set" />
 </node>
 
 <node name="ppcnt_reg_counter_set_auto_ext"       size="0xf8.0" attr_is_union="1" descr="" >
@@ -4338,7 +4417,13 @@
 	<field name="mixer_offset0"                   offset="0x0.16"   size="0x0.16" access="RW" descr="eye centering control.may cause link degradation when set." />
 </node>
 
-<node name="prei_reg_ext"                         size="0x18.0" attr_required_tlvs="index:s" descr="" >
+<node name="prei_reg_duty_cycle_ext"              size="0x8.0" descr="" >
+	<field name="error_injection_duty_cycle_rest_interval" offset="0x0.0" size="0x0.16" access="RW" descr="Sets the time between error injection iterations. Granularity\;according to time_res field.When set to ‘0’ error injection will occur once for time configured in error_injection_time.When a non-zero value is set, FW will run an error injection duty\;cycle of injecting errors for error_injection_time, followed by\;no error injection for error_injection_rest_interval_admin.\;This duty cycle repeats for the number of iterations configured in\;error_injection_duty_cycle_iterations.For recovery_go_once: sets the time between recovery entries.Note: Field is valid only when for error_type_admin == &lt;i&gt;\;error_injection_duty_cycle_fields_cap[i] is set to ‘1’." />
+	<field name="error_injection_duty_cycle_iterations" offset="0x0.22" size="0x0.10" access="RW" descr="Sets the number of iterations the error injection duty cycle defined\;by error_injection_time and\;error_injection_duty_cycle_rest_interval will repeat itself.When set to ‘0’ error injection will occur once for time configured in error_injection_time.When set to 1023 (max value) duty cycle iterations will continue\;without stop condition.Note: Field is valid only when for error_type_admin == &lt;i&gt;\;error_injection_duty_cycle_fields_cap[i] is set to ‘1’ &amp;\;error_injection_duty_cycle_rest_interval is non-zero." />
+	<field name="error_injection_duty_cycle_fields_cap" offset="0x4.0" size="0x0.8" access="RO" enum="mixer_offset_ctrl=0x1,serdes_rx_reset=0x20" descr="Bitmask indicating which error injection type supports duty cycle\;fields error_injection_duty_cycle_iterations &amp;\;error_injection_duty_cycle_rest_interval. These allow\;configuring an error injection duty cycle.Bit 0: mixer_offset_ctrlBit 5: serdes_rx_resetWhen bit &lt;i&gt; is set this indicates that when\;error_type_admin == &lt;i&gt; this error injection type supports\;setting duty cycle fields." />
+</node>
+
+<node name="prei_reg_ext"                         size="0x18.0" attr_required_tlvs="index:s,index:m" descr="" >
 	<field name="status"                          offset="0x0.0"    size="0x0.4" access="RO" descr="Error injection status:0x0 -Good status0x2 - No available sources for Error injection0x3 - Error injection configuration when port is in non operational\;state (port is neither in UP or TEST MODE)" />
 	<field name="time_res"                        offset="0x0.4"    size="0x0.2" access="OP" descr="0: 10ms" />
 	<field name="plane_ind"                       offset="0x0.8"    size="0x0.4" access="INDEX" descr="Reserved for non-planarized port.Plane port index of the aggregated port. A value of 0 refers to the\;aggregated port only." />
@@ -4346,18 +4431,26 @@
 	<field name="pnat"                            offset="0x0.14"   size="0x0.2" access="INDEX" descr="Port number access type.0 - Local port number1 - IB port number" />
 	<field name="local_port"                      offset="0x0.16"   size="0x0.8" access="INDEX" descr="Local port number." />
 	<field name="version"                         offset="0x0.24"   size="0x0.4" access="RO" descr="1 - 28nm products3 - 16nm products" />
+	<field name="error_injection_page_selector_cap" offset="0x0.29" size="0x0.1" access="RO" descr="[DWIP]When set indicates the page_selector index field is supported.If value is ‘0’ page_data will always show fields chosen by\;page_selector == 0." />
 	<field name="lm_cap"                          offset="0x0.30"   size="0x0.1" access="RO" descr="When set , lane_mask field is applicable" />
 	<field name="mps"                             offset="0x0.31"   size="0x0.1" access="INDEX" descr="[DWIP]Multiple Port Set.Supported only if indicated in PMSCR.prm_support of PREI support,\;otherwise ignored.When set, local_port index is ignored and set command is given to all\;ports in mask given from PMSCR.local_port_mask field" />
 	<field name="error_type_admin"                offset="0x4.0"    size="0x0.8" access="RW" enum="mixer_offset_ctrl_set=0x1,serdes_rx_reset=0x20" descr="Error Type to generate:0: No_Error —- Physical Errors —-Bit 0: mixer_offset_ctrl_setBit 5: serdes_rx_reset" />
 	<field name="error_type_cap"                  offset="0x4.8"    size="0x0.8" access="RO" enum="mixer_offset_ctrl=0x1,serdes_rx_reset=0x20" descr="Error injection capabilities:Bit 0: mixer_offset_ctrlBit 5: serdes_rx_reset" />
 	<field name="error_type_oper"                 offset="0x4.24"   size="0x0.4" access="RO" descr="Error injection operational status:0x0 - No error injection0x1 - Performing error injection" />
+	<field name="page_selector"                   offset="0x4.29"   size="0x0.3" access="INDEX" enum="error_injection_fields_expansion=0x0,error_injection_duty_cycle_fields=0x1" descr="[DWIP]Page select index.0: error_injection_fields_expansion1: error_injection_duty_cycle_fields" />
 	<field name="lane_mask"                       offset="0x8.0"    size="0x0.8" access="RW" descr="Valid only if lm_cap is set, otherwise ignoredSets the specific lanes to be applied from the error_type_admin that was\;selected.Relevant for error types that can be per lane: rx_reset.Bitmask per lane." />
 	<field name="error_injection_time"            offset="0x8.12"   size="0x0.16" access="RW" descr="Duration in time_res the port will generate errors. Reading this field\;will return the time left for errors to inject in msec.0x0000 indicates no generation of errors.0xFFFF - No decremental operation, meaning the errors will be injected\;continuously without stop condition." />
-	<field name="page_data"                       offset="0x10.0"   size="0x8.0" subnode="prei_reg_28nm_ext" access="RW" descr="PREI - Port Receive Error Injection Register Layout for 28nm" />
+	<field name="page_data"                       offset="0x10.0"   size="0x8.0" subnode="prei_reg_page_data_auto_ext" access="RW" union_selector="$(parent).page_selector" descr="PREI - Port Receive Error Injection Register Fields for 28nmPREI - Port Receive Error Injection Register duty cycle fields Layout" />
+</node>
+
+<node name="prei_reg_page_data_auto_ext"          size="0x8.0" attr_is_union="1" descr="" >
+	<field name="prei_reg_28nm_ext"               offset="0x0.0"    size="0x8.0" subnode="prei_reg_28nm_ext" access="RW" selected_by="error_injection_fields_expansion" descr="" />
+	<field name="prei_reg_duty_cycle_ext"         offset="0x0.0"    size="0x8.0" subnode="prei_reg_duty_cycle_ext" access="RW" selected_by="error_injection_duty_cycle_fields" descr="" />
 </node>
 
 <node name="prod_3nm_serdes_gen_7p5_ext"          size="0x48.0" descr="" >
 	<field name="ob_bad_stat"                     offset="0x0.0"    size="0x0.16" access="RO" enum="tap0_is_out_of_range=0x1,tap1_is_out_of_range=0x2,tap2_is_out_of_range=0x4,tap3_is_out_of_range=0x8,tap4_is_out_of_range=0x10,tap5_is_out_of_range=0x20,tap6_is_out_of_range=0x40,tap7_is_out_of_range=0x80,tap8_is_out_of_range=0x100,tap9_is_out_of_range=0x200,tap10_is_out_of_range=0x400,tap11_is_out_of_range=0x800,sum_of_taps_is_out_of_range=0x1000" descr="Bitmask for bad ‘set’ status:Bit 0: tap0_is_out_of_rangeBit 1: tap1_is_out_of_rangeBit 2: tap2_is_out_of_rangeBit 3: tap3_is_out_of_rangeBit 4: tap4_is_out_of_rangeBit 5: tap5_is_out_of_rangeBit 6: tap6_is_out_of_rangeBit 7: tap7_is_out_of_rangeBit 8: tap8_is_out_of_rangeBit 9: tap9_is_out_of_rangeBit 10: tap10_is_out_of_rangeBit 11: tap11_is_out_of_rangeBit 12: sum_of_taps_is_out_of_range" />
+	<field name="status_invalid_reason"           offset="0x0.16"   size="0x0.4" access="RO" enum="n_a=0x0,tx_disabled=0x1,pending_lt=0x2,non_linear_settings=0x3" descr="Indicates the reason the get operation cannot return valid data. Populated\;only when status = 0 (Invalid); set to N/A when status = 1 (Valid).0: n_a - Default; no invalid condition applies, or unknown reason1: tx_disabled - Link is not yet active2: pending_lt - Link Training is in progress3: non_linear_settings - SerDes is operating with non-linear (LUT) tap\;settings; SLTP get is not supported in this state" />
 	<field name="mode_b_idx"                      offset="0x0.23"   size="0x0.1" access="RO" enum="mode_a=0x0,mode_b=0x1" descr="0: mode_a 1: mode_b" />
 	<field name="lt_preset_sel"                   offset="0x0.24"   size="0x0.3" access="RW" descr="Valid only when lt_preset_sel_cap is set, otherwise ignored0: no_preset_selected - changes Tx DB according to cable1-7: LT_index_preset_select - Tx will get / set LT preset" />
 	<field name="vs_peer_db"                      offset="0x0.28"   size="0x0.2" access="RW" descr="relevant for when c_db is set, else field is ignored.for when direct drive module connected:0 - db to override is for Did vs Did1 - db to override if for Did vs retimed module" />
@@ -5088,7 +5181,7 @@
 <node name="slrg_5nm_ext"                         size="0x18.0" descr="" >
 	<field name="fom_measurement"                 offset="0x0.0"    size="0x0.4" access="OP" descr="Bitmask for measurement activationBit 0 - Upper eyeBit 1 - Middle eyeBit 2 - Lower eyeBit 3- Composite eyeNote: NRZ only Bit 3 is valid" />
 	<field name="initial_fom"                     offset="0x4.0"    size="0x0.16" access="RO" descr="measured EOM status after FEQ.valid only when SLRG.status is ‘1’" />
-	<field name="fom_mode"                        offset="0x4.16"   size="0x0.4" access="RW" enum="FOM_MODE_EYE_OPEN=0x0,FOM_MODE_EYEO_SNR=0x1,FOM_MODE_NORM_SNR=0x2,FOM_MODE_EYE_LVLN=0x3,FOM_MODE_EYE_LVLP=0x4,FOM_MODE_THRES_NERR=0x5,FOM_MODE_CDR_NERR=0x6,FOM_MODE_CSDET_NERR=0x7,FOM_MODE_MLSE_NERR=0x8,FOM_MODE_SFEC_NERR=0x9" descr="fom mode:FOM eye mode to search0x0: FOM_MODE_EYE_OPEN0x1: FOM_MODE_EYEO_SNR0x2: FOM_MODE_NORM_SNR0x3: FOM_MODE_EYE_LVLN0x4: FOM_MODE_EYE_LVLP0x5: FOM_MODE_THRES_NERR0x6: FOM_MODE_CDR_NERR0x7: FOM_MODE_CSDET_NERR0x8: FOM_MODE_MLSE_NERR0x9: FOM_MODE_SFEC_NERR" />
+	<field name="fom_mode"                        offset="0x4.16"   size="0x0.4" access="RW" enum="FOM_MODE_EYE_OPEN=0x0,FOM_MODE_EYEO_SNR=0x1,FOM_MODE_NORM_SNR=0x2,FOM_MODE_EYE_LVLN=0x3,FOM_MODE_EYE_LVLP=0x4,FOM_MODE_THRES_NERR=0x5,FOM_MODE_CDR_NERR=0x6,FOM_MODE_CSDET_NERR=0x7,FOM_MODE_MLSE_NERR=0x8,FOM_MODE_SFEC_NERR=0x9,FOM_MODE_MLSD_NERR=0xa" descr="fom mode:FOM eye mode to search0x0: FOM_MODE_EYE_OPEN0x1: FOM_MODE_EYEO_SNR0x2: FOM_MODE_NORM_SNR0x3: FOM_MODE_EYE_LVLN0x4: FOM_MODE_EYE_LVLP0x5: FOM_MODE_THRES_NERR0x6: FOM_MODE_CDR_NERR0x7: FOM_MODE_CSDET_NERR0x8: FOM_MODE_MLSE_NERR0x9: FOM_MODE_SFEC_NERR0xA: FOM_MODE_MLSD_NERR" />
 	<field name="fom_meas_type_read"              offset="0x4.31"   size="0x0.1" access="RO" descr="Indicate if the fom_measurement is of PAM4 or NRZ data0 - PAM4 (Upper, mid, low eye)1 - NRZ (Composite eye)" />
 	<field name="upper_eye"                       offset="0x8.0"    size="0x0.16" access="RO" descr="last measured EOM-FOM status of upper eye.valid only if fom_measurement bit ‘0’ is set" />
 	<field name="last_fom"                        offset="0x8.16"   size="0x0.16" access="RO" descr="last measured EOM-FOM status of composite eye.valid only if fom_measurement bit ‘3’ is set" />
@@ -5239,6 +5332,7 @@
 
 <node name="sltp_5nm_ext"                         size="0x48.0" descr="" >
 	<field name="ob_bad_stat"                     offset="0x0.0"    size="0x0.16" access="RO" enum="tap0_is_out_of_range=0x1,tap1_is_out_of_range=0x2,tap2_is_out_of_range=0x4,tap3_is_out_of_range=0x8,tap4_is_out_of_range=0x10,tap5_is_out_of_range=0x20,tap6_is_out_of_range=0x40,tap7_is_out_of_range=0x80,tap8_is_out_of_range=0x100,tap9_is_out_of_range=0x200,tap10_is_out_of_range=0x400,tap11_is_out_of_range=0x800,sum_of_taps_is_out_of_range=0x1000" descr="Bitmask for bad ‘set’ status:Bit 0: tap0_is_out_of_rangeBit 1: tap1_is_out_of_rangeBit 2: tap2_is_out_of_rangeBit 3: tap3_is_out_of_rangeBit 4: tap4_is_out_of_rangeBit 5: tap5_is_out_of_rangeBit 6: tap6_is_out_of_rangeBit 7: tap7_is_out_of_rangeBit 8: tap8_is_out_of_rangeBit 9: tap9_is_out_of_rangeBit 10: tap10_is_out_of_rangeBit 11: tap11_is_out_of_rangeBit 12: sum_of_taps_is_out_of_range" />
+	<field name="status_invalid_reason"           offset="0x0.16"   size="0x0.4" access="RO" enum="n_a=0x0,tx_disabled=0x1,pending_lt=0x2,non_linear_settings=0x3" descr="Indicates the reason the get operation cannot return valid data. Populated\;only when status = 0 (Invalid); set to N/A when status = 1 (Valid).0: n_a - Default; no invalid condition applies, or unknown reason1: tx_disabled - Link is not yet active2: pending_lt - Link Training is in progress3: non_linear_settings - SerDes is operating with non-linear (LUT) tap\;settings; SLTP get is not supported in this state" />
 	<field name="lt_preset_sel"                   offset="0x0.24"   size="0x0.3" access="RW" descr="Valid only when lt_preset_sel_cap is set, otherwise ignored0: no_preset_selected - changes Tx DB according to cable1-7: LT_index_preset_select - Tx will get / set LT preset" />
 	<field name="vs_peer_db"                      offset="0x0.28"   size="0x0.2" access="RW" descr="relevant for when c_db is set, else field is ignored.for when direct drive module connected:0 - db to override is for Did vs Did1 - db to override if for Did vs retimed module" />
 	<field name="lt_preset_sel_cap"               offset="0x0.30"   size="0x0.1" access="RO" descr="When set, lt_preset_sel field is valid." />
@@ -5400,7 +5494,9 @@
 
 <node name="sltpv2_lut_5nm_ext"                   size="0x108.0" descr="" >
 	<field name="ob_bad_stat"                     offset="0x0.0"    size="0x0.16" access="RO" enum="LUT_value_is_out_of_range=0x1,delay_0_invalid=0x2,delay_1_invalid=0x4,delay_2_invalid=0x8" descr="Bitmask for bad ‘set’ status:Bit 0:LUT_value_is_out_of_rangeBit 1: delay_0_invalidBit 2: delay_1_invalidBit 3: delay_2_invalid" />
+	<field name="status_invalid_reason"           offset="0x0.16"   size="0x0.4" access="RO" enum="n_a=0x0,tx_disabled=0x1,pending_lt=0x2" descr="Indicates the reason the get operation cannot return valid data. Populated\;only when status = 0 (Invalid); set to N/A when status = 1 (Valid).0: n_a - Default; no invalid condition applies, or unknown reason1: tx_disabled - Link is not yet active2: pending_lt - Link Training is in progress" />
 	<field name="lut_sel"                         offset="0x0.20"   size="0x0.4" access="INDEX" enum="LUT_1=0x0,LUT_2=0x1,LUT_3=0x2,LUT_4=0x3" descr="0: LUT_1 - taps 0-1 (16 entries), valid ranges per entry: [-16, 15]1: LUT_2 - taps 2-5 (256 entries), valid ranges per entry: [-64, 63]2: LUT_3 - taps 6-8 (64 entries), valid ranges per entry: [-16, 15]3: LUT_4 - taps 9-11 (64 entries), valid ranges per entry: [-16, 15]Note that only LUT_2 group has FW DB, hence c_db shall work only for\;LUT_2." />
+	<field name="tx_conf_mode"                    offset="0x0.24"   size="0x0.2" access="RO" enum="n_a=0x0,linear=0x1,non_linear=0x2" descr="Active Tx configuration mode of the SerDes lane. Valid only when status = 1\;(Valid); returns 0 (N/A) when status = 0 (Invalid).0: n_a - Default; status is not valid1: linear - SerDes Tx is configured with linear (FIR) tap settings2: non_linear - SerDes Tx is configured with non-linear (LUT) tap settings" />
 	<field name="vs_peer_db"                      offset="0x0.28"   size="0x0.2" access="RW" descr="relevant for when c_db is set, else field is ignored.for when direct drive module connected:0 - db to override is for Did vs Did1 - db to override if for Did vs retimed module" />
 	<field name="no_db_set"                       offset="0x0.31"   size="0x0.1" access="RW" descr="supported only if PCAM bit 96 in feature_cap_mask is set.When set, Tx DB will not be written into HW on linkup phase.When cleared, Tx DB is written into HW on linkup phase." />
 	<field name="delay0"                          offset="0x4.0"    size="0x0.6" access="RW" descr="(see above)" />
@@ -5720,25 +5816,25 @@
 </node>
 
 <node name="sltr_non_periodic_non_destructive_7_5_ext" size="0x10.0" descr="" >
-	<field name="w_group_exist"                   offset="0x0.30"   size="0x0.1" access="RO" descr="does this group implemented\;\;0 - no\;\;1- yes" />
-	<field name="e_group_exist"                   offset="0x0.31"   size="0x0.1" access="RO" descr="does this group implemented\;\;0 - no\;\;1- yes" />
-	<field name="e_group6"                        offset="0x4.0"    size="0x0.8" access="RO" descr="AE_CDR_OFFSET_STAT_cdr_offset" />
-	<field name="e_group5"                        offset="0x4.10"   size="0x0.2" access="RO" descr="AE_CTLE_STAT1_lf_gain" />
-	<field name="e_group4"                        offset="0x4.13"   size="0x0.3" access="RO" descr="AE_CTLE_STAT1_lf_pole" />
-	<field name="e_group3"                        offset="0x4.17"   size="0x0.2" access="RO" descr="AE_CTLE_STAT1_mf_gain" />
-	<field name="e_group2"                        offset="0x4.20"   size="0x0.2" access="RO" descr="AE_CTLE_STAT1_mf_pole" />
-	<field name="e_group1"                        offset="0x4.23"   size="0x0.3" access="RO" descr="AE_CTLE_STAT0_dc_gain" />
-	<field name="e_group0"                        offset="0x4.27"   size="0x0.5" access="RO" descr="AE_CTLE_STAT0_hf_gain" />
-	<field name="w_group4"                        offset="0x8.0"    size="0x0.5" access="RO" descr="AE_PLLC_PHOS_STAT3.phos_coef4" />
-	<field name="w_group3"                        offset="0x8.5"    size="0x0.5" access="RO" descr="AE_PLLC_PHOS_STAT2.phos_coef3" />
-	<field name="w_group2"                        offset="0x8.10"   size="0x0.5" access="RO" descr="AE_PLLC_PHOS_STAT2.phos_coef2" />
-	<field name="w_group1"                        offset="0x8.15"   size="0x0.5" access="RO" descr="AE_PLLC_PHOS_STAT1.phos_coef1" />
-	<field name="w_group0"                        offset="0x8.20"   size="0x0.5" access="RO" descr="AE_PLLC_PHOS_STAT1.phos_coef0" />
-	<field name="e_group8"                        offset="0x8.26"   size="0x0.2" access="RO" descr="AE_TERM_ATTN_STAT_term_lpf" />
-	<field name="e_group7"                        offset="0x8.29"   size="0x0.3" access="RO" descr="AE_TERM_ATTN_STAT_term_attn_ctrl" />
-	<field name="w_group7"                        offset="0xc.17"   size="0x0.5" access="RO" descr="AE_PLLC_PHOS_STAT4.phos_coef7" />
-	<field name="w_group6"                        offset="0xc.22"   size="0x0.5" access="RO" descr="AE_PLLC_PHOS_STAT4.phos_coef6" />
-	<field name="w_group5"                        offset="0xc.27"   size="0x0.5" access="RO" descr="AE_PLLC_PHOS_STAT3.phos_coef5" />
+	<field name="w_group_exist"                   offset="0x0.30"   size="0x0.1" access="RO" descr="" />
+	<field name="e_group_exist"                   offset="0x0.31"   size="0x0.1" access="RO" descr="" />
+	<field name="e_group6"                        offset="0x4.0"    size="0x0.8" access="RO" descr="" />
+	<field name="e_group5"                        offset="0x4.10"   size="0x0.2" access="RO" descr="" />
+	<field name="e_group4"                        offset="0x4.13"   size="0x0.3" access="RO" descr="" />
+	<field name="e_group3"                        offset="0x4.17"   size="0x0.2" access="RO" descr="" />
+	<field name="e_group2"                        offset="0x4.20"   size="0x0.2" access="RO" descr="" />
+	<field name="e_group1"                        offset="0x4.23"   size="0x0.3" access="RO" descr="" />
+	<field name="e_group0"                        offset="0x4.27"   size="0x0.5" access="RO" descr="" />
+	<field name="w_group4"                        offset="0x8.0"    size="0x0.5" access="RO" descr="" />
+	<field name="w_group3"                        offset="0x8.5"    size="0x0.5" access="RO" descr="" />
+	<field name="w_group2"                        offset="0x8.10"   size="0x0.5" access="RO" descr="" />
+	<field name="w_group1"                        offset="0x8.15"   size="0x0.5" access="RO" descr="" />
+	<field name="w_group0"                        offset="0x8.20"   size="0x0.5" access="RO" descr="" />
+	<field name="e_group8"                        offset="0x8.26"   size="0x0.2" access="RO" descr="" />
+	<field name="e_group7"                        offset="0x8.29"   size="0x0.3" access="RO" descr="" />
+	<field name="w_group7"                        offset="0xc.17"   size="0x0.5" access="RO" descr="" />
+	<field name="w_group6"                        offset="0xc.22"   size="0x0.5" access="RO" descr="" />
+	<field name="w_group5"                        offset="0xc.27"   size="0x0.5" access="RO" descr="" />
 </node>
 
 <node name="sltr_non_periodic_non_destructive_ext" size="0x18.0" descr="" >
@@ -5781,155 +5877,155 @@
 </node>
 
 <node name="sltr_periodic_non_destructive_7_5_ext" size="0xd8.0" descr="" >
-	<field name="d_group_exist"                   offset="0x0.23"   size="0x0.1" access="RO" descr="does this group implemented\;\;0 - no\;\;1- yes" />
-	<field name="c_group_exist"                   offset="0x0.24"   size="0x0.1" access="RO" descr="does this group implemented\;\;0 - no\;\;1- yes" />
-	<field name="bs_group_exist"                  offset="0x0.25"   size="0x0.1" access="RO" descr="does this group implemented\;\;0 - no\;\;1- yes" />
-	<field name="bc_group_exist"                  offset="0x0.26"   size="0x0.1" access="RO" descr="does this group implemented\;\;0 - no\;\;1- yes" />
-	<field name="af_group_exist"                  offset="0x0.27"   size="0x0.1" access="RO" descr="does this group implemented\;\;0 - no\;\;1- yes" />
-	<field name="afm_group_exist"                 offset="0x0.28"   size="0x0.1" access="RO" descr="does this group implemented\;\;0 - no\;\;1- yes" />
-	<field name="f_group_exist"                   offset="0x0.29"   size="0x0.1" access="RO" descr="does this group implemented\;\;0 - no\;\;1- yes" />
-	<field name="t_group_exist"                   offset="0x0.31"   size="0x0.1" access="RO" descr="does this group implemented\;\;0 - no\;\;1- yes" />
-	<field name="af_group16"                      offset="0x4.16"   size="0x0.4" access="RO" descr="ffe_fm16" />
-	<field name="af_group15"                      offset="0x4.20"   size="0x0.4" access="RO" descr="ffe_fm15" />
-	<field name="af_group14"                      offset="0x4.24"   size="0x0.4" access="RO" descr="ffe_fm14" />
-	<field name="af_group13"                      offset="0x4.28"   size="0x0.4" access="RO" descr="ffe_fm13" />
-	<field name="afm_group5"                      offset="0x8.3"    size="0x0.7" access="RO" descr="ffe_fm5" />
-	<field name="afm_group6"                      offset="0x8.11"   size="0x0.7" access="RO" descr="ffe_fm6" />
-	<field name="afm_group7"                      offset="0x8.18"   size="0x0.6" access="RO" descr="ffe_fm7" />
-	<field name="afm_group8"                      offset="0x8.25"   size="0x0.4" access="RO" descr="ffe_fm8" />
-	<field name="afm_group9"                      offset="0x8.29"   size="0x0.3" access="RO" descr="ffe_fm9" />
-	<field name="f_group0"                        offset="0xc.8"    size="0x0.6" access="RO" descr="adc_vref_val" />
-	<field name="afm_group3"                      offset="0xc.15"   size="0x0.8" access="RO" descr="ffe_fm3" />
-	<field name="afm_group4"                      offset="0xc.24"   size="0x0.8" access="RO" descr="ffe_fm4" />
-	<field name="afm_group2"                      offset="0x10.0"   size="0x0.8" access="RO" descr="ffe_fm2" />
-	<field name="afm_group1"                      offset="0x10.10"  size="0x0.9" access="RO" descr="ffe_fm1" />
-	<field name="af_group1"                       offset="0x10.21"  size="0x0.8" access="RO" descr="ffe_f1" />
-	<field name="af_group2"                       offset="0x14.0"   size="0x0.8" access="RO" descr="ffe_f2" />
-	<field name="af_group3"                       offset="0x14.10"  size="0x0.7" access="RO" descr="ffe_f3" />
-	<field name="af_group4"                       offset="0x14.19"  size="0x0.7" access="RO" descr="ffe_f4" />
-	<field name="m_group0"                        offset="0x14.28"  size="0x0.4" access="RO" descr="ECHO_AEX_N2M2_STAT0_aex_n2" />
-	<field name="af_group5"                       offset="0x18.0"   size="0x0.7" access="RO" descr="ffe_f5" />
-	<field name="af_group6"                       offset="0x18.9"   size="0x0.6" access="RO" descr="ffe_f6" />
-	<field name="af_group7"                       offset="0x18.17"  size="0x0.6" access="RO" descr="ffe_f7" />
-	<field name="af_group8"                       offset="0x18.25"  size="0x0.6" access="RO" descr="ffe_f8" />
-	<field name="af_group9"                       offset="0x1c.0"   size="0x0.6" access="RO" descr="ffe_f9" />
-	<field name="af_group10"                      offset="0x1c.8"   size="0x0.5" access="RO" descr="ffe_f10" />
-	<field name="af_group11"                      offset="0x1c.15"  size="0x0.5" access="RO" descr="ffe_f11" />
-	<field name="af_group12"                      offset="0x1c.22"  size="0x0.5" access="RO" descr="ffe_f12" />
-	<field name="bs_group0"                       offset="0x20.0"   size="0x0.6" access="RO" descr="dffe_dsel0" />
-	<field name="bc_group0"                       offset="0x20.6"   size="0x0.4" access="RO" descr="dffe_coef0" />
-	<field name="bs_group1"                       offset="0x20.11"  size="0x0.6" access="RO" descr="dffe_dsel1" />
-	<field name="bc_group1"                       offset="0x20.17"  size="0x0.4" access="RO" descr="dffe_coef1" />
-	<field name="bs_group2"                       offset="0x20.22"  size="0x0.6" access="RO" descr="dffe_dsel2" />
-	<field name="bc_group2"                       offset="0x20.28"  size="0x0.4" access="RO" descr="dffe_coef2" />
-	<field name="bs_group3"                       offset="0x24.0"   size="0x0.6" access="RO" descr="dffe_dsel3" />
-	<field name="bc_group3"                       offset="0x24.6"   size="0x0.4" access="RO" descr="dffe_coef3" />
-	<field name="bs_group4"                       offset="0x24.11"  size="0x0.6" access="RO" descr="dffe_dsel4" />
-	<field name="bc_group4"                       offset="0x24.17"  size="0x0.4" access="RO" descr="dffe_coef4" />
-	<field name="bs_group5"                       offset="0x24.22"  size="0x0.6" access="RO" descr="dffe_dsel5" />
-	<field name="bc_group5"                       offset="0x24.28"  size="0x0.4" access="RO" descr="dffe_coef5" />
-	<field name="bs_group6"                       offset="0x28.0"   size="0x0.6" access="RO" descr="dffe_dsel6" />
-	<field name="bc_group6"                       offset="0x28.6"   size="0x0.4" access="RO" descr="dffe_coef6" />
-	<field name="bs_group7"                       offset="0x28.11"  size="0x0.6" access="RO" descr="dffe_dsel7" />
-	<field name="bc_group7"                       offset="0x28.17"  size="0x0.4" access="RO" descr="dffe_coef7" />
-	<field name="bs_group8"                       offset="0x28.22"  size="0x0.6" access="RO" descr="dffe_dsel8" />
-	<field name="bc_group8"                       offset="0x28.28"  size="0x0.4" access="RO" descr="dffe_coef8" />
-	<field name="bs_group9"                       offset="0x2c.0"   size="0x0.6" access="RO" descr="dffe_dsel9" />
-	<field name="bc_group9"                       offset="0x2c.6"   size="0x0.4" access="RO" descr="dffe_coef9" />
-	<field name="bs_group10"                      offset="0x2c.11"  size="0x0.6" access="RO" descr="dffe_dsel10" />
-	<field name="bc_group10"                      offset="0x2c.17"  size="0x0.4" access="RO" descr="dffe_coef10" />
-	<field name="bs_group11"                      offset="0x2c.22"  size="0x0.6" access="RO" descr="dffe_dsel11" />
-	<field name="bc_group11"                      offset="0x2c.28"  size="0x0.4" access="RO" descr="dffe_coef11" />
-	<field name="bs_group12"                      offset="0x30.0"   size="0x0.6" access="RO" descr="dffe_dsel12" />
-	<field name="bc_group12"                      offset="0x30.6"   size="0x0.4" access="RO" descr="dffe_coef12" />
-	<field name="bs_group13"                      offset="0x30.11"  size="0x0.6" access="RO" descr="dffe_dsel13" />
-	<field name="bc_group13"                      offset="0x30.17"  size="0x0.4" access="RO" descr="dffe_coef13" />
-	<field name="bs_group14"                      offset="0x30.22"  size="0x0.6" access="RO" descr="dffe_dsel14" />
-	<field name="bc_group14"                      offset="0x30.28"  size="0x0.4" access="RO" descr="dffe_coef14" />
-	<field name="bs_group15"                      offset="0x34.0"   size="0x0.6" access="RO" descr="dffe_dsel15" />
-	<field name="bc_group15"                      offset="0x34.6"   size="0x0.4" access="RO" descr="dffe_coef15" />
-	<field name="c_group0"                        offset="0x34.11"  size="0x0.10" access="RO" descr="fb_slicer_th0" />
-	<field name="c_group1"                        offset="0x34.22"  size="0x0.10" access="RO" descr="fb_slicer_th1" />
-	<field name="c_group2"                        offset="0x38.0"   size="0x0.10" access="RO" descr="fb_slicer_th2" />
-	<field name="c_group3"                        offset="0x38.11"  size="0x0.10" access="RO" descr="fb_slicer_th3" />
-	<field name="c_group4"                        offset="0x38.22"  size="0x0.10" access="RO" descr="fb_slicer_th4" />
-	<field name="c_group5"                        offset="0x3c.0"   size="0x0.10" access="RO" descr="fb_slicer_th5" />
-	<field name="c_group6"                        offset="0x3c.11"  size="0x0.10" access="RO" descr="fb_slicer_th6" />
-	<field name="c_group7"                        offset="0x3c.22"  size="0x0.10" access="RO" descr="fb_slicer_th7" />
-	<field name="c_group8"                        offset="0x40.0"   size="0x0.10" access="RO" descr="fb_slicer_th8" />
-	<field name="c_group9"                        offset="0x40.11"  size="0x0.10" access="RO" descr="fb_slicer_th9" />
-	<field name="c_group10"                       offset="0x40.22"  size="0x0.10" access="RO" descr="fb_slicer_th10" />
-	<field name="c_group11"                       offset="0x44.0"   size="0x0.10" access="RO" descr="fb_slicer_th11" />
-	<field name="c_group12"                       offset="0x44.11"  size="0x0.10" access="RO" descr="fb_slicer_th12" />
-	<field name="d_group0"                        offset="0x44.22"  size="0x0.10" access="RO" descr="ff_slicer_th0" />
-	<field name="d_group1"                        offset="0x48.0"   size="0x0.10" access="RO" descr="ff_slicer_th1" />
-	<field name="d_group2"                        offset="0x48.11"  size="0x0.10" access="RO" descr="ff_slicer_th2" />
-	<field name="d_group3"                        offset="0x48.22"  size="0x0.10" access="RO" descr="ff_slicer_th3" />
-	<field name="d_group4"                        offset="0x4c.0"   size="0x0.10" access="RO" descr="ff_slicer_th4" />
-	<field name="d_group5"                        offset="0x4c.11"  size="0x0.10" access="RO" descr="ff_slicer_th5" />
-	<field name="d_group6"                        offset="0x4c.22"  size="0x0.10" access="RO" descr="ff_slicer_th6" />
-	<field name="d_group7"                        offset="0x50.0"   size="0x0.10" access="RO" descr="ff_slicer_th7" />
-	<field name="d_group8"                        offset="0x50.11"  size="0x0.10" access="RO" descr="ff_slicer_th8" />
-	<field name="d_group9"                        offset="0x50.22"  size="0x0.10" access="RO" descr="ff_slicer_th9" />
-	<field name="d_group10"                       offset="0x54.0"   size="0x0.10" access="RO" descr="ff_slicer_th10" />
-	<field name="d_group11"                       offset="0x54.11"  size="0x0.10" access="RO" descr="ff_slicer_th11" />
-	<field name="d_group12"                       offset="0x54.22"  size="0x0.10" access="RO" descr="ff_slicer_th12" />
-	<field name="za_group4"                       offset="0x58.2"   size="0x0.6" access="RO" descr="CLKBUF_DCC_Q_STAT_dcc_qclk_vref_ctrl" />
-	<field name="za_group3"                       offset="0x58.8"   size="0x0.6" access="RO" descr="CLKBUF_DCC_I_STAT_dcc_iclkb_vref_ctrl" />
-	<field name="za_group2"                       offset="0x58.14"  size="0x0.6" access="RO" descr="CLKBUF_DCC_I_STAT_dcc_iclk_vref_ctrl" />
-	<field name="za_group1"                       offset="0x58.20"  size="0x0.6" access="RO" descr="CLKBUF_IQC_STAT_iqc_qclk_fine_ctrl" />
-	<field name="za_group0"                       offset="0x58.26"  size="0x0.6" access="RO" descr="CLKBUF_IQC_STAT_iqc_iclk_fine_ctrl" />
-	<field name="zd_group0"                       offset="0x5c.20"  size="0x0.5" access="RO" descr="TX_TMCAL_CTX_CTRL_ctx_pi_phase" />
-	<field name="za_group5"                       offset="0x5c.26"  size="0x0.6" access="RO" descr="CLKBUF_DCC_Q_STAT_dcc_qclkb_vref_ctrl" />
-	<field name="x_group1"                        offset="0x64.0"   size="0x0.16" access="RO" descr="AE_PLLC_GOSC_STAT0" />
-	<field name="x_group0"                        offset="0x64.16"  size="0x0.16" access="RO" descr="AE_PLLC_VOS_STAT0" />
-	<field name="x_group5"                        offset="0x68.0"   size="0x0.6" access="RO" descr="AE_PLLC_RO_STAT_ro_fine" />
-	<field name="x_group4"                        offset="0x68.6"   size="0x0.4" access="RO" descr="AE_PLLC_ILO_STAT_ilo_coarse" />
-	<field name="x_group3"                        offset="0x68.10"  size="0x0.6" access="RO" descr="AE_PLLC_ILO_STAT_ilo_fine" />
-	<field name="x_group2"                        offset="0x68.16"  size="0x0.16" access="RO" descr="AE_PLLC_GOSF_STAT0" />
-	<field name="x_group7"                        offset="0x6c.15"  size="0x0.13" access="RO" descr="AE_CDR_RXPLL_FRVAL_STAT_rxpll_frval" />
-	<field name="x_group6"                        offset="0x6c.28"  size="0x0.4" access="RO" descr="AE_PLLC_RO_STAT_ro_coarse" />
-	<field name="u_group1"                        offset="0x70.0"   size="0x0.16" access="RO" descr="AE_PHOS_CTX_CTRL1" />
-	<field name="u_group0"                        offset="0x70.16"  size="0x0.16" access="RO" descr="AE_PHOS_CTX_CTRL0" />
-	<field name="u_group3"                        offset="0x74.0"   size="0x0.16" access="RO" descr="AE_PHOS_CTX_CTRL3" />
-	<field name="u_group2"                        offset="0x74.16"  size="0x0.16" access="RO" descr="AE_PHOS_CTX_CTRL2" />
-	<field name="u_group5"                        offset="0x78.0"   size="0x0.16" access="RO" descr="AE_PHOS_CTX_CTRL5" />
-	<field name="u_group4"                        offset="0x78.16"  size="0x0.16" access="RO" descr="AE_PHOS_CTX_CTRL4" />
-	<field name="u_group7"                        offset="0x7c.0"   size="0x0.16" access="RO" descr="AE_PHOS_CTX_CTRL7" />
-	<field name="u_group6"                        offset="0x7c.16"  size="0x0.16" access="RO" descr="AE_PHOS_CTX_CTRL6" />
-	<field name="u_group9"                        offset="0x80.0"   size="0x0.16" access="RO" descr="AE_PHOS_CTX_CTRL9" />
-	<field name="u_group8"                        offset="0x80.16"  size="0x0.16" access="RO" descr="AE_PHOS_CTX_CTRL8" />
-	<field name="u_group11"                       offset="0x84.0"   size="0x0.16" access="RO" descr="AE_PHOS_CTX_CTRL11" />
-	<field name="u_group10"                       offset="0x84.16"  size="0x0.16" access="RO" descr="AE_PHOS_CTX_CTRL10" />
-	<field name="u_group13"                       offset="0x88.0"   size="0x0.16" access="RO" descr="AE_PHOS_CTX_CTRL13" />
-	<field name="u_group12"                       offset="0x88.16"  size="0x0.16" access="RO" descr="AE_PHOS_CTX_CTRL12" />
-	<field name="u_group15"                       offset="0x8c.0"   size="0x0.16" access="RO" descr="AE_PHOS_CTX_CTRL15" />
-	<field name="u_group14"                       offset="0x8c.16"  size="0x0.16" access="RO" descr="AE_PHOS_CTX_CTRL14" />
-	<field name="ha_group"                        offset="0x90.24"  size="0x10.0" access="RO" high_bound="15" low_bound="0" descr="adc_vos" />
-	<field name="hb_group"                        offset="0xa0.24"  size="0x10.0" access="RO" high_bound="15" low_bound="0" descr="adc_gos" />
-	<field name="t_group1"                        offset="0xb0.0"   size="0x0.16" access="RO" descr="AE_NSX_STAT1" />
-	<field name="t_group0"                        offset="0xb0.16"  size="0x0.16" access="RO" descr="AE_NSX_STAT0" />
-	<field name="t_group4"                        offset="0xb4.0"   size="0x0.8" access="RO" descr="AE_EQ_NSX_CTRL0_nsx_error_limit" />
-	<field name="t_group3"                        offset="0xb4.8"   size="0x0.8" access="RO" descr="AE_EQ_NSX_CTRL1_nsx_error_ratio" />
-	<field name="t_group2"                        offset="0xb4.16"  size="0x0.16" access="RO" descr="AE_NSX_STAT2" />
-	<field name="t_group5"                        offset="0xb8.30"  size="0x0.2" access="RO" descr="AE_EQ_NSX_CTRL0_nsx_mode" />
-	<field name="g_group1"                        offset="0xbc.0"   size="0x0.16" access="RO" descr="EOM_FOM_STAT1" />
-	<field name="g_group0"                        offset="0xbc.16"  size="0x0.16" access="RO" descr="EOM_FOM_STAT0" />
-	<field name="g_group3"                        offset="0xc0.0"   size="0x0.16" access="RO" descr="EOM_FOM_STAT3" />
-	<field name="g_group2"                        offset="0xc0.16"  size="0x0.16" access="RO" descr="EOM_FOM_STAT2" />
-	<field name="g_group5"                        offset="0xc4.0"   size="0x0.16" access="RO" descr="EOM_FOM_STAT5" />
-	<field name="g_group4"                        offset="0xc4.16"  size="0x0.16" access="RO" descr="EOM_FOM_STAT4" />
-	<field name="g_group7"                        offset="0xc8.0"   size="0x0.16" access="RO" descr="EOM_FOM_STAT7" />
-	<field name="g_group6"                        offset="0xc8.16"  size="0x0.16" access="RO" descr="EOM_FOM_STAT6" />
-	<field name="g_group9"                        offset="0xcc.0"   size="0x0.16" access="RO" descr="EOM_FOM_STAT9" />
-	<field name="g_group8"                        offset="0xcc.16"  size="0x0.16" access="RO" descr="EOM_FOM_STAT8" />
-	<field name="ah_group2"                       offset="0xd0.6"   size="0x0.5" access="RO" descr="phos_fine_gray" />
-	<field name="ah_group1"                       offset="0xd0.11"  size="0x0.5" access="RO" descr="phos_coarse_gray" />
-	<field name="ah_group7"                       offset="0xd4.6"   size="0x0.4" access="RO" descr="dco_sprfine" />
-	<field name="ah_group6"                       offset="0xd4.10"  size="0x0.5" access="RO" descr="dco_fine" />
-	<field name="ah_group5"                       offset="0xd4.15"  size="0x0.4" access="RO" descr="dco_coarse" />
-	<field name="ah_group4"                       offset="0xd4.19"  size="0x0.6" access="RO" descr="caldac_vos_ctrl_gray" />
-	<field name="ah_group3"                       offset="0xd4.25"  size="0x0.7" access="RO" descr="dtc_gain_gray" />
+	<field name="d_group_exist"                   offset="0x0.23"   size="0x0.1" access="RO" descr="" />
+	<field name="c_group_exist"                   offset="0x0.24"   size="0x0.1" access="RO" descr="" />
+	<field name="bs_group_exist"                  offset="0x0.25"   size="0x0.1" access="RO" descr="" />
+	<field name="bc_group_exist"                  offset="0x0.26"   size="0x0.1" access="RO" descr="" />
+	<field name="af_group_exist"                  offset="0x0.27"   size="0x0.1" access="RO" descr="" />
+	<field name="afm_group_exist"                 offset="0x0.28"   size="0x0.1" access="RO" descr="" />
+	<field name="f_group_exist"                   offset="0x0.29"   size="0x0.1" access="RO" descr="" />
+	<field name="t_group_exist"                   offset="0x0.31"   size="0x0.1" access="RO" descr="" />
+	<field name="af_group16"                      offset="0x4.16"   size="0x0.4" access="RO" descr="" />
+	<field name="af_group15"                      offset="0x4.20"   size="0x0.4" access="RO" descr="" />
+	<field name="af_group14"                      offset="0x4.24"   size="0x0.4" access="RO" descr="" />
+	<field name="af_group13"                      offset="0x4.28"   size="0x0.4" access="RO" descr="" />
+	<field name="afm_group5"                      offset="0x8.3"    size="0x0.7" access="RO" descr="" />
+	<field name="afm_group6"                      offset="0x8.11"   size="0x0.7" access="RO" descr="" />
+	<field name="afm_group7"                      offset="0x8.18"   size="0x0.6" access="RO" descr="" />
+	<field name="afm_group8"                      offset="0x8.25"   size="0x0.4" access="RO" descr="" />
+	<field name="afm_group9"                      offset="0x8.29"   size="0x0.3" access="RO" descr="" />
+	<field name="f_group0"                        offset="0xc.8"    size="0x0.6" access="RO" descr="" />
+	<field name="afm_group3"                      offset="0xc.15"   size="0x0.8" access="RO" descr="" />
+	<field name="afm_group4"                      offset="0xc.24"   size="0x0.8" access="RO" descr="" />
+	<field name="afm_group2"                      offset="0x10.0"   size="0x0.8" access="RO" descr="" />
+	<field name="afm_group1"                      offset="0x10.10"  size="0x0.9" access="RO" descr="" />
+	<field name="af_group1"                       offset="0x10.21"  size="0x0.8" access="RO" descr="" />
+	<field name="af_group2"                       offset="0x14.0"   size="0x0.8" access="RO" descr="" />
+	<field name="af_group3"                       offset="0x14.10"  size="0x0.7" access="RO" descr="" />
+	<field name="af_group4"                       offset="0x14.19"  size="0x0.7" access="RO" descr="" />
+	<field name="m_group0"                        offset="0x14.28"  size="0x0.4" access="RO" descr="" />
+	<field name="af_group5"                       offset="0x18.0"   size="0x0.7" access="RO" descr="" />
+	<field name="af_group6"                       offset="0x18.9"   size="0x0.6" access="RO" descr="" />
+	<field name="af_group7"                       offset="0x18.17"  size="0x0.6" access="RO" descr="" />
+	<field name="af_group8"                       offset="0x18.25"  size="0x0.6" access="RO" descr="" />
+	<field name="af_group9"                       offset="0x1c.0"   size="0x0.6" access="RO" descr="" />
+	<field name="af_group10"                      offset="0x1c.8"   size="0x0.5" access="RO" descr="" />
+	<field name="af_group11"                      offset="0x1c.15"  size="0x0.5" access="RO" descr="" />
+	<field name="af_group12"                      offset="0x1c.22"  size="0x0.5" access="RO" descr="" />
+	<field name="bs_group0"                       offset="0x20.0"   size="0x0.6" access="RO" descr="" />
+	<field name="bc_group0"                       offset="0x20.6"   size="0x0.4" access="RO" descr="" />
+	<field name="bs_group1"                       offset="0x20.11"  size="0x0.6" access="RO" descr="" />
+	<field name="bc_group1"                       offset="0x20.17"  size="0x0.4" access="RO" descr="" />
+	<field name="bs_group2"                       offset="0x20.22"  size="0x0.6" access="RO" descr="" />
+	<field name="bc_group2"                       offset="0x20.28"  size="0x0.4" access="RO" descr="" />
+	<field name="bs_group3"                       offset="0x24.0"   size="0x0.6" access="RO" descr="" />
+	<field name="bc_group3"                       offset="0x24.6"   size="0x0.4" access="RO" descr="" />
+	<field name="bs_group4"                       offset="0x24.11"  size="0x0.6" access="RO" descr="" />
+	<field name="bc_group4"                       offset="0x24.17"  size="0x0.4" access="RO" descr="" />
+	<field name="bs_group5"                       offset="0x24.22"  size="0x0.6" access="RO" descr="" />
+	<field name="bc_group5"                       offset="0x24.28"  size="0x0.4" access="RO" descr="" />
+	<field name="bs_group6"                       offset="0x28.0"   size="0x0.6" access="RO" descr="" />
+	<field name="bc_group6"                       offset="0x28.6"   size="0x0.4" access="RO" descr="" />
+	<field name="bs_group7"                       offset="0x28.11"  size="0x0.6" access="RO" descr="" />
+	<field name="bc_group7"                       offset="0x28.17"  size="0x0.4" access="RO" descr="" />
+	<field name="bs_group8"                       offset="0x28.22"  size="0x0.6" access="RO" descr="" />
+	<field name="bc_group8"                       offset="0x28.28"  size="0x0.4" access="RO" descr="" />
+	<field name="bs_group9"                       offset="0x2c.0"   size="0x0.6" access="RO" descr="" />
+	<field name="bc_group9"                       offset="0x2c.6"   size="0x0.4" access="RO" descr="" />
+	<field name="bs_group10"                      offset="0x2c.11"  size="0x0.6" access="RO" descr="" />
+	<field name="bc_group10"                      offset="0x2c.17"  size="0x0.4" access="RO" descr="" />
+	<field name="bs_group11"                      offset="0x2c.22"  size="0x0.6" access="RO" descr="" />
+	<field name="bc_group11"                      offset="0x2c.28"  size="0x0.4" access="RO" descr="" />
+	<field name="bs_group12"                      offset="0x30.0"   size="0x0.6" access="RO" descr="" />
+	<field name="bc_group12"                      offset="0x30.6"   size="0x0.4" access="RO" descr="" />
+	<field name="bs_group13"                      offset="0x30.11"  size="0x0.6" access="RO" descr="" />
+	<field name="bc_group13"                      offset="0x30.17"  size="0x0.4" access="RO" descr="" />
+	<field name="bs_group14"                      offset="0x30.22"  size="0x0.6" access="RO" descr="" />
+	<field name="bc_group14"                      offset="0x30.28"  size="0x0.4" access="RO" descr="" />
+	<field name="bs_group15"                      offset="0x34.0"   size="0x0.6" access="RO" descr="" />
+	<field name="bc_group15"                      offset="0x34.6"   size="0x0.4" access="RO" descr="" />
+	<field name="c_group0"                        offset="0x34.11"  size="0x0.10" access="RO" descr="" />
+	<field name="c_group1"                        offset="0x34.22"  size="0x0.10" access="RO" descr="" />
+	<field name="c_group2"                        offset="0x38.0"   size="0x0.10" access="RO" descr="" />
+	<field name="c_group3"                        offset="0x38.11"  size="0x0.10" access="RO" descr="" />
+	<field name="c_group4"                        offset="0x38.22"  size="0x0.10" access="RO" descr="" />
+	<field name="c_group5"                        offset="0x3c.0"   size="0x0.10" access="RO" descr="" />
+	<field name="c_group6"                        offset="0x3c.11"  size="0x0.10" access="RO" descr="" />
+	<field name="c_group7"                        offset="0x3c.22"  size="0x0.10" access="RO" descr="" />
+	<field name="c_group8"                        offset="0x40.0"   size="0x0.10" access="RO" descr="" />
+	<field name="c_group9"                        offset="0x40.11"  size="0x0.10" access="RO" descr="" />
+	<field name="c_group10"                       offset="0x40.22"  size="0x0.10" access="RO" descr="" />
+	<field name="c_group11"                       offset="0x44.0"   size="0x0.10" access="RO" descr="" />
+	<field name="c_group12"                       offset="0x44.11"  size="0x0.10" access="RO" descr="" />
+	<field name="d_group0"                        offset="0x44.22"  size="0x0.10" access="RO" descr="" />
+	<field name="d_group1"                        offset="0x48.0"   size="0x0.10" access="RO" descr="" />
+	<field name="d_group2"                        offset="0x48.11"  size="0x0.10" access="RO" descr="" />
+	<field name="d_group3"                        offset="0x48.22"  size="0x0.10" access="RO" descr="" />
+	<field name="d_group4"                        offset="0x4c.0"   size="0x0.10" access="RO" descr="" />
+	<field name="d_group5"                        offset="0x4c.11"  size="0x0.10" access="RO" descr="" />
+	<field name="d_group6"                        offset="0x4c.22"  size="0x0.10" access="RO" descr="" />
+	<field name="d_group7"                        offset="0x50.0"   size="0x0.10" access="RO" descr="" />
+	<field name="d_group8"                        offset="0x50.11"  size="0x0.10" access="RO" descr="" />
+	<field name="d_group9"                        offset="0x50.22"  size="0x0.10" access="RO" descr="" />
+	<field name="d_group10"                       offset="0x54.0"   size="0x0.10" access="RO" descr="" />
+	<field name="d_group11"                       offset="0x54.11"  size="0x0.10" access="RO" descr="" />
+	<field name="d_group12"                       offset="0x54.22"  size="0x0.10" access="RO" descr="" />
+	<field name="za_group4"                       offset="0x58.2"   size="0x0.6" access="RO" descr="" />
+	<field name="za_group3"                       offset="0x58.8"   size="0x0.6" access="RO" descr="" />
+	<field name="za_group2"                       offset="0x58.14"  size="0x0.6" access="RO" descr="" />
+	<field name="za_group1"                       offset="0x58.20"  size="0x0.6" access="RO" descr="" />
+	<field name="za_group0"                       offset="0x58.26"  size="0x0.6" access="RO" descr="" />
+	<field name="zd_group0"                       offset="0x5c.20"  size="0x0.5" access="RO" descr="" />
+	<field name="za_group5"                       offset="0x5c.26"  size="0x0.6" access="RO" descr="" />
+	<field name="x_group1"                        offset="0x64.0"   size="0x0.16" access="RO" descr="" />
+	<field name="x_group0"                        offset="0x64.16"  size="0x0.16" access="RO" descr="" />
+	<field name="x_group5"                        offset="0x68.0"   size="0x0.6" access="RO" descr="" />
+	<field name="x_group4"                        offset="0x68.6"   size="0x0.4" access="RO" descr="" />
+	<field name="x_group3"                        offset="0x68.10"  size="0x0.6" access="RO" descr="" />
+	<field name="x_group2"                        offset="0x68.16"  size="0x0.16" access="RO" descr="" />
+	<field name="x_group7"                        offset="0x6c.15"  size="0x0.13" access="RO" descr="" />
+	<field name="x_group6"                        offset="0x6c.28"  size="0x0.4" access="RO" descr="" />
+	<field name="u_group1"                        offset="0x70.0"   size="0x0.16" access="RO" descr="" />
+	<field name="u_group0"                        offset="0x70.16"  size="0x0.16" access="RO" descr="" />
+	<field name="u_group3"                        offset="0x74.0"   size="0x0.16" access="RO" descr="" />
+	<field name="u_group2"                        offset="0x74.16"  size="0x0.16" access="RO" descr="" />
+	<field name="u_group5"                        offset="0x78.0"   size="0x0.16" access="RO" descr="" />
+	<field name="u_group4"                        offset="0x78.16"  size="0x0.16" access="RO" descr="" />
+	<field name="u_group7"                        offset="0x7c.0"   size="0x0.16" access="RO" descr="" />
+	<field name="u_group6"                        offset="0x7c.16"  size="0x0.16" access="RO" descr="" />
+	<field name="u_group9"                        offset="0x80.0"   size="0x0.16" access="RO" descr="" />
+	<field name="u_group8"                        offset="0x80.16"  size="0x0.16" access="RO" descr="" />
+	<field name="u_group11"                       offset="0x84.0"   size="0x0.16" access="RO" descr="" />
+	<field name="u_group10"                       offset="0x84.16"  size="0x0.16" access="RO" descr="" />
+	<field name="u_group13"                       offset="0x88.0"   size="0x0.16" access="RO" descr="" />
+	<field name="u_group12"                       offset="0x88.16"  size="0x0.16" access="RO" descr="" />
+	<field name="u_group15"                       offset="0x8c.0"   size="0x0.16" access="RO" descr="" />
+	<field name="u_group14"                       offset="0x8c.16"  size="0x0.16" access="RO" descr="" />
+	<field name="ha_group"                        offset="0x90.24"  size="0x10.0" access="RO" high_bound="15" low_bound="0" descr="" />
+	<field name="hb_group"                        offset="0xa0.24"  size="0x10.0" access="RO" high_bound="15" low_bound="0" descr="" />
+	<field name="t_group1"                        offset="0xb0.0"   size="0x0.16" access="RO" descr="" />
+	<field name="t_group0"                        offset="0xb0.16"  size="0x0.16" access="RO" descr="" />
+	<field name="t_group4"                        offset="0xb4.0"   size="0x0.8" access="RO" descr="" />
+	<field name="t_group3"                        offset="0xb4.8"   size="0x0.8" access="RO" descr="" />
+	<field name="t_group2"                        offset="0xb4.16"  size="0x0.16" access="RO" descr="" />
+	<field name="t_group5"                        offset="0xb8.30"  size="0x0.2" access="RO" descr="" />
+	<field name="g_group1"                        offset="0xbc.0"   size="0x0.16" access="RO" descr="" />
+	<field name="g_group0"                        offset="0xbc.16"  size="0x0.16" access="RO" descr="" />
+	<field name="g_group3"                        offset="0xc0.0"   size="0x0.16" access="RO" descr="" />
+	<field name="g_group2"                        offset="0xc0.16"  size="0x0.16" access="RO" descr="" />
+	<field name="g_group5"                        offset="0xc4.0"   size="0x0.16" access="RO" descr="" />
+	<field name="g_group4"                        offset="0xc4.16"  size="0x0.16" access="RO" descr="" />
+	<field name="g_group7"                        offset="0xc8.0"   size="0x0.16" access="RO" descr="" />
+	<field name="g_group6"                        offset="0xc8.16"  size="0x0.16" access="RO" descr="" />
+	<field name="g_group9"                        offset="0xcc.0"   size="0x0.16" access="RO" descr="" />
+	<field name="g_group8"                        offset="0xcc.16"  size="0x0.16" access="RO" descr="" />
+	<field name="ah_group2"                       offset="0xd0.6"   size="0x0.5" access="RO" descr="" />
+	<field name="ah_group1"                       offset="0xd0.11"  size="0x0.5" access="RO" descr="" />
+	<field name="ah_group7"                       offset="0xd4.6"   size="0x0.4" access="RO" descr="" />
+	<field name="ah_group6"                       offset="0xd4.10"  size="0x0.5" access="RO" descr="" />
+	<field name="ah_group5"                       offset="0xd4.15"  size="0x0.4" access="RO" descr="" />
+	<field name="ah_group4"                       offset="0xd4.19"  size="0x0.6" access="RO" descr="" />
+	<field name="ah_group3"                       offset="0xd4.25"  size="0x0.7" access="RO" descr="" />
 </node>
 
 <node name="sltr_periodic_non_destructive_ext"    size="0x124.0" descr="" >
