@@ -36,7 +36,7 @@
  
 
 /***
-         *** This file was generated at "2026-08-27 16:49:58"
+         *** This file was generated at "2026-09-03 08:24:25"
          *** by:
          ***    > [REDACTED]/adb2pack.py --input adb/prm/hca/ext/reg_access_hca.adb --file-prefix reg_access_hca --prefix reg_access_hca_ --no-adb-utils
          ***/
@@ -2222,6 +2222,8 @@ void reg_access_hca_mgir_fw_info_ext_pack(const struct reg_access_hca_mgir_fw_in
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->encryption);
 	offset = 441;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 3, (u_int32_t)ptr_struct->life_cycle_msb);
+	offset = 437;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->num_mctp_ports);
 	offset = 436;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->dev_state);
 	offset = 434;
@@ -2232,12 +2234,6 @@ void reg_access_hca_mgir_fw_info_ext_pack(const struct reg_access_hca_mgir_fw_in
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->ec_offload_engine_disabled);
 	offset = 427;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 5, (u_int32_t)ptr_struct->dev_counter);
-	offset = 476;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->uphy_version_sub_minor);
-	offset = 472;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->uphy_version_minor);
-	offset = 468;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->uphy_version_major);
 	offset = 460;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->BKV_clm_sub_minor);
 	offset = 456;
@@ -2315,6 +2311,8 @@ void reg_access_hca_mgir_fw_info_ext_unpack(struct reg_access_hca_mgir_fw_info_e
 	ptr_struct->encryption = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 441;
 	ptr_struct->life_cycle_msb = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 3);
+	offset = 437;
+	ptr_struct->num_mctp_ports = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
 	offset = 436;
 	ptr_struct->dev_state = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 434;
@@ -2325,12 +2323,6 @@ void reg_access_hca_mgir_fw_info_ext_unpack(struct reg_access_hca_mgir_fw_info_e
 	ptr_struct->ec_offload_engine_disabled = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 427;
 	ptr_struct->dev_counter = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 5);
-	offset = 476;
-	ptr_struct->uphy_version_sub_minor = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
-	offset = 472;
-	ptr_struct->uphy_version_minor = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
-	offset = 468;
-	ptr_struct->uphy_version_major = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
 	offset = 460;
 	ptr_struct->BKV_clm_sub_minor = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
 	offset = 456;
@@ -2411,6 +2403,8 @@ void reg_access_hca_mgir_fw_info_ext_print(const struct reg_access_hca_mgir_fw_i
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "life_cycle_msb       : " UH_FMT "\n", ptr_struct->life_cycle_msb);
 	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "num_mctp_ports       : " UH_FMT "\n", ptr_struct->num_mctp_ports);
+	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "dev_state            : " UH_FMT "\n", ptr_struct->dev_state);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "issu_able            : " UH_FMT "\n", ptr_struct->issu_able);
@@ -2420,12 +2414,6 @@ void reg_access_hca_mgir_fw_info_ext_print(const struct reg_access_hca_mgir_fw_i
 	fprintf(fd, "ec_offload_engine_disabled : " UH_FMT "\n", ptr_struct->ec_offload_engine_disabled);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "dev_counter          : " UH_FMT "\n", ptr_struct->dev_counter);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "uphy_version_sub_minor : " UH_FMT "\n", ptr_struct->uphy_version_sub_minor);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "uphy_version_minor   : " UH_FMT "\n", ptr_struct->uphy_version_minor);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "uphy_version_major   : " UH_FMT "\n", ptr_struct->uphy_version_major);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "BKV_clm_sub_minor    : " UH_FMT "\n", ptr_struct->BKV_clm_sub_minor);
 	adb2c_add_indentation(fd, indent_level);
@@ -3003,7 +2991,7 @@ void reg_access_hca_MRFV_ext_print(const struct reg_access_hca_MRFV_ext *ptr_str
 	fprintf(fd, "======== reg_access_hca_MRFV_ext ========\n");
 
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "fuse_id              : %s (" UH_FMT ")\n", (ptr_struct->fuse_id == 0 ? ("cvb") : ((ptr_struct->fuse_id == 1 ? ("ULT") : ((ptr_struct->fuse_id == 2 ? ("vdd_main_die") : ((ptr_struct->fuse_id == 3 ? ("vdd_tile_0") : ((ptr_struct->fuse_id == 4 ? ("vdd_tile_1") : ((ptr_struct->fuse_id == 5 ? ("vdd_tile_2") : ((ptr_struct->fuse_id == 6 ? ("vdd_tile_3") : ((ptr_struct->fuse_id == 7 ? ("vdd_tile_4") : ((ptr_struct->fuse_id == 8 ? ("vdd_tile_5") : ((ptr_struct->fuse_id == 9 ? ("vdd_tile_6") : ((ptr_struct->fuse_id == 10 ? ("vdd_tile_7") : ((ptr_struct->fuse_id == 11 ? ("raw_and_value_vdd") : ((ptr_struct->fuse_id == 12 ? ("raw_and_value_pl_avdd") : ((ptr_struct->fuse_id == 13 ? ("raw_and_value_pl_dvdd") : ((ptr_struct->fuse_id == 15 ? ("raw_and_value_opt_fuse_rev") : ((ptr_struct->fuse_id == 16 ? ("raw_and_value_dvdd_sg") : ((ptr_struct->fuse_id == 17 ? ("raw_and_value_opt_lot_code_0") : ((ptr_struct->fuse_id == 18 ? ("raw_and_value_opt_lot_code_1") : ((ptr_struct->fuse_id == 19 ? ("raw_and_value_opt_ops_reserved") : ((ptr_struct->fuse_id == 20 ? ("raw_and_value_opt_vendor_code") : ((ptr_struct->fuse_id == 21 ? ("raw_and_value_opt_wafer_id") : ((ptr_struct->fuse_id == 22 ? ("raw_and_value_opt_x_coordinate") : ((ptr_struct->fuse_id == 23 ? ("raw_and_value_opt_y_coordinate") : ((ptr_struct->fuse_id == 24 ? ("raw_and_value_opt_fab_code") : ((ptr_struct->fuse_id == 30 ? ("raw_and_value_dvdd") : ((ptr_struct->fuse_id == 31 ? ("raw_and_value_vddp") : ("unknown")))))))))))))))))))))))))))))))))))))))))))))))))))), ptr_struct->fuse_id);
+	fprintf(fd, "fuse_id              : %s (" UH_FMT ")\n", (ptr_struct->fuse_id == 0 ? ("cvb") : ((ptr_struct->fuse_id == 1 ? ("ULT") : ((ptr_struct->fuse_id == 2 ? ("vdd_main_die") : ((ptr_struct->fuse_id == 3 ? ("vdd_tile_0") : ((ptr_struct->fuse_id == 4 ? ("vdd_tile_1") : ((ptr_struct->fuse_id == 5 ? ("vdd_tile_2") : ((ptr_struct->fuse_id == 6 ? ("vdd_tile_3") : ((ptr_struct->fuse_id == 7 ? ("vdd_tile_4") : ((ptr_struct->fuse_id == 8 ? ("vdd_tile_5") : ((ptr_struct->fuse_id == 9 ? ("vdd_tile_6") : ((ptr_struct->fuse_id == 10 ? ("vdd_tile_7") : ((ptr_struct->fuse_id == 30 ? ("raw_and_value_dvdd") : ((ptr_struct->fuse_id == 31 ? ("raw_and_value_vddp") : ("unknown")))))))))))))))))))))))))), ptr_struct->fuse_id);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "instance_id          : " UH_FMT "\n", ptr_struct->instance_id);
 	adb2c_add_indentation(fd, indent_level);

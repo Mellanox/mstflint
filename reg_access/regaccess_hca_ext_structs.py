@@ -33,7 +33,7 @@
 
 
 ###############################################################################
-#    This file was generated at "2026-08-27 16:50:00"
+#    This file was generated at "2026-09-03 08:24:27"
 #    by:
 #      > prm_update.py --project Nic
 ###############################################################################
@@ -232,14 +232,12 @@ class MGIR_FW_INFO_EXT(ctypes.Structure):
         ("sec_boot", ctypes.c_uint8),
         ("encryption", ctypes.c_uint8),
         ("life_cycle_msb", ctypes.c_uint8),
+        ("num_mctp_ports", ctypes.c_uint8),
         ("dev_state", ctypes.c_uint8),
         ("issu_able", ctypes.c_uint8),
         ("pds", ctypes.c_uint8),
         ("ec_offload_engine_disabled", ctypes.c_uint8),
         ("dev_counter", ctypes.c_uint8),
-        ("uphy_version_sub_minor", ctypes.c_uint8),
-        ("uphy_version_minor", ctypes.c_uint8),
-        ("uphy_version_major", ctypes.c_uint8),
         ("BKV_clm_sub_minor", ctypes.c_uint8),
         ("BKV_clm_minor", ctypes.c_uint8),
         ("BKV_clm_major", ctypes.c_uint8),

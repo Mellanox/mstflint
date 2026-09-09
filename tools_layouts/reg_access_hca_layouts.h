@@ -33,10 +33,10 @@
 *  Version: $Id$
 *
 */
-
+ 
 
 /***
-         *** This file was generated at "2026-08-27 16:49:58"
+         *** This file was generated at "2026-09-03 08:24:25"
          *** by:
          ***    > [REDACTED]/adb2pack.py --input adb/prm/hca/ext/reg_access_hca.adb --file-prefix reg_access_hca --prefix reg_access_hca_ --no-adb-utils
          ***/
@@ -866,8 +866,8 @@ struct reg_access_hca_ptys_ext_proto_ib_cap_oper_ext {
 struct reg_access_hca_ptys_ext_proto_nvlink_admin_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - NVLink bitmask:Bit 0: 200G_1x_mode_a -
-Bit 1: 400G_2x_mode_a Bit 2: 400G_2x_mode_b Bit 3: 360G_2x_mode_b Bit 4: 328G_2x_mode_b Bit 5: 378_2x_mode_b
-Bit 6: 200G_2x_mode_a
+Bit 1: 400G_2x_mode_a Bit 2: 400G_2x_mode_b Bit 3: 360G_2x_mode_b Bit 4: 328G_2x_mode_b Bit 5: 378_2x_mode_b 
+Bit 6: 200G_2x_mode_a 
 Bit 7: 187G_1x_mode_a Bit 8: 176G_1x_mode_a Bit 9: 169G_1x_mode_a Bit 10: 100G_1x_mode_a Bit 11: 345G_2x_mode_b */
 	/* 0x0.0 - 0x0.31 */
 	/* access: RW */
@@ -879,8 +879,8 @@ Bit 7: 187G_1x_mode_a Bit 8: 176G_1x_mode_a Bit 9: 169G_1x_mode_a Bit 10: 100G_1
 struct reg_access_hca_ptys_ext_proto_nvlink_cap_oper_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - NVLink bitmask:Bit 0: 200G_1x_mode_a -
-Bit 1: 400G_2x_mode_a Bit 2: 400G_2x_mode_b Bit 3: 360G_2x_mode_b Bit 4: 328G_2x_mode_b Bit 5: 378_2x_mode_b
-Bit 6: 200G_2x_mode_a
+Bit 1: 400G_2x_mode_a Bit 2: 400G_2x_mode_b Bit 3: 360G_2x_mode_b Bit 4: 328G_2x_mode_b Bit 5: 378_2x_mode_b 
+Bit 6: 200G_2x_mode_a 
 Bit 7: 187G_1x_mode_a Bit 8: 176G_1x_mode_a Bit 9: 169G_1x_mode_a Bit 10: 100G_1x_mode_a Bit 11: 345G_2x_mode_b */
 	/* 0x0.0 - 0x0.31 */
 	/* access: RO */
@@ -1231,6 +1231,14 @@ combination of both fields.0: Production1: GA Secured2: GA Non-Secured3: RMA4: P
 	/* 0x34.4 - 0x34.6 */
 	/* access: RO */
 	u_int8_t life_cycle_msb;
+	/* Description - Number of MCTP ports exposed to host software through
+MMCTP. Valid MMCTP.mctp_port_id values are 0
+to num_mctp_ports - 1.Returns 0 when MMCTP is not supported.Supported when MCAM.mng_feature_cap_mask bit 97 is set. Supported on
+ConnectX-10 and above, Spectrum-7 and above, and Quantum-6 and above.
+ConnectX-10, Spectrum-7, and Quantum-6 report 1. */
+	/* 0x34.7 - 0x34.10 */
+	/* access: RO */
+	u_int8_t num_mctp_ports;
 	/* Description - 0: device is in prod mode1: device is in dev mode */
 	/* 0x34.11 - 0x34.11 */
 	/* access: RO */
@@ -1253,18 +1261,6 @@ version */
 	/* access: RO */
 	u_int8_t dev_counter;
 /*---------------- DWORD[14] (Offset 0x38) ----------------*/
-	/* Description - (see above) */
-	/* 0x38.0 - 0x38.3 */
-	/* access: RO */
-	u_int8_t uphy_version_sub_minor;
-	/* Description - (see above) */
-	/* 0x38.4 - 0x38.7 */
-	/* access: RO */
-	u_int8_t uphy_version_minor;
-	/* Description - uPHY version patch, read at runtime from SerDes. */
-	/* 0x38.8 - 0x38.11 */
-	/* access: RO */
-	u_int8_t uphy_version_major;
 	/* Description - (see above) */
 	/* 0x38.16 - 0x38.19 */
 	/* access: RO */
@@ -1533,8 +1529,7 @@ struct reg_access_hca_uint64 {
 /* Size in bytes - 64 */
 struct reg_access_hca_MRFV_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Fuse Index0: cvb - CVB Main Die, used for Retimer1: ULT2: vdd_main_die - (used in SPC-4, SPC-5)3: vdd_tile_0 - (used in SPC-4, SPC-5)4: vdd_tile_1 - (used in SPC-4, SPC-5)5: vdd_tile_2 - (used in SPC-4, SPC-5)6: vdd_tile_3 - (used in SPC-4, SPC-5)7: vdd_tile_4 - (used in SPC-4, SPC-5)8: vdd_tile_5 - (used in SPC-4, SPC-5)9: vdd_tile_6 - (used in SPC-4, SPC-5)10: vdd_tile_7 - (used in SPC-4, SPC-5)[SwitchOnly][DWIP]:11: raw_and_value_vdd - Use instance_id for the specific instance. Valid on SPC6.12: raw_and_value_pl_avdd - Use instance_id for the specific instance. Valid on SPC6.13: raw_and_value_pl_dvdd - Use instance_id for the specific instance. Valid on SPC6.15: raw_and_value_opt_fuse_rev - Valid on SPC6 CPO.16: raw_and_value_dvdd_sg - Use instance_id for the specific instance. Valid on SPC6 CPO.17: raw_and_value_opt_lot_code_0 - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.18: raw_and_value_opt_lot_code_1 - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.19: raw_and_value_opt_ops_reserved - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.20: raw_and_value_opt_vendor_code - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.21: raw_and_value_opt_wafer_id Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.22: raw_and_value_opt_x_coordinate Use entity_index to specify the Optical Engine index Valid on SPC6 CPO.23: raw_and_value_opt_y_coordinate Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.24: raw_and_value_opt_fab_code
-Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO. -
+	/* Description - Fuse Index0: cvb - CVB Main Die, used for Retimer1: ULT2: vdd_main_die - (used in SPC-4, SPC-5)3: vdd_tile_0 - (used in SPC-4, SPC-5)4: vdd_tile_1 - (used in SPC-4, SPC-5)5: vdd_tile_2 - (used in SPC-4, SPC-5)6: vdd_tile_3 - (used in SPC-4, SPC-5)7: vdd_tile_4 - (used in SPC-4, SPC-5)8: vdd_tile_5 - (used in SPC-4, SPC-5)9: vdd_tile_6 - (used in SPC-4, SPC-5)10: vdd_tile_7 - (used in SPC-4, SPC-5) -
  -
  -
 
@@ -1584,9 +1579,9 @@ resides, if not part of the ASIC itself.Currently only valid elements are Optica
 	/* access: INDEX */
 	u_int8_t module_index_msb;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
-	/* Description - DataSee
-MRFV entry - CVB LayoutSee
-MRFV entry - ULT LayoutSee
+	/* Description - DataSee 
+MRFV entry - CVB LayoutSee 
+MRFV entry - ULT LayoutSee 
 MRFV entry - VDD_MAIN LayoutSee
 
 MRFV entry - VDD_Tile LayoutSee
@@ -1820,7 +1815,8 @@ PEMI.laser_source_essential, PEMI.laser_source_advance, PEMI.module
 status, PEMI.optical_engine_telemetry_parameters, PEMI.cpo_module,
 PEMI.last_sub_module.Bit 89: If set, supports minimum temperatures, as well as alerts for low
 critical and high critical thresholds, in the following registers: MTMP,
-MTEWE, MTBR, MTBR_v2.Bit 90: If set, MQDIK.key_index=1 is supported.Bit 91: If set, CPO Combined Model is supported.Bit 93: If set, MGIR.hw_info.board_ga is supported; ignore otherwise.Bit 94: If set, MFKV is supported.Bit 95: If set, MRFV.fm2 and MRFV.fm_sel are supported. */
+MTEWE, MTBR, MTBR_v2.Bit 90: If set, MQDIK.key_index=1 is supported.Bit 91: If set, CPO Combined Model is supported.Bit 93: If set, MGIR.hw_info.board_ga is supported; ignore otherwise.Bit 94: If set, MFKV is supported.Bit 95: If set, MRFV.fm2 and MRFV.fm_sel are supported.Bit 97: If set, MGIR.fw_info.num_mctp_ports and
+MMCTP are supported. */
 	/* 0x28.0 - 0x34.31 */
 	/* access: RO */
 	u_int32_t mng_feature_cap_mask[4];
@@ -2072,7 +2068,7 @@ component_index). */
 	u_int8_t last_index_flag;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - This field uniquely identifies a specific component type.0x1: BOOT_IMG0x4: OEM_NVCONFIG0x5: MLNX_NVCONFIG0x6: CS_TOKEN0x7: DBG_TOKEN0xA: Gearbox0xB: CC_ALGO - Congestion Control Algorithm0xC: LINKX_IMG0xD: CRYPTO_TO_COMMISSIONING0xE: RMCS_TOKEN0xF: RMDT_TOKEN0x10: CRCS_TOKEN
-0x11: CRDT_TOKEN 0x12: CLOCK_SYNC_EEPROM
+0x11: CRDT_TOKEN 0x12: CLOCK_SYNC_EEPROM  
 0x15: DIGITAL_CACERT - Certificate to be trusted by the device0x17: DIGITAL_CACERT_REMOVAL0x1A: LINKX_FW_ELS0x1C: DPA_COMPONENT0x1D: DPA_COMPONENT_REMOVAL0x1E: MTDT_TOKEN[DWIP]: 0x1F: CPO_VMOD_FW0x20: PSC_TOKEN[DWIP]: 0x22: CPLD_IMG[DWIP]: 0x23: HBI_IMGOther values are reserved */
 	/* 0x4.0 - 0x4.15 */
 	/* access: RO */
