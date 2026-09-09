@@ -2757,9 +2757,7 @@ bool MlxlinkAmBerCollector::isTestModeNvlinkModeB()
         updateField("pnat", _pnat);
         sendRegister(ACCESS_REG_PPRT, MACCESS_REG_METHOD_GET);
 
-        string laneRateOperStr = getStrByValue(getFieldValue("lane_rate_oper"), _mlxlinkMaps->_prbsLaneRateList);
-        // XDR = Mode A, others = Mode B
-        return (laneRateOperStr != _mlxlinkMaps->_prbsLaneRateList[PRBS_XDR]);
+        return isPrbsLaneRateModeB(getFieldValue("lane_rate_oper"));
     }
     catch (...)
     {
@@ -3665,17 +3663,10 @@ void MlxlinkAmBerCollector::updateNumOfLanesForTestModeNVL6()
     updateField("local_port", _localPort);
     updateField("e", PPRT_PPTT_ENABLE);
     sendRegister(ACCESS_REG_PPRT, MACCESS_REG_METHOD_GET);
-    string laneRateStr = getStrByValue(getFieldValue("lane_rate_oper"), _mlxlinkMaps->_prbsLaneRateList);
     if (_isNvlinkModeB || _isNvlinkModeA)
     {
-        if (laneRateStr == _mlxlinkMaps->_prbsLaneRateList[PRBS_XDR])
-        {
-            _numOfLanes = 1; // XDR_1X mode has 1 lane (XDR_2X is currently not supported)
-        }
-        else
-        {
-            _numOfLanes = 2; // Mode B has 2 lanes, usually we should query PMLP to get the actual number of lanes
-        }
+        // Mode B bonds two physical lanes into one logical link, Mode A drives a single lane
+        _numOfLanes = isPrbsLaneRateModeB(getFieldValue("lane_rate_oper")) ? 2 : 1;
     }
 }
 

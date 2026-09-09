@@ -132,25 +132,33 @@ struct CAP_VALUE
         value = 0;
         capExtMask = 0;
         name = "";
+        modulation = PRBS_MODULATION_DEFAULT;
     }
-    CAP_VALUE(u_int32_t _cap, u_int32_t _val, u_int32_t _capExt = 0)
+    CAP_VALUE(u_int32_t _cap, u_int32_t _val, u_int32_t _capExt = 0, u_int32_t _modulation = PRBS_MODULATION_DEFAULT)
     {
         capMask = _cap;
         value = _val;
         capExtMask = _capExt;
         name = "";
+        modulation = _modulation;
     }
-    CAP_VALUE(string _name, u_int32_t _cap, u_int32_t _val, u_int32_t _capExt = 0)
+    CAP_VALUE(string _name,
+              u_int32_t _cap,
+              u_int32_t _val,
+              u_int32_t _capExt = 0,
+              u_int32_t _modulation = PRBS_MODULATION_DEFAULT)
     {
         capMask = _cap;
         value = _val;
         capExtMask = _capExt;
         name = _name;
+        modulation = _modulation;
     }
     u_int32_t capMask;
     u_int32_t value;
     u_int32_t capExtMask;
     string name;
+    u_int32_t modulation;
 
     bool capSupported(u_int32_t devCapMask) const { return (devCapMask & capMask) != 0; }
 

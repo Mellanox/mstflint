@@ -600,70 +600,86 @@ void MlxlinkMaps::initPrbsMapping()
     _prbsLaneRateList[14] = "164G";
     _prbsLaneRateList[15] = "189G";
     _prbsLaneRateList[16] = "172.5G";
+    _prbsLaneRateList[17] = "187G";
+    _prbsLaneRateList[18] = "176G";
+    _prbsLaneRateList[19] = "169G";
 
     // 1G
-    _prbsLaneRate["1G"] = {LANE_RATE_1G_CAP, PRBS_1G};
+    _prbsLaneRate["1G"] = {LANE_RATE_1G_CAP, PRBS_1G, 0, PRBS_MODULATION_NRZ};
     // 2.5G
-    _prbsLaneRate["XAUI"] = {LANE_RATE_XAUI_CAP, PRBS_XAUI};
-    _prbsLaneRate["2.5G"] = {LANE_RATE_XAUI_CAP, PRBS_XAUI};
+    _prbsLaneRate["XAUI"] = {LANE_RATE_XAUI_CAP, PRBS_XAUI, 0, PRBS_MODULATION_NRZ};
+    _prbsLaneRate["2.5G"] = {LANE_RATE_XAUI_CAP, PRBS_XAUI, 0, PRBS_MODULATION_NRZ};
     // 50G-KR4
-    _prbsLaneRate["50GE-KR4"] = {LANE_RATE_50G_CAP, PRBS_50G};
-    _prbsLaneRate["12.89G"] = {LANE_RATE_50G_CAP, PRBS_50G};
+    _prbsLaneRate["50GE-KR4"] = {LANE_RATE_50G_CAP, PRBS_50G, 0, PRBS_MODULATION_NRZ};
+    _prbsLaneRate["12.89G"] = {LANE_RATE_50G_CAP, PRBS_50G, 0, PRBS_MODULATION_NRZ};
     // SDR
-    _prbsLaneRate["IB-SDR"] = {LANE_RATE_SDR_CAP, PRBS_SDR};
-    _prbsLaneRate["SDR"] = {LANE_RATE_SDR_CAP, PRBS_SDR};
+    _prbsLaneRate["IB-SDR"] = {LANE_RATE_SDR_CAP, PRBS_SDR, 0, PRBS_MODULATION_NRZ};
+    _prbsLaneRate["SDR"] = {LANE_RATE_SDR_CAP, PRBS_SDR, 0, PRBS_MODULATION_NRZ};
     // DDR
-    _prbsLaneRate["IB-DDR"] = {LANE_RATE_DDR_CAP, PRBS_DDR};
-    _prbsLaneRate["DDR"] = {LANE_RATE_DDR_CAP, PRBS_DDR};
-    _prbsLaneRate["5G"] = {LANE_RATE_DDR_CAP, PRBS_DDR};
+    _prbsLaneRate["IB-DDR"] = {LANE_RATE_DDR_CAP, PRBS_DDR, 0, PRBS_MODULATION_NRZ};
+    _prbsLaneRate["DDR"] = {LANE_RATE_DDR_CAP, PRBS_DDR, 0, PRBS_MODULATION_NRZ};
+    _prbsLaneRate["5G"] = {LANE_RATE_DDR_CAP, PRBS_DDR, 0, PRBS_MODULATION_NRZ};
     // QDR
-    _prbsLaneRate["IB-QDR"] = {LANE_RATE_QDR_CAP, PRBS_QDR};
-    _prbsLaneRate["QDR"] = {LANE_RATE_QDR_CAP, PRBS_QDR};
+    _prbsLaneRate["IB-QDR"] = {LANE_RATE_QDR_CAP, PRBS_QDR, 0, PRBS_MODULATION_NRZ};
+    _prbsLaneRate["QDR"] = {LANE_RATE_QDR_CAP, PRBS_QDR, 0, PRBS_MODULATION_NRZ};
     // FDR10
-    _prbsLaneRate["IB-FDR10"] = {LANE_RATE_FDR10_CAP, PRBS_FDR10};
-    _prbsLaneRate["FDR10"] = {LANE_RATE_FDR10_CAP, PRBS_FDR10};
-    _prbsLaneRate["10G"] = {LANE_RATE_FDR10_CAP, PRBS_FDR10};
-    _prbsLaneRate["40G"] = {LANE_RATE_FDR10_CAP, PRBS_FDR10};
+    _prbsLaneRate["IB-FDR10"] = {LANE_RATE_FDR10_CAP, PRBS_FDR10, 0, PRBS_MODULATION_NRZ};
+    _prbsLaneRate["FDR10"] = {LANE_RATE_FDR10_CAP, PRBS_FDR10, 0, PRBS_MODULATION_NRZ};
+    _prbsLaneRate["10G"] = {LANE_RATE_FDR10_CAP, PRBS_FDR10, 0, PRBS_MODULATION_NRZ};
+    _prbsLaneRate["40G"] = {LANE_RATE_FDR10_CAP, PRBS_FDR10, 0, PRBS_MODULATION_NRZ};
     // FDR
-    _prbsLaneRate["IB-FDR"] = {LANE_RATE_FDR_CAP, PRBS_FDR};
-    _prbsLaneRate["FDR"] = {LANE_RATE_FDR_CAP, PRBS_FDR};
-    _prbsLaneRate["14G"] = {LANE_RATE_FDR_CAP, PRBS_FDR};
+    _prbsLaneRate["IB-FDR"] = {LANE_RATE_FDR_CAP, PRBS_FDR, 0, PRBS_MODULATION_NRZ};
+    _prbsLaneRate["FDR"] = {LANE_RATE_FDR_CAP, PRBS_FDR, 0, PRBS_MODULATION_NRZ};
+    _prbsLaneRate["14G"] = {LANE_RATE_FDR_CAP, PRBS_FDR, 0, PRBS_MODULATION_NRZ};
     // EDR
-    _prbsLaneRate["IB-EDR"] = {LANE_RATE_EDR_CAP, PRBS_EDR};
-    _prbsLaneRate["EDR"] = {LANE_RATE_EDR_CAP, PRBS_EDR};
-    _prbsLaneRate["25G"] = {LANE_RATE_EDR_CAP, PRBS_EDR};
-    _prbsLaneRate["50G"] = {LANE_RATE_EDR_CAP, PRBS_EDR};
-    _prbsLaneRate["50G_2X"] = {LANE_RATE_EDR_CAP, PRBS_EDR};
-    _prbsLaneRate["100G"] = {LANE_RATE_EDR_CAP, PRBS_EDR};
-    _prbsLaneRate["100G_4X"] = {LANE_RATE_EDR_CAP, PRBS_EDR};
+    _prbsLaneRate["IB-EDR"] = {LANE_RATE_EDR_CAP, PRBS_EDR, 0, PRBS_MODULATION_NRZ};
+    _prbsLaneRate["EDR"] = {LANE_RATE_EDR_CAP, PRBS_EDR, 0, PRBS_MODULATION_NRZ};
+    _prbsLaneRate["25G"] = {LANE_RATE_EDR_CAP, PRBS_EDR, 0, PRBS_MODULATION_NRZ};
+    _prbsLaneRate["50G"] = {LANE_RATE_EDR_CAP, PRBS_EDR, 0, PRBS_MODULATION_NRZ};
+    _prbsLaneRate["50G_2X"] = {LANE_RATE_EDR_CAP, PRBS_EDR, 0, PRBS_MODULATION_NRZ};
+    _prbsLaneRate["100G"] = {LANE_RATE_EDR_CAP, PRBS_EDR, 0, PRBS_MODULATION_NRZ};
+    _prbsLaneRate["100G_4X"] = {LANE_RATE_EDR_CAP, PRBS_EDR, 0, PRBS_MODULATION_NRZ};
     // HDR
-    _prbsLaneRate["IB-HDR"] = {LANE_RATE_HDR_CAP, PRBS_HDR};
-    _prbsLaneRate["HDR"] = {LANE_RATE_HDR_CAP, PRBS_HDR};
-    _prbsLaneRate["50G_1X"] = {LANE_RATE_HDR_CAP, PRBS_HDR};
-    _prbsLaneRate["100G_2X"] = {LANE_RATE_HDR_CAP, PRBS_HDR};
-    _prbsLaneRate["200G_4X"] = {LANE_RATE_HDR_CAP, PRBS_HDR};
-    _prbsLaneRate["400G_8X"] = {LANE_RATE_HDR_CAP, PRBS_HDR};
+    _prbsLaneRate["IB-HDR"] = {LANE_RATE_HDR_CAP, PRBS_HDR, 0, PRBS_MODULATION_PAM4_ENCODING};
+    _prbsLaneRate["HDR"] = {LANE_RATE_HDR_CAP, PRBS_HDR, 0, PRBS_MODULATION_PAM4_ENCODING};
+    _prbsLaneRate["50G_1X"] = {LANE_RATE_HDR_CAP, PRBS_HDR, 0, PRBS_MODULATION_PAM4_ENCODING};
+    _prbsLaneRate["100G_2X"] = {LANE_RATE_HDR_CAP, PRBS_HDR, 0, PRBS_MODULATION_PAM4_ENCODING};
+    _prbsLaneRate["200G_4X"] = {LANE_RATE_HDR_CAP, PRBS_HDR, 0, PRBS_MODULATION_PAM4_ENCODING};
+    _prbsLaneRate["400G_8X"] = {LANE_RATE_HDR_CAP, PRBS_HDR, 0, PRBS_MODULATION_PAM4_ENCODING};
     // NDR
-    _prbsLaneRate["IB-NDR"] = {LANE_RATE_NDR_CAP, PRBS_NDR};
-    _prbsLaneRate["NDR"] = {LANE_RATE_NDR_CAP, PRBS_NDR};
-    _prbsLaneRate["100G_1X"] = {LANE_RATE_NDR_CAP, PRBS_NDR};
-    _prbsLaneRate["200G_2X"] = {LANE_RATE_NDR_CAP, PRBS_NDR};
-    _prbsLaneRate["400G_4X"] = {LANE_RATE_NDR_CAP, PRBS_NDR};
-    _prbsLaneRate["800G_8X"] = {LANE_RATE_NDR_CAP, PRBS_NDR};
+    _prbsLaneRate["IB-NDR"] = {LANE_RATE_NDR_CAP, PRBS_NDR, 0, PRBS_MODULATION_PAM4_ENCODING};
+    _prbsLaneRate["NDR"] = {LANE_RATE_NDR_CAP, PRBS_NDR, 0, PRBS_MODULATION_PAM4_ENCODING};
+    _prbsLaneRate["100G_1X"] = {LANE_RATE_NDR_CAP, PRBS_NDR, 0, PRBS_MODULATION_PAM4_ENCODING};
+    _prbsLaneRate["200G_2X"] = {LANE_RATE_NDR_CAP, PRBS_NDR, 0, PRBS_MODULATION_PAM4_ENCODING};
+    _prbsLaneRate["400G_4X"] = {LANE_RATE_NDR_CAP, PRBS_NDR, 0, PRBS_MODULATION_PAM4_ENCODING};
+    _prbsLaneRate["800G_8X"] = {LANE_RATE_NDR_CAP, PRBS_NDR, 0, PRBS_MODULATION_PAM4_ENCODING};
     // XDR
-    _prbsLaneRate["IB-XDR"] = {LANE_RATE_XDR_CAP, PRBS_XDR};
-    _prbsLaneRate["XDR"] = {LANE_RATE_XDR_CAP, PRBS_XDR};
-    _prbsLaneRate["200G_1X"] = {LANE_RATE_XDR_CAP, PRBS_XDR};
-    _prbsLaneRate["400G_2X"] = {LANE_RATE_XDR_CAP, PRBS_XDR};
-    _prbsLaneRate["800G_4X"] = {LANE_RATE_XDR_CAP, PRBS_XDR};
-    _prbsLaneRate["1600G_8X"] = {LANE_RATE_XDR_CAP, PRBS_XDR};
+    _prbsLaneRate["IB-XDR"] = {LANE_RATE_XDR_CAP, PRBS_XDR, 0, PRBS_MODULATION_PAM4_ENCODING};
+    _prbsLaneRate["XDR"] = {LANE_RATE_XDR_CAP, PRBS_XDR, 0, PRBS_MODULATION_PAM4_ENCODING};
+    _prbsLaneRate["200G_1X"] = {LANE_RATE_XDR_CAP, PRBS_XDR, 0, PRBS_MODULATION_PAM4_ENCODING};
+    _prbsLaneRate["400G_2X"] = {LANE_RATE_XDR_CAP, PRBS_XDR, 0, PRBS_MODULATION_PAM4_ENCODING};
+    _prbsLaneRate["800G_4X"] = {LANE_RATE_XDR_CAP, PRBS_XDR, 0, PRBS_MODULATION_PAM4_ENCODING};
+    _prbsLaneRate["1600G_8X"] = {LANE_RATE_XDR_CAP, PRBS_XDR, 0, PRBS_MODULATION_PAM4_ENCODING};
 
     // NVL6
-    _prbsLaneRate["400G_2X_MODE_B"] = {LANE_RATE_400G_2X_MODE_B_CAP, PRBS_400G_2X_MODE_B};
-    _prbsLaneRate["360G_2X_MODE_B"] = {LANE_RATE_360G_2X_MODE_B_CAP, PRBS_360G_2X_MODE_B};
-    _prbsLaneRate["328G_2X_MODE_B"] = {LANE_RATE_328G_2X_MODE_B_CAP, PRBS_328G_2X_MODE_B};
-    _prbsLaneRate["378G_2X_MODE_B"] = {LANE_RATE_378G_2X_MODE_B_CAP, PRBS_378G_2X_MODE_B};
-    _prbsLaneRate["345G_2X_MODE_B"] = {0, PRBS_345G_2X_MODE_B, LANE_RATE_345G_2X_MODE_B_CAP_EXT};
+    _prbsLaneRate["400G_2X_MODE_B"] = {LANE_RATE_400G_2X_MODE_B_CAP, PRBS_400G_2X_MODE_B, 0,
+                                       PRBS_MODULATION_PAM4_PRECODING};
+    _prbsLaneRate["360G_2X_MODE_B"] = {LANE_RATE_360G_2X_MODE_B_CAP, PRBS_360G_2X_MODE_B, 0,
+                                       PRBS_MODULATION_PAM4_PRECODING};
+    _prbsLaneRate["328G_2X_MODE_B"] = {LANE_RATE_328G_2X_MODE_B_CAP, PRBS_328G_2X_MODE_B, 0,
+                                       PRBS_MODULATION_PAM4_PRECODING};
+    _prbsLaneRate["378G_2X_MODE_B"] = {LANE_RATE_378G_2X_MODE_B_CAP, PRBS_378G_2X_MODE_B, 0,
+                                       PRBS_MODULATION_PAM4_PRECODING};
+    _prbsLaneRate["345G_2X_MODE_B"] = {0, PRBS_345G_2X_MODE_B, LANE_RATE_345G_2X_MODE_B_CAP_EXT,
+                                       PRBS_MODULATION_PAM4_PRECODING};
+
+    // NVL7
+    _prbsLaneRate["187G_1X_MODE_A"] = {0, PRBS_187G_1X_MODE_A, LANE_RATE_187G_1X_MODE_A_CAP_EXT,
+                                       PRBS_MODULATION_PAM4_ENCODING};
+    _prbsLaneRate["176G_1X_MODE_A"] = {0, PRBS_176G_1X_MODE_A, LANE_RATE_176G_1X_MODE_A_CAP_EXT,
+                                       PRBS_MODULATION_PAM4_ENCODING};
+    _prbsLaneRate["169G_1X_MODE_A"] = {0, PRBS_169G_1X_MODE_A, LANE_RATE_169G_1X_MODE_A_CAP_EXT,
+                                       PRBS_MODULATION_PAM4_ENCODING};
 
     _prbsRxTuningStatus[0] = "PRBS mode tuning was not performed.";
     _prbsRxTuningStatus[1] = "Performing PRBS mode tuning.";
@@ -684,13 +700,15 @@ void MlxlinkMaps::initPrbsMapping()
       _prbsLaneRateCap[LANE_RATE_HDR_CAP] = "HDR/50G/100G/200G/400G (26.5625Gbd/53.125Gb/s)";
       _prbsLaneRateCap[LANE_RATE_NDR_CAP] = "NDR/100G/200G/400G/800G (53.125Gbd/106.25Gb/s)";
       _prbsLaneRateCap[LANE_RATE_XDR_CAP] = "XDR/NVL6/200G_1x_mode_a/200G/400G/800G/1600G (106.25Gbd/212.5Gb/s)";
-      _prbsLaneRateCap[LANE_RATE_360G_2X_MODE_B_CAP] = "NVL6/NVL7/360G_2x_mode_b/168p75G_1x_mode_b (90Gbd/180Gb/s)";
-      _prbsLaneRateCap[LANE_RATE_400G_2X_MODE_B_CAP] = "NVL6/NVL7/400G_2x_mode_b/187p5_1x_mode_b (100Gbd/200Gb/s)";
-      _prbsLaneRateCap[LANE_RATE_328G_2X_MODE_B_CAP] = "NVL6/NVL7/328G_2x_mode_b/153p75G_1x_mode_b (82Gbd/164Gb/s)";
-      _prbsLaneRateCap[LANE_RATE_378G_2X_MODE_B_CAP] = "NVL6/NVL7/378G_2x_mode_b/189G_1x_mode_b (94.5 Gbd/189 Gb/s)";
+      _prbsLaneRateCap[LANE_RATE_360G_2X_MODE_B_CAP] = "NVL6/360G_2x_mode_b (90Gbd/180Gb/s)";
+      _prbsLaneRateCap[LANE_RATE_400G_2X_MODE_B_CAP] = "NVL6/400G_2x_mode_b (100Gbd/200Gb/s)";
+      _prbsLaneRateCap[LANE_RATE_328G_2X_MODE_B_CAP] = "NVL6/328G_2x_mode_b (82Gbd/164Gb/s)";
+      _prbsLaneRateCap[LANE_RATE_378G_2X_MODE_B_CAP] = "NVL6/378G_2x_mode_b (94.5 Gbd/189 Gb/s)";
 
-      _prbsLaneRateCapExt[LANE_RATE_345G_2X_MODE_B_CAP_EXT] =
-        "NVL6/NVL7/345G_2x_mode_b/172p5G_1x_mode_b (86.25 Gbd/172.5 Gb/s)";
+      _prbsLaneRateCapExt[LANE_RATE_345G_2X_MODE_B_CAP_EXT] = "NVL6/345G_2x_mode_b (86.25 Gbd/172.5 Gb/s)";
+      _prbsLaneRateCapExt[LANE_RATE_187G_1X_MODE_A_CAP_EXT] = "NVL7/187G_1x_mode_a (93.5 Gbd/187 Gb/s)";
+      _prbsLaneRateCapExt[LANE_RATE_176G_1X_MODE_A_CAP_EXT] = "NVL7/176G_1x_mode_a (88 Gbd/176 Gb/s)";
+      _prbsLaneRateCapExt[LANE_RATE_169G_1X_MODE_A_CAP_EXT] = "NVL7/169G_1x_mode_a (84.5 Gbd/169 Gb/s)";
 
     _prbsLockStatus[0] = "Not locked";
     _prbsLockStatus[1] = "Locked";

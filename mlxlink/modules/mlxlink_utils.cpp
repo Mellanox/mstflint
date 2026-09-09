@@ -905,6 +905,12 @@ bool isNvlinkModeBSpeed(bool isNvl6, u_int32_t linkSpeed)
                           NVLINK_SPEED_378G_2X_MODE_B | NVLINK_SPEED_345G_2X_MODE_B)));
 }
 
+bool isPrbsLaneRateModeB(u_int32_t laneRate)
+{
+    return (laneRate == PRBS_400G_2X_MODE_B || laneRate == PRBS_360G_2X_MODE_B || laneRate == PRBS_328G_2X_MODE_B ||
+            laneRate == PRBS_378G_2X_MODE_B || laneRate == PRBS_345G_2X_MODE_B);
+}
+
 string getStrByValue(u_int32_t flags, std::map<u_int32_t, std::string> map)
 {
     string flagsStr = map[flags];
