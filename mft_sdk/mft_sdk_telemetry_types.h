@@ -320,6 +320,12 @@ typedef enum operationalInfoFec_t
       14, // "Ethernet_Consortium_LL_50G_RS_FEC_PLR -(272,257+1)"
     OPERATIONAL_INFO_FEC_INTERLEAVED_ETHERNET_CONSORTIUM_LL_50G_RS_FEC_PLR_272_258 =
       15, // "Interleaved_Ethernet_Consortium_LL_50G_RS_FEC_PLR - (272,257+1)"
+    OPERATIONAL_INFO_FEC_INTERLEAVED_DOUBLE_RS_HALF_KP4_FEC_PLR_288_258 =
+      16, // "Interleaved Double RS Half KP4 FEC + PLR - (288,258)"
+    OPERATIONAL_INFO_FEC_INTERLEAVED_QUAD_RS_HALF_KP4_FEC_PLR_288_258 =
+      17, // "Interleaved Quad RS Half KP4 FEC + PLR - (288,258)"
+    OPERATIONAL_INFO_FEC_INTERLEAVED_OCTET_RS_HALF_KP4_FEC_PLR_288_258 =
+      18, // "Interleaved Octet RS Half KP4 FEC + PLR - (288,258)"
 } OperationalInfoFec;
 
 /**
