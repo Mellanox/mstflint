@@ -36,7 +36,7 @@
  
 
 /***
-         *** This file was generated at "2026-08-27 14:48:42"
+         *** This file was generated at "2026-09-03 12:35:14"
          *** by:
          ***    > [REDACTED]/adb2pack.py --input reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils -o user/tools_layouts
          ***/
@@ -1642,7 +1642,7 @@ void reg_access_switch_MRFV_ext_pack(const struct reg_access_switch_MRFV_ext *pt
 		offset = 128;
 		reg_access_switch_MRFV_PVS_TILE_ext_pack(&(ptr_struct->data.MRFV_PVS_TILE_ext), ptr_buff + offset / 8);
 	}
-	else if (0) {
+	else if (ptr_struct->fuse_id == 11 || ptr_struct->fuse_id == 12 || ptr_struct->fuse_id == 13 || ptr_struct->fuse_id == 15 || ptr_struct->fuse_id == 16 || ptr_struct->fuse_id == 17 || ptr_struct->fuse_id == 18 || ptr_struct->fuse_id == 19 || ptr_struct->fuse_id == 20 || ptr_struct->fuse_id == 21 || ptr_struct->fuse_id == 22 || ptr_struct->fuse_id == 23 || ptr_struct->fuse_id == 24 || ptr_struct->fuse_id == 25 || ptr_struct->fuse_id == 26 || ptr_struct->fuse_id == 27 || ptr_struct->fuse_id == 28) {
 		offset = 128;
 		reg_access_switch_MRFV_RAW_AND_VALUE_ext_pack(&(ptr_struct->data.MRFV_RAW_AND_VALUE_ext), ptr_buff + offset / 8);
 	}
@@ -1687,7 +1687,7 @@ void reg_access_switch_MRFV_ext_unpack(struct reg_access_switch_MRFV_ext *ptr_st
 		offset = 128;
 		reg_access_switch_MRFV_PVS_TILE_ext_unpack(&(ptr_struct->data.MRFV_PVS_TILE_ext), ptr_buff + offset / 8);
 	}
-	else if (0) {
+	else if (ptr_struct->fuse_id == 11 || ptr_struct->fuse_id == 12 || ptr_struct->fuse_id == 13 || ptr_struct->fuse_id == 15 || ptr_struct->fuse_id == 16 || ptr_struct->fuse_id == 17 || ptr_struct->fuse_id == 18 || ptr_struct->fuse_id == 19 || ptr_struct->fuse_id == 20 || ptr_struct->fuse_id == 21 || ptr_struct->fuse_id == 22 || ptr_struct->fuse_id == 23 || ptr_struct->fuse_id == 24 || ptr_struct->fuse_id == 25 || ptr_struct->fuse_id == 26 || ptr_struct->fuse_id == 27 || ptr_struct->fuse_id == 28) {
 		offset = 128;
 		reg_access_switch_MRFV_RAW_AND_VALUE_ext_unpack(&(ptr_struct->data.MRFV_RAW_AND_VALUE_ext), ptr_buff + offset / 8);
 	}
@@ -1703,7 +1703,7 @@ void reg_access_switch_MRFV_ext_print(const struct reg_access_switch_MRFV_ext *p
 	fprintf(fd, "======== reg_access_switch_MRFV_ext ========\n");
 
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "fuse_id              : %s (" UH_FMT ")\n", (ptr_struct->fuse_id == 0 ? ("cvb") : ((ptr_struct->fuse_id == 1 ? ("ULT") : ((ptr_struct->fuse_id == 2 ? ("vdd_main_die") : ((ptr_struct->fuse_id == 3 ? ("vdd_tile_0") : ((ptr_struct->fuse_id == 4 ? ("vdd_tile_1") : ((ptr_struct->fuse_id == 5 ? ("vdd_tile_2") : ((ptr_struct->fuse_id == 6 ? ("vdd_tile_3") : ((ptr_struct->fuse_id == 7 ? ("vdd_tile_4") : ((ptr_struct->fuse_id == 8 ? ("vdd_tile_5") : ((ptr_struct->fuse_id == 9 ? ("vdd_tile_6") : ((ptr_struct->fuse_id == 10 ? ("vdd_tile_7") : ((ptr_struct->fuse_id == 11 ? ("raw_and_value_vdd") : ((ptr_struct->fuse_id == 12 ? ("raw_and_value_pl_avdd") : ((ptr_struct->fuse_id == 13 ? ("raw_and_value_pl_dvdd") : ((ptr_struct->fuse_id == 15 ? ("raw_and_value_opt_fuse_rev") : ((ptr_struct->fuse_id == 16 ? ("raw_and_value_dvdd_sg") : ((ptr_struct->fuse_id == 17 ? ("raw_and_value_opt_lot_code_0") : ((ptr_struct->fuse_id == 18 ? ("raw_and_value_opt_lot_code_1") : ((ptr_struct->fuse_id == 19 ? ("raw_and_value_opt_ops_reserved") : ((ptr_struct->fuse_id == 20 ? ("raw_and_value_opt_vendor_code") : ((ptr_struct->fuse_id == 21 ? ("raw_and_value_opt_wafer_id") : ((ptr_struct->fuse_id == 22 ? ("raw_and_value_opt_x_coordinate") : ((ptr_struct->fuse_id == 23 ? ("raw_and_value_opt_y_coordinate") : ((ptr_struct->fuse_id == 24 ? ("raw_and_value_opt_fab_code") : ((ptr_struct->fuse_id == 25 ? ("raw_and_value_ws_tp_version_0_31") : ((ptr_struct->fuse_id == 26 ? ("raw_and_value_ft_tp_version_0_31") : ((ptr_struct->fuse_id == 28 ? ("raw_and_value_fuse_ver_4_7") : ((ptr_struct->fuse_id == 30 ? ("raw_and_value_dvdd") : ((ptr_struct->fuse_id == 31 ? ("raw_and_value_vddp") : ("unknown")))))))))))))))))))))))))))))))))))))))))))))))))))))))))), ptr_struct->fuse_id);
+	fprintf(fd, "fuse_id              : %s (" UH_FMT ")\n", (ptr_struct->fuse_id == 0 ? ("cvb") : ((ptr_struct->fuse_id == 1 ? ("ULT") : ((ptr_struct->fuse_id == 2 ? ("vdd_main_die") : ((ptr_struct->fuse_id == 3 ? ("vdd_tile_0") : ((ptr_struct->fuse_id == 4 ? ("vdd_tile_1") : ((ptr_struct->fuse_id == 5 ? ("vdd_tile_2") : ((ptr_struct->fuse_id == 6 ? ("vdd_tile_3") : ((ptr_struct->fuse_id == 7 ? ("vdd_tile_4") : ((ptr_struct->fuse_id == 8 ? ("vdd_tile_5") : ((ptr_struct->fuse_id == 9 ? ("vdd_tile_6") : ((ptr_struct->fuse_id == 10 ? ("vdd_tile_7") : ((ptr_struct->fuse_id == 11 ? ("raw_and_value_vdd") : ((ptr_struct->fuse_id == 12 ? ("raw_and_value_pl_avdd") : ((ptr_struct->fuse_id == 13 ? ("raw_and_value_pl_dvdd") : ((ptr_struct->fuse_id == 15 ? ("raw_and_value_opt_fuse_rev") : ((ptr_struct->fuse_id == 16 ? ("raw_and_value_dvdd_sg") : ((ptr_struct->fuse_id == 17 ? ("raw_and_value_opt_lot_code_0") : ((ptr_struct->fuse_id == 18 ? ("raw_and_value_opt_lot_code_1") : ((ptr_struct->fuse_id == 19 ? ("raw_and_value_opt_ops_reserved") : ((ptr_struct->fuse_id == 20 ? ("raw_and_value_opt_vendor_code") : ((ptr_struct->fuse_id == 21 ? ("raw_and_value_opt_wafer_id") : ((ptr_struct->fuse_id == 22 ? ("raw_and_value_opt_x_coordinate") : ((ptr_struct->fuse_id == 23 ? ("raw_and_value_opt_y_coordinate") : ((ptr_struct->fuse_id == 24 ? ("raw_and_value_opt_fab_code") : ((ptr_struct->fuse_id == 25 ? ("raw_and_value_ws_tp_version_0_31") : ((ptr_struct->fuse_id == 26 ? ("raw_and_value_ft_tp_version_0_31") : ((ptr_struct->fuse_id == 27 ? ("raw_and_value_fuse_ver_0_3") : ((ptr_struct->fuse_id == 28 ? ("raw_and_value_fuse_ver_4_7") : ((ptr_struct->fuse_id == 30 ? ("raw_and_value_dvdd") : ((ptr_struct->fuse_id == 31 ? ("raw_and_value_vddp") : ("unknown")))))))))))))))))))))))))))))))))))))))))))))))))))))))))))), ptr_struct->fuse_id);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "instance_id          : " UH_FMT "\n", ptr_struct->instance_id);
 	adb2c_add_indentation(fd, indent_level);
@@ -1735,7 +1735,7 @@ void reg_access_switch_MRFV_ext_print(const struct reg_access_switch_MRFV_ext *p
 		fprintf(fd, "MRFV_PVS_TILE_ext:\n");
 		reg_access_switch_MRFV_PVS_TILE_ext_print(&(ptr_struct->data.MRFV_PVS_TILE_ext), fd, indent_level + 1);
 	}
-	else if (0) {
+	else if (ptr_struct->fuse_id == 11 || ptr_struct->fuse_id == 12 || ptr_struct->fuse_id == 13 || ptr_struct->fuse_id == 15 || ptr_struct->fuse_id == 16 || ptr_struct->fuse_id == 17 || ptr_struct->fuse_id == 18 || ptr_struct->fuse_id == 19 || ptr_struct->fuse_id == 20 || ptr_struct->fuse_id == 21 || ptr_struct->fuse_id == 22 || ptr_struct->fuse_id == 23 || ptr_struct->fuse_id == 24 || ptr_struct->fuse_id == 25 || ptr_struct->fuse_id == 26 || ptr_struct->fuse_id == 27 || ptr_struct->fuse_id == 28) {
 		adb2c_add_indentation(fd, indent_level);
 		fprintf(fd, "MRFV_RAW_AND_VALUE_ext:\n");
 		reg_access_switch_MRFV_RAW_AND_VALUE_ext_print(&(ptr_struct->data.MRFV_RAW_AND_VALUE_ext), fd, indent_level + 1);
