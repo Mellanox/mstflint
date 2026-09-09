@@ -36,7 +36,7 @@
  
 
 /***
-         *** This file was generated at "2026-08-27 14:48:42"
+         *** This file was generated at "2026-09-03 12:35:14"
          *** by:
          ***    > [REDACTED]/adb2pack.py --input reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils -o user/tools_layouts
          ***/
@@ -121,7 +121,7 @@ value is 15. */
 	/* 0x0.0 - 0x0.4 */
 	/* access: RO */
 	u_int8_t raw_fuses_highest_bit;
-	/* Description - Value valid.0: value_base and value_exponent are NOT valid.1: value_base and value_exponent are valid.[SwitchOnly]:For the following fuse_ids (assuming a valid instance_id is
+	/* Description - Value valid.0: value_base and value_exponent are NOT valid.1: value_base and value_exponent are valid.[Switch]:For the following fuse_ids (assuming a valid instance_id is
 provided), the value is valid:11: raw_and_value_vdd.12: raw_and_value_pl_avdd.13: raw_and_value_pl_dvdd.16: raw_and_value_dvdd_sg. */
 	/* 0x0.31 - 0x0.31 */
 	/* access: RO */
@@ -858,11 +858,10 @@ struct reg_access_switch_MMAM_ext {
 /* Size in bytes - 64 */
 struct reg_access_switch_MRFV_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Fuse Index0: cvb - CVB Main Die, used for Retimer1: ULT2: vdd_main_die - (used in SPC-4, SPC-5)3: vdd_tile_0 - (used in SPC-4, SPC-5)4: vdd_tile_1 - (used in SPC-4, SPC-5)5: vdd_tile_2 - (used in SPC-4, SPC-5)6: vdd_tile_3 - (used in SPC-4, SPC-5)7: vdd_tile_4 - (used in SPC-4, SPC-5)8: vdd_tile_5 - (used in SPC-4, SPC-5)9: vdd_tile_6 - (used in SPC-4, SPC-5)10: vdd_tile_7 - (used in SPC-4, SPC-5)[SwitchOnly][DWIP]:11: raw_and_value_vdd - Use instance_id for the specific instance. Valid on SPC6.12: raw_and_value_pl_avdd - Use instance_id for the specific instance. Valid on SPC6.13: raw_and_value_pl_dvdd - Use instance_id for the specific instance. Valid on SPC6.15: raw_and_value_opt_fuse_rev - Valid on SPC6 CPO.16: raw_and_value_dvdd_sg - Use instance_id for the specific instance. Valid on SPC6 CPO.17: raw_and_value_opt_lot_code_0 - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.18: raw_and_value_opt_lot_code_1 - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.19: raw_and_value_opt_ops_reserved - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.20: raw_and_value_opt_vendor_code - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.21: raw_and_value_opt_wafer_id - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.22: raw_and_value_opt_x_coordinate - Use entity_index to specify the Optical Engine index - Valid on SPC6 CPO.23: raw_and_value_opt_y_coordinate - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.24: raw_and_value_opt_fab_code -
-Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO. -
- -
- -
-
+	/* Description - Fuse Index0: cvb - CVB Main Die, used for Retimer1: ULT2: vdd_main_die - (used in SPC-4, SPC-5)3: vdd_tile_0 - (used in SPC-4, SPC-5)4: vdd_tile_1 - (used in SPC-4, SPC-5)5: vdd_tile_2 - (used in SPC-4, SPC-5)6: vdd_tile_3 - (used in SPC-4, SPC-5)7: vdd_tile_4 - (used in SPC-4, SPC-5)8: vdd_tile_5 - (used in SPC-4, SPC-5)9: vdd_tile_6 - (used in SPC-4, SPC-5)10: vdd_tile_7 - (used in SPC-4, SPC-5)[Switch]:11: raw_and_value_vdd - Use instance_id for the specific instance. Valid on SPC6.12: raw_and_value_pl_avdd - Use instance_id for the specific instance. Valid on SPC6.13: raw_and_value_pl_dvdd - Use instance_id for the specific instance. Valid on SPC6.15: raw_and_value_opt_fuse_rev - Valid on SPC6 CPO.16: raw_and_value_dvdd_sg - Use instance_id for the specific instance. Valid on SPC6 CPO.17: raw_and_value_opt_lot_code_0 - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.18: raw_and_value_opt_lot_code_1 - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.19: raw_and_value_opt_ops_reserved - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.20: raw_and_value_opt_vendor_code - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.21: raw_and_value_opt_wafer_id - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.22: raw_and_value_opt_x_coordinate - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.23: raw_and_value_opt_y_coordinate - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.24: raw_and_value_opt_fab_code - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.[Retimer][Switch]25: raw_and_value_ws_tp_version_0_31 -
+Valid starting SPC6, QM5, ArcusE.26: raw_and_value_ft_tp_version_0_31 -
+Valid starting SPC6, QM5, ArcusE.27: raw_and_value_fuse_ver_0_3 - Use instance_id for the specific instance. Valid starting SPC6, QM5, ArcusE.28: raw_and_value_fuse_ver_4_7 -
+Use instance_id for the specific instance. Valid starting SPC6, QM5, ArcusE.
 [NIC_only][DWIP]:30: raw_and_value_dvdd[NIC_only][DWIP]:31: raw_and_value_vddpOther values reserved. */
 	/* 0x0.0 - 0x0.7 */
 	/* access: INDEX */
@@ -909,9 +908,9 @@ resides, if not part of the ASIC itself.Currently only valid elements are Optica
 	/* access: INDEX */
 	u_int8_t module_index_msb;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
-	/* Description - DataSee
-MRFV entry - CVB LayoutSee
-MRFV entry - ULT LayoutSee
+	/* Description - DataSee 
+MRFV entry - CVB LayoutSee 
+MRFV entry - ULT LayoutSee 
 MRFV entry - VDD_MAIN LayoutSee
 
 MRFV entry - VDD_Tile LayoutSee
