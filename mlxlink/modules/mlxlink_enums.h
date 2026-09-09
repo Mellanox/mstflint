@@ -1110,7 +1110,10 @@ enum FEC_MODE_ACTIVE
     FEC_MODE_RS_FEC_544_514_PLR = 12,
     FEC_MODE_LL_FEC_271_257_PLR = 13,
     FEC_MODE_LL_50G_RS_FEC_PLR_272_258 = 14,
-    FEC_MODE_INTERLEAVED_LL_50G_RS_FEC_PLR_272_258 = 15
+    FEC_MODE_INTERLEAVED_LL_50G_RS_FEC_PLR_272_258 = 15,
+    FEC_MODE_INTERLEAVED_DOUBLE_RS_HALF_KP4_FEC_PLR_288_258 = 16,
+    FEC_MODE_INTERLEAVED_QUAD_RS_HALF_KP4_FEC_PLR_288_258 = 17,
+    FEC_MODE_INTERLEAVED_OCTET_RS_HALF_KP4_FEC_PLR_288_258 = 18
 };
 
 enum FEC_MODE_MASK
@@ -2808,6 +2811,12 @@ const char* const FEC_LL_FEC_271_257_PLR = "LL-FEC - (271,257) + PLR";
 const char* const FEC_LL_50G_RS_FEC_PLR_272_258 = "Ethernet_Consortium_LL_50G_RS_FEC_PLR -(272,257+1)";
 const char* const FEC_INTERLEAVED_LL_50G_RS_FEC_PLR_272_258 =
   "Interleaved_Ethernet_Consortium_LL_50G_RS_FEC_PLR - (272,257+1)";
+const char* const FEC_INTERLEAVED_DOUBLE_RS_HALF_KP4_FEC_PLR_288_258 =
+  "Interleaved Double RS Half KP4 FEC + PLR - (288,258)";
+const char* const FEC_INTERLEAVED_QUAD_RS_HALF_KP4_FEC_PLR_288_258 =
+  "Interleaved Quad RS Half KP4 FEC + PLR - (288,258)";
+const char* const FEC_INTERLEAVED_OCTET_RS_HALF_KP4_FEC_PLR_288_258 =
+  "Interleaved Octet RS Half KP4 FEC + PLR - (288,258)";
 // ELSFP CMIS spec (OIF-ELSFP-CMIS-01.0) constants for save_laser_setpoint via MCIA.
 // MCIA reads in 4-byte dwords, so each EEPROM field is described by a pair:
 //   - <FIELD>_DWORD_ADDRESS: 4-byte-aligned address to pass to readMCIA

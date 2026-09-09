@@ -106,6 +106,37 @@ TEST_F(MftSdkTelemetryTest, GetTelemetryOperationalInfo)
                 (1ULL << TELEMETRY_OP_INFO_AUTO_NEGOTIATION));
 }
 
+TEST_F(MftSdkTelemetryTest, ExtendedFecModesHaveNames)
+{
+    const FieldDescriptor* fields = getOpInfoFields();
+    const FieldDescriptor* fecField = nullptr;
+    for (size_t i = 0; i < NUM_OP_INFO_FIELDS; i++)
+    {
+        if (fields[i].capabilityBit == TELEMETRY_OP_INFO_FEC)
+        {
+            fecField = &fields[i];
+            break;
+        }
+    }
+    ASSERT_NE(fecField, nullptr);
+
+    MstTelemetryOperationalInfo operationalInfo{};
+    const std::vector<std::pair<OperationalInfoFec, const char*>> fecModes = {
+      {OPERATIONAL_INFO_FEC_INTERLEAVED_DOUBLE_RS_HALF_KP4_FEC_PLR_288_258,
+       "Interleaved Double RS Half KP4 FEC + PLR - (288,258)"},
+      {OPERATIONAL_INFO_FEC_INTERLEAVED_QUAD_RS_HALF_KP4_FEC_PLR_288_258,
+       "Interleaved Quad RS Half KP4 FEC + PLR - (288,258)"},
+      {OPERATIONAL_INFO_FEC_INTERLEAVED_OCTET_RS_HALF_KP4_FEC_PLR_288_258,
+       "Interleaved Octet RS Half KP4 FEC + PLR - (288,258)"},
+    };
+
+    for (const auto& fecMode : fecModes)
+    {
+        operationalInfo.fec = fecMode.first;
+        EXPECT_STREQ(fieldValueToString(&operationalInfo, fecField), fecMode.second);
+    }
+}
+
 TEST_F(MftSdkTelemetryTest, DefaultPortAfterSpecificPortDoesNotThrow)
 {
     MstStatus status = mstGetDeviceHandle(&mstDevice, g_devicePci.c_str());
