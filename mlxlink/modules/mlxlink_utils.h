@@ -95,6 +95,7 @@ int ptysSpeedToMaskNVLINK(const string& speed);
 string convertSpeedToNVLINK(const string& speed);
 bool checkNvl6ModeBSpeed(const string& speed);
 bool isNvlinkModeBSpeed(bool isNvl6, u_int32_t linkSpeed);
+bool isPrbsLaneRateModeB(u_int32_t laneRate);
 string getOui(u_int32_t oui);
 int getBitvalue(u_int32_t mask, int idx);
 string getMaxPowerStr(u_int32_t maxPower);

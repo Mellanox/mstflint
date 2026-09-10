@@ -3632,8 +3632,7 @@ void MlxlinkCommander::showTestMode()
 
     if (_isNvlinkModeA || _isNvlinkModeB)
     {
-        setPrintVal(_testModeInfoCmd, "Nvlink Mode",
-                    pprtMap["pprtLaneRate"] == _mlxlinkMaps->_prbsLaneRateList[PRBS_XDR] ? "A" : "B");
+        setPrintVal(_testModeInfoCmd, "Nvlink Mode", pprtMap["pprtNvlinkMode"]);
         setPrintVal(_testModeInfoCmd, "Primary/Secondary", getStrByValue(_priOrSec, _mlxlinkMaps->_priOrSec));
         setPrintVal(_testModeInfoCmd, "Test Mode FSM State", getTestModeFsmStateStr());
     }
@@ -3683,19 +3682,13 @@ std::map<std::string, std::string> MlxlinkCommander::getPprt()
 
     sendPrmReg(ACCESS_REG_PPRT, REG_GET, "e=%d", PPRT_PPTT_ENABLE);
 
-    string laneRateStr = getStrByValue(getFieldValue("lane_rate_oper"), _mlxlinkMaps->_prbsLaneRateList);
+    u_int32_t laneRateOper = getFieldValue("lane_rate_oper");
+    string laneRateStr = getStrByValue(laneRateOper, _mlxlinkMaps->_prbsLaneRateList);
+    bool isModeBRate = isPrbsLaneRateModeB(laneRateOper);
     if (_isNvlinkModeB || _isNvlinkModeA)
     {
-        if (laneRateStr == _mlxlinkMaps->_prbsLaneRateList[PRBS_XDR])
-        {
-            // XDR_1X mode has 1 lane
-            _numOfLanes = 1;
-        }
-        else
-        {
-            // Mode B has 2 lanes, usually we should query PMLP to get the actual number of lanes
-            _numOfLanes = 2;
-        }
+        // Mode B bonds two physical lanes into one logical link, Mode A drives a single lane
+        _numOfLanes = isModeBRate ? 2 : 1;
     }
 
     u_int32_t statusMask = getFieldValue("prbs_lock_status");
@@ -3706,6 +3699,7 @@ std::map<std::string, std::string> MlxlinkCommander::getPprt()
     pprtMap["pprtModulation"] = getStrByValue(getFieldValue("modulation"), _mlxlinkMaps->_prbsModulation);
     pprtMap["pprtTuningStatus"] = getStrByValue(getFieldValue("prbs_rx_tuning_status"), _mlxlinkMaps->_prbsRxTuningStatus);
     pprtMap["pprtLockStatus"] = prbsMaskToLockStatus(statusMask, _numOfLanes);
+    pprtMap["pprtNvlinkMode"] = isModeBRate ? "B" : "A";
 
     return pprtMap;
 }
@@ -7069,26 +7063,7 @@ void MlxlinkCommander::prbsConfiguration(const string& prbsReg, bool enable, u_i
         {
             cmd << ",p=1";
         }
-        // Handle modulation field
-        if (isNvl6)
-        {
-            cmd << ",modulation=" << PRBS_MODULATION_PAM4_PRECODING;
-        }
-        else if (modulation != PRBS_MODULATION_DEFAULT)
-        {
-            // User specified modulation
-            cmd << ",modulation=" << modulation;
-        }
-        else if (laneRate >= PRBS_HDR && laneRate <= PRBS_XDR)
-        {
-            // Default behavior for high-speed rates
-            cmd << ",modulation=" << PRBS_MODULATION_PAM4_ENCODING;
-        }
-        else
-        {
-            // Default behavior for low-speed rates
-            cmd << ",modulation=" << PRBS_MODULATION_NRZ;
-        }
+        cmd << ",modulation=" << modulation;
 
         cmd << ",e=" << enable << "," << rateToUpdate << "=" << laneRate << ",prbs_mode_admin=" << prbsMode;
         return cmd.str();
@@ -7134,16 +7109,21 @@ void MlxlinkCommander::sendPprtPptt(bool isNvl6)
 {
     bool perLaneConfig =
       (!_userInput._prbsLanesToSet.empty()) && (_userInput._prbsLanesToSet.size() != _numOfLanes) && !isNvl6;
-    u_int32_t rxRate = (_mlxlinkMaps->_prbsLaneRate[_userInput._pprtRate].anyCapSupported()) ?
-                         _mlxlinkMaps->_prbsLaneRate[_userInput._pprtRate].value :
-                         (u_int32_t)PRBS_EDR;
+    string rxRateStr = _userInput._pprtRate.empty() ? "EDR" : _userInput._pprtRate;
+    string txRateStr = _userInput._ppttRate.empty() ? "EDR" : _userInput._ppttRate;
+    const CAP_VALUE& rxRateConfig = _mlxlinkMaps->_prbsLaneRate[rxRateStr];
+    const CAP_VALUE& txRateConfig = _mlxlinkMaps->_prbsLaneRate[txRateStr];
+    u_int32_t rxRate = rxRateConfig.value;
+    u_int32_t txRate = txRateConfig.value;
 
-    u_int32_t txRate = (_mlxlinkMaps->_prbsLaneRate[_userInput._ppttRate].anyCapSupported()) ?
-                         _mlxlinkMaps->_prbsLaneRate[_userInput._ppttRate].value :
-                         (u_int32_t)PRBS_EDR;
-
-    u_int32_t rxModulation = !_userInput._pprtModulation.empty() ? _mlxlinkMaps->_prbsModulationValue[_userInput._pprtModulation] : (u_int32_t)PRBS_MODULATION_DEFAULT;
-    u_int32_t txModulation = !_userInput._ppttModulation.empty() ? _mlxlinkMaps->_prbsModulationValue[_userInput._ppttModulation] : (u_int32_t)PRBS_MODULATION_DEFAULT;
+    u_int32_t rxModulation = isNvl6 ? PRBS_MODULATION_PAM4_PRECODING :
+                             !_userInput._pprtModulation.empty() ?
+                                      _mlxlinkMaps->_prbsModulationValue[_userInput._pprtModulation] :
+                                      rxRateConfig.modulation;
+    u_int32_t txModulation = isNvl6 ? PRBS_MODULATION_PAM4_PRECODING :
+                             !_userInput._ppttModulation.empty() ?
+                                      _mlxlinkMaps->_prbsModulationValue[_userInput._ppttModulation] :
+                                      txRateConfig.modulation;
 
     prbsConfiguration("PPRT", true, rxRate, prbsModeToMask(_userInput._pprtMode, isNvl6), perLaneConfig, _userInput._prbsRxInv, isNvl6, rxModulation);
     prbsConfiguration("PPTT", true, txRate, prbsModeToMask(_userInput._ppttMode, isNvl6), perLaneConfig, _userInput._prbsTxInv, isNvl6, txModulation);
@@ -7155,8 +7135,9 @@ void MlxlinkCommander::resetPprtPptt(bool isNvl6)
     {
         if (_prbsTestMode && !isNvl6)
         {
-            prbsConfiguration("PPRT", false, PRBS_EDR, PRBS31, false, false, isNvl6, PRBS_MODULATION_DEFAULT);
-            prbsConfiguration("PPTT", false, PRBS_EDR, PRBS31, false, false, isNvl6, PRBS_MODULATION_DEFAULT);
+            u_int32_t modulation = _mlxlinkMaps->_prbsLaneRate["EDR"].modulation;
+            prbsConfiguration("PPRT", false, PRBS_EDR, PRBS31, false, false, isNvl6, modulation);
+            prbsConfiguration("PPTT", false, PRBS_EDR, PRBS31, false, false, isNvl6, modulation);
         }
     }
     catch (MlxRegException& exc)
