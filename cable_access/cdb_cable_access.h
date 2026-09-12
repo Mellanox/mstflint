@@ -108,8 +108,11 @@ public:
 
     static const u_int16_t CDB_LPL_PAYLOAD_MAX_SIZE;
 
-    explicit CmisCdbAccess(string mstDevName, mfile* mf = NULL, bool clearCompletionFlag = false);
-    virtual ~CmisCdbAccess(){};
+    explicit CmisCdbAccess(string mstDevName,
+                           mfile* mf = NULL,
+                           bool clearCompletionFlag = false,
+                           bool vmdlUseEls = false);
+    virtual ~CmisCdbAccess();
     void Init();
     void InnerInit(); // bypass to the cable access init()
 
@@ -162,6 +165,7 @@ protected:
     bool IsOuiRequiringActivationWA() const;
 
     static void CreateStatusMap();
+    bool SetVMDLUseELS(bool useEls);
 
     cableAccess _cableAccess;
     CdbCommandHeader _header;
@@ -175,6 +179,7 @@ protected:
     bool _isIgnoreCompletionTimeOut;
     bool _isCompletionWaitingTimeOverridden;
     bool _clearCompletionFlag;
+    bool _vmdlUseEls;
 
     static const u_int16_t CDB_EPL_PAYLOAD_MAX_SIZE;
     static const u_int16_t CDB_EPL_PAGE_SIZE;
@@ -190,6 +195,7 @@ protected:
     static const u_int16_t CDB_PASSWORD_ENTRY_AREA_ADDRESS;
     static const u_int16_t CDB_IMPLEMENTED_BANKS_ADDRESS;
     static const u_int16_t CDB_OUI_ADDRESS;
+    static const u_int16_t CDB_VMDL_USE_ELS_ADDRESS;
 };
 
 class FWManagementCdbAccess : public CmisCdbAccess
@@ -233,7 +239,7 @@ public:
         u_int16_t maxDurationComplete;
     };
 
-    FWManagementCdbAccess(string mstDevName, bool clearCompletionFlag = false);
+    FWManagementCdbAccess(string mstDevName, bool clearCompletionFlag = false, bool vmdlUseEls = false);
     virtual ~FWManagementCdbAccess();
 
     void Init(vector<u_int8_t> password);

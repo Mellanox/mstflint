@@ -59,8 +59,8 @@
  *
  ********************************************************************************************************************/
 
-FwManagementCdbCommander::FwManagementCdbCommander(string mstDevName, bool clearCompletionFlag) :
-    _modulePasswordSet(false), _fwMngCableAccess(mstDevName, clearCompletionFlag), _timeOutCounter(0)
+FwManagementCdbCommander::FwManagementCdbCommander(string mstDevName, bool clearCompletionFlag, bool vmdlUseEls) :
+    _modulePasswordSet(false), _fwMngCableAccess(mstDevName, clearCompletionFlag, vmdlUseEls), _timeOutCounter(0)
 {
 }
 

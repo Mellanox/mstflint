@@ -847,6 +847,25 @@ int main(int argc, char** argv)
         printf("\n");
     }
 
+    int vmdl_found = 0;
+    for (i = 0; i < len; i++)
+    {
+        if (devs[i].dev_name && (strstr(devs[i].dev_name, "vmdl_") != NULL))
+        {
+            if (vmdl_found == 0)
+            {
+                printf("\nVirtual module devices:\n");
+                printf("---------------\n");
+                vmdl_found = 1;
+            }
+            printf("%s\n", devs[i].dev_name);
+        }
+    }
+    if (vmdl_found)
+    {
+        printf("\n");
+    }
+
     rc = 0;
 cleanup:
     if (devs)

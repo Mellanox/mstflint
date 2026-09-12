@@ -11,6 +11,7 @@ extern "C"
 #include "dev_mgt/tools_dev_types.h"
 
 #define CABLE_DEVICE_STR "_cable_"
+#define VMDL_DEVICE_STR "_vmdl_"
 
 typedef enum {
     MCABLES_OK = 0,
@@ -32,6 +33,9 @@ typedef enum {
 
 typedef enum {
     MLXCABLES_REG_ACCESS = 1,
+#ifdef ENABLE_MST_DEV_I2C
+    MLXCABLES_MTUSB_ACCESS
+#endif /* ENABLE_MST_DEV_I2C */
 } cable_access_type_t;
 
 #define MCABLES_INTERNAL_ERROR_MSG_SIZE 256
@@ -144,7 +148,13 @@ int get_cable_id(mfile* m, u_int32_t* ptr_hw_dev_id, dm_dev_id_t* ptr_dm_dev_id)
 
 void mcables_set_burn_flow(bool burn_flow);
 
+#ifdef ENABLE_MST_DEV_I2C
+int mcables_is_i2c_vmdl(mfile* mf);
+#endif
+
 MType mcables_get_tp(mfile* mf);
+
+int mcables_lock_vmdl_els_sempahore(mfile* mf, bool use_els);
 #endif /* _MTCR_CABLES_H */
 #ifdef __cplusplus
 }

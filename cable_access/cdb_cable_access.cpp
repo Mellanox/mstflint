@@ -59,6 +59,7 @@ const u_int16_t CmisCdbAccess::CDB_PAGE_INDEX_IN_ADDRESS = 0x0100;
 const u_int16_t CmisCdbAccess::CDB_PASSWORD_ENTRY_AREA_ADDRESS = 0x7A;
 const u_int16_t CmisCdbAccess::CDB_IMPLEMENTED_BANKS_ADDRESS = 0x018E;
 const u_int16_t CmisCdbAccess::CDB_OUI_ADDRESS = 0x0091;
+const u_int16_t CmisCdbAccess::CDB_VMDL_USE_ELS_ADDRESS = 0x1A;
 
 void CmisCdbAccess::CreateStatusMap()
 {
@@ -81,7 +82,7 @@ void CmisCdbAccess::CreateStatusMap()
     _cdbStatusMap[0b01111011] = make_pair(false, "LinkX UID Not Found error.");
 }
 
-CmisCdbAccess::CmisCdbAccess(string mstDevName, mfile* mf, bool clearCompletionFlag) :
+CmisCdbAccess::CmisCdbAccess(string mstDevName, mfile* mf, bool clearCompletionFlag, bool vmdlUseEls) :
     _cableAccess(mstDevName.c_str(), mf),
     _cmisVersion(CMIS_UNKNOWN),
     _oui(),
@@ -92,10 +93,19 @@ CmisCdbAccess::CmisCdbAccess(string mstDevName, mfile* mf, bool clearCompletionF
     _maxDurationWriteMilliSec(0),
     _isIgnoreCompletionTimeOut(false),
     _isCompletionWaitingTimeOverridden(false),
-    _clearCompletionFlag(clearCompletionFlag)
+    _clearCompletionFlag(clearCompletionFlag),
+    _vmdlUseEls(vmdlUseEls)
 {
     memset(&_header, 0, sizeof(_header));
     CmisCdbAccess::CreateStatusMap();
+}
+
+CmisCdbAccess::~CmisCdbAccess()
+{
+    if (_vmdlUseEls)
+    {
+        SetVMDLUseELS(false);
+    }
 }
 
 CmisCdbAccess::CMISVersion CmisCdbAccess::ToCMISVersion(u_int8_t cmisVersionByte)
@@ -173,6 +183,10 @@ void CmisCdbAccess::Init()
             u_int32_t completionFlagByteMask = 0x000000C0;
             u_int32_t completionFlag = ReadDWord(CDB_CMD_COMPLETE_FLAG_ADDRESS) & completionFlagByteMask;
             CDB_ACCESS_DPRINTF(("CmisCdbAccess::Init cleared completion flag, read value: 0x%x\n", completionFlag));
+        }
+        if (_vmdlUseEls && !SetVMDLUseELS(true))
+        {
+            throw CmisCdbAccessException(_cableAccess.getLastErrMsg());
         }
     }
 }
@@ -540,6 +554,45 @@ void CmisCdbAccess::OverrideCommandCompletionWaitingTime(u_int32_t waitTime)
     _completionWaitingTimeMilliSec = waitTime;
 }
 
+bool CmisCdbAccess::SetVMDLUseELS(bool useEls)
+{
+    const u_int8_t value = useEls ? 1 : 0;
+    const u_int32_t size = 1;
+    const u_int8_t useElsByteMask = 0x01;
+
+    // For lock ELS, lock semaphore first and then set bit, for unlock set bit and then unlock semaphore
+    if (useEls && !_cableAccess.lockVmdlElsSemaphore(useEls))
+    {
+        CDB_ACCESS_DPRINTF(("Failed to set VMDL use ELS in cable, error: %s\n", _cableAccess.getLastErrMsg().c_str()));
+        return false;
+    }
+
+    CDB_ACCESS_DPRINTF(("Setting VMDL use ELS to %d\n", value));
+    try
+    {
+        vector<u_int8_t> currentValueVec = ReadData(CDB_VMDL_USE_ELS_ADDRESS, size, OTHER);
+        u_int8_t valueToWrite = (currentValueVec[0] & ~useElsByteMask) | value;
+        WriteData(CDB_VMDL_USE_ELS_ADDRESS, &valueToWrite, size);
+    }
+    catch (const CmisCdbAccessException& ex)
+    {
+        CDB_ACCESS_DPRINTF(("Failed to write VMDL use ELS to cable, error: %s\n", ex.what()));
+        if (useEls)
+        {
+            // Unlock semaphore
+            _cableAccess.lockVmdlElsSemaphore(false);
+        }
+        return false;
+    }
+
+    if (!useEls && !_cableAccess.lockVmdlElsSemaphore(useEls))
+    {
+        CDB_ACCESS_DPRINTF(("Failed to set VMDL use ELS in cable, error: %s\n", _cableAccess.getLastErrMsg().c_str()));
+        return false;
+    }
+    return true;
+}
+
 /********************************************************************************************************************************
  *
  * FWManagementCdbAccess
@@ -549,8 +602,8 @@ void CmisCdbAccess::OverrideCommandCompletionWaitingTime(u_int32_t waitTime)
 u_int16_t FWManagementCdbAccess::_lplPayloadMaxSizeBytes = 0;
 u_int16_t FWManagementCdbAccess::_eplPayloadMaxSizeBytes = 0;
 
-FWManagementCdbAccess::FWManagementCdbAccess(string mstDevName, bool clearCompletionFlag) :
-    CmisCdbAccess(mstDevName, nullptr, clearCompletionFlag),
+FWManagementCdbAccess::FWManagementCdbAccess(string mstDevName, bool clearCompletionFlag, bool vmdlUseEls) :
+    CmisCdbAccess(mstDevName, nullptr, clearCompletionFlag, vmdlUseEls),
     _fwUpdateMechanism(NONE_SUPPORTED),
     _startCmdPayloadSize(0),
     _FwMngFeaturesInitialized(false)

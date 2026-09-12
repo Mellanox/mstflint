@@ -270,6 +270,7 @@ private:
     FlintStatus ResetModule(string device);
     FlintStatus WaitForModuleInit(string device);
     FlintStatus PerformBurn(std::vector<u_int8_t>& fwImage, std::vector<u_int8_t>& vendorData);
+    FlintStatus IsVMDLSystem(bool& isVMDLSystem);
     FlintStatus PldmOpsToFwOps(const string& componentType, FsPldmOperations* pldmOps);
 
 public:
