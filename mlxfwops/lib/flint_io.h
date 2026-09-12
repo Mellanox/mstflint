@@ -59,6 +59,7 @@
 #endif
 
 #include <string>
+#include <vector>
 
 // external flash attr struct
 
@@ -400,7 +401,10 @@ public:
         _cr_space_locked(0),
         _flash_working_mode(FBase::Fwm_Default),
         _cputUtilizationApplied(false),
-        _cpuPercent(-1)
+        _cpuPercent(-1),
+        _erase_needed(false),
+        _sector_mirror_addr(0),
+        _sector_mirror_valid(false)
     {
         memset(&_attr, 0, sizeof(_attr));
     }
@@ -569,6 +573,16 @@ protected:
     int _flash_working_mode;
     bool _cputUtilizationApplied;
     int _cpuPercent;
+    bool _erase_needed;
+
+    // In-memory mirror of everything written into the currently open sector (_curr_sector) since
+    // write() erased it. Filled from the caller's data only - never read back from flash, which is
+    // unreliable right after a bad write. Lets an erase-miss retry re-erase the sector and replay
+    // it whole, including chunks written by earlier write() calls into the same sector.
+    // Any erase outside write() invalidates it (see Flash::erase_sector).
+    std::vector<u_int8_t> _sector_mirror;
+    u_int32_t _sector_mirror_addr;
+    bool _sector_mirror_valid;
 };
 
 #endif

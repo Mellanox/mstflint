@@ -2441,6 +2441,24 @@ bool Fs4Operations::DoAfterBurnJobs(const u_int32_t magic_pattern[], ExtBurnPara
     return true;
 }
 
+// The image is burnt with plain writes by default. Burning it through the read-modify-write path
+// instead routes every write via Flash::write_sector_with_erase, which retries a failed write by
+// re-erasing the sector and writing it again (MFLASH_ERASE_RETRIES). That costs a read of every
+// sector before writing it and erases in 4KB instead of 64KB sectors, so it is opt-in only.
+static bool burn_with_read_modify_write()
+{
+    static bool evaluated = false;
+    static bool enabled = false;
+
+    if (!evaluated)
+    {
+        const char* env = getenv("MFLASH_BURN_RMW");
+        enabled = env ? (strtoul(env, (char**)NULL, 0) != 0) : false;
+        evaluated = true;
+    }
+    return enabled;
+}
+
 bool Fs4Operations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& burnParams)
 {
     u_int8_t is_curr_image_on_second_partition;
@@ -2532,7 +2550,9 @@ bool Fs4Operations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& bu
     //* Burn
     int alreadyWrittenSz = 0;
     //* Burn image without signature
-    DPRINTF(("Fs4Operations::burnEncryptedImage - Burning image without magic-pattern\n"));
+    bool readModifyWrite = burn_with_read_modify_write();
+    DPRINTF(("Fs4Operations::burnEncryptedImage - Burning image without magic-pattern (read-modify-write = %d)\n",
+             readModifyWrite));
     if (!writeImageEx(burnParams.progressFuncEx,
                       burnParams.progressUserData,
                       burnParams.progressFunc,
@@ -2540,7 +2560,7 @@ bool Fs4Operations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& bu
                       imgBuff.data() + FS3_FW_SIGNATURE_SIZE,       // data
                       imgBuff.size() - FS3_FW_SIGNATURE_SIZE,       // size
                       true,                                         // phys addr
-                      false,
+                      readModifyWrite,
                       total_img_size,
                       alreadyWrittenSz))
     {

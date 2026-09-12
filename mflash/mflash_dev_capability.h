@@ -44,20 +44,7 @@
 
 #include "mflash_pack_layer.h"
 
-#ifndef UEFI_BUILD
-#define FLASH_DPRINTF(args)                          \
-    do                                               \
-    {                                                \
-        char* reacDebug = getenv("MFT_FLASH_DEBUG"); \
-        if (reacDebug != NULL)                       \
-        {                                            \
-            printf("\33[2K\r");                      \
-            printf("[MFT_FLASH_DEBUG]: -D- ");       \
-            printf args;                             \
-            fflush(stdout);                          \
-        }                                            \
-    } while (0)
-#else
+#ifdef UEFI_BUILD
 #define FLASH_DPRINTF(...)
 #endif
 
