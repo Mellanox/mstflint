@@ -116,7 +116,6 @@ extern "C"
         Spectrum4,
         Spectrum5,
         Spectrum6,
-        Quantum,
         Quantum2,
         Quantum3,
         NVLink6_Switch,
