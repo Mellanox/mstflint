@@ -38,12 +38,37 @@
 
 #include <mft_sdk/mft_sdk_types.h>
 #include <mft_sdk/mft_sdk_errors.h>
-#include <mft_sdk/mft_sdk_query.h>
-#include <mft_sdk/mft_sdk_discovery.h>
-#include <mft_sdk/mft_sdk_reg_access.h>
-#include <mft_sdk/mft_sdk_telemetry.h>
-#include <mft_sdk/mft_sdk_hca_caps.h>
-#include <mft_sdk/mft_sdk_cr_space_access.h>
-#include <mft_sdk/mft_sdk_i2c_access.h>
-#include <mft_sdk/mft_sdk_icmd.h>
-#include <mft_sdk/mft_sdk_temperature.h>
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+    /**
+     * @brief ICMD access method - whether the input buffer is written to the mailbox before executing.
+     */
+    typedef enum
+    {
+        MST_ICMD_WRITE_READ = 1, /**< Write the input to the mailbox, then read the output back. */
+        MST_ICMD_READ_ONLY = 2,  /**< Leave the mailbox as is and only read the output back. */
+    } MstIcmdAccessMethod;
+
+    /**
+     * @brief Sends an ICMD (internal command) to the device firmware.
+     * @param mstDevice mstDevice handle.
+     * @param opcode The ICMD opcode to send.
+     * @param data Caller allocated in/out buffer: holds the command input on entry and is overwritten
+     *             with the firmware output on return. The same buffer and size serve both directions.
+     * @param dataSize The size of the data buffer in bytes.
+     * @param method Whether to write the input before executing. Commands that take input parameters -
+     *               queries included - need MST_ICMD_WRITE_READ.
+     * @return The status of the operation. MST_ERROR_INVALID_ARGUMENT if mstDevice or data is NULL, if
+     *         dataSize is zero, if method is not an MstIcmdAccessMethod value, or if opcode or dataSize
+     *         exceeds INT_MAX; MST_ERROR_FAILED_TO_SEND_ICMD if the command failed - call
+     *         mstGetLastErrorString for the reason and mstGetSyndrome for the firmware syndrome.
+     */
+    MstStatus
+      mstSendIcmd(MstDevice mstDevice, uint32_t opcode, void* data, uint32_t dataSize, MstIcmdAccessMethod method);
+
+#ifdef __cplusplus
+}
+#endif

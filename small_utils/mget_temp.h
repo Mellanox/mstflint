@@ -46,6 +46,8 @@
 #include <mtcr.h>
 #include "dev_mgt/therm_fw.h"
 #include "common/tools_time.h"
+#include "small_utils/mget_temp_lib.h"
+#include "small_utils/mget_temp_sensors.h"
 
 #define SEC 1000 // Number of milliseconds in one second
 #define MAX_DEV_LEN 512
@@ -77,15 +79,8 @@
 
 int parseAndRun(int argc, char** argv);
 
-/* CPO module sensor helpers (gated on MGIR.cpo_indication; see read_cpo_module_sensors). */
-int read_cpo_module_sensors(mfile* mf,
-                            td_temp_unit_t requested_unit,
-                            td_data_mmta** mmta_data_p,
-                            bool* cpo_supported,
-                            bool no_modules);
 void print_temperature_table_header(bool cpo_supported);
 void display_mmta_sensor_verbose(td_data_mmta* sensor, int decimals, int* row_num);
-int include_mmta_in_max_temp(td_data_mmta* mmta_data, int mmta_modules_read, int current_max);
 void display_internal_sensors_verbose(td_data_fw* data, bool cpo_supported, int* row_num);
 
 /* Print all thermal zones to stdout.

@@ -107,10 +107,16 @@ mlxpcilib_DATA = binary_file.py mlxpci_lib.py
 
 mstfwresetlib_DATA = $(MSTFWRESET_PYTHON_WRAPPER).py
 
+# The mget_temp reading, shared by the CLI and the SDK so the two cannot disagree
+# about a device.
+noinst_LTLIBRARIES = libmgettemp.la
+libmgettemp_la_SOURCES = mget_temp_lib.c mget_temp_lib.h mget_temp_sensors.h
+
 bin_PROGRAMS += mstmget_temp
 
 mstmget_temp_SOURCES = mget_temp.c mget_temp.h
-mstmget_temp_DEPENDENCIES = $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
+mstmget_temp_DEPENDENCIES = libmgettemp.la \
+               			 $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
                			 $(top_builddir)/dev_mgt/libdev_mgt.la \
  	                     $(top_builddir)/reg_access/libreg_access.la \
  	                     $(top_builddir)/tools_layouts/libtools_layouts.la

@@ -36,14 +36,26 @@
 
 #pragma once
 
+#include <stdint.h>
 #include <mft_sdk/mft_sdk_types.h>
 #include <mft_sdk/mft_sdk_errors.h>
-#include <mft_sdk/mft_sdk_query.h>
-#include <mft_sdk/mft_sdk_discovery.h>
-#include <mft_sdk/mft_sdk_reg_access.h>
-#include <mft_sdk/mft_sdk_telemetry.h>
-#include <mft_sdk/mft_sdk_hca_caps.h>
-#include <mft_sdk/mft_sdk_cr_space_access.h>
-#include <mft_sdk/mft_sdk_i2c_access.h>
-#include <mft_sdk/mft_sdk_icmd.h>
-#include <mft_sdk/mft_sdk_temperature.h>
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+    /**
+     * @brief Gets the current device temperature, equivalent to `mget_temp -d <device>`.
+     * @param mstDevice mstDevice handle.
+     * @param temperature Output parameter for the highest sensor reading, in whole degrees Celsius.
+     * @return The status of the operation. MST_ERROR_TEMPERATURE_NOT_AVAILABLE if the
+     *         device answered but no sensor produced a valid reading;
+     *         MST_ERROR_NOT_SUPPORTED for a device in livefish mode or a GPU ASIC;
+     *         MST_ERROR_INVALID_ARGUMENT if either argument is NULL;
+     *         MST_ERROR_UNKNOWN if a sensor or GPU driver read failed - call
+     *         mstGetLastErrorString for which read it was and why.
+     */
+    MstStatus mstGetDeviceTemperature(MstDevice mstDevice, int32_t* temperature);
+#ifdef __cplusplus
+}
+#endif

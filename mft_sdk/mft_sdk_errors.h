@@ -43,34 +43,48 @@ extern "C"
 {
 #endif
 
+/** Size of the error message buffer in MstErrorInfo, including the terminator. */
 #define MAX_ERROR_MESSAGE_LENGTH 256
 
+    /**
+     * @brief The status returned by every MFT SDK function.
+     *
+     * The numeric values are part of the API: an existing code keeps its value across SDK versions and
+     * a new code takes the next free number, so a caller built against an older SDK keeps working
+     * against a newer shared object.
+     */
     typedef enum MstStatus
     {
-        MST_SUCCESS,
-        MST_ERROR_UNINITIALIZED,
-        MST_ERROR_INVALID_ARGUMENT,
-        MST_ERROR_NOT_SUPPORTED,
-        MST_ERROR_NO_PERMISSION,
-        MST_ERROR_NO_AVAILABLE_DEVICES,
-        MST_ERROR_DEVICE_NOT_FOUND,
-        MST_ERROR_INTERFACE_NOT_AVAILABLE,
-        MST_ERROR_MST_DRIVER_NOT_LOADED,
-        MST_ERROR_FAILED_TO_ALLOCATE_MEMORY,
-        MST_ERROR_FAILED_TO_OPEN_DEVICE,
-        MST_ERROR_FAILED_TO_SEND_ACCESS_REG,
-        MST_ERROR_FAILED_TO_GET_TELEMETRY,
-        MST_ERROR_FAILED_TO_GET_HCA_CAPABILITIES,
-        MST_ERROR_FAILED_TO_READ_CR_SPACE,
-        MST_ERROR_FAILED_TO_WRITE_CR_SPACE,
-        MST_ERROR_FAILED_TO_SET_I2C_SECONDARY,
-        MST_ERROR_UNKNOWN,
+        MST_SUCCESS = 0,                               /**< The operation completed successfully. */
+        MST_ERROR_UNINITIALIZED = 1,                   /**< The device handle has no open device. */
+        MST_ERROR_INVALID_ARGUMENT = 2,                /**< An argument was NULL, zero or out of range. */
+        MST_ERROR_NOT_SUPPORTED = 3,                   /**< The device cannot do this. */
+        MST_ERROR_NO_PERMISSION = 4,                   /**< The caller lacks the required privileges. */
+        MST_ERROR_NO_AVAILABLE_DEVICES = 5,            /**< Discovery found no matching device. */
+        MST_ERROR_DEVICE_NOT_FOUND = 6,                /**< The requested device does not exist. */
+        MST_ERROR_INTERFACE_NOT_AVAILABLE = 7,         /**< The access interface is absent on this host. */
+        MST_ERROR_MST_DRIVER_NOT_LOADED = 8,           /**< The mst_pci/mst_pciconf module is not loaded. */
+        MST_ERROR_FAILED_TO_ALLOCATE_MEMORY = 9,       /**< The SDK could not allocate a buffer. */
+        MST_ERROR_FAILED_TO_OPEN_DEVICE = 10,          /**< Opening the device failed. */
+        MST_ERROR_FAILED_TO_SEND_ACCESS_REG = 11,      /**< An access register command failed. */
+        MST_ERROR_FAILED_TO_GET_TELEMETRY = 12,        /**< A telemetry query failed. */
+        MST_ERROR_FAILED_TO_GET_HCA_CAPABILITIES = 13, /**< An HCA capability query failed. */
+        MST_ERROR_FAILED_TO_READ_CR_SPACE = 14,        /**< A CR space read failed. */
+        MST_ERROR_FAILED_TO_WRITE_CR_SPACE = 15,       /**< A CR space write failed. */
+        MST_ERROR_FAILED_TO_SET_I2C_SECONDARY = 16,    /**< Setting the I2C secondary address failed. */
+        MST_ERROR_UNKNOWN = 17,                        /**< Catch-all; the codes below it are newer. */
+        MST_ERROR_FAILED_TO_SEND_ICMD = 18,            /**< An ICMD failed; mstGetSyndrome has the
+                                                            firmware syndrome. */
+        MST_ERROR_TEMPERATURE_NOT_AVAILABLE = 19,      /**< No sensor produced a valid reading. */
     } MstStatus;
 
+    /**
+     * @brief A failure status paired with the message describing it.
+     */
     typedef struct MstErrorInfo_t
     {
-        MstStatus status;
-        char errorMessage[MAX_ERROR_MESSAGE_LENGTH];
+        MstStatus status;                            /**< The status of the failed operation. */
+        char errorMessage[MAX_ERROR_MESSAGE_LENGTH]; /**< Human readable description of the failure. */
     } MstErrorInfo;
 
     /**
