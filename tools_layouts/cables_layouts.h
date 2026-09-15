@@ -36,7 +36,7 @@
  
 
 /***
-         *** This file was generated at "2026-08-27 16:50:01"
+         *** This file was generated at "2026-09-14 06:08:33"
          *** by:
          ***    > [REDACTED]/adb2pack.py --input adb/prm/hca/ext/reg_access_cables.adb --file-prefix cables --prefix reg_access_hca_ --no-adb-utils
          ***/
@@ -53,8 +53,8 @@ extern "C" {
 /* Size in bytes - 148 */
 struct reg_access_hca_mcia_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Module Status0: SUCCESS1: NO_EEPROM_MODULE. No response from modules EEPROM.2: MODULE_NOT_SUPPORTED. Module type not supported by the device.
-3: MODULE_NOT_CONNECTED. No module present indication.4: MODULE_TYPE_INVALID - module is not supported by INI.9: I2C_ERROR. Error occurred while trying to access the modules EEPROM
+	/* Description - Module Status0: SUCCESS1: NO_EEPROM_MODULE. No response from module's EEPROM.2: MODULE_NOT_SUPPORTED. Module type not supported by the device.
+3: MODULE_NOT_CONNECTED. No module present indication.4: MODULE_TYPE_INVALID - module is not supported by INI.9: I2C_ERROR. Error occurred while trying to access the module's EEPROM
 using I2C.16: MODULE_DISABLED - module is disabled */
 	/* 0x0.0 - 0x0.7 */
 	/* access: RO */
@@ -75,7 +75,7 @@ using I2C.16: MODULE_DISABLED - module is disabled */
 	/* 0x0.26 - 0x0.28 */
 	/* access: INDEX */
 	u_int8_t module_bits_14_12;
-	/* Description - [DWIP]:Page Number Valid0: write page number1: dont write page numberValid only if module is in SW control */
+	/* Description - [DWIP]:Page Number Valid0: write page number1: don't write page numberValid only if module is in SW control */
 	/* 0x0.29 - 0x0.29 */
 	/* access: OP */
 	u_int8_t pnv;
