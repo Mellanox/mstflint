@@ -80,6 +80,13 @@ SDK_BUILD_SUBDIRS = \
 	$(HCA_CAP_DIR) \
 	$(MSTFLINT_SDK_DIR)
 
+# Subdirs the SDK needs only a single convenience library from, as
+# "<dir>:<target>" pairs. small_utils' `all' would link the mst* CLI tools and
+# drag in their unrelated dependencies, so build just libmgettemp.la -- the
+# mget_temp reading mft_sdk links against.
+SDK_BUILD_SUBDIR_TARGETS = \
+	small_utils:libmgettemp.la
+
 # Subdirs that install SDK runtime artifacts: the .so and headers (mft_sdk) and
 # the PRM databases getDefaultDBName() opens under $(pkgdatadir)/prm_dbs.
 SDK_INSTALL_SUBDIRS = \
@@ -89,6 +96,12 @@ SDK_INSTALL_SUBDIRS = \
 	tools_layouts/adb/prm/switch/ext
 
 sdk:
+	@for entry in $(SDK_BUILD_SUBDIR_TARGETS); do \
+		dir=`echo $$entry | sed 's/:.*//'`; \
+		target=`echo $$entry | sed 's/.*://'`; \
+		echo "  SDK-BUILD    $$dir ($$target)"; \
+		$(MAKE) $(AM_MAKEFLAGS) -C $$dir $$target || exit 1; \
+	done
 	@for dir in $(SDK_BUILD_SUBDIRS); do \
 		echo "  SDK-BUILD    $$dir"; \
 		$(MAKE) $(AM_MAKEFLAGS) -C $$dir all || exit 1; \
