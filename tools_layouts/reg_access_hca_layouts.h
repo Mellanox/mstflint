@@ -36,7 +36,7 @@
  
 
 /***
-         *** This file was generated at "2026-09-03 10:41:01"
+         *** This file was generated at "2026-09-11 06:47:21"
          *** by:
          ***    > /usr/local/lib64/python3.9/site-packages/mft_adbtools/adabe_plugins/adb2c/adb2pack.py --input /home/jenkins/agent/workspace/automatic_prm_update/user/tools_layouts/adb/prm/hca/ext/reg_access_hca.adb --file-prefix reg_access_hca --prefix reg_access_hca_ --no-adb-utils -o /home/jenkins/agent/workspace/automatic_prm_update/user/tools_layouts
          ***/
@@ -216,8 +216,8 @@ struct reg_access_hca_mcqi_dpa_metadata_ext {
 	/* 0x0.0 - 0x0.7 */
 	/* access: RO */
 	u_int8_t subtype;
-	/* Description - The type of the section. Should be used to identify twin applications,
-e.g. - CCProg coming from a 3rd party versus native application.Enumeration details:0 - APU_APP_EXTERNAL,1 - 3 - Reserved,4 - APU_APP_PCC,5 - APU_APP_DLL,6 - APU_APP_KERNEL,7-255 - Reserved */
+	/* Description - The type of the section. Should be used to identify "twin" applications,
+e.g. - CCProg coming from a 3rd party versus "native" application.Enumeration details:0 - APU_APP_EXTERNAL,1 - 3 - Reserved,4 - APU_APP_PCC,5 - APU_APP_DLL,6 - APU_APP_KERNEL,7-255 - Reserved */
 	/* 0x0.24 - 0x0.31 */
 	/* access: RO */
 	u_int8_t type;
@@ -325,7 +325,7 @@ struct reg_access_hca_MRFV_PVS_TILE_ext {
 struct reg_access_hca_MRFV_RAW_AND_VALUE_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Raw Fuses Highest bit. Indicates the highest bit in raw_fuses field
-which is part of the fuse data.For example, if raw_fuses [15:0] contains the fuse data, this fields
+which is part of the fuse data.For example, if raw_fuses [15:0] contains the fuse data, this field's
 value is 15. */
 	/* 0x0.0 - 0x0.4 */
 	/* access: RO */
@@ -340,12 +340,12 @@ value is 15. */
 	/* access: RO */
 	u_int32_t raw_fuses;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - The exponent part of the value.This field is signed, and negative values are represented using 2s
+	/* Description - The exponent part of the value.This field is signed, and negative values are represented using 2's
 complement. */
 	/* 0x8.0 - 0x8.5 */
 	/* access: RO */
 	u_int8_t value_exponent;
-	/* Description - The base part of the value.This field is signed, and negative values are represented using 2s
+	/* Description - The base part of the value.This field is signed, and negative values are represented using 2's
 complement.The value is:value_base x 10 ^ value_exponent.Units:Power: [W].Voltage: [V].Time: [Sec].Current: [A].Capacitance: [F]. */
 	/* 0x8.6 - 0x8.31 */
 	/* access: RO */
@@ -960,8 +960,8 @@ header (together with the type field). */
 	/* 0x0.12 - 0x0.15 */
 	/* access: RW */
 	u_int8_t version;
-	/* Description - The entity which configured this parameter0x0: UNSPECIFIED0x1: CHASSIS_BMC0x2: MAD0x3: BMC0x4: COMMAND_INTERFACE0x5: ICMD - with unspecified source0x6: ICMD_UEFI_HII - configured by the NICs UEFI expansion ROMs HII
-menu.0x7: ICMD_UEFI_CLP - configured by the NICs expansion ROMs CLP.0x8: ICMD_Flexboot - configured by the NICs legacy expansion ROM.0x9: ICMD_mlxconfig - configured by Mellanox mlxconfig tool0xA: ICMD_USER1 - value available for customer created tools that
+	/* Description - The entity which configured this parameter0x0: UNSPECIFIED0x1: CHASSIS_BMC0x2: MAD0x3: BMC0x4: COMMAND_INTERFACE0x5: ICMD - with unspecified source0x6: ICMD_UEFI_HII - configured by the NIC's UEFI expansion ROM's HII
+menu.0x7: ICMD_UEFI_CLP - configured by the NIC's expansion ROM's CLP.0x8: ICMD_Flexboot - configured by the NIC's legacy expansion ROM.0x9: ICMD_mlxconfig - configured by Mellanox mlxconfig tool0xA: ICMD_USER1 - value available for customer created tools that
 uses the ICMD interface for writing TLVs.0xB: ICMD_USER2 - value available for customer created tools that
 uses the ICMD interface for writing TLVs.0xC: ICMD_MLXCONFIG_SET_RAW - configures bymlxconfig set raw operation.0xD: ICMD_FLEXBOOT_CLP - configured by Legacy Expansion ROM CLP0xE: CMIS_CDB - configured by VMOD CMIS CDB I/F0x10: BMC_APP1 - Configuration was done over the BMC0x11: BMC_APP2 - Configuration was done over the BMC0x12: BMP_APP3 - Configuration was done over the BMC0x1F: OTHER - the parameter was written by the NIC due to other
 reasons.Note - This field is writeable only when using the ICMD interface.
@@ -1096,15 +1096,15 @@ struct reg_access_hca_mgir_dev_info_ext {
 /* Size in bytes - 64 */
 struct reg_access_hca_mgir_fw_info_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Sub-minor firmware version number.Deprecated and returns 0.Refer to extended_sub_minor. */
+	/* Description - Sub-minor firmware version number.Deprecated and returns 0'.Refer to extended_sub_minor. */
 	/* 0x0.0 - 0x0.7 */
 	/* access: RO */
 	u_int8_t sub_minor;
-	/* Description - Minor firmware version number.Deprecated and returns 0.Refer to extended_minor. */
+	/* Description - Minor firmware version number.Deprecated and returns 0'.Refer to extended_minor. */
 	/* 0x0.8 - 0x0.15 */
 	/* access: RO */
 	u_int8_t minor;
-	/* Description - Major firmware version number.Deprecated and returns 0.Refer to extended_major. */
+	/* Description - Major firmware version number.Deprecated and returns 0'.Refer to extended_major. */
 	/* 0x0.16 - 0x0.23 */
 	/* access: RO */
 	u_int8_t major;
@@ -1117,10 +1117,10 @@ capabilities. */
 	/* 0x0.25 - 0x0.25 */
 	/* access: RO */
 	u_int8_t signed_fw;
-	/* Description - When set, the device is running a debug firmware. debug binary can
+	/* Description - When set, the device is running a debug firmware. debug' binary can
 only be installed on specific devices (identified by their Factory base
-MAC), which currently run a specific firmware version. These
-restrictions are expressed by a signed debug token that must be loaded
+MAC'), which currently run a specific firmware version. These
+restrictions are expressed by a signed debug' token that must be loaded
 to the device before installing the debug binary. */
 	/* 0x0.26 - 0x0.26 */
 	/* access: RO */
@@ -1143,7 +1143,7 @@ required. */
 	/* access: RO */
 	u_int8_t index_tlv;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - Firmware Build ID. Optional.Note: Deprecated for switches and returns 0. */
+	/* Description - Firmware Build ID. Optional.Note: Deprecated for switches and returns 0'. */
 	/* 0x4.0 - 0x4.31 */
 	/* access: RO */
 	u_int32_t build_id;
@@ -1189,17 +1189,17 @@ Year= 0x04 */
 	/* access: RO */
 	u_int32_t ini_file_version;
 /*---------------- DWORD[9] (Offset 0x24) ----------------*/
-	/* Description - FW versions Major field in extended (32b) format. */
+	/* Description - FW version's Major field in extended (32b) format. */
 	/* 0x24.0 - 0x24.31 */
 	/* access: RO */
 	u_int32_t extended_major;
 /*---------------- DWORD[10] (Offset 0x28) ----------------*/
-	/* Description - FW versions Minor field in extended (32b) format. */
+	/* Description - FW version's Minor field in extended (32b) format. */
 	/* 0x28.0 - 0x28.31 */
 	/* access: RO */
 	u_int32_t extended_minor;
 /*---------------- DWORD[11] (Offset 0x2c) ----------------*/
-	/* Description - FW versions SubMinor field in extended (32b) format. */
+	/* Description - FW version's SubMinor field in extended (32b) format. */
 	/* 0x2c.0 - 0x2c.31 */
 	/* access: RO */
 	u_int32_t extended_sub_minor;
@@ -1208,7 +1208,7 @@ Year= 0x04 */
 	/* 0x30.0 - 0x30.15 */
 	/* access: RO */
 	u_int16_t isfu_major;
-	/* Description - Bitmap representing the disabled tiles in the ASIC. Tile 0 is
+	/* Description - Bitmap representing the disabled tiles in the ASIC. Tile 0' is
 represented by the msb bit.0: tile is enabled1: tile is disabledThe total number of tiles can be derived through MGPIR register. */
 	/* 0x30.16 - 0x30.31 */
 	/* access: RO */
@@ -1342,7 +1342,7 @@ Device HW Revision Descriptions */
 	/* access: RO */
 	u_int8_t pci_switch_only_mode;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
-	/* Description - MSB of the base MAC address of the NIC that was allocate during
+	/* Description - MSB of the 'base' MAC address of the NIC that was allocate during
 manufacturing. The NIC derives the MAC addresses for the different PCI
 PFs from this MAC address. This parameter can be used as a canonical
 unique identifier of the NIC.manufacturing_base_mac of value 0 means field is not supported. */
@@ -1358,7 +1358,7 @@ unique identifier of the NIC.manufacturing_base_mac of value 0 means field is no
 	/* access: RO */
 	u_int8_t chip_type;
 /*---------------- DWORD[5] (Offset 0x14) ----------------*/
-	/* Description - LSB of the base MAC address of the NIC that was allocate during
+	/* Description - LSB of the 'base' MAC address of the NIC that was allocate during
 manufacturing. The NIC derives the MAC addresses for the different PCI
 PFs from this MAC address. This parameter can be used as a canonical
 unique identifier of the NIC.manufacturing_base_mac of value 0 means field is not supported. */
@@ -1538,7 +1538,7 @@ struct reg_access_hca_MRFV_ext {
 	/* access: INDEX */
 	u_int8_t fuse_id;
 	/* Description - [DWIP]:Instance ID. For a fuse that has multiple instances, this field provides
-the Instance ID.For the common case where its a single instance per asic, instance ID 0
+the Instance ID.For the common case where it's a single instance per asic, instance ID 0
 denotes the main/die [0] instance, and subsequent instance ID X denotes
 the instance of tile [X-1] / die [X].For a given fuse_id, if an invalid instance_id is provided, fm field
 will have a value of 1 (Fuse mismatch found). */
@@ -1616,7 +1616,7 @@ MRSV entry - BF-3 Straps Layout */
 /* Size in bytes - 64 */
 struct reg_access_hca_debug_cap {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - The maximum number of samples that can be stored on the devices
+	/* Description - The maximum number of samples that can be stored on the device's
 sampling buffer is 2^ log_max_samples in counters unit (i.e. 100 will
 represent the ability to store 100 samples of single counter, 50 samples
 of 2 counters, etc). */
@@ -1631,7 +1631,7 @@ resource_dump_event */
 	/* Description - If set, Resource_dump register is supported.
 
 See
-table 2030 - RESOURCE_DUMP Register Layout */
+table 2036 - RESOURCE_DUMP Register Layout */
 	/* 0x0.22 - 0x0.22 */
 	/* access: RW */
 	u_int8_t resource_dump;
@@ -1640,7 +1640,7 @@ order to accommodate cr_dump.
 
 0 means feature is not supported.
 
-See table 2028 - CORE_DUMP Register Layout */
+See table 2034 - CORE_DUMP Register Layout */
 	/* 0x0.23 - 0x0.27 */
 	/* access: RW */
 	u_int8_t log_cr_dump_to_mem_size;
@@ -1772,13 +1772,13 @@ represent register ID 0x9180 while bit 127 represents register ID
 	/* access: INDEX */
 	u_int8_t feature_group;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - Supported managements access register bitmask. Based on
+	/* Description - Supported management's access register bitmask. Based on
 access_reg_group index.When bit is set, the register is supported in the device.For example:Bit 1: MFCR_0x9001Bit 2: MFSC_0x9002Bit 3: MFSM_0x9003Bit 4: MFSL_0x9004Bit 58: MGCR_0x903ABit 73: MPPF_0x9049Bit 127: MCAP_0x907F */
 	/* 0x8.0 - 0x14.31 */
 	/* access: RO */
 	u_int32_t mng_access_reg_cap_mask[4];
 /*---------------- DWORD[10] (Offset 0x28) ----------------*/
-	/* Description - Supported ports enhanced features.Based on feature_group index.When bit is set, The feature is supported in the deviceBit 0: MPCNT counter group- PCIE performance counters supportedBit 1: mtpps_fs - If set, field_select field in MTPPS register is
+	/* Description - Supported port's enhanced features.Based on feature_group index.When bit is set, The feature is supported in the deviceBit 0: MPCNT counter group- PCIE performance counters supportedBit 1: mtpps_fs - If set, field_select field in MTPPS register is
 supported.Bit 2: mtpps_enhanced_out_periodic_adjustment - If set,
 enhanced_out_periodic_adjustment field in MTPPS register is supported.Bit 3: tx_lossy_overflow_oper - If set, tx_overflow_buffer_pkt counter
 in MPCNT register is supported.Bit 4: pcie_outbound_stalled - if set, outbound_stalled_reads,
@@ -1786,14 +1786,14 @@ outbound_stalled_writes, outbound_stalled_reads_events and
 outbound_stalled_writes_events counters in MPCNT are supported.Bit 5: Management pass through is supportedBit 6: sensor_map - If set, sensor_map is supported in MTCAP register.Bit 7: if set, module_status bit 8 (Module Low Power) in MCION register
 is supported.Bit 8: beacon_capability_disable - If set, beacon feature, as appears in
 MLCR register, in not supported by the device.Bit 9: dynamic_tx_overflow - If set, tx_overflow_sense field is
-supported in MPEGC register.Bit 10: mark_tx_action_cqe is supported if set to 1.Bit 11: mark_tx_action_cnp is supported if set to 1.Bit 12: dev_info is supported in register is set to 1.Bit 13: sensor_count field is 12bit size in MTMP and MTBRBit 14: cs_tokens_supported is supportedBit 15: debug_fw_tokens_supportedBit 16: long_keys is supportedBit 17: pwr_status and pci_power are supported in MPEINBit 18: If set, accessing through device_type and device_index is
-supported in MCC, MCQI and MCQSBit 19: pcie_sync_for_fw_update_supported is set to 1Bit 20: ptpCyc2Realtime_modify - If set, the cycle to realtime
-translation offload is supportedBit 21: If set to 1, reset_state in MFRL is supportedBit 22: If set to 1, link_peer_max_speed is supported in MPEIN
-RegisterBit 23: If set to 1, slot_index field is supported in: MCIA, MCAS,
+supported in MPEGC register.Bit 10: mark_tx_action_cqe is supported if set to 1'.Bit 11: mark_tx_action_cnp is supported if set to 1'.Bit 12: dev_info is supported in register is set to 1'.Bit 13: sensor_count field is 12bit size in MTMP and MTBRBit 14: cs_tokens_supported is supportedBit 15: debug_fw_tokens_supportedBit 16: long_keys is supportedBit 17: pwr_status and pci_power are supported in MPEINBit 18: If set, accessing through device_type and device_index is
+supported in MCC, MCQI and MCQSBit 19: pcie_sync_for_fw_update_supported is set to 1'Bit 20: ptpCyc2Realtime_modify - If set, the cycle to realtime
+translation offload is supportedBit 21: If set to 1', reset_state in MFRL is supportedBit 22: If set to 1', link_peer_max_speed is supported in MPEIN
+RegisterBit 23: If set to 1', slot_index field is supported in: MCIA, MCAS,
 MCION, MQSP, MTCAP, MTECR, MTMP, MTEWE, MTBR, MVCAP, MVCR, MGPIR,
 MDDT.Bit 24: If set, transceiver burn flow is supported in MCC, MCQI and
 MCQS.Bit 26: If set, progress field is supported in MCQSBit 28: If set, number_of_slots field is supported in MGPIR.Bit 29: If set, virtual hot plug / unplug is supported in MPEGC.Bit 30: If set, my_pf_number is supported in MPPF.Bit 31: If set, sdee is supported in MTMPBit 32: If set, npps_period is supported in MTPPS.Bit 33: If set, out_pulse_duration_ns is supported in MTPPS.Bit 34: If set, MCIA supports 32 D-words. Otherwise, 12 D-words.Bit 35: If set, MGIR.hw_info.technology is supported.Bit 37: If set, lp_msb is supported for MLCR, MPIR
-Bit 39: If set, MRCS and RMDT tokens are supported in MCQSBit 40: If set, encryption field in MGIR is supportedBit 43: If set, MFCR supports tacho_active_msb fieldBit 44: If set, FORE supports fan_under_limit_msb and fan_over_limit_msb
+Bit 39: If set, MRCS and RMDT tokens are supported in MCQSBit 40: If set, encryption' field in MGIR is supportedBit 43: If set, MFCR supports tacho_active_msb fieldBit 44: If set, FORE supports fan_under_limit_msb and fan_over_limit_msb
 fieldsBit 45: If set, MFRL.pci_rescan_required is supportedBit 46: time_adjust_range_extended - if set, the MTUTC.time_adjustment
 range is extended to -200,000 to +200,000
 Bit 47: If set, MTUTC.freq_adj_units=1 is supportedBit 48: If set, MRSRFT/MRSR.command=6 is supportedBit 49: If set, MCQS.identifier support CRCS and CRDT tokensBit 51: If set, MTUTC.freq_adj_units=2 is supportedBit 53: If set, Mlx mlxfwreset with downstream port is supported by FW
@@ -1987,7 +1987,7 @@ MCQI CAPABILITIES Info Layout */
 struct reg_access_hca_mcqi_reg_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Component index gathered by
-section 31.23.1 - MCQS - Management Component Query Status */
+section 31.24.1 - MCQS - Management Component Query Status */
 	/* 0x0.0 - 0x0.15 */
 	/* access: INDEX */
 	u_int16_t component_index;
@@ -2052,7 +2052,7 @@ last_index_flag. */
 	/* access: INDEX */
 	u_int16_t component_index;
 	/* Description - Device number.For gearboxes, the index represents the gearbox die.For cables, the index represents the module index starting at index 1.
-Index 0 indicates the host device.For Clock synchronizer, index is used to represent the clock sync
+Index 0 indicates the host device.For Clock synchronizer, index is used to represent the clock sync'
 device index. Starting from 1. */
 	/* 0x0.16 - 0x0.27 */
 	/* access: INDEX */
@@ -2117,7 +2117,7 @@ struct reg_access_hca_mfba_reg_ext {
 	/* 0x0.4 - 0x0.5 */
 	/* access: INDEX */
 	u_int8_t fs;
-	/* Description - Capability bit - If set to 1, address field is 32 bit length. */
+	/* Description - Capability bit - If set to 1', address field is 32 bit length. */
 	/* 0x0.31 - 0x0.31 */
 	/* access: RO */
 	u_int8_t add_cap_32b;
@@ -2155,7 +2155,7 @@ struct reg_access_hca_mfbe_reg_ext {
 	/* 0x0.30 - 0x0.30 */
 	/* access: WO */
 	u_int8_t bulk_32kb_erase;
-	/* Description - Capability bit - If set to 1, address field is 32 bit length. */
+	/* Description - Capability bit - If set to 1', address field is 32 bit length. */
 	/* 0x0.31 - 0x0.31 */
 	/* access: RO */
 	u_int8_t add_cap_32b;
@@ -2175,7 +2175,7 @@ struct reg_access_hca_mfpa_reg_ext {
 	/* 0x0.4 - 0x0.5 */
 	/* access: INDEX */
 	u_int8_t fs;
-	/* Description - Capability bit - If set to 1, boot_address field is 32 bit length. */
+	/* Description - Capability bit - If set to 1', boot_address field is 32 bit length. */
 	/* 0x0.31 - 0x0.31 */
 	/* access: RO */
 	u_int8_t add_cap_32b;
@@ -2254,7 +2254,7 @@ trigger, you need to configure pci_reset_req_method.Bit 6: TRIGGER6 - PERSTOther
 	/* 0x4.0 - 0x4.7 */
 	/* access: RW */
 	u_int8_t reset_trigger;
-	/* Description - Each bit represents a chip reset type.If set to 1, the reset is supported.Bit 0: Full_Chip_ResetBit 1: Keep_Network_Port_Active_During_ResetBit 3: ARM_Only_ResetBit 4: ARM_OS_ShutdownBit 5: Network_Reset - Keep PCIe active during reset. dwip */
+	/* Description - Each bit represents a chip reset type.If set to 1', the reset is supported.Bit 0: Full_Chip_ResetBit 1: Keep_Network_Port_Active_During_ResetBit 3: ARM_Only_ResetBit 4: ARM_OS_ShutdownBit 5: Network_Reset - Keep PCIe active during reset. dwip */
 	/* 0x4.8 - 0x4.15 */
 	/* access: RO */
 	u_int8_t reset_type;
@@ -2534,14 +2534,14 @@ or Host-PF. */
 /* Size in bytes - 160 */
 struct reg_access_hca_mpcir_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - If set to 01, activates the flow of preparation for FW ISSU, on all
-services. The values in op-codes for per-service are ignored.If set to 10, returns to operational state on all services. The values
+	/* Description - If set to 01', activates the flow of preparation for FW ISSU, on all
+services. The values in op-codes for per-service are ignored.If set to 10', returns to operational state on all services. The values
 in op-codes for per-service are ignored.11 - get_status for all services */
 	/* 0x0.30 - 0x0.31 */
 	/* access: OP */
 	u_int8_t all;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - For each of the services, the following operations are available:0: N/A (no action)1: start preparation flow for FW ISSU2: return to operational service (end of FW ISSU flow)3: get statusWhen set to 3, the current status will appear in corresponding _stat
+	/* Description - For each of the services, the following operations are available:0: N/A (no action)1: start preparation flow for FW ISSU2: return to operational service (end of FW ISSU flow)3: get statusWhen set to 3', the current status will appear in corresponding _stat
 fields. */
 	/* 0x4.0 - 0x4.1 */
 	/* access: OP */
@@ -2581,13 +2581,13 @@ struct reg_access_hca_mpegc_reg_ext {
 	u_int16_t field_select;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - When overflow encountered for lossy packets, it will be dropped or
-marked and will be counted in tx_overflow_buffer_dropped_pkt or
+marked and will be counted in "tx_overflow_buffer_dropped_pkt or
 tx_overflow_buffer_marked_pkt counter.00 - Disabled01 - drop - overflow traffic will be dropped. [Internal]: Drop can be
 set only if tx_lossless_overflow_oper is set to disable. backward
 enabled.10 - mark - overflow traffic will be marked in the CE field in the CqE.
 [Internal]: Mark can be set only if tx_lossless_overflow_oper is set to
 disable or mark. Supported only when MCAM.mark_tx_action_cqe or
-MCAM.mark_tx_action_cnp are 1. */
+MCAM.mark_tx_action_cnp are 1'. */
 	/* 0x8.0 - 0x8.1 */
 	/* access: RW */
 	u_int8_t tx_lossy_overflow_oper;
@@ -2601,18 +2601,18 @@ invalidthe value here will be reflected in the MPIR segment_validreserved when p
 	/* access: RW */
 	u_int8_t segment_valid;
 	/* Description - When this bit is set, the marking action will be generating a CNP for
-RoCE traffic. Supported only when MCAM.mark_tx_action_cnp is 1. */
+RoCE traffic. Supported only when MCAM.mark_tx_action_cnp is 1'. */
 	/* 0x8.29 - 0x8.29 */
 	/* access: RW */
 	u_int8_t mark_cnp;
 	/* Description - When this bit is set, the marking action will be set in the CqE for TCP
-traffic. Supported only when MCAM.mark_tx_action_cqe is 1. */
+traffic. Supported only when MCAM.mark_tx_action_cqe is 1'. */
 	/* 0x8.30 - 0x8.30 */
 	/* access: RW */
 	u_int8_t mark_cqe;
 	/* Description - Set the sensibility level of the tx overflow mechanism.0 - Aggressive [Internal]: WRED is on.1 - Dynamic adjustment. When tx_lossy_overflow_oper is disabled,
 tx_overflow_sense must be disabled. [Internal]: Based on RX buffer
-fullness.Supported only when MCAM.dynamic_tx_oveflow is 1. */
+fullness.Supported only when MCAM.dynamic_tx_oveflow is 1'. */
 	/* 0x8.31 - 0x8.31 */
 	/* access: RW */
 	u_int8_t tx_overflow_sense;
@@ -2762,7 +2762,7 @@ different types.0 - PCI Express Endpoint port4 - Root Port of PCI Express Root C
 /* Size in bytes - 16 */
 struct reg_access_hca_mpir_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Number of PCIe buses available for the host to connect ot the device.0 when operating in non-Socket-Direct mode. */
+	/* Description - Number of PCIe buses available for the host to connect ot the device.0' when operating in non-Socket-Direct mode. */
 	/* 0x0.0 - 0x0.3 */
 	/* access: RO */
 	u_int8_t host_buses;
@@ -2787,11 +2787,11 @@ struct reg_access_hca_mpir_ext {
 	/* access: RO */
 	u_int8_t sdm;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - sunbordinate bus - the highest bus number that subordinates to switch.Default value of 0 in case it is not a switch port. */
+	/* Description - sunbordinate bus - the highest bus number that subordinates to switch.Default value of 0' in case it is not a switch port. */
 	/* 0x4.0 - 0x4.7 */
 	/* access: RO */
 	u_int8_t subordinate_bus;
-	/* Description - secondary bus - the internal logic bus in the switch.Default value of 0 in case it is not a switch port. */
+	/* Description - secondary bus - the internal logic bus in the switch.Default value of 0' in case it is not a switch port. */
 	/* 0x4.8 - 0x4.15 */
 	/* access: RO */
 	u_int8_t secondary_bus;
@@ -2842,7 +2842,7 @@ hierarchy of the link.segment_cap = 1 : segment base that was captured in Flit m
 	/* 0xc.24 - 0xc.30 */
 	/* access: RO */
 	u_int8_t host_index;
-	/* Description - If set to 1, slot_number field is supported. */
+	/* Description - If set to 1', slot_number field is supported. */
 	/* 0xc.31 - 0xc.31 */
 	/* access: RO */
 	u_int8_t slot_cap;
@@ -3009,7 +3009,7 @@ power to the device */
 struct reg_access_hca_mtcap_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Number of ASIC+platform sensors supported by the deviceThis includes the ASIC and the ambient sensors. Module sensors are not
-included.This actually is equal to sum of all 1 in sensor_mapRange 1..64Known sensors:0: current asic temp, FW exposes current max(all diode temp sensors)1..63: ambient, supported only for unmanaged switch, defined by ini64..127: modules (not exposed by this field) */
+included.This actually is equal to sum of all 1' in sensor_mapRange 1..64Known sensors:0: current asic temp, FW exposes current max(all diode temp sensors)1..63: ambient, supported only for unmanaged switch, defined by ini64..127: modules (not exposed by this field) */
 	/* 0x0.0 - 0x0.6 */
 	/* access: RO */
 	u_int8_t sensor_count;
@@ -3080,7 +3080,7 @@ struct reg_access_hca_mteim_reg_ext {
 	/* access: RO */
 	u_int8_t cap_core_dpa;
 	/* Description - Number of tiles per device. For devices without tiles (only main ASIC),
-this field should be 0. */
+this field should be 0'. */
 	/* 0x0.24 - 0x0.31 */
 	/* access: RO */
 	u_int8_t cap_num_of_tile;
@@ -3102,7 +3102,7 @@ by first_tile/main _core _event_id[i] + cap_core_tile/main.When clear the Phy UC
 	/* 0x4.30 - 0x4.30 */
 	/* access: RO */
 	u_int8_t is_phy_uc_supported;
-	/* Description - When set to 1, the device supports dwsn_msb bit within the FW trace
+	/* Description - When set to 1', the device supports dwsn_msb bit within the FW trace
 layout. */
 	/* 0x4.31 - 0x4.31 */
 	/* access: RO */
@@ -3184,10 +3184,10 @@ support by the MTEWE/TMPW event mechanism. */
 	/* 0x0.25 - 0x0.28 */
 	/* access: INDEX */
 	u_int8_t asic_index;
-	/* Description - internal granularity.Used to query the internal diodes of the switch main ASIC and tiles.0: the i field may be used to query the entire ASIC internal diodes.
-Main + tile.1: The i field is ignored (considered as 0) and only the main ASIC
+	/* Description - internal granularity.Used to query the internal diodes of the switch main ASIC and tiles.0: the i' field may be used to query the entire ASIC internal diodes.
+Main + tile.1: The i' field is ignored (considered as 0) and only the main ASIC
 diodes are available to query and sensor_index is the index of the main
-ASIC diodes. (The only valid value of sensor_index is 0).2: The i field is ignored (considered as 0) and only the tile ASIC
+ASIC diodes. (The only valid value of sensor_index is 0).2: The i' field is ignored (considered as 0) and only the tile ASIC
 diodes are available to query and sensor_index is the index of the tile
 ASIC diodes. To query a specific tile, asic_index field should be used.
 (The only valid value of sensor_index is 0).3: Reserved. */
@@ -3202,13 +3202,13 @@ sensor_index is the index of the ASIC diode. */
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - Current temperature reading from the sensor. In case of a virtual
 sensor, this field reflects the maximum over all real sensors that it
-represents.Units of 0.125 Celsius degrees.For negative values 2s complement is used (for example: -3.25 Celsius
+represents.Units of 0.125 Celsius degrees.For negative values 2's complement is used (for example: -3.25 Celsius
 will read as 0xFFE6) */
 	/* 0x4.0 - 0x4.15 */
 	/* access: RO */
 	u_int16_t temperature;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - The highest historic measured temperature from the sensor.Reserved when mte = 0Cleared by mtr = 1Valid only when i = 0For negative values 2s complement is used (for example: -3.25 Celsius
+	/* Description - The highest historic measured temperature from the sensor.Reserved when mte = 0Cleared by mtr = 1Valid only when i = 0For negative values 2's complement is used (for example: -3.25 Celsius
 will read as 0xFFE6) */
 	/* 0x8.0 - 0x8.15 */
 	/* access: RO */
@@ -3231,7 +3231,7 @@ will read as 0xFFE6) */
 	u_int8_t mte;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description - temperature_threshold_hi refers to the high threshold of Warning Event.
-Units of 0.125 Celsius degrees.For negative values 2s complement is used (for example: -3.25 Celsius
+Units of 0.125 Celsius degrees.For negative values 2's complement is used (for example: -3.25 Celsius
 will read as 0xFFE6)If the sensor temperature measurement is above the threshold (and events
 are enabled), an event will be generated.threshold_hi and threshold_lo implements hysteresis mechanism of the
 threshold preventing toggling of the indication.Note that temperature_threshold_hi must be equal or lower than the
@@ -3252,7 +3252,7 @@ message or an interrupt using GPIO */
 	u_int8_t tee;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - temperature_threshold_lo refers to the low threshold of Warning
-Event.Units of 0.125 Celsius degrees.For negative values 2s complement is used (for example: -3.25 Celsius
+Event.Units of 0.125 Celsius degrees.For negative values 2's complement is used (for example: -3.25 Celsius
 will read as 0xFFE6)The offset threshold_lo implements the lower threshold for the
 hysteresis mechanism of over temperature alert. Once alert is set, if
 the temperature goes below this threshold, the alert is cleared.Note that temperature_threshold_lo must be at least 5 degrees lower than
@@ -3590,7 +3590,7 @@ oper_status = down.Ethernet devices that support this field will use only bits 2
 	/* 0x4.4 - 0x4.7 */
 	/* access: RO */
 	u_int8_t physical_state_status;
-	/* Description - Force down.Supported only when indicated in PCAMCan be set only with admin_status = 2 (down_by_configuration), will
+	/* Description - Force down.Supported only when indicated in PCAMCan be set only with admin_status = 2 (down_by_configuration'), will
 force link to be down. */
 	/* 0x4.8 - 0x4.8 */
 	/* access: RW */
@@ -3698,7 +3698,7 @@ configuration is valid. Otherwise, field ignores the value.Bit 0: flua_enbit 1: 
 that occurs only upon link down command of peer port. In the event of
 Down command/cable disconnect, entire link up flow will be initialized.NOTE: This mode can be configured only when PTYS.an_disable_admin is set
 (i.e. AN is disabled).NOTE: if physical environment was changed (i.e. replacement of module,
-temp change, etc) there is a possibility that link wont be established
+temp change, etc) there is a possibility that link won't be established
 or will be established with high BER */
 	/* 0x4.0 - 0x4.0 */
 	/* access: WO */
@@ -3816,12 +3816,12 @@ of oper_status to initialization. */
 [DWIP] 0x11: Submodule_failure
 [DWIP] 0x12: serbi_check_failure
 [DWIP] 0x13: els_critical_indication
-Valid only when oper_status = 4b0011 */
+Valid only when oper_status = 4'b0011 */
 	/* 0x4.8 - 0x4.12 */
 	/* access: RO */
 	u_int8_t error_type;
 	/* Description - This notification can occur only if module passed initialization process0x0: No notifications.0x1: Speed degradation  the module is not enabled in its full speed due
-to incompatible transceiver/cableValid only when oper_status = 4b0001. */
+to incompatible transceiver/cableValid only when oper_status = 4'b0001. */
 	/* 0x4.16 - 0x4.19 */
 	/* access: RO */
 	u_int8_t operational_notification;
@@ -3877,7 +3877,7 @@ aggregated port only. */
 	/* 0x0.16 - 0x0.23 */
 	/* access: INDEX */
 	u_int8_t local_port;
-	/* Description - Module lane mapping:0 - Local to Module mapping include module lanes mapping1 - Local to Module mapping only, without lane mappingWhen this operational is set (1), the following fields are ignored in
+	/* Description - Module lane mapping:0 - Local to Module mapping include module lanes mapping1 - Local to Module mapping only, without lane mappingWhen this operational is set (1'), the following fields are ignored in
 SET command and should return the value 0 in GET commands:PMLP.rxtxPMLP.lane<i>_module_mapping.tx_lanePMLP.lane<i>_module_mapping.rx_lane */
 	/* 0x0.28 - 0x0.28 */
 	/* access: OP */
@@ -3932,7 +3932,7 @@ aggregated port only. */
 	/* Description - Valid only when ee_tx_ready is set, otherwise field is ignored.0: do_not_generate_eventBit 0: generate_tx_ready_event - When set, PTSE register will generate
 event when Transmitter is generating valid signal on the lineBit 1: generate_tx_not_ready_event - when set, PTSE will generate event
 when the transmitter stopped transmitting after Tx_ready was set.Note: if both tx_not_ready and tx_ready are set, one toggle event may be
-received instead of 2 consecutive events of not ready > ready. */
+received instead of 2 consecutive events of not ready --> ready. */
 	/* 0x0.26 - 0x0.27 */
 	/* access: RW */
 	u_int8_t tx_ready_e;
@@ -3946,7 +3946,7 @@ received instead of 2 consecutive events of not ready > ready. */
 	u_int8_t an_disable_cap;
 	/* Description - Auto Negotiation disable:0 - Normal operation1 - Disable AN.Note: In Ethernet port, when Disabling AN, the eth_proto_admin bit
 mask must comply to single speed rate set.In IB port, when Disabling AN, the ib_proto_admin bit mask must comply
-to single speed rate set.Its recommended to validate the FEC override bits in PPLM when
+to single speed rate set.It's recommended to validate the FEC override bits in PPLM when
 operating with AN. */
 	/* 0x0.30 - 0x0.30 */
 	/* access: RW */
@@ -4128,8 +4128,8 @@ next call in case dump_more==1. */
 	u_int32_t index2;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - The amount of objects to dump starting for index 2.SW shall read this field upon command done and shall provide it on the
-next call in case dump_more==1.Range is 0..0xfff0. When the segments num_of_obj2_supports_all is set,
-the special value of 0xffff represents all. When the segments
+next call in case dump_more==1.Range is 0..0xfff0. When the segment's num_of_obj2_supports_all is set,
+the special value of 0xffff represents all. When the segment's
 num_of_objx_supports_active is set, the special value of 0xfffe
 represents active. The value of 0x0 and 0x1 are allowed even if the
 supported_num_of_obj2 is 0. */
@@ -4137,8 +4137,8 @@ supported_num_of_obj2 is 0. */
 	/* access: RW */
 	u_int16_t num_of_obj2;
 	/* Description - The amount of objects to dump starting for index 1SW shall read this field upon command done and shall provide it on the
-next call in case dump_more==1.Range is 0..0xfff0. When the segments num_of_obj1_supports_all is set,
-the special value of 0xffff represents all. When the segments
+next call in case dump_more==1.Range is 0..0xfff0. When the segment's num_of_obj1_supports_all is set,
+the special value of 0xffff represents all. When the segment's
 num_of_objx_supports_active is set, the special value of 0xfffe
 represents active. The value of 0x0 and 0x1 are allowed even if the
 supported_num_of_obj1 is 0. */
