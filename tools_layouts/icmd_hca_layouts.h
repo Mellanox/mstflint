@@ -36,7 +36,7 @@
  
 
 /***
-         *** This file was generated at "2026-09-03 10:41:03"
+         *** This file was generated at "2026-09-11 06:47:22"
          *** by:
          ***    > /usr/local/lib64/python3.9/site-packages/mft_adbtools/adabe_plugins/adb2c/adb2pack.py --input /home/jenkins/agent/workspace/automatic_prm_update/user/tools_layouts/adb/tools/icmd_hca.adb --file-prefix icmd_hca --prefix icmd_hca_ --no-adb-utils -o /home/jenkins/agent/workspace/automatic_prm_update/user/tools_layouts
          ***/
@@ -78,7 +78,7 @@ struct icmd_hca_diagnostic_cntr_layout {
 /* Size in bytes - 24 */
 struct icmd_hca_diagnostic_params_context {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - The number of samples to store on the devices sampling buffer is 2^
+	/* Description - The number of samples to store on the device's sampling buffer is 2^
 log_number_of_samples. Range is 1floor(DIAG_CNT_CAP.
 log_max_samples_mul_counters /DIAG_CNT_SET. num_of_counters)
 Note that modifying this field will cause resetting the sampling buffer. */
@@ -108,32 +108,32 @@ buffer. */
 	/* access: RW */
 	u_int8_t enable;
 	/* Description - If set, the device does not collect samples. Upon QUERY_DIAGNOSTIC
-command, the device will fetch current sample. on demand mode is
-mutually exclusive with repetitive, clear andsync modes and cannot
+command, the device will fetch current sample. 'on demand' mode is
+mutually exclusive with 'repetitive', 'clear' and'sync' modes and cannot
 be set together */
 	/* 0x4.27 - 0x4.27 */
 	/* access: RW */
 	u_int8_t on_demand;
 	/* Description - Clear counters at the beginning of each period. Valid only for Synched
-Start Diagnostic Counters, only when sync is set to 1.
+Start Diagnostic Counters, only when sync is set to 1'.
 
-Clear is mutually exclusive with on demand. */
+Clear is mutually exclusive with 'on demand'. */
 	/* 0x4.28 - 0x4.28 */
 	/* access: RW */
 	u_int8_t clear;
 	/* Description - Use Synched Start counting on Diagnostics Counters that support sync
 operation.
 
-Sync is mutually exclusive with on demand. */
+Sync is mutually exclusive with 'on demand'. */
 	/* 0x4.29 - 0x4.29 */
 	/* access: RW */
 	u_int8_t sync;
-	/* Description - Repetitive sampling mode. Available only when HCA-CAP.repetitive is 1
+	/* Description - Repetitive sampling mode. Available only when HCA-CAP.repetitive is 1'
 Mutually exclusive with single mode and on_demand mode. */
 	/* 0x4.30 - 0x4.30 */
 	/* access: RW */
 	u_int8_t repetitive;
-	/* Description - Single sampling mode. Available only when HCA_CAP.single is 1.
+	/* Description - Single sampling mode. Available only when HCA_CAP.single is 1'.
 Mutually exclusive with repetitive mode. */
 	/* 0x4.31 - 0x4.31 */
 	/* access: RW */
@@ -149,7 +149,7 @@ Mutually exclusive with repetitive mode. */
 /* Size in bytes - 64 */
 struct icmd_hca_debug_cap {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - The maximum number of samples that can be stored on the devices
+	/* Description - The maximum number of samples that can be stored on the device's
 sampling buffer is 2^ log_max_samples in counters unit (i.e. 100 will
 represent the ability to store 100 samples of single counter, 50 samples
 of 2 counters, etc). */
@@ -164,7 +164,7 @@ resource_dump_event */
 	/* Description - If set, Resource_dump register is supported.
 
 See
-table 2030 - RESOURCE_DUMP Register Layout */
+table 2036 - RESOURCE_DUMP Register Layout */
 	/* 0x0.22 - 0x0.22 */
 	/* access: RW */
 	u_int8_t resource_dump;
@@ -173,7 +173,7 @@ order to accommodate cr_dump.
 
 0 means feature is not supported.
 
-See table 2028 - CORE_DUMP Register Layout */
+See table 2034 - CORE_DUMP Register Layout */
 	/* 0x0.23 - 0x0.27 */
 	/* access: RW */
 	u_int8_t log_cr_dump_to_mem_size;
