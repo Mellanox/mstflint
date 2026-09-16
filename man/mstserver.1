@@ -15,7 +15,7 @@ Clients register those devices with
 and then address them as
 \fIhost\fR:\fIport\fR,\fIdevice\fR, for example
 .IP
-mstflint \-d myhost:8080,0000:43:00.0 q
+mstflint \-d myhost:23108,0000:43:00.0 q
 .PP
 .B start
 detaches and runs in the background, recording its process id in
@@ -65,7 +65,7 @@ could be replayed in its place.
 .SH OPTIONS
 .TP
 \fB\-p\fR, \fB\-\-port\fR \fIport\fR
-TCP port to listen on. The default is 8080. One server may run per port; the
+TCP port to listen on. The default is 23108. One server may run per port; the
 process id file is named after the port.
 .TP
 \fB\-s\fR, \fB\-\-passphrase\fR \fIpassphrase\fR
@@ -92,7 +92,7 @@ Start on the default port and register the devices from another host:
 .PP
 On the client, which asks you to confirm that same fingerprint:
 .IP
-# mstremote add myhost:8080 \-s 0ad7ab253962c94de05194ecc27fe432
+# mstremote add myhost:23108 \-s 0ad7ab253962c94de05194ecc27fe432
 .PP
 Stop it:
 .IP

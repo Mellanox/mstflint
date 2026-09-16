@@ -50,7 +50,9 @@
 #include "cmdparser/cmdparser.h"
 
 #define MSTSERVER_VERSION "2.0"
-#define MSTSERVER_DEFAULT_PORT 8080
+/* Same default as MFT's mst server, so a host that has run either one is
+ * reachable with a bare "mstremote add <host>". */
+#define MSTSERVER_DEFAULT_PORT 23108
 
 namespace mstserver
 {

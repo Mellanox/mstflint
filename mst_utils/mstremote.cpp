@@ -66,7 +66,8 @@
 
 using namespace std;
 
-static const int DEFAULT_PORT = 8080;
+/* Must match MSTSERVER_DEFAULT_PORT, and matches MFT's mst server. */
+static const int DEFAULT_PORT = 23108;
 static const size_t MAX_PASSPHRASE = 256;
 static const size_t MAX_NAME = 1024;
 

@@ -37,7 +37,7 @@
  * <device> is the device path as it exists on the remote host and '@' stands
  * for '/' so the name survives shells and paths. Example:
  *
- *     mstmread -d 10.0.0.7:8080,@dev@mst@mt4125_pciconf0 0xf0014
+ *     mstmread -d 10.0.0.7:23108,@dev@mst@mt4125_pciconf0 0xf0014
  *
  * The whole file is a no-op unless configure was run with --enable-remote.
  */

@@ -51,7 +51,7 @@
  *     <host>:<port>,<device>
  *
  * with '@' standing for '/' inside <device>. A leading path is stripped, so
- * "/dev/mstflint/10.0.0.7:8080,@dev@mst@x" works too. */
+ * "/dev/mstflint/10.0.0.7:23108,@dev@mst@x" works too. */
 #define PORT_DELIMITER ':'
 #define DEVICE_DELIMITER ','
 

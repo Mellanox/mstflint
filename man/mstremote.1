@@ -21,7 +21,7 @@ device name, \fIhost\fR:\fIport\fR,\fIdevice\fR, with '@' standing for '/'. The
 file holds no data and is never opened; it exists so the device can be
 discovered. Naming a remote device works whether or not it is registered:
 .IP
-mstflint \-d myhost:8080,0000:43:00.0 q
+mstflint \-d myhost:23108,0000:43:00.0 q
 .PP
 .B add
 authenticates first. When
@@ -39,7 +39,7 @@ prints the key's fingerprint and asks whether to continue, exactly as
 .BR ssh (1)
 does for an unknown host:
 .IP
-The authenticity of MST server 'myhost:8080' can't be established.
+The authenticity of MST server 'myhost:23108' can't be established.
 .br
 Server key fingerprint is SHA256:2YMOeTLaODASHO/h44tV8KPGg4xG1X+TOQIZVjC2ghA.
 .br
@@ -113,25 +113,25 @@ File recording the trusted server keys, instead of
 \fI/var/lib/mstflint/mst_known_hosts\fR.
 .SH EXAMPLES
 .IP
-# mstremote add myhost:8080
+# mstremote add myhost:23108
 .br
-The authenticity of MST server 'myhost:8080' can't be established.
+The authenticity of MST server 'myhost:23108' can't be established.
 .br
 Server key fingerprint is SHA256:2YMOeTLaODASHO/h44tV8KPGg4xG1X+TOQIZVjC2ghA.
 .br
 Are you sure you want to continue connecting (yes/no)? yes
 .br
-Passphrase for myhost:8080:
+Passphrase for myhost:23108:
 .br
-\-I\- 8 remote device(s) registered from myhost:8080
+\-I\- 8 remote device(s) registered from myhost:23108
 .PP
 .IP
 $ mstdevices_info
 .br
-$ mstflint \-d myhost:8080,0000:43:00.0 q
+$ mstflint \-d myhost:23108,0000:43:00.0 q
 .PP
 .IP
-# mstremote del myhost:8080
+# mstremote del myhost:23108
 .SH FILES
 .TP
 \fI/dev/mstflint/<host>:<port>,<device>\fR
