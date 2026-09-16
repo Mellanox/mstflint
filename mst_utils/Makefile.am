@@ -42,6 +42,40 @@ mstdevices_info_DEPENDENCIES = $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
 mstdevices_info_LDADD = $(mstdevices_info_DEPENDENCIES) ${LDL}
 mstdevices_info_LDFLAGS = -static
 
+
+# jsoncpp is resolved at the END of the link line. libmtcr_ul.a and
+# libmst_http_client.a are mutually dependent (mtcr_remote.c calls the client;
+# the client needs Json), and ld makes a single pass over each archive, so the
+# Json objects carried inside libmtcr_ul are already behind it by the time the
+# client's undefined Json symbols show up. Listing jsoncpp last closes that gap.
+if USE_LOCAL_JSON
+MST_JSON_LIBS = $(top_builddir)/ext_libs/json/libjson.la
+else
+MST_JSON_LIBS = -ljsoncpp
+endif
+
+# Registers/unregisters devices served by a remote mstserver. Only built
+# with --enable-remote, since it drives the MST HTTP client directly and there
+# is nothing to register without the mtcr remote path.
+if ENABLE_MTCR_REMOTE
+bin_PROGRAMS += mstremote
+
+mstremote_SOURCES = mstremote.cpp
+mstremote_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/${MTCR_CONF_DIR}
+# $(CXX17_STD): libmst_http_client is built as C++17 and its headers come with
+# that requirement, so every consumer has to agree on the standard.
+mstremote_CXXFLAGS = $(AM_CXXFLAGS) $(COMPILER_FPIC) $(CXX17_STD)
+mstremote_DEPENDENCIES = $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
+                         $(top_builddir)/mst_server/client/libmst_http_client.la \
+                         $(top_builddir)/cmdparser/libcmdparser.a
+# openssl and libcurl come in through libmst_http_client, which speaks TLS.
+# mstremote itself no longer computes anything: the passphrase goes to the
+# server over the encrypted channel and is checked there against a salted
+# verifier.
+mstremote_LDADD = $(mstremote_DEPENDENCIES) $(openssl_LIBS) $(mst_remote_curl_LIBS) $(FILESYSTEM_LIBS) ${LDL} -lstdc++ $(MST_JSON_LIBS)
+mstremote_LDFLAGS = -static
+endif
+
 if ENABLE_CABLES
 bin_PROGRAMS += mstcable_discovery
 mstcable_discovery_SOURCES = cable_discovery.cpp

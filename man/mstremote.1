@@ -1,0 +1,147 @@
+.TH MSTREMOTE "1" "September 2026" "mstflint" "User Commands"
+.SH NAME
+mstremote \- register devices served by a remote mstserver
+.SH SYNOPSIS
+.B mstremote add
+\fIhost\fR[:\fIport\fR] [\fB\-s\fR \fIpassphrase\fR] [\fB\-y\fR] [\fB\-\-all\fR]
+.br
+.B mstremote del
+\fIhost\fR[:\fIport\fR]
+.SH DESCRIPTION
+.B mstremote
+asks an
+.BR mstserver (1)
+which devices it serves and registers them locally, so the ordinary mstflint
+tools can address them and
+.BR mstdevices_info (1)
+lists them under "Remote devices".
+.PP
+A registered device is an empty marker file in \fI/dev/mstflint\fR whose name is the
+device name, \fIhost\fR:\fIport\fR,\fIdevice\fR, with '@' standing for '/'. The
+file holds no data and is never opened; it exists so the device can be
+discovered. Naming a remote device works whether or not it is registered:
+.IP
+mstflint \-d myhost:8080,0000:43:00.0 q
+.PP
+.B add
+authenticates first. When
+.B \-s
+is not given the passphrase is read from the terminal without echoing. The
+resulting session token is written to
+\fI/var/run/mst/.token.<host>_<port>\fR, where the tools pick it up. Registering
+and unregistering need root; using the devices afterwards does not.
+.SS Server identity
+The connection is TLS, and the server proves who it is with a key it generates
+once and keeps. The first time this host talks to a given server, its key is
+unknown, so
+.B mstremote
+prints the key's fingerprint and asks whether to continue, exactly as
+.BR ssh (1)
+does for an unknown host:
+.IP
+The authenticity of MST server 'myhost:8080' can't be established.
+.br
+Server key fingerprint is SHA256:2YMOeTLaODASHO/h44tV8KPGg4xG1X+TOQIZVjC2ghA.
+.br
+Are you sure you want to continue connecting (yes/no)?
+.PP
+Compare that fingerprint with the one
+.B mstserver start
+printed on the server before answering; the question is only worth asking if the
+answer is checked. Answering yes records the key in
+\fI/var/lib/mstflint/mst_known_hosts\fR and it is not asked again.
+.PP
+If the key later changes, every command against that server fails and says so.
+No option overrides this: a changed key is what an interposed server looks like,
+and the only safe resolution is for an operator to establish out of band that
+the server really was reinstalled, then remove its line from the file. Nothing
+in this tool rewrites an existing entry.
+.PP
+When there is no terminal to ask on, an unknown server is currently accepted
+with a warning rather than refused. Automated callers should pass
+.B \-y
+so that behaviour does not have to be relied upon.
+.PP
+By default one entry is registered per device. A server reports each device
+twice, under its bus address and its sysfs configuration-space path; both refer
+to the same hardware, so only the bus address is kept.
+.PP
+The markers go in \fI/dev/mstflint\fR rather than in MFT's \fI/dev/mst\fR,
+even though the naming is MFT's. MFT clears \fI/dev/mst\fR on
+.BR "mst stop" ,
+and its
+.B "mst remote del"
+removes the same
+\fIhost\fR:\fIport\fR,* pattern written here, so sharing the directory would
+let an unrelated MFT command silently unregister these devices. Devices
+registered with MFT's
+.B "mst remote add"
+are correspondingly not visible here.
+.SH OPTIONS
+.TP
+\fB\-s\fR, \fB\-\-passphrase\fR \fIpassphrase\fR
+Passphrase of the remote server. Prompted for when omitted, which is preferred:
+an argument is visible in \fBps\fR(1) and recorded in the shell history.
+.TP
+\fB\-y\fR, \fB\-\-yes\fR
+Trust an unrecognized server without asking. Intended for automated callers,
+which have no terminal to answer on. It has no effect on a server whose
+recorded key has changed, which is refused either way.
+.TP
+\fB\-\-all\fR
+Register every name the server reports, including the configuration-space alias
+of each device.
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Show usage and exit.
+.SH ENVIRONMENT
+.TP
+.B MSTFLINT_REMOTE_DEV_DIR
+Directory holding the marker files, instead of \fI/dev/mstflint\fR. Useful for
+registering without root.
+.TP
+.B MSTFLINT_REMOTE_TOKEN
+Session token to use, instead of reading one from \fI/var/run/mst\fR.
+.TP
+.B MST_REMOTE_AUTO_TRUST
+Set to a value other than 0 to behave as if
+.B \-y
+had been passed, for environments that cannot change every call site.
+.TP
+.B MST_KNOWN_HOSTS
+File recording the trusted server keys, instead of
+\fI/var/lib/mstflint/mst_known_hosts\fR.
+.SH EXAMPLES
+.IP
+# mstremote add myhost:8080
+.br
+The authenticity of MST server 'myhost:8080' can't be established.
+.br
+Server key fingerprint is SHA256:2YMOeTLaODASHO/h44tV8KPGg4xG1X+TOQIZVjC2ghA.
+.br
+Are you sure you want to continue connecting (yes/no)? yes
+.br
+Passphrase for myhost:8080:
+.br
+\-I\- 8 remote device(s) registered from myhost:8080
+.PP
+.IP
+$ mstdevices_info
+.br
+$ mstflint \-d myhost:8080,0000:43:00.0 q
+.PP
+.IP
+# mstremote del myhost:8080
+.SH FILES
+.TP
+\fI/dev/mstflint/<host>:<port>,<device>\fR
+Marker file for a registered remote device.
+.TP
+\fI/var/run/mst/.token.<host>_<port>\fR
+Session token for that server.
+.TP
+\fI/var/lib/mstflint/mst_known_hosts\fR
+Server keys this host has been told to trust, one
+"\fIhost\fR:\fIport\fR \fIfingerprint\fR" line each.
+.SH "SEE ALSO"
+.B mstserver(1), mstdevices_info(1), mstflint(1)
