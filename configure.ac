@@ -884,13 +884,27 @@ AC_MSG_RESULT($enable_remote)
 # fw-manager and pldm tools that also use libcurl are disabled.
 mst_remote_curl_CFLAGS=""
 mst_remote_curl_LIBS=""
+# --with-libcurl is declared by the fw-manager block below; AC_ARG_WITH puts the
+# option in configure's preamble, so $with_libcurl is set here regardless of
+# whether that feature is enabled. Honour it so a libcurl outside the default
+# prefix works for --enable-remote too.
 AS_IF([test "x$enable_remote" = "xyes"], [
-    PKG_CHECK_MODULES([mst_remote_curl], [libcurl],
-        [],
-        [AC_CHECK_HEADERS([curl/curl.h], [], [AC_MSG_ERROR([--enable-remote requires libcurl headers])])
-         AC_CHECK_LIB([curl], [curl_easy_init], [], [AC_MSG_ERROR([--enable-remote requires libcurl])])
-         mst_remote_curl_CFLAGS=""
-         mst_remote_curl_LIBS="-lcurl"])
+    AS_IF([test -n "$with_libcurl" && test "x$with_libcurl" != "xyes" && test "x$with_libcurl" != "xno"],
+        [AC_MSG_NOTICE([--enable-remote: using libcurl from $with_libcurl])
+         mst_remote_curl_CFLAGS="-I$with_libcurl/include"
+         mst_remote_curl_LIBS="-L$with_libcurl/lib -lcurl"],
+        [PKG_CHECK_MODULES([mst_remote_curl], [libcurl],
+            [],
+            [AC_CHECK_HEADERS([curl/curl.h], [],
+                [AC_MSG_ERROR([--enable-remote needs the libcurl development headers.
+  Install libcurl-devel (RHEL/Fedora/SUSE) or libcurl4-openssl-dev (Debian/Ubuntu),
+  or point at an existing tree with --with-libcurl=PATH.])])
+             AC_CHECK_LIB([curl], [curl_easy_init], [],
+                [AC_MSG_ERROR([--enable-remote needs the libcurl library.
+  Install libcurl-devel (RHEL/Fedora/SUSE) or libcurl4-openssl-dev (Debian/Ubuntu),
+  or point at an existing tree with --with-libcurl=PATH.])])
+             mst_remote_curl_CFLAGS=""
+             mst_remote_curl_LIBS="-lcurl"])])
 ])
 AC_SUBST(mst_remote_curl_CFLAGS)
 AC_SUBST(mst_remote_curl_LIBS)
