@@ -57,3 +57,8 @@ endif
 # consumers just add -isystem $(top_srcdir)/ext_libs/spdlog/include - so it
 # only needs to be distributed.
 EXTRA_DIST = spdlog/include spdlog/LICENSE
+
+# Header-only vendored libraries consumed by mst_server/ (Crow HTTP server and
+# standalone Asio, which Crow builds on). They have no build step of their own -
+# consumers just add -I<dir>/include - so they only need to be distributed.
+EXTRA_DIST += crow/include asio/include
