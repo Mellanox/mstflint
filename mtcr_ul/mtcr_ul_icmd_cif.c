@@ -41,6 +41,7 @@
 #include "common/bit_slice.h"
 #include "common/tools_time.h"
 #include "mtcr_icmd_cif.h"
+#include "mtcr_remote.h"
 #include "packets_common.h"
 #include "mtcr_gpu.h"
 #ifndef __FreeBSD__
@@ -953,6 +954,16 @@ int icmd_send_command(mfile* mf, IN int opcode, INOUT void* data, IN int data_si
  */
 int icmd_send_command_int(mfile* mf, IN int opcode, INOUT void* data, IN int write_data_size, IN int read_data_size, IN int skip_write)
 {
+#ifdef ENABLE_MTCR_REMOTE
+    if (mf->is_remote)
+    {
+        /* The protocol carries a single buffer size; send the larger of the
+         * two so neither direction is truncated. */
+        int max_size = (write_data_size > read_data_size) ? write_data_size : read_data_size;
+
+        return mtcr_remote_icmd_send_command(mf, opcode, data, max_size, skip_write);
+    }
+#endif
     if ((mf->gb_info.is_gb_mngr || mf->gb_info.is_gearbox) && (mf->gb_info.gb_conn_type == GEARBPX_OVER_MTUSB))
     {
         return icmd_send_gbox_command_com(mf, data, write_data_size, read_data_size, 0);

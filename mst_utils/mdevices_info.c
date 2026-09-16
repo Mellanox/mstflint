@@ -812,6 +812,22 @@ int main(int argc, char** argv)
         }
     }
 
+    /* print remote devices (registered as marker files, see mtcr_remote.h) */
+    if (is_type_exist(devs, len, MDEVS_REM))
+    {
+        printf("Remote devices:\n");
+        printf("---------------\n");
+
+        for (i = 0; i < len; i++)
+        {
+            if (devs[i].type == MDEVS_REM)
+            {
+                printf("%s\n", devs[i].dev_name);
+            }
+        }
+        printf("\n");
+    }
+
     /* print infiniband devices */
     if (is_type_exist(devs, len, MDEVS_IB))
     {

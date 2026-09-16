@@ -46,3 +46,5 @@ libtool
 /small_utils/mstvpd
 /stamp-h1
 /tracers/fwtrace/mstfwtrace
+mst_utils/mstremote
+mst_server/service/mstserver

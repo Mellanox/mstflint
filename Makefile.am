@@ -28,11 +28,17 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-SUBDIRS = $(NVML_DIR) ext_libs common cmdparser mft_core $(TOOLS_CRYPTO) tools_layouts $(VFIO_DRIVER_DIR) ${MTCR_CONF_DIR} mtcr_py $(MAD_IFC) $(XZ_UTILS_DIR) reg_access cmdif dev_mgt pci_library mft_utils $(CABLE_ACCESS_DIR) tools_res_mgmt mvpd mflash fw_comps_mgr libmfa pldm_utils pldmlib $(DPA) mlxfwops mlxconfig $(NVFWRESET_DIR) $(FW_MGR_TOOLS) $(PLDM_PKG_GEN) mlxtokengenerator flint small_utils mst_utils mstdump efuse ${ADABE_TOOLS} $(HCA_CAP_DIR) $(MSTFLINT_SDK_DIR) tracers resourcetools $(IBDUMP_DIR)
+# $(MST_CLIENT_DIR) sits before ${MTCR_CONF_DIR} because libmtcr_ul links the
+# MST HTTP client with --enable-remote; $(MST_SERVICE_DIR) sits at the end
+# because the HTTP server links libmtcr_ul. Both are empty unless configure
+# found a C++17 compiler.
+SUBDIRS = $(NVML_DIR) ext_libs $(MST_CLIENT_DIR) common cmdparser mft_core $(TOOLS_CRYPTO) tools_layouts $(VFIO_DRIVER_DIR) ${MTCR_CONF_DIR} mtcr_py $(MAD_IFC) $(XZ_UTILS_DIR) reg_access cmdif dev_mgt pci_library mft_utils $(CABLE_ACCESS_DIR) tools_res_mgmt mvpd mflash fw_comps_mgr libmfa pldm_utils pldmlib $(DPA) mlxfwops mlxconfig $(NVFWRESET_DIR) $(FW_MGR_TOOLS) $(PLDM_PKG_GEN) mlxtokengenerator flint small_utils mst_utils mstdump efuse ${ADABE_TOOLS} $(HCA_CAP_DIR) $(MSTFLINT_SDK_DIR) tracers resourcetools $(IBDUMP_DIR) $(MST_SERVICE_DIR)
 
-DIST_SUBDIRS = tracers
+# mst_server is only in SUBDIRS when configure found a C++17 compiler, but it
+# must always be distributed.
+DIST_SUBDIRS = tracers mst_server/client mst_server/service
 
-man_MANS = man/mstflint.1 man/mstconfig.1 man/mstmcra.1 man/mstmread.1 man/mstmwrite.1 man/mstmtserver.1 man/mstregdump.1 man/mstvpd.1 man/mstprivhost.1 man/mstarchive.1 man/mstreg.1 man/mstfwtrace.1 man/mstlink.1 man/mstcongestion.1 man/mstfwmanager.1 man/mstfwreset.1 man/mstresourcedump.1 man/mstflintlogger.1
+man_MANS = man/mstflint.1 man/mstconfig.1 man/mstmcra.1 man/mstmread.1 man/mstmwrite.1 man/mstmtserver.1 man/mstregdump.1 man/mstvpd.1 man/mstprivhost.1 man/mstarchive.1 man/mstreg.1 man/mstfwtrace.1 man/mstlink.1 man/mstcongestion.1 man/mstfwmanager.1 man/mstfwreset.1 man/mstresourcedump.1 man/mstflintlogger.1 man/mstserver.1 man/mstremote.1
 
 EXTRA_DIST = \
 	mstflint.spec \

@@ -128,6 +128,9 @@ void get_pci_dev_rdma(mfile* mf, char* buf);
 unsigned char mset_i2c_secondary(mfile* mf, unsigned char new_i2c_secondary);
 unsigned char mget_i2c_secondary(mfile* mf);
 void set_force_i2c_address(int i2c_address);
+/* The remote path forwards the forced address to the server, which applies it
+   while opening the device there. */
+int get_force_i2c_address(void);
 
 int mget_mdevs_flags(mfile* mf, u_int32_t* devs_flags);
 
