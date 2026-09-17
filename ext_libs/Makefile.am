@@ -61,4 +61,7 @@ EXTRA_DIST = spdlog/include spdlog/LICENSE
 # Header-only vendored libraries consumed by mst_server/ (Crow HTTP server and
 # standalone Asio, which Crow builds on). They have no build step of their own -
 # consumers just add -I<dir>/include - so they only need to be distributed.
-EXTRA_DIST += crow/include asio/include
+#
+# Both licences require the licence text to travel with the code, and asio's
+# headers name LICENSE_1_0.txt as an accompanying file, so ship them alongside.
+EXTRA_DIST += crow/include crow/LICENSE asio/include asio/LICENSE_1_0.txt
