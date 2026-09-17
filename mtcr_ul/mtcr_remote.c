@@ -62,7 +62,7 @@
  * $MSTFLINT_RUN_DIR override, which is how the feature is exercised without
  * write access to /var/run. Reading a fixed path here while mstremote honoured
  * the override made every open fail with a 401. */
-#define MTCR_REMOTE_TOKEN_DIR "/var/run/mst"
+#define MTCR_REMOTE_TOKEN_DIR "/var/run/mstflint"
 #define MTCR_REMOTE_TOKEN_PATH_FMT "%s/.token.%s_%d"
 #define MTCR_REMOTE_TOKEN_ENV "MSTFLINT_REMOTE_TOKEN"
 #define MTCR_REMOTE_RUN_DIR_ENV "MSTFLINT_RUN_DIR"

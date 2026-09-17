@@ -28,7 +28,7 @@ authenticates first. When
 .B \-s
 is not given the passphrase is read from the terminal without echoing. The
 resulting session token is written to
-\fI/var/run/mst/.token.<host>_<port>\fR, where the tools pick it up. Registering
+\fI/var/run/mstflint/.token.<host>_<port>\fR, where the tools pick it up. Registering
 and unregistering need root; using the devices afterwards does not.
 .SS Server identity
 The connection is TLS, and the server proves who it is with a key it generates
@@ -101,7 +101,7 @@ Directory holding the marker files, instead of \fI/dev/mstflint\fR. Useful for
 registering without root.
 .TP
 .B MSTFLINT_REMOTE_TOKEN
-Session token to use, instead of reading one from \fI/var/run/mst\fR.
+Session token to use, instead of reading one from \fI/var/run/mstflint\fR.
 .TP
 .B MST_REMOTE_AUTO_TRUST
 Set to a value other than 0 to behave as if
@@ -137,7 +137,7 @@ $ mstflint \-d myhost:23108,0000:43:00.0 q
 \fI/dev/mstflint/<host>:<port>,<device>\fR
 Marker file for a registered remote device.
 .TP
-\fI/var/run/mst/.token.<host>_<port>\fR
+\fI/var/run/mstflint/.token.<host>_<port>\fR
 Session token for that server.
 .TP
 \fI/var/lib/mstflint/mst_known_hosts\fR

@@ -19,7 +19,7 @@ mstflint \-d myhost:23108,0000:43:00.0 q
 .PP
 .B start
 detaches and runs in the background, recording its process id in
-\fI/var/run/mst/mstserver.<port>.pid\fR.
+\fI/var/run/mstflint/mstserver.<port>.pid\fR.
 .B stop
 signals that process and removes the file.
 Both require root: the server opens devices directly.
@@ -99,7 +99,7 @@ Stop it:
 # mstserver stop
 .SH FILES
 .TP
-\fI/var/run/mst/mstserver.<port>.pid\fR
+\fI/var/run/mstflint/mstserver.<port>.pid\fR
 Process id of the running server.
 .TP
 \fI/var/lib/mstflint/mst_server/server.key\fR

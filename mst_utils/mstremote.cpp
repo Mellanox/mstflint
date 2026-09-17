@@ -72,7 +72,7 @@ static const size_t MAX_PASSPHRASE = 256;
 static const size_t MAX_NAME = 1024;
 
 /* Where mtcr_remote.c looks for a session token. */
-static const char* const TOKEN_DIR = "/var/run/mst";
+static const char* const TOKEN_DIR = "/var/run/mstflint";
 
 /* Must match MstKnownHosts::DefaultPath(); only the help text reads it here. */
 static const char* const MST_KNOWN_HOSTS_DEFAULT = "/var/lib/mstflint/mst_known_hosts";

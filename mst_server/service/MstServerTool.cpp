@@ -54,7 +54,7 @@
 #include <unistd.h>
 
 // Default runtime state directory; $MSTFLINT_RUN_DIR overrides it.
-#define MSTSERVER_RUN_DIR "/var/run/mst"
+#define MSTSERVER_RUN_DIR "/var/run/mstflint"
 
 namespace mstserver
 {
