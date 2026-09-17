@@ -53,6 +53,13 @@ extern "C"
 #define MLX_VSC_TYPE_LEN    8
 #define FUNCTIONAL_VSC      0
 #define RECOVERY_VSC        2
+/* Gateways reaching the full 32b CrSpace. The functional one takes the target address shifted right by 2, the recovery
+ * one carries the posted/non-posted flag on address bit 1 so bit 31 is free to carry address. */
+#define FUNCTIONAL_VSC_32B  0x10
+#define RECOVERY_VSC_32B    0x12
+
+#define IS_FUNCTIONAL_VSC(vsc_type) ((vsc_type) == FUNCTIONAL_VSC || (vsc_type) == FUNCTIONAL_VSC_32B)
+#define IS_RECOVERY_VSC(vsc_type)   ((vsc_type) == RECOVERY_VSC || (vsc_type) == RECOVERY_VSC_32B)
 
 /*
  * Read 4 bytes, return number of succ. read bytes or -1 on failure
