@@ -35,6 +35,7 @@
  */
 
 #include <mtcr_ul_com.h>
+#include <mtcr_remote.h>
 #include <mtcr_ib.h>
 #include <errno.h>
 #include <common/tools_utils.h>
@@ -303,6 +304,11 @@ MTCR_API int mset_addr_space(mfile* mf, int space)
     if ((space < 0) || (space >= AS_END)) {
         return -1;
     }
+#ifdef ENABLE_MTCR_REMOTE
+    if (mf->is_remote) {
+        return mtcr_remote_set_addr_space(mf, space);
+    }
+#endif
     if (VSEC_SUPPORTED_UL(mf) && (mf->vsec_cap_mask & (1 << space_to_cap_offset(space)))) {
         mf->address_space = space;
         /* printf("VSC address space was set successfully to: %d\n", mf->address_space); */

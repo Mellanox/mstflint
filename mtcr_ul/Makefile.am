@@ -46,6 +46,7 @@ libmtcr_ul_la_SOURCES = mtcr_ul.c mtcr_ib.h  mtcr_int_defs.h\
 			packets_common.c packets_common.h\
 			packets_layout.c packets_layout.h \
 			fwctrl.c fwctrl.h fwctrl_ioctl.h \
+			mtcr_remote.c mtcr_remote.h \
 			mtcr_gpu.c mtcr_gpu.h
 libmtcr_ul_la_CFLAGS = -W -Wall -g -MP -MD -fPIC -DMTCR_API="" -DMST_UL
 # The MTCR layer of the central NVIDIA Tools logger. Every tool links
@@ -72,7 +73,15 @@ endif
 if ENABLE_CABLES
 libmtcr_ul_la_SOURCES += mtcr_cables.c mtcr_cables.h
 libmtcr_ul_la_DEPENDENCIES += $(top_builddir)/tools_layouts/libcables_layouts.la
-libmtcr_ul_la_LDFLAGS += -static 
+libmtcr_ul_la_LDFLAGS += -static
+endif
+
+# --enable-remote: mtcr_remote.c drives the MST HTTP client, so libmtcr_ul (and
+# hence every tool that links it) picks up the client archive, jsoncpp, libcurl
+# and libstdc++. Off by default; without it mtcr_remote.c compiles to just the
+# never-matching mtcr_remote_is_remote_name() stub.
+if ENABLE_MTCR_REMOTE
+libmtcr_ul_la_DEPENDENCIES += $(top_builddir)/mst_server/client/libmst_http_client.la
 endif
 
 libmtcr_ul_la_LIBADD = $(libmtcr_ul_la_DEPENDENCIES)

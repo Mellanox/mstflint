@@ -798,13 +798,22 @@ CXXFLAGS="$CXXFLAGS -DMST_UL"
 
 CFLAGS="$CFLAGS -std=c11 -D_XOPEN_SOURCE=700 -D_POSIX_C_SOURCE=200809L -D_DEFAULT_SOURCE"
 
-CCVER=`${CC} --version | grep ${CC} | grep -E -o "( )[[4-9]]\.[[0-9]]\.[[0-9]]" | head -1`
+# mstflint is still a C++14 project; it becomes C++17 two releases from now.
+# Pin the standard explicitly so a C++17-only construct is rejected here even
+# on a new compiler, rather than compiling locally and breaking for everyone on
+# an older one. Only mst_server/ opts out, and only because Crow requires it.
+#
+# -dumpversion rather than parsing --version: the old pattern required a single
+# leading digit, so it matched nothing from GCC 10 onwards, left CXXFLAGS with
+# no -std at all, and let the tree inherit the compiler default (gnu++17 on
+# GCC 11+). The guard has been silently absent on modern toolchains.
+CCVER=`${CC} -dumpversion 2>/dev/null`
+CC_MAJOR=`echo "${CCVER}" | cut -d. -f1`
 AC_MSG_NOTICE(Compiler: ${CC}; version: ${CCVER};)
-if test ${CCVER} \> 5.0.0 ; then
-    CXXFLAGS="$CXXFLAGS -std=c++14"
-elif test ${CCVER} \> 4.7.2 ; then
-    CXXFLAGS="$CXXFLAGS -std=c++11"
-fi
+AS_IF([test -n "${CC_MAJOR}" && expr "${CC_MAJOR}" : '[[0-9]][[0-9]]*$' >/dev/null && test "${CC_MAJOR}" -ge 5],
+      [CXXFLAGS="$CXXFLAGS -std=c++14"],
+      [test -n "${CC_MAJOR}" && expr "${CC_MAJOR}" : '[[0-9]][[0-9]]*$' >/dev/null && test "${CC_MAJOR}" -ge 4],
+      [CXXFLAGS="$CXXFLAGS -std=c++11"])
 
 # Deprecation notice: as of January 2027 mstflint will be built as C++17,
 # which requires GCC 9 or newer. Warn users still on an older compiler.
@@ -816,6 +825,133 @@ Detected compiler ${CC} version ${CC_MAJOR_VER}.
 Starting January 2027, the mstflint project will require C++17, and the
 minimal supported GCC version will be 9. Please upgrade your compiler.
 *******************************************************************************])])
+
+# Per-target C++17 opt-in. The tree as a whole is still built as C++14 (see
+# above); components that genuinely require C++17 - currently the Crow-based
+# MST HTTP server and the libcurl-based MST HTTP client under mst_server/ - add
+# $(CXX17_STD) to their own _CXXFLAGS. Where the compiler cannot do C++17,
+# CXX17_STD expands to empty and the mst_server directories are left unset so
+# those components are simply not built, instead of failing on an unknown
+# option.
+AC_LANG_PUSH([C++])
+mstflint_saved_CXXFLAGS="$CXXFLAGS"
+CXXFLAGS="$CXXFLAGS -std=c++17"
+AC_MSG_CHECKING([whether $CXX accepts -std=c++17])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <string_view>
+#include <optional>]],
+                                   [[std::string_view sv = "c++17";
+std::optional<int> o = 17;
+(void)sv; (void)o;]])],
+                  [have_cxx17=yes], [have_cxx17=no])
+AC_MSG_RESULT([$have_cxx17])
+CXXFLAGS="$mstflint_saved_CXXFLAGS"
+AC_LANG_POP([C++])
+AM_CONDITIONAL([HAVE_CXX17], [test "x$have_cxx17" = "xyes"])
+AS_IF([test "x$have_cxx17" = "xyes"], [CXX17_STD="-std=c++17"], [CXX17_STD=""])
+AC_SUBST(CXX17_STD)
+
+# std::filesystem needs -lstdc++fs on gcc 8, which passes the C++17 probe above;
+# gcc 9 and newer fold it into libstdc++ and warn about nothing if it is absent.
+# Probe rather than version-check, since clang and libc++ split it differently.
+FILESYSTEM_LIBS=""
+AS_IF([test "x$have_cxx17" = "xyes"], [
+    AC_LANG_PUSH([C++])
+    save_CXXFLAGS="$CXXFLAGS"
+    CXXFLAGS="$CXXFLAGS -std=c++17"
+    AC_MSG_CHECKING([whether std::filesystem needs -lstdc++fs])
+    AC_LINK_IFELSE(
+        [AC_LANG_PROGRAM([[#include <filesystem>]],
+                         [[return std::filesystem::is_directory("/") ? 0 : 1;]])],
+        [AC_MSG_RESULT([no])],
+        [save_LIBS="$LIBS"
+         LIBS="$LIBS -lstdc++fs"
+         AC_LINK_IFELSE(
+             [AC_LANG_PROGRAM([[#include <filesystem>]],
+                              [[return std::filesystem::is_directory("/") ? 0 : 1;]])],
+             [AC_MSG_RESULT([yes])
+              FILESYSTEM_LIBS="-lstdc++fs"],
+             [AC_MSG_RESULT([unavailable])
+              AC_MSG_ERROR([a C++17 compiler was found but std::filesystem does not link; mst_server needs it])])
+         LIBS="$save_LIBS"])
+    CXXFLAGS="$save_CXXFLAGS"
+    AC_LANG_POP([C++])
+])
+AC_SUBST(FILESYSTEM_LIBS)
+
+# Remote device access: route mtcr through the MST HTTP client so tools can
+# drive a device attached to another host. Off by default - it pulls the C++17
+# client (and libstdc++/jsoncpp/libcurl) into libmtcr_ul, which every tool links.
+AC_MSG_CHECKING(--enable-remote argument)
+AC_ARG_ENABLE(remote,
+    AS_HELP_STRING([--enable-remote], [enable remote device access via the MST HTTP server, requires C++17/openssl/libcurl [default=disabled]]),
+    [enable_remote="$enableval"],
+    [enable_remote="no"]
+)
+AC_MSG_RESULT($enable_remote)
+
+# The client speaks HTTP through libcurl, so the feature needs it even when the
+# fw-manager and pldm tools that also use libcurl are disabled.
+mst_remote_curl_CFLAGS=""
+mst_remote_curl_LIBS=""
+# --with-libcurl is declared by the fw-manager block below; AC_ARG_WITH puts the
+# option in configure's preamble, so $with_libcurl is set here regardless of
+# whether that feature is enabled. Honour it so a libcurl outside the default
+# prefix works for --enable-remote too.
+AS_IF([test "x$enable_remote" = "xyes"], [
+    AS_IF([test -n "$with_libcurl" && test "x$with_libcurl" != "xyes" && test "x$with_libcurl" != "xno"],
+        [AC_MSG_NOTICE([--enable-remote: using libcurl from $with_libcurl])
+         mst_remote_curl_CFLAGS="-I$with_libcurl/include"
+         mst_remote_curl_LIBS="-L$with_libcurl/lib -lcurl"],
+        [PKG_CHECK_MODULES([mst_remote_curl], [libcurl],
+            [],
+            [AC_CHECK_HEADERS([curl/curl.h], [],
+                [AC_MSG_ERROR([--enable-remote needs the libcurl development headers.
+  Install libcurl-devel (RHEL/Fedora/SUSE) or libcurl4-openssl-dev (Debian/Ubuntu),
+  or point at an existing tree with --with-libcurl=PATH.])])
+             AC_CHECK_LIB([curl], [curl_easy_init], [],
+                [AC_MSG_ERROR([--enable-remote needs the libcurl library.
+  Install libcurl-devel (RHEL/Fedora/SUSE) or libcurl4-openssl-dev (Debian/Ubuntu),
+  or point at an existing tree with --with-libcurl=PATH.])])
+             mst_remote_curl_CFLAGS=""
+             mst_remote_curl_LIBS="-lcurl"])])
+])
+AC_SUBST(mst_remote_curl_CFLAGS)
+AC_SUBST(mst_remote_curl_LIBS)
+
+if test "x$enable_remote" = "xyes"; then
+    if test "x$have_cxx17" != "xyes"; then
+        AC_MSG_ERROR([--enable-remote requires a C++17 compiler: the MST HTTP client is built as C++17])
+    fi
+    if test "x$enable_openssl" != "xyes"; then
+        AC_MSG_ERROR([--enable-remote requires openssl: the MST HTTP transport is TLS and the client pins the server key])
+    fi
+    CFLAGS="$CFLAGS -DENABLE_MTCR_REMOTE"
+    CXXFLAGS="$CXXFLAGS -DENABLE_MTCR_REMOTE"
+fi
+AM_CONDITIONAL(ENABLE_MTCR_REMOTE, [test "x$enable_remote" = "xyes"])
+
+# mst_server/ (HTTP server + client) is built only for --enable-remote, and only
+# on a C++17 toolchain. The two halves are listed separately because they sit on
+# opposite sides of mtcr in the build order: the client is a dependency of
+# libmtcr_ul and must be built before it, while the server links libmtcr_ul and
+# must be built after it.
+#
+# Gating on enable_remote as well as have_cxx17 keeps the feature strictly
+# opt-in: without it the client would still be descended into and would need
+# libcurl headers that were never probed for.
+#
+# Both halves need openssl now that the transport is TLS: the server generates
+# and serves its own key pair, and the client pins that key's fingerprint.
+MST_CLIENT_DIR=""
+MST_SERVICE_DIR=""
+# The C++17 and openssl requirements are already enforced above, so reaching
+# here with --enable-remote means both hold.
+AS_IF([test "x$enable_remote" = "xyes"],
+      [MST_CLIENT_DIR="mst_server/client"
+       MST_SERVICE_DIR="mst_server/service"],
+      [AC_MSG_NOTICE([--enable-remote not given - the MST HTTP server/client (mst_server) will not be built])])
+AC_SUBST(MST_CLIENT_DIR)
+AC_SUBST(MST_SERVICE_DIR)
 
 AM_CFLAGS="-Wall"
 AM_CXXFLAGS="-Wall"
@@ -1088,6 +1224,8 @@ AC_OUTPUT( \
     resourcetools/resourcedump_lib/src/sdk/Makefile \
     small_utils/Makefile \
     mst_utils/Makefile \
+    mst_server/client/Makefile \
+    mst_server/service/Makefile \
     small_utils/mlxfwresetlib/Makefile \
     tools_layouts/Makefile \
     tools_res_mgmt/Makefile \

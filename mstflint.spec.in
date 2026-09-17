@@ -7,6 +7,7 @@
 %{!?nodc: %define nodc 0}
 %{!?enablecs: %define enablecs 0}
 %{!?nopenssl: %define nopenssl 0}
+%{!?enableremote: %define enableremote 0}
 %{!?enablexml2: %define enablexml2 0}
 %{!?enabledpa: %define enabledpa 0}
 %{!?enablepldmpkggen: %define enablepldmpkggen 0}
@@ -92,6 +93,9 @@ MSTFLINT_VERSION_STR="%{name} %{version}-%{release}"
 
 %if %{nopenssl}
     config_flags="$config_flags --disable-openssl"
+%endif
+%if %{enableremote}
+    config_flags="$config_flags --enable-remote"
 %endif
 
 %if %{enablecs}
@@ -198,6 +202,19 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/mstresourceparse
 %{_bindir}/mstdevices_info
 %{_bindir}/mstflintlogger
+%if %{enableremote}
+# Both tools are built only with --enable-remote, which additionally requires
+# OpenSSL (the TLS listener, its self-signed identity and the session tokens)
+# and a C++17 compiler.
+#
+# The server's key pair lives under /var/lib/mstflint/mst_server and is created
+# on first start rather than packaged: it is per-installation state that clients
+# pin, so it must survive an upgrade and must not be shipped in an RPM where
+# every host would share one.
+%{_bindir}/mstserver
+# Registers remote devices so local tools can reach them.
+%{_bindir}/mstremote
+%endif
 %if %{enablecables}
    %{_bindir}/mstcable_discovery
 %endif

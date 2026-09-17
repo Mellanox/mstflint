@@ -88,5 +88,10 @@ typedef struct ul_ctx
     f_mwrite4_block res_mwrite4_block;
     /*************************************************************/
     int via_driver;
+    /* Remote (MST HTTP) devices only: mtcr_remote_ctx*, owned by mtcr_remote.c
+     * and released by mtcr_remote_mclose(). Kept here rather than in mfile so
+     * the installed mtcr_mf.h layout is unchanged. Declared unconditionally so
+     * the struct layout does not depend on ENABLE_MTCR_REMOTE. */
+    void* remote_ctx;
 } ul_ctx_t;
 #endif

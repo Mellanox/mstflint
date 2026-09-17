@@ -106,6 +106,7 @@
 #include "mtcr_icmd_cif.h"
 #include "mtcr_com_defs.h"
 #include "mtcr_common.h"
+#include "mtcr_remote.h"
 #include "fwctrl_ioctl.h"
 #include "kernel/mst.h"
 #include "tools_dev_types.h"
@@ -2462,6 +2463,21 @@ static int mtcr_inband_open(mfile* mf, const char* name)
 #endif
 }
 
+/* Forced I2C address. Declared unconditionally in mtcr.h and consumed by the
+ * remote path, so the storage and its accessors live outside ENABLE_MST_DEV_I2C
+ * even though only the i2c backend below acts on the value. */
+static int force_i2c_address = -1;
+
+void set_force_i2c_address(int i2c_address)
+{
+    force_i2c_address = i2c_address;
+}
+
+int get_force_i2c_address(void)
+{
+    return force_i2c_address;
+}
+
 #ifdef ENABLE_MST_DEV_I2C
 /* split the data into 64 byte chunks and read each chunk. */
 int mtcr_i2c_mread_chunks(mfile* mf, unsigned int offset, void* data, int length)
@@ -2582,13 +2598,6 @@ void fix_endianness(u_int32_t* buf, int len, int be_mode)
             /* printf("-D- before: buf[%d] = %#x\n", i, buf[i]); */
         }
     }
-}
-
-static int force_i2c_address = -1;
-
-void set_force_i2c_address(int i2c_address)
-{
-    force_i2c_address = i2c_address;
 }
 
 static int prepare_i2c_buf(void* maddr, DType dtype, u_int32_t offset)
@@ -3081,6 +3090,14 @@ static MType mtcr_parse_name(const char* name, int* force, unsigned* domain_p, u
     (void)is_vfio;
 #endif
 
+    /* "<host>:<port>,<device>" - served by a remote mstserver. Checked first:
+     * the remote device part may itself look like a local name. */
+    if (mtcr_remote_is_remote_name(name))
+    {
+        *force = 1;
+        return MST_REMOTE;
+    }
+
     if (strstr(name, "fwctl"))
     {
         return MST_FWCTL_CONTROL_DRIVER;
@@ -3509,6 +3526,44 @@ int mdevices_v_ul(char* buf, int len, int mask, int verbosity)
     }
     closedir(d);
 
+#ifdef ENABLE_MTCR_REMOTE
+    /* Remote devices are registered by dropping an empty marker file into
+     * MTCR_REMOTE_DEV_DIR whose *name* is the device name itself
+     * ("<host>:<port>,<device>", '@' standing for '/'). Same convention as
+     * MFT's "mst remote add". */
+    if (mask & MDEVS_REM)
+    {
+        DIR* remote_dir = opendir(mtcr_remote_dev_dir());
+
+        if (remote_dir != NULL)
+        {
+            struct dirent* remote_entry;
+
+            while ((remote_entry = readdir(remote_dir)) != NULL)
+            {
+                int name_sz;
+                int name_rsz;
+
+                if (!mtcr_remote_is_remote_name(remote_entry->d_name))
+                {
+                    continue;
+                }
+                name_sz = strlen(remote_entry->d_name);
+                name_rsz = name_sz + 1; /* dev name size + place for Null char */
+                if ((pos + name_rsz) > len)
+                {
+                    closedir(remote_dir);
+                    return -1;
+                }
+                memcpy(&buf[pos], remote_entry->d_name, name_rsz);
+                pos += name_rsz;
+                ndevs++;
+            }
+            closedir(remote_dir);
+        }
+    }
+#endif
+
     if (mask & (MDEVS_CABLE))
     {
         DIR* mstflint_dir;
@@ -3903,6 +3958,19 @@ dev_info* mdevices_info_v_ul(int mask, int* len, int verbosity)
 
         /* update default device name */
         strncpy(dev_info_arr[i].dev_name, dev_name, sizeof(dev_info_arr[i].dev_name) - 1);
+
+#ifdef ENABLE_MTCR_REMOTE
+        /* Remote devices carry no PCI geometry: describe them through the
+         * `remote` union member and skip the DBDF/sysfs parsing below, which
+         * would otherwise fail and abort the whole enumeration. */
+        if (mtcr_remote_is_remote_name(dev_name))
+        {
+            dev_info_arr[i].type = (Mdevs)MDEVS_REM;
+            strncpy(dev_info_arr[i].remote.remote_device_name, dev_name,
+                    sizeof(dev_info_arr[i].remote.remote_device_name) - 1);
+            goto next;
+        }
+#endif
         strncpy(dev_info_arr[i].pci.cr_dev, dev_name, sizeof(dev_info_arr[i].pci.cr_dev) - 1);
 
         /* update dbdf */
@@ -4085,7 +4153,9 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
     int err;
     int rc;
 
-    if (geteuid() != 0)
+    /* A remote device is opened by the server, which is the side that needs
+     * privilege; requiring local root here would block the common case. */
+    if ((geteuid() != 0) && !mtcr_remote_is_remote_name(name))
     {
         errno = EACCES;
         return NULL;
@@ -4138,6 +4208,20 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
                 goto open_failed;
             }
             break;
+
+#ifdef ENABLE_MTCR_REMOTE
+        case MST_REMOTE:
+            rc = mtcr_remote_open(mf, name);
+            if (rc)
+            {
+                goto open_failed;
+            }
+            /* Return directly rather than breaking: mtcr_remote_open() has
+             * fully set up mf, and the shared tail below would re-interpret
+             * the name locally - notably is_cable_device(), which matches on a
+             * substring and would fire for a remote cable device. */
+            return mf;
+#endif
 
         case MST_NVML:
             rc = nvml_open(mf, name);
@@ -4772,6 +4856,16 @@ int maccess_reg_ul(mfile* mf, u_int16_t reg_id, maccess_reg_method_t reg_method,
     {
         return ME_BAD_PARAMS;
     }
+#ifdef ENABLE_MTCR_REMOTE
+    /* Remote devices: forward the whole register access rather than driving the
+     * icmd handshake over the wire. The server runs it locally, so the FW
+     * semaphore is never held across the network. Placed before the size check
+     * below, which reads local device state a remote mfile never populates. */
+    if (mf->is_remote)
+    {
+        return mtcr_remote_maccess_reg(mf, reg_id, reg_method, reg_data, reg_size, reg_status);
+    }
+#endif
     /* check register size */
     unsigned int max_size = (unsigned int)mget_max_reg_size_ul(mf, reg_method);
 
