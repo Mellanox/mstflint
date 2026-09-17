@@ -828,6 +828,7 @@ enum
 #define PCICONF_ADDR_OFF 0x58
 #define PCICONF_DATA_OFF 0x5c
 #define PCICONF_ADDR_NON_POSTED_MASK 0x80000000
+#define PCICONF_ADDR_NON_POSTED_MASK_32B 0x2
 
 int mtcr_driver_mread4(mfile* mf, unsigned int offset, u_int32_t* value)
 {
@@ -1688,9 +1689,15 @@ int mtcr_pciconf_rw(mfile* mf, unsigned int offset, u_int32_t* data, int rw)
     int rc = ME_OK;
     u_int32_t address = offset;
 
-    /* last 2 bits must be zero as we only allow 30 bits addresses */
-    if (EXTRACT(address, 30, 2))
+    if (mf->vsec_type == FUNCTIONAL_VSC_32B)
     {
+        /* the address field holds bits [31:2] of the target address, which is what makes the whole 32b CrSpace
+         * reachable */
+        address >>= 2;
+    }
+    else if (EXTRACT(address, 30, 2))
+    {
+        /* last 2 bits must be zero as we only allow 30 bits addresses */
         if (errno == EEXIST)
         {
             errno = EINVAL;
@@ -2017,8 +2024,9 @@ int mtcr_pciconf_mread4_old(mfile* mf, unsigned int offset, u_int32_t* value)
     }
 
     /* Mark the access non-posted so the device acknowledges it before responding on the data register.
-     * A posted read lets the data register be sampled before the device fetched the value, returning stale data. */
-    new_offset |= PCICONF_ADDR_NON_POSTED_MASK;
+     * A posted read lets the data register be sampled before the device fetched the value, returning stale data.
+     * The 32b recovery gateway carries the flag on bit 1 so that bit 31 is free to carry address. */
+    new_offset |= (mf->vsec_type == RECOVERY_VSC_32B) ? PCICONF_ADDR_NON_POSTED_MASK_32B : PCICONF_ADDR_NON_POSTED_MASK;
 
     /* adrianc: PCI registers always in le32 */
     offset = __cpu_to_le32(new_offset);
@@ -2241,8 +2249,8 @@ static int mtcr_vfio_device_open(mfile* mf, const char* name, unsigned domain, u
         mf->vsec_addr += mf->address_region_addr;
         READ4_PCI(mf, &vsec_type, mf->vsec_addr, "read vsc type", return ME_PCI_READ_ERROR);
         mf->vsec_type = EXTRACT(vsec_type, MLX_VSC_TYPE_OFFSET, MLX_VSC_TYPE_LEN);
-        MTCR_LOG_DEBUG("VSC type: %d", mf->vsec_type);
-        if (mf->vsec_type == FUNCTIONAL_VSC)
+        MTCR_LOG_DEBUG("VSC type: 0x%x", mf->vsec_type);
+        if (IS_FUNCTIONAL_VSC(mf->vsec_type))
         {
             MTCR_LOG_DEBUG("FUNCTIONAL VSC Supported");
             mf->functional_vsec_supp = 1;
@@ -2348,8 +2356,8 @@ static int mtcr_pciconf_open(mfile* mf, const char* name, u_int32_t adv_opt)
     {
         READ4_PCI(mf, &vsec_type, mf->vsec_addr, "read vsc type", return ME_PCI_READ_ERROR);
         mf->vsec_type = EXTRACT(vsec_type, MLX_VSC_TYPE_OFFSET, MLX_VSC_TYPE_LEN);
-        MTCR_LOG_DEBUG("in mtcr_pciconf_open function. mf->vsec_type: %d", mf->vsec_type);
-        if (mf->vsec_type == FUNCTIONAL_VSC)
+        MTCR_LOG_DEBUG("VSC type: 0x%x at config space offset 0x%lx", mf->vsec_type, mf->vsec_addr);
+        if (IS_FUNCTIONAL_VSC(mf->vsec_type))
         {
             MTCR_LOG_DEBUG("FUNCTIONAL VSC Supported");
             mf->functional_vsec_supp = 1;
