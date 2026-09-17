@@ -48,6 +48,13 @@
 # context members), so every translation unit that includes crow.h must agree on
 # it: a mix would be an ODR violation that links cleanly and misbehaves at run
 # time. Only this target includes Crow, so setting it here is enough.
+# The tree is pinned to C++14 by configure (see the CXX_STD note there) and
+# automake emits $(CXXFLAGS) after every per-target _CXXFLAGS, so a -std in
+# those would lose. Appending here is what actually makes C++17 win, and it is
+# scoped to this directory - the only place allowed to use it until mstflint
+# takes C++17 as its baseline.
+CXXFLAGS += $(CXX17_STD)
+
 bin_PROGRAMS = mstserver
 
 mstserver_SOURCES = \

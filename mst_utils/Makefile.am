@@ -58,13 +58,21 @@ endif
 # with --enable-remote, since it drives the MST HTTP client directly and there
 # is nothing to register without the mtcr remote path.
 if ENABLE_MTCR_REMOTE
+# mstremote belongs to the remote feature, which configure already refuses to
+# enable without a C++17 compiler - so C++17 is always available here. Raised
+# with the rest of the feature rather than held at the tree standard.
+#
+# It has to be CXXFLAGS: automake emits $(CXXFLAGS) after every per-target
+# _CXXFLAGS, so a -std in mstremote_CXXFLAGS would lose to the tree's C++14.
+# The append is inside this conditional so a build without --enable-remote
+# leaves the directory at the tree standard.
+CXXFLAGS += $(CXX17_STD)
+
 bin_PROGRAMS += mstremote
 
 mstremote_SOURCES = mstremote.cpp
 mstremote_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/${MTCR_CONF_DIR}
-# $(CXX17_STD): libmst_http_client is built as C++17 and its headers come with
-# that requirement, so every consumer has to agree on the standard.
-mstremote_CXXFLAGS = $(AM_CXXFLAGS) $(COMPILER_FPIC) $(CXX17_STD)
+mstremote_CXXFLAGS = $(AM_CXXFLAGS) $(COMPILER_FPIC)
 mstremote_DEPENDENCIES = $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
                          $(top_builddir)/mst_server/client/libmst_http_client.la \
                          $(top_builddir)/cmdparser/libcmdparser.a

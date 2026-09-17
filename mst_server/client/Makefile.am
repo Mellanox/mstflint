@@ -56,6 +56,13 @@ MST_SERVER_CXXFLAGS = \
 # through libmft_log_config.la. Two archives carrying them makes the final link
 # fail with "multiple definition of Json::...". The headers still come in via
 # $(JSON_CFLAGS); the symbols resolve from the logger's copy.
+# The tree is pinned to C++14 by configure (see the CXX_STD note there) and
+# automake emits $(CXXFLAGS) after every per-target _CXXFLAGS, so a -std in
+# those would lose. Appending here is what actually makes C++17 win, and it is
+# scoped to this directory - the only place allowed to use it until mstflint
+# takes C++17 as its baseline.
+CXXFLAGS += $(CXX17_STD)
+
 noinst_LTLIBRARIES = libmst_http_client.la
 
 libmst_http_client_la_SOURCES = \

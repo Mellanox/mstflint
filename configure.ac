@@ -798,13 +798,22 @@ CXXFLAGS="$CXXFLAGS -DMST_UL"
 
 CFLAGS="$CFLAGS -std=c11 -D_XOPEN_SOURCE=700 -D_POSIX_C_SOURCE=200809L -D_DEFAULT_SOURCE"
 
-CCVER=`${CC} --version | grep ${CC} | grep -E -o "( )[[4-9]]\.[[0-9]]\.[[0-9]]" | head -1`
+# mstflint is still a C++14 project; it becomes C++17 two releases from now.
+# Pin the standard explicitly so a C++17-only construct is rejected here even
+# on a new compiler, rather than compiling locally and breaking for everyone on
+# an older one. Only mst_server/ opts out, and only because Crow requires it.
+#
+# -dumpversion rather than parsing --version: the old pattern required a single
+# leading digit, so it matched nothing from GCC 10 onwards, left CXXFLAGS with
+# no -std at all, and let the tree inherit the compiler default (gnu++17 on
+# GCC 11+). The guard has been silently absent on modern toolchains.
+CCVER=`${CC} -dumpversion 2>/dev/null`
+CC_MAJOR=`echo "${CCVER}" | cut -d. -f1`
 AC_MSG_NOTICE(Compiler: ${CC}; version: ${CCVER};)
-if test ${CCVER} \> 5.0.0 ; then
-    CXXFLAGS="$CXXFLAGS -std=c++14"
-elif test ${CCVER} \> 4.7.2 ; then
-    CXXFLAGS="$CXXFLAGS -std=c++11"
-fi
+AS_IF([test -n "${CC_MAJOR}" && expr "${CC_MAJOR}" : '[[0-9]][[0-9]]*$' >/dev/null && test "${CC_MAJOR}" -ge 5],
+      [CXXFLAGS="$CXXFLAGS -std=c++14"],
+      [test -n "${CC_MAJOR}" && expr "${CC_MAJOR}" : '[[0-9]][[0-9]]*$' >/dev/null && test "${CC_MAJOR}" -ge 4],
+      [CXXFLAGS="$CXXFLAGS -std=c++11"])
 
 # Deprecation notice: as of January 2027 mstflint will be built as C++17,
 # which requires GCC 9 or newer. Warn users still on an older compiler.
