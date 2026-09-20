@@ -850,11 +850,26 @@ AM_CONDITIONAL([HAVE_CXX17], [test "x$have_cxx17" = "xyes"])
 AS_IF([test "x$have_cxx17" = "xyes"], [CXX17_STD="-std=c++17"], [CXX17_STD=""])
 AC_SUBST(CXX17_STD)
 
-# std::filesystem needs -lstdc++fs on gcc 8, which passes the C++17 probe above;
-# gcc 9 and newer fold it into libstdc++ and warn about nothing if it is absent.
-# Probe rather than version-check, since clang and libc++ split it differently.
+# Remote device access: route mtcr through the MST HTTP client so tools can
+# drive a device attached to another host. Off by default - it pulls the C++17
+# client (and libstdc++/jsoncpp/libcurl) into libmtcr_ul, which every tool links.
+AC_MSG_CHECKING(--enable-remote argument)
+AC_ARG_ENABLE(remote,
+    AS_HELP_STRING([--enable-remote], [enable remote device access via the MST HTTP server, requires C++17/openssl/libcurl [default=disabled]]),
+    [enable_remote="$enableval"],
+    [enable_remote="no"]
+)
+AC_MSG_RESULT($enable_remote)
+
+# mst_server/ is the only part of the tree built as C++17, and accepting
+# -std=c++17 is not by itself proof of a usable C++17 runtime: some toolchains
+# need an extra library to link it, others cannot link it at all. Probe rather
+# than version-check, since compilers differ here.
+#
+# Only under --enable-remote, so a build that does not ask for the feature is
+# never held up by a requirement that belongs to it.
 FILESYSTEM_LIBS=""
-AS_IF([test "x$have_cxx17" = "xyes"], [
+AS_IF([test "x$enable_remote" = "xyes" && test "x$have_cxx17" = "xyes"], [
     AC_LANG_PUSH([C++])
     save_CXXFLAGS="$CXXFLAGS"
     CXXFLAGS="$CXXFLAGS -std=c++17"
@@ -871,23 +886,13 @@ AS_IF([test "x$have_cxx17" = "xyes"], [
              [AC_MSG_RESULT([yes])
               FILESYSTEM_LIBS="-lstdc++fs"],
              [AC_MSG_RESULT([unavailable])
-              AC_MSG_ERROR([a C++17 compiler was found but std::filesystem does not link; mst_server needs it])])
+              AC_MSG_ERROR([--enable-remote requires full C++17 support, which this compiler
+  does not provide. Build without --enable-remote, or use a newer compiler.])])
          LIBS="$save_LIBS"])
     CXXFLAGS="$save_CXXFLAGS"
     AC_LANG_POP([C++])
 ])
 AC_SUBST(FILESYSTEM_LIBS)
-
-# Remote device access: route mtcr through the MST HTTP client so tools can
-# drive a device attached to another host. Off by default - it pulls the C++17
-# client (and libstdc++/jsoncpp/libcurl) into libmtcr_ul, which every tool links.
-AC_MSG_CHECKING(--enable-remote argument)
-AC_ARG_ENABLE(remote,
-    AS_HELP_STRING([--enable-remote], [enable remote device access via the MST HTTP server, requires C++17/openssl/libcurl [default=disabled]]),
-    [enable_remote="$enableval"],
-    [enable_remote="no"]
-)
-AC_MSG_RESULT($enable_remote)
 
 # The client speaks HTTP through libcurl, so the feature needs it even when the
 # fw-manager and pldm tools that also use libcurl are disabled.
