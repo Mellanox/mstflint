@@ -3896,6 +3896,40 @@ void MlxlinkCommander::getPcieNdrCounters(uint32_t flitActive)
         string berStr = to_string(getFieldValue("effective_ber_coef")) + "E-" + to_string(getFieldValue("effective_ber_magnitude"));
         setPrintVal(_mpcntPerfInfCmd, "Effective ber", berStr);
     }
+    
+    if (_productTechnology >= PRODUCT_5NM && flitActive)
+    {
+        string flitErrorRatioStr =
+          getFlitErrorRatioStr(getFieldValue("effective_ber_coef"), getFieldValue("effective_ber_magnitude"));
+        setPrintVal(_mpcntPerfInfCmd, "Flit Error Ratio", flitErrorRatioStr);
+    }
+}
+
+// A PCIe Gen6 flit is 256 bytes, so the flit error ratio the PCIe spec limits is the
+// effective BER scaled by 2048. Scaling stays in the "<coef>E-<magnitude>" form the
+// other BER fields use by approximating 2048 as 2 * 10^3, keeping a single-digit coefficient.
+string MlxlinkCommander::getFlitErrorRatioStr(u_int32_t effectiveBerCoef, u_int32_t effectiveBerMagnitude)
+{
+    if (effectiveBerMagnitude == PCIE_EFFECTIVE_BER_NO_ERRORS_MAGNITUDE)
+    {
+        return "0";
+    }
+
+    u_int32_t coef = effectiveBerCoef * 2;
+    int magnitude = (int)effectiveBerMagnitude - 3;
+    if (coef >= 10)
+    {
+        coef = (coef + 5) / 10;
+        magnitude--;
+    }
+
+    // A ratio cannot exceed 1, so a larger scaled value is not a valid measurement.
+    if (magnitude < 0 || (magnitude == 0 && coef > 1))
+    {
+        return NA_FIELD_VALUE;
+    }
+
+    return to_string(coef) + "E-" + to_string(magnitude);
 }
 
 void MlxlinkCommander::showMpcntPerformance(DPN& dpn)

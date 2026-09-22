@@ -468,6 +468,7 @@
 #define PCIE_MAX_DURATION 16777215
 #define PCIE_MAX_DURATION_HW_COUNTERS 255
 #define PCIE_MAX_ERR_PARAM 4
+#define PCIE_EFFECTIVE_BER_NO_ERRORS_MAGNITUDE 255
 
 #define SW_CONTROLLED_MODULE_PATH "/sys/module/sx_core/asic0/module"
 #define POWER_ON "power_on"

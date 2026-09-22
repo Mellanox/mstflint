@@ -642,6 +642,7 @@ public:
     string getSupportedFecForSpeed(const string& speed);
     string fecMaskToUserInputStr(u_int32_t fecCapMask);
     string fecMaskToStr(u_int32_t mask);
+    string getFlitErrorRatioStr(u_int32_t effectiveBerCoef, u_int32_t effectiveBerMagnitude);
     void updateSwControlStatus();
     void updateCpoStatus();
     void validateCpoParams();
