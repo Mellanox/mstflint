@@ -1988,8 +1988,8 @@ void MlxlinkAmBerCollector::pushModuleDpPerLane(vector<AmberField>& fields, cons
     for (u_int32_t lane = 0; lane < MAX_NETWORK_LANES; lane++)
     {
         string laneStr = to_string(lane);
-        dpStateStr = getStrByMask(getLocalFieldValue(fieldName + openSquareBracket + laneStr + closeSquareBracket),
-                                  _mlxlinkMaps->_dataPathSt);
+        dpStateStr = getStrByValue(getLocalFieldValue(fieldName + openSquareBracket + laneStr + closeSquareBracket),
+                                   _mlxlinkMaps->_dataPathSt);
         fields.push_back(AmberField(str + laneStr + suffix, dpStateStr));
         dpStateStr = NA_FIELD_VALUE;
     }
