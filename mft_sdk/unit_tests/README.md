@@ -31,6 +31,19 @@ MFT_SDK_KNOWN_MISSING=<comma-list> \
 python3 mft_sdk/unit_tests/mlxreg/test_register_access.py --compare -d <BDF> --so
 ```
 
+### SDK path resolution
+
+The Makefile resolves the installed SDK in this order:
+
+1. `SDK_INCDIR` / `SDK_LIBDIR` from the command line or environment
+2. the `mstflint_sdk` pkg-config module (what DOCA uses)
+3. `SDK_PREFIX` (default `/usr`) with a `lib64`-vs-`lib` probe
+
+`make help` prints which one won. Preferring pkg-config means a relocated
+install — e.g. `mstflint-sdk-local` under `/opt/mellanox/mstflint_sdk_local` —
+works with no variables at all, as long as `PKG_CONFIG_PATH` points at its
+`pkgconfig` directory.
+
 Env knobs (all consumed by `utils.py`):
 
 - `MFT_SDK_SO_DIR` — SDK lib dir (forwarded through sudo as `LD_LIBRARY_PATH`).

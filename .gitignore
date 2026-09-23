@@ -48,3 +48,9 @@ libtool
 /tracers/fwtrace/mstfwtrace
 mst_utils/mstremote
 mst_server/service/mstserver
+
+# SDK unit-test build output.
+build-tests/
+
+# Hand-written, not autotools output; the unanchored Makefile rule above hides it.
+!mft_sdk/unit_tests/Makefile
