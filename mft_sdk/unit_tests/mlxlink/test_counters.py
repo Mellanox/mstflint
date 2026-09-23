@@ -418,6 +418,8 @@ class ComparisonTable(object):
             print("Valid fields mask summary:  {} checked, {}".format(
                 mask_total, mask_status))
 
+        # run_comparison() needs the count; the bool return cannot express it.
+        self.compared_count = compared_count
         return diff_count == 0
 
 
@@ -499,12 +501,22 @@ class TestSuite(BaseTestSuite):
             mlxlink_fields = self.mlxlink_runner.get_counters()
 
         if c_fields or cpp_fields:
-            all_match = ComparisonTable(
+            table = ComparisonTable(
                 c_fields, cpp_fields, mlxlink_fields,
                 valid_fields_mask=valid_fields_mask,
                 device=self.device,
-                device_type=self.device_type).print_table()
-            return self.RESULT_PASS if all_match else self.RESULT_FAIL
+                device_type=self.device_type)
+            all_match = table.print_table()
+            if not all_match:
+                return self.RESULT_FAIL
+            # Every counter masked out (link down) means nothing was put side
+            # by side; that is a SKIP, not a PASS.
+            if getattr(table, "compared_count", 0) == 0:
+                print("\n{}No counters were comparable on this port (link down / no cable) -- "
+                      "nothing was validated, reporting SKIP rather than PASS.{}".format(
+                          YELLOW, RESET))
+                return self.RESULT_SKIP
+            return self.RESULT_PASS
 
         return self._compare_errors()
 

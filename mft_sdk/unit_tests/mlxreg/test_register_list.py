@@ -223,15 +223,33 @@ class RegisterListComparisonTable(object):
                   len(all_names), len(common), len(sdk_only),
                   len(mlxreg_only), oracle))
 
+        # Must run in EVERY mode, not only under SDK_ONLY: run_comparison()
+        # falls back to `sdk_names = c_names if c_names else cpp_names`, so an
+        # empty C++ column would otherwise pass as a C-versus-CLI comparison.
+        c_names = set(self._c_names) if self._c_names else set()
+        cpp_names = set(self._cpp_names) if self._cpp_names else set()
+        if c_names and cpp_names:
+            if c_names != cpp_names:
+                only_c = sorted(c_names - cpp_names)
+                only_cpp = sorted(cpp_names - c_names)
+                print("\n{}FAIL: the C and C++ SDK register lists differ{}".format(RED, RESET))
+                if only_c:
+                    print("  C only  ({}): {}".format(len(only_c), ", ".join(only_c)))
+                if only_cpp:
+                    print("  C++ only ({}): {}".format(len(only_cpp), ", ".join(only_cpp)))
+                return False
+            print("\n{}C and C++ register lists match ({} registers){}".format(
+                GREEN, len(c_names), RESET))
+        elif c_names or cpp_names:
+            # One column produced nothing: only half the SDK was exercised.
+            missing, present = ("C++", "C") if c_names else ("C", "C++")
+            print("\n{}FAIL: the {} column produced no register list while the {} column "
+                  "produced {} registers -- only half the SDK was tested. Check "
+                  "MFT_SDK_SO_TEST_BIN / MFT_SDK_C_SO_TEST_BIN (run: eval \"$(make print-env)\")"
+                  "{}".format(RED, missing, present, len(c_names or cpp_names), RESET))
+            return False
+
         if BaseConfig.SDK_ONLY:
-            c_names = set(self._c_names) if self._c_names else set()
-            cpp_names = set(self._cpp_names) if self._cpp_names else set()
-            if c_names and cpp_names:
-                if c_names != cpp_names:
-                    print("\n{}SDK-only mode: C and C++ register lists differ{}".format(RED, RESET))
-                    return False
-                print("\n{}SDK-only mode: C and C++ register lists match "
-                      "({} registers){}".format(GREEN, len(c_names), RESET))
             return True
 
         # CLI-only registers listed in MFT_SDK_KNOWN_MISSING are an expected
