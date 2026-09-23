@@ -283,12 +283,22 @@ class PackagingSuite(object):
         # installs nor erases. Deleting the parent took the CLI reference's
         # database with it and left mstreg/mstlink broken for every later
         # compare on that machine.
+        # In the libdir not even that: <libdir>/mstflint/sdk also holds the
+        # CLI package's libresource_dump_sdk.so, so name the SDK's own files.
         dirs = []
+        files = []
         for flavor_defaults in (_default_dirs("rpm"), _default_dirs("deb")):
-            dirs += [os.path.join(flavor_defaults["libdir"], "mstflint", "sdk")]
+            sdkdir = os.path.join(flavor_defaults["libdir"], "mstflint", "sdk")
+            # libmft_sdk.so.1 is no longer created; keep removing it so the
+            # stale alias earlier runs left behind is cleared.
+            files += [os.path.join(sdkdir, "libmstflint_sdk.so"),
+                      os.path.join(sdkdir, "libmft_sdk.so.1"),
+                      os.path.join(flavor_defaults["libdir"], "pkgconfig",
+                                   "mstflint_sdk.pc")]
         dirs += ["/usr/include/mstflint/sdk", "/usr/share/mstflint/sdk",
                  c.dirs["prefix"] if c.relocated else None]
         dirs = [d for d in dirs if d and d != "/usr"]
+        _run("sudo rm -f " + " ".join(files))
         _run("sudo rm -rf " + " ".join(dirs))
         _ldconfig()
 
