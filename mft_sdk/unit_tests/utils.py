@@ -293,6 +293,18 @@ def _get_pci_devices_lspci():
         return []
 
 
+def mst_tool_available():
+    """True when MFT's `mst` service tool is on PATH.
+
+    `mst` ships with MFT, not mstflint; the SDK drives devices over
+    pciconf/VSEC, so discovery falls back to lspci when this is False.
+    """
+    for p in ("/usr/bin/mst", "/usr/sbin/mst", "/bin/mst", "/sbin/mst"):
+        if os.path.exists(p):
+            return True
+    return False
+
+
 # =============================================================================
 # Project Root
 # =============================================================================
@@ -524,9 +536,10 @@ class DeviceInfo(object):
 def get_pci_devices():
     """Get list of DeviceInfo objects.
 
-    In SDK-only mode uses lspci; otherwise uses ``mst status -v``.
+    Uses ``mst status -v`` when MFT's `mst` is installed -- it also reports
+    the RDMA/NET interface names -- otherwise falls back to lspci.
     """
-    if BaseConfig.SDK_ONLY:
+    if BaseConfig.SDK_ONLY or not mst_tool_available():
         return _get_pci_devices_lspci()
     try:
         output = subprocess.check_output(
@@ -642,8 +655,16 @@ class MstManager(object):
 
     @staticmethod
     def start():
-        """Start MST. Skipped in SDK-only mode. Raises RuntimeError on failure."""
+        """Start MST. Raises RuntimeError on failure.
+
+        Skipped in SDK-only mode and when `mst` is absent: it belongs to
+        MFT, and the SDK does not need the /dev/mst node it creates.
+        """
         if BaseConfig.SDK_ONLY:
+            return
+        if not mst_tool_available():
+            print("\n[MST] `mst` not installed (no MFT) - skipping, "
+                  "devices come from lspci")
             return
         print("\n[MST] Starting MST...")
         success, output = CommandRunner.run("sudo mst start", "Starting MST")
