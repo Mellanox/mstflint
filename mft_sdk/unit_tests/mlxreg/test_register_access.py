@@ -90,7 +90,7 @@ class Config(BaseConfig):
     INDEXED_REGISTERS = {
         "MTMP": {"sensor_index": "0"},
         "PAOS": {"local_port": "1"},
-        "PTYS": {"local_port": "1", "proto_mask": "0x7"},
+        "PTYS": {"local_port": "1", "proto_mask": "0x1"},
     }
     RAW_REGISTERS = {
         "MGIR": {"reg_id": "0x9020", "reg_len": "0xa0"},
