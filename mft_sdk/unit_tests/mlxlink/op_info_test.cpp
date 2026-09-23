@@ -69,7 +69,10 @@ TEST_F(MftSdkTelemetryTest, GetTelemetryOperationalInfo)
     MST_QUERY_INIT(&operationalInfo);
     MstTelemetryContext context = makeTelemetryContext();
     status = mstGetTelemetryOperationalInfo(mstDevice, &context, &operationalInfo);
-    ASSERT_EQ(status, MST_SUCCESS) << "Failed to get telemetry operational info";
+    // Keep the "Failed to get ...: <reason>" shape: utils.py's _GTEST_ERROR_RE
+    // scrapes it to fill the C++ error column.
+    ASSERT_EQ(status, MST_SUCCESS)
+      << "Failed to get telemetry operational info: " << mstGetLastErrorString(mstDevice);
 
     const FieldDescriptor* fields = getOpInfoFields();
 
