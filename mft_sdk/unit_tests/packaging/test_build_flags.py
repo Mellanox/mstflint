@@ -50,9 +50,10 @@ the rest of the flow expects.
 
 The fixed-location problem: existing --so tests already resolve the SDK .so
 via the MFT_SDK_SO_DIR env override and the harness via MFT_SDK_SO_TEST_BIN
-(utils.py); this test points both at the VARIANT's dirs, creates the
-libmft_sdk.so.1 compat symlink inside the variant libdir, and asserts the
-DEFAULT paths are absent — so nothing can silently fall back to a stale copy.
+(utils.py); this test points both at the VARIANT's dirs and asserts the DEFAULT
+paths are absent — so nothing can silently fall back to a stale copy. The
+harness links the SDK's real soname, steered into the variant libdir by
+LD_LIBRARY_PATH alone.
 Headers have no runtime consumer in --so mode, so they are covered by the
 compile step of packaging_smoke.c against the variant includedir.
 
@@ -66,8 +67,9 @@ Env:
     MSTFLINT_PKG_CACHE     package cache root (required); variants live at
                            <cache>/variants/<variant>/<arch>/ and
                            <cache>/variants/manifest.json
-    MFT_SDK_SO_TEST_BIN    installed gtest harness binary (default:
-                           /usr/lib64/mft_sdk/tests/mft_sdk_mstflint_so_test)
+    MFT_SDK_SO_TEST_BIN    gtest harness binary (default: this tree's
+                           unit_tests/build-tests/mstflint_sdk_cpp_test,
+                           built by `make -C mft_sdk/unit_tests unified`)
 """
 
 from __future__ import print_function
@@ -88,15 +90,19 @@ from utils import (  # noqa: E402
 
 YELLOW = "\033[93m"
 
-DEFAULT_HARNESS = "/usr/lib64/mft_sdk/tests/mft_sdk_mstflint_so_test"
+# The harness is built from this tree by mft_sdk/unit_tests/Makefile and links
+# libmstflint_sdk.so, the only SDK library the mstflint-sdk package ships.
+# MFT_SDK_SO_TEST_BIN overrides this for a non-default BUILD_DIR.
+_TESTS_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DEFAULT_HARNESS = os.path.join(_TESTS_DIR, "build-tests", "mstflint_sdk_cpp_test")
+SDK_SONAME = "libmstflint_sdk.so"
 GTEST_EXCLUSIONS = "-*I2c*:*NullDeviceToAllApis*:*TelemetryJson*:*FreeJsonString*"
 
 # Every package identity this suite may install or must clean away. The wipe
 # below removes exactly these + the SDK install dirs; it deliberately does NOT
-# touch the CLI tools that serve as the compare reference (MFT's mlxreg_ext, or
-# mstflint's mstreg — both ship outside these packages) nor the seeded harness
-# binary under /usr/lib64/mft_sdk/tests (unowned file, survives rpm -e).
-SDK_PKGS = ["mft-sdk-int", "mft-sdk", "mstflint-sdk", "sdkv-mstflint-sdk"]
+# touch the CLI tools that serve as the compare reference (mstreg/mstlink ship
+# outside these packages) nor the harness, which is built in the source tree.
+SDK_PKGS = ["mstflint-sdk", "sdkv-mstflint-sdk"]
 
 VARIANTS = ("paths_only", "name_only", "both")
 
@@ -281,7 +287,6 @@ class PackagingSuite(object):
         for flavor_defaults in (_default_dirs("rpm"), _default_dirs("deb")):
             dirs += [os.path.join(flavor_defaults["libdir"], "mstflint", "sdk")]
         dirs += ["/usr/include/mstflint/sdk", "/usr/share/mstflint/sdk",
-                 "/usr/include/mft_sdk", "/usr/share/mft_sdk", "/etc/mft_sdk",
                  c.dirs["prefix"] if c.relocated else None]
         dirs = [d for d in dirs if d and d != "/usr"]
         _run("sudo rm -rf " + " ".join(dirs))
@@ -305,9 +310,6 @@ class PackagingSuite(object):
             rc, out = _run("sudo dpkg -i {}".format(c.pkg_file))
         if rc != 0:
             return self._record("install", "FAIL", out.strip().splitlines()[-1][:120])
-        # compat symlink INSIDE the variant libdir so the harness's NEEDED
-        # libmft_sdk.so.1 resolves there (and only there) via LD_LIBRARY_PATH
-        _run("sudo ln -sf {0}/libmstflint_sdk.so {0}/libmft_sdk.so.1".format(c.sdk_libdir))
         _ldconfig()
         return self._record("install", "PASS", os.path.basename(c.pkg_file))
 
@@ -402,16 +404,26 @@ class PackagingSuite(object):
     def harness_gtest(self):
         c = self.ctx
         if not os.path.exists(self.harness):
-            return self._record("harness_discovery", "SKIP",
-                                self.harness + " missing — run Build & Run")
-        # WRONGLIB gate first: the harness must resolve libmft_sdk.so.1 into
-        # the VARIANT libdir — otherwise we would be testing some other lib.
-        rc, out = _run("env LD_LIBRARY_PATH={} ldd {} 2>/dev/null | grep libmft_sdk.so.1"
-                       .format(c.sdk_libdir, self.harness))
-        if c.sdk_libdir not in out:
             return self._record("harness_discovery", "FAIL",
-                                "libmft_sdk.so.1 resolves outside variant libdir: " +
-                                out.strip()[:100])
+                                self.harness + " missing — run: "
+                                "make -C mft_sdk/unit_tests unified")
+        # WRONGLIB gate first: whichever SDK library the harness links must
+        # resolve into the VARIANT libdir — otherwise we would be testing some
+        # other lib. Keep "no SDK library in the ldd output" distinct from
+        # "resolves elsewhere", or a soname mismatch reports an empty detail.
+        rc, out = _run("env LD_LIBRARY_PATH={} ldd {} 2>/dev/null"
+                       .format(c.sdk_libdir, self.harness))
+        sdk_lines = [l.strip() for l in out.splitlines() if SDK_SONAME in l]
+        if not sdk_lines:
+            return self._record("harness_discovery", "FAIL",
+                                "harness links no SDK library ({}): ldd said {}".format(
+                                    SDK_SONAME,
+                                    out.strip().replace("\n", " ")[:100] or "nothing"))
+        stray = [l for l in sdk_lines if c.sdk_libdir not in l]
+        if stray:
+            return self._record("harness_discovery", "FAIL",
+                                "SDK library resolves outside variant libdir {}: {}".format(
+                                    c.sdk_libdir, "; ".join(stray)[:120]))
         dev = " -d " + self.device if self.device else ""
         rc, out = _run('sudo env LD_LIBRARY_PATH={} {} --gtest_filter="MftSdkDiscovery*{}"{}'
                        .format(c.sdk_libdir, self.harness, GTEST_EXCLUSIONS, dev),
@@ -522,7 +534,6 @@ class PackagingSuite(object):
         else:
             rc, out = _run("sudo dpkg -i --force-confnew {}".format(c.default_pkg_file))
         d = os.path.join(_default_dirs(c.pkg)["libdir"], "mstflint", "sdk")
-        _run("sudo ln -sf {0}/libmstflint_sdk.so {0}/libmft_sdk.so.1".format(d))
         _ldconfig()
         so = os.path.join(d, "libmstflint_sdk.so")
         ok = rc == 0 and os.path.exists(so)
