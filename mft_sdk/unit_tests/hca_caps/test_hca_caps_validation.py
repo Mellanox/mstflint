@@ -43,13 +43,22 @@ validates the feature against sources that are not the SDK:
                 firmware-matched ADB -- the same firmware data reached by a
                 completely different path
   D  fwctl      SDK value == oracle value, both halves pinned to one device
+  E  offline    the packaging/API contract DOCA's libs/doca_mgmt depends on
 
 Layers A-C need no fwctl and run on any host with a ConnectX/BlueField adapter.
 Layer D needs /dev/fwctl and self-skips with a precise reason where there is
 none. See .claude/mds/mft-sdk/hca-capabilities/TEST_PLAN.md for the full contract.
 
-Usage:  ./test_hca_caps_validation.py --compare -d <bdf>
-        ./test_hca_caps_validation.py --compare-all          (offline layers only)
+Standalone suite: no unit_tests/utils.py, no gtest harness. It compiles
+hca_caps_probe.c at run time against the INSTALLED SDK, resolved as
+MFT_SDK_INC_DIR/MFT_SDK_LIB_DIR, else the mstflint_sdk pkg-config module, else
+standard install dirs (see find_sdk_paths). For a non-standard prefix, point
+PKG_CONFIG_PATH at its pkgconfig dir.
+
+Usage:  ./test_hca_caps_validation.py -d <bdf>      (all layers)
+        ./test_hca_caps_validation.py               (offline layers only; the
+                                                     device layers self-SKIP)
+        -v/--verbose echoes every command it runs.
 """
 
 from __future__ import print_function
@@ -243,38 +252,116 @@ def scratch_root():
 # discovery
 # --------------------------------------------------------------------------
 
+def sdk_prefix():
+    """Install prefix of the SDK under test, from the .pc, or None.
+
+    $(includedir), $(libdir) and $(datadir) all hang off it, so deriving them
+    here is what makes a relocated install work with no hardcoded path."""
+    return _pkgconfig_sdk_vars().get("prefix")
+
+
 def find_adb():
     """DATA_PATH is baked in at compile time (no env override), so the ADB is
     wherever the package put it: <pkgdatadir>/sdk for the SDK build,
-    <pkgdatadir> for plain mstflint, /usr/share/mft for MFT."""
+    <pkgdatadir> for plain mstflint, /usr/share/mft for MFT.
+
+    The prefix comes from mstflint_sdk.pc first; the fixed list below is the
+    fallback for a host with no pkg-config."""
+    bases = []
+    prefix = sdk_prefix()
+    if prefix:
+        bases.append(os.path.join(prefix, "share"))
+    bases += ["/usr/share", "/usr/local/share", "/opt"]
     cands = []
-    for base in ("/usr/share", "/usr/local/share", "/opt"):
-        cands += glob.glob(os.path.join(base, "*", "sdk", "prm_dbs", "hca", "ext", ADB_BASENAME))
-        cands += glob.glob(os.path.join(base, "*", "prm_dbs", "hca", "ext", ADB_BASENAME))
-    # SDK build first: that is the copy the SDK under test actually loads.
-    cands.sort(key=lambda p: (0 if "/sdk/" in p else 1, len(p)))
-    return cands[0] if cands else None
+    for rank, base in enumerate(bases):
+        for p in (glob.glob(os.path.join(base, "*", "sdk", "prm_dbs", "hca", "ext", ADB_BASENAME))
+                  + glob.glob(os.path.join(base, "*", "prm_dbs", "hca", "ext", ADB_BASENAME))):
+            cands.append((rank, 0 if "/sdk/" in p else 1, len(p), p))
+    # The SDK's own prefix first, then the SDK copy over the plain-mstflint one:
+    # on a host carrying both, that is the file the SDK under test loads.
+    cands.sort()
+    return cands[0][3] if cands else None
+
+
+_pc_vars_cache = {}
+
+
+def _pkgconfig_sdk_vars():
+    """The .pc variables of the mstflint_sdk module, or {}.
+
+    The harness Makefile and DOCA's meson resolve the SDK this way, so the probe
+    is built against the copy consumers would actually pick up."""
+    if _pc_vars_cache:
+        return _pc_vars_cache.get("vars", {})
+    vals = {}
+    if have("pkg-config") and run("pkg-config --exists {} 2>/dev/null".format(
+            DOCA_PKGCONFIG_MODULE))[0] == 0:
+        for var in ("includedir", "libdir", "prefix"):
+            rc, out = run("pkg-config --variable={} {} 2>/dev/null".format(
+                var, DOCA_PKGCONFIG_MODULE))
+            line = out.strip().splitlines()[0].strip() if rc == 0 and out.strip() else ""
+            if line:
+                vals[var] = line
+    _pc_vars_cache["vars"] = vals
+    return vals
+
+
+# How find_sdk_paths() resolved the SDK; reported on the B0 line, since a probe
+# built against the wrong copy would make every later layer lie.
+sdk_paths_origin = "not resolved"
+_sdk_paths_cache = {}
 
 
 def find_sdk_paths():
     """Include dir + lib dir of the installed SDK, for compiling the probe.
-    MFT_SDK_INC_DIR / MFT_SDK_LIB_DIR point the probe at a build tree instead,
-    which is how a fix is validated before it is packaged."""
+
+    Resolution order, highest priority first -- the same order as
+    mft_sdk/unit_tests/Makefile:
+
+      1. MFT_SDK_INC_DIR / MFT_SDK_LIB_DIR   point the probe at a build tree,
+         which is how a fix is validated before it is packaged
+      2. the mstflint_sdk pkg-config module  <- what DOCA actually uses
+      3. a fixed list of standard install dirs, for a host with no pkg-config
+
+    (2) must stay ahead of (3): $(libdir) is lib64 on RPM distros, lib on
+    Debian, and a relocated build puts it under its own prefix."""
+    global sdk_paths_origin
+    if _sdk_paths_cache:
+        return _sdk_paths_cache["inc"], _sdk_paths_cache["lib"]
+
+    def _ok_inc(c):
+        return bool(c) and os.path.isfile(os.path.join(c, "mft_sdk", "mft_sdk_hca_caps.h"))
+
+    def _ok_lib(c):
+        return bool(c) and bool(glob.glob(os.path.join(c, "lib*_sdk.so*")))
+
     inc = os.environ.get("MFT_SDK_INC_DIR")
     lib = os.environ.get("MFT_SDK_LIB_DIR")
-    if inc and lib:
-        return inc, lib
-    inc = lib = None
-    for c in ("/usr/include/mstflint/sdk", "/usr/local/include/mstflint/sdk",
-              "/usr/include/mft_sdk", "/usr/include"):
-        if os.path.isfile(os.path.join(c, "mft_sdk", "mft_sdk_hca_caps.h")):
-            inc = c
-            break
-    for c in ("/usr/lib64/mstflint/sdk", "/usr/lib/x86_64-linux-gnu/mstflint/sdk",
-              "/usr/lib/aarch64-linux-gnu/mstflint/sdk", "/usr/lib64/mft_sdk", "/usr/lib64"):
-        if glob.glob(os.path.join(c, "lib*_sdk.so*")):
-            lib = c
-            break
+    origin = "MFT_SDK_INC_DIR/MFT_SDK_LIB_DIR"
+    if not (inc and lib):
+        pc = _pkgconfig_sdk_vars()
+        inc, lib = pc.get("includedir"), pc.get("libdir")
+        origin = "pkg-config({})".format(DOCA_PKGCONFIG_MODULE)
+        if not (_ok_inc(inc) and _ok_lib(lib)):
+            inc = lib = None
+            origin = "standard install dirs (no usable {}.pc)".format(DOCA_PKGCONFIG_MODULE)
+            for c in ("/usr/include/mstflint/sdk", "/usr/local/include/mstflint/sdk",
+                      "/usr/include/mft_sdk", "/usr/include"):
+                if _ok_inc(c):
+                    inc = c
+                    break
+            # $(libdir)/mstflint/sdk: lib64 on RPM distros, plain lib on Debian
+            # (autotools' default there), plus the multiarch spellings.
+            for c in ("/usr/lib64/mstflint/sdk", "/usr/lib/mstflint/sdk",
+                      "/usr/lib/x86_64-linux-gnu/mstflint/sdk",
+                      "/usr/lib/aarch64-linux-gnu/mstflint/sdk",
+                      "/usr/local/lib64/mstflint/sdk", "/usr/local/lib/mstflint/sdk",
+                      "/usr/lib64/mft_sdk", "/usr/lib64"):
+                if _ok_lib(c):
+                    lib = c
+                    break
+    sdk_paths_origin = origin
+    _sdk_paths_cache["inc"], _sdk_paths_cache["lib"] = inc, lib
     return inc, lib
 
 
@@ -589,7 +676,12 @@ def layer_a():
 def build_probe(work):
     inc, lib = find_sdk_paths()
     if not inc or not lib:
-        check("B0_probe_build", "SKIP", "installed SDK headers/libs not found")
+        # This SKIP disables layers B and D and half of E, so say what is
+        # missing and how it was looked for.
+        check("B0_probe_build", "SKIP",
+              "no installed SDK to build against: {} via {}; set MFT_SDK_INC_DIR/"
+              "MFT_SDK_LIB_DIR, or PKG_CONFIG_PATH for a relocated install".format(
+                  "headers" if not inc else "library", sdk_paths_origin))
         return None
     src = os.path.join(HERE, "hca_caps_probe.c")
     if not os.path.isfile(src):
@@ -607,7 +699,8 @@ def build_probe(work):
     if rc != 0 or not os.path.isfile(out):
         check("B0_probe_build", "FAIL", txt.strip()[:200])
         return None
-    check("B0_probe_build", "PASS", "against lib{}.so in {}".format(sdk_lib, lib))
+    check("B0_probe_build", "PASS",
+          "against lib{}.so in {} [{}]".format(sdk_lib, lib, sdk_paths_origin))
     return out
 
 
@@ -1019,9 +1112,14 @@ def _find_pc_file(lib):
     plain globs, and is the half that would break DOCA.
     """
     name = "{}.pc".format(DOCA_PKGCONFIG_MODULE)
-    dirs = [os.path.join(lib, "pkgconfig")] if lib else []
-    # The .pc goes to $(libdir)/pkgconfig, which is multiarch on Debian and
-    # lib64 on RPM distros -- check both rather than guessing from the host.
+    # The .pc goes to $(libdir)/pkgconfig but the .so to $(libdir)/mstflint/sdk,
+    # so the dir to check is two levels up from the resolved lib dir.
+    dirs = []
+    if lib:
+        dirs.append(os.path.join(os.path.dirname(os.path.dirname(lib)), "pkgconfig"))
+        dirs.append(os.path.join(lib, "pkgconfig"))
+    # Then the standard spellings: multiarch on Debian, lib64 on RPM distros --
+    # check both rather than guessing from the host.
     dirs += ["/usr/lib64/pkgconfig", "/usr/lib/x86_64-linux-gnu/pkgconfig",
              "/usr/lib/aarch64-linux-gnu/pkgconfig", "/usr/lib/pkgconfig",
              "/usr/share/pkgconfig"]
