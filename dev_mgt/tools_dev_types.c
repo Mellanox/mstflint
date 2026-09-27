@@ -713,7 +713,8 @@ int dm_get_device_id(mfile* mf, dm_dev_id_t* ptr_dm_dev_id, u_int32_t* ptr_hw_de
     return_value = dm_get_device_id_inner(mf, ptr_dm_dev_id, ptr_hw_dev_id, ptr_hw_rev);
     if (return_value == CRSPACE_READ_ERROR)
     {
-        printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno));
+        int err = errno;
+        DBG_PRINTF("Failed to read the device ID from CR-space%s%s\n", err ? ": " : "", err ? strerror(err) : "");
         return GET_DEV_ID_ERROR;
     }
     else if (return_value == CHECK_PTR_DEV_ID)

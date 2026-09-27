@@ -933,8 +933,17 @@ const char* file_handle_type_to_str(fw_hndl_type_t type)
 bool FwOperations::IsDeviceSupported(fw_ops_params_t& fwParams)
 {
     mfile* mf = mopen_adv(fwParams.mstHndl, (MType)(MST_DEFAULT | MST_LINKX_CHIP));
+    int openErrno = errno;
     if (!mf)
     {
+        const char* openErr = openErrno ? strerror(openErrno) : "";
+#if !defined(__WIN__) && !defined(__FreeBSD__)
+        if (mtcr_get_last_err()[0])
+        {
+            openErr = mtcr_get_last_err();
+        }
+#endif
+        WriteToErrBuff(fwParams.errBuff, openErr, fwParams.errBuffSize);
         return false;
     }
 
@@ -1748,7 +1757,7 @@ bool FwOperations::FwSwReset()
     return true;
 }
 
-void FwOperations::WriteToErrBuff(char* errBuff, char* errStr, int bufSize)
+void FwOperations::WriteToErrBuff(char* errBuff, const char* errStr, int bufSize)
 {
     if (bufSize > 0)
     {
