@@ -5,7 +5,7 @@
       "device_name": "GR150",
       "device_short_name": "gr150",
       "fw_name": "Rubin_Ultra",
-      "device_type": "Switch",
+      "device_type": "GPU",
       "fw_major": 0,
       "image_layout_format": "N/A",
       "pci_device_id_list": [

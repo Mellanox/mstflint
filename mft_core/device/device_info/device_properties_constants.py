@@ -137,6 +137,7 @@ DEVICE_TYPE_SWITCH = "Switch"
 DEVICE_TYPE_CABLE = "Cable"
 DEVICE_TYPE_LINKX = "LinkX"
 DEVICE_TYPE_RETIMER = "Retimer"
+DEVICE_TYPE_GPU = "GPU"
 
 # Property value constants -- image_layout_format field values
 IMAGE_LAYOUT_NA = "N/A"

@@ -4,7 +4,7 @@
       "device_name": "GR100",
       "device_short_name": "gr100",
       "fw_name": "Rubin",
-      "device_type": "Switch",
+      "device_type": "GPU",
       "fw_major": 0,
       "image_layout_format": "N/A",
       "pci_device_id_list": [

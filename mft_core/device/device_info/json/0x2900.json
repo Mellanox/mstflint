@@ -4,7 +4,7 @@
       "device_name": "GB100",
       "device_short_name": "gb100",
       "fw_name": "BlackWell",
-      "device_type": "Switch",
+      "device_type": "GPU",
       "fw_major": 0,
       "image_layout_format": "N/A",
       "pci_device_id_list": [

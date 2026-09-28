@@ -4,7 +4,7 @@
       "device_name": "NR10",
       "device_short_name": "nr10",
       "fw_name": "rubin_fusion",
-      "device_type": "Switch",
+      "device_type": "GPU",
       "fw_major": 0,
       "image_layout_format": "N/A",
       "pci_device_id_list": [

@@ -292,6 +292,10 @@ def is_switch(device_id):
     return get_property_as_string(device_id, PROP_DEVICE_TYPE) == DEVICE_TYPE_SWITCH
 
 
+def is_gpu(device_id):
+    return get_property_as_string(device_id, PROP_DEVICE_TYPE) == DEVICE_TYPE_GPU
+
+
 def is_cable(device_id):
     return get_property_as_string(device_id, PROP_DEVICE_TYPE) == DEVICE_TYPE_CABLE
 
@@ -367,12 +371,12 @@ def get_device_name_by_id(dev_id):
 
 
 def get_all_tracer_supported_ids():
-    """Return device IDs supported by tracers (non-deprecated NICs, switches, ArcusE, Arcus2)."""
+    """Return device IDs supported by tracers (non-deprecated NICs, switches, GPUs, ArcusE, Arcus2)."""
     result = []
     for dev_id in _DEVICE_VECTOR:
         if _is_deprecated(dev_id):
             continue
-        if is_nic(dev_id) or is_switch(dev_id) or dev_id in (ArcusE, Arcus2):
+        if is_nic(dev_id) or is_switch(dev_id) or is_gpu(dev_id) or dev_id in (ArcusE, Arcus2):
             result.append(dev_id)
     return result
 

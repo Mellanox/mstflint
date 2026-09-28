@@ -292,6 +292,11 @@ extern "C"
         return strcmp(get_property_as_cstring(device_id, PROP_DEVICE_TYPE), DEVICE_TYPE_SWITCH) == 0;
     }
 
+    bool is_gpu(uint32_t device_id)
+    {
+        return strcmp(get_property_as_cstring(device_id, PROP_DEVICE_TYPE), DEVICE_TYPE_GPU) == 0;
+    }
+
     bool is_cable(uint32_t device_id)
     {
         return strcmp(get_property_as_cstring(device_id, PROP_DEVICE_TYPE), DEVICE_TYPE_CABLE) == 0;
@@ -410,7 +415,8 @@ extern "C"
         unsigned int count = 0;
         for (eDeviceID dev : devices)
         {
-            if (is_nic((uint32_t)dev) || is_switch((uint32_t)dev) || dev == ArcusE || dev == Arcus2)
+            if (is_nic((uint32_t)dev) || is_switch((uint32_t)dev) || is_gpu((uint32_t)dev) || dev == ArcusE ||
+                dev == Arcus2)
             {
                 count++;
             }
@@ -432,7 +438,8 @@ extern "C"
         std::vector<eDeviceID> supported;
         for (eDeviceID dev : devices)
         {
-            if (is_nic((uint32_t)dev) || is_switch((uint32_t)dev) || dev == ArcusE || dev == Arcus2)
+            if (is_nic((uint32_t)dev) || is_switch((uint32_t)dev) || is_gpu((uint32_t)dev) || dev == ArcusE ||
+                dev == Arcus2)
             {
                 supported.push_back(dev);
             }
@@ -474,7 +481,7 @@ extern "C"
         {
             // TODO - when FN100 will be ready: ommit it from the if.
             // TODO - when NVLink8_Switch will be ready: ommit it from the if.
-            if (is_switch((uint32_t)dev_id) && dev_id != FN100 && dev_id != NVLink8_Switch)
+            if ((is_switch((uint32_t)dev_id) || is_gpu((uint32_t)dev_id)) && dev_id != FN100 && dev_id != NVLink8_Switch)
             {
                 printf("%s\n", get_property_as_cstring((uint32_t)dev_id, PROP_DEVICE_NAME));
             }

@@ -137,6 +137,7 @@
 #define DEVICE_TYPE_CABLE "Cable"
 #define DEVICE_TYPE_LINKX "LinkX"
 #define DEVICE_TYPE_RETIMER "Retimer"
+#define DEVICE_TYPE_GPU "GPU"
 
 /* Property value constants -- image_layout_format field values */
 #define IMAGE_LAYOUT_NA "N/A"
