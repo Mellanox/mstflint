@@ -100,10 +100,7 @@ typedef void* trm_ctx;
 #define BLUEFIELD3_HW_ID    0x21c
 #define BLUEFIELD4_HW_ID    0x220
 #define CONNECT_IB_HW_ID    0x1FF
-#define SWITCH_IB_HW_ID     0x247
 #define SPECTRUM_HW_ID      0x249
-#define SWITCH_IB2_HW_ID    0x24b
-#define QUANTUM_HW_ID       0x24d
 #define SPECTRUM2_HW_ID     0x24e
 #define SPECTRUM3_HW_ID     0x250
 #define QUANTUM2_HW_ID      0x257
@@ -120,8 +117,6 @@ typedef void* trm_ctx;
  * Device IDs Macros:
  */
 #define IS_CONNECTX_4TH_GEN_FAMILY(dev_id) (((dev_id) == CX3_HW_ID) || ((dev_id) == CX3_PRO_HW_ID))
-#define IS_SIB(dev_id)                     ((dev_id) == SWITCH_IB_HW_ID)
-#define IS_SIB2(dev_id)                    ((dev_id) == SWITCH_IB2_HW_ID)
 #define IS_SEN(dev_id)                     ((dev_id) == SPECTRUM_HW_ID)
 #define IS_SPECTRUM2(dev_id)               ((dev_id) == SPECTRUM2_HW_ID)
 #define IS_CONNECT_IB(dev_id)              ((dev_id) == CONNECT_IB_HW_ID)
@@ -137,7 +132,6 @@ typedef void* trm_ctx;
 #define IS_CONNECTX6DX(dev_id)             ((dev_id) == CX6DX_HW_ID)
 #define IS_CONNECTX6LX(dev_id)             ((dev_id) == CX6LX_HW_ID)
 #define IS_BLUEFIELD(dev_id)               ((dev_id) == BLUEFIELD_HW_ID)
-#define IS_QUANTUM(dev_id)                 ((dev_id) == QUANTUM_HW_ID)
 #define IS_SPECTRUM(dev_id)                ((dev_id) == SPECTRUM_HW_ID)
 #define IS_BLUEFEILD(dev_id)               ((dev_id) == BLUEFIELD_HW_ID)
 #define IS_BLUEFEILD2(dev_id)              ((dev_id) == BLUEFIELD2_HW_ID)

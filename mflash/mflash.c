@@ -1353,7 +1353,7 @@ int spi_update_num_of_banks(mflash* mfl, int prev_num_of_flashes)
     num_of_banks = spi_get_num_of_flashes(prev_num_of_flashes);
     if (num_of_banks == -1)
     {
-        if (IS_SIB(mfl->attr.hw_dev_id) || IS_SEN(mfl->attr.hw_dev_id) || IS_SIB2(mfl->attr.hw_dev_id))
+        if (IS_SEN(mfl->attr.hw_dev_id))
         {
             mfl->opts[MFO_NUM_OF_BANKS] = 2;
         }
@@ -1999,7 +1999,6 @@ static cache_rep_or_pager_reg_type_t get_reg_type(dm_dev_id_t devid_t)
         case DeviceConnectX6LX:
         case DeviceSpectrum2:
         case DeviceSpectrum3:
-        case DeviceQuantum:
             reg_type = CACHE_REP_GEN_5;
             break;
         case DeviceQuantum2:
@@ -3030,25 +3029,15 @@ int get_dev_info(mflash* mfl)
         /* mgir.HWInfo.DEVID, mgir.HWInfo.hw_dev_id); */
         if (rc)
         {
-            dev_id = DeviceSwitchIB_HwId;
-            mfl->attr.rev_id = 0;
-            mfl->attr.hw_dev_id = DeviceSwitchIB_HwId;
+            return MFE_UNSUPPORTED_DEVICE;
         }
-        else
+        dev_id = mgir.hw_info.hw_dev_id;
+        if (dev_id == 0)
         {
-            dev_id = mgir.hw_info.hw_dev_id;
-            if (dev_id == 0)
-            {
-                dev_id = DeviceSwitchIB_HwId;
-                mfl->attr.hw_dev_id = DeviceSwitchIB_HwId;
-                mfl->attr.rev_id = mgir.hw_info.device_hw_revision & 0xf;
-            }
-            else
-            {
-                mfl->attr.hw_dev_id = dev_id;
-                mfl->attr.rev_id = 0; /* WA: MGIR should have also hw_rev_id and then we can use it. */
-            }
+            return MFE_UNSUPPORTED_DEVICE;
         }
+        mfl->attr.hw_dev_id = dev_id;
+        mfl->attr.rev_id = 0; /* WA: MGIR should have also hw_rev_id and then we can use it. */
 #else
         /* no MLNX_OS in UEFI, no mgir register in UEFI package */
         /* we should never reach here */
@@ -3858,9 +3847,6 @@ int mf_set_reset_flash_on_warm_reboot(mflash* mfl)
         case DeviceConnectX3:
         case DeviceConnectX3Pro:
         case DeviceConnectIB:
-        case DeviceSwitchIB:
-        case DeviceSwitchIB2:
-        case DeviceQuantum:
         case DeviceQuantum2:
         case DeviceQuantum3:
         case DeviceNVLink6_Switch:
@@ -3919,11 +3905,9 @@ int mf_update_boot_addr(mflash* mfl, u_int32_t boot_addr)
         case DeviceConnectX3:
         case DeviceConnectX3Pro:
         case DeviceConnectIB:
-        case DeviceSwitchIB:
         case DeviceSpectrum:
         case DeviceConnectX4:
         case DeviceConnectX4LX:
-        case DeviceSwitchIB2:
             boot_cr_space_address = 0xf0000;
             offset_in_address = 8;
             break;
@@ -3937,7 +3921,6 @@ int mf_update_boot_addr(mflash* mfl, u_int32_t boot_addr)
         case DeviceConnectX6:
         case DeviceConnectX6DX:
         case DeviceConnectX6LX:
-        case DeviceQuantum:
         case DeviceBlueField2:
         case DeviceSpectrum2:
         case DeviceSpectrum3:

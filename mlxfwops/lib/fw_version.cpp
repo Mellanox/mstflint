@@ -119,10 +119,8 @@ bool FwVersion::operator!=(const FwVersion& rhs) const
 }
 
 // 13 is Spectrum1
-// 15 is SwitchIB2
 // 19 is Amos-GB
 // 21 is Abir-GB
-// 27 is Quantum
 // 29 is Spectrum2
 // 30 is Spectrum3
 // 31 is Quantum2
@@ -137,7 +135,7 @@ bool FwVersion::is_switch_or_gb() const
     {
         return true;
     }
-    if (_major == 11 || _major == 13 || _major == 15 || _major == 27 || _major == 29 || _major == 30 || _major == 31 || _major == 34 || _major == 19 || _major == 21 || _major == 35 || _major == 36 ||
+    if (_major == 13 || _major == 29 || _major == 30 || _major == 31 || _major == 34 || _major == 19 || _major == 21 || _major == 35 || _major == 36 ||
         _major == 37 || _major == 41)
     {
         return true;

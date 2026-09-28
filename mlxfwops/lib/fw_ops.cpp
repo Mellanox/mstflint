@@ -413,16 +413,6 @@ bool FwOperations::FindAllImageStart(FBase* ioAccess, u_int32_t start_locations[
 
     needed_pos_num = CNTX_START_POS_SIZE;
 
-    /* WA: due to bug on SwichIB first GA FW (FW doesnt look at chip select field in mfba)
-     *     when reading from flash address 0x400000 it wraps around to 0x0 causing more than one
-     *     valid image to be found. as a WA we dont check at 0x400000. basic flash operations
-     *     are affected when attempting to access addressess greater than 0x3fffff.
-     */
-    if (ioAccess->get_dev_id() == SWITCH_IB_HW_ID)
-    {
-        needed_pos_num -= 1;
-    }
-
     ioAccess->set_address_convertor(0, 0);
     if (found_images)
     {
@@ -1439,7 +1429,6 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
   {"ConnectX-3", CX3_HW_ID, CT_CONNECTX, CFT_HCA, 2, {4099, 4100, 4101, 4102, 4104, 4105, 4106, 4107, 4108, 4109, 4110, 4111, 4112, 0}, {{UNKNOWN_BIN, {0}}}},
   {"ConnectX-3Pro", CX3_PRO_HW_ID, CT_CONNECTX, CFT_HCA, 2, {4103, 0}, {{UNKNOWN_BIN, {0}}}},
   {"Connect_IB", CONNECT_IB_HW_ID, CT_CONNECT_IB, CFT_HCA, 2, {CONNECT_IB_SW_ID, 4114, 4115, 4116, 4117, 4118, 4119, 4120, 4121, 4122, 4123, 4124, 0}, {{UNKNOWN_BIN, {0}}}},
-  {"Switch_IB", SWITCH_IB_HW_ID, CT_SWITCH_IB, CFT_SWITCH, 0, {52000, 0}, {{UNKNOWN_BIN, {0}}}},
   {"ConnectX-4", CX4_HW_ID, CT_CONNECTX4, CFT_HCA, 0, {4115, 0}, {{UNKNOWN_BIN, {0}}}},
   {"ConnectX-4LX", CX4LX_HW_ID, CT_CONNECTX4_LX, CFT_HCA, 0, {4117, 0}, {{UNKNOWN_BIN, {0}}}},
   {"ConnectX-5", CX5_HW_ID, CT_CONNECTX5, CFT_HCA, 0, {4119, 4121, 0}, {{CX5_LOW_BIN, {4119, 0}}, {CX5_HIGH_BIN, {4119, 4121, 0}}, {UNKNOWN_BIN, {0}}}},
@@ -1456,8 +1445,6 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
   {"BlueField3", BF3_HW_ID, CT_BLUEFIELD3, CFT_HCA, 0, {41690, 41691, 41692, 0}, {{UNKNOWN_BIN, {0}}}},
   {"BlueField4", BF4_HW_ID, CT_BLUEFIELD4, CFT_HCA, 0, {41695, 0}, {{UNKNOWN_BIN, {0}}}},
   {"Spectrum", SPECTRUM_HW_ID, CT_SPECTRUM, CFT_SWITCH, 0, {52100, 0}, {{UNKNOWN_BIN, {0}}}},
-  {"Switch_IB2", SWITCH_IB2_HW_ID, CT_SWITCH_IB2, CFT_SWITCH, 0, {53000, 0}, {{UNKNOWN_BIN, {0}}}},
-  {"Quantum", QUANTUM_HW_ID, CT_QUANTUM, CFT_SWITCH, 0, {54000, 0}, {{UNKNOWN_BIN, {0}}}},
   {"Spectrum2", SPECTRUM2_HW_ID, CT_SPECTRUM2, CFT_SWITCH, 0, {53100, 0}, {{UNKNOWN_BIN, {0}}}},
   {"Spectrum3", SPECTRUM3_HW_ID, CT_SPECTRUM3, CFT_SWITCH, 0, {53104, 0}, {{UNKNOWN_BIN, {0}}}},
   {"Quantum2", QUANTUM2_HW_ID, CT_QUANTUM2, CFT_SWITCH, 0, {54002, 0}, {{UNKNOWN_BIN, {0}}}},
@@ -1493,10 +1480,7 @@ const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
   {"BlueField2", BF2_HW_ID, 0x00},
   {"BlueField3", BF3_HW_ID, 0x00},
   {"BlueField4", BF4_HW_ID, 0x00},
-  {"SwitchIB A0", SWITCH_IB_HW_ID, 0x00},
   {"Spectrum A0", SPECTRUM_HW_ID, 0x00},
-  {"SwitchIB2 A0", SWITCH_IB2_HW_ID, 0x00},
-  {"Quantum A0", QUANTUM_HW_ID, 0x00},
   {"Spectrum A1", SPECTRUM_HW_ID, 0x01},
   {"Spectrum2 A0", SPECTRUM2_HW_ID, 0x00},
   {"Spectrum3 A0", SPECTRUM3_HW_ID, 0x00},
@@ -2605,12 +2589,12 @@ u_int8_t FwOperations::GetFwFormatFromHwDevID(u_int32_t hwDevId)
     {
         return FS_FS2_GEN;
     }
-    else if ((hwDevId == CONNECT_IB_HW_ID) || (hwDevId == SWITCH_IB_HW_ID) || (hwDevId == CX4_HW_ID) || (hwDevId == CX4LX_HW_ID) || (hwDevId == SPECTRUM_HW_ID) || (hwDevId == SWITCH_IB2_HW_ID))
+    else if ((hwDevId == CONNECT_IB_HW_ID) || (hwDevId == CX4_HW_ID) || (hwDevId == CX4LX_HW_ID) || (hwDevId == SPECTRUM_HW_ID))
     {
         return FS_FS3_GEN;
     }
     else if (hwDevId == CX5_HW_ID || hwDevId == CX6_HW_ID || hwDevId == CX6DX_HW_ID || hwDevId == CX6LX_HW_ID || hwDevId == CX7_HW_ID || hwDevId == BF_HW_ID || hwDevId == BF2_HW_ID ||
-             hwDevId == BF3_HW_ID || hwDevId == QUANTUM_HW_ID || hwDevId == QUANTUM2_HW_ID || hwDevId == SPECTRUM4_HW_ID || hwDevId == SPECTRUM3_HW_ID ||
+             hwDevId == BF3_HW_ID || hwDevId == QUANTUM2_HW_ID || hwDevId == SPECTRUM4_HW_ID || hwDevId == SPECTRUM3_HW_ID ||
              hwDevId == SPECTRUM2_HW_ID || hwDevId == SPECTRUM5_HW_ID || hwDevId == GEARBOX_HW_ID || hwDevId == GB_MANAGER_HW_ID || hwDevId == ABIR_GB_HW_ID)
     {
         return FS_FS4_GEN;

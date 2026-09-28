@@ -1790,10 +1790,9 @@ u_int32_t FwCompsMgr::getFwSupport()
 #endif
     devid = EXTRACT(devid, 0, 16);
     /*
-     * If 4TH gen nic or switch with no MCAM reg return not supported
+     * If 4TH gen nic with no MCAM reg return not supported
      */
-    if ((devid == CX3_HW_ID) || (devid == CX3_PRO_HW_ID) || (devid == SWITCH_IB_HW_ID) ||
-        (devid == SWITCH_IB2_HW_ID)) {
+    if ((devid == CX3_HW_ID) || (devid == CX3_PRO_HW_ID)) {
         _lastError = FWCOMPS_UNSUPPORTED_DEVICE;
         return 0;
     }
