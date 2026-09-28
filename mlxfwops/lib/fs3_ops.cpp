@@ -2938,7 +2938,7 @@ bool Fs3Operations::FwSetAccessKey(hw_key_t userKey, ProgressCallBack)
     int rc = (int)reg_access_secure_host(getMfileObj(), REG_ACCESS_METHOD_GET, &mlock);
     if (rc)
     {
-        return errmsg("secure host operation failed. reported error code: %d", rc);
+        return errmsg("secure host operation failed: %s", m_err2str((MError)rc));
     }
     if (mlock.operation)
     {
@@ -2953,7 +2953,7 @@ bool Fs3Operations::FwSetAccessKey(hw_key_t userKey, ProgressCallBack)
     rc = reg_access_secure_host(getMfileObj(), REG_ACCESS_METHOD_SET, &mlock);
     if (rc)
     {
-        return errmsg("secure host operation failed. reported error code: %d", rc);
+        return errmsg("secure host operation failed: %s", m_err2str((MError)rc));
     }
     printf("-I- Secure Host was enabled successfully on the device.\n");
     return true;
@@ -2966,7 +2966,7 @@ bool Fs3Operations::GetSecureHostState(u_int8_t& state)
     int rc = (int)reg_access_secure_host(getMfileObj(), REG_ACCESS_METHOD_GET, &mlock);
     if (rc)
     {
-        return errmsg("secure host operation failed. reported error code: %d", rc);
+        return errmsg("secure host operation failed: %s", m_err2str((MError)rc));
     }
     state = mlock.operation;
     return true;

@@ -2467,6 +2467,13 @@ void MlxlinkMaps::initSdkOperationalInfoFecMapping()
       OPERATIONAL_INFO_FEC_INTERLEAVED_OCTET_RS_HALF_KP4_FEC_PLR_288_258;
 }
 
+void MlxlinkMaps::initSdkGroupOpcodeMapping()
+{
+    _groupOpcodeSdk[GROUP_OPCODE_STR_PHY_FW] = TROUBLESHOOTING_INFO_GROUP_OPCODE_PHY_FW;
+    _groupOpcodeSdk[GROUP_OPCODE_STR_MNG_FW] = TROUBLESHOOTING_INFO_GROUP_OPCODE_MNG_FW;
+    _groupOpcodeSdk[GROUP_OPCODE_STR_CORE_DRIVER] = TROUBLESHOOTING_INFO_GROUP_OPCODE_CORE_DRIVER;
+}
+
 void MlxlinkMaps::initSDKMappings()
 {
     initSdkOperationalInfoStateMapping();
@@ -2482,4 +2489,5 @@ void MlxlinkMaps::initSDKMappings()
     initSdkModuleStateMapping();
     initSdkRxPowerTypeMapping();
     initSdkErrorCodeResponseMapping();
+    initSdkGroupOpcodeMapping();
 }

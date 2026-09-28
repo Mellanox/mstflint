@@ -52,16 +52,13 @@ int is_four_byte_address_needed(mflash* mfl, MfError* status)
         case DeviceConnectX3:
         case DeviceConnectX3Pro:
         case DeviceConnectIB:
-        case DeviceSwitchIB:
         case DeviceSpectrum:
         case DeviceConnectX4:
         case DeviceConnectX4LX:
-        case DeviceSwitchIB2:
         case DeviceConnectX5:
         case DeviceBlueField:
         case DeviceSecureHost:
             return 0;
-        case DeviceQuantum:
         case DeviceConnectX6:
         case DeviceConnectX7:
         case DeviceConnectX8:
@@ -127,15 +124,12 @@ int is_icmdif_supported(mflash* mfl, MfError* status)
         case DeviceSecureHost:
             return 0;
         case DeviceConnectIB:
-        case DeviceSwitchIB:
         case DeviceConnectX4:
         case DeviceConnectX4LX:
         case DeviceSpectrum:
-        case DeviceSwitchIB2:
         case DeviceConnectX5:
         case DeviceBlueField:
         case DeviceBlueField2:
-        case DeviceQuantum:
         case DeviceSpectrum2:
         case DeviceSpectrum3:
         case DeviceConnectX6:

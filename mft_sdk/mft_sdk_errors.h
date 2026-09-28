@@ -76,6 +76,9 @@ extern "C"
         MST_ERROR_FAILED_TO_SEND_ICMD = 18,            /**< An ICMD failed; mstGetSyndrome has the
                                                             firmware syndrome. */
         MST_ERROR_TEMPERATURE_NOT_AVAILABLE = 19,      /**< No sensor produced a valid reading. */
+        MST_ERROR_INSUFFICIENT_BUFFER = 20,            /**< The buffer is too small; the call reports
+                                                            the size it needs. */
+        MST_ERROR_FAILED_TO_DUMP_RESOURCE = 21,        /**< A resource dump failed. */
     } MstStatus;
 
     /**

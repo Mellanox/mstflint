@@ -90,11 +90,6 @@ static struct device_sem_info g_dev_sem_info_db[] = {
     1,               // vsec_sem_supported
   },
   {
-    DeviceSwitchIB, // dev_id
-    {0xa24f8},      // hw_sem_addr
-    0,              // vsec_sem_supported
-  },
-  {
     DeviceSpectrum, // dev_id
     {0xa24f8},      // hw_sem_addr
     0,              // vsec_sem_supported
@@ -103,11 +98,6 @@ static struct device_sem_info g_dev_sem_info_db[] = {
     DeviceConnectX4LX, // dev_id
     {0xe250c},         // hw_sem_addr
     1,                 // vsec_sem_supported
-  },
-  {
-    DeviceSwitchIB2, // dev_id
-    {0xa24f8},       // hw_sem_addr
-    0,               // vsec_sem_supported
   },
   {
     DeviceConnectX5, // dev_id
@@ -133,11 +123,6 @@ static struct device_sem_info g_dev_sem_info_db[] = {
     DeviceBlueField4, // dev_id
     {0xe5660},        // hw_sem_addr
     1,                // vsec_sem_supported
-  },
-  {
-    DeviceQuantum, // dev_id
-    {0xa68f8},     // hw_sem_addr
-    0,             // vsec_sem_supported
   },
   {
     DeviceSpectrum2, // dev_id

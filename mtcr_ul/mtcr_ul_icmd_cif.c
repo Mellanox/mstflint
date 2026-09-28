@@ -608,7 +608,6 @@ bool device_supports_sem_lock_verify(unsigned int hw_dev_id)
         case DeviceConnectX3_HwId:
         case DeviceConnectIB_HwId:
         case DeviceConnectX3Pro_HwId:
-        case DeviceSwitchIB_HwId:
         case DeviceSpectrum_HwId:
         case DeviceConnectX4_HwId:
         case DeviceConnectX4LX_HwId:
@@ -620,8 +619,6 @@ bool device_supports_sem_lock_verify(unsigned int hw_dev_id)
         case DeviceBlueField_HwId:
         case DeviceBlueField2_HwId:
         case DeviceBlueField3_HwId:
-        case DeviceSwitchIB2_HwId:
-        case DeviceQuantum_HwId:
         case DeviceQuantum2_HwId:
         case DeviceQuantum3_HwId:
         case DeviceNVLink6_Switch_HwId:
@@ -763,6 +760,17 @@ static int icmd_send_command_com(mfile* mf, IN int opcode, INOUT void* data, IN 
         CHECK_RC(ret);
     }
 
+    u_int32_t reg = 0x0;
+
+    /* check busy bit is down */
+    int busy_bit = check_busy_bit(mf, BUSY_BITOFF, &reg);
+    ret = (busy_bit == BUSY_BIT_DOWN) ? ME_OK : ME_ICMD_STATUS_IFC_BUSY;
+    if (ret != ME_OK)
+    {
+        MTCR_LOG_ERROR("ICMD interface busy before command (busy_bit set)");
+    }
+    CHECK_RC_GO_TO(ret, cleanup);
+
     ret = set_opcode(mf, opcode);
     CHECK_RC_GO_TO(ret, cleanup);
 
@@ -792,12 +800,15 @@ static int icmd_send_command_com(mfile* mf, IN int opcode, INOUT void* data, IN 
         CHECK_RC(ret);
     }
 
-    u_int32_t reg = 0x0;
-
-    /* check go bit down */
-    int busy_bit = check_busy_bit(mf, BUSY_BITOFF, &reg);
+    /* re-check busy bit is down: the interface may have been taken while the mailbox was written */
+    busy_bit = check_busy_bit(mf, BUSY_BITOFF, &reg);
     ret = (busy_bit == BUSY_BIT_DOWN) ? ME_OK : ME_ICMD_STATUS_IFC_BUSY;
-    CHECK_RC(ret);
+    if (ret != ME_OK)
+    {
+        MTCR_LOG_ERROR(
+          "Parallel access detected: ICMD interface set to busy by another proccess while semaphore is owned by this tool");
+    }
+    CHECK_RC_GO_TO(ret, cleanup);
 
     /* set go bit + poll + returned status */
     ret = set_and_poll_on_busy_bit(mf, enhanced, BUSY_BITOFF, &reg);

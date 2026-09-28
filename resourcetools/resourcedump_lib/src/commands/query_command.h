@@ -61,6 +61,8 @@ class QueryCommand : public ResourceDumpCommand
 {
 public:
     QueryCommand(device_attributes device_attrs);
+    // Borrows an already-open device; the caller keeps ownership of the mfile.
+    QueryCommand(mfile_t* mf, device_attributes device_attrs);
 
     std::string get_big_endian_string();
 
@@ -75,6 +77,7 @@ protected:
     const std::string to_string() const override;
 
 private:
+    void init_streams();
 };
 } // namespace resource_dump
 } // namespace mft

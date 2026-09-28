@@ -304,6 +304,7 @@ private:
     void initSdkModuleStateMapping();
     void initSdkRxPowerTypeMapping();
     void initSdkErrorCodeResponseMapping();
+    void initSdkGroupOpcodeMapping();
 
 public:
     static MlxlinkMaps* getInstance();
@@ -340,6 +341,7 @@ public:
     std::map<std::string, ModuleInfoModuleState> _moduleStateSdk;
     std::map<std::string, ModuleInfoRxPowerType> _rxPowerTypeSdk;
     std::map<std::string, ModuleInfoErrorCodeResponse> _errorCodeResponseSdk;
+    std::map<std::string, TroubleShootingInfoGroupOpcode> _groupOpcodeSdk;
     std::map<u_int32_t, std::string> _prbsLaneRateCap;
     std::map<u_int32_t, std::string> _prbsLaneRateCapExt;
     std::map<u_int32_t, std::string> _prbsTuningType;

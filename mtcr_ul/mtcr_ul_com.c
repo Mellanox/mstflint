@@ -2859,7 +2859,6 @@ u_int32_t secured_devices[] = {
 u_int32_t supported_device_ids[] = {DeviceConnectX3_HwId,
                                     DeviceConnectIB_HwId,
                                     DeviceConnectX3Pro_HwId,
-                                    DeviceSwitchIB_HwId,
                                     DeviceSpectrum_HwId,
                                     DeviceConnectX4_HwId,
                                     DeviceConnectX4LX_HwId,
@@ -2873,7 +2872,6 @@ u_int32_t supported_device_ids[] = {DeviceConnectX3_HwId,
                                     DeviceBlueField2_HwId,
                                     DeviceBlueField3_HwId,
                                     DeviceBlueField4_HwId,
-                                    DeviceSwitchIB2_HwId,
                                     DeviceCableQSFP_HwId,
                                     DeviceCableQSFPaging_HwId,
                                     DeviceCableCMIS_HwId,
@@ -2882,7 +2880,6 @@ u_int32_t supported_device_ids[] = {DeviceConnectX3_HwId,
                                     DeviceCableSFP51_HwId,
                                     DeviceCableSFP51Paging_HwId,
                                     DeviceSpectrum2_HwId,
-                                    DeviceQuantum_HwId,
                                     DeviceQuantum2_HwId,
                                     DeviceQuantum3_HwId,
                                     DeviceNVLink6_Switch_HwId,
@@ -3350,10 +3347,7 @@ static long supported_dev_ids[] = {0x1003, /* Connect-X3 */
                                    0x1021, /* Connect-X7 */
                                    0x1023, /* Connect-X8 */
                                    0x1025, /* Connect-X9 */
-                                   0xcb20, /* Switch-IB */
                                    0xcb84, /* Spectrum */
-                                   0xcf08, /* Switch-IB2 */
-                                   0xd2f0, /* Quantum */
                                    0xd2f2, /* Quantum2 */
                                    0xcf6c, /* Spectrum2 */
                                    0xa2d2, /* MT416842 Family BlueField integrated ConnectX-5 network controller */
@@ -3374,7 +3368,7 @@ static long supported_dev_ids[] = {0x1003, /* Connect-X3 */
                                    0xd2f8, /* NVLink6_Switch */
                                    -1};
 
-static long live_fish_id_database[] = {0x191, 0x246, 0x249, 0x24b, 0x24d, 0x24e, 0x1F6, 0x1F8, 0x1FF, 0x247, 0x209, 0x20b, 0x20d, 0x20f, 0x211, 0x214, /* BlueField2 */
+static long live_fish_id_database[] = {0x191, 0x246, 0x249, 0x24e, 0x1F6, 0x1F8, 0x1FF, 0x209, 0x20b, 0x20d, 0x20f, 0x211, 0x214, /* BlueField2 */
                                        0x212,                                                                                                          /* Connect-X6DX */
                                        0x216,                                                                                                          /* Connect-X6LX */
                                        0x218,                                                                                                          /* Connect-X7 */

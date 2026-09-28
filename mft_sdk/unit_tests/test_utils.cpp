@@ -201,6 +201,12 @@ const EnumName<OperationalInfoAutoNegotiation> AUTO_NEGOTIATION_NAMES[] = {
   {OPERATIONAL_INFO_AUTO_NEGOTIATION_FORCE, AUTO_NEGOTIATION_FORCE},
 };
 
+const EnumName<TroubleShootingInfoGroupOpcode> GROUP_OPCODE_NAMES[] = {
+  {TROUBLESHOOTING_INFO_GROUP_OPCODE_PHY_FW, GROUP_OPCODE_STR_PHY_FW},
+  {TROUBLESHOOTING_INFO_GROUP_OPCODE_MNG_FW, GROUP_OPCODE_STR_MNG_FW},
+  {TROUBLESHOOTING_INFO_GROUP_OPCODE_CORE_DRIVER, GROUP_OPCODE_STR_CORE_DRIVER},
+};
+
 template<typename EnumType, size_t N>
 std::string lookupEnum(const EnumName<EnumType> (&table)[N], EnumType value)
 {
@@ -252,6 +258,14 @@ static const FieldDescriptor ddmFields[NUM_DDM_FIELDS] = {
   {TELEMETRY_CABLE_DDM_INFO_VOLTAGE, DDM_FIELD_VOLTAGE, offsetof(MstCableDDMInfo, voltage), 7},
 };
 
+// Troubleshooting info fields — order matches mlxlink's "Troubleshooting Info" page
+static const FieldDescriptor troubInfoFields[NUM_TROUB_INFO_FIELDS] = {
+  {TELEMETRY_TROUBLESHOOTING_INFO_STATUS_OPCODE, FIELD_STATUS_OPCODE, offsetof(MstTroubleShootingInfo, statusOpcode), 3},
+  {TELEMETRY_TROUBLESHOOTING_INFO_GROUP_OPCODE, FIELD_GROUP_OPCODE, offsetof(MstTroubleShootingInfo, groupOpcode), 12},
+  {TELEMETRY_TROUBLESHOOTING_INFO_RECOMMENDATION, FIELD_RECOMMENDATION,
+   offsetof(MstTroubleShootingInfo, recommendation), 11},
+};
+
 extern "C"
 {
     const FieldDescriptor* getOpInfoFields(void)
@@ -261,6 +275,10 @@ extern "C"
     const FieldDescriptor* getCounterFields(void)
     {
         return counterFields;
+    }
+    const FieldDescriptor* getTroubInfoFields(void)
+    {
+        return troubInfoFields;
     }
     const FieldDescriptor* getDDMFields(void)
     {
@@ -348,6 +366,15 @@ extern "C"
                              info->rawPhysicalBERPerLane[i].exponent);
                     g_stringBuffer += buf;
                 }
+                return g_stringBuffer.c_str();
+            }
+            case 11: /* NUL-terminated char array */
+                g_stringBuffer = base + field->offset;
+                return g_stringBuffer.c_str();
+            case 12: /* troubleshooting group opcode */
+            {
+                int v = *reinterpret_cast<const int*>(base + field->offset);
+                g_stringBuffer = lookupEnum(GROUP_OPCODE_NAMES, static_cast<TroubleShootingInfoGroupOpcode>(v));
                 return g_stringBuffer.c_str();
             }
             default:

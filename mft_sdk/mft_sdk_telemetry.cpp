@@ -1236,6 +1236,76 @@ MstStatus MftSdk::extractModuleInfoFromJson(MstModuleInfo* moduleInfo)
     return MST_SUCCESS;
 }
 
+Json::Value MftSdk::getTroubleShootingInfoJsonSection()
+{
+    Json::Value jsonRoot;
+    _mstMlxLinkSdkInstance->_troubInfoCmd.toJsonFormat(jsonRoot);
+    return getJsonSection(FIELD_TROUBLESHOOTING_INFO, jsonRoot);
+}
+
+MstStatus MftSdk::extractTroubleShootingInfoFromJson(MstTroubleShootingInfo* troubleShootingInfo)
+{
+    try
+    {
+        Json::Value troubleShootingInfoJson = getTroubleShootingInfoJsonSection();
+
+        extractAndSetNumericField(troubleShootingInfoJson,
+                                  FIELD_STATUS_OPCODE,
+                                  troubleShootingInfo->statusOpcode,
+                                  troubleShootingInfo->header,
+                                  TELEMETRY_TROUBLESHOOTING_INFO_STATUS_OPCODE,
+                                  parseUint32FromString);
+
+        extractAndMapField(troubleShootingInfoJson,
+                           FIELD_GROUP_OPCODE,
+                           _mstMlxLinkSdkInstance->_mlxlinkMaps->_groupOpcodeSdk,
+                           troubleShootingInfo->groupOpcode,
+                           troubleShootingInfo->header,
+                           TELEMETRY_TROUBLESHOOTING_INFO_GROUP_OPCODE);
+
+        extractAndSetStringField(troubleShootingInfoJson,
+                                 FIELD_RECOMMENDATION,
+                                 troubleShootingInfo->recommendation,
+                                 TROUBLESHOOTING_INFO_RECOMMENDATION_MAX_LENGTH,
+                                 troubleShootingInfo->header,
+                                 TELEMETRY_TROUBLESHOOTING_INFO_RECOMMENDATION);
+    }
+    catch (const std::exception& e)
+    {
+        std::string errorMessage = "Failed to retrieve telemetry troubleshooting info: " + std::string(e.what());
+        setLastError(MST_ERROR_FAILED_TO_GET_TELEMETRY, errorMessage);
+        return _lastError.status;
+    }
+    return _lastError.status;
+}
+
+MstStatus MftSdk::getTroubleShootingInfo(MstTroubleShootingInfo* troubleShootingInfo,
+                                         const MstTelemetryContext& context)
+{
+    if (!troubleShootingInfo || troubleShootingInfo->header.size < sizeof(mstQueryHeader))
+    {
+        return MST_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (initMlxLinkSdk(MlxLinkInitMode::OPERATIONAL_INFO, TelemetryContextView(context).getPort()) != MST_SUCCESS)
+    {
+        return _lastError.status;
+    }
+
+    MST_QUERY_CLEAR(troubleShootingInfo);
+
+    try
+    {
+        _mstMlxLinkSdkInstance->troubInfoPage();
+        extractTroubleShootingInfoFromJson(troubleShootingInfo);
+    }
+    catch (const std::exception& e)
+    {
+        setLastError(MST_ERROR_FAILED_TO_GET_TELEMETRY, e.what());
+    }
+    return _lastError.status;
+}
+
 MstStatus MftSdk::getModuleInfo(MstModuleInfo* moduleInfo, const MstTelemetryContext& context)
 {
     if (!moduleInfo || moduleInfo->header.size < sizeof(mstQueryHeader))
@@ -1319,6 +1389,19 @@ extern "C"
 
         MftSdk* instance = reinterpret_cast<MftSdk*>(mstDevice);
         return instance->getModuleInfo(moduleInfo, resolveTelemetryContext(context));
+    }
+
+    MstStatus mstGetTroubleShootingInfo(MstDevice mstDevice,
+                                        const MstTelemetryContext* context,
+                                        MstTroubleShootingInfo* troubleShootingInfo)
+    {
+        if (!mstDevice || validateTelemetryContext(context) != MST_SUCCESS)
+        {
+            return MST_ERROR_INVALID_ARGUMENT;
+        }
+
+        MftSdk* instance = reinterpret_cast<MftSdk*>(mstDevice);
+        return instance->getTroubleShootingInfo(troubleShootingInfo, resolveTelemetryContext(context));
     }
 
 } // extern "C"

@@ -101,7 +101,7 @@ public:
         {
             return new ConnectX6LXFwOperationsSignatureManager();
         }
-        else if (deviceId == DeviceSpectrum || deviceId == DeviceSpectrum2 || deviceId == DeviceSpectrum3 || deviceId == DeviceQuantum)
+        else if (deviceId == DeviceSpectrum || deviceId == DeviceSpectrum2 || deviceId == DeviceSpectrum3)
         {
             return new RavenSwitchSignatureManager();
         }
@@ -169,7 +169,7 @@ public:
         {
             return new GearBoxSignatureManager();
         }
-        else if (chip == CT_QUANTUM || chip == CT_SPECTRUM || chip == CT_SPECTRUM2 || chip == CT_SPECTRUM3)
+        else if (chip == CT_SPECTRUM || chip == CT_SPECTRUM2 || chip == CT_SPECTRUM3)
         {
             return new RavenSwitchSignatureManager();
         }

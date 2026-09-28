@@ -4484,23 +4484,14 @@ bool QuerySubCommand::displayFs3Uids(const fw_info_t& fwInfo, bool isStripedImag
     else
     {
         printf("Description:           UID                GuidsNumber  Step\n");
-        string firstGuid = (fwInfo.fw_info.chip_type != CT_SWITCH_IB) ? "GUID1" : "GUID";
-        string firstMac = (fwInfo.fw_info.chip_type != CT_SWITCH_IB) ? "MAC1" : "MAC";
-
         printFs3OrNewerUids(fwInfo.fs3_info.fs3_uids_info.cib_uids.guids[0],
-                            fwInfo.fs3_info.orig_fs3_uids_info.cib_uids.guids[0], firstGuid, true);
-        if (fwInfo.fw_info.chip_type != CT_SWITCH_IB)
-        {
-            printFs3OrNewerUids(fwInfo.fs3_info.fs3_uids_info.cib_uids.guids[1],
-                                fwInfo.fs3_info.orig_fs3_uids_info.cib_uids.guids[1], "GUID2", true);
-        }
+                            fwInfo.fs3_info.orig_fs3_uids_info.cib_uids.guids[0], "GUID1", true);
+        printFs3OrNewerUids(fwInfo.fs3_info.fs3_uids_info.cib_uids.guids[1],
+                            fwInfo.fs3_info.orig_fs3_uids_info.cib_uids.guids[1], "GUID2", true);
         printFs3OrNewerUids(fwInfo.fs3_info.fs3_uids_info.cib_uids.macs[0],
-                            fwInfo.fs3_info.orig_fs3_uids_info.cib_uids.macs[0], firstMac, true);
-        if (fwInfo.fw_info.chip_type != CT_SWITCH_IB)
-        {
-            printFs3OrNewerUids(fwInfo.fs3_info.fs3_uids_info.cib_uids.macs[1],
-                                fwInfo.fs3_info.orig_fs3_uids_info.cib_uids.macs[1], "MAC2", true);
-        }
+                            fwInfo.fs3_info.orig_fs3_uids_info.cib_uids.macs[0], "MAC1", true);
+        printFs3OrNewerUids(fwInfo.fs3_info.fs3_uids_info.cib_uids.macs[1],
+                            fwInfo.fs3_info.orig_fs3_uids_info.cib_uids.macs[1], "MAC2", true);
     }
     return true;
 }
@@ -6271,7 +6262,7 @@ FlintStatus SgSubCommand::sgFs3()
     }
 
     // TODO: create method that checks the flags for FS3/FS2
-    if (_info.fw_info.chip_type == CT_CONNECT_IB || _info.fw_info.chip_type == CT_SWITCH_IB)
+    if (_info.fw_info.chip_type == CT_CONNECT_IB)
     {
         if (!_flintParams.uid_specified)
         {
@@ -6446,7 +6437,7 @@ FlintStatus SmgSubCommand::executeCommand()
         return FLINT_FAILED;
     }
 
-    if (_info.fw_info.chip_type == CT_CONNECT_IB || _info.fw_info.chip_type == CT_SWITCH_IB)
+    if (_info.fw_info.chip_type == CT_CONNECT_IB)
     {
         if (!_flintParams.uid_specified)
         {

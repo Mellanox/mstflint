@@ -40,6 +40,7 @@
 #include <mft_sdk/mft_sdk_types.h>
 
 #define MODULE_INFO_MAX_LENGTH 256
+#define TROUBLESHOOTING_INFO_RECOMMENDATION_MAX_LENGTH 256
 #define MAX_NUM_OF_LANES 16
 #define MAX_NUM_OF_BINS 32
 #define MAX_NUM_OF_CHANNELS 8
@@ -170,6 +171,11 @@ typedef struct MstTelemetryContext_t
 #define TELEMETRY_MODULE_INFO_RX_LOS_PER_LANE 51
 #define TELEMETRY_MODULE_INFO_RX_CDR_LOL_PER_LANE 52
 #define TELEMETRY_MODULE_INFO_TX_ADAPTIVE_EQ_FAULT_PER_LANE 53
+
+// Troubleshooting Info capability bits:
+#define TELEMETRY_TROUBLESHOOTING_INFO_STATUS_OPCODE 0  // Status opcode.
+#define TELEMETRY_TROUBLESHOOTING_INFO_GROUP_OPCODE 1   // Group the status opcode belongs to.
+#define TELEMETRY_TROUBLESHOOTING_INFO_RECOMMENDATION 2 // Recommendation text.
 
 /**
  * @brief Numeric value represented in scientific notation.
@@ -489,6 +495,28 @@ typedef struct MstTelemetryOperationalInfo_t
     OperationalInfoLoopbackMode loopbackMode;       /**< Loopback mode. */
     OperationalInfoAutoNegotiation autoNegotiation; /**< Auto-negotiation mode. */
 } MstTelemetryOperationalInfo;
+
+/**
+ * @brief Component group a troubleshooting status opcode originates from.
+ */
+typedef enum troubleShootingInfoGroupOpcode_t
+{
+    TROUBLESHOOTING_INFO_GROUP_OPCODE_PHY_FW = 0,      // "PHY FW"
+    TROUBLESHOOTING_INFO_GROUP_OPCODE_MNG_FW = 1,      // "MNG FW"
+    TROUBLESHOOTING_INFO_GROUP_OPCODE_CORE_DRIVER = 2, // "CORE/DRIVER"
+} TroubleShootingInfoGroupOpcode;
+
+/**
+ * @brief Link troubleshooting telemetry.
+ */
+typedef struct MstTroubleShootingInfo_t
+{
+    mstQueryHeader header;                      /**< Query response header. */
+    uint32_t statusOpcode;                      /**< Link status opcode reported by the device. */
+    TroubleShootingInfoGroupOpcode groupOpcode; /**< Group the status opcode belongs to. */
+    /** Recommendation text for the status opcode. */
+    char recommendation[TROUBLESHOOTING_INFO_RECOMMENDATION_MAX_LENGTH];
+} MstTroubleShootingInfo;
 
 /**
  * @brief Single FEC histogram bin.

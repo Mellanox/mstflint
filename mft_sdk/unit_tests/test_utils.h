@@ -56,6 +56,7 @@ extern "C"
      *   1 = uint16_t              2 = double "%.01f"      3 = uint32_t
      *   4 = ScientificNotation    5 = per-lane errors     6 = temperature "%dC"
      *   7 = voltage "%.4fV"       9 = uint8_t             10 = per-lane ScientificNotation
+     *  11 = NUL-terminated char array                      12 = troubleshooting group-opcode enum
      */
     typedef struct
     {
@@ -68,10 +69,12 @@ extern "C"
 #define NUM_OP_INFO_FIELDS 7
 #define NUM_COUNTER_FIELDS 10
 #define NUM_DDM_FIELDS 2
+#define NUM_TROUB_INFO_FIELDS 3
 
     const FieldDescriptor* getOpInfoFields(void);
     const FieldDescriptor* getCounterFields(void);
     const FieldDescriptor* getDDMFields(void);
+    const FieldDescriptor* getTroubInfoFields(void);
 
     /**
      * Convert a struct field to its display string (mlxlink-compatible).

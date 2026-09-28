@@ -41,7 +41,8 @@ AM_CPPFLAGS = \
 
 noinst_LTLIBRARIES = libresource_dump_sdk.la
 
-libresource_dump_sdk_la_SOURCES = resource_dump_sdk.h resource_dump_sdk.cpp
+libresource_dump_sdk_la_SOURCES = resource_dump_sdk.h resource_dump_sdk.cpp \
+    resource_dump_api.h resource_dump_api.cpp
 libresource_dump_sdk_la_CFLAGS = $(AM_CFLAGS) $(COMPILER_FPIC)
 libresource_dump_sdk_la_CXXFLAGS = $(AM_CXXFLAGS) $(COMPILER_FPIC)
 
@@ -88,6 +89,7 @@ resource_dump_sdk_so_DEPS = \
 # if !WIN_BUILD
 libresource_dump_sdk.so: libresource_dump_sdk.la
 	$(CC) -Wall -pthread -shared ${CFLAGS} ${LDFLAGS} $(COMPILER_FPIC) libresource_dump_sdk_la-resource_dump_sdk.o \
+	libresource_dump_sdk_la-resource_dump_api.o \
 	-o libresource_dump_sdk.so ${AM_LDFLAGS} $(resource_dump_sdk_so_DEPS)
 # else
 # libresource_dump_sdk.dll: libresource_dump_sdk.la
