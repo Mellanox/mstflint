@@ -608,7 +608,6 @@ bool device_supports_sem_lock_verify(unsigned int hw_dev_id)
         case DeviceConnectX3_HwId:
         case DeviceConnectIB_HwId:
         case DeviceConnectX3Pro_HwId:
-        case DeviceSwitchIB_HwId:
         case DeviceSpectrum_HwId:
         case DeviceConnectX4_HwId:
         case DeviceConnectX4LX_HwId:
@@ -620,8 +619,6 @@ bool device_supports_sem_lock_verify(unsigned int hw_dev_id)
         case DeviceBlueField_HwId:
         case DeviceBlueField2_HwId:
         case DeviceBlueField3_HwId:
-        case DeviceSwitchIB2_HwId:
-        case DeviceQuantum_HwId:
         case DeviceQuantum2_HwId:
         case DeviceQuantum3_HwId:
         case DeviceNVLink6_Switch_HwId:
