@@ -111,15 +111,6 @@ static struct device_info g_devs_info[] = {{
                                              DM_HCA              /* dev_type */
                                            },
                                            {
-                                             DeviceSwitchIB, /* dm_id */
-                                             0x247,          /* hw_dev_id */
-                                             -1,             /* hw_rev_id */
-                                             52000,          /* sw_dev_id */
-                                             "SwitchIB",     /* name */
-                                             36,             /* port_num */
-                                             DM_SWITCH       /* dev_type */
-                                           },
-                                           {
                                              DeviceSpectrum, /* dm_id */
                                              0x249,          /* hw_dev_id */
                                              -1,             /* hw_rev_id */
@@ -264,15 +255,6 @@ static struct device_info g_devs_info[] = {{
                                              DM_HCA            // dev_type
                                            },
                                            {
-                                             DeviceSwitchIB2, /* dm_id */
-                                             0x24b,           /* hw_dev_id */
-                                             -1,              /* hw_rev_id */
-                                             53000,           /* sw_dev_id */
-                                             "SwitchIB2",     /* name */
-                                             36,              /* port_num */
-                                             DM_SWITCH        /* dev_type */
-                                           },
-                                           {
                                              DeviceCableQSFP, /* dm_id */
                                              0x0d,            /* hw_dev_id */
                                              0,               /* hw_rev_id */
@@ -352,15 +334,6 @@ static struct device_info g_devs_info[] = {{
                                              "DummyDevice", /* name */
                                              2,             /* port_num */
                                              DM_HCA         /* dev_type */
-                                           },
-                                           {
-                                             DeviceQuantum, /* dm_id */
-                                             0x24d,         /* hw_dev_id */
-                                             -1,            /* hw_rev_id */
-                                             54000,         /* sw_dev_id */
-                                             "Quantum",     /* name */
-                                             80,            /* port_num */
-                                             DM_SWITCH      /* dev_type */
                                            },
                                            {
                                              DeviceNVLink6_Switch,      // dm_id
@@ -669,25 +642,15 @@ static int dm_get_device_id_inner(mfile* mf, dm_dev_id_t* ptr_dm_dev_id, u_int32
         /* mgir.HWInfo.DEVID, mgir.HWInfo.hw_dev_id); */
         if (rc)
         {
-            dword = get_entry(DeviceSwitchIB)->hw_dev_id;
-            *ptr_hw_rev = 0;
-            *ptr_hw_dev_id = get_entry(DeviceSwitchIB)->hw_dev_id;
+            return GET_DEV_ID_ERROR;
         }
-        else
+        dword = mgir.hw_info.hw_dev_id;
+        if (dword == 0)
         {
-            dword = mgir.hw_info.hw_dev_id;
-            if (dword == 0)
-            {
-                dword = get_entry(DeviceSwitchIB)->hw_dev_id;
-                *ptr_hw_dev_id = get_entry(DeviceSwitchIB)->hw_dev_id;
-                *ptr_hw_rev = mgir.hw_info.device_hw_revision & 0xf;
-            }
-            else
-            {
-                *ptr_hw_dev_id = dword;
-                *ptr_hw_rev = 0; /* WA: MGIR should have also hw_rev_id and then we can use it. */
-            }
+            return GET_DEV_ID_ERROR;
         }
+        *ptr_hw_dev_id = dword;
+        *ptr_hw_rev = 0; /* WA: MGIR should have also hw_rev_id and then we can use it. */
     }
     else
     {
@@ -935,11 +898,6 @@ int dm_dev_is_switch(dm_dev_id_t type)
     return get_entry(type)->dev_type == DM_SWITCH;
 }
 
-int dm_dev_is_200g_speed_supported_switch(dm_dev_id_t type)
-{
-    return (dm_dev_is_switch(type) && (get_entry(type)->hw_dev_id >= get_entry(DeviceQuantum)->hw_dev_id));
-}
-
 int dm_dev_is_bridge(dm_dev_id_t type)
 {
     return get_entry(type)->dev_type == DM_BRIDGE;
@@ -1098,14 +1056,14 @@ int dm_is_new_gen_switch(dm_dev_id_t type)
 
 int dm_dev_is_raven_family_switch(dm_dev_id_t type)
 {
-    return (dm_dev_is_switch(type) && (type == DeviceQuantum || type == DeviceQuantum2 || type == DeviceQuantum3 || type == DeviceNVLink6_Switch || type == DeviceSpectrum2 ||
+    return (dm_dev_is_switch(type) && (type == DeviceQuantum2 || type == DeviceQuantum3 || type == DeviceNVLink6_Switch || type == DeviceSpectrum2 ||
                                        type == DeviceSpectrum3 || type == DeviceSpectrum4 || type == DeviceSpectrum5 || type == DeviceSpectrum6));
 }
 
 int dm_dev_is_ib_switch(dm_dev_id_t type)
 {
     return (dm_dev_is_switch(type) &&
-            (type == DeviceQuantum || type == DeviceQuantum2 || type == DeviceQuantum3 || type == DeviceNVLink6_Switch || type == DeviceSwitchIB || type == DeviceSwitchIB2));
+            (type == DeviceQuantum2 || type == DeviceQuantum3 || type == DeviceNVLink6_Switch));
 }
 
 int dm_dev_is_eth_switch(dm_dev_id_t type)
@@ -1115,13 +1073,13 @@ int dm_dev_is_eth_switch(dm_dev_id_t type)
 
 int dm_dev_is_fs3(dm_dev_id_t type)
 {
-    return type == DeviceConnectIB || type == DeviceSwitchIB || type == DeviceConnectX4 || type == DeviceConnectX4LX || type == DeviceSpectrum || type == DeviceSwitchIB2;
+    return type == DeviceConnectIB || type == DeviceConnectX4 || type == DeviceConnectX4LX || type == DeviceSpectrum;
 }
 
 int dm_dev_is_fs4(dm_dev_id_t type)
 {
     return type == DeviceConnectX5 || type == DeviceConnectX6 || type == DeviceConnectX6DX || type == DeviceConnectX6LX || type == DeviceConnectX7 || type == DeviceBlueField ||
-           type == DeviceBlueField2 || type == DeviceBlueField3 || type == DeviceQuantum || type == DeviceQuantum2 || type == DeviceSpectrum5 || type == DeviceSpectrum4 || type == DeviceSpectrum2 ||
+           type == DeviceBlueField2 || type == DeviceBlueField3 || type == DeviceQuantum2 || type == DeviceSpectrum5 || type == DeviceSpectrum4 || type == DeviceSpectrum2 ||
            type == DeviceSpectrum3 || type == DeviceGearBox || type == DeviceGearBoxManager;
 }
 

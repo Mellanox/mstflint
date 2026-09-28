@@ -85,9 +85,7 @@ extern "C"
         DeviceConnectX3,
         DeviceConnectIB,
         DeviceConnectX3Pro,
-        DeviceSwitchIB,
         DeviceSpectrum,
-        DeviceQuantum,
         DeviceConnectX4,
         DeviceConnectX4LX,
         DeviceConnectX5,
@@ -96,7 +94,6 @@ extern "C"
         DeviceBlueField2,
         DeviceBlueField3,
         DeviceBlueField4,
-        DeviceSwitchIB2,
         DeviceCable,
         DeviceCableQSFP,
         DeviceCableQSFPaging,
@@ -142,7 +139,6 @@ extern "C"
         DeviceConnectX3_HwId = 0x1f5,
         DeviceConnectIB_HwId = 0x1ff,
         DeviceConnectX3Pro_HwId = 0x1f7,
-        DeviceSwitchIB_HwId = 0x247,
         DeviceSpectrum_HwId = 0x249,
         DeviceConnectX4_HwId = 0x209,
         DeviceConnectX4LX_HwId = 0x20b,
@@ -159,7 +155,6 @@ extern "C"
         DeviceBlueField2_HwId = 0x214,
         DeviceBlueField3_HwId = 0x21c,
         DeviceBlueField4_HwId = 0x224,
-        DeviceSwitchIB2_HwId = 0x24b,
         DeviceCableQSFP_HwId = 0x0d,
         DeviceCableQSFPaging_HwId = 0x11,
         DeviceCableCMIS_HwId = 0x19,
@@ -168,7 +163,6 @@ extern "C"
         DeviceCableSFP51_HwId = 0x03,
         DeviceCableSFP51Paging_HwId = 0x03,
         DeviceSpectrum2_HwId = 0x24e,
-        DeviceQuantum_HwId = 0x24d,
         DeviceQuantum2_HwId = 0x257,
         DeviceQuantum3_HwId = 0x25b,
         DeviceNVLink6_Switch_HwId = 0x278,
@@ -268,11 +262,6 @@ extern "C"
      * A predicate returning if the device is a switch
      */
     int dm_dev_is_switch(dm_dev_id_t type);
-
-    /**
-     * A predicate returning if the switch supports 200G speed and above
-     */
-    int dm_dev_is_200g_speed_supported_switch(dm_dev_id_t type);
 
     /**
      * A predicate returning if the device is a bridge
