@@ -1438,13 +1438,13 @@ string getGroupStr(u_int32_t advancedOpcode)
     }
     else if (advancedOpcode < 1023)
     {
-        return "PHY FW";
+        return GROUP_OPCODE_STR_PHY_FW;
     }
     else if (advancedOpcode < 2048)
     {
-        return "MNG FW";
+        return GROUP_OPCODE_STR_MNG_FW;
     }
-    return "CORE/DRIVER";
+    return GROUP_OPCODE_STR_CORE_DRIVER;
 }
 
 string toUpperCase(string& str)

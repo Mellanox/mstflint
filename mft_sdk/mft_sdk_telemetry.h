@@ -95,6 +95,21 @@ extern "C"
      */
     MstStatus mstGetModuleInfo(MstDevice mstDevice, const MstTelemetryContext* context, MstModuleInfo* moduleInfo);
 
+    /**
+     * @brief Gets the troubleshooting info of the device. Equivalent to Mlxlink's general query "Troubleshooting Info"
+     * page.
+     * @param mstDevice The MstDevice handle.
+     * @param context Context options, or NULL for the device defaults. Initialize with MST_TELEMETRY_CONTEXT_INIT.
+     * @param troubleShootingInfo The troubleshooting info struct to fill. Should be initialized with MST_QUERY_INIT.
+     * A field the device reports as not applicable is left untouched and its bit stays clear in the header mask.
+     * @return The status of the operation. MST_ERROR_INVALID_ARGUMENT if mstDevice or troubleShootingInfo is NULL, or
+     * if either struct carries an invalid size; MST_ERROR_FAILED_TO_GET_TELEMETRY if the device could not be queried -
+     * call mstGetLastErrorString for the reason.
+     */
+    MstStatus mstGetTroubleShootingInfo(MstDevice mstDevice,
+                                        const MstTelemetryContext* context,
+                                        MstTroubleShootingInfo* troubleShootingInfo);
+
 #ifdef __cplusplus
 }
 #endif

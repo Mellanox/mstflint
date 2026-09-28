@@ -3367,7 +3367,7 @@ void MlxlinkCommander::troubInfoPage()
 
         u_int32_t monitorOpcode = getFieldValue("monitor_opcode");
         string color = status2Color(monitorOpcode);
-        setPrintTitle(_troubInfoCmd, "Troubleshooting Info", PDDR_TRUOBLESHOOTING_INFO_LAST, !_prbsTestMode);
+        setPrintTitle(_troubInfoCmd, FIELD_TROUBLESHOOTING_INFO, PDDR_TRUOBLESHOOTING_INFO_LAST, !_prbsTestMode);
 
         if (monitorOpcode == CABLE_IS_UNPLUGGED)
         {

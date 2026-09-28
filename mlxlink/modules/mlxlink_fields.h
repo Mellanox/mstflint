@@ -86,10 +86,14 @@ static const char* const FIELD_ENABLED_LINK_SPEED = "Enabled Link Speed";
 static const char* const FIELD_SUPPORTED_CABLE_SPEED = "Supported Cable Speed";
 
 // Troubleshooting Info field names
+static const char* const FIELD_TROUBLESHOOTING_INFO = "Troubleshooting Info";
 static const char* const FIELD_STATUS_OPCODE = "Status Opcode";
 static const char* const FIELD_GROUP_OPCODE = "Group Opcode";
 static const char* const FIELD_RECOMMENDATION = "Recommendation";
 static const char* const FIELD_TIME_TO_LINK_UP = "Time to Link Up";
+static const char* const GROUP_OPCODE_STR_PHY_FW = "PHY FW";
+static const char* const GROUP_OPCODE_STR_MNG_FW = "MNG FW";
+static const char* const GROUP_OPCODE_STR_CORE_DRIVER = "CORE/DRIVER";
 
 // Tool Information field names
 static const char* const FIELD_FIRMWARE_VERSION = "Firmware Version";
