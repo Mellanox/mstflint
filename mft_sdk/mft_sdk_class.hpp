@@ -51,6 +51,15 @@
 #include "mtcr.h"
 #include "hca_capabilities/hca_capabilities.h"
 
+namespace mft
+{
+namespace resource_dump
+{
+struct device_attributes;
+class ResourceDumpException;
+} // namespace resource_dump
+} // namespace mft
+
 enum class MlxLinkInitMode
 {
     NONE,
@@ -126,6 +135,19 @@ public:
 
     // temperature SDK functions
     MstStatus getDeviceTemperature(int32_t* temperature);
+    // resource dump SDK functions
+    MstStatus getResourceMenu(MstResourceDumpEndianness endianness, MstResourceMenu* menu);
+    MstStatus dumpResource(const MstResourceDumpRequest* request,
+                           MstResourceDumpEndianness endianness,
+                           MstResourceDumpData* dumpData);
+    MstStatus dumpResourceToBuffer(const MstResourceDumpRequest* request,
+                                   MstResourceDumpEndianness endianness,
+                                   unsigned char* buffer,
+                                   size_t bufferSize,
+                                   size_t* dumpSize);
+    MstStatus dumpResourceToFile(const MstResourceDumpRequest* request,
+                                 MstResourceDumpEndianness endianness,
+                                 const char* filename);
 
 private:
     void setInitError(MstStatus status, const std::string& errorMessage);
@@ -216,6 +238,14 @@ private:
 
     // hca capabilities SDK private functions
     MstStatus initHcaCapabilities();
+
+    // resource dump SDK private functions
+    mft::resource_dump::device_attributes buildResourceDumpDeviceAttributes(uint16_t vhca);
+    MstStatus executeResourceDump(const MstResourceDumpRequest* request,
+                                  MstResourceDumpEndianness endianness,
+                                  std::string& dumpOut);
+    MstStatus translateResourceDumpReasonToMstStatus(uint16_t reason);
+    MstStatus setErrorFromResourceDumpException(const mft::resource_dump::ResourceDumpException& exception);
 
     std::string _deviceIdentifier;
     mfile* _mf;

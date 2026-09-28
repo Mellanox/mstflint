@@ -37,7 +37,13 @@ AM_CPPFLAGS = \
     -I$(top_srcdir)/mft_core/mft_core_utils \
     -I$(top_srcdir)/mft_utils \
     -I$(top_srcdir)/mlxlink \
-    -I$(top_srcdir)/mlxreg
+    -I$(top_srcdir)/mlxreg \
+    -I$(top_srcdir)/resourcetools/resourcedump_lib/src/commands \
+    -I$(top_srcdir)/resourcetools/resourcedump_lib/src/common \
+    -I$(top_srcdir)/resourcetools/resourcedump_lib/src/fetchers \
+    -I$(top_srcdir)/resourcetools/resourcedump_lib/src/filters \
+    -I$(top_srcdir)/resourcetools/resourcedump_lib/src/sdk \
+    -I$(top_srcdir)/resourcetools/resourcedump_lib/src/segments
 
 AM_CPPFLAGS += $(JSON_CFLAGS)
 
@@ -71,6 +77,7 @@ libmstflint_sdk_la_SOURCES = \
     mft_sdk_i2c_access.cpp \
     mft_sdk_icmd.cpp \
     mft_sdk_reg_access.cpp \
+    mft_sdk_resource_dump.cpp \
     mft_sdk_temperature.cpp \
     mft_sdk_telemetry.cpp \
     mft_sdk.h \
@@ -83,6 +90,7 @@ libmstflint_sdk_la_SOURCES = \
     mft_sdk_icmd.h \
     mft_sdk_query.h \
     mft_sdk_reg_access.h \
+    mft_sdk_resource_dump.h \
     mft_sdk_telemetry.h \
     mft_sdk_temperature.h \
     mft_sdk_telemetry_types.h \
@@ -99,6 +107,11 @@ libmstflint_sdk_la_LIBADD = \
     $(top_builddir)/mft_utils/libmftutils.la \
     $(top_builddir)/small_utils/libmgettemp.la \
     $(MTCR_SDK_WHOLE_ARCHIVE) \
+    $(top_builddir)/resourcetools/resourcedump_lib/src/sdk/libresource_dump_sdk.la \
+    $(top_builddir)/resourcetools/resourcedump_lib/src/commands/libresource_dump_commands.la \
+    $(top_builddir)/resourcetools/resourcedump_lib/src/fetchers/libreg_access_resource_dump_fetcher.la \
+    $(top_builddir)/resourcetools/resourcedump_lib/src/filters/libresource_dump_filters.la \
+    $(top_builddir)/resourcetools/resourcedump_lib/src/common/libresource_dump_common.la \
     $(top_builddir)/adb_parser/libadb_parser.la \
     $(top_builddir)/cmdif/libcmdif.la \
     $(top_builddir)/dev_mgt/libdev_mgt.la \
@@ -133,6 +146,7 @@ sdkinclude_HEADERS = \
     mft_sdk_icmd.h \
     mft_sdk_query.h \
     mft_sdk_reg_access.h \
+    mft_sdk_resource_dump.h \
     mft_sdk_telemetry.h \
     mft_sdk_temperature.h \
     mft_sdk_telemetry_types.h \

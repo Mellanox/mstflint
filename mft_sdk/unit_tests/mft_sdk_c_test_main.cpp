@@ -69,6 +69,9 @@ extern "C"
     int metadata_test_main(int argc, char** argv);
     int register_access_test_main(int argc, char** argv);
     int register_list_test_main(int argc, char** argv);
+    int resource_menu_test_main(int argc, char** argv);
+    int resource_dump_test_main(int argc, char** argv);
+    int resource_dump_error_handling_test_main(int argc, char** argv);
 }
 
 struct CSuite
@@ -89,6 +92,9 @@ static const CSuite SUITES[] = {
     {"metadata", metadata_test_main},
     {"register_access", register_access_test_main},
     {"register_list", register_list_test_main},
+    {"resource_menu", resource_menu_test_main},
+    {"resource_dump", resource_dump_test_main},
+    {"resource_dump_error_handling", resource_dump_error_handling_test_main},
 };
 
 static void printUsage(const char* prog)

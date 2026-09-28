@@ -87,6 +87,11 @@ MFT_SDK_REG_TOOL = os.environ.get("MFT_SDK_REG_TOOL", "mlxreg_ext")
 # CLI instead of MFT's mlxlink_ext. Defaults keep the MFT flow untouched.
 MFT_SDK_LINK_TOOL = os.environ.get("MFT_SDK_LINK_TOOL", "mlxlink_ext")
 
+# CLI tool the resource dump compare (non --sdk-only) flow diffs the SDK against.
+# Override with MFT_SDK_RESOURCE_DUMP_TOOL (bare name or absolute path).
+MFT_SDK_RESOURCE_DUMP_TOOL = os.environ.get(
+    "MFT_SDK_RESOURCE_DUMP_TOOL", "resourcedump")
+
 
 def tool_label(tool):
     """Short display name of a reference CLI, for report headers.

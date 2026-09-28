@@ -35,7 +35,7 @@
 #include "resource_dump_types.h"
 #include "dump_command.h"
 #include "query_command.h"
-#include "strip_control_segments_filter.h"
+#include "resource_dump_api.h"
 
 #include <common/compatibility.h>
 
@@ -59,7 +59,6 @@ enum result_t
         query_command.execute();
 
         auto record_data_count = query_command.menu_records.size();
-        auto record_data_size = sizeof(mft::resource_dump::menu_record_data) * record_data_count;
 
         if (record_data_count > available_resources->num_of_resources)
         {
@@ -69,15 +68,8 @@ enum result_t
 
         available_resources->num_of_resources = record_data_count;
 
-        if (__BYTE_ORDER != __BIG_ENDIAN && endianess == endianess_t::RD_BIG_ENDIAN)
-        {
-            auto big_endian_record_data = query_command.get_big_endian_string();
-            memcpy(available_resources->resources, big_endian_record_data.c_str(), record_data_size);
-        }
-        else
-        {
-            memcpy(available_resources->resources, &(*query_command.menu_records), record_data_size);
-        }
+        auto record_data = mft::resource_dump::get_menu_data(query_command, endianess);
+        memcpy(available_resources->resources, record_data.c_str(), record_data.size());
     }
     catch (const mft::resource_dump::ResourceDumpException& rde)
     {
@@ -159,16 +151,8 @@ enum result_t dump_resource_to_buffer(device_attributes_t device_attrs,
               mft::resource_dump::ResourceDumpException::Reason::BUFFER_TOO_SMALL);
         }
 
-        if (__BYTE_ORDER != __BIG_ENDIAN && endianess == endianess_t::RD_BIG_ENDIAN)
-        {
-            auto big_endian_data = dump_command.get_big_endian_string();
-            memcpy(reinterpret_cast<char*>(buffer), big_endian_data.c_str(), parsed_size);
-        }
-        else
-        {
-            istream& parsed_stream = dump_command.get_native_stream();
-            parsed_stream.read(reinterpret_cast<char*>(buffer), parsed_size);
-        }
+        auto data = mft::resource_dump::get_dump_data(dump_command, false, endianess);
+        memcpy(reinterpret_cast<char*>(buffer), data.c_str(), data.size());
     }
     catch (const mft::resource_dump::ResourceDumpException& rde)
     {
@@ -200,21 +184,13 @@ enum result_t create_resource_dump(device_attributes_t device_attrs,
         auto dump_command = new mft::resource_dump::DumpCommand{device_attrs, segment_params, depth};
         dump_command->execute();
 
-        istream& parsed_stream = dump_command->get_native_stream();
         const size_t parsed_size = dump_command->get_dumped_size();
 
         dump_data->dump_obj = static_cast<void*>(dump_command);
         dump_data->data = new unsigned char[parsed_size];
 
-        if (__BYTE_ORDER != __BIG_ENDIAN && dump_data->endianess == endianess_t::RD_BIG_ENDIAN)
-        {
-            auto big_endian_data = dump_command->get_big_endian_string();
-            memcpy(dump_data->data, big_endian_data.c_str(), parsed_size);
-        }
-        else
-        {
-            parsed_stream.read(reinterpret_cast<char*>(dump_data->data), parsed_size);
-        }
+        auto data = mft::resource_dump::get_dump_data(*dump_command, false, dump_data->endianess);
+        memcpy(dump_data->data, data.c_str(), data.size());
 
         dump_data->size = parsed_size;
         return RD_OK;
@@ -257,20 +233,11 @@ enum result_t strip_control_segments(resource_dump_data_t* dump_data)
     try
     {
         auto dump_command = static_cast<mft::resource_dump::DumpCommand*>(dump_data->dump_obj);
-        mft::resource_dump::filters::StripControlSegmentsFilter filter{*dump_command};
-        auto filtered_view = filter.apply();
 
-        if (__BYTE_ORDER != __BIG_ENDIAN && dump_data->endianess == endianess_t::RD_BIG_ENDIAN)
-        {
-            auto big_endian_data = filter.get_big_endian_string();
-            memcpy(dump_data->data, big_endian_data.c_str(), big_endian_data.size() + 1);
-        }
-        else
-        {
-            filtered_view.filtered_stream.read(reinterpret_cast<char*>(dump_data->data), filtered_view.size);
-        }
+        auto data = mft::resource_dump::get_dump_data(*dump_command, true, dump_data->endianess);
+        memcpy(dump_data->data, data.c_str(), data.size());
 
-        dump_data->size = filtered_view.size;
+        dump_data->size = data.size();
     }
     catch (const mft::resource_dump::ResourceDumpException& rde)
     {
