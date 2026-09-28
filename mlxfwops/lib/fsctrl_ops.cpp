@@ -344,7 +344,7 @@ bool FsCtrlOperations::FsIntQuery()
     rc = isRegisterValidAccordingToMcamReg(mf, REG_ID_MPIR, &mpir_reg_supported);
     if (rc != ME_OK)
     {
-        return errmsg("error while reading MCAM reg. reported error code: %d", rc);
+        return errmsg("error while reading MCAM reg: %s", m_err2str((MError)rc));
     }
 
     bool mrsv_reg_supported = false;
@@ -364,7 +364,7 @@ bool FsCtrlOperations::FsIntQuery()
             rc = isRegisterValidAccordingToMcamReg(mf, REG_ID_MRSV, &mrsv_reg_supported);
             if (rc != ME_OK)
             {
-                return errmsg("error while reading MCAM reg. reported error code: %d", rc);
+                return errmsg("error while reading MCAM reg: %s", m_err2str((MError)rc));
             }
         }
     }
@@ -377,7 +377,7 @@ bool FsCtrlOperations::FsIntQuery()
         // MRSV reg is only supported for BF-3 so this is best effort that will only work on a BF-3 device
         if (rc != ME_OK)
         {
-            return errmsg("error while reading MRSV reg. reported error code: %d", rc);
+            return errmsg("error while reading MRSV reg: %s", m_err2str((MError)rc));
         }
         if (mrsv.v) // mrsv.v -> MRSV reg is valid
         {
@@ -1512,7 +1512,7 @@ bool FsCtrlOperations::ChangeSecureHostState(bool disable, u_int64_t key)
     int rc = reg_access_secure_host(getMfileObj(), REG_ACCESS_METHOD_SET, &mlock);
     if (rc)
     {
-        return errmsg("secure host operation failed. reported error code: %d", rc);
+        return errmsg("secure host operation failed: %s", m_err2str((MError)rc));
     }
     return true;
 }
@@ -1524,7 +1524,7 @@ bool FsCtrlOperations::FwSetAccessKey(hw_key_t userKey, ProgressCallBack)
     int rc = (int)reg_access_secure_host(getMfileObj(), REG_ACCESS_METHOD_GET, &mlock);
     if (rc)
     {
-        return errmsg("secure host operation failed. reported error code: %d", rc);
+        return errmsg("secure host operation failed: %s", m_err2str((MError)rc));
     }
     if (mlock.operation)
     {
@@ -1539,7 +1539,7 @@ bool FsCtrlOperations::FwSetAccessKey(hw_key_t userKey, ProgressCallBack)
     rc = reg_access_secure_host(getMfileObj(), REG_ACCESS_METHOD_SET, &mlock);
     if (rc)
     {
-        return errmsg("secure host operation failed. reported error code: %d", rc);
+        return errmsg("secure host operation failed: %s", m_err2str((MError)rc));
     }
     printf("-I- Secure Host was enabled successfully on the device.\n");
     return true;
