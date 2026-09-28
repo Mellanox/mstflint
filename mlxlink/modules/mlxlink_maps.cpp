@@ -858,6 +858,31 @@ void MlxlinkMaps::initLinkUpInfo()
       "finish saving data during PCNR flow)";
 }
 
+void MlxlinkMaps::initLinkStatusMapping()
+{
+    _linkHealth[LINK_HEALTH_NA] = "N/A - not supported or not enabled";
+    _linkHealth[LINK_HEALTH_ATTENTION] = "Attention";
+    _linkHealth[LINK_HEALTH_HEALTHY] = "Healthy";
+
+    _attentionTrigger[ATTENTION_TRIGGER_NA] = "N/A - no trigger active/supported or not enabled";
+    _attentionTrigger[ATTENTION_TRIGGER_PLR_TX_BW_LOSS] = "PLR_Tx_BW_Loss";
+    _attentionTrigger[ATTENTION_TRIGGER_RECOVERY_BW_LOSS] = "Recovery_BW_Loss";
+    _attentionTrigger[ATTENTION_TRIGGER_EFFECTIVE_BER] = "Effective_BER";
+    _attentionTrigger[ATTENTION_TRIGGER_SYMBOL_ERROR_COUNT] = "symbol_error_count";
+    _attentionTrigger[ATTENTION_TRIGGER_RAW_BER] = "Raw_BER";
+    _attentionTrigger[ATTENTION_TRIGGER_PLR_RX_BW_LOSS] = "PLR_Rx_BW_Loss";
+    _attentionTrigger[ATTENTION_TRIGGER_PORT_TOTAL_BW_LOSS] = "Port_total_BW_Loss";
+    _attentionTrigger[ATTENTION_TRIGGER_LINK_DOWN_COUNT] = "Link_down_count";
+    _attentionTrigger[ATTENTION_TRIGGER_SYMBOL_BER] = "Symbol_BER";
+
+    _linkHealthConfigChanged[LINK_HEALTH_CONFIG_CHANGED_NA] = "N/A - link health is not in Attention state";
+    _linkHealthConfigChanged[LINK_HEALTH_CONFIG_CHANGED_CURRENT_CONFIG] =
+      "Attention reflects a threshold crossing under the current link health metrics configuration";
+    _linkHealthConfigChanged[LINK_HEALTH_CONFIG_CHANGED_PREVIOUS_CONFIG] =
+      "Attention was triggered under a previous configuration; one or more associated metric parameters have since "
+      "been modified";
+}
+
 void MlxlinkMaps::initSltpStatusMapping()
 {
     _SltpEdrParams[SLTP_EDR_POLARITY] = PRM_FIELD{"polarity", "Pol", FIELD_ACCESS_RW, false, LINK_SPEED_ALL};
@@ -2141,6 +2166,7 @@ MlxlinkMaps::MlxlinkMaps()
     initPpbmcAndPepcMapping();
     initLinkDownInfoMapping();
     initLinkUpInfo();
+    initLinkStatusMapping();
     initSltpStatusMapping();
     initPSCDRateMaskMapping();
     initPSCDRoleMaskMapping();
@@ -2162,6 +2188,7 @@ MlxlinkMaps::MlxlinkMaps()
     initPprmRecoveryStatusMapping();
     initPmpeModuleStatusMapping();
     initElsMapping();
+    initNvlinkPhy6CauseListMapping();
 }
 
 void MlxlinkMaps::initElsMapping()
@@ -2197,6 +2224,59 @@ void MlxlinkMaps::initElsMapping()
     _pmlseOperStatusToStr[PMLSE_OPER_STATUS_FAILED_TIMEOUT] = "Failed - Timeout";
     _pmlseOperStatusToStr[PMLSE_OPER_STATUS_FAILED_MODULE_UNINITIALIZED] = "Failed - Module Uninitialized";
     _pmlseOperStatusToStr[PMLSE_OPER_STATUS_FAILED_LASER_TUNE_WAS_NOT_DONE] = "Failed - Laser Tune Was Not Done";
+}
+
+void MlxlinkMaps::initNvlinkPhy6CauseListMapping()
+{
+    _nvlinkPhy6CauseList1[CAUSE_DESKEW_FIFO_OVERRUN] = "cause_deskew_fifo_overrun";
+    _nvlinkPhy6CauseList1[CAUSE_RECOVERY_TH_EXPIRED] = "cause_recovery_th_expired";
+    _nvlinkPhy6CauseList1[CAUSE_REMINDER_DATA_OVERRUN] = "cause_reminder_data_overrun";
+    _nvlinkPhy6CauseList1[CAUSE_UNEXPECTED_END_SIZE] = "unexpected_end_size";
+    _nvlinkPhy6CauseList1[CAUSE_INVALID_RS_SH_ARRIVED] = "invalid_rs_sh_arrived";
+    _nvlinkPhy6CauseList1[CAUSE_TX_RS_8X_FIFO_OVERRUN] = "cause_tx_rs_8x_fifo_overrun";
+    _nvlinkPhy6CauseList1[CAUSE_ALIGN_LOST] = "cause_align_lost";
+    _nvlinkPhy6CauseList1[CAUSE_PLU_TX_PORTS_BUFFER_OVERRUN] = "cause_plu_tx_ports_buffer_overrun";
+    _nvlinkPhy6CauseList1[CAUSE_TS_AT_LINKUP] = "cause_ts_at_linkup";
+    _nvlinkPhy6CauseList1[CAUSE_ALIGN_ACQUIRED_TOGGLED] = "cause_align_acquired_toggled";
+    _nvlinkPhy6CauseList1[CAUSE_AS_DETECTED_NOT_ON_SLOT] = "cause_as_detected_not_on_slot";
+    _nvlinkPhy6CauseList1[CAUSE_FEC_CW_BAD_CNT_REACHED_MAX] = "cause_fec_cw_bad_cnt_reached_max";
+    _nvlinkPhy6CauseList1[CAUSE_FEC_DATA_ALL_ZEROS] = "cause_fec_data_all_zeros";
+    _nvlinkPhy6CauseList1[CAUSE_HEARTBEAT_ERR] = "cause_heartbeat_err";
+    _nvlinkPhy6CauseList1[CAUSE_LINK_FAIL] = "cause_link_fail";
+    _nvlinkPhy6CauseList1[CAUSE_LINK_FAIL_NOT_BY_CMD] = "cause_link_fail_not_by_cmd";
+    _nvlinkPhy6CauseList1[CAUSE_MPR_VIOLATION] = "cause_mpr_violation";
+    _nvlinkPhy6CauseList1[CAUSE_PLR_RX_BLOCK_FLUSHED_DUE_TO_CRC_ERROR] = "cause_plr_rx_block_flushed_due_to_crc_error";
+    _nvlinkPhy6CauseList1[CAUSE_PLR_RX_DECODING_ERROR] = "cause_plr_rx_decoding_error";
+    _nvlinkPhy6CauseList1[CAUSE_RECOVER_IDLE_62_RX_ERR] = "cause_recover_idle_62_rx_err";
+    _nvlinkPhy6CauseList1[CAUSE_RX_CMD_ABORT_LANE0] = "cause_rx_cmd_abort_lane0";
+    _nvlinkPhy6CauseList1[CAUSE_RX_CMD_ABORT_LANE1] = "cause_rx_cmd_abort_lane1";
+    _nvlinkPhy6CauseList1[CAUSE_RX_CMD_ABORT_LANE2] = "cause_rx_cmd_abort_lane2";
+    _nvlinkPhy6CauseList1[CAUSE_RX_CMD_ABORT_LANE3] = "cause_rx_cmd_abort_lane3";
+    _nvlinkPhy6CauseList1[CAUSE_RX_CMD_ARRIVED_WHEN_NOT_IDLE_LANE0] = "cause_rx_cmd_arrived_when_not_idle_lane0";
+    _nvlinkPhy6CauseList1[CAUSE_RX_CMD_ARRIVED_WHEN_NOT_IDLE_LANE1] = "cause_rx_cmd_arrived_when_not_idle_lane1";
+    _nvlinkPhy6CauseList1[CAUSE_RX_CMD_ARRIVED_WHEN_NOT_IDLE_LANE2] = "cause_rx_cmd_arrived_when_not_idle_lane2";
+    _nvlinkPhy6CauseList1[CAUSE_RX_CMD_ARRIVED_WHEN_NOT_IDLE_LANE3] = "cause_rx_cmd_arrived_when_not_idle_lane3";
+    _nvlinkPhy6CauseList1[CAUSE_TX_CMD_ABORT_LANE0] = "cause_tx_cmd_abort_lane0";
+    _nvlinkPhy6CauseList1[CAUSE_TX_CMD_ABORT_LANE1] = "cause_tx_cmd_abort_lane1";
+    _nvlinkPhy6CauseList1[CAUSE_TX_CMD_ABORT_LANE2] = "cause_tx_cmd_abort_lane2";
+    _nvlinkPhy6CauseList1[CAUSE_TX_CMD_ABORT_LANE3] = "cause_tx_cmd_abort_lane3";
+
+    _nvlinkPhy6CauseList2[CAUSE_TX_CMD_ARRIVED_WHEN_NOT_IDLE_LANE0] = "cause_tx_cmd_arrived_when_not_idle_lane0";
+    _nvlinkPhy6CauseList2[CAUSE_TX_CMD_ARRIVED_WHEN_NOT_IDLE_LANE1] = "cause_tx_cmd_arrived_when_not_idle_lane1";
+    _nvlinkPhy6CauseList2[CAUSE_TX_CMD_ARRIVED_WHEN_NOT_IDLE_LANE2] = "cause_tx_cmd_arrived_when_not_idle_lane2";
+    _nvlinkPhy6CauseList2[CAUSE_TX_CMD_ARRIVED_WHEN_NOT_IDLE_LANE3] = "cause_tx_cmd_arrived_when_not_idle_lane3";
+    _nvlinkPhy6CauseList2[CAUSE_UPHY_RECOVERY_RX_CMD_FAILED] = "cause_uphy_recovery_rx_cmd_failed";
+    _nvlinkPhy6CauseList2[CAUSE_END_AFTER_END] = "cause_end_after_end";
+    _nvlinkPhy6CauseList2[CAUSE_START_AFTER_START] = "cause_start_after_start";
+    _nvlinkPhy6CauseList2[CAUSE_SPLIT_TDM_VIOLATION] = "split_tdm_violation";
+    _nvlinkPhy6CauseList2[CAUSE_LLI_ERR] = "lli_err";
+    _nvlinkPhy6CauseList2[CAUSE_LP_ERR0] = "lp_err0";
+    _nvlinkPhy6CauseList2[CAUSE_LP_ERR1] = "lp_err1";
+    _nvlinkPhy6CauseList2[CAUSE_LP_ERR2] = "lp_err2";
+    _nvlinkPhy6CauseList2[CAUSE_LP_ERR3] = "lp_err3";
+    _nvlinkPhy6CauseList2[CAUSE_LP_ERR4] = "lp_err4";
+    _nvlinkPhy6CauseList2[CAUSE_PHY_ERROR_CAUSE] = "phy_error_cause";
+    _nvlinkPhy6CauseList2[CAUSE_VCRC_ERROR_CAUSE] = "vcrc_error_cause";
 }
 
 MlxlinkMaps::~MlxlinkMaps()
