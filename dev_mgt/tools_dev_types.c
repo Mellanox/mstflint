@@ -505,7 +505,7 @@ static struct device_info g_devs_info[] = {{
                                              10496,       /* sw_dev_id */
                                              "GB100",     /* name */
                                              128,         /* port_num NEED_CHECK */
-                                             DM_SWITCH    /* dev_type */
+                                             DM_GPU       /* dev_type */
                                            },
                                            {
                                              DeviceGR100, /* dm_id */
@@ -514,7 +514,7 @@ static struct device_info g_devs_info[] = {{
                                              12288,       /* sw_dev_id */
                                              "GR100",     /* name */
                                              128,         /* port_num NEED_CHECK */
-                                             DM_SWITCH    /* dev_type */
+                                             DM_GPU       /* dev_type */
                                            },
                                            {
                                              DeviceGearBox, /* dm_id */
@@ -1050,16 +1050,6 @@ int dm_is_connectib(dm_dev_id_t type)
     return (type == DeviceConnectIB);
 }
 
-int dm_is_gb100(dm_dev_id_t type)
-{
-    return (type == DeviceGB100);
-}
-
-int dm_is_gr100(dm_dev_id_t type)
-{
-    return (type == DeviceGR100);
-}
-
 int dm_is_qt3(dm_dev_id_t type)
 {
     return (type == DeviceQuantum3);
@@ -1067,7 +1057,7 @@ int dm_is_qt3(dm_dev_id_t type)
 
 int dm_is_gpu(dm_dev_id_t type)
 {
-    return (dm_is_gb100(type) || dm_is_gr100(type));
+    return get_entry(type)->dev_type == DM_GPU;
 }
 
 int dm_is_cpo(mfile* mf, u_int8_t* ptr_cpo_ind)
@@ -1108,14 +1098,14 @@ int dm_is_new_gen_switch(dm_dev_id_t type)
 
 int dm_dev_is_raven_family_switch(dm_dev_id_t type)
 {
-    return (dm_dev_is_switch(type) && (type == DeviceQuantum || type == DeviceQuantum2 || type == DeviceQuantum3 || type == DeviceNVLink6_Switch || type == DeviceGB100 || type == DeviceGR100 || type == DeviceSpectrum2 ||
+    return (dm_dev_is_switch(type) && (type == DeviceQuantum || type == DeviceQuantum2 || type == DeviceQuantum3 || type == DeviceNVLink6_Switch || type == DeviceSpectrum2 ||
                                        type == DeviceSpectrum3 || type == DeviceSpectrum4 || type == DeviceSpectrum5 || type == DeviceSpectrum6));
 }
 
 int dm_dev_is_ib_switch(dm_dev_id_t type)
 {
     return (dm_dev_is_switch(type) &&
-            (type == DeviceQuantum || type == DeviceQuantum2 || type == DeviceQuantum3 || type == DeviceNVLink6_Switch || type == DeviceGB100 || type == DeviceGR100 || type == DeviceSwitchIB || type == DeviceSwitchIB2));
+            (type == DeviceQuantum || type == DeviceQuantum2 || type == DeviceQuantum3 || type == DeviceNVLink6_Switch || type == DeviceSwitchIB || type == DeviceSwitchIB2));
 }
 
 int dm_dev_is_eth_switch(dm_dev_id_t type)

@@ -74,6 +74,7 @@ extern "C"
 
     bool is_nic(uint32_t device_id);
     bool is_switch(uint32_t device_id);
+    bool is_gpu(uint32_t device_id);
     bool is_cable(uint32_t device_id);
     bool is_linkx(uint32_t device_id);
     bool is_retimer(uint32_t device_id);

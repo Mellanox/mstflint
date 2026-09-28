@@ -624,7 +624,7 @@ void MlxlinkCommander::checkAllPortsStatus()
         }
         throw MlxRegException("FW Version " + _fwVersion + " is not supported. Please update FW.");
     }
-    else if (dm_dev_is_ib_switch(_devID))
+    else if (dm_dev_is_ib_switch(_devID) || dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
     {
         for (u_int32_t localPort = 1; localPort <= maxLocalPort(); localPort++)
         {
@@ -1239,7 +1239,7 @@ void MlxlinkCommander::labelToLocalPort()
             labelToLocalPortGenericMapping();
         }
     }
-    else if (dm_dev_is_ib_switch(_devID))
+    else if (dm_dev_is_ib_switch(_devID) || dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
     {
         if (_devID == DeviceQuantum3 || _devID == DeviceNVLink6_Switch || dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
         {

@@ -71,7 +71,8 @@ extern "C"
         DM_SFP_CABLE,
         DM_LINKX, /* linkx chip */
         DM_GEARBOX,
-        DM_RETIMER
+        DM_RETIMER,
+        DM_GPU
     };
 
     enum dm_dev_id
@@ -310,11 +311,6 @@ extern "C"
     int dm_is_fpp_supported(dm_dev_id_t type);
 
     /**
-     * A predicate returning if the device is a gb100
-     */
-    int dm_is_gb100(dm_dev_id_t type);
-
-    /**
      * A predicate returning if the device is a gpu device
      */
     int dm_is_gpu(dm_dev_id_t type);
@@ -325,11 +321,6 @@ extern "C"
      * (in which case *ptr_cpo_ind is left untouched).
      */
     int dm_is_cpo(mfile* mf, u_int8_t* ptr_cpo_ind);
-
-    /**
-     * A predicate returning if the device is a gr100
-     */
-    int dm_is_gr100(dm_dev_id_t type);
 
     int dm_is_qt3(dm_dev_id_t type);
 

@@ -598,7 +598,7 @@ vector<AmberField> MlxlinkAmBerCollector::getIndexesInfo()
         sendRegister(ACCESS_REG_MGIR, MACCESS_REG_METHOD_GET);
         fields.push_back(AmberField("IC_GA", to_string(getFieldValue("ga")), _isPortIB || _isPortNVLINK));
 
-        if (dm_dev_is_switch(static_cast<dm_dev_id_t>(_devID)) && !dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
+        if (dm_dev_is_switch(static_cast<dm_dev_id_t>(_devID)))
         {
             resetLocalParser(ACCESS_REG_PLLP);
             updateField("local_port", _localPort);
