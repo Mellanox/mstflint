@@ -81,7 +81,8 @@ extern "C"
         GCIF_ICMD_NOT_SUPPORTED,
         GCIF_ICMD_INIT_FAILED,
         GCIF_ICMD_BUSY,
-        GCIF_STATUS_UNKNOWN_STATUS
+        GCIF_STATUS_UNKNOWN_STATUS,
+        GCIF_STATUS_UNABLE_TO_TAKE_SEMAPHORE
     };
 
     enum
@@ -100,7 +101,7 @@ extern "C"
     /**
      * Returns the error message associated with the provided return code
      **/
-    char* gcif_err_str(int rc);
+    const char* gcif_err_str(int rc);
 
 #ifdef __cplusplus
 }
