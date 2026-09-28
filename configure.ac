@@ -935,6 +935,17 @@ if test "x$enable_remote" = "xyes"; then
 fi
 AM_CONDITIONAL(ENABLE_MTCR_REMOTE, [test "x$enable_remote" = "xyes"])
 
+# Under --enable-remote libtool folds the MST HTTP client into libmtcr_ul, so
+# the archive carries unresolved libcurl and openssl references. Consumers that
+# link it as a libtool library pick those up from dependency_libs in the .la;
+# the hand-written .so recipes name the raw .libs/libmtcr_ul.a path instead and
+# so bypass that, leaving the modules to load with undefined symbols. They have
+# to name the libraries themselves.
+MST_REMOTE_LINK_LIBS=""
+AS_IF([test "x$enable_remote" = "xyes"],
+      [MST_REMOTE_LINK_LIBS="$mst_remote_curl_LIBS $openssl_LIBS"])
+AC_SUBST(MST_REMOTE_LINK_LIBS)
+
 # mst_server/ (HTTP server + client) is built only for --enable-remote, and only
 # on a C++17 toolchain. The two halves are listed separately because they sit on
 # opposite sides of mtcr in the build order: the client is a dependency of

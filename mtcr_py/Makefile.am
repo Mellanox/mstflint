@@ -50,6 +50,6 @@ CMTCR_JSON_LIBS =
 endif
 
 cmtcr.so:
-	$(CC) -g -Wall -pthread -shared ${CFLAGS} ${LDFLAGS} -o cmtcr.so -Wl,--whole-archive $(top_builddir)/${MTCR_CONF_DIR}/.libs/libmtcr_ul.a -Wl,--no-whole-archive $(CMTCR_JSON_LIBS) -lstdc++
+	$(CC) -g -Wall -pthread -shared ${CFLAGS} ${LDFLAGS} -o cmtcr.so -Wl,--whole-archive $(top_builddir)/${MTCR_CONF_DIR}/.libs/libmtcr_ul.a -Wl,--no-whole-archive $(CMTCR_JSON_LIBS) $(MST_REMOTE_LINK_LIBS) -lstdc++
 
 CLEANFILES = cmtcr.so
