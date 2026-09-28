@@ -13,6 +13,7 @@ suites themselves.
 | `mlxlink/` | 5 compare suites (operational info, counters, FEC histogram, cable DDM, module info) + gtest sources |
 | `mlxreg/` | 5 compare suites (register list/access/metadata/full path/error handling) + gtest sources |
 | `discovery/`, `hca_caps/`, `telemetry/`, `segfault/` | gtest-only suites (run via the installed harness with `--gtest_filter`) |
+| `doca_contract/` | The DOCA integration contract: pkg-config resolution, `<mft_sdk/…>` header nesting, the 23 consumed `mst*` symbols, ldconfig registration, and a no-rpath C probe. Run with `make check-doca` |
 | `packaging/` | `build_sdk.sh` packaging-flags validation (variants, relocation, coexistence) and source-package emission (SRPM / `.dsc`) |
 | `build/` | autotools build-system checks — the `configure.ac` C++17 / GCC-9 deprecation notice (offline, no device) |
 | `test_utils.*`, `mft_sdk_test_main.cpp`, `mlxreg/mlxreg_fields.h` | gtest harness sources (shared `main()`, field-name parsing contract) |
@@ -30,6 +31,33 @@ MFT_SDK_SO_TEST_BIN=/usr/lib64/mft_sdk/tests/mft_sdk_mstflint_so_test \
 MFT_SDK_KNOWN_MISSING=<comma-list> \
 python3 mft_sdk/unit_tests/mlxreg/test_register_access.py --compare -d <BDF> --so
 ```
+
+### The DOCA contract check
+
+Separate from the suites above, and worth running after **any** change to the
+SDK's public API, header layout, packaging paths or pkg-config metadata:
+
+```bash
+make -C mft_sdk/unit_tests check-doca      # 7 checks; needs the SDK installed
+```
+
+It is the only check here that resolves the SDK the way our sole external
+consumer does — `pkg-config mstflint_sdk`, plain C, **no rpath**; every other
+binary bakes in an rpath and stays green through regressions that break
+`doca-dms`. See `doca_contract/probe.c`.
+
+### SDK path resolution
+
+The Makefile resolves the installed SDK in this order:
+
+1. `SDK_INCDIR` / `SDK_LIBDIR` from the command line or environment
+2. the `mstflint_sdk` pkg-config module (what DOCA uses)
+3. `SDK_PREFIX` (default `/usr`) with a `lib64`-vs-`lib` probe
+
+`make help` prints which one won. Preferring pkg-config means a relocated
+install — e.g. `mstflint-sdk-local` under `/opt/mellanox/mstflint_sdk_local` —
+works with no variables at all, as long as `PKG_CONFIG_PATH` points at its
+`pkgconfig` directory.
 
 Env knobs (all consumed by `utils.py`):
 

@@ -173,14 +173,17 @@ TEST_F(MftSdkRegisterAccessTest, RegisterGetIndexed_PTYS)
     status = mstSetPRMRegisterField(mstDevice, &regMap, "local_port", 0x1);
     ASSERT_EQ(status, MST_SUCCESS) << mstGetLastErrorString(mstDevice);
 
-    status = mstSetPRMRegisterField(mstDevice, &regMap, "proto_mask", 0x7);
+    // proto_mask is a one-hot protocol selector (0x1 IB, 0x2 reserved,
+    // 0x4 Ethernet), not a filter mask: 0x7 asks the firmware for three
+    // protocols at once and it refuses with syndrome 0x7CD836.
+    status = mstSetPRMRegisterField(mstDevice, &regMap, "proto_mask", 0x1);
     ASSERT_EQ(status, MST_SUCCESS) << mstGetLastErrorString(mstDevice);
 
     status = mstSendPRMRegister(mstDevice, &regMap, MST_PRM_GET);
     ASSERT_EQ(status, MST_SUCCESS) << "Failed to send PTYS GET: " << mstGetLastErrorString(mstDevice);
 
     printf("\n%s: %s\n", SECTION_REGISTER_GET_INDEXED, regMap.name);
-    printf("%s: local_port=1, proto_mask=0x7\n", FIELD_INDEXES);
+    printf("%s: local_port=1, proto_mask=0x1\n", FIELD_INDEXES);
     printf("----------------------------------\n");
     printRegisterGetFields(regMap);
 

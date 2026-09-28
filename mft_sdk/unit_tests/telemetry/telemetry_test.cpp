@@ -48,6 +48,50 @@
 #include <string>
 
 // ============================================================================
+// Optional SDK APIs
+//
+//   MFT_SDK_HAS_TELEMETRY_JSON -- mstGetTelemetryJson, mstFreeJsonString,
+//       MstTelemetryView and FIELD_* are not declared by the installed
+//       <mft_sdk/mft_sdk_telemetry.h>: referencing them is a COMPILE error.
+//   MFT_SDK_HAS_I2C_SECONDARY -- mstGet/SetI2cSecondary are declared but not
+//       exported by libmstflint_sdk.so (no --enable-i2c): a LINK error.
+//
+// The else-arms keep the cases present but skipped, so the gap stays visible.
+// ============================================================================
+
+// googletest 1.8.1, the version this harness vendors, predates GTEST_SKIP();
+// fall back to the "[  SKIPPED ]" line the rest of this file already prints.
+#ifdef GTEST_SKIP
+#define MST_SKIP_WITH_REASON(reason) GTEST_SKIP() << (reason)
+#else
+#define MST_SKIP_WITH_REASON(reason)                           \
+    do                                                         \
+    {                                                          \
+        std::cout << "[  SKIPPED ] " << (reason) << std::endl; \
+        return;                                                \
+    } while (0)
+#endif
+
+#define MST_TELEMETRY_JSON_MISSING_REASON                                                   \
+    "telemetry JSON API unavailable: mstGetTelemetryJson, mstFreeJsonString, "              \
+    "MstTelemetryView/MST_TELEMETRY_VIEW_* and FIELD_* are not declared by "                \
+    "<mft_sdk/mft_sdk_telemetry.h> in the installed mstflint SDK. Rebuild with "            \
+    "-DMFT_SDK_HAS_TELEMETRY_JSON once the SDK exports them."
+
+#define MST_I2C_SECONDARY_MISSING_REASON                                                    \
+    "I2C secondary-address API unavailable: mstGetI2cSecondary/mstSetI2cSecondary are "     \
+    "declared in <mft_sdk/mft_sdk_i2c_access.h> but are not exported by "                   \
+    "libmstflint_sdk.so (packaged without --enable-i2c), so calling them does not link. "   \
+    "Rebuild with -DMFT_SDK_HAS_I2C_SECONDARY against an i2c-enabled SDK."
+
+// Declares the case under its real name so the suite's case list stays stable.
+#define MST_UNAVAILABLE_API_TEST(fixture, name, reason) \
+    TEST_F(fixture, name)                               \
+    {                                                   \
+        MST_SKIP_WITH_REASON(reason);                   \
+    }
+
+// ============================================================================
 // GROUP A: No device required -- null/invalid parameter validation
 // ============================================================================
 
@@ -155,6 +199,8 @@ TEST_F(MftTelemetryNoDeviceTest, ModuleInfoInvalidHeaderSize)
     EXPECT_EQ(mstGetModuleInfo(NULL, nullptr, &modInfo), MST_ERROR_INVALID_ARGUMENT);
 }
 
+#ifdef MFT_SDK_HAS_TELEMETRY_JSON
+
 TEST_F(MftTelemetryNoDeviceTest, TelemetryJsonNullDevice)
 {
     char* json = nullptr;
@@ -177,6 +223,15 @@ TEST_F(MftTelemetryNoDeviceTest, FreeJsonStringNull)
     // mstFreeJsonString(NULL) must not crash; it reports the bad argument.
     EXPECT_EQ(mstFreeJsonString(NULL), MST_ERROR_INVALID_ARGUMENT);
 }
+
+#else // MFT_SDK_HAS_TELEMETRY_JSON
+
+MST_UNAVAILABLE_API_TEST(MftTelemetryNoDeviceTest, TelemetryJsonNullDevice, MST_TELEMETRY_JSON_MISSING_REASON)
+MST_UNAVAILABLE_API_TEST(MftTelemetryNoDeviceTest, TelemetryJsonNullOutput, MST_TELEMETRY_JSON_MISSING_REASON)
+MST_UNAVAILABLE_API_TEST(MftTelemetryNoDeviceTest, TelemetryJsonZeroViews, MST_TELEMETRY_JSON_MISSING_REASON)
+MST_UNAVAILABLE_API_TEST(MftTelemetryNoDeviceTest, FreeJsonStringNull, MST_TELEMETRY_JSON_MISSING_REASON)
+
+#endif // MFT_SDK_HAS_TELEMETRY_JSON
 
 // MST_QUERY_HAS via a runtime bit index, so bits >= MASK_SIZE do not trigger
 // constant shift-overflow warnings in the not-taken branch of the macro.
@@ -685,6 +740,8 @@ TEST_F(MftTelemetryDeviceTest, ModuleInfoNullPtr)
     EXPECT_EQ(status, MST_ERROR_INVALID_ARGUMENT);
 }
 
+#ifdef MFT_SDK_HAS_TELEMETRY_JSON
+
 // Minimal structural sanity for a serialized telemetry JSON document.
 static void expectJsonBalanced(const char* json)
 {
@@ -786,6 +843,19 @@ TEST_F(MftTelemetryDeviceTest, GetTelemetryJsonZeroViews)
     char* json = nullptr;
     EXPECT_EQ(mstGetTelemetryJson(mstDevice, nullptr, 0, &json), MST_ERROR_INVALID_ARGUMENT);
 }
+
+#else // MFT_SDK_HAS_TELEMETRY_JSON
+
+MST_UNAVAILABLE_API_TEST(MftTelemetryDeviceTest, GetTelemetryJsonOperationalView, MST_TELEMETRY_JSON_MISSING_REASON)
+MST_UNAVAILABLE_API_TEST(MftTelemetryDeviceTest, GetTelemetryJsonCountersView, MST_TELEMETRY_JSON_MISSING_REASON)
+MST_UNAVAILABLE_API_TEST(MftTelemetryDeviceTest, GetTelemetryJsonGeneralView, MST_TELEMETRY_JSON_MISSING_REASON)
+MST_UNAVAILABLE_API_TEST(MftTelemetryDeviceTest, GetTelemetryJsonPerView, MST_TELEMETRY_JSON_MISSING_REASON)
+MST_UNAVAILABLE_API_TEST(MftTelemetryDeviceTest,
+                         GetTelemetryJsonModuleGeneralCountersCombo,
+                         MST_TELEMETRY_JSON_MISSING_REASON)
+MST_UNAVAILABLE_API_TEST(MftTelemetryDeviceTest, GetTelemetryJsonZeroViews, MST_TELEMETRY_JSON_MISSING_REASON)
+
+#endif // MFT_SDK_HAS_TELEMETRY_JSON
 
 // Context bound to explicit label port 1 (exists on all supported devices).
 static MstTelemetryContext makePort1Context()
@@ -937,6 +1007,8 @@ TEST_F(MftTelemetryDeviceTest, ReadCRSpaceUnalignedLength)
     EXPECT_TRUE(status == MST_SUCCESS || status == MST_ERROR_FAILED_TO_READ_CR_SPACE);
 }
 
+#ifdef MFT_SDK_HAS_I2C_SECONDARY
+
 TEST_F(MftTelemetryDeviceTest, SetI2cSecondaryMultipleValues)
 {
     SKIP_IF_NO_DEVICE();
@@ -966,6 +1038,13 @@ TEST_F(MftTelemetryDeviceTest, GetI2cSecondaryNullAddr)
     MstStatus status = mstGetI2cSecondary(mstDevice, NULL);
     EXPECT_EQ(status, MST_ERROR_INVALID_ARGUMENT);
 }
+
+#else // MFT_SDK_HAS_I2C_SECONDARY
+
+MST_UNAVAILABLE_API_TEST(MftTelemetryDeviceTest, SetI2cSecondaryMultipleValues, MST_I2C_SECONDARY_MISSING_REASON)
+MST_UNAVAILABLE_API_TEST(MftTelemetryDeviceTest, GetI2cSecondaryNullAddr, MST_I2C_SECONDARY_MISSING_REASON)
+
+#endif // MFT_SDK_HAS_I2C_SECONDARY
 
 TEST_F(MftTelemetryDeviceTest, GetLastErrorAfterSuccess)
 {

@@ -69,13 +69,17 @@ TEST_F(MftSdkTelemetryTest, GetTelemetryOperationalInfo)
     MST_QUERY_INIT(&operationalInfo);
     MstTelemetryContext context = makeTelemetryContext();
     status = mstGetTelemetryOperationalInfo(mstDevice, &context, &operationalInfo);
-    ASSERT_EQ(status, MST_SUCCESS) << "Failed to get telemetry operational info";
+    // Keep the "Failed to get ...: <reason>" shape: utils.py's _GTEST_ERROR_RE
+    // scrapes it to fill the C++ error column.
+    ASSERT_EQ(status, MST_SUCCESS)
+      << "Failed to get telemetry operational info: " << mstGetLastErrorString(mstDevice);
 
     const FieldDescriptor* fields = getOpInfoFields();
 
     std::vector<std::pair<std::string, std::string>> results;
     results.reserve(NUM_OP_INFO_FIELDS);
 
+    std::string stateValue;
     for (size_t i = 0; i < NUM_OP_INFO_FIELDS; i++)
     {
         const char* valueStr;
@@ -89,6 +93,10 @@ TEST_F(MftSdkTelemetryTest, GetTelemetryOperationalInfo)
         {
             valueStr = NA_FIELD_VALUE;
         }
+        if (bit == TELEMETRY_OP_INFO_STATE)
+        {
+            stateValue = valueStr;
+        }
         results.emplace_back(fields[i].displayName, valueStr);
     }
 
@@ -99,11 +107,25 @@ TEST_F(MftSdkTelemetryTest, GetTelemetryOperationalInfo)
         printf("%-35s: %s\n", result.first.c_str(), result.second.c_str());
     }
 
-    EXPECT_EQ(operationalInfo.header.valid_fields_mask,
-              (1ULL << TELEMETRY_OP_INFO_STATE) | (1ULL << TELEMETRY_OP_INFO_PHYSICAL_STATE) |
-                (1ULL << TELEMETRY_OP_INFO_SPEED) | (1ULL << TELEMETRY_OP_INFO_WIDTH) |
-                (1ULL << TELEMETRY_OP_INFO_FEC) | (1ULL << TELEMETRY_OP_INFO_LOOPBACK_MODE) |
-                (1ULL << TELEMETRY_OP_INFO_AUTO_NEGOTIATION));
+    // Which fields are reported is a property of the link, not of the SDK; only
+    // an Active link must report all of them.
+    uint64_t definedBits = 0;
+    for (size_t i = 0; i < NUM_OP_INFO_FIELDS; i++)
+    {
+        definedBits |= 1ULL << fields[i].capabilityBit;
+    }
+    const uint64_t mask = operationalInfo.header.valid_fields_mask;
+
+    EXPECT_EQ(mask & ~definedBits, 0ULL) << "valid_fields_mask sets a bit outside the defined fields";
+    if (stateValue == "Active")
+    {
+        EXPECT_EQ(mask, definedBits) << "on an Active link all operational-info fields must be reported";
+    }
+    else
+    {
+        printf("\n[ INFO ] link state '%s' is not Active: mask 0x%llx\n", stateValue.c_str(),
+               (unsigned long long)mask);
+    }
 }
 
 TEST_F(MftSdkTelemetryTest, ExtendedFecModesHaveNames)
@@ -153,9 +175,18 @@ TEST_F(MftSdkTelemetryTest, DefaultPortAfterSpecificPortDoesNotThrow)
     ASSERT_EQ(status, MST_SUCCESS) << "Failed to bind port 1: " << mstGetLastErrorString(mstDevice);
 
     // 2) Switch back to the device default; must not throw "Invalid port number!".
+    //
+    // Known SDK defect, not a test bug -- do not relax this assertion.
+    // initMlxLinkSdk() re-binds whenever the port differs from the last one and
+    // the device default is the empty label, which handlePortStr() rejects, so
+    // one call with an explicit port leaves the handle unable to serve a NULL
+    // context (a fresh handle still works).
     MST_QUERY_INIT(&operationalInfo);
     status = mstGetTelemetryOperationalInfo(mstDevice, nullptr, &operationalInfo);
-    EXPECT_EQ(status, MST_SUCCESS) << "Default port after a specific port failed: " << mstGetLastErrorString(mstDevice);
+    EXPECT_EQ(status, MST_SUCCESS) << "Default port after a specific port failed: " << mstGetLastErrorString(mstDevice)
+                                   << " -- this is the known telemetry port-state defect in the SDK "
+                                      "(initMlxLinkSdk passes the empty default label to handlePortStr), "
+                                      "not a problem with this test.";
 }
 
 #ifndef MFT_SDK_SO_UNIFIED
