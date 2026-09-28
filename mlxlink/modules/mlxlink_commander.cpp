@@ -3936,9 +3936,11 @@ void MlxlinkCommander::showMpcntPerformance(DPN& dpn)
 {
     uint32_t flitActive = 0, recordsNum = MPCNT_PERFORMANCE_INFO_LAST + 3;
     string mrrStr = "", mprStr = "";
+    bool linkUp = true;
     try
     {
         sendPrmReg(ACCESS_REG_MPEIN, REG_GET, "depth=%d,pcie_index=%d,node=%d", _dpn.depth, _dpn.pcieIndex, _dpn.node);
+        linkUp = getFieldValue("link_speed_active") != 0;
         flitActive = getFieldValue("flit_active");
         recordsNum += flitActive ? 3 : 0;
         if (_userInput._extendedPcie)
@@ -3953,6 +3955,15 @@ void MlxlinkCommander::showMpcntPerformance(DPN& dpn)
         // For backward compatibility, we will not throw an exception here.
     }
 
+    if (!linkUp)
+    {
+        MlxlinkRecord::printWar("Warning: The PCIe link (depth, pcie index, node: " + to_string(_dpn.depth) + ", " +
+                                  to_string(_dpn.pcieIndex) + ", " + to_string(_dpn.node) +
+                                  ") is down, performance counters are not reported",
+                                _jsonRoot);
+        return;
+    }
+    
     try
     {
         sendPrmReg(ACCESS_REG_MPCNT, REG_GET, "depth=%d,pcie_index=%d,node=%d,grp=%d", dpn.depth, dpn.pcieIndex, dpn.node, MPCNT_PERFORMANCE_GROUP);
