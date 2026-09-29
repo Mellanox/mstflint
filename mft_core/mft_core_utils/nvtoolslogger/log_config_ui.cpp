@@ -58,9 +58,6 @@
 #define RESET_FLAG "reset"
 #define RESET_FLAG_SHORT 'r'
 
-#define CONFIG_FILE_FLAG "config-file"
-#define CONFIG_FILE_FLAG_SHORT 'c'
-
 #define SET_MAX_LOG_FILES_FLAG "set-max-log-files"
 #define SET_MAX_LOG_FILES_FLAG_SHORT 'n'
 
@@ -75,10 +72,38 @@
 namespace nvtoolslogger
 {
 
+namespace
+{
+// std::stoi() would otherwise accept "20abc", " 20", "1e3" or "00020" and silently
+// keep just the leading digits. Parsed as 64-bit so a value above the ceiling is
+// rejected rather than wrapped.
+bool parsePositiveCount(const std::string& value, uint32_t max, uint32_t& out)
+{
+    if (value.empty() || value[0] == '0' || value.find_first_not_of("0123456789") != std::string::npos)
+    {
+        return false;
+    }
+
+    try
+    {
+        unsigned long long parsed = std::stoull(value);
+        if (parsed > max)
+        {
+            return false;
+        }
+        out = static_cast<uint32_t>(parsed);
+    }
+    catch (const std::exception&)
+    {
+        return false;
+    }
+    return true;
+}
+} // namespace
+
 LogConfigUi::LogConfigUi() :
     CommandLineRequester(TOOL_NAME),
     _cmdParser(TOOL_NAME),
-    _configFilePath(DEFAULT_CONFIG_PATH),
     _action(Action::NONE),
     _hasGlobalLevel(false),
     _globalLevel(DEFAULT_SEVERITY),
@@ -109,15 +134,12 @@ void LogConfigUi::initCmdParser()
                "Disable an output sink (stdout|stderr|file|syslog). Can be specified multiple times");
 
     AddOptions(SET_MAX_LOG_FILES_FLAG, SET_MAX_LOG_FILES_FLAG_SHORT, "COUNT",
-               "Set maximum number of log files in the log directory (default: " +
-                 std::to_string(DEFAULT_MAX_LOG_DIR_FILES) + ")");
+               "Set maximum number of log files in the log directory (1-" + std::to_string(MAX_LOG_DIR_FILES_LIMIT) +
+                 ", default: " + std::to_string(DEFAULT_MAX_LOG_DIR_FILES) + ")");
 
     AddOptions(SHOW_FLAG, SHOW_FLAG_SHORT, "", "Display the active configuration and resolved layer settings");
 
     AddOptions(RESET_FLAG, RESET_FLAG_SHORT, "", "Reset the logging configuration to defaults");
-
-    AddOptions(CONFIG_FILE_FLAG, CONFIG_FILE_FLAG_SHORT, "PATH",
-               "Override config file path (default: " + std::string(DEFAULT_CONFIG_PATH) + ")");
 
     AddOptions(HELP_FLAG, HELP_FLAG_SHORT, "", "Show this help message and exit");
 
@@ -138,12 +160,6 @@ ParseStatus LogConfigUi::HandleOption(std::string name, std::string value)
     {
         print_version_string(TOOL_NAME, "");
         return PARSE_OK_WITH_EXIT;
-    }
-
-    if (name == CONFIG_FILE_FLAG)
-    {
-        _configFilePath = value;
-        return PARSE_OK;
     }
 
     if (name == SET_LEVEL_FLAG)
@@ -267,23 +283,15 @@ ParseStatus LogConfigUi::HandleOption(std::string name, std::string value)
 
     if (name == SET_MAX_LOG_FILES_FLAG)
     {
-        try
-        {
-            int val = std::stoi(value);
-            if (val <= 0)
-            {
-                std::cerr << "Error: --" << SET_MAX_LOG_FILES_FLAG << " must be a positive integer." << std::endl;
-                return PARSE_ERROR;
-            }
-            _hasMaxLogDirFiles = true;
-            _maxLogDirFiles = static_cast<uint32_t>(val);
-        }
-        catch (const std::exception&)
+        uint32_t count = 0;
+        if (!parsePositiveCount(value, MAX_LOG_DIR_FILES_LIMIT, count))
         {
             std::cerr << "Error: Invalid value '" << value << "' for --" << SET_MAX_LOG_FILES_FLAG
-                      << ". Expected a positive integer." << std::endl;
+                      << ". Expected an integer between 1 and " << MAX_LOG_DIR_FILES_LIMIT << "." << std::endl;
             return PARSE_ERROR;
         }
+        _hasMaxLogDirFiles = true;
+        _maxLogDirFiles = count;
         return PARSE_OK;
     }
 
@@ -334,7 +342,7 @@ int LogConfigUi::run(int argc, char** argv)
     if (_action == Action::RESET)
     {
         config.reset();
-        if (!config.save(_configFilePath))
+        if (!config.save(DEFAULT_CONFIG_PATH))
         {
             return 1;
         }
@@ -347,7 +355,12 @@ int LogConfigUi::run(int argc, char** argv)
         return 0;
     }
 
-    config.load(_configFilePath);
+    config.load(DEFAULT_CONFIG_PATH);
+    bool staleConfigReplaceFailed = false;
+    if (config.isStaleConfigIgnored() && !hasModifications)
+    {
+        staleConfigReplaceFailed = !config.save(DEFAULT_CONFIG_PATH);
+    }
 
     if (hasModifications)
     {
@@ -381,11 +394,20 @@ int LogConfigUi::run(int argc, char** argv)
             config.disableSink(sink);
         }
 
-        if (!config.save(_configFilePath))
+        // Turning logging on without naming a destination should produce visible output, so
+        // a bare --set-level on a config that has never chosen a sink picks the console for
+        // the user. Scoped to "no sink flags in this invocation" so that an explicit
+        // --disable-output is never undone by the default.
+        if (_hasGlobalLevel && _sinksToEnable.empty() && _sinksToDisable.empty() && config.getActiveSinks().empty())
+        {
+            config.enableSink(Sink::STDOUT);
+        }
+
+        if (!config.save(DEFAULT_CONFIG_PATH))
         {
             return 1;
         }
-        std::cout << "Configuration saved to " << _configFilePath << std::endl;
+        std::cout << "Configuration saved to " << DEFAULT_CONFIG_PATH << std::endl;
         std::cout << std::endl;
     }
     else if (_action == Action::SHOW)
@@ -393,7 +415,7 @@ int LogConfigUi::run(int argc, char** argv)
         config.show();
     }
 
-    return 0;
+    return staleConfigReplaceFailed ? 1 : 0;
 }
 
 void LogConfigUi::printHelp()

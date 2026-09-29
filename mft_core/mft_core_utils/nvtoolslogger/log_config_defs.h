@@ -167,7 +167,9 @@ inline bool parseSinkName(const std::string& name, Sink& out)
 static constexpr const char* DEFAULT_CONFIG_PATH = "/var/lib/mstflint/mstflintlogger.json";
 static const Severity DEFAULT_SEVERITY = Severity::Default;
 static const uint32_t DEFAULT_MAX_LOG_DIR_FILES = 100;
-static const int CONFIG_VERSION = 1;
+// Every tool scans and stats the whole log directory on startup, so the ceiling keeps
+// one tool's setting from slowing down all the others.
+static const uint32_t MAX_LOG_DIR_FILES_LIMIT = 1000;
 
 } // namespace nvtoolslogger
 
