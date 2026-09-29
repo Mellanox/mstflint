@@ -32,6 +32,7 @@
  *  Version: $Id$
  *
  */
+#include "nvtoolslogger/NvToolsLogger.h"
 #include "mlxreg_sdk.h"
 #include "prm_reg_sdk.h"
 
@@ -84,6 +85,7 @@ int32_t init_prm_access_manager(const char* mst_dev, void** opaque)
     else
     {
         *opaque = (void*)sdk;
+        MLXREG_SDK_LOG_INFO("PRM access manager opened for device '%s'", mst_dev);
     }
     return rc;
 }
@@ -104,6 +106,9 @@ int32_t send_seq_prm_access_reg(void* opaque,
 {
     if (!opaque)
     {
+        MLXREG_SDK_LOG_ERROR("No PRM access manager supplied for register '%s'; init_prm_access_manager must succeed "
+                             "first",
+                             reg_name ? reg_name : "<unknown>");
         return ERR_CODE_INVALID_ACCESS_MANAGER;
     }
     ((PrmRegSdk*)opaque)->initPrmCommand(reg_name, (uint32_t)method, params);
@@ -123,6 +128,7 @@ int32_t init_response_outbox(RegisterMap* response_outbox)
 {
     if (!response_outbox)
     {
+        MLXREG_SDK_LOG_ERROR("Cannot initialize a null response outbox");
         return ERR_CODE_INVALID_RESPONSE_OUTBOX;
     }
     response_outbox->number_of_fields = 0;
