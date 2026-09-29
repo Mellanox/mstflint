@@ -79,9 +79,6 @@ int is_four_byte_address_needed(mflash* mfl, MfError* status)
         case DeviceBlueField2:
         case DeviceBlueField3:
         case DeviceBlueField4:
-        case DeviceGearBox:
-        case DeviceGearBoxManager:
-        case DeviceAbirGearBox:
             return 1;
         default:
             *status = MFE_UNSUPPORTED_DEVICE;
@@ -99,7 +96,7 @@ int is_flash_enable_needed(mflash* mfl, MfError* status)
     {
         return 1;
     }
-    else if ((mfl->dm_dev_id == DeviceSecureHost) || (dm_is_5th_gen_hca(mfl->dm_dev_id)) || (dm_dev_is_gearbox(mfl->dm_dev_id)) || (dm_is_new_gen_switch(mfl->dm_dev_id)) ||
+    else if ((mfl->dm_dev_id == DeviceSecureHost) || (dm_is_5th_gen_hca(mfl->dm_dev_id)) || (dm_is_new_gen_switch(mfl->dm_dev_id)) ||
              (dm_dev_is_retimer(mfl->dm_dev_id)))
     {
         return 0;
@@ -135,8 +132,6 @@ int is_icmdif_supported(mflash* mfl, MfError* status)
         case DeviceConnectX6:
         case DeviceConnectX6DX:
         case DeviceConnectX6LX:
-        case DeviceGearBox:
-        case DeviceGearBoxManager:
             return 1;
         case DeviceQuantum2:
         case DeviceQuantum3:
@@ -150,7 +145,6 @@ int is_icmdif_supported(mflash* mfl, MfError* status)
         case DeviceConnectX9:
         case DeviceBlueField3:
         case DeviceBlueField4:
-        case DeviceAbirGearBox:
             return 1;
         default:
             *status = MFE_UNSUPPORTED_DEVICE;
@@ -170,7 +164,6 @@ FlashGen get_flash_gen(mflash* mfl)
         case DeviceSpectrum6:
         case DeviceConnectX7:
         case DeviceBlueField3:
-        case DeviceAbirGearBox:
         {
             gen = SIX_GEN_FLASH;
             break;

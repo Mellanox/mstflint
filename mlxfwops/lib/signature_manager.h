@@ -179,11 +179,3 @@ public:
     Bluefield4FwOperationsSignatureManager() : ConnectX9FwOperationsSignatureManager() {}
     virtual ~Bluefield4FwOperationsSignatureManager() {}
 };
-
-class GearBoxSignatureManager : public AbstractSignatureManager
-{
-public:
-    GearBoxSignatureManager() : AbstractSignatureManager() {}
-    virtual ~GearBoxSignatureManager() {}
-    virtual bool AddSignature(mfile*, Fs3Operations*, Flash*, u_int32_t) { return false; }
-};

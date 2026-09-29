@@ -69,9 +69,6 @@
 #define SPECTRUM4_HW_ID 596
 #define SPECTRUM5_HW_ID 624
 #define SPECTRUM6_HW_ID 628
-#define GEARBOX_HW_ID 594
-#define GB_MANAGER_HW_ID 595
-#define ABIR_GB_HW_ID 598
 #define CX4_HW_ID 521
 #define CX4LX_HW_ID 523
 #define CX5_HW_ID 525
@@ -364,9 +361,6 @@ typedef enum chip_type
     CT_SPECTRUM4,
     CT_SPECTRUM5,
     CT_SPECTRUM6,
-    CT_GEARBOX,
-    CT_GEARBOX_MGR,
-    CT_ABIR_GEARBOX,
     CT_ARCUSE
 } chip_type_t;
 
@@ -380,8 +374,7 @@ typedef enum chip_family_type
 {
     CFT_UNKNOWN = 0,
     CFT_HCA,
-    CFT_SWITCH,
-    CFT_GEARBOX
+    CFT_SWITCH
 } chip_family_type_t;
 
 typedef struct guid

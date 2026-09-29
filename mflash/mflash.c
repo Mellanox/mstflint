@@ -1287,27 +1287,6 @@ int get_info_from_jededc_id(u_int32_t jedec_id, u_int8_t* vendor, u_int8_t* type
     return MFE_OK;
 }
 
-int mf_check_spi_channel(mfile* mf)
-{
-    int retVal = 1;
-    u_int32_t value = 0;
-
-    if (mread4(mf, 0x21e4, &value) != sizeof(u_int32_t))
-    {
-        printf("-E- Cannot get SPI value.\n");
-        retVal = 0;
-    }
-    else
-    {
-        value = (value >> 8) & 3;
-        if ((value != 0x1) && (value != 2))
-        {
-            retVal = 0;
-        }
-    }
-    printf("-D- Get SPI channel value %u.\n", value);
-    return retVal;
-}
 int cntx_spi_get_type(mflash* mfl, u_int8_t op_type, u_int8_t* vendor, u_int8_t* type, u_int8_t* density)
 {
     u_int32_t flash_data = 0;
@@ -2297,17 +2276,6 @@ int is4_flash_init(mflash* mfl, flash_params_t* flash_params)
     return gen4_flash_init_com(mfl, flash_params);
 }
 
-static void flash_update_amos_gearbox_gw(mflash* mfl)
-{
-    FLASH_ACCESS_DPRINTF(("flash_update_amos_gearbox_gw()\n"));
-    mfl->gw_data_field_addr = HCR_FLASH_GEARBOX_DATA;
-    mfl->gw_cmd_register_addr = HCR_FLASH_GEARBOX_CMD;
-    mfl->gw_addr_field_addr = HCR_FLASH_GEARBOX_ADDR;
-    mfl->cache_repacement_en_addr = HCR_FLASH_GEARBOX_CACHE_REPLACEMENT_EN_ADDR;
-    mfl->cache_rep_cmd_field_addr = HCR_FLASH_GEARBOX_CACHE_REPLACEMENT_CMD;
-    mfl->cache_rep_offset_field_addr = HCR_FLASH_GEARBOX_CACHE_REPLACEMENT_OFFSET;
-}
-
 int sx_flash_init_direct_access(mflash* mfl, flash_params_t* flash_params)
 {
     mfl->f_lock = is4_flash_lock;
@@ -2795,15 +2763,6 @@ int six_gen_flash_init(mflash* mfl, flash_params_t* flash_params)
 
 int fifth_gen_flash_init(mflash* mfl, flash_params_t* flash_params)
 {
-    if (mfl->mf->gb_info.is_gb_mngr)
-    {
-        // need to update GW offsets before calling to the check_cache_replacement_guard
-        flash_update_amos_gearbox_gw(mfl);
-    }
-    else if (mfl->mf->gb_info.is_gearbox)
-    {
-        return MFE_OCR_NOT_SUPPORTED; // Accessing flash GW of GB that's not manager is not possible
-    }
     int rc = flash_init_with_cache_guard(mfl, flash_params, fifth_gen_init_direct_access, 1);
     CHECK_RC(rc);
 
@@ -3489,18 +3448,6 @@ int mf_open_int(mflash** pmfl, const char* dev, int num_of_banks, flash_params_t
         return MFE_CR_ERROR;
     }
 
-    if (ignore_cache_rep_guard)
-    { /* relevant only if working with -ocr flag */
-        if (mf->gb_info.is_gb_mngr == 1)
-        {
-            if (mf_check_spi_channel(mf) != 1)
-            {
-                mclose(mf);
-                printf("-E- Can not continue - SPI channel is not OK.\n");
-                return MFE_CR_ERROR;
-            }
-        }
-    }
     rc = mf_opend_int(pmfl, (struct mfile_t*)mf, num_of_banks, flash_params, ignore_cache_rep_guard, MFAT_MFILE, NULL, cx3_fw_access, no_fw_ctrl);
     if ((*pmfl))
     {
@@ -3860,7 +3807,6 @@ int mf_set_reset_flash_on_warm_reboot(mflash* mfl)
         case DeviceSpectrum4:
         case DeviceSpectrum5:
         case DeviceSpectrum6:
-        case DeviceAbirGearBox:
             return MFE_OK;
 
         case DeviceSpectrum:
@@ -3878,8 +3824,6 @@ int mf_set_reset_flash_on_warm_reboot(mflash* mfl)
         case DeviceBlueField2:
         case DeviceSpectrum2:
         case DeviceSpectrum3:
-        case DeviceGearBox:
-        case DeviceGearBoxManager:
             set_reset_bit_dword_addr = 0xf0c28;
             set_reset_bit_offset = 2;
             break;
@@ -3924,14 +3868,7 @@ int mf_update_boot_addr(mflash* mfl, u_int32_t boot_addr)
         case DeviceBlueField2:
         case DeviceSpectrum2:
         case DeviceSpectrum3:
-        case DeviceGearBox:
-        case DeviceGearBoxManager:
             boot_cr_space_address = 0xf0080;
-            offset_in_address = 0;
-            break;
-
-        case DeviceAbirGearBox:
-            boot_cr_space_address = 0xf1400;
             offset_in_address = 0;
             break;
 
