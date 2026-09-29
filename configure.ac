@@ -591,6 +591,24 @@ fi
 AM_CONDITIONAL(ENABLE_MST_DEV_I2C, [ test "x$enable_i2c" = "xyes" ])
 ##
 
+# Compress the mstdump device DBs at build time when xz is available.
+# crd_lib reads both forms, so a tree without a usable xz simply installs plain .csv.
+AC_CHECK_PROG([XZ], [xz], [xz], [no])
+# Finding the binary is not enough: a wrapper that fails, or an xz too old for
+# --check=crc32, would break the build instead of degrading to plain .csv. Probe
+# the exact flags the build uses and fall back unless they round-trip.
+if test "x$XZ" != "xno"; then
+    AC_MSG_CHECKING([whether $XZ can produce crc32 streams])
+    if test "x`echo mstflint_xz_probe | $XZ --check=crc32 -c 2>/dev/null | $XZ -d -c 2>/dev/null`" = "xmstflint_xz_probe"; then
+        AC_MSG_RESULT([yes])
+    else
+        AC_MSG_RESULT([no, installing the device DBs uncompressed])
+        XZ=no
+    fi
+fi
+AM_CONDITIONAL(HAVE_XZ, [test "x$XZ" != "xno"])
+##
+
 # Enable mstflint SDK:
 AC_MSG_CHECKING(--enable-mstflint-sdk argument)
 AC_ARG_ENABLE(mstflint-sdk,
