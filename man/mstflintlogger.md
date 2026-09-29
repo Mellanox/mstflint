@@ -10,19 +10,24 @@ mstflintlogger
 > \[-l|-\-set-level \<LEVEL\>\] \[-m|-\-set-module \<MODULE:LEVEL\>\]
 > \[-M|-\-clear-module \<MODULE\>\] \[-o|-\-enable-output \<SINK\>\]
 > \[-O|-\-disable-output \<SINK\>\] \[-n|-\-set-max-log-files \<COUNT\>\]
-> \[-s|-\-show\] \[-r|-\-reset\] \[-c|-\-config-file \<PATH\>\]
-> \[-h|-\-help\]
+> \[-s|-\-show\] \[-r|-\-reset\] \[-h|-\-help\]
 
 # DESCRIPTION
 
 > mstflintlogger configures the NVIDIA Tools logger used by the mstflint tools. It
 > reads and writes a single JSON file, /var/lib/mstflint/mstflintlogger.json, which
 > every tool loads once at process start. Verbosity is therefore data, not
-> code: no tool flag, no environment variable and no rebuild is involved, and
-> one command changes what every tool logs.
+> code: no tool flag and no rebuild is involved, and one command changes what
+> every tool logs.
 >
 > Logging is off until it is turned on. With no configuration file present,
-> no output is produced at all.
+> no output is produced at all, unless NVTOOLSLOGGER_LEVEL is set (see
+> ENVIRONMENT).
+>
+> The configuration file records the mstflint build that wrote it. A file
+> written by a different build, for example before an upgrade, is ignored and
+> the defaults apply, so logging is off again until it is turned back on; the
+> next mstflintlogger command rewrites the file.
 >
 > A configuration change affects processes started afterwards; a tool that is
 > already running is unaffected.
@@ -30,17 +35,20 @@ mstflintlogger
 > Severity levels are debug, info, warning, error, fatal and off. A level
 > means "this level and above"; off silences the layer. Output sinks are
 > stdout, stderr, file and syslog. The file sink writes
-> /var/log/mstflint/\<executable\>_\<pid\>.log.
+> /var/log/mstflint/\<executable\>_\<pid\>.log. When stdout is not a terminal,
+> the stdout sink writes to stderr instead, so log records never end up in
+> output that another program parses.
 >
-> Writing the default configuration file requires root. Use -\-config-file to
-> work on an unprivileged copy.
+> Writing the configuration file requires root.
 
 OPTIONS
 
 > mstflintlogger \[OPTIONS\]
 
   - **-l**|-\-set-level \<LEVEL\>
-    : Set the global severity threshold, used by every layer with no override
+    : Set the global severity threshold, used by every layer with no override.
+    If the configuration has no output sink yet and the command names none,
+    stdout is enabled as well
 
   - **-m**|-\-set-module \<MODULE:LEVEL\>
     : Set a per-layer severity override, e.g. mtcr:debug. May be repeated.
@@ -57,8 +65,9 @@ OPTIONS
     : Remove an output sink. May be repeated
 
   - **-n**|-\-set-max-log-files \<COUNT\>
-    : Cap the number of .log files kept in the log directory (default: 100).
-    Older files beyond the cap are deleted when a new log file is opened
+    : Cap the number of .log files kept in the log directory, 1 to 1000
+    (default: 100). Older files beyond the cap are deleted when a new log file
+    is opened
 
   - **-s**|-\-show
     : Print the configuration and the resolved severity of every layer,
@@ -66,10 +75,6 @@ OPTIONS
 
   - **-r**|-\-reset
     : Reset the configuration to defaults, i.e. logging off
-
-  - **-c**|-\-config-file \<PATH\>
-    : Operate on a different configuration file
-    (default: /var/lib/mstflint/mstflintlogger.json)
 
   - **-h**|-\-help
     : Show help message and exit
@@ -87,6 +92,14 @@ OPTIONS
 >
 > all is not a layer, it is a keyword accepted by -\-set-module and
 > -\-clear-module that expands to every layer.
+
+# ENVIRONMENT
+
+> NVTOOLSLOGGER_LEVEL, set to 1 (debug) through 5 (fatal), logs every layer at
+> that level and above to stdout for a single run, e.g.
+> NVTOOLSLOGGER_LEVEL=1 mstflint -d /dev/mst/mt4123_pciconf0 q. A valid value
+> takes over the run entirely: the configuration file is not read. Any other
+> value is ignored.
 
 # NOTES
 
