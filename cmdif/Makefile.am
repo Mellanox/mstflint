@@ -48,7 +48,7 @@ cmdifincludedir = $(includedir)/mstflint/cmdif/
 
 cmdifinclude_HEADERS = icmd_cif_common.h icmd_cif_open.h
 
-libcmdif_la_SOURCES = tools_cif.c tools_cif.h icmd_cif_common.c icmd_cif_common.h icmd_cif_open.c icmd_cif_open.h
+libcmdif_la_SOURCES = icmd_cif_common.c icmd_cif_common.h icmd_cif_open.c icmd_cif_open.h
 
 cmdif_pylibdir = $(libdir)/mstflint/python_tools/
 cmdif_pylib_DATA = ${CCMDIF_SO} cmdif.py

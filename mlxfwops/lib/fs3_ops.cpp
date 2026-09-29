@@ -2974,29 +2974,7 @@ bool Fs3Operations::GetSecureHostState(u_int8_t& state)
 
 bool Fs3Operations::FwResetNvData()
 {
-    return errmsg("Unsupported Device, can only reset configuration on a CX3/3-PRO device.");
-    /*
-     *  // future support for cx4
-     *
-     *  if (!FsIntQueryAux(false)) {
-     *   return false;
-     *  }
-     *  if (_fwImgInfo.ext_info.chip_type != CT_CONNECTX) {
-     *   // TODO: Indicate the device name.
-     *      return errmsg("Unsupported device type %d", _fwImgInfo.ext_info.dev_type);
-     *  }
-     *
-     *  struct toc_info *currToc;
-     *
-     *  if (!Fs3GetItocInfo(_fs3ImgInfo.tocArr, _fs3ImgInfo.numOfItocs, FS3_NV_DATA, currToc)) {
-     *   return false;
-     *  }
-     *  // allocate new NvData which will contain only zeroes
-     *  std::vector<u_int8_t> newNvData(currToc->section_data.size());
-     *  memset(&newNvData[0], 0, currToc->section_data.size());
-     *
-     *  return Fs3AddSection(FS3_NV_DATA, FS3_DEV_INFO, (u_int32_t *)&newNvData[0], newNvData.size()/4, progressFunc);
-     */
+    return errmsg("Unsupported device, cannot reset NV data.");
 }
 
 u_int32_t Fs3Operations::getAbsAddr(toc_info* toc)
@@ -3933,103 +3911,8 @@ bool Fs3Operations::TocComp::operator()(toc_info* elem1, toc_info* elem2)
 
 bool Fs3Operations::FwShiftDevData(PrintCallBack progressFunc)
 {
-    if (!_ioAccess->is_flash())
-    {
-        return errmsg("cannot shift device data sections on Image.");
-    }
-    const char* flashType = ((Flash*)_ioAccess)->getFlashType();
-
-    if (flashType == NULL)
-    {
-        return errmsg("Cannot shift device data on old flash types.");
-    }
-    if (strcasecmp(flashType, "N25Q0XX") != 0)
-    {
-        return errmsg("Cannot shift device data on flash type %s.", flashType);
-    }
-
-    /* query device and get device data sectors. */
-    PUSH_DEV_DATA(_readSectList);
-    if (!FsIntQueryAux())
-    {
-        POP_DEV_DATA(_readSectList);
-        return false;
-    }
-    POP_DEV_DATA(_readSectList);
-
-    if (_fwImgInfo.ext_info.chip_type != CT_CONNECT_IB)
-    {
-        return errmsg("Cannot shift device data. Unsupported device.");
-    }
-
-    u_int32_t lastFwDataAddr;
-    u_int32_t firstDevDataAddr;
-
-    if (!getLastFwSAddr(lastFwDataAddr) || !getFirstDevDataAddr(firstDevDataAddr))
-    {
-        return errmsg("Failed to get ITOC information.");
-    }
-
-    /* check if we already shifted */
-    struct toc_info* mfgToc = (struct toc_info*)NULL;
-
-    if (!Fs3GetItocInfo(_fs3ImgInfo.tocArr, _fs3ImgInfo.numOfItocs, FS3_MFG_INFO, mfgToc))
-    {
-        return errmsg("Failed to get MFG_INFO ITOC information.");
-    }
-
-    if (getAbsAddr(mfgToc) < _ioAccess->get_effective_size() - (((Flash*)(_ioAccess))->get_sector_size()))
-    {
-        return errmsg("Device data sections already shifted.");
-    }
-
-    /* check if we can shift all dev data sections by 60KB */
-    if (lastFwDataAddr > (firstDevDataAddr - SHIFT_SIZE))
-    {
-        return errmsg("Cannot shift device data sections, fw image is too big.");
-    }
-    /* for each device data section move it by an offset of 60kb (0xf000) */
-
-    PRINT_PROGRESS(progressFunc, (char*)"Shifting dev data section - ");
-
-    /* possible problem : if itoc array isnt ordered by ascending flash address and dev data sections are larger that */
-    /* 60kb there is a chance we runover exsisting device data sections Fix : preform the section shift by order from */
-    /* the lowest addresss to the highest. */
-    std::vector<struct toc_info*> sortedTocs(_fs3ImgInfo.numOfItocs);
-    for (int i = 0; i < _fs3ImgInfo.numOfItocs; i++)
-    {
-        sortedTocs[i] = &(_fs3ImgInfo.tocArr[i]);
-    }
-    std::sort(sortedTocs.begin(), sortedTocs.end(), TocComp(_fwImgInfo.imgStart));
-
-    /* shift the location of device data sections by SHIFT_SIZE (60kb) */
-    for (std::vector<struct toc_info*>::iterator it = sortedTocs.begin(); it != sortedTocs.end(); it++)
-    {
-        if ((*it)->toc_entry.device_data)
-        {
-            /* update the itoc (basically update the flash_addr and itoc entry crc) */
-            struct toc_info* currToc = *it;
-            if (!Fs3UpdateItocInfo(currToc, ((currToc->toc_entry.flash_addr << 2) - SHIFT_SIZE)))
-            {
-                PRINT_PROGRESS(progressFunc, (char*)"FAILED\n");
-                return false;
-            }
-            /* write the section to its new place in the flash */
-            if (!writeImage((ProgressCallBack)NULL, getAbsAddr(currToc), (u_int8_t*)&currToc->section_data[0],
-                            (currToc->toc_entry.size << 2), true, true))
-            {
-                PRINT_PROGRESS(progressFunc, (char*)"FAILED\n");
-                return false;
-            }
-        }
-    }
-    PRINT_PROGRESS(progressFunc, (char*)"OK\n");
-    /* update itoc section */
-    if (!reburnItocSection(progressFunc))
-    {
-        return false;
-    }
-    return true;
+    (void)progressFunc;
+    return errmsg("Cannot shift device data. Unsupported device.");
 }
 
 bool Fs3Operations::CheckItocArrConsistency(std::vector<struct toc_info*>& sortedTocVec, u_int32_t imageStartAddr)

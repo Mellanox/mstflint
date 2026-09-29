@@ -171,8 +171,8 @@ dm_dev_id_t _MlxRegLib_impl<dynamic>::getDevId(mfile* mf)
 template<bool dynamic>
 bool _MlxRegLib_impl<dynamic>::isDeviceSupported(mfile* mf)
 {
-    dm_dev_id_t devID = getDevId(mf);
-    return !dm_is_4th_gen(devID);
+    (void)mf;
+    return true;
 }
 
 template<bool dynamic>

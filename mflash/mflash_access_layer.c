@@ -47,10 +47,6 @@
 
 extern flash_info_t g_flash_info_arr[];
 
-#define CX3_PRO_HW_ID 0x1F7
-#define CX3_HW_ID 0x1F5
-#define HAS_TOOLS_CMDIF(dev_id) ((((dev_id) == CX3_HW_ID) || ((dev_id) == CX3_PRO_HW_ID)))
-
 // On windows we don't support cmdIf access!
 int check_access_type(mflash* mfl)
 // TODO: re-write in a more elegant way.
@@ -68,7 +64,6 @@ int check_access_type(mflash* mfl)
             case ATBM_MLNXOS_CMDIF:
 #endif
             case ATBM_ICMD:
-            case ATBM_TOOLS_CMDIF:
                 break;
 
             default:
@@ -121,11 +116,6 @@ int sx_get_flash_info_by_type(mflash* mfl, flash_info_t* f_info, int* log2size, 
     f_info->protect_sub_and_sector = mfpa_args.supp_sector_write_prot & mfpa_args.supp_sub_sector_write_prot;
     f_info->quad_en_support = mfpa_args.supp_quad_en;
 
-    // HACK: Use fw_sector size as the sector size only in CX3 family devices for now
-    if (HAS_TOOLS_CMDIF(mfl->attr.hw_dev_id))
-    {
-        f_info->sector_size = mfpa_args.fw_flash_sector_sz ? mfpa_args.fw_flash_sector_sz : f_info->sector_size;
-    }
     return MFE_OK;
 }
 
@@ -180,14 +170,6 @@ static int lock_flash_programing_sem(mflash* mfl)
             return MFE_SEM_LOCKED;
         }
     }
-    else if (mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_TOOLS_CMDIF)
-    {
-        rc = trm_lock(mfl->trm, TRM_RES_HCR_FLASH_PROGRAMING, MAX_FLASH_PROG_SEM_RETRY_CNT);
-        if (rc && rc != TRM_STS_RES_NOT_SUPPORTED)
-        {
-            return MFE_SEM_LOCKED;
-        }
-    }
 #endif
     return MFE_OK;
 }
@@ -199,14 +181,6 @@ static int unlock_flash_programing_sem(mflash* mfl)
     if (mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_ICMD || mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_INBAND)
     {
         rc = trm_unlock(mfl->trm, TRM_RES_FLASH_PROGRAMING);
-        if (rc && rc != TRM_STS_RES_NOT_SUPPORTED)
-        {
-            return MFE_SEM_LOCKED;
-        }
-    }
-    else if (mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_TOOLS_CMDIF)
-    {
-        rc = trm_unlock(mfl->trm, TRM_RES_HCR_FLASH_PROGRAMING);
         if (rc && rc != TRM_STS_RES_NOT_SUPPORTED)
         {
             return MFE_SEM_LOCKED;

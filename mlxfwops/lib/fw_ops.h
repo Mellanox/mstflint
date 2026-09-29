@@ -480,7 +480,6 @@ public:
         int ignoreCacheRep;
         bool noFlashVerify;
         bool shortErrors; // show short/long error msgs (default shuold be false)
-        int cx3FwAccess;
         int isCableFw;
         bool noFwCtrl;
         bool mccUnsupported;

@@ -81,9 +81,6 @@ extern "C"
                                /* to let user iterate from DeviceStartMarker to DeviceEndMarker */
                                /* Note: Call dm_is_device_supported() to see if a device is supported by the lib. */
 
-        DeviceConnectX3,
-        DeviceConnectIB,
-        DeviceConnectX3Pro,
         DeviceSpectrum,
         DeviceConnectX4,
         DeviceConnectX4LX,
@@ -132,9 +129,6 @@ extern "C"
 
     enum hw_dev_id
     {
-        DeviceConnectX3_HwId = 0x1f5,
-        DeviceConnectIB_HwId = 0x1ff,
-        DeviceConnectX3Pro_HwId = 0x1f7,
         DeviceSpectrum_HwId = 0x249,
         DeviceConnectX4_HwId = 0x209,
         DeviceConnectX4LX_HwId = 0x20b,
@@ -301,13 +295,9 @@ extern "C"
 
     int dm_is_qt3(dm_dev_id_t type);
 
-    int dm_is_4th_gen(dm_dev_id_t type);
-
     int dm_dev_is_fs5(dm_dev_id_t type);
 
     int dm_is_5th_gen_hca(dm_dev_id_t type);
-
-    int dm_is_connectib(dm_dev_id_t type);
 
     int dm_is_cx8(dm_dev_id_t type);
 

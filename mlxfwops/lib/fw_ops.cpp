@@ -44,7 +44,6 @@
 #include "fs5_ops.h"
 #include "fs4_ops.h"
 #include "fs3_ops.h"
-#include "fs2_ops.h"
 #include "fs_pldm.h"
 #include "fsctrl_ops.h"
 #include "fs_comps_factory.h"
@@ -570,7 +569,7 @@ bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase** ioAccessP, 
     else if (fwParams.hndlType == FHT_MST_DEV)
     {
         *ioAccessP = new Flash;
-        if (!(*ioAccessP)->open(fwParams.mstHndl, fwParams.forceLock, fwParams.readOnly, fwParams.numOfBanks, fwParams.flashParams, fwParams.ignoreCacheRep, !fwParams.shortErrors, fwParams.cx3FwAccess, fwParams.noFwCtrl))
+        if (!(*ioAccessP)->open(fwParams.mstHndl, fwParams.forceLock, fwParams.readOnly, fwParams.numOfBanks, fwParams.flashParams, fwParams.ignoreCacheRep, !fwParams.shortErrors, fwParams.noFwCtrl))
         {
             // TODO: release memory here ?
             WriteToErrBuff(fwParams.errBuff, (char*)(*ioAccessP)->err(), fwParams.errBuffSize);
@@ -821,7 +820,6 @@ FwOperations* FwOperations::FwOperationsCreate(void* fwHndl, void* info, char* p
         fwParams.flashParams = (flash_params_t*)NULL;
         fwParams.ignoreCacheRep = 0;
         fwParams.noFlashVerify = false;
-        fwParams.cx3FwAccess = 0;
     }
     else if (hndlType == FHT_CABLE_DEV)
     {
@@ -876,7 +874,6 @@ void FwOperations::BackUpFwParams(fw_ops_params_t& fwParams)
     _fwParams.hndlType = fwParams.hndlType;
     _fwParams.buffHndl = fwParams.buffHndl;
     _fwParams.buffSize = fwParams.buffSize;
-    _fwParams.cx3FwAccess = fwParams.cx3FwAccess;
     _fwParams.errBuff = (char*)NULL;
     _fwParams.errBuffSize = 0;
     _fwParams.fileHndl = (fwParams.hndlType == FHT_FW_FILE && fwParams.fileHndl) ?
@@ -1090,14 +1087,6 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
     init_fwops:
         switch (fwFormat)
         {
-#if !defined(UEFI_BUILD)
-            case FS_FS2_GEN:
-            {
-                DPRINTF(("FS2 ops created for %s\n", file_handle_type_to_str(fwParams.hndlType)));
-                fwops = new Fs2Operations(ioAccess);
-                break;
-            }
-#endif
             case FS_FS3_GEN:
             {
                 DPRINTF(("FS3 ops created for %s\n", file_handle_type_to_str(fwParams.hndlType)));
@@ -1426,9 +1415,6 @@ FwOperations::HwDevData FwOperations::getInfoFromChipType(chip_type_t chipT) con
 // TODO:combine both databases(hwDevData and hwDev2Str) and remove old unsupporded devices i.e infinihost
 // infinihost_iii_ex infinihost_iii_lx
 const FwOperations::HwDevData FwOperations::hwDevData[] = {
-  {"ConnectX-3", CX3_HW_ID, CT_CONNECTX, CFT_HCA, 2, {4099, 4100, 4101, 4102, 4104, 4105, 4106, 4107, 4108, 4109, 4110, 4111, 4112, 0}, {{UNKNOWN_BIN, {0}}}},
-  {"ConnectX-3Pro", CX3_PRO_HW_ID, CT_CONNECTX, CFT_HCA, 2, {4103, 0}, {{UNKNOWN_BIN, {0}}}},
-  {"Connect_IB", CONNECT_IB_HW_ID, CT_CONNECT_IB, CFT_HCA, 2, {CONNECT_IB_SW_ID, 4114, 4115, 4116, 4117, 4118, 4119, 4120, 4121, 4122, 4123, 4124, 0}, {{UNKNOWN_BIN, {0}}}},
   {"ConnectX-4", CX4_HW_ID, CT_CONNECTX4, CFT_HCA, 0, {4115, 0}, {{UNKNOWN_BIN, {0}}}},
   {"ConnectX-4LX", CX4LX_HW_ID, CT_CONNECTX4_LX, CFT_HCA, 0, {4117, 0}, {{UNKNOWN_BIN, {0}}}},
   {"ConnectX-5", CX5_HW_ID, CT_CONNECTX5, CFT_HCA, 0, {4119, 4121, 0}, {{CX5_LOW_BIN, {4119, 0}}, {CX5_HIGH_BIN, {4119, 4121, 0}}, {UNKNOWN_BIN, {0}}}},
@@ -1458,10 +1444,6 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
 };
 
 const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
-  {"ConnectIB", CONNECT_IB_HW_ID, 0x00},
-  {"ConnectX-3 A0", CX3_HW_ID, 0x00},
-  {"ConnectX-3 A1", CX3_HW_ID, 0x01},
-  {"ConnectX-3Pro", CX3_PRO_HW_ID, 0x00},
   {"ConnectX-4", CX4_HW_ID, 0x00},
   {"ConnectX-4LX", CX4LX_HW_ID, 0x00},
   {"ConnectX-5", CX5_HW_ID, 0x00},
@@ -2582,11 +2564,7 @@ bool FwOperations::FwReadBlock(u_int32_t addr, u_int32_t size, std::vector<u_int
 u_int8_t FwOperations::GetFwFormatFromHwDevID(u_int32_t hwDevId)
 {
     // TODO - remove QTM3/CX8/BF4/ARCUSE from FS4
-    if ((hwDevId == CX3_HW_ID) || (hwDevId == CX3_PRO_HW_ID))
-    {
-        return FS_FS2_GEN;
-    }
-    else if ((hwDevId == CONNECT_IB_HW_ID) || (hwDevId == CX4_HW_ID) || (hwDevId == CX4LX_HW_ID) || (hwDevId == SPECTRUM_HW_ID))
+    if ((hwDevId == CX4_HW_ID) || (hwDevId == CX4LX_HW_ID) || (hwDevId == SPECTRUM_HW_ID))
     {
         return FS_FS3_GEN;
     }

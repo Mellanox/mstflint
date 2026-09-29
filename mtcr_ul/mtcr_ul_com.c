@@ -102,7 +102,6 @@
 #include "mtcr_ib.h"
 #include "mtcr_gpu.h"
 #include "packets_layout.h"
-#include "mtcr_tools_cif.h"
 #include "mtcr_icmd_cif.h"
 #include "mtcr_com_defs.h"
 #include "mtcr_common.h"
@@ -287,25 +286,6 @@ static int _extract_dbdf_from_full_name(const char* name, unsigned* domain, unsi
     return -1;
 }
 
-static int mtcr_connectx_flush(void* ptr, int fdlock)
-{
-    u_int32_t value;
-    int rc;
-
-    rc = _flock_int(fdlock, LOCK_EX);
-    CHECK_LOCK(rc);
-    *((u_int32_t*)((char*)ptr + 0xf0380)) = 0x0;
-    do
-    {
-        __asm__ volatile("" ::: "memory");
-        u_int32_t tmp = *((u_int32_t*)((char*)ptr + 0xf0380));
-        value = __be32_to_cpu(tmp);
-    } while (value);
-    rc = _flock_int(fdlock, LOCK_UN);
-    CHECK_LOCK(rc)
-    return 0;
-}
-
 int mread4_ul(mfile* mf, unsigned int offset, u_int32_t* value)
 {
     ul_ctx_t* ctx = mf->ul_ctx;
@@ -361,7 +341,6 @@ static int mwrite_chunk_as_multi_mwrite4(mfile* mf, unsigned int offset, u_int32
     return length;
 }
 
-static int mst_driver_connectx_flush(mfile* mf);
 int mtcr_driver_cr_mread4(mfile* mf, unsigned int offset, u_int32_t* value);
 void mpci_change_ul(mfile* mf);
 
@@ -376,7 +355,6 @@ static int mtcr_check_signature(mfile* mf)
 {
     unsigned signature = 0;
     int rc;
-    char* connectx_flush = getenv("CONNECTX_FLUSH");
 
     rc = mread4_ul(mf, 0x30F0014, &signature);
     if (rc != 4)
@@ -396,26 +374,6 @@ static int mtcr_check_signature(mfile* mf)
         case 0xbadacce5: /* returned upon mapping the UAR bar */
         case 0xffffffff: /* returned when pci mem access is disabled (driver down) */
             return 1;
-    }
-
-    if ((connectx_flush == NULL) || strcmp(connectx_flush, "0"))
-    {
-        if (((signature == 0xa00190) || ((signature & 0xffff) == 0x1f5) || ((signature & 0xffff) == 0x1f7)) && (mf->tp == MST_PCI))
-        {
-            ul_ctx_t* ctx = mf->ul_ctx;
-            ctx->connectx_flush = 1;
-            if (ctx->via_driver)
-            {
-                if (mst_driver_connectx_flush(mf))
-                {
-                    return -1;
-                }
-            }
-            else if (mtcr_connectx_flush(mf->bar_virtual_addr, ctx->fdlock))
-            {
-                return -1;
-            }
-        }
     }
 
     return 0;
@@ -642,20 +600,10 @@ static int mtcr_mmap(mfile* mf, const char* name, off_t off, int ioctl_needed)
 
 int mtcr_pcicr_mread4(mfile* mf, unsigned int offset, u_int32_t* value)
 {
-    ul_ctx_t* ctx = mf->ul_ctx;
-
     if (offset - mf->cr_space_offset >= MTCR_MAP_SIZE)
     {
         errno = EINVAL;
         return 0;
-    }
-    if (ctx->need_flush)
-    {
-        if (mtcr_connectx_flush(mf->bar_virtual_addr, ctx->fdlock))
-        {
-            return 0;
-        }
-        ctx->need_flush = 0;
     }
 
     if (!mf->bar_virtual_addr || mf->bar_virtual_addr == MAP_FAILED)
@@ -680,8 +628,6 @@ int mtcr_pcicr_mread4(mfile* mf, unsigned int offset, u_int32_t* value)
 
 int mtcr_pcicr_mwrite4(mfile* mf, unsigned int offset, u_int32_t value)
 {
-    ul_ctx_t* ctx = mf->ul_ctx;
-
     if (offset - mf->cr_space_offset >= MTCR_MAP_SIZE)
     {
         errno = EINVAL;
@@ -697,7 +643,6 @@ int mtcr_pcicr_mwrite4(mfile* mf, unsigned int offset, u_int32_t value)
         *((u_int32_t*)((char*)mf->bar_virtual_addr + offset)) = value;
     }
 
-    ctx->need_flush = ctx->connectx_flush;
     return 4;
 }
 
@@ -716,8 +661,6 @@ static int mtcr_pcicr_open(mfile* mf, const char* name, char* conf_name, off_t o
 
     mf->bar_virtual_addr = NULL;
     mf->fd = -1;
-    ctx->connectx_flush = 0;
-    ctx->need_flush = 0;
 
     rc = mtcr_mmap(mf, name, off, ioctl_needed);
     if (rc)
@@ -880,18 +823,6 @@ int mtcr_driver_mwrite4(mfile* mf, unsigned int offset, u_int32_t value)
     return rc;
 }
 
-static int mst_driver_connectx_flush(mfile* mf)
-{
-    mtcr_driver_mwrite4(mf, mf->connectx_wa_slot, 0);
-    u_int32_t value = 0x1;
-
-    do
-    {
-        mtcr_driver_mread4(mf, mf->connectx_wa_slot, &value);
-    } while (value);
-    return 0;
-}
-
 int mtcr_fwctl_driver_mread4(mfile* mf, unsigned int offset, u_int32_t* value)
 {
     int rc = -1;
@@ -1011,28 +942,15 @@ u_int16_t nvml_get_device_id(mfile* mf)
 
 int mtcr_driver_cr_mread4(mfile* mf, unsigned int offset, u_int32_t* value)
 {
-    ul_ctx_t* ctx = mf->ul_ctx;
-
-    if (ctx->need_flush)
-    {
-        if (mst_driver_connectx_flush(mf))
-        {
-            return 0;
-        }
-        ctx->need_flush = 0;
-    }
     return mtcr_driver_mread4(mf, offset, value);
 }
 
 int mtcr_driver_cr_mwrite4(mfile* mf, unsigned int offset, u_int32_t value)
 {
-    ul_ctx_t* ctx = mf->ul_ctx;
-
     if (mtcr_driver_mwrite4(mf, offset, value) != 4)
     {
         return 0;
     }
-    ctx->need_flush = ctx->connectx_flush;
     return 4;
 }
 
@@ -1169,8 +1087,6 @@ static int nvml_open(mfile* mf, const char* name)
 {
 #ifdef ENABLE_NVML
     ul_ctx_t* ctx = mf->ul_ctx;
-    ctx->connectx_flush = 0;
-    ctx->need_flush = 0;
     ctx->via_driver = 0;
     mf->tp = MST_NVML;
     ctx->mread4 = nvml_mread4;
@@ -1253,8 +1169,6 @@ static int fwctrl_driver_open(mfile* mf, const char* name)
 
     ul_ctx_t* ctx = mf->ul_ctx;
 
-    ctx->connectx_flush = 0;
-    ctx->need_flush = 0;
     ctx->via_driver = 1;
     mf->fd = open(full_path_name, O_RDWR | O_SYNC);
     if (mf->fd < 0)
@@ -1290,8 +1204,6 @@ static int mtcr_driver_open(mfile* mf, MType dev_type, unsigned domain_p, unsign
 
     int cr_valid = 0;
 
-    ctx->connectx_flush = 0;
-    ctx->need_flush = 0;
     ctx->via_driver = 1;
     if (dev_type == MST_DRIVER_CR)
     {
@@ -1308,14 +1220,6 @@ static int mtcr_driver_open(mfile* mf, MType dev_type, unsigned domain_p, unsign
         ctx->mwrite4_block = (f_mwrite4_block)driver_mwrite4_block;
         ctx->mclose = mtcr_driver_mclose;
         mf->bar_virtual_addr = NULL;
-        unsigned int slot_num;
-        rc = ioctl(mf->fd, PCI_CONNECTX_WA, &slot_num);
-        if (rc < 0)
-        {
-            goto end;
-        }
-
-        mf->connectx_wa_slot = CONNECTX_WA_BASE + 4 * slot_num;
         cr_valid = 1;
         rc = mtcr_check_signature(mf);
 
@@ -2872,10 +2776,7 @@ u_int32_t secured_devices[] = {
 
 #define SECURED_DEVICE_ID_TABLE_SIZE (sizeof(secured_devices) / sizeof(u_int32_t))
 
-u_int32_t supported_device_ids[] = {DeviceConnectX3_HwId,
-                                    DeviceConnectIB_HwId,
-                                    DeviceConnectX3Pro_HwId,
-                                    DeviceSpectrum_HwId,
+u_int32_t supported_device_ids[] = {DeviceSpectrum_HwId,
                                     DeviceConnectX4_HwId,
                                     DeviceConnectX4LX_HwId,
                                     DeviceConnectX5_HwId,
@@ -4806,7 +4707,6 @@ int mwrite_buffer_ul(mfile* mf, unsigned int offset, u_int8_t* data, int byte_le
 u_int8_t class_to_use = MAD_CLASS_1_REG_ACCESS;
 
 static int supports_icmd(mfile* mf);
-static int supports_tools_cmdif_reg(mfile* mf);
 static int mreg_send_wrapper(mfile* mf, u_int8_t* data, int r_icmd_size, int w_icmd_size);
 static int mreg_send_raw(mfile* mf, u_int16_t reg_id, maccess_reg_method_t method, void* reg_data, u_int32_t reg_size, u_int32_t r_size_reg, u_int32_t w_size_reg, int* reg_status);
 
@@ -4870,7 +4770,7 @@ int return_by_reg_status(int reg_status)
 int supports_reg_access_smp(mfile* mf)
 {
 #ifndef NO_INBAND
-    return mib_supports_reg_access_smp(mf) && (supports_icmd(mf) || supports_tools_cmdif_reg(mf));
+    return mib_supports_reg_access_smp(mf) && supports_icmd(mf);
 #endif
     (void)mf;
     return 0;
@@ -5117,14 +5017,6 @@ static int mreg_send_wrapper(mfile* mf, u_int8_t* data, int r_icmd_size, int w_i
         }
 #endif
     }
-    else if (supports_tools_cmdif_reg(mf))
-    {
-        rc = tools_cmdif_reg_access(mf, data, w_icmd_size, r_icmd_size);
-        if (rc)
-        {
-            return rc;
-        }
-    }
     else
     {
         return ME_NOT_IMPLEMENTED;
@@ -5210,10 +5102,6 @@ static int mreg_send_raw(mfile* mf, u_int16_t reg_id, maccess_reg_method_t metho
     return ME_OK;
 }
 
-/* needed device HW IDs */
-#define CONNECTX3_PRO_HW_ID 0x1f7
-#define CONNECTX3_HW_ID 0x1f5
-
 static int supports_icmd(mfile* mf)
 {
     u_int32_t dev_id = 0;
@@ -5227,40 +5115,7 @@ static int supports_icmd(mfile* mf)
     { /* cr might be locked and retured 0xbad0cafe but we dont care we search for device that supports icmd */
         return 0;
     }
-    switch (dev_id & 0xffff)
-    { /* that the hw device id */
-        case CONNECTX3_HW_ID:
-        case CONNECTX3_PRO_HW_ID:
-            return 0;
-
-        default:
-            break;
-    }
     return 1;
-}
-
-static int supports_tools_cmdif_reg(mfile* mf)
-{
-    u_int32_t dev_id = 0;
-
-    if (mread4_ul(mf, HW_ID_ADDR, &dev_id) != 4)
-    { /* cr might be locked and retured 0xbad0cafe but we dont care we search for device that supports tools cmdif */
-        return 0;
-    }
-    switch (dev_id & 0xffff)
-    {                             /* that the hw device id */
-        case CONNECTX3_HW_ID:     /* Cx3 */
-        case CONNECTX3_PRO_HW_ID: /* Cx3-pro */
-            if (tools_cmdif_is_supported(mf) == ME_OK)
-            {
-                return 1;
-            }
-            break;
-
-        default:
-            break;
-    }
-    return 0;
 }
 
 int mget_max_reg_size_ul(mfile* mf, maccess_reg_method_t reg_method)
@@ -5292,10 +5147,6 @@ int mget_max_reg_size_ul(mfile* mf, maccess_reg_method_t reg_method)
     else if (supports_icmd(mf))
     {
         mf->acc_reg_params.max_reg_size[reg_method] = ICMD_MAX_REG_SIZE;
-    }
-    else if (supports_tools_cmdif_reg(mf))
-    {
-        mf->acc_reg_params.max_reg_size[reg_method] = TOOLS_HCR_MAX_REG_SIZE;
     }
     return mf->acc_reg_params.max_reg_size[reg_method];
 }

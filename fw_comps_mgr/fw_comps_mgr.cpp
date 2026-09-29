@@ -1789,14 +1789,6 @@ u_int32_t FwCompsMgr::getFwSupport()
     devid = _hwDevId;
 #endif
     devid = EXTRACT(devid, 0, 16);
-    /*
-     * If 4TH gen nic with no MCAM reg return not supported
-     */
-    if ((devid == CX3_HW_ID) || (devid == CX3_PRO_HW_ID)) {
-        _lastError = FWCOMPS_UNSUPPORTED_DEVICE;
-        return 0;
-    }
-
     reg_access_hca_mcam_reg_ext mcam;
     memset(&mcam, 0, sizeof(mcam));
     reg_access_status_t rc = reg_access_mcam(_mf, REG_ACCESS_METHOD_GET, &mcam);

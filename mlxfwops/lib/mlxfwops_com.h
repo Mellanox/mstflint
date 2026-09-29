@@ -84,9 +84,6 @@
 #define BF2_HW_ID 532
 #define BF3_HW_ID 540
 #define BF4_HW_ID 544
-#define CX3_HW_ID 501
-#define CX3_PRO_HW_ID 503
-#define CONNECT_IB_HW_ID 511
 
 #define INBAND_MAX_REG_SIZE 44
 #define MCDA_REG_HEADER 16
@@ -541,18 +538,6 @@ typedef struct fs3_info_ext
 
 // typedef struct fs3_info_ext fs4_info_t;
 
-typedef struct fs2_info_ext
-{
-    guid_t guids[MAX_GUIDS];
-    u_int32_t guid_num;
-    u_int32_t config_sectors;
-    u_int32_t config_pad;
-    u_int8_t access_key_exists;
-    guid_t access_key_value;
-    u_int8_t blank_guids;
-    char prs_name[PRS_NAME_LEN];
-} fs2_info_t;
-
 #ifdef CABLES_SUPP
 typedef struct cablefw_info_ext
 {
@@ -621,7 +606,6 @@ typedef struct fw_info_ext
 {
     u_int8_t fw_type;
     fw_info_com_t fw_info;
-    fs2_info_t fs2_info;
     fs3_info_t fs3_info;
 #ifdef CABLES_SUPP
     cablefw_info_t cablefw_info;

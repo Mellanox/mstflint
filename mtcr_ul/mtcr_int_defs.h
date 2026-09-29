@@ -68,10 +68,6 @@ typedef int (*f_mclose)(mfile* mf);
 typedef struct ul_ctx
 {
     int fdlock;
-    /* Hermon WA */
-    int connectx_flush; /* For ConnectX A0 */
-    int need_flush;     /* For ConnectX A0 */
-
     f_mread4 mread4;
     f_mwrite4 mwrite4;
     f_mread4_block mread4_block;

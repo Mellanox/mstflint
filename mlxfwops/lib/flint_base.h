@@ -273,8 +273,6 @@ using namespace std;
 #define FS2_BOOT_START 0x38
 #define FS_DATA_OFF 0x28
 
-#define CONNECT_IB_SW_ID 4113
-
 // FS3 defines
 #define FS3_BOOT_START FS2_BOOT_START
 #define FS3_BOOT_START_IN_DW FS3_BOOT_START / 4

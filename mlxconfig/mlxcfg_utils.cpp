@@ -47,7 +47,6 @@
 #include <fstream>
 #include <mft_sig_handler.h>
 #include <bit_slice.h>
-#include <cmdif/tools_cif.h>
 #include <compatibility.h>
 
 #include <tools_layouts/tools_open_layouts.h>

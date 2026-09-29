@@ -257,13 +257,6 @@ FlintStatus Flint::run(int argc, char* argv[])
         _flintParams.cmd = SC_Clear_Sem;
     }
 
-    // TODO: adrianc: remove use_fw flag and this condition before MFT-4.1.0
-    if (_flintParams.use_fw && _flintParams.override_cache_replacement)
-    {
-        printf("-E- flags --use_fw and --override_cache_replacement/-ocr cannot be specified simultaneously");
-        return FLINT_FAILED;
-    }
-
     // Step 2 save argv as a single cmd string in flint params for the log functionality
     for (int i = 0; i < argc; i++)
     {
