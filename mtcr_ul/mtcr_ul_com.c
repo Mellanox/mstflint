@@ -4841,6 +4841,9 @@ int return_by_reg_status(int reg_status)
         case 9:
             return ME_REG_ACCESS_MSG_RECPT_ACK;
 
+        case 0xd:
+            return ME_REG_ACCESS_ISSU_ONGOING;
+
         case 0xe:
             return ME_REG_ACCESS_NOT_SUPPORTED_BY_SECONDARY;
 
