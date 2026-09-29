@@ -64,14 +64,14 @@
       "hw_rev_id": -1
     },
     "mtcr_icmd_info": {
-      "cmd_ptr_address": 0,
-      "cmd_ptr_bitlen": 0,
-      "semaphore_address": 0,
-      "static_cfg_not_done_address": 0,
+      "cmd_ptr_address": 51380224,
+      "cmd_ptr_bitlen": 32,
+      "semaphore_address": 50894072,
+      "static_cfg_not_done_address": 51380240,
       "static_cfg_not_done_offset": 0,
       "version_bit_offset": 0,
-      "version_bitlen": 0,
-      "version_address": 0
+      "version_bitlen": 8,
+      "version_address": 51380292
     }
   }
 }
