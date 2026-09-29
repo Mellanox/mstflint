@@ -49,6 +49,7 @@
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <memory>
 #include <string>
 #include <vector>
@@ -153,6 +154,30 @@ static spdlog::level::level_enum toSpdlogLevel(int severity)
     return toSpdlogLevel(static_cast<nvtoolslogger::Severity>(severity));
 }
 
+static const char* const LEVEL_ENV_VAR = "NVTOOLSLOGGER_LEVEL";
+
+// NVTOOLSLOGGER_LEVEL=1..5 maps onto Severity::Debug..Fatal. When set, it takes over the
+// session entirely instead of layering on the JSON config, so a quick "turn logging on"
+// env var always behaves the same regardless of whatever config file happens to be present.
+static bool getEnvSeverityOverride(nvtoolslogger::Severity& out)
+{
+    const char* value = std::getenv(LEVEL_ENV_VAR);
+    if (value == nullptr)
+    {
+        return false;
+    }
+
+    char* end = nullptr;
+    long level = std::strtol(value, &end, 10);
+    if (end == value || *end != '\0' || level < 1 || level > 5)
+    {
+        return false;
+    }
+
+    out = static_cast<nvtoolslogger::Severity>(level - 1);
+    return true;
+}
+
 static std::string getProcessLogName()
 {
     std::string name = "mft";
@@ -185,10 +210,19 @@ struct NvToolsLogger::Impl
         }
 
         nvtoolslogger::LogConfig config;
-        bool success = config.load(nvtoolslogger::DEFAULT_CONFIG_PATH);
-        if (!success)
+        nvtoolslogger::Severity envLevel;
+        if (getEnvSeverityOverride(envLevel))
         {
-            return;
+            config.setGlobalLevel(envLevel);
+            config.enableSink(nvtoolslogger::Sink::STDOUT);
+        }
+        else
+        {
+            bool success = config.load(nvtoolslogger::DEFAULT_CONFIG_PATH);
+            if (!success)
+            {
+                return;
+            }
         }
 
         // Deliberately the _st (single-threaded) sink variants: they take no lock,
