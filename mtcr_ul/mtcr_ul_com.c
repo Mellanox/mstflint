@@ -220,7 +220,9 @@ static int _flock_int(int fdlock, int operation)
         }
         cnt++;
     } while (cnt < MAX_RETRY_CNT);
-    perror("failed to perform lock operation.");
+    int err = errno;
+    MTCR_LOG_ERROR("Failed to %s the device lock file after %d retries: %s", (operation & LOCK_UN) ? "release" : "take",
+                   cnt, strerror(err));
     return -1;
 }
 
@@ -256,7 +258,7 @@ static int _create_lock(mfile* mf, unsigned domain, unsigned bus, unsigned dev, 
     return 0;
 
 cl_clean_up:
-    fprintf(stderr, "Warrning: Failed to create lockfile: %s (parallel access not supported)\n", fname);
+    MTCR_LOG_WARNING("Failed to create the lockfile %s, parallel access to this device is not protected", fname);
     return 0;
 }
 /*End of Lock file section */
@@ -618,6 +620,7 @@ static int mtcr_mmap(mfile* mf, const char* name, off_t off, int ioctl_needed)
     if (ioctl_needed && (ioctl(mf->fd, PCIIOC_MMAP_IS_MEM) < 0))
     {
         err = errno;
+        MTCR_LOG_ERROR("PCIIOC_MMAP_IS_MEM ioctl failed on %s: %s", mf->dev_name, strerror(err));
         close(mf->fd);
         errno = err;
         return -1;
@@ -628,6 +631,8 @@ static int mtcr_mmap(mfile* mf, const char* name, off_t off, int ioctl_needed)
     if (!mf->bar_virtual_addr || (mf->bar_virtual_addr == MAP_FAILED))
     {
         err = errno;
+        MTCR_LOG_ERROR("Failed to mmap %d bytes of %s at offset 0x%llx: %s", MTCR_MAP_SIZE, mf->dev_name,
+                       (unsigned long long)off, strerror(err));
         close(mf->fd);
         errno = err;
         return -1;
@@ -1254,6 +1259,7 @@ static int fwctrl_driver_open(mfile* mf, const char* name)
     mf->fd = open(full_path_name, O_RDWR | O_SYNC);
     if (mf->fd < 0)
     {
+        MTCR_LOG_ERROR("Failed to open the fwctl device %s: %s", full_path_name, strerror(errno));
         return mf->fd;
     }
     mf->tp = MST_FWCTL_CONTROL_DRIVER;
@@ -1326,6 +1332,8 @@ end:
         mf->res_fd = open(driver_conf_name, O_RDWR | O_SYNC);
         if (mf->res_fd < 0)
         {
+            MTCR_LOG_ERROR("Failed to open the conf node %s of an already opened CR device: %s", driver_conf_name,
+                           strerror(errno));
             return -1;
         }
         mf->res_tp = MST_PCICONF;
@@ -1341,13 +1349,14 @@ end:
         mf->fd = open(driver_conf_name, O_RDWR | O_SYNC);
         if (mf->fd < 0)
         {
+            MTCR_LOG_ERROR("Failed to open the mst driver conf node %s: %s", driver_conf_name, strerror(errno));
             return -1;
         }
         struct mst_params dev_params;
         memset(&dev_params, 0, sizeof(dev_params));
         if (ioctl(mf->fd, MST_PARAMS, &dev_params) < 0)
         {
-            fprintf(stderr, "-E- Failed to get Device PARAMS!\n");
+            MTCR_LOG_ERROR("MST_PARAMS ioctl failed on %s: %s", driver_conf_name, strerror(errno));
             return -1;
         }
         mf->functional_vsec_supp = (int)dev_params.functional_vsc_offset;
@@ -1471,7 +1480,7 @@ int pci_find_capability(mfile* mf, int cap_id)
 
 int mtcr_pciconf_cap9_sem(mfile* mf, int state)
 {
-    u_int32_t lock_val;
+    u_int32_t lock_val = 0;
     u_int32_t counter = 0;
     int retries = 0;
 
@@ -1485,6 +1494,8 @@ int mtcr_pciconf_cap9_sem(mfile* mf, int state)
         {
             if (retries > IFC_MAX_RETRIES)
             {
+                MTCR_LOG_ERROR("VSC semaphore at 0x%" PRIx64 " is still taken after %d retries (last read 0x%x)",
+                               mf->vsec_addr + PCI_SEMAPHORE_OFFSET, retries, lock_val);
                 return ME_SEM_LOCKED;
             }
             /* read semaphore untill 0x0 */
@@ -2240,6 +2251,8 @@ static int mtcr_vfio_device_open(mfile* mf, const char* name, unsigned domain, u
 
     if (GetStartOffsets(domain, bus, dev, func, &mf->fd, &mf->vsec_addr, &mf->address_region_addr) != 0)
     {
+        MTCR_LOG_ERROR("Failed to open %s over VFIO: could not resolve the VSEC offsets of %04x:%02x:%02x.%x", name,
+                       domain, bus, dev, func);
         return -1;
     }
 
@@ -2288,6 +2301,8 @@ static int mtcr_vfio_device_open(mfile* mf, const char* name, unsigned domain, u
 
     if (init_dev_info_ul(mf, name, domain, bus, dev, func))
     {
+        MTCR_LOG_ERROR("Failed to initialize the device info of %s (%04x:%02x:%02x.%x) opened over VFIO", name, domain,
+                       bus, dev, func);
         return -1;
     }
 
@@ -2370,6 +2385,7 @@ static int mtcr_pciconf_open(mfile* mf, const char* name, u_int32_t adv_opt)
             }
             if (mtcr_pciconf_cap9_sem(mf, 1))
             {
+                MTCR_LOG_ERROR("Failed to take the VSC semaphore while opening %s", name);
                 close(mf->fd);
                 errno = EBUSY;
                 return -1;
@@ -4141,7 +4157,7 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
     mfile* mf;
     off_t offset;
     unsigned domain = 0, bus = 0, dev = 0, func = 0;
-    MType dev_type;
+    MType dev_type = MST_ERROR; /* the early "goto open_failed" paths log it before mtcr_parse_name() runs */
     int force;
     char rbuf[99] = "/sys/bus/pci/devices/XXXX:XX:XX.X/resource0";
     char cbuf[99] = "/sys/bus/pci/devices/XXXX:XX:XX.X/config";
@@ -4155,6 +4171,7 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
      * privilege; requiring local root here would block the common case. */
     if ((geteuid() != 0) && !mtcr_remote_is_remote_name(name))
     {
+        MTCR_LOG_ERROR("Cannot open %s: direct device access requires root privileges", name);
         errno = EACCES;
         return NULL;
     }
@@ -4186,6 +4203,8 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
     mf->res_fd = -1;
     mf->mpci_change = mpci_change_ul;
     dev_type = mtcr_parse_name(name, &force, &domain, &bus, &dev, &func);
+    MTCR_LOG_DEBUG("Opening %s: parsed as access type 0x%x, %04x:%02x:%02x.%x (force=%d, adv_opt=0x%x)", name, dev_type,
+                   domain, bus, dev, func, force, adv_opt);
 
     int return_mf = 1;
     switch (dev_type)
@@ -4294,6 +4313,7 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
         sprintf(pcidev, "%4.4x:%2.2x:%2.2x.%1.1x", domain, bus, dev, func);
         if (!is_supported_device(pcidev, mf))
         {
+            MTCR_LOG_ERROR("PCI device %s is not a supported NVIDIA/Mellanox device", pcidev);
             errno = ENOTSUP;
             goto open_failed;
         }
@@ -4302,6 +4322,7 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
 
         if (init_dev_info_ul(mf, name, domain, bus, dev, func))
         {
+            MTCR_LOG_ERROR("Failed to initialize the device info of %s (%s)", name, pcidev);
             goto open_failed;
         }
 
@@ -4434,6 +4455,7 @@ access_config_forced:
 
 open_failed:
     err = errno;
+    MTCR_LOG_ERROR("Failed to open device %s (access type 0x%x): %s", name, dev_type, strerror(err));
     mclose_ul(mf);
     errno = err;
     return NULL;
@@ -4456,6 +4478,8 @@ int init_dev_info_ul(mfile* mf, const char* dev_name, unsigned domain, unsigned 
 
     if (i == devs_len)
     {
+        MTCR_LOG_DEBUG("PCI device %04x:%02x:%02x.%x is not among the %d enumerated devices", domain, bus, dev, func,
+                       devs_len);
         ret = 1;
         goto cleanup;
     }
@@ -4545,6 +4569,12 @@ cleanup:
 mfile* mopen_ul(const char* name)
 {
     mfile* mf = mopen_ul_int(name, 0);
+
+    if (mf)
+    {
+        MTCR_LOG_INFO("Opened device %s: access type 0x%x, PCI device id 0x%x, functional VSC %s", name, mf->tp,
+                      mf->pci_device_id, mf->functional_vsec_supp ? "supported" : "not supported");
+    }
 
     return mf;
 }
@@ -4703,6 +4733,7 @@ static int reopen_pci_as_inband(mfile* mf)
     rc = get_inband_dev_from_pci(inband_dev, mf->dev_name);
     if (rc)
     {
+        MTCR_LOG_ERROR("No inband (IB) device is bound to %s, cannot reopen it for MAD access", mf->dev_name);
         errno = ENODEV;
         return -1;
     }
@@ -5833,7 +5864,17 @@ if (in_parallel) {
     info.device_2.function = function_2;
 }
 
-return ioctl(mf->fd, PCICONF_HOT_RESET, &info);
+int rc = ioctl(mf->fd, PCICONF_HOT_RESET, &info);
+if (rc) {
+    int err = errno;
+    MTCR_LOG_ERROR("Hot reset of %04x:%02x:%02x.%x failed: %s", domain_1, bus_1, device_1, function_1,
+                   strerror(err));
+    errno = err;
+} else {
+    MTCR_LOG_INFO("Hot reset issued for %04x:%02x:%02x.%x%s", domain_1, bus_1, device_1, function_1,
+                  in_parallel ? " (in parallel with its peer device)" : "");
+}
+return rc;
 #else
 (void)mf;
 return -1;
