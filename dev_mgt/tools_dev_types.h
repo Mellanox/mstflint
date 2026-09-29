@@ -70,7 +70,6 @@ extern "C"
         DM_CMIS_CABLE,
         DM_SFP_CABLE,
         DM_LINKX, /* linkx chip */
-        DM_GEARBOX,
         DM_RETIMER,
         DM_GPU
     };
@@ -121,9 +120,6 @@ extern "C"
         DeviceQuantum2, /* Blackbird */
         DeviceQuantum3, /* Sunbird */
         DeviceNVLink6_Switch,
-        DeviceGearBox,
-        DeviceGearBoxManager,
-        DeviceAbirGearBox,
         DeviceCableCMIS,
         DeviceCableCMISPaging,
         DeviceGB100, /* Blackwell */
@@ -177,9 +173,6 @@ extern "C"
         DeviceSpectrum5_HwId = 0x270,
         DeviceSpectrum6_HwId = 0x274,
         DeviceSpectrum6IB_HwId = 0x276,
-        DeviceGearBox_HwId = 0x252,
-        DeviceGearBoxManager_HwId = 0x253,
-        DeviceAbirGearBox_HwId = 0x256,
         DeviceArcusPTC_HwId = 0x7f, /* ArcusP Test Chip */
         DeviceArcusP_HwId = 0x80,
         DeviceArcusE_HwId = 0x81,
@@ -232,11 +225,6 @@ extern "C"
      * A predicate returning if the device is an hca
      */
     int dm_dev_is_hca(dm_dev_id_t type);
-
-    /**
-     * A predicate returning if the device is gearbox
-     */
-    int dm_dev_is_gearbox(dm_dev_id_t type);
 
     /**
      * A predicate returning the software device id
