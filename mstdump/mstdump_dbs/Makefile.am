@@ -30,5 +30,50 @@
 # SOFTWARE.
 #--
 mstregdumpdir = $(datadir)/@PACKAGE@
-dist_mstregdump_DATA = $(srcdir)/*.csv
 
+# The .csv files stay the source of truth in the repo and are always distributed.
+# Compressing them is best effort: the DBs have shipped as plain .csv for years,
+# so any failure here falls back to that rather than breaking the build. crd_lib
+# reads both forms and prefers a plain .csv placed next to them, so a DB can
+# still be overridden in the field.
+CSV_FILES = $(notdir $(wildcard $(srcdir)/*.csv))
+EXTRA_DIST = $(CSV_FILES)
+CLEANFILES = $(CSV_FILES:%=%.xz) $(CSV_FILES:%=%.xz.tmp)
+
+if HAVE_XZ
+all-local: $(CSV_FILES:%=%.xz)
+
+# Compress via a temp file so an interrupted or failing xz can never leave a
+# partial .csv.xz behind - that would be newer than its .csv, count as up to date
+# on the next make, and ship a DB the decoder cannot read. On any failure the
+# target is removed and the plain .csv is installed instead.
+# CRC32 is the only integrity check the in-tree XZ Embedded decoder accepts, and
+# the default preset keeps the dictionary within the decoder's CRD_XZ_DICT_MAX.
+%.csv.xz: $(srcdir)/%.csv
+	-@if $(XZ) --check=crc32 -c $< > $@.tmp 2>/dev/null && test -s $@.tmp; then \
+	    mv -f $@.tmp $@; \
+	else \
+	    rm -f $@.tmp $@; \
+	    echo "  WARNING: $(XZ) failed for $<; installing it uncompressed"; \
+	fi
+endif
+
+# Install the compressed form only where one was actually produced; everything
+# else falls back to the plain .csv. This also covers the no-xz configuration,
+# where no .csv.xz exists at all.
+install-data-local:
+	$(MKDIR_P) "$(DESTDIR)$(mstregdumpdir)"
+	@for f in $(CSV_FILES); do \
+	    if test -f "$$f.xz"; then \
+	        echo " $(INSTALL_DATA) $$f.xz '$(DESTDIR)$(mstregdumpdir)'"; \
+	        $(INSTALL_DATA) "$$f.xz" "$(DESTDIR)$(mstregdumpdir)/$$f.xz" || exit 1; \
+	    else \
+	        echo " $(INSTALL_DATA) $(srcdir)/$$f '$(DESTDIR)$(mstregdumpdir)'"; \
+	        $(INSTALL_DATA) "$(srcdir)/$$f" "$(DESTDIR)$(mstregdumpdir)/$$f" || exit 1; \
+	    fi; \
+	done
+
+uninstall-local:
+	@for f in $(CSV_FILES); do \
+	    rm -f "$(DESTDIR)$(mstregdumpdir)/$$f" "$(DESTDIR)$(mstregdumpdir)/$$f.xz"; \
+	done

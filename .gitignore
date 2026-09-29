@@ -67,3 +67,6 @@ build-tests/
 
 # Hand-written, not autotools output; the unanchored Makefile rule above hides it.
 !mft_sdk/unit_tests/Makefile
+
+# Compressed mstdump device DBs, generated at build time from the .csv sources.
+/mstdump/mstdump_dbs/*.csv.xz
