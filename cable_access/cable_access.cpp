@@ -284,7 +284,7 @@ bool cableAccess::rw(u_int32_t addr, u_int32_t len, u_int8_t* data, int _rw)
     if (rc)
     {
         ostringstream ss;
-        if (((cable_ctx*)(_mf->cable_ctx))->internal_error_msg[0] != '\0')
+        if (_mf->cable_ctx && ((cable_ctx*)(_mf->cable_ctx))->internal_error_msg[0] != '\0')
         {
             ss << ((cable_ctx*)(_mf->cable_ctx))->internal_error_msg;
         }
