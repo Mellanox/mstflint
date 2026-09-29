@@ -72,6 +72,35 @@
 namespace nvtoolslogger
 {
 
+namespace
+{
+// std::stoi() would otherwise accept "20abc", " 20", "1e3" or "00020" and silently
+// keep just the leading digits. Parsed as 64-bit so a value above the ceiling is
+// rejected rather than wrapped.
+bool parsePositiveCount(const std::string& value, uint32_t max, uint32_t& out)
+{
+    if (value.empty() || value[0] == '0' || value.find_first_not_of("0123456789") != std::string::npos)
+    {
+        return false;
+    }
+
+    try
+    {
+        unsigned long long parsed = std::stoull(value);
+        if (parsed > max)
+        {
+            return false;
+        }
+        out = static_cast<uint32_t>(parsed);
+    }
+    catch (const std::exception&)
+    {
+        return false;
+    }
+    return true;
+}
+} // namespace
+
 LogConfigUi::LogConfigUi() :
     CommandLineRequester(TOOL_NAME),
     _cmdParser(TOOL_NAME),
@@ -105,8 +134,8 @@ void LogConfigUi::initCmdParser()
                "Disable an output sink (stdout|stderr|file|syslog). Can be specified multiple times");
 
     AddOptions(SET_MAX_LOG_FILES_FLAG, SET_MAX_LOG_FILES_FLAG_SHORT, "COUNT",
-               "Set maximum number of log files in the log directory (default: " +
-                 std::to_string(DEFAULT_MAX_LOG_DIR_FILES) + ")");
+               "Set maximum number of log files in the log directory (1-" + std::to_string(MAX_LOG_DIR_FILES_LIMIT) +
+                 ", default: " + std::to_string(DEFAULT_MAX_LOG_DIR_FILES) + ")");
 
     AddOptions(SHOW_FLAG, SHOW_FLAG_SHORT, "", "Display the active configuration and resolved layer settings");
 
@@ -254,23 +283,15 @@ ParseStatus LogConfigUi::HandleOption(std::string name, std::string value)
 
     if (name == SET_MAX_LOG_FILES_FLAG)
     {
-        try
-        {
-            int val = std::stoi(value);
-            if (val <= 0)
-            {
-                std::cerr << "Error: --" << SET_MAX_LOG_FILES_FLAG << " must be a positive integer." << std::endl;
-                return PARSE_ERROR;
-            }
-            _hasMaxLogDirFiles = true;
-            _maxLogDirFiles = static_cast<uint32_t>(val);
-        }
-        catch (const std::exception&)
+        uint32_t count = 0;
+        if (!parsePositiveCount(value, MAX_LOG_DIR_FILES_LIMIT, count))
         {
             std::cerr << "Error: Invalid value '" << value << "' for --" << SET_MAX_LOG_FILES_FLAG
-                      << ". Expected a positive integer." << std::endl;
+                      << ". Expected an integer between 1 and " << MAX_LOG_DIR_FILES_LIMIT << "." << std::endl;
             return PARSE_ERROR;
         }
+        _hasMaxLogDirFiles = true;
+        _maxLogDirFiles = count;
         return PARSE_OK;
     }
 
