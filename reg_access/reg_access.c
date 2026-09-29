@@ -144,13 +144,6 @@
 
 #define MAX_DYNAMIC_ARRAY_SIZE_IN_BYTES 704 /* as defined by FW MAD communication */
 
-reg_access_status_t reg_access_mddt(mfile                                * mf,
-                                    reg_access_method_t                    method,
-                                    struct reg_access_switch_mddt_reg_ext* switch_mddt_reg)
-{
-    REG_ACCCESS(mf, method, REG_ID_MDDT, switch_mddt_reg, switch_mddt_reg_ext, reg_access);
-}
-
 reg_access_status_t reg_access_mddq(mfile* mf, reg_access_method_t method, struct reg_access_switch_mddq_ext* mddq)
 {
     REG_ACCCESS(mf, method, REG_ID_MDDQ, mddq, mddq_ext, reg_access_switch);
