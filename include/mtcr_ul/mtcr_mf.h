@@ -100,12 +100,6 @@ struct mfile_t {
     unsigned int i2c_RESERVED; /*  Reserved for internal usage (i2c internal) */
     int          i2c_smbus;
     enum Mdevs_t flags;
-    u_int32_t    connectx_wa_slot; /* apply connectx cr write workaround */
-    int          connectx_wa_last_op_write;
-    u_int32_t    connectx_wa_stat;
-    u_int64_t    connectx_wa_max_retries;
-    u_int64_t    connectx_wa_num_of_writes;
-    u_int64_t    connectx_wa_num_of_retry_writes;
     int          server_ver_major;
     int          server_ver_minor;
     unsigned int proto_type;

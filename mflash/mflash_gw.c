@@ -123,12 +123,9 @@ static bool is_x_byte_address_access_commands(mflash* mfl, int x)
 }
 static int cntx_exec_cmd(mflash* mfl, u_int32_t gw_cmd, char* msg)
 {
-    if (!IS_CONNECTX_4TH_GEN_FAMILY(mfl->attr.hw_dev_id))
-    {
-        // for old devices lock bit is separate from the flash HW ifc
-        // for new devices need to make sure this bit remains locked when writing the dword
-        gw_cmd = MERGE(gw_cmd, 1, 31, 1);
-    }
+    // for old devices lock bit is separate from the flash HW ifc
+    // for new devices need to make sure this bit remains locked when writing the dword
+    gw_cmd = MERGE(gw_cmd, 1, 31, 1);
     if ((gw_cmd & (1 << HBO_ADDR_PHASE)) != 0)
     { // This is an access command
         if (is_x_byte_address_access_commands(mfl, 4))

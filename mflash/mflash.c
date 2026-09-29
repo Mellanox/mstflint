@@ -1465,38 +1465,6 @@ int old_flash_lock(mflash* mfl, int lock_state)
     static u_int32_t cnt;
     u_int32_t word = 0;
 
-#if !defined(UEFI_BUILD)
-    if (IS_CONNECTX_4TH_GEN_FAMILY(mfl->attr.hw_dev_id) && (mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_NO))
-    {
-        int rc = 0;
-        if (lock_state)
-        {
-            if (!mfl->flash_prog_locked)
-            {
-                rc = trm_lock(mfl->trm, TRM_RES_HCR_FLASH_PROGRAMING, MAX_FLASH_PROG_SEM_RETRY_CNT);
-                if (!rc)
-                {
-                    mfl->flash_prog_locked = 1;
-                }
-            }
-        }
-        else
-        {
-            if (mfl->unlock_flash_prog_allowed)
-            {
-                rc = trm_unlock(mfl->trm, TRM_RES_HCR_FLASH_PROGRAMING);
-                if (!rc)
-                {
-                    mfl->flash_prog_locked = 0;
-                }
-            }
-        }
-        if (rc && (rc != TRM_STS_RES_NOT_SUPPORTED))
-        {
-            return MFE_SEM_LOCKED;
-        }
-    }
-#endif /* !defined(UEFI) */
     /* timeout at 5 seconds */
     TIMER_INIT_AND_START();
 
@@ -1899,7 +1867,6 @@ static cache_rep_or_pager_reg_type_t get_reg_type(dm_dev_id_t devid_t)
         case DeviceConnectX4LX:
         case DeviceConnectX5:
         case DeviceSpectrum:
-        case DeviceConnectIB:
             reg_type = CACHE_REP_GEN_5_LEGACY;
             break;
         case DeviceBlueField2:
@@ -3249,7 +3216,7 @@ int mf_open_fw(mflash* mfl, flash_params_t* flash_params, int num_of_banks)
     return MFE_OK;
 }
 
-int mf_opend_int(mflash** pmfl, void* access_dev, int num_of_banks, flash_params_t* flash_params, int ignore_cache_rep_guard, u_int8_t access_type, void* dev_extra, int cx3_fw_access, int no_fw_ctrl)
+int mf_opend_int(mflash** pmfl, void* access_dev, int num_of_banks, flash_params_t* flash_params, int ignore_cache_rep_guard, u_int8_t access_type, void* dev_extra, int no_fw_ctrl)
 {
     int rc = 0;
 
@@ -3263,7 +3230,6 @@ int mf_opend_int(mflash** pmfl, void* access_dev, int num_of_banks, flash_params
 
     (*pmfl)->opts[MFO_IGNORE_CASHE_REP_GUARD] = ignore_cache_rep_guard;
     (*pmfl)->opts[MFO_NO_FW_CTRL] = no_fw_ctrl;
-    (*pmfl)->opts[MFO_CX3_FW_ACCESS_EN] = cx3_fw_access;
     (*pmfl)->access_type = access_type;
     if (access_type == MFAT_MFILE)
     {
@@ -3298,10 +3264,10 @@ int mf_opend_int(mflash** pmfl, void* access_dev, int num_of_banks, flash_params
 
 int mf_open_uefi(mflash** pmfl, uefi_Dev_t* uefi_dev, uefi_dev_extra_t* uefi_dev_extra, int no_fw_ctrl)
 {
-    return mf_opend_int(pmfl, (void*)uefi_dev, 4, (flash_params_t*)NULL, 0, MFAT_UEFI, (void*)uefi_dev_extra, 0, no_fw_ctrl);
+    return mf_opend_int(pmfl, (void*)uefi_dev, 4, (flash_params_t*)NULL, 0, MFAT_UEFI, (void*)uefi_dev_extra, no_fw_ctrl);
 }
 
-int mf_open_int(mflash** pmfl, const char* dev, int num_of_banks, flash_params_t* flash_params, int ignore_cache_rep_guard, int cx3_fw_access, int no_fw_ctrl)
+int mf_open_int(mflash** pmfl, const char* dev, int num_of_banks, flash_params_t* flash_params, int ignore_cache_rep_guard, int no_fw_ctrl)
 {
     mfile* mf;
     int rc = MFE_OK;
@@ -3318,7 +3284,7 @@ int mf_open_int(mflash** pmfl, const char* dev, int num_of_banks, flash_params_t
         return MFE_CR_ERROR;
     }
 
-    rc = mf_opend_int(pmfl, (struct mfile_t*)mf, num_of_banks, flash_params, ignore_cache_rep_guard, MFAT_MFILE, NULL, cx3_fw_access, no_fw_ctrl);
+    rc = mf_opend_int(pmfl, (struct mfile_t*)mf, num_of_banks, flash_params, ignore_cache_rep_guard, MFAT_MFILE, NULL, no_fw_ctrl);
     if ((*pmfl))
     {
         (*pmfl)->opts[MFO_CLOSE_MF_ON_EXIT] = 1;
@@ -3330,14 +3296,14 @@ int mf_open_int(mflash** pmfl, const char* dev, int num_of_banks, flash_params_t
     return rc;
 }
 
-int mf_open_adv(mflash** pmfl, const char* dev, int num_of_banks, flash_params_t* flash_params, int ignore_cache_rep_guard, int cx3_fw_access, int no_fw_ctrl)
+int mf_open_adv(mflash** pmfl, const char* dev, int num_of_banks, flash_params_t* flash_params, int ignore_cache_rep_guard, int no_fw_ctrl)
 {
-    return mf_open_int(pmfl, dev, num_of_banks, flash_params, ignore_cache_rep_guard, cx3_fw_access, no_fw_ctrl);
+    return mf_open_int(pmfl, dev, num_of_banks, flash_params, ignore_cache_rep_guard, no_fw_ctrl);
 }
 
 int mf_open(mflash** pmfl, const char* dev, int num_of_banks, flash_params_t* flash_params, int ignore_cache_rep_guard, int no_fw_ctrl)
 {
-    return mf_open_int(pmfl, dev, num_of_banks, flash_params, ignore_cache_rep_guard, 0, no_fw_ctrl);
+    return mf_open_int(pmfl, dev, num_of_banks, flash_params, ignore_cache_rep_guard, no_fw_ctrl);
 }
 
 void mf_close(mflash* mfl)
@@ -3661,9 +3627,6 @@ int mf_set_reset_flash_on_warm_reboot(mflash* mfl)
 
     switch (mfl->dm_dev_id)
     {
-        case DeviceConnectX3:
-        case DeviceConnectX3Pro:
-        case DeviceConnectIB:
         case DeviceQuantum2:
         case DeviceQuantum3:
         case DeviceNVLink6_Switch:
@@ -3716,9 +3679,6 @@ int mf_update_boot_addr(mflash* mfl, u_int32_t boot_addr)
 
     switch (mfl->dm_dev_id)
     {
-        case DeviceConnectX3:
-        case DeviceConnectX3Pro:
-        case DeviceConnectIB:
         case DeviceSpectrum:
         case DeviceConnectX4:
         case DeviceConnectX4LX:
@@ -4850,14 +4810,7 @@ int mf_secure_host_op(mflash* mfl, u_int64_t key, int op)
     mlock.key = key;
     int rc = ME_OK;
 
-    if (IS_CONNECT_IB(mfl->attr.hw_dev_id))
-    {
-        rc = ME_REG_ACCESS_REG_NOT_SUPP;
-    }
-    else
-    {
-        rc = (int)reg_access_secure_host(mfl->mf, REG_ACCESS_METHOD_SET, &mlock);
-    }
+    rc = (int)reg_access_secure_host(mfl->mf, REG_ACCESS_METHOD_SET, &mlock);
     switch (rc)
     {
         case ME_REG_ACCESS_REG_NOT_SUPP:

@@ -569,7 +569,7 @@ bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase** ioAccessP, 
     else if (fwParams.hndlType == FHT_MST_DEV)
     {
         *ioAccessP = new Flash;
-        if (!(*ioAccessP)->open(fwParams.mstHndl, fwParams.forceLock, fwParams.readOnly, fwParams.numOfBanks, fwParams.flashParams, fwParams.ignoreCacheRep, !fwParams.shortErrors, fwParams.cx3FwAccess, fwParams.noFwCtrl))
+        if (!(*ioAccessP)->open(fwParams.mstHndl, fwParams.forceLock, fwParams.readOnly, fwParams.numOfBanks, fwParams.flashParams, fwParams.ignoreCacheRep, !fwParams.shortErrors, fwParams.noFwCtrl))
         {
             // TODO: release memory here ?
             WriteToErrBuff(fwParams.errBuff, (char*)(*ioAccessP)->err(), fwParams.errBuffSize);
@@ -820,7 +820,6 @@ FwOperations* FwOperations::FwOperationsCreate(void* fwHndl, void* info, char* p
         fwParams.flashParams = (flash_params_t*)NULL;
         fwParams.ignoreCacheRep = 0;
         fwParams.noFlashVerify = false;
-        fwParams.cx3FwAccess = 0;
     }
     else if (hndlType == FHT_CABLE_DEV)
     {
@@ -875,7 +874,6 @@ void FwOperations::BackUpFwParams(fw_ops_params_t& fwParams)
     _fwParams.hndlType = fwParams.hndlType;
     _fwParams.buffHndl = fwParams.buffHndl;
     _fwParams.buffSize = fwParams.buffSize;
-    _fwParams.cx3FwAccess = fwParams.cx3FwAccess;
     _fwParams.errBuff = (char*)NULL;
     _fwParams.errBuffSize = 0;
     _fwParams.fileHndl = (fwParams.hndlType == FHT_FW_FILE && fwParams.fileHndl) ?

@@ -84,33 +84,6 @@ struct device_info
 #define ARCUS_E_REV0_DEVID 0x81
 
 static struct device_info g_devs_info[] = {{
-                                             DeviceConnectX3, /* dm_id */
-                                             0x1f5,           /* hw_dev_id */
-                                             -1,              /* hw_rev_id */
-                                             -1,              /* sw_dev_id */
-                                             "ConnectX3",     /* name */
-                                             2,               /* port_num */
-                                             DM_HCA           /* dev_type */
-                                           },
-                                           {
-                                             DeviceConnectIB, /* dm_id */
-                                             0x1ff,           /* hw_dev_id */
-                                             -1,              /* hw_rev_id */
-                                             4113,            /* sw_dev_id */
-                                             "ConnectIB",     /* name */
-                                             2,               /* port_num */
-                                             DM_HCA           /* dev_type */
-                                           },
-                                           {
-                                             DeviceConnectX3Pro, /* dm_id */
-                                             0x1f7,              /* hw_dev_id */
-                                             -1,                 /* hw_rev_id */
-                                             4103,               /* sw_dev_id */
-                                             "ConnectX3Pro",     /* name */
-                                             2,                  /* port_num */
-                                             DM_HCA              /* dev_type */
-                                           },
-                                           {
                                              DeviceSpectrum, /* dm_id */
                                              0x249,          /* hw_dev_id */
                                              -1,             /* hw_rev_id */
@@ -948,32 +921,12 @@ int dm_is_livefish_mode(mfile* mf)
         return 0;
     }
 
-    if (dm_is_4th_gen(devid_t))
-    {
-        return (devid == swid - 1);
-    }
-    else
-    {
-        int zombiefish = is_zombiefish_device(mf);
-        return ((devid == swid) || zombiefish);
-    }
-
-    return 0;
-}
-
-int dm_is_4th_gen(dm_dev_id_t type)
-{
-    return (type == DeviceConnectX3 || type == DeviceConnectX3Pro);
+    return ((devid == swid) || is_zombiefish_device(mf));
 }
 
 int dm_is_5th_gen_hca(dm_dev_id_t type)
 {
-    return (dm_dev_is_hca(type) && !dm_is_4th_gen(type));
-}
-
-int dm_is_connectib(dm_dev_id_t type)
-{
-    return (type == DeviceConnectIB);
+    return dm_dev_is_hca(type);
 }
 
 int dm_is_qt3(dm_dev_id_t type)
@@ -1041,7 +994,7 @@ int dm_dev_is_eth_switch(dm_dev_id_t type)
 
 int dm_dev_is_fs3(dm_dev_id_t type)
 {
-    return type == DeviceConnectIB || type == DeviceConnectX4 || type == DeviceConnectX4LX || type == DeviceSpectrum;
+    return type == DeviceConnectX4 || type == DeviceConnectX4LX || type == DeviceSpectrum;
 }
 
 int dm_dev_is_fs4(dm_dev_id_t type)

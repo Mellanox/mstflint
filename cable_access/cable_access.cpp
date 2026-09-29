@@ -315,10 +315,6 @@ void cableAccess::setBurnFlow(bool isBurnFlow)
 
 bool cableAccess::isBurnSupported()
 {
-    if (_mf->hw_dev_id == DeviceConnectX3_HwId || _mf->hw_dev_id == DeviceConnectX3Pro_HwId)
-    {
-        return false;
-    }
     return true;
 }
 

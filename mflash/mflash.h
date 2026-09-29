@@ -195,7 +195,6 @@ int mf_open_adv(mflash** pmfl,
                 int num_of_banks,
                 flash_params_t* flash_params,
                 int ignore_cache_rep_guard,
-                int cx3_fw_access,
                 int no_fw_ctrl);
 
 int mf_open_uefi(mflash** pmfl, uefi_Dev_t* uefi_dev, uefi_dev_extra_t* dev_extra, int no_fw_ctrl);

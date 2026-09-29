@@ -211,7 +211,6 @@ FlagMetaData::FlagMetaData()
                                                        // one
     _flags.push_back(new Flag("v", "version", 0));
     _flags.push_back(new Flag("", "no_devid_check", 0));
-    _flags.push_back(new Flag("", "use_fw", 0));
     _flags.push_back(new Flag("", "use_dev_img_info", 0));
     _flags.push_back(new Flag("", "ignore_crc_check", 0));
     _flags.push_back(new Flag("", "hexdump_format", 0));
@@ -629,7 +628,7 @@ void Flint::initCmdParser()
     AddOptions("uid",
                ' ',
                "<UID>",
-               "ConnectIB/SwitchIB only. Derive and set the device UIDs (GUIDs, MACs, WWNs).\n"
+               "SwitchIB only. Derive and set the device UIDs (GUIDs, MACs, WWNs).\n"
                "UIDs are derived from the given base UID according to Mellanox Methodology\n"
                "Commands affected: burn, sg");
 
@@ -698,14 +697,12 @@ void Flint::initCmdParser()
     AddOptions("override_cache_replacement",
                ' ',
                "",
-               "On SwitchX/ConnectIB devices:\n"
+               "On SwitchX devices:\n"
                "Allow accessing the flash even if the cache replacement mode is enabled.\n"
                "NOTE: This flag is intended for advanced users only.\n"
                "Running in this mode may cause the firmware to hang.\n");
 
     AddOptions("no_flash_verify", ' ', "", "Do not verify each write on the flash.");
-
-    AddOptions("use_fw", ' ', "", "Flash access will be done using FW (ConnectX-3/ConnectX-3Pro only).");
 
     AddOptions("silent",
                's',
@@ -1146,10 +1143,6 @@ ParseStatus Flint::HandleOption(string name, string value)
     else if (name == "override_cache_replacement" || name == "ocr")
     {
         _flintParams.override_cache_replacement = true;
-    }
-    else if (name == "use_fw")
-    {
-        _flintParams.use_fw = true;
     }
     else if (name == "no_flash_verify")
     {

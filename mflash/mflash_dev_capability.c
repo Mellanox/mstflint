@@ -49,9 +49,6 @@ int is_four_byte_address_needed(mflash* mfl, MfError* status)
 
     switch (mfl->dm_dev_id)
     {
-        case DeviceConnectX3:
-        case DeviceConnectX3Pro:
-        case DeviceConnectIB:
         case DeviceSpectrum:
         case DeviceConnectX4:
         case DeviceConnectX4LX:
@@ -92,12 +89,8 @@ int is_flash_enable_needed(mflash* mfl, MfError* status)
 {
     *status = MFE_OK;
 
-    if (dm_is_4th_gen(mfl->dm_dev_id))
-    {
-        return 1;
-    }
-    else if ((mfl->dm_dev_id == DeviceSecureHost) || (dm_is_5th_gen_hca(mfl->dm_dev_id)) || (dm_is_new_gen_switch(mfl->dm_dev_id)) ||
-             (dm_dev_is_retimer(mfl->dm_dev_id)))
+    if ((mfl->dm_dev_id == DeviceSecureHost) || (dm_is_5th_gen_hca(mfl->dm_dev_id)) || (dm_is_new_gen_switch(mfl->dm_dev_id)) ||
+        (dm_dev_is_retimer(mfl->dm_dev_id)))
     {
         return 0;
     }
@@ -116,11 +109,8 @@ int is_icmdif_supported(mflash* mfl, MfError* status)
 
     switch (mfl->dm_dev_id)
     {
-        case DeviceConnectX3:
-        case DeviceConnectX3Pro:
         case DeviceSecureHost:
             return 0;
-        case DeviceConnectIB:
         case DeviceConnectX4:
         case DeviceConnectX4LX:
         case DeviceSpectrum:

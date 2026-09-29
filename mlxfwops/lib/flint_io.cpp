@@ -501,7 +501,6 @@ bool Flash::open(const char* device,
                  flash_params_t* flash_params,
                  int ignore_cashe_replacement,
                  bool advErr,
-                 int cx3_fw_access,
                  int no_fw_ctrl)
 {
     // Open device
@@ -509,7 +508,7 @@ bool Flash::open(const char* device,
     _advErrors = advErr;
     _ignore_cache_replacement = ignore_cashe_replacement ? true : false;
     (void)read_only; // not used , avoid compiler warnings TODO: remove this var from function def
-    rc = mf_open_adv(&_mfl, device, num_of_banks, flash_params, ignore_cashe_replacement, cx3_fw_access, no_fw_ctrl);
+    rc = mf_open_adv(&_mfl, device, num_of_banks, flash_params, ignore_cashe_replacement, no_fw_ctrl);
     // printf("device: %s , forceLock: %s , read only: %s, num of banks: %d, flash params is null: %s, ocr: %d, rc:
     // %d\n", 		device, force_lock? "true":"false", read_only?"true":"false", num_of_banks, flash_params?
     // "no":"yes",
