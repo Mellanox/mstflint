@@ -230,6 +230,7 @@ typedef enum MError
     ME_REG_ACCESS_BAD_INDEX,
     ME_REG_ACCESS_BAD_INPUT_LEN,
     ME_REG_ACCESS_BAD_OUTPUT_LEN,
+    ME_REG_ACCESS_ISSU_ONGOING,
 
     /* errors regarding ICMD */
     ME_ICMD_STATUS_CR_FAIL = 0x200, /* cr-space access failure */

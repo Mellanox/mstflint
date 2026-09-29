@@ -229,6 +229,9 @@ const char* m_err2str(MError status)
     case ME_REG_ACCESS_NOT_READY:
         return "Register access not ready";
 
+    case ME_REG_ACCESS_ISSU_ONGOING:
+        return "Register access rejected, an ISSU is in progress on the device. Please retry once it completes.";
+
     /* ICMD access errors */
     case ME_ICMD_STATUS_CR_FAIL:
         return "ICMD failed due to CRSpace access failure";
