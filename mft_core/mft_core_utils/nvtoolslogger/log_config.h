@@ -50,6 +50,8 @@ public:
     bool save(const std::string& path) const;
     void reset();
 
+    bool isStaleConfigIgnored() const;
+
     void setGlobalLevel(Severity level);
     Severity getGlobalLevel() const;
 
@@ -84,6 +86,7 @@ private:
     std::map<std::string, Severity> _moduleLevels;
     std::vector<Sink> _activeSinks;
     uint32_t _maxLogDirFiles;
+    bool _staleConfigIgnored;
 };
 
 } // namespace nvtoolslogger

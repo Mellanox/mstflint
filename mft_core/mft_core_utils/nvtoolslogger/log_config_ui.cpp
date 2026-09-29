@@ -356,6 +356,11 @@ int LogConfigUi::run(int argc, char** argv)
     }
 
     config.load(DEFAULT_CONFIG_PATH);
+    bool staleConfigReplaceFailed = false;
+    if (config.isStaleConfigIgnored() && !hasModifications)
+    {
+        staleConfigReplaceFailed = !config.save(DEFAULT_CONFIG_PATH);
+    }
 
     if (hasModifications)
     {
@@ -410,7 +415,7 @@ int LogConfigUi::run(int argc, char** argv)
         config.show();
     }
 
-    return 0;
+    return staleConfigReplaceFailed ? 1 : 0;
 }
 
 void LogConfigUi::printHelp()
