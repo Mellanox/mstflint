@@ -858,7 +858,7 @@ AC_SUBST(CXX17_STD)
 # client (and libstdc++/jsoncpp/libcurl) into libmtcr_ul, which every tool links.
 AC_MSG_CHECKING(--enable-remote argument)
 AC_ARG_ENABLE(remote,
-    AS_HELP_STRING([--enable-remote], [enable remote device access via the MST HTTP server, requires C++17/openssl/libcurl [default=disabled]]),
+    AS_HELP_STRING([--enable-remote], [enable remote device access via the MST HTTP server, requires C++17/openssl>=3.0/libcurl [default=disabled]]),
     [enable_remote="$enableval"],
     [enable_remote="no"]
 )
@@ -933,6 +933,9 @@ if test "x$enable_remote" = "xyes"; then
     if test "x$enable_openssl" != "xyes"; then
         AC_MSG_ERROR([--enable-remote requires openssl: the MST HTTP transport is TLS and the client pins the server key])
     fi
+    # --enable-remote requires OpenSSL 3.0+
+    PKG_CHECK_MODULES([openssl3], [openssl >= 3.0.0], [],
+        [AC_MSG_ERROR([--enable-remote requires OpenSSL 3.0 or newer])])
     CFLAGS="$CFLAGS -DENABLE_MTCR_REMOTE"
     CXXFLAGS="$CXXFLAGS -DENABLE_MTCR_REMOTE"
 fi
