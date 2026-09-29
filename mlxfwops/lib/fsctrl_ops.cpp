@@ -71,11 +71,7 @@ u_int8_t FsCtrlOperations::FwType()
         }
     }
     u_int8_t fwFormat = GetFwFormatFromHwDevID(_hwDevId);
-    if (fwFormat == FS_FS2_GEN)
-    {
-        return FIT_FS2;
-    }
-    else if (fwFormat == FS_FS3_GEN)
+    if (fwFormat == FS_FS3_GEN)
     {
         return FIT_FS3;
     }

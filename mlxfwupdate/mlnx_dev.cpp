@@ -164,133 +164,65 @@ MlnxDev::MlnxDev(const char* devname, int compare_ffv)
 
 void MlnxDev::setGuidMac(fw_info_t& fw_query)
 {
-    bool isFs2 = (fw_query.fw_type == FIT_FS2) ? true : false;
     char buff[512] = {0};
-    string mac_format = "%4.4x%8.8x";
-    string guild_format = "%8.8x%8.8x";
     if (_deviceType == DeviceUnknown)
     {
         return;
     }
-    if (isFs2)
+    if (fw_query.fs3_info.fs3_uids_info.guid_format == MULTI_ASIC_GUIDS)
     {
-        if (fw_query.fs2_info.guid_num < 3)
-        {
-            return;
-        }
-        if (fw_query.fs2_info.guid_num < 6)
-        {
-            if (fw_query.fs2_info.guids[1].h || fw_query.fs2_info.guids[1].l)
-            {
-                snprintf(buff, sizeof(buff) - 1, guild_format.c_str(), fw_query.fs2_info.guids[1].h,
-                         fw_query.fs2_info.guids[1].l);
-                guidPortOne = (string)buff;
-            }
-            if (fw_query.fs2_info.guids[2].h || fw_query.fs2_info.guids[2].l)
-            {
-                snprintf(buff, sizeof(buff) - 1, guild_format.c_str(), fw_query.fs2_info.guids[2].h,
-                         fw_query.fs2_info.guids[2].l);
-                guidPortTwo = (string)buff;
-            }
-        }
-        else
-        {
-            if (portOneType == PORT_ETH)
-            {
-                if (fw_query.fs2_info.guids[4].h || fw_query.fs2_info.guids[4].l)
-                {
-                    snprintf(buff, sizeof(buff) - 1, mac_format.c_str(), fw_query.fs2_info.guids[4].h,
-                             fw_query.fs2_info.guids[4].l);
-                    macPortOne = (string)buff;
-                }
-            }
-            else if (portOneType == PORT_IB)
-            {
-                if (fw_query.fs2_info.guids[1].h || fw_query.fs2_info.guids[1].l)
-                {
-                    snprintf(buff, sizeof(buff) - 1, guild_format.c_str(), fw_query.fs2_info.guids[1].h,
-                             fw_query.fs2_info.guids[1].l);
-                    guidPortOne = (string)buff;
-                }
-            }
-
-            if (portTwoType == PORT_ETH)
-            {
-                if (fw_query.fs2_info.guids[5].h || fw_query.fs2_info.guids[5].l)
-                {
-                    snprintf(buff, sizeof(buff) - 1, mac_format.c_str(), fw_query.fs2_info.guids[5].h,
-                             fw_query.fs2_info.guids[5].l);
-                    macPortTwo = (string)buff;
-                }
-            }
-            else if (portTwoType == PORT_IB)
-            {
-                if (fw_query.fs2_info.guids[2].h || fw_query.fs2_info.guids[2].l)
-                {
-                    snprintf(buff, sizeof(buff) - 1, guild_format.c_str(), fw_query.fs2_info.guids[2].h,
-                             fw_query.fs2_info.guids[2].l);
-                    guidPortTwo = (string)buff;
-                }
-            }
-        }
+        snprintf(buff, sizeof(buff) - 1, "%016" U64H_FMT_GEN,
+                 fw_query.fs3_info.fs3_uids_info.multi_asic_guids.sys_guid);
+        systemGuid = string(buff);
+        snprintf(buff, sizeof(buff) - 1, "%016" U64H_FMT_GEN,
+                 fw_query.fs3_info.fs3_uids_info.multi_asic_guids.node_guid);
+        nodeGuid = string(buff);
+        snprintf(buff, sizeof(buff) - 1, "%016" U64H_FMT_GEN,
+                 fw_query.fs3_info.fs3_uids_info.image_layout_uids.base_guid.uid);
+        guidPortOne = (string)buff;
+        snprintf(buff, sizeof(buff) - 1, "%012" U64H_FMT_GEN,
+                 fw_query.fs3_info.fs3_uids_info.image_layout_uids.base_mac.uid);
+        macPortOne = (string)buff;
+        // For MULTI_ASIC_GUIDS, guidPortTwo is not applicable
     }
     else
     {
-        if (fw_query.fs3_info.fs3_uids_info.guid_format == MULTI_ASIC_GUIDS)
+        if (fw_query.fs3_info.fs3_uids_info.guid_format == IMAGE_LAYOUT_UIDS)
         {
             snprintf(buff, sizeof(buff) - 1, "%016" U64H_FMT_GEN,
-                     fw_query.fs3_info.fs3_uids_info.multi_asic_guids.sys_guid);
-            systemGuid = string(buff);
-            snprintf(buff, sizeof(buff) - 1, "%016" U64H_FMT_GEN,
-                     fw_query.fs3_info.fs3_uids_info.multi_asic_guids.node_guid);
-            nodeGuid = string(buff);
-            snprintf(buff, sizeof(buff) - 1, "%016" U64H_FMT_GEN,
                      fw_query.fs3_info.fs3_uids_info.image_layout_uids.base_guid.uid);
-            guidPortOne = (string)buff;
-            snprintf(buff, sizeof(buff) - 1, "%012" U64H_FMT_GEN,
-                     fw_query.fs3_info.fs3_uids_info.image_layout_uids.base_mac.uid);
-            macPortOne = (string)buff;
-            // For MULTI_ASIC_GUIDS, guidPortTwo is not applicable
         }
         else
         {
-            if (fw_query.fs3_info.fs3_uids_info.guid_format == IMAGE_LAYOUT_UIDS)
-            {
-                snprintf(buff, sizeof(buff) - 1, "%016" U64H_FMT_GEN,
-                         fw_query.fs3_info.fs3_uids_info.image_layout_uids.base_guid.uid);
-            }
-            else
-            {
-                snprintf(buff, sizeof(buff) - 1, "%016" U64H_FMT_GEN,
-                         fw_query.fs3_info.fs3_uids_info.cib_uids.guids[0].uid);
-            }
+            snprintf(buff, sizeof(buff) - 1, "%016" U64H_FMT_GEN,
+                     fw_query.fs3_info.fs3_uids_info.cib_uids.guids[0].uid);
+        }
 
-            if (fw_query.fs3_info.fs3_uids_info.cib_uids.guids[0].uid ||
-                fw_query.fs3_info.fs3_uids_info.image_layout_uids.base_guid.uid)
-            {
-                guidPortOne = (string)buff;
-            }
+        if (fw_query.fs3_info.fs3_uids_info.cib_uids.guids[0].uid ||
+            fw_query.fs3_info.fs3_uids_info.image_layout_uids.base_guid.uid)
+        {
+            guidPortOne = (string)buff;
+        }
 
-            if (fw_query.fs3_info.fs3_uids_info.guid_format == IMAGE_LAYOUT_UIDS)
+        if (fw_query.fs3_info.fs3_uids_info.guid_format == IMAGE_LAYOUT_UIDS)
+        {
+            snprintf(buff, sizeof(buff) - 1, "%012" U64H_FMT_GEN,
+                     fw_query.fs3_info.fs3_uids_info.image_layout_uids.base_mac.uid);
+            if (fw_query.fs3_info.fs3_uids_info.image_layout_uids.base_mac.uid)
             {
-                snprintf(buff, sizeof(buff) - 1, "%012" U64H_FMT_GEN,
-                         fw_query.fs3_info.fs3_uids_info.image_layout_uids.base_mac.uid);
-                if (fw_query.fs3_info.fs3_uids_info.image_layout_uids.base_mac.uid)
-                {
-                    macPortOne = (string)buff;
-                }
+                macPortOne = (string)buff;
             }
-            else
-            {
-                snprintf(buff, sizeof(buff) - 1, "%016" U64H_FMT_GEN,
-                         fw_query.fs3_info.fs3_uids_info.cib_uids.guids[1].uid);
-            }
+        }
+        else
+        {
+            snprintf(buff, sizeof(buff) - 1, "%016" U64H_FMT_GEN,
+                     fw_query.fs3_info.fs3_uids_info.cib_uids.guids[1].uid);
+        }
 
-            if (fw_query.fs3_info.fs3_uids_info.image_layout_uids.base_mac.uid ||
-                fw_query.fs3_info.fs3_uids_info.cib_uids.guids[1].uid)
-            {
-                guidPortTwo = (string)buff;
-            }
+        if (fw_query.fs3_info.fs3_uids_info.image_layout_uids.base_mac.uid ||
+            fw_query.fs3_info.fs3_uids_info.cib_uids.guids[1].uid)
+        {
+            guidPortTwo = (string)buff;
         }
     }
     //    printf("Guild 1 : %s\n", guidPortOne.c_str());

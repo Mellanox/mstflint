@@ -70,7 +70,6 @@
 #include <unistd.h>
 
 #include "mtcr_icmd_cif.h"
-#include "mtcr_tools_cif.h"
 #ifndef MST_UL
 #include "mtcr_utils.h"
 #else
@@ -2494,7 +2493,6 @@ void mdevices_info_destroy(dev_info* dev_info, int len)
 #define OP_TLV_SIZE 16
 #define REG_TLV_HEADER_LEN 4
 static int supports_icmd(mfile* mf);
-static int supports_tools_cmdif_reg(mfile* mf);
 static int mreg_send_wrapper(mfile* mf, u_int8_t* data, int r_icmd_size, int w_icmd_size);
 static int mreg_send_raw(mfile* mf, u_int16_t reg_id, maccess_reg_method_t method, void* reg_data, u_int32_t reg_size, u_int32_t r_size_reg, u_int32_t w_size_reg, int* reg_status);
 int mget_max_reg_size(mfile* mf, maccess_reg_method_t reg_method);
@@ -2611,14 +2609,6 @@ static int mreg_send_wrapper(mfile* mf, u_int8_t* data, int r_icmd_size, int w_i
             return rc;
         }
     }
-    else if (supports_tools_cmdif_reg(mf))
-    {
-        rc = tools_cmdif_reg_access(mf, data, w_icmd_size, r_icmd_size);
-        if (rc)
-        {
-            return rc;
-        }
-    }
     else
     {
         return ME_NOT_IMPLEMENTED;
@@ -2686,9 +2676,6 @@ static int mreg_send_raw(mfile* mf, u_int16_t reg_id, maccess_reg_method_t metho
     return ME_OK;
 }
 
-#define CONNECTX3_HW_ID 0x1f5
-#define CONNECTX3_PRO_HW_ID 0x1f7
-
 static int supports_icmd(mfile* mf)
 {
     u_int32_t dev_id;
@@ -2698,39 +2685,7 @@ static int supports_icmd(mfile* mf)
         /* cr might be locked and retured 0xbad0cafe but we dont care we search for device that supports icmd */
         return 0;
     }
-    switch (dev_id & 0xffff)
-    { /* that the hw device id */
-        case CONNECTX3_HW_ID:
-        case CONNECTX3_PRO_HW_ID:
-            return 0;
-
-        default:
-            break;
-    }
     return 1;
-}
-
-static int supports_tools_cmdif_reg(mfile* mf)
-{
-    u_int32_t dev_id;
-
-    if (read_device_id(mf, &dev_id) != 4)
-    {
-        return 0;
-    }
-    switch (dev_id & 0xffff)
-    {                             /* that the hw device id */
-        case CONNECTX3_HW_ID:     /* Cx3 */
-        case CONNECTX3_PRO_HW_ID: /* Cx3-pro */
-            if (tools_cmdif_is_supported(mf) == ME_OK)
-            {
-                return 1;
-            }
-            return 0;
-
-        default:
-            return 0;
-    }
 }
 
 int mget_max_reg_size(mfile* mf, maccess_reg_method_t reg_method)
@@ -2745,10 +2700,6 @@ int mget_max_reg_size(mfile* mf, maccess_reg_method_t reg_method)
         /* TOOD: get size dynamically from icmd_params once we have support by fw for mfba with size field greater than */
         /* 8 bits */
         mf->acc_reg_params.max_reg_size[reg_method] = ICMD_MAX_REG_SIZE;
-    }
-    else if (supports_tools_cmdif_reg(mf))
-    {
-        mf->acc_reg_params.max_reg_size[reg_method] = TOOLS_HCR_MAX_REG_SIZE;
     }
     return mf->acc_reg_params.max_reg_size[reg_method];
 }

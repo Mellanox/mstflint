@@ -77,8 +77,6 @@ libmlxfwops_a_SOURCES = \
     flint_io.h \
     fs_checks.cpp \
     fs_checks.h \
-    fs2_ops.cpp \
-    fs2_ops.h \
     fs3_ops.cpp \
     fs3_ops.h \
     fs4_ops.cpp \

@@ -49,8 +49,6 @@ libmtcr_ul_la_SOURCES = \
     $(top_srcdir)/mtcr_ul/mtcr_int_defs.h \
     $(top_srcdir)/mtcr_ul/mtcr_mem_ops.c \
     $(top_srcdir)/mtcr_ul/mtcr_mem_ops.h \
-    $(top_srcdir)/mtcr_ul/mtcr_tools_cif.c \
-    $(top_srcdir)/mtcr_ul/mtcr_tools_cif.h\
     $(top_srcdir)/mtcr_ul/mtcr_ul_icmd_cif.c \
     $(top_srcdir)/mtcr_ul/packets_common.c \
     $(top_srcdir)/mtcr_ul/packets_common.h\

@@ -127,7 +127,6 @@ protected:
     u_int32_t getUserChoice(u_int32_t maximumValue);
     static int verifyCbFunc(char* str);
     static int CbCommon(int completion, char* preStr, char* endStr = NULL);
-    static int burnCbFs2Func(int completion);
     static int burnCbFs3Func(int completion);
     static int advProgressFunc(int completion, const char* stage, prog_t type, int* unknownProgress);
     static int burnBCbFunc(int completion);
@@ -241,7 +240,6 @@ private:
     int _unknownProgress; // used to trace the progress of unknown progress.
     FwCompsMgr* fwCompsAccess;
     FlintStatus burnFs3();
-    FlintStatus burnFs2();
     bool checkFwVersion(bool CreateFromImgInfo = true,
                         u_int16_t fw_ver0 = 0,
                         u_int16_t fw_ver1 = 0,
@@ -250,7 +248,6 @@ private:
     void updateBurnParams();
     bool dealWithExpRom();
     bool checkMatchingExpRomDevId(const fw_info_t& info);
-    bool dealWithGuids();
     bool dealWithVSD();
     FlintStatus burnMFA2();
     FlintStatus burnMFA2LiveFish(dm_dev_id_t devid_t);
@@ -311,7 +308,6 @@ private:
     FlintStatus printInfo(const fw_info_t& fwInfo, bool fullQuery);
     bool displayFs4Uids(const fw_info_t& fwInfo);
     bool displayFs3Uids(const fw_info_t& fwInfo, bool isStripedImage);
-    bool displayFs2Uids(const fw_info_t& fwInfo);
     bool checkMac(u_int64_t mac, string& warrStr);
     FlintStatus queryMFA2();
     void AddTableHeaderForCSVFormat(string& outputString);
@@ -513,7 +509,6 @@ private:
     FwOperations* _ops;
     FwOperations::sg_params_t _sgParams;
 
-    FlintStatus sgFs2();
     FlintStatus sgFs3();
     void setUserGuidsAndMacs();
     bool CheckSetGuidsFlags();

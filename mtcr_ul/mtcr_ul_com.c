@@ -102,7 +102,6 @@
 #include "mtcr_ib.h"
 #include "mtcr_gpu.h"
 #include "packets_layout.h"
-#include "mtcr_tools_cif.h"
 #include "mtcr_icmd_cif.h"
 #include "mtcr_com_defs.h"
 #include "mtcr_common.h"
@@ -4775,7 +4774,6 @@ int mwrite_buffer_ul(mfile* mf, unsigned int offset, u_int8_t* data, int byte_le
 u_int8_t class_to_use = MAD_CLASS_1_REG_ACCESS;
 
 static int supports_icmd(mfile* mf);
-static int supports_tools_cmdif_reg(mfile* mf);
 static int mreg_send_wrapper(mfile* mf, u_int8_t* data, int r_icmd_size, int w_icmd_size);
 static int mreg_send_raw(mfile* mf, u_int16_t reg_id, maccess_reg_method_t method, void* reg_data, u_int32_t reg_size, u_int32_t r_size_reg, u_int32_t w_size_reg, int* reg_status);
 
@@ -4836,7 +4834,7 @@ int return_by_reg_status(int reg_status)
 int supports_reg_access_smp(mfile* mf)
 {
 #ifndef NO_INBAND
-    return mib_supports_reg_access_smp(mf) && (supports_icmd(mf) || supports_tools_cmdif_reg(mf));
+    return mib_supports_reg_access_smp(mf) && supports_icmd(mf);
 #endif
     (void)mf;
     return 0;
@@ -5083,14 +5081,6 @@ static int mreg_send_wrapper(mfile* mf, u_int8_t* data, int r_icmd_size, int w_i
         }
 #endif
     }
-    else if (supports_tools_cmdif_reg(mf))
-    {
-        rc = tools_cmdif_reg_access(mf, data, w_icmd_size, r_icmd_size);
-        if (rc)
-        {
-            return rc;
-        }
-    }
     else
     {
         return ME_NOT_IMPLEMENTED;
@@ -5176,10 +5166,6 @@ static int mreg_send_raw(mfile* mf, u_int16_t reg_id, maccess_reg_method_t metho
     return ME_OK;
 }
 
-/* needed device HW IDs */
-#define CONNECTX3_PRO_HW_ID 0x1f7
-#define CONNECTX3_HW_ID 0x1f5
-
 static int supports_icmd(mfile* mf)
 {
     u_int32_t dev_id = 0;
@@ -5193,40 +5179,7 @@ static int supports_icmd(mfile* mf)
     { /* cr might be locked and retured 0xbad0cafe but we dont care we search for device that supports icmd */
         return 0;
     }
-    switch (dev_id & 0xffff)
-    { /* that the hw device id */
-        case CONNECTX3_HW_ID:
-        case CONNECTX3_PRO_HW_ID:
-            return 0;
-
-        default:
-            break;
-    }
     return 1;
-}
-
-static int supports_tools_cmdif_reg(mfile* mf)
-{
-    u_int32_t dev_id = 0;
-
-    if (mread4_ul(mf, HW_ID_ADDR, &dev_id) != 4)
-    { /* cr might be locked and retured 0xbad0cafe but we dont care we search for device that supports tools cmdif */
-        return 0;
-    }
-    switch (dev_id & 0xffff)
-    {                             /* that the hw device id */
-        case CONNECTX3_HW_ID:     /* Cx3 */
-        case CONNECTX3_PRO_HW_ID: /* Cx3-pro */
-            if (tools_cmdif_is_supported(mf) == ME_OK)
-            {
-                return 1;
-            }
-            break;
-
-        default:
-            break;
-    }
-    return 0;
 }
 
 int mget_max_reg_size_ul(mfile* mf, maccess_reg_method_t reg_method)
@@ -5258,10 +5211,6 @@ int mget_max_reg_size_ul(mfile* mf, maccess_reg_method_t reg_method)
     else if (supports_icmd(mf))
     {
         mf->acc_reg_params.max_reg_size[reg_method] = ICMD_MAX_REG_SIZE;
-    }
-    else if (supports_tools_cmdif_reg(mf))
-    {
-        mf->acc_reg_params.max_reg_size[reg_method] = TOOLS_HCR_MAX_REG_SIZE;
     }
     return mf->acc_reg_params.max_reg_size[reg_method];
 }

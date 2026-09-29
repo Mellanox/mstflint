@@ -536,17 +536,6 @@ int SubCommand::advProgressFunc(int completion, const char* stage, prog_t type, 
     return 0;
 }
 
-int SubCommand::burnCbFs2Func(int completion)
-{
-    char* message = (char*)"Burning FS2 FW image without signatures - ";
-    char* endStr = (char*)"Restoring signature                     - OK";
-    if (completion == 102)
-    {
-        endStr = (char*)"Image was successfully cached by driver.";
-    }
-    return CbCommon(completion, message, endStr);
-}
-
 int SubCommand::bromCbFunc(int completion)
 {
     char* message = (char*)"Burning ROM image    - ";
@@ -1454,7 +1443,7 @@ bool SubCommand::checkGuidsFlags(u_int16_t devType,
             reportErr(true, "-uid flag is applicable only for FS3/FS4/FS5 FW Only.\n");
             return false;
         }
-        else if (fwType != FIT_FS2 && !ethDev && macsSpecified)
+        else if (!ethDev && macsSpecified)
         {
             reportErr(true, "-mac(s) flag is not applicable for IB MT%d device.\n", devType);
             return false;
@@ -1691,12 +1680,6 @@ FlintStatus Extract4MBImageSubCommand::executeCommand()
 
     if (preFwOps() == FLINT_FAILED)
     {
-        return FLINT_FAILED;
-    }
-
-    if (_imgOps->FwType() == FIT_FS2)
-    {
-        reportErr(true, "Extracting FW Data is applicable only for FS3/FS4 FW.\n");
         return FLINT_FAILED;
     }
 
@@ -2609,7 +2592,7 @@ bool BurnSubCommand::verifyParams()
 void BurnSubCommand::updateBurnParams()
 {
     _burnParams.progressFunc =
-      _flintParams.silent == true ? (ProgressCallBack)NULL : _fwType == FIT_FS2 ? &burnCbFs2Func : &burnCbFs3Func;
+      _flintParams.silent == true ? (ProgressCallBack)NULL : &burnCbFs3Func;
 
     _burnParams.ProgressFuncAdv.func =
       _flintParams.silent == true ? (f_prog_func_adv)NULL : (f_prog_func_adv)&advProgressFunc;
@@ -2905,143 +2888,6 @@ FlintStatus BurnSubCommand::burnFs3()
     return FLINT_SUCCESS;
 }
 
-FlintStatus BurnSubCommand::burnFs2()
-{
-    _shouldSkip = false;
-    if (_flintParams.striped_image)
-    {
-        reportErr(true, FLINT_FS2_STRIPED_ERROR);
-        return FLINT_FAILED;
-    }
-    if (_imgInfo.fw_type != FIT_FS2)
-    {
-        reportErr(true, FLINT_IMG_DEV_COMPAT_ERROR, "FS2", "FS2");
-        return FLINT_FAILED;
-    }
-    if (_burnParams.use_cpu_utilization)
-    {
-        if (_burnParams.cpu_utilization < 1 || _burnParams.cpu_utilization > 5)
-        {
-            reportErr(true, FLINT_ILLEGAL_CPU_VALUE);
-            return FLINT_FAILED;
-        }
-    }
-    // CheckMatchingHwDevId is done in mlxfwops burn routine.
-    // CheckMatchingDevId is done in mlxfwops burn routine.
-
-    (void)dealWithExpRom();
-    bool getRomFromDev = _burnParams.burnRomOptions == FwOperations::ExtBurnParams::BRO_FROM_DEV_IF_EXIST;
-    if (!getRomFromDev && !checkMatchingExpRomDevId(_imgInfo))
-    {
-        printf("Image file ROM: FW is for device %d, but Exp-ROM is for device %d\n", _imgInfo.fw_info.dev_type,
-               _imgInfo.fw_info.roms_info.exp_rom_com_devid);
-        if (!askUser())
-        {
-            return FLINT_FAILED;
-        }
-    }
-
-    // deal with guids
-    if (!dealWithGuids())
-    {
-        return FLINT_FAILED;
-    }
-
-    // deal with failsifity should be made in fwops as we dont know if image/device fw is failsafe
-    if (_burnParams.burnFailsafe & (!_imgInfo.fw_info.is_failsafe || !_devInfo.fw_info.is_failsafe))
-    {
-        if ((!_imgInfo.fw_info.is_failsafe && !_devInfo.fw_info.is_failsafe))
-        {
-            // When both image and flash are non-failsafe, flint will burn in a non-failsafe mode
-            _burnParams.burnFailsafe = false;
-        }
-        else
-        {
-            // when only one of image and flash is non-failsafe, flint will fail with appropriate message
-            reportErr(true,
-                      "Failsafe burn failed: FW image in the %s is non failsafe.\n"
-                      "    you cannot burn a%s failsafe image over a%s failsafe image in a failsafe mode.\n"
-                      "    If you want to burn in non failsafe mode, use the \"-nofs\" switch.\n",
-                      _imgInfo.fw_info.is_failsafe ? "flash" : "given file", _imgInfo.fw_info.is_failsafe ? "" : " non",
-                      _devInfo.fw_info.is_failsafe ? "" : " non");
-            return FLINT_FAILED;
-        }
-    }
-
-    // deal with vsd
-    if (!dealWithVSD())
-    {
-        return FLINT_FAILED;
-    }
-
-    // check versions
-    if (!checkFwVersion())
-    {
-        if (_shouldSkip)
-        {
-            return FLINT_SUCCESS;
-        }
-        return FLINT_BURN_ABORTED;
-    }
-    // check Psid
-    if (_devQueryRes && !checkPSID())
-    {
-        return FLINT_FAILED;
-    }
-
-    // Warn if a fw which does not support config is burnt over fw that does support config
-    // The other way (new fw with config, old fw w/o config) is a normal update flow.
-    // Update: all fw should now support config sectors, so we just check any mismatch in the config pads
-
-    // Verify config offset. Should never be different between image and flash (unless changing PSID).
-    if (_imgInfo.fs2_info.config_pad != _devInfo.fs2_info.config_pad)
-    {
-        printf("\n");
-        printf("-W- Configuration section offset on flash (%u sectors) differs from the"
-               " Configuration section offset in the given image (%u sectors)."
-               " Current device configuration (if exists) will be deleted.\n",
-               _devInfo.fs2_info.config_pad,
-               _imgInfo.fs2_info.config_pad);
-        if (_burnParams.allowPsidChange)
-        {
-            if (!askUser())
-            {
-                return FLINT_FAILED;
-            }
-        }
-        else
-        {
-            reportErr(true, "Use the '-allow_psid_change' flag to force this change.\n");
-            return FLINT_FAILED;
-        }
-    }
-
-    if (!_burnParams.burnFailsafe)
-    {
-        printf("Burn process will not be failsafe. No checks will be performed.\n");
-        printf("ALL flash, including the Invariant Sector will be overwritten.\n");
-        printf("If this process fails, computer may remain in an inoperable state.\n");
-        if (!askUser())
-        {
-            return FLINT_FAILED;
-        }
-    }
-
-    // Finally we can burn
-    if (!_fwOps->FwBurnAdvanced(_imgOps, _burnParams))
-    {
-        reportErr(true, FLINT_FS2_BURN_ERROR, _fwOps->err());
-        return FLINT_FAILED;
-    }
-    PRINT_PROGRESS(_burnParams.progressFunc, 101);
-    write_result_to_log(FLINT_SUCCESS, "", _flintParams.log_specified);
-    if (_burnParams.burnStatus.imageCachedSuccessfully)
-    {
-        PRINT_PROGRESS(_burnParams.progressFunc, 102);
-    }
-    return FLINT_SUCCESS;
-}
-
 bool BurnSubCommand::dealWithVSD()
 {
     if (!(_burnParams.vsdSpecified || _burnParams.useImagePs) &&
@@ -3070,171 +2916,51 @@ bool BurnSubCommand::dealWithVSD()
     return true;
 }
 
-bool BurnSubCommand::dealWithGuids()
+bool BurnSubCommand::dealWithExpRom()
 {
-    bool read_guids = true;
-    bool ib_dev;
-    bool eth_dev;
-    // Get the FW types
-    FwOperations::SetDevFlags(_imgInfo.fw_info.chip_type, _imgInfo.fw_info.dev_type, (fw_img_type)_imgInfo.fw_type,
-                              ib_dev, eth_dev);
-    // setDevFlags(_imgInfo, ib_dev, eth_dev);
-
-    // Check if there is a need to read guids
-    if (_burnParams.useImageGuids || _burnParams.blankGuids || (_burnParams.userGuidsSpecified && ib_dev) ||
-        (_burnParams.userMacsSpecified))
+    // Check exp rom:
+    _burnParams.burnRomOptions = FwOperations::ExtBurnParams::BRO_ONLY_FROM_IMG;
+    bool cond = _devQueryRes && IS_HCA(_devInfo.fw_info.chip_type);
+    if (cond && _flintParams.use_dev_rom)
     {
-        read_guids = false;
-    }
-    // Check if the burnt FW is ok and readable in order to get the GUIDs later
-    if (read_guids && !_devQueryRes)
-    {
-        // printMissingGuidErr(ib_dev, eth_dev);
-        if (_burnParams.burnFailsafe)
+        if (_devInfo.fw_info.roms_info.num_of_exp_rom > 0)
         {
-            reportErr(true,
-                      "Can not extract GUIDs/MACs info from flash, %s\n"
-                      "    Can not burn in a failsafe mode.\n"
-                      "    If you want to burn in non failsafe mode, use the \"-nofs\" switch.\n",
-                      _fwOps->err());
+            if (!strcmp(_devInfo.fw_info.product_ver, "") && !strcmp(_imgInfo.fw_info.product_ver, ""))
+            {
+                _burnParams.burnRomOptions = FwOperations::ExtBurnParams::BRO_FROM_DEV_IF_EXIST;
+            }
+            else if (_flintParams.allow_rom_change)
+            {
+                _burnParams.burnRomOptions = FwOperations::ExtBurnParams::BRO_FROM_DEV_IF_EXIST;
+            }
+            else
+            {
+                // error, please use allow_rom_change flag
+                reportErr(true, "The device FW contains common FW/ROM Product Version - "
+                                "The ROM cannot be updated separately.\n");
+                return false;
+            }
         }
         else
         {
-            reportErr(true, "Can not extract GUIDs/MACs info from flash, %s", _fwOps->err());
-            printMissingGuidErr(ib_dev, eth_dev);
-        }
-        return false;
-    }
-    // Check guids flag to ensure correct patching of guids in mlxfwops
-    bool is_guids_specified =
-      _burnParams.userGuidsSpecified || _burnParams.userMacsSpecified || _burnParams.userUidSpecified;
-    if (is_guids_specified)
-    {
-        if (!checkGuidsFlags(_imgInfo.fw_info.dev_type, _fwType, _burnParams.userGuidsSpecified,
-                             _burnParams.userMacsSpecified, _burnParams.userUidSpecified, ib_dev, eth_dev))
-        {
-            return false;
-        }
-    }
-    // report guid changes if needed. and update the user_guids vector in _burnParams
-    if (is_guids_specified || _flintParams.use_image_guids)
-    {
-        guid_t* new_guids = (_burnParams.userGuidsSpecified || _burnParams.userUidSpecified) ?
-                              &_burnParams.userUids[0] :
-                              _devInfo.fs2_info.guids;
-        guid_t* new_macs =
-          _burnParams.userMacsSpecified != 0 ? &_burnParams.userUids[GUIDS] : &_devInfo.fs2_info.guids[GUIDS];
-        guid_t* old_guids = !_devQueryRes ? NULL : _devInfo.fs2_info.guids;
-        guid_t* old_macs = old_guids != NULL ? &old_guids[GUIDS] : NULL;
-        if (!is_guids_specified && _flintParams.use_image_guids)
-        {
-            new_guids = _imgInfo.fs2_info.guids;
-            new_macs = &_imgInfo.fs2_info.guids[GUIDS];
-        }
-        // printf("-D- l=%d, h=%d\n", new_macs->l, new_macs->h);
-        if (!reportGuidChanges(new_guids, new_macs, old_guids, old_macs, ib_dev, eth_dev, _imgInfo.fs2_info.guid_num))
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
-bool BurnSubCommand::dealWithExpRom()
-{
-    bool getRomFromDev = false;
-
-    // Check exp rom:
-    bool fs2Cond;
-
-    if (_fwType != FIT_FS2)
-    {
-        _burnParams.burnRomOptions = FwOperations::ExtBurnParams::BRO_ONLY_FROM_IMG;
-        bool cond = _devQueryRes && IS_HCA(_devInfo.fw_info.chip_type);
-        if (cond && _flintParams.use_dev_rom)
-        {
-            if (_devInfo.fw_info.roms_info.num_of_exp_rom > 0)
+            if (_imgInfo.fw_info.roms_info.num_of_exp_rom > 0)
             {
-                if (!strcmp(_devInfo.fw_info.product_ver, "") && !strcmp(_imgInfo.fw_info.product_ver, ""))
+                if (!askUser("No Expansion ROM found in the device, "
+                             "Do you want to use the ROM from the image file",
+                             false))
                 {
-                    _burnParams.burnRomOptions = FwOperations::ExtBurnParams::BRO_FROM_DEV_IF_EXIST;
-                }
-                else if (_flintParams.allow_rom_change)
-                {
-                    _burnParams.burnRomOptions = FwOperations::ExtBurnParams::BRO_FROM_DEV_IF_EXIST;
-                }
-                else
-                {
-                    // error, please use allow_rom_change flag
-                    reportErr(true, "The device FW contains common FW/ROM Product Version - "
-                                    "The ROM cannot be updated separately.\n");
                     return false;
                 }
             }
             else
             {
-                if (_imgInfo.fw_info.roms_info.num_of_exp_rom > 0)
+                if (!askUser("No Expansion ROM found in the device"
+                             ", Do you want to continue"))
                 {
-                    if (!askUser("No Expansion ROM found in the device, "
-                                 "Do you want to use the ROM from the image file",
-                                 false))
-                    {
-                        return false;
-                    }
-                }
-                else
-                {
-                    if (!askUser("No Expansion ROM found in the device"
-                                 ", Do you want to continue"))
-                    {
-                        return false;
-                    }
+                    return false;
                 }
             }
         }
-        return true;
-    }
-
-    FwVersion dev_version = FwOperations::createFwVersion(&_devInfo.fw_info);
-    bool rom_condition =
-      (FwOperations::IsFwSupportingRomModify(dev_version) || (_imgInfo.fw_info.roms_info.num_of_exp_rom > 0));
-    fs2Cond = (_devQueryRes && IS_HCA(_devInfo.fw_info.chip_type) && rom_condition && !_flintParams.use_image_rom &&
-               !strcmp(_devInfo.fw_info.product_ver, "") && !strcmp(_imgInfo.fw_info.product_ver, ""));
-
-    if (fs2Cond)
-    {
-        // Enter here when:
-        //                  The fw on the flash is OK (passed query, and it should pass verify in mlxfwops) &&
-        //                  ( The device is connectx ||  connectib    )&&
-        //                  The image fw supports modifying ROM OR it contains ROM &&.
-        //                  The user didn't ask to burn the image rom. &&
-        //                  The  fw on the flash doesn't contain product version
-
-        if (_imgInfo.fw_info.roms_info.num_of_exp_rom > 0 && _devInfo.fw_info.roms_info.num_of_exp_rom > 0)
-        {
-            printf("\n    Note: Both the image file and the flash contain a ROM image.\n"
-                   "          Select \"yes\" to use the ROM from the given image file.\n"
-                   "          Select \"no\" to keep the existing ROM in the flash\n");
-
-            displayExpRomInfo(_devInfo.fw_info.roms_info, "    Current ROM info on flash: ");
-            displayExpRomInfo(_imgInfo.fw_info.roms_info, "    ROM info from image file : ");
-            if (!askUser("Use the ROM from the image file", false))
-            {
-                getRomFromDev = true;
-            }
-            else
-            {
-                getRomFromDev = false;
-            }
-        }
-        else if (!(_imgInfo.fw_info.roms_info.num_of_exp_rom > 0) && _devInfo.fw_info.roms_info.num_of_exp_rom > 0)
-        {
-            getRomFromDev = true;
-        }
-    }
-    if (getRomFromDev)
-    {
-        _burnParams.burnRomOptions = FwOperations::ExtBurnParams::BRO_FROM_DEV_IF_EXIST;
     }
     return true;
 }
@@ -3790,7 +3516,7 @@ FlintStatus BurnSubCommand::executeCommand()
         return FLINT_FAILED;
     }
 
-    if (_flintParams.use_image_guids && _fwType != FIT_FS2)
+    if (_flintParams.use_image_guids)
     {
         UnlockDevice(_fwOps);
         reportErr(true, "The \"--use_image_guids\" flag is supported only for GEN4 devices.\n");
@@ -3843,12 +3569,6 @@ FlintStatus BurnSubCommand::executeCommand()
             }
         }
         FlintStatus res = burnFs3();
-        UnlockDevice(_fwOps);
-        return res;
-    }
-    else if (_fwType == FIT_FS2)
-    {
-        FlintStatus res = burnFs2();
         UnlockDevice(_fwOps);
         return res;
     }
@@ -4256,89 +3976,6 @@ bool QuerySubCommand::checkMac(u_int64_t mac, string& warrStr)
     return true;
 }
 
-bool QuerySubCommand::displayFs2Uids(const fw_info_t& fwInfo)
-{
-    const char* mac_indent = "";
-    bool ibDev;
-    bool ethDev;
-    FwOperations::SetDevFlags(fwInfo.fw_info.chip_type, fwInfo.fw_info.dev_type, (fw_img_type)fwInfo.fw_type, ibDev,
-                              ethDev);
-    // setDevFlags(fwInfo, ibDev, ethDev);
-    int numPorts = 2;
-    // we do not support cards with one port anymore.
-
-    // GUIDS:
-    if (ibDev)
-    {
-        // report("GUID Des:        Node             Port1            ");
-        printf("Description:           Node             ");
-        if (numPorts > 0)
-        {
-            printf("Port1            ");
-        }
-        if (numPorts > 1)
-        {
-            printf("Port2            ");
-        }
-        printf("Sys image\n");
-
-        printf("GUIDs:                 ");
-        for (u_int32_t i = 0; i < GUIDS; i++)
-        {
-            if ((i == 1 && numPorts < 1) || (i == 2 && numPorts < 2))
-            {
-                continue;
-            }
-            printf(GUID_FORMAT " ", fwInfo.fs2_info.guids[i].h, fwInfo.fs2_info.guids[i].l);
-        }
-        if (numPorts > 0)
-        {
-            mac_indent = "                 ";
-        }
-    }
-    // MACS:
-    if (ethDev)
-    {
-        if (fwInfo.fs2_info.guid_num == 6)
-        {
-            if (!ibDev)
-            {
-                printf("Description:  %s    Port1            Port2\n", mac_indent);
-            }
-            else
-            {
-                printf("\n");
-            }
-            printf("MACs:          %s       ", mac_indent);
-            for (u_int32_t i = GUIDS; i < 6; i++)
-            {
-                printf("     " MAC_FORMAT, fwInfo.fs2_info.guids[i].h, fwInfo.fs2_info.guids[i].l);
-            }
-
-            for (u_int32_t i = GUIDS; i < 6; i++)
-            {
-                u_int64_t mac = (((u_int64_t)fwInfo.fs2_info.guids[i].h) << 32) | fwInfo.fs2_info.guids[i].l;
-                string warrStr;
-                if (!fwInfo.fs2_info.blank_guids && !checkMac(mac, warrStr))
-                {
-                    if (i == GUIDS)
-                    {
-                        printf("\n\n");
-                    }
-                    printf(FLINT_BAD_MAC_ADRESS_WARNING, fwInfo.fs2_info.guids[i].h, fwInfo.fs2_info.guids[i].l,
-                           warrStr.c_str());
-                }
-            }
-        }
-        else
-        {
-            printf(FLINT_MAC_ENTRIES_WARNING, 6, fwInfo.fs2_info.guid_num);
-        }
-    }
-
-    printf("\n");
-    return true;
-}
 #define NA_STR "N/A"
 #define BASE_STR "Base"
 #define PRINT_FS3_OR_NEWER_UID(uid1, str, printStep, isGuid)             \
@@ -4718,7 +4355,6 @@ bool HwSubCommand::FillAttrIfNeeded(ext_flash_attr_t& attr, char* param_val_str,
 FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
 {
     DPRINTF(("QuerySubCommand::printInfo fullQuery=%d\n", fullQuery));
-    bool isFs2 = (fwInfo.fw_type == FIT_FS2) ? true : false;
     bool isFs3 = (fwInfo.fw_type == FIT_FS3) ? true : false;
     bool isFs4 = (fwInfo.fw_type == FIT_FS4 || fwInfo.fw_type == FIT_FS5) ? true : false;
     bool isFsCtrl = (fwInfo.fw_type == FIT_FSCTRL) ? true : false;
@@ -4786,40 +4422,22 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
             printf("MIC Version:           %d.%d.%d\n", fwInfo.fw_info.mic_ver[0], fwInfo.fw_info.mic_ver[1],
                    fwInfo.fw_info.mic_ver[2]);
         }
-        if (isFs2)
+        // FS3
+        if (strlen(fwInfo.fs3_info.prs_name))
         {
-            if (fwInfo.fs2_info.config_sectors)
-            {
-                printf("Config Sectors:        %d\n", fwInfo.fs2_info.config_sectors);
-            }
-            if (fwInfo.fs2_info.config_pad)
-            {
-                printf("Config Pad:            %d\n", fwInfo.fs2_info.config_pad);
-            }
-            if (strlen(fwInfo.fs2_info.prs_name))
-            {
-                printf("PRS Name:              %s\n", fwInfo.fs2_info.prs_name);
-            }
+            printf("PRS Name:              %s\n", fwInfo.fs3_info.prs_name);
         }
-        else
+        if (strlen(fwInfo.fs3_info.orig_prs_name))
         {
-            // FS3
-            if (strlen(fwInfo.fs3_info.prs_name))
-            {
-                printf("PRS Name:              %s\n", fwInfo.fs3_info.prs_name);
-            }
-            if (strlen(fwInfo.fs3_info.orig_prs_name))
-            {
-                printf("Orig PRS Name:         %s\n", fwInfo.fs3_info.orig_prs_name);
-            }
-            if (strlen(fwInfo.fs3_info.name))
-            {
-                printf("Part Number:           %s\n", fwInfo.fs3_info.name);
-            }
-            if (strlen(fwInfo.fs3_info.description))
-            {
-                printf("Description:           %s\n", fwInfo.fs3_info.description);
-            }
+            printf("Orig PRS Name:         %s\n", fwInfo.fs3_info.orig_prs_name);
+        }
+        if (strlen(fwInfo.fs3_info.name))
+        {
+            printf("Part Number:           %s\n", fwInfo.fs3_info.name);
+        }
+        if (strlen(fwInfo.fs3_info.description))
+        {
+            printf("Description:           %s\n", fwInfo.fs3_info.description);
         }
     }
 
@@ -4837,88 +4455,52 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
         printf("                       type=PXE  version=skipped devid=skipped cpu=skipped\n");
         printf("                       type=NVMe version=skipped devid=skipped cpu=skipped\n");
     }
-    if (isFs2)
+    /*i.e its fs3/fs4*/
+    if (!displayFs3Uids(fwInfo, isStripedImage))
     {
-        printf("Device ID:             %d\n", fwInfo.fw_info.dev_type);
-    }
-
-    if (isFs2 && fwInfo.fs2_info.access_key_exists)
-    {
-        printf("HW Access Key:         ");
-        if (fwInfo.fs2_info.access_key_value.l || fwInfo.fs2_info.access_key_value.h)
-        {
-            printf("Enabled\n");
-        }
-        else
-        {
-            printf("Disabled\n");
-        }
-    }
-
-    if (!isFs2)
-    {
-        /*i.e its fs3/fs4*/
-        if (!displayFs3Uids(fwInfo, isStripedImage))
-        {
-            return FLINT_FAILED;
-        }
-    }
-    else
-    {
-        if (!displayFs2Uids(fwInfo))
-        {
-            return FLINT_FAILED;
-        }
+        return FLINT_FAILED;
     }
 
     // VSD, PSID
     if (!fwInfo.fw_info.vsd_vendor_id || fwInfo.fw_info.vsd_vendor_id == MELLANOX_VENDOR_ID)
     {
-        if (!isFs2)
-        {
-            char* imageVSD = (char*)fwInfo.fs3_info.image_vsd;
-            char* deviceVSD = NULL;
+        char* imageVSD = (char*)fwInfo.fs3_info.image_vsd;
+        char* deviceVSD = NULL;
 
-            if (_flintParams.device_specified == false && _flintParams.image_specified == true)
-            {
-                // we're making query on BIN file only
-                deviceVSD = (char*)fwInfo.fw_info.vsd;
-            }
-            else if (isFs4 && !_flintParams.no_fw_ctrl && !_flintParams.override_cache_replacement)
-            {
-                deviceVSD = (char*)fwInfo.fs3_info.deviceVsd;
-            }
-            else
-            {
-                deviceVSD = (char*)fwInfo.fw_info.vsd;
-            }
-            if (strlen(imageVSD) == 0)
-            {
-                imageVSD = (char*)NA_STR;
-            }
-            if (strlen(deviceVSD) == 0)
-            {
-                deviceVSD = (char*)NA_STR;
-            }
-            printf("Image VSD:             %s\n", imageVSD);
-            printf("Device VSD:            %s\n", deviceVSD);
-            printf("PSID:                  %s\n", fwInfo.fw_info.psid);
-            if (!isStripedImage && strncmp(fwInfo.fw_info.psid, fwInfo.fs3_info.orig_psid, 13) != 0)
-            {
-                if (strlen(fwInfo.fs3_info.orig_psid))
-                {
-                    printf("Orig PSID:             %s\n", fwInfo.fs3_info.orig_psid);
-                }
-                else
-                {
-                    printf("Orig PSID:             %s\n", NA_STR);
-                }
-            }
+        if (_flintParams.device_specified == false && _flintParams.image_specified == true)
+        {
+            // we're making query on BIN file only
+            deviceVSD = (char*)fwInfo.fw_info.vsd;
+        }
+        else if (isFs4 && !_flintParams.no_fw_ctrl && !_flintParams.override_cache_replacement)
+        {
+            deviceVSD = (char*)fwInfo.fs3_info.deviceVsd;
         }
         else
         {
-            printf("VSD:                   %s\n", fwInfo.fw_info.vsd);
-            printf("PSID:                  %s\n", fwInfo.fw_info.psid);
+            deviceVSD = (char*)fwInfo.fw_info.vsd;
+        }
+        if (strlen(imageVSD) == 0)
+        {
+            imageVSD = (char*)NA_STR;
+        }
+        if (strlen(deviceVSD) == 0)
+        {
+            deviceVSD = (char*)NA_STR;
+        }
+        printf("Image VSD:             %s\n", imageVSD);
+        printf("Device VSD:            %s\n", deviceVSD);
+        printf("PSID:                  %s\n", fwInfo.fw_info.psid);
+        if (!isStripedImage && strncmp(fwInfo.fw_info.psid, fwInfo.fs3_info.orig_psid, 13) != 0)
+        {
+            if (strlen(fwInfo.fs3_info.orig_psid))
+            {
+                printf("Orig PSID:             %s\n", fwInfo.fs3_info.orig_psid);
+            }
+            else
+            {
+                printf("Orig PSID:             %s\n", NA_STR);
+            }
         }
     }
     else
@@ -5014,12 +4596,6 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
                 }
             }
         }
-    }
-
-    if (isFs2 && fwInfo.fs2_info.blank_guids)
-    {
-        // blankGuids only exsists in FS2 image type in mlxfwops why?
-        printf(FLINT_BLANK_GUIDS_WARNING);
     }
 
     if (fwInfo.fs3_info.ini_file_version)
@@ -5635,23 +5211,6 @@ FlintStatus VerifySubCommand::executeCommand()
         reportErr(true, FLINT_CMD_VERIFY_ERROR, ops->err());
         return FLINT_FAILED;
     }
-    // get status of blank guids in fs2 only can either bring from FwVerify as another parameter. ask mohammad
-    if (ops->FwType() == FIT_FS2)
-    {
-        fw_info_t fwInfo;
-        if (!ops->FwQuery(&fwInfo, true, _flintParams.striped_image))
-        {
-            printf("\n\n");
-            reportErr(true, "Failed to get Guids status. %s\n", ops->err());
-            return FLINT_FAILED;
-        }
-        if (fwInfo.fs2_info.blank_guids)
-        {
-            printf("\n\n");
-            reportErr(true, FLINT_CMD_VERIFY_ERROR, "BLANK GUIDS");
-            return FLINT_FAILED;
-        }
-    }
     printf("\n-I- FW image verification succeeded. Image is bootable.\n\n");
     return FLINT_SUCCESS;
 }
@@ -6187,54 +5746,6 @@ bool SgSubCommand::CheckSetGuidsFlags()
     return true;
 }
 
-FlintStatus SgSubCommand::sgFs2()
-{
-    // different behaviours for fs2 device with blank guids and fs2 device with guids or image
-    // different behaviour if isfailesafe or not
-    if (_flintParams.cmd_params.size() > 1)
-    {
-        reportErr(true, FLINT_CMD_ARGS_ERROR2, _name.c_str(), 1, (int)_flintParams.cmd_params.size());
-    }
-
-    if (_flintParams.device_specified && !_info.fs2_info.blank_guids)
-    {
-        // 2- FS2 device with no blank Guids
-        printf(FLINT_SET_GUIDS_WARRNING);
-    }
-
-    if (!CheckSetGuidsFlags())
-    {
-        return FLINT_FAILED;
-    }
-
-    if (_flintParams.image_specified || !_info.fs2_info.blank_guids)
-    {
-        // report guid changes
-        bool ethDev;
-        bool ibDev;
-        FwOperations::SetDevFlags(_info.fw_info.chip_type, _info.fw_info.dev_type, (fw_img_type)_info.fw_type, ibDev,
-                                  ethDev);
-        // setDevFlags(_info, ibDev, ethDev);
-        // decide what are our new guids/macs
-        guid_t* new_guids =
-          (_sgParams.guidsSpecified || _sgParams.uidSpecified) ? &_sgParams.userGuids[0] : &_info.fs2_info.guids[0];
-        guid_t* new_macs = _sgParams.macsSpecified ? &_sgParams.userGuids[GUIDS] : &_info.fs2_info.guids[GUIDS];
-
-        if (!reportGuidChanges(new_guids, new_macs, &_info.fs2_info.guids[0], &_info.fs2_info.guids[GUIDS], ibDev,
-                               ethDev, _info.fs2_info.guid_num))
-        {
-            return FLINT_FAILED;
-        }
-    }
-    if (!_ops->FwSetGuids(_sgParams, &verifyCbFunc, &burnCbFs2Func))
-    {
-        reportErr(true, FLINT_SG_GUID_ERROR, _ops->err());
-        return FLINT_FAILED;
-    }
-    burnCbFs2Func(101);
-    return FLINT_SUCCESS;
-}
-
 #ifndef MST_UL
 #define FW_RESET_MSG "To load new configuration run mlxfwreset or reboot machine"
 #else
@@ -6324,10 +5835,6 @@ FlintStatus SgSubCommand::executeCommand()
         return FLINT_FAILED;
     }
     setUserGuidsAndMacs();
-    if (_info.fw_type == FIT_FS2)
-    {
-        return sgFs2();
-    }
     FlintStatus setGuidResult = sgFs3();
     return setGuidResult;
 }
@@ -6462,7 +5969,7 @@ FlintStatus SmgSubCommand::executeCommand()
         reportErr(true, FLINT_MFG_ERROR, _ops->err());
         return FLINT_FAILED;
     }
-    if (_flintParams.device_specified && _info.fw_type != FIT_FS2)
+    if (_flintParams.device_specified)
     {
         printf("-I- %s\n", FW_RESET_MSG);
     }
@@ -6730,11 +6237,6 @@ FlintStatus SvSubCommand::executeCommand()
         return FLINT_FAILED;
     }
 
-    if (ops->FwType() == FIT_FS2)
-    {
-        // print "restoring signature" on FS2 to be consistent with FS3 output
-        vsdCbFunc(101);
-    }
     return FLINT_SUCCESS;
 }
 
@@ -6842,8 +6344,7 @@ FlintStatus DcSubCommand::executeCommand()
     // check on what we are wroking
     ops = (_flintParams.device_specified) ? _fwOps : _imgOps;
     const char* file = _flintParams.cmd_params.size() == 1 ? _flintParams.cmd_params[0].c_str() : (const char*)NULL;
-    if (!ops->FwGetSection((ops->FwType() == FIT_FS2) ? (int)H_FW_CONF : (int)FS3_DBG_FW_INI, _sect,
-                           _flintParams.striped_image))
+    if (!ops->FwGetSection((int)FS3_DBG_FW_INI, _sect, _flintParams.striped_image))
     {
         reportErr(true, FLINT_DUMP_ERROR, "Fw Configuration", ops->err());
         return FLINT_FAILED;
@@ -7005,24 +6506,10 @@ FlintStatus SetKeySubCommand::executeCommand()
     
     if (_fwOps != nullptr)
     {
-        if (_fwOps->FwType() == FIT_FS2)
+        if (!_fwOps->FwSetAccessKey(_userKey, &setKeyCbFunc))
         {
-            if (!_fwOps->FwSetAccessKey(_userKey, &setKeyCbFunc))
-            {
-                reportErr(true, FLINT_SET_KEY_ERROR, _fwOps->err());
-                return FLINT_FAILED;
-            }
-            setKeyCbFunc(101);
-            printf("\n-I- New key was updated successfully in the flash. "
-                   "In order to activate the new key you should reboot or restart the driver.\n");
-        }
-        else
-        {
-            if (!_fwOps->FwSetAccessKey(_userKey, &setKeyCbFunc))
-            {
-                reportErr(true, FLINT_SET_KEY_ERROR, _fwOps->err());
-                return FLINT_FAILED;
-            }
+            reportErr(true, FLINT_SET_KEY_ERROR, _fwOps->err());
+            return FLINT_FAILED;
         }
     }
     else

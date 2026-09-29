@@ -136,24 +136,6 @@ int maccess_reg_ul(mfile              * mf,
                                                     /* w_size_reg = your_register_size */
                    int* reg_status);
 
-int tools_cmdif_send_inline_cmd_ul(mfile    * mf,
-                                   u_int64_t  in_param,
-                                   u_int64_t* out_param,
-                                   u_int32_t  input_modifier,
-                                   u_int16_t  opcode,
-                                   u_int8_t   opcode_modifier);
-
-int tools_cmdif_send_mbox_command_ul(mfile   * mf,
-                                     u_int32_t input_modifier,
-                                     u_int16_t opcode,
-                                     u_int8_t  opcode_modifier,
-                                     int       data_offs_in_mbox,
-                                     void    * data,
-                                     int       data_size,
-                                     int       skip_write);
-
-int tools_cmdif_unlock_semaphore_ul(mfile* mf);
-
 int mget_max_reg_size_ul(mfile* mf, maccess_reg_method_t reg_method);
 int supports_reg_access_gmp_ul(mfile* mf, maccess_reg_method_t reg_method);
 int supports_reg_access_cls_a_ul(mfile* mf, maccess_reg_method_t reg_method);
