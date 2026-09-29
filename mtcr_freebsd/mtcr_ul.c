@@ -60,6 +60,7 @@
 #include "mtcr_common.h"
 #include "mtcr.h"
 #include "common/compatibility.h"
+#include "common/tools_endianness.h"
 #include "common/bit_slice.h"
 #include "common/tools_time.h"
 #include <stdlib.h>
@@ -1346,7 +1347,7 @@ int mread4_old(mfile* mf, unsigned int offset, u_int32_t* value)
 {
     int rc;
 
-    offset = __cpu_to_le32(offset);
+    offset = mft_cpu_to_le32(offset);
     if (mf->wo_addr)
     {
         offset |= 0x1;
@@ -1372,7 +1373,7 @@ int mread4_old(mfile* mf, unsigned int offset, u_int32_t* value)
         goto cleanup;
     }
 
-    *value = __le32_to_cpu(*value);
+    *value = mft_le32_to_cpu(*value);
 cleanup:
     lock_rc = _flock_int(mf->fdlock, LOCK_UN);
     if (lock_rc || rc)
@@ -1440,8 +1441,8 @@ int mwrite4_old(mfile* mf, unsigned int offset, u_int32_t value)
 {
     int rc;
 
-    offset = __cpu_to_le32(offset);
-    value = __cpu_to_le32(value);
+    offset = mft_cpu_to_le32(offset);
+    value = mft_cpu_to_le32(value);
 
     int lock_rc;
 

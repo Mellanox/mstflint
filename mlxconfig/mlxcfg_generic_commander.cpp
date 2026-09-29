@@ -56,6 +56,7 @@
 #include "mlxcfg_status.h"
 #include "mlxcfg_tlv.h"
 #include "mlxcfg_utils.h"
+#include "common/tools_endianness.h"
 
 #if !defined(DISABLE_XML2)
 #include <libxml/parser.h>
@@ -2269,7 +2270,7 @@ void GenericCommander::raw2XML(const vector<string>& lines, string& xmlTemplate)
             for (vector<string>::iterator s = dws.begin(); s != dws.end(); ++s)
             {
                 /* printf("s=%s\n", s->c_str()); */
-                u_int32_t dw = __cpu_to_be32(strtoul((*s).c_str(), &p, 0));
+                u_int32_t dw = mft_cpu_to_be32(strtoul((*s).c_str(), &p, 0));
                 /* printf("-D- s=%s dw=0x%x\n", s->c_str(), dw); */
                 if (!p)
                 {
@@ -2337,7 +2338,7 @@ int RawCfgParams5thGen::setRawData(const std::vector<u_int32_t>& tlvBuff)
     tlvBuffBe.insert(tlvBuffBe.begin(), _tlvBuff.begin(), _tlvBuff.end());
     for (std::vector<u_int32_t>::iterator it = tlvBuffBe.begin(); it != tlvBuffBe.end(); it++)
     {
-        *it = __cpu_to_be32(*it);
+        *it = mft_cpu_to_be32(*it);
     }
     tools_open_mnvda_unpack(&_nvdaTlv, ((u_int8_t*)(&tlvBuffBe[0])));
     _nvdaTlv.nv_hdr.writer_id = WRITER_ID_ICMD_MLXCONFIG_SET_RAW;
@@ -2352,7 +2353,7 @@ std::vector<u_int32_t> RawCfgParams5thGen::getRawData()
     tools_open_mnvda_pack(&_nvdaTlv, ((u_int8_t*)(&tlvBuff[0])));
     for (std::vector<u_int32_t>::iterator it = tlvBuff.begin(); it != tlvBuff.end(); it++)
     {
-        *it = __be32_to_cpu(*it);
+        *it = mft_be32_to_cpu(*it);
     }
     /* Truncate to the correct data size */
     tlvBuff.resize(this->_tlvBuff.size());

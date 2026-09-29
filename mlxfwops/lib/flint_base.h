@@ -54,6 +54,7 @@
 #include <signal.h>
 #include "mft_utils/crc16.h"
 #include "tools_version.h"
+#include "common/tools_endianness.h"
 
 #ifndef __WIN__
 
@@ -105,29 +106,29 @@
 
 static inline void be_guid_to_cpu(guid_t* to, guid_t* from)
 {
-    to->h = __be32_to_cpu(from->h);
-    to->l = __be32_to_cpu(from->l);
+    to->h = mft_be32_to_cpu(from->h);
+    to->l = mft_be32_to_cpu(from->l);
 }
 namespace std
 {
 };
 using namespace std;
 
-#define TOCPU1(s) s = __be32_to_cpu((u_int32_t)(s));
-#define CPUTO1(s) s = __cpu_to_be32((u_int32_t)(s));
+#define TOCPU1(s) s = mft_be32_to_cpu((u_int32_t)(s));
+#define CPUTO1(s) s = mft_cpu_to_be32((u_int32_t)(s));
 #define TOCPU(s)                                                               \
     do                                                                         \
     {                                                                          \
         u_int32_t* p = (u_int32_t*)(s);                                        \
         for (u_int32_t ii = 0; ii < sizeof(*s) / sizeof(u_int32_t); ii++, p++) \
-            *p = __be32_to_cpu(*p);                                            \
+            *p = mft_be32_to_cpu(*p);                                          \
     } while (0)
 #define TOCPUn(s, n)                                \
     do                                              \
     {                                               \
         u_int32_t* p = (u_int32_t*)(s);             \
         for (u_int32_t ii = 0; ii < (n); ii++, p++) \
-            *p = __be32_to_cpu(*p);                 \
+            *p = mft_be32_to_cpu(*p);               \
     } while (0)
 
 #define CPUTOn(s, n)                                \
@@ -135,7 +136,7 @@ using namespace std;
     {                                               \
         u_int32_t* p = (u_int32_t*)(s);             \
         for (u_int32_t ii = 0; ii < (n); ii++, p++) \
-            *p = __cpu_to_be32(*p);                 \
+            *p = mft_cpu_to_be32(*p);               \
     } while (0)
 
 #define TOCPUBY(s)                                                            \
@@ -143,14 +144,14 @@ using namespace std;
     {                                                                         \
         u_int32_t* p = (u_int32_t*)(&s);                                      \
         for (u_int32_t ii = 0; ii < sizeof(s) / sizeof(u_int32_t); ii++, p++) \
-            *p = __be32_to_cpu(*p);                                           \
+            *p = mft_be32_to_cpu(*p);                                         \
     } while (0)
 #define CPUTOBY(s)                                                            \
     do                                                                        \
     {                                                                         \
         u_int32_t* p = (u_int32_t*)(&s);                                      \
         for (u_int32_t ii = 0; ii < sizeof(s) / sizeof(u_int32_t); ii++, p++) \
-            *p = __cpu_to_be32(*p);                                           \
+            *p = mft_cpu_to_be32(*p);                                         \
     } while (0)
 #define TOCPUBY64(s)                                                      \
     do                                                                    \

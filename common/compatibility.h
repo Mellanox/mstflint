@@ -163,6 +163,7 @@
 #define __LITTLE_ENDIAN LITTLE_ENDIAN
 #endif
 
+/* DEPRECATED: Use mft_be32_to_cpu, mft_cpu_to_be32, etc. from "common/tools_endianness.h" instead. */
 #undef __be64_to_cpu
 #undef __be32_to_cpu
 #undef __be16_to_cpu
@@ -390,20 +391,23 @@ typedef uint8_t u_int8_t;
 
 #endif
 
+/* The buffer helpers below convert endianness; route them through the single API. */
+#include "tools_endianness.h"
+
 // Convert BYTES - DWORDS with MEMCPY BE
 #define BYTES_TO_DWORD_BE(dw_dest, byte_src) \
     do                                       \
     {                                        \
         u_int32_t tmp;                       \
         memcpy(&tmp, byte_src, 4);           \
-        *(dw_dest) = __be32_to_cpu(tmp);     \
+        *(dw_dest) = mft_be32_to_cpu(tmp);   \
     } while (0)
 
 #define DWORD_TO_BYTES_BE(bytes_dest, dw_src) \
     do                                        \
     {                                         \
         u_int32_t tmp;                        \
-        tmp = __cpu_to_be32(*(dw_src));       \
+        tmp = mft_cpu_to_be32(*(dw_src));     \
         memcpy(bytes_dest, &tmp, 4);          \
     } while (0)
 
@@ -411,7 +415,7 @@ typedef uint8_t u_int8_t;
     do                                      \
     {                                       \
         u_int16_t tmp;                      \
-        tmp = __cpu_to_be16(*(w_src));      \
+        tmp = mft_cpu_to_be16(*(w_src));    \
         memcpy(bytes_dest, &tmp, 2);        \
     } while (0)
 

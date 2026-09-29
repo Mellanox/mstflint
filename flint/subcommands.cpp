@@ -87,6 +87,7 @@
 #include "subcommands.h"
 #include "tools_layouts/cx4fw_layouts.h"
 #include "tools_layouts/image_layout_layouts.h"
+#include "common/tools_endianness.h"
 
 
 #if defined(CABLES_SUPPORT) && !defined(MST_CPU_armv7l_umbriel)
@@ -7741,7 +7742,7 @@ FlintStatus RwSubCommand::executeCommand()
         reportErr(true, FLINT_FLASH_READ_ERROR, _io->err());
         return FLINT_FAILED;
     }
-    printf("0x%08x\n", (unsigned int)__cpu_to_be32(data));
+    printf("0x%08x\n", (unsigned int)mft_cpu_to_be32(data));
     return FLINT_SUCCESS;
 }
 
@@ -7799,7 +7800,7 @@ FlintStatus WwSubCommand::executeCommand()
     }
     delete[] addrStr;
     delete[] dataStr;
-    data = __cpu_to_be32(data);
+    data = mft_cpu_to_be32(data);
     // TODO - align below write function for Flash and FImage classes
     if (_io->is_flash())
     {
@@ -7874,7 +7875,7 @@ FlintStatus WwneSubCommand::executeCommand()
     }
     delete[] addrStr;
     delete[] dataStr;
-    data = __cpu_to_be32(data);
+    data = mft_cpu_to_be32(data);
     if (!((Flash*)_io)->write(addr, &data, 4, true))
     {
         reportErr(true, FLINT_FLASH_WRITE_ERROR, _io->err());
@@ -8026,7 +8027,7 @@ bool WbneSubCommand::extractData(const std::vector<string>& cmdParams, u_int32_t
     for (u_int32_t i = 2; i < cmdParams.size(); i++)
     {
         char* dataStr = strcpy(new char[cmdParams[i].size() + 1], cmdParams[i].c_str());
-        data.push_back(__cpu_to_be32(strtoul(dataStr, &endp, 0)));
+        data.push_back(mft_cpu_to_be32(strtoul(dataStr, &endp, 0)));
         if (*endp)
         {
             reportErr(true, FLINT_INVALID_DATA_ERROR, dataStr);
@@ -8122,7 +8123,7 @@ bool RbSubCommand::printToScreen(const std::vector<u_int8_t>& buff, bool hexdump
         for (u_int32_t i = 0; i < buff.size(); i += 4)
         {
             u_int32_t word = *((u_int32_t*)(&buff[0] + i));
-            word = __be32_to_cpu(word);
+            word = mft_be32_to_cpu(word);
             printf("0x%08x ", word);
         }
     }
