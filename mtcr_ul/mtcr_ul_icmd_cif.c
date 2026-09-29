@@ -1105,9 +1105,6 @@ int icmd_open(mfile* mf)
     }
     return ME_ICMD_NOT_SUPPORTED;
 #else
-    /*if (mf->gb_info.is_gearbox){
-     *   return icmd_init_cr(mf);
-     *  }*/
     if (mf->functional_vsec_supp)
     {
         int rc = icmd_init_vcr(mf);
