@@ -601,6 +601,7 @@ AC_ARG_ENABLE(mstflint-sdk,
 AC_MSG_RESULT($enable_mstflint_sdk)
 MSTFLINT_SDK_DIR=""
 HCA_CAP_DIR=""
+RESOURCE_DUMP_SDK_DIR=""
 MLXREG_SDK_DIR=""
 DEVICE_DIR=""
 LOAD_SHARED_LIB_DIR=""
@@ -612,6 +613,7 @@ if test "x$enable_mstflint_sdk" = "xyes"; then
     CFLAGS="$CFLAGS -DMFT_SDK_EXTERNAL -DMFT_SDK_STANDALONE_BUILD"
     MSTFLINT_SDK_DIR="mft_sdk"
     HCA_CAP_DIR="hca_capabilities"
+    RESOURCE_DUMP_SDK_DIR="resourcetools/resourcedump_lib/src"
     MLXREG_SDK_DIR="mlxreg_sdk"
     DEVICE_DIR="device"
     # Link mtcr statically (whole-archive) into libmstflint_sdk.so so it carries
@@ -664,6 +666,7 @@ AC_SUBST(MSTFLINT_SDK_DIR)
 AC_SUBST(MTCR_SDK_WHOLE_ARCHIVE)
 AC_SUBST(MSTREG_SDK_WHOLE_ARCHIVE)
 AC_SUBST(HCA_CAP_DIR)
+AC_SUBST(RESOURCE_DUMP_SDK_DIR)
 AC_SUBST(MLXREG_SDK_DIR)
 AC_SUBST(DEVICE_DIR)
 AC_SUBST(LOAD_SHARED_LIB_DIR)
