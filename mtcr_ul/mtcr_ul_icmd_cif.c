@@ -63,13 +63,10 @@
 /* _DEBUG_MODE   // un-comment this to enable debug prints */
 
 #define ICMD_DEFAULT_TIMEOUT 40000
-/* Kept for the devices that are not described by the device-properties
-   catalog: ConnectIB and the Amos gearbox. Every other device takes these
-   values from the catalog. */
+/* Kept for ConnectIB, which is not described by the device-properties
+   catalog. Every other device takes these values from the catalog. */
 #define STAT_CFG_NOT_DONE_ADDR_CIB 0xb0004
-#define STAT_CFG_NOT_DONE_ADDR_CX6 0xb5f04
 #define STAT_CFG_NOT_DONE_BITOFF_CIB 31
-#define STAT_CFG_NOT_DONE_BITOFF_CX5 31
 #define SEMAPHORE_ADDR_CIB 0xe27f8 /* sem62 */
 #define SEMAPHORE_ADDR_CX4 0xe250c /* sem67 bit31 is the semaphore bit here (only one semaphore in this dword) */
 #define HCR_ADDR_CIB 0x0
@@ -99,26 +96,6 @@
 
 #define EXT_MBOX_DMA_OFF 0x8
 
-#define SEMAPHORE_ADDR_GBOX 0xa6850
-#define CMD_PTR_ADDR_GBOX 0x90010
-#define GBOX_GW_OPCODE_OFFSET 256
-#define GBOX_GW_REG_OPCODE_OFFSET 252
-#define GBOX_GW_REQUEST_DATA_BLOCK_OFFSET 0
-#define GBOX_GW_RESPONSE_DATA_BLOCK_OFFSET 260
-#define GBOX_MAX_DATA_SIZE 256
-#define GBOX_STAT_CFG_NOT_DONE_ADDR 0x90000
-#define GBOX_REG_ACCESS_CMD_OPCODE 0x0ff
-#define GBOX_BUSY_BITOFF 31
-#define GBOX_OPCODE_BITOFF 16
-#define GBOX_OPCODE_BITLEN 10
-#define GBOX_REG_ACC_W_SIZE_BITOFF 0
-#define GBOX_REG_ACC_W_SIZE_BITLEN 8
-#define GBOX_STATUS_BITOFF 28
-#define GBOX_STATUS_BITLEN 3
-#define GBOX_STATUS1_BITOFF 8
-#define GBOX_STATUS1_BITLEN 7
-#define GBOX_READ_SIZE_BITOFF 0
-#define GBOX_READ_SIZE_BITLEN 8
 /*
  * General Macros
  */
@@ -257,7 +234,6 @@ enum
  */
 
 #define CIB_HW_ID 511
-#define AMOS_GBOX_HW_ID 594
 
 /***** GLOBALS *****/
 int increase_poll_time = 0;
@@ -266,7 +242,6 @@ void set_increase_poll_time(int new_value)
     increase_poll_time = new_value;
 }
 
-u_int32_t gbox_gw_start_addr = 0xffff;
 /***** GLOBALS *****/
 
 /*************************************************************************************/
@@ -387,33 +362,6 @@ static int translate_status(int status)
 
         case 0x7:
             return ME_ICMD_WRITE_PROTECT;
-
-        default:
-            return ME_ICMD_UNKNOWN_STATUS;
-    }
-}
-
-static int translate_gbox_icmd_status(int status)
-{
-    switch (status)
-    {
-        case 0x0:
-            return ME_OK;
-
-        case 0x1:
-            return ME_ERROR;
-
-        case 0x2:
-            return ME_UNKOWN_ACCESS_TYPE;
-
-        case 0x3:
-            return ME_ICMD_BAD_PARAM;
-
-        case 0x6:
-            return ME_TIMEOUT;
-
-        case 0x7:
-            return ME_ICMD_NOT_SUPPORTED;
 
         default:
             return ME_ICMD_UNKNOWN_STATUS;
@@ -853,108 +801,6 @@ cleanup:
     return ret;
 }
 
-/*
- * set_gbox_gw_opcode_block
- */
-static u_int32_t set_gbox_gw_opcode_block(u_int16_t opcode, int size)
-{
-    u_int32_t reg = 0x0;
-
-    reg = MERGE(reg, (u_int32_t)(size / 4), GBOX_REG_ACC_W_SIZE_BITOFF, GBOX_REG_ACC_W_SIZE_BITLEN);
-    reg = MERGE(reg, opcode, GBOX_OPCODE_BITOFF, GBOX_OPCODE_BITLEN);
-    return reg;
-}
-
-static MError get_gbox_gw_start_addr(mfile* mf, u_int32_t* start_addr)
-{
-    /* get gbox_gw_start_addr by reading cr-space only once */
-    if (gbox_gw_start_addr == 0xffff)
-    {
-        if (MREAD4(mf, CMD_PTR_ADDR_GBOX, &gbox_gw_start_addr))
-        {
-            return ME_ICMD_STATUS_CR_FAIL;
-        }
-        /* no need to /4 */
-        /* gw_addr = gw_addr >> 2; */
-        *start_addr = gbox_gw_start_addr;
-    }
-    return ME_OK;
-}
-
-static int icmd_send_gbox_command_com(mfile* mf, INOUT void* data, IN int write_data_size, IN int read_data_size, IN int enhanced)
-{
-    int ret;
-    u_int32_t data_start_off = 0x0;
-    u_int8_t buffer[GBOX_MAX_DATA_SIZE + 4] = {0};
-    u_int32_t reg = 0x0;
-
-    if (mf->gb_info.gb_conn_type != GEARBPX_OVER_MTUSB)
-    {
-        /* wasn't supposed to get here */
-        return ME_ERROR;
-    }
-
-    /* init icmd */
-    ret = icmd_open(mf);
-    CHECK_RC(ret);
-
-    ret = check_msg_size(mf, write_data_size, read_data_size);
-    CHECK_RC(ret);
-
-    ret = icmd_is_cmd_ifc_ready(mf, enhanced);
-    CHECK_RC(ret);
-    if (!enhanced)
-    {
-        ret = icmd_take_semaphore(mf);
-        CHECK_RC(ret);
-    }
-
-    /* check go bit down */
-    ret = check_busy_bit(mf, GBOX_BUSY_BITOFF, &reg);
-    CHECK_RC(ret);
-
-    /* write to data request section */
-    MTCR_LOG_DEBUG("Setting command GW");
-    data_start_off = mf->gb_info.data_req_addr + GBOX_MAX_DATA_SIZE - write_data_size;
-    MWRITE_BUF_ICMD(mf, data_start_off, data, write_data_size, ret = ME_ICMD_STATUS_CR_FAIL; goto sem_cleanup;);
-
-    int orig_reg_size = write_data_size - 4;
-
-    /* set opcode block - size is original register size = means without register vlock ()-4 bytes */
-    reg = set_gbox_gw_opcode_block(GBOX_REG_ACCESS_CMD_OPCODE, orig_reg_size);
-
-    /* set busy bit and write msg, than, poll + return status */
-    ret = set_and_poll_on_busy_bit(mf, enhanced, GBOX_BUSY_BITOFF, &reg);
-    CHECK_RC_GO_TO(ret, sem_cleanup);
-
-    /* get status */
-    ret = translate_gbox_icmd_status(EXTRACT(reg, GBOX_STATUS_BITOFF, GBOX_STATUS_BITLEN));
-    CHECK_RC_GO_TO(ret, sem_cleanup);
-    ret = EXTRACT(reg, GBOX_STATUS1_BITOFF, GBOX_STATUS1_BITLEN);
-
-    /* read response */
-    MTCR_LOG_DEBUG("Reading command from mailbox");
-    /* no need to read size, it is the same (fw dont change this field) - uncommnet if logic will change */
-    /* int read_size = EXTRACT(reg, GBOX_READ_SIZE_BITOFF, GBOX_READ_SIZE_BITLEN); */
-    /* read_size = read_size * 4; */
-
-    /* reset buffer */
-    memset(buffer, 0, GBOX_MAX_DATA_SIZE);
-    /* put register status in first 4 bytes */
-    memcpy(buffer, &ret, 4);
-    /* get response data (into buffer+4) */
-    MREAD_BUF_ICMD(mf, mf->gb_info.data_res_addr, buffer + 4, orig_reg_size, ret = ME_ICMD_STATUS_CR_FAIL; goto sem_cleanup;);
-    memcpy(data, buffer, read_data_size); /* read_data_size is same as orig size + 4 */
-
-    ret = ME_OK;
-sem_cleanup:
-    if (!enhanced)
-    {
-        (void)icmd_clear_semaphore(mf);
-    }
-    return ret;
-}
-
 int icmd_send_command(mfile* mf, IN int opcode, INOUT void* data, IN int data_size, IN int skip_write)
 {
     return icmd_send_command_int(mf, opcode, data, data_size, data_size, skip_write);
@@ -975,26 +821,12 @@ int icmd_send_command_int(mfile* mf, IN int opcode, INOUT void* data, IN int wri
         return mtcr_remote_icmd_send_command(mf, opcode, data, max_size, skip_write);
     }
 #endif
-    if ((mf->gb_info.is_gb_mngr || mf->gb_info.is_gearbox) && (mf->gb_info.gb_conn_type == GEARBPX_OVER_MTUSB))
-    {
-        return icmd_send_gbox_command_com(mf, data, write_data_size, read_data_size, 0);
-    }
-    else
-    {
-        return icmd_send_command_com(mf, opcode, data, write_data_size, read_data_size, skip_write, 0);
-    }
+    return icmd_send_command_com(mf, opcode, data, write_data_size, read_data_size, skip_write, 0);
 }
 
 int icmd_send_command_enhanced(mfile* mf, IN int opcode, INOUT void* data, IN int write_data_size, IN int read_data_size, IN int skip_write)
 {
-    if ((mf->gb_info.is_gb_mngr || mf->gb_info.is_gearbox) && (mf->gb_info.gb_conn_type == GEARBPX_OVER_MTUSB))
-    {
-        return icmd_send_gbox_command_com(mf, data, write_data_size, read_data_size, 1);
-    }
-    else
-    {
-        return icmd_send_command_com(mf, opcode, data, write_data_size, read_data_size, skip_write, 1);
-    }
+    return icmd_send_command_com(mf, opcode, data, write_data_size, read_data_size, skip_write, 1);
 }
 
 static int icmd_init_cr(mfile* mf)
@@ -1028,30 +860,6 @@ static int icmd_init_cr(mfile* mf)
             mf->icmd.semaphore_addr = SEMAPHORE_ADDR_CIB;
             mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CIB;
             mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CIB;
-            break;
-
-        case (AMOS_GBOX_HW_ID):
-            mf->icmd.ctrl_addr = GBOX_MAX_DATA_SIZE;
-
-            u_int32_t start_addr = 0x0;
-            MError rc = get_gbox_gw_start_addr(mf, &start_addr);
-            if (rc)
-            {
-                return ME_ERROR;
-            }
-
-            mf->icmd.ctrl_addr += start_addr;
-            mf->icmd.cmd_addr = start_addr + GBOX_GW_OPCODE_OFFSET;
-            mf->gb_info.data_req_addr = start_addr + GBOX_GW_REQUEST_DATA_BLOCK_OFFSET;
-            mf->gb_info.data_res_addr = start_addr + GBOX_GW_RESPONSE_DATA_BLOCK_OFFSET;
-
-            mf->icmd.semaphore_addr = SEMAPHORE_ADDR_GBOX;
-            mf->icmd.static_cfg_not_done_addr = GBOX_STAT_CFG_NOT_DONE_ADDR;
-            mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CX5;
-            mf->icmd.max_cmd_size = GBOX_MAX_DATA_SIZE;
-            mf->icmd.icmd_opened = 1;
-
-            return ME_OK;
             break;
 
         default:
@@ -1135,12 +943,6 @@ static int icmd_init_vcr_crspace_addr(mfile* mf)
         case (CIB_HW_ID):
             mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CIB;
             mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CIB;
-            break;
-
-        /* The gearbox reuses the CX6 address, it has no catalog entry of its own. */
-        case (AMOS_GBOX_HW_ID):
-            mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CX6;
-            mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CX5; /* same bit offset as CX5 */
             break;
 
         default:
