@@ -165,10 +165,6 @@ public:
         {
             return new ConnectX6LXFwOperationsSignatureManager();
         }
-        else if (chip == CT_GEARBOX)
-        {
-            return new GearBoxSignatureManager();
-        }
         else if (chip == CT_SPECTRUM || chip == CT_SPECTRUM2 || chip == CT_SPECTRUM3)
         {
             return new RavenSwitchSignatureManager();

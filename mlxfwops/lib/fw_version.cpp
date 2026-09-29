@@ -119,8 +119,6 @@ bool FwVersion::operator!=(const FwVersion& rhs) const
 }
 
 // 13 is Spectrum1
-// 19 is Amos-GB
-// 21 is Abir-GB
 // 29 is Spectrum2
 // 30 is Spectrum3
 // 31 is Quantum2

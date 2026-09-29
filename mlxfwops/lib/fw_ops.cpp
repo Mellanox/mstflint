@@ -1022,9 +1022,9 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
                     fwCompsAccess->forceRelease();
                 }
 
-                // In case MCC is not preferable (e.g verify command) but the device is secured or GB via switch
+                // In case MCC is not preferable (e.g verify command) but the device is secured
                 // We'll stay with MCC flow because we can't use MFBA/Direct-Access
-                if (fwParams.mccUnsupported && !fwCompsAccess->getMfileObj()->gb_info.is_gearbox && fwCompsAccess->queryFwInfo(&fwInfo) == true && fwInfo.security_type.secure_fw == 0)
+                if (fwParams.mccUnsupported && fwCompsAccess->queryFwInfo(&fwInfo) == true && fwInfo.security_type.secure_fw == 0)
                 {
                     delete fwCompsAccess;
                     fwCompsAccess = (FwCompsMgr*)NULL;
@@ -1453,9 +1453,6 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
   {"Spectrum4", SPECTRUM4_HW_ID, CT_SPECTRUM4, CFT_SWITCH, 0, {53120, 0}, {{UNKNOWN_BIN, {0}}}},
   {"Spectrum5", SPECTRUM5_HW_ID, CT_SPECTRUM5, CFT_SWITCH, 0, {53122, 0}, {{UNKNOWN_BIN, {0}}}},
   {"Spectrum6", SPECTRUM6_HW_ID, CT_SPECTRUM6, CFT_SWITCH, 0, {53124, 0}, {{UNKNOWN_BIN, {0}}}},
-  {"Gearbox", GEARBOX_HW_ID, CT_GEARBOX, CFT_GEARBOX, 0, {0, 0}, {{UNKNOWN_BIN, {0}}}},
-  {"GearboxManager", GB_MANAGER_HW_ID, CT_GEARBOX_MGR, CFT_GEARBOX, 0, {0, 0}, {{UNKNOWN_BIN, {0}}}},
-  {"AbirGearbox", ABIR_GB_HW_ID, CT_ABIR_GEARBOX, CFT_GEARBOX, 0, {0, 0}, {{UNKNOWN_BIN, {0}}}},
   {"ArcusE", ARCUSE_HW_ID, CT_ARCUSE, CFT_SWITCH, 0, {45568, 0}, {{UNKNOWN_BIN, {0}}}},
   {(char*)NULL, 0, CT_UNKNOWN, CFT_UNKNOWN, 0, {0}, {{UNKNOWN_BIN, {0}}}}, // zero devid terminator
 };
@@ -2595,7 +2592,7 @@ u_int8_t FwOperations::GetFwFormatFromHwDevID(u_int32_t hwDevId)
     }
     else if (hwDevId == CX5_HW_ID || hwDevId == CX6_HW_ID || hwDevId == CX6DX_HW_ID || hwDevId == CX6LX_HW_ID || hwDevId == CX7_HW_ID || hwDevId == BF_HW_ID || hwDevId == BF2_HW_ID ||
              hwDevId == BF3_HW_ID || hwDevId == QUANTUM2_HW_ID || hwDevId == SPECTRUM4_HW_ID || hwDevId == SPECTRUM3_HW_ID ||
-             hwDevId == SPECTRUM2_HW_ID || hwDevId == SPECTRUM5_HW_ID || hwDevId == GEARBOX_HW_ID || hwDevId == GB_MANAGER_HW_ID || hwDevId == ABIR_GB_HW_ID)
+             hwDevId == SPECTRUM2_HW_ID || hwDevId == SPECTRUM5_HW_ID)
     {
         return FS_FS4_GEN;
     }

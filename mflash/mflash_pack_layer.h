@@ -321,13 +321,6 @@ enum CntxCrConstants {
     HCR_FLASH_CACHE_REPLACEMENT_CMD    = 0xf040c,
     HCR_FLASH_DATA                     = 0xf0410,
     HCR_CACHE_REPLACEMNT_EN_ADDR       = 0xf0420,
-    /* Gearbox flash GW registers addresses */
-    HCR_FLASH_GEARBOX_CMD                       = 0x2000,
-    HCR_FLASH_GEARBOX_ADDR                      = 0x2004,
-    HCR_FLASH_GEARBOX_CACHE_REPLACEMENT_OFFSET  = 0x2008,
-    HCR_FLASH_GEARBOX_DATA                      = 0x2010,
-    HCR_FLASH_GEARBOX_CACHE_REPLACEMENT_CMD     = 0x200c,
-    HCR_FLASH_GEARBOX_CACHE_REPLACEMENT_EN_ADDR = 0x2020,
     /* 6th gen flash GW registers addresses */
     HCR_6GEN_FLASH_GW_BASE_ADDR         = 0xf0420,
     HCR_NEW_GW_FLASH_ADDR               = HCR_6GEN_FLASH_GW_BASE_ADDR,

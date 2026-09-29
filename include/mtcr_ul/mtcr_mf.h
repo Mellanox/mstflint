@@ -143,7 +143,6 @@ struct mfile_t {
     void        * cable_chip_ctx; /* TODO change the name */
     f_mpci_change mpci_change;
     /* Amos gear-box */
-    gearbox_info gb_info;
 #ifdef __FreeBSD__
     struct pcisel         sel;
     unsigned int          vpd_cap_addr;

@@ -490,33 +490,6 @@ static struct device_info g_devs_info[] = {{
                                              DM_GPU       /* dev_type */
                                            },
                                            {
-                                             DeviceGearBox, /* dm_id */
-                                             0x252,         /* hw_dev_id */
-                                             -1,            /* hw_rev_id */
-                                             53108,         /* sw_dev_id */
-                                             "AmosGearBox", /* name */
-                                             128,           /* port_num NEED_CHECK */
-                                             DM_GEARBOX     /* dev_type */
-                                           },
-                                           {
-                                             DeviceGearBoxManager, /* dm_id */
-                                             0x253,                /* hw_dev_id */
-                                             -1,                   /* hw_rev_id */
-                                             -1,                   /* sw_dev_id */
-                                             "AmosGearBoxManager", /* name */
-                                             -1,                   /* port_num NEED_CHECK */
-                                             DM_GEARBOX            /* dev_type */
-                                           },
-                                           {
-                                             DeviceAbirGearBox, /* dm_id */
-                                             0x256,             /* hw_dev_id */
-                                             -1,                /* hw_rev_id */
-                                             -1,                /* sw_dev_id */
-                                             "AbirGearBox",     /* name */
-                                             -1,                /* port_num NEED_CHECK */
-                                             DM_GEARBOX         /* dev_type */
-                                           },
-                                           {
                                              DeviceUnknown,    /* dm_id */
                                              0,                /* hw_dev_id */
                                              0,                /* hw_rev_id */
@@ -871,11 +844,6 @@ int dm_dev_is_dummy(dm_dev_id_t type)
     return type == DeviceDummy;
 }
 
-int dm_dev_is_gearbox(dm_dev_id_t type)
-{
-    return (get_entry(type)->dev_type == DM_GEARBOX);
-}
-
 int dm_is_menhit(dm_dev_id_t type)
 {
     return type == DeviceMenhit || type == DeviceArcusPTC || type == DeviceArcusP || type == DeviceArcusE;
@@ -1080,7 +1048,7 @@ int dm_dev_is_fs4(dm_dev_id_t type)
 {
     return type == DeviceConnectX5 || type == DeviceConnectX6 || type == DeviceConnectX6DX || type == DeviceConnectX6LX || type == DeviceConnectX7 || type == DeviceBlueField ||
            type == DeviceBlueField2 || type == DeviceBlueField3 || type == DeviceQuantum2 || type == DeviceSpectrum5 || type == DeviceSpectrum4 || type == DeviceSpectrum2 ||
-           type == DeviceSpectrum3 || type == DeviceGearBox || type == DeviceGearBoxManager;
+           type == DeviceSpectrum3;
 }
 
 int dm_dev_is_fs5(dm_dev_id_t type)

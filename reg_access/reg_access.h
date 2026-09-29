@@ -61,10 +61,6 @@ typedef MError reg_access_status_t;
 /* Add new methods here */
 struct reg_access_switch_mddq_ext;
 reg_access_status_t reg_access_mddq(mfile* mf, reg_access_method_t method, struct reg_access_switch_mddq_ext* mddq);
-struct reg_access_switch_mddt_reg_ext;
-reg_access_status_t reg_access_mddt(mfile                                * mf,
-                                    reg_access_method_t                    method,
-                                    struct reg_access_switch_mddt_reg_ext* switch_mddt_reg);
 struct reg_access_hca_paos_reg_ext;
 reg_access_status_t reg_access_paos(mfile* mf, reg_access_method_t method, struct reg_access_hca_paos_reg_ext* paos);
 
