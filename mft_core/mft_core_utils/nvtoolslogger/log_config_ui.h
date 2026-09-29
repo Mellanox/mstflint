@@ -76,7 +76,6 @@ private:
     std::string buildValidSinkList() const;
 
     CommandLineParser _cmdParser;
-    std::string _configFilePath;
 
     Action _action;
     bool _hasGlobalLevel;

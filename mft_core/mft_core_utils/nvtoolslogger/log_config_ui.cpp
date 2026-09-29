@@ -58,9 +58,6 @@
 #define RESET_FLAG "reset"
 #define RESET_FLAG_SHORT 'r'
 
-#define CONFIG_FILE_FLAG "config-file"
-#define CONFIG_FILE_FLAG_SHORT 'c'
-
 #define SET_MAX_LOG_FILES_FLAG "set-max-log-files"
 #define SET_MAX_LOG_FILES_FLAG_SHORT 'n'
 
@@ -78,7 +75,6 @@ namespace nvtoolslogger
 LogConfigUi::LogConfigUi() :
     CommandLineRequester(TOOL_NAME),
     _cmdParser(TOOL_NAME),
-    _configFilePath(DEFAULT_CONFIG_PATH),
     _action(Action::NONE),
     _hasGlobalLevel(false),
     _globalLevel(DEFAULT_SEVERITY),
@@ -116,9 +112,6 @@ void LogConfigUi::initCmdParser()
 
     AddOptions(RESET_FLAG, RESET_FLAG_SHORT, "", "Reset the logging configuration to defaults");
 
-    AddOptions(CONFIG_FILE_FLAG, CONFIG_FILE_FLAG_SHORT, "PATH",
-               "Override config file path (default: " + std::string(DEFAULT_CONFIG_PATH) + ")");
-
     AddOptions(HELP_FLAG, HELP_FLAG_SHORT, "", "Show this help message and exit");
 
     AddOptions(VERSION_FLAG, VERSION_FLAG_SHORT, "", "Show version and exit");
@@ -138,12 +131,6 @@ ParseStatus LogConfigUi::HandleOption(std::string name, std::string value)
     {
         print_version_string(TOOL_NAME, "");
         return PARSE_OK_WITH_EXIT;
-    }
-
-    if (name == CONFIG_FILE_FLAG)
-    {
-        _configFilePath = value;
-        return PARSE_OK;
     }
 
     if (name == SET_LEVEL_FLAG)
@@ -334,7 +321,7 @@ int LogConfigUi::run(int argc, char** argv)
     if (_action == Action::RESET)
     {
         config.reset();
-        if (!config.save(_configFilePath))
+        if (!config.save(DEFAULT_CONFIG_PATH))
         {
             return 1;
         }
@@ -347,7 +334,7 @@ int LogConfigUi::run(int argc, char** argv)
         return 0;
     }
 
-    config.load(_configFilePath);
+    config.load(DEFAULT_CONFIG_PATH);
 
     if (hasModifications)
     {
@@ -381,11 +368,11 @@ int LogConfigUi::run(int argc, char** argv)
             config.disableSink(sink);
         }
 
-        if (!config.save(_configFilePath))
+        if (!config.save(DEFAULT_CONFIG_PATH))
         {
             return 1;
         }
-        std::cout << "Configuration saved to " << _configFilePath << std::endl;
+        std::cout << "Configuration saved to " << DEFAULT_CONFIG_PATH << std::endl;
         std::cout << std::endl;
     }
     else if (_action == Action::SHOW)
