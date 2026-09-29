@@ -154,6 +154,15 @@ static spdlog::level::level_enum toSpdlogLevel(int severity)
     return toSpdlogLevel(static_cast<nvtoolslogger::Severity>(severity));
 }
 
+// A tool's stdout is a data channel, not a display: MFT tools capture and parse each
+// other's stdout (mlxfwreset reads a register value out of mcra's). Log records written
+// there corrupt that value for the caller. When stdout is not a terminal nobody is
+// reading the records anyway, so the stdout sink sends them to stderr instead.
+static bool isStdoutTerminal()
+{
+    return isatty(STDOUT_FILENO) != 0;
+}
+
 static const char* const LEVEL_ENV_VAR = "NVTOOLSLOGGER_LEVEL";
 
 // NVTOOLSLOGGER_LEVEL=1..5 maps onto Severity::Debug..Fatal. When set, it takes over the
@@ -232,15 +241,28 @@ struct NvToolsLogger::Impl
         // to move this file to the _mt variants first; sharing sink instances across
         // layers means there is no way to make only one layer thread-safe.
         std::vector<spdlog::sink_ptr> sinks;
+
+        // Resolved after the loop so that enabling both console sinks, or having stdout
+        // demoted onto stderr, still yields a single sink per stream instead of duplicates.
+        bool isStdout = false;
+        bool isStderr = false;
+
         for (const auto& sink : config.getActiveSinks())
         {
             switch (sink)
             {
                 case nvtoolslogger::Sink::STDOUT:
-                    sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_st>());
+                    if (isStdoutTerminal())
+                    {
+                        isStdout = true;
+                    }
+                    else
+                    {
+                        isStderr = true;
+                    }
                     break;
                 case nvtoolslogger::Sink::STDERR:
-                    sinks.push_back(std::make_shared<spdlog::sinks::stderr_color_sink_st>());
+                    isStderr = true;
                     break;
                 case nvtoolslogger::Sink::FILE_SINK:
                 {
@@ -264,6 +286,15 @@ struct NvToolsLogger::Impl
                 default:
                     break;
             }
+        }
+
+        if (isStdout)
+        {
+            sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_st>());
+        }
+        if (isStderr)
+        {
+            sinks.push_back(std::make_shared<spdlog::sinks::stderr_color_sink_st>());
         }
 
         if (sinks.empty())

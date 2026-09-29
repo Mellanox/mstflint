@@ -389,6 +389,15 @@ int LogConfigUi::run(int argc, char** argv)
             config.disableSink(sink);
         }
 
+        // Turning logging on without naming a destination should produce visible output, so
+        // a bare --set-level on a config that has never chosen a sink picks the console for
+        // the user. Scoped to "no sink flags in this invocation" so that an explicit
+        // --disable-output is never undone by the default.
+        if (_hasGlobalLevel && _sinksToEnable.empty() && _sinksToDisable.empty() && config.getActiveSinks().empty())
+        {
+            config.enableSink(Sink::STDOUT);
+        }
+
         if (!config.save(DEFAULT_CONFIG_PATH))
         {
             return 1;
