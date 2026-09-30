@@ -45,6 +45,7 @@ libtool
 /mst_utils/mstdevices_info
 /mstdump/crd_main/mstregdump
 /mstflint.spec
+/mstflint-sdk.spec
 /resourcetools/mstresourcedump
 /resourcetools/mstresourceparse
 /small_utils/mstcongestion

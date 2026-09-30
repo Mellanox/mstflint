@@ -70,7 +70,7 @@ package.
 # Regenerate the build system from the checked-in Makefile.am/configure.ac so
 # the build never depends on stale generated files shipped in the tarball.
 ./autogen.sh
-%configure --enable-adb-generic-tools --enable-mstflint-sdk
+%configure --enable-adb-generic-tools --enable-mstflint-sdk --disable-rdmem
 make %{?_smp_mflags} sdk
 
 %install
