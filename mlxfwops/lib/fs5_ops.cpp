@@ -33,6 +33,7 @@
 #include "calc_hw_crc.h"
 #include "fs5_image_layout_layouts.h"
 #include <algorithm>
+#include "common/tools_endianness.h"
 
 u_int8_t Fs5Operations::FwType()
 {
@@ -216,7 +217,7 @@ bool Fs5Operations::CheckBoot2(bool fullRead, const char* pref, VerifyCallBack v
     {
         return false;
     }
-    _fwImgInfo.boot2Size = __be32_to_cpu(ncoreBCH.stage1_components[0].u32_binary_len) - hashes_table_size;
+    _fwImgInfo.boot2Size = mft_be32_to_cpu(ncoreBCH.stage1_components[0].u32_binary_len) - hashes_table_size;
 
     DPRINTF(("FwOperations::CheckBoot2 size = 0x%x\n", _fwImgInfo.boot2Size));
     if (_fwImgInfo.boot2Size > 1048576 || _fwImgInfo.boot2Size < 4)

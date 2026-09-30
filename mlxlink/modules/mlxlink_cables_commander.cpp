@@ -32,6 +32,7 @@
 
 #include "mlxlink_cables_commander.h"
 #include "common/tools_time.h"
+#include "common/tools_endianness.h"
 
 MlxlinkCablesCommander::MlxlinkCablesCommander(Json::Value& jsonRoot) : _jsonRoot(jsonRoot)
 {
@@ -84,7 +85,7 @@ void MlxlinkCablesCommander::readMCIA(u_int32_t page,
     {
         sprintf(fieldName, "dword[%d]", i);
         u_int32_t s = getFieldValue(std::string(fieldName));
-        s = __be32_to_cpu(s);
+        s = mft_be32_to_cpu(s);
         memcpy(data + (i * 4), &s, sizeof(u_int32_t));
     }
 }
@@ -112,7 +113,7 @@ void MlxlinkCablesCommander::writeMCIA(u_int32_t page,
     memcpy(dwordData, data, size);
     for (; i < dwordDataSize; i++)
     {
-        sprintf(fieldName, ",dword[%d]=%d", i, __cpu_to_be32(dwordData[i]));
+        sprintf(fieldName, ",dword[%d]=%u", i, mft_cpu_to_be32(dwordData[i]));
         dataCmd += string(fieldName);
     }
     free(dwordData);

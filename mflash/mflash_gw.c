@@ -39,6 +39,7 @@
  *      Author: edwardg
  */
 #include "common/tools_time.h"
+#include "common/tools_endianness.h"
 #include "nvtoolslogger/nvtoolslogger_c.h"
 #include "mflash_pack_layer.h"
 #include "mflash_dev_capability.h"
@@ -535,7 +536,7 @@ int cntx_st_spi_block_read_ex(mflash* mfl,
     CHECK_RC(rc);
     for (i = 0; i < blk_size; i += 4)
     {
-        *(u_int32_t*)(data + i) = __be32_to_cpu(*(u_int32_t*)(data + i));
+        *(u_int32_t*)(data + i) = mft_be32_to_cpu(*(u_int32_t*)(data + i));
     }
     return MFE_OK;
 }

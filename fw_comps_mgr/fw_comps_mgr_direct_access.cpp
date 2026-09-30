@@ -39,6 +39,7 @@
  */
 
 #include "fw_comps_mgr_direct_access.h"
+#include "common/tools_endianness.h"
 
 #ifndef UEFI_BUILD
 #include <mft_sig_handler.h>
@@ -105,7 +106,7 @@ bool DirectComponentAccess::accessComponent(u_int32_t updateHandle,
             }
             for (i = 0; i < accessData.size / 4; i++)
             {
-                data[(size - leftSize) / 4 + i] = __le32_to_cpu(accessData.data[i]);
+                data[(size - leftSize) / 4 + i] = mft_le32_to_cpu(accessData.data[i]);
             }
             // printf("data[%#02x]: %#08x\n", (i-1)*4, data[(size - leftSize)/4 + i-1]);
         }
@@ -113,7 +114,7 @@ bool DirectComponentAccess::accessComponent(u_int32_t updateHandle,
         {
             for (i = 0; i < accessData.size / 4; i++)
             {
-                accessData.data[i] = __cpu_to_le32(data[(size - leftSize) / 4 + i]);
+                accessData.data[i] = mft_cpu_to_le32(data[(size - leftSize) / 4 + i]);
             }
             reg_access_status_t rc = reg_access_mcda(_mf, REG_ACCESS_METHOD_SET, &accessData);
             _manager->deal_with_signal();

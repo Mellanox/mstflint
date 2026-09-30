@@ -34,6 +34,7 @@
  #include <sstream>
 
  #include "pldm_devicerecord.h"
+ #include "common/tools_endianness.h"
  
  using namespace std;
  
@@ -95,6 +96,6 @@
      // No need as the length above is zero
  
      // RecordLength
-     ((u_int16_t*)(buff.data() + recordLengthFieldOffset))[0] = __cpu_to_le16(buff.size() - buffSizeBeforePack);
+     ((u_int16_t*)(buff.data() + recordLengthFieldOffset))[0] = mft_cpu_to_le16(buff.size() - buffSizeBeforePack);
  }
  

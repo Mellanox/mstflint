@@ -35,6 +35,7 @@
  
 #include <exception>
 #include <string>
+#include "common/tools_endianness.h"
 #include <vector>
 #include <stdarg.h>
 #define MLX_DPA_LOG_DEBUG(...) MFT_LOG_DEBUGF(nvtoolslogger::Layer::MLXDPA, __VA_ARGS__)
@@ -48,7 +49,7 @@
     {                                               \
         u_int32_t* p = (u_int32_t*)(s);             \
         for (u_int32_t ii = 0; ii < (n); ii++, p++) \
-            *p = __cpu_to_be32(*p);                 \
+            *p = mft_cpu_to_be32(*p);               \
     } while (0)
 
 using namespace std;

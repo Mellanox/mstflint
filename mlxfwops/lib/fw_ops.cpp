@@ -50,6 +50,7 @@
 #include "dev_mgt/tools_dev_types.h"
 #include "pldmlib/pldm_pkg.h"
 #include "pldm_utils/pldm_utils.h"
+#include "common/tools_endianness.h"
 
 #ifdef CABLES_SUPP
 #include "cablefw_ops.h"
@@ -1341,11 +1342,11 @@ void FwOperations::recalcSectionCrc(u_int8_t* buf, u_int32_t data_size)
     u_int32_t crcRes;
     for (u_int32_t i = 0; i < data_size; i += 4)
     {
-        crc << __be32_to_cpu(*(u_int32_t*)(buf + i));
+        crc << mft_be32_to_cpu(*(u_int32_t*)(buf + i));
     }
     crc.finish();
     crcRes = crc.get();
-    *((u_int32_t*)(buf + data_size)) = __cpu_to_be32(crcRes);
+    *((u_int32_t*)(buf + data_size)) = mft_cpu_to_be32(crcRes);
 }
 
 chip_type_t FwOperations::getChipType()
@@ -1983,8 +1984,8 @@ bool FwOperations::RomInfo::GetExpRomVerForOneRom(u_int32_t verOffset)
     // Following mlxsign: refer to layout in Flash Programminng application note.
 
     // Get expansion rom product ID
-    tmp = __le32_to_cpu(*((u_int32_t*)&romSect[verOffset]));
-    offs4 = __le32_to_cpu(*((u_int32_t*)&romSect[verOffset + 4]));
+    tmp = mft_le32_to_cpu(*((u_int32_t*)&romSect[verOffset]));
+    offs4 = mft_le32_to_cpu(*((u_int32_t*)&romSect[verOffset + 4]));
 
     romInfo->exp_rom_product_id = tmp >> 16;
     romInfo->exp_rom_num_ver_fields = FwOperations::RomInfo::getNumVerFromProdId(romInfo->exp_rom_product_id);
@@ -2004,7 +2005,7 @@ bool FwOperations::RomInfo::GetExpRomVerForOneRom(u_int32_t verOffset)
 
     if (romInfo->exp_rom_product_id >= 0x10)
     {
-        offs8 = __le32_to_cpu(*((u_int32_t*)&romSect[verOffset + 8]));
+        offs8 = mft_le32_to_cpu(*((u_int32_t*)&romSect[verOffset + 8]));
         romInfo->exp_rom_supp_cpu_arch = (offs8 >> 8) & 0xf;
         romInfo->exp_rom_dev_id = offs8 >> 16;
         // 0x12 is CLP we have only 1 version field and no port
@@ -2017,7 +2018,7 @@ bool FwOperations::RomInfo::GetExpRomVerForOneRom(u_int32_t verOffset)
     else if (romInfo->exp_rom_product_id == 0xf)
     {
         // get string length
-        u_int32_ba tmp_ba = __le32_to_cpu(*((u_int32_t*)&romSect[verOffset + 0xc]));
+        u_int32_ba tmp_ba = mft_le32_to_cpu(*((u_int32_t*)&romSect[verOffset + 0xc]));
         u_int32_t str_len = u_int32_t(tmp_ba.range(15, 8));
         u_int32_t sign_length = u_int32_t(tmp_ba.range(7, 0));
         u_int32_t dws_num = ((str_len + 3) / 4) + 4;
@@ -2036,7 +2037,7 @@ bool FwOperations::RomInfo::GetExpRomVerForOneRom(u_int32_t verOffset)
             romInfo->exp_rom_ver[0] = svnv;
         }
 
-        tmp_ba = __le32_to_cpu(*((u_int32_t*)&romSect[0x18]));
+        tmp_ba = mft_le32_to_cpu(*((u_int32_t*)&romSect[0x18]));
         u_int32_t dev_id_off = u_int32_t(tmp_ba.range(15, 0)) + 4;
 
         if (dev_id_off >= romSect.size())
@@ -2045,7 +2046,7 @@ bool FwOperations::RomInfo::GetExpRomVerForOneRom(u_int32_t verOffset)
         }
 
         // get devid
-        tmp_ba = __le32_to_cpu(*((u_int32_t*)&romSect[dev_id_off]));
+        tmp_ba = mft_le32_to_cpu(*((u_int32_t*)&romSect[dev_id_off]));
         romInfo->exp_rom_dev_id = u_int32_t(tmp_ba.range(31, 16));
         u_int32_t vendor_id = u_int32_t(tmp_ba.range(15, 0));
 

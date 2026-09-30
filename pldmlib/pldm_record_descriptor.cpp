@@ -6,6 +6,7 @@
 
 #include "pldm_buff.h"
 #include "pldm_record_descriptor.h"
+#include "common/tools_endianness.h"
 
 PldmRecordDescriptor::PldmRecordDescriptor() :
     bufferOffset(0),
@@ -71,12 +72,12 @@ bool PldmRecordDescriptor::extractVendorDefined()
         }
         else if (descriptorName == "APSKU")
         {
-            vendorDefinedNumericValue = __cpu_to_le32(*reinterpret_cast<u_int32_t*>(vendoreDefinedPtr));
+            vendorDefinedNumericValue = mft_cpu_to_le32(*reinterpret_cast<u_int32_t*>(vendoreDefinedPtr));
             vendorDefinedType = VendorDefinedType::APSKU;
         }
         else if (descriptorName == "GLACIERDSD")
         {
-            vendorDefinedNumericValue = __cpu_to_le32(*reinterpret_cast<u_int32_t*>(vendoreDefinedPtr));
+            vendorDefinedNumericValue = mft_cpu_to_le32(*reinterpret_cast<u_int32_t*>(vendoreDefinedPtr));
             vendorDefinedType = VendorDefinedType::GLACIERDSD;
         }
         else
@@ -172,14 +173,14 @@ bool PldmRecordDescriptor::pack(PldmBuffer& buff) const
     }
     size_t off = (size_t)bufferOffset;
 
-    u_int16_t typeLE = __cpu_to_le16(descriptorType);
+    u_int16_t typeLE = mft_cpu_to_le16(descriptorType);
     if (!buff.writeAt(off, (const u_int8_t*)&typeLE, sizeof(typeLE)))
     {
         return false;
     }
     off += sizeof(typeLE);
 
-    u_int16_t lenLE = __cpu_to_le16(descriptorLength);
+    u_int16_t lenLE = mft_cpu_to_le16(descriptorLength);
     if (!buff.writeAt(off, (const u_int8_t*)&lenLE, sizeof(lenLE)))
     {
         return false;

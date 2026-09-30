@@ -57,6 +57,7 @@
 #include "mft_utils/mft_utils.h"
 #include "common/tools_string.h"
 #include "mlxfwops/lib/fs_pldm.h"
+#include "common/tools_endianness.h"
 #include "pldm_utils/pldm_utils.h"
 
 using nbu::mft::common::string_format;
@@ -1485,7 +1486,7 @@ mlxCfgStatus MlxCfg::backupCfg(string deviceName)
             vector<u_int8_t> v = it->tlvBin;
             for (size_t i = 0; i < v.size() / 4; i++)
             {
-                fprintf(file, "0x%08x ", __cpu_to_be32(((u_int32_t*)v.data())[i]));
+                fprintf(file, "0x%08x ", (unsigned int)mft_cpu_to_be32(((u_int32_t*)v.data())[i]));
             }
             fprintf(file, "\n");
         }

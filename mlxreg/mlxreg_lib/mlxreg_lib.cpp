@@ -45,6 +45,7 @@
 #include "common/tools_time.h"
 #include <mlxreg_exception.h>
 #include <mtcr_ul/packets_layout.h>
+#include "common/tools_endianness.h"
 
 #define REG_ACCESS_UNION_NODE "access_reg_summary"
 
@@ -432,7 +433,7 @@ void _MlxRegLib_impl<dynamic>::handle_buffer_endianness(void* buffer, uint32_t s
 {
     for (uint32_t* addr = (uint32_t*)buffer; addr < (uint32_t*)buffer + size / sizeof(uint32_t); ++addr)
     {
-        *addr = __cpu_to_be32(*addr);
+        *addr = mft_cpu_to_be32(*addr);
     }
 }
 /************************************
@@ -464,7 +465,7 @@ MlxRegLibStatus _MlxRegLib_impl<dynamic>::dumpRegisterData(string output_file_na
     {
         for (typename std::vector<u_int32_t>::size_type i = 0; i != data.size(); i++)
         {
-            fprintf(outputFile, "%08x\n", CPU_TO_BE32(data[i]));
+            fprintf(outputFile, "%08x\n", (u_int32_t)mft_cpu_to_be32(data[i]));
         }
     }
     else

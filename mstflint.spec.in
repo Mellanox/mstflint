@@ -238,6 +238,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/mstflint/cmdif/icmd_cif_common.h
 %{_includedir}/mstflint/cmdif/icmd_cif_open.h
 %{_includedir}/mstflint/common/compatibility.h
+%{_includedir}/mstflint/common/tools_endianness.h
 %{_includedir}/mstflint/mtcr.h
 %{_includedir}/mstflint/mtcr_com_defs.h
 %{_includedir}/mstflint/mtcr_mf.h

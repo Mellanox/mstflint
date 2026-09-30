@@ -40,6 +40,7 @@
  #include <fstream>
  #include <sstream>
  #include "mlxfwops/lib/fw_ops.h"
+ #include "common/tools_endianness.h"
  
  #define OPTIONS_BYTES_LEN 2
  #define ACTIVATION_METHOD_BYTES_LEN 2
@@ -169,7 +170,7 @@
  
  void PLDMComponent::SetComponentLocationOffset(vector<u_int8_t>& buff, u_int32_t value)
  {
-     ((u_int32_t*)(buff.data() + _offsetOfComponentDataOffset))[0] = __cpu_to_le32(value);
+     ((u_int32_t*)(buff.data() + _offsetOfComponentDataOffset))[0] = mft_cpu_to_le32(value);
  }
  
  string PLDMComponent::extractFwData(string& imageSource)

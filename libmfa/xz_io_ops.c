@@ -42,6 +42,7 @@
 #endif
 #include <string.h>
 #include <xz.h>
+#include "common/tools_endianness.h"
 
 #define XZ_IOBUF_SIZE 4096
 #define _ERR(errcode) (-errcode)
@@ -165,7 +166,7 @@ ssize_t xz_stream_len(u_int8_t* buffer, ssize_t len)
 
     pos -= 7;
     u_int32_t backward_size = *((u_int32_t*)&buffer[pos]); // TODO: Must use le2cpu function here
-    backward_size = __le32_to_cpu(backward_size);
+    backward_size = mft_le32_to_cpu(backward_size);
     backward_size = (backward_size + 1) * 4;
     pos -= 4;                 // CRC32
     pos -= backward_size - 1; // pos will point at number of records field inside Index

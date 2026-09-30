@@ -58,6 +58,7 @@
 using namespace std;
 #include <cstdlib>
 #include <fcntl.h>
+#include "common/tools_endianness.h"
 #ifdef __WIN__
 #include <direct.h>
 #include <sys/stat.h>
@@ -205,7 +206,7 @@ MError mnvaCom5thGen(mfile* mf,
         mnvaTlv.nv_hdr.read_current = 1;
     }
     // tlvType should be in the correct endianess
-    mnvaTlv.nv_hdr.type.tlv_type_dw.tlv_type_dw = __be32_to_cpu(tlvType);
+    mnvaTlv.nv_hdr.type.tlv_type_dw.tlv_type_dw = mft_be32_to_cpu(tlvType);
     memcpy(mnvaTlv.data, buff, len);
     MError rc;
     // "suspend" signals as we are going to take semaphores
@@ -229,7 +230,7 @@ MError
     memset(&nvqcTlv, 0, sizeof(struct reg_access_hca_mnvqc_reg_ext));
 
     // tlvType should be in the correct endianess
-    nvqcTlv.type = __be32_to_cpu(tlvType);
+    nvqcTlv.type = mft_be32_to_cpu(tlvType);
     nvqcTlv.host_id_valid = is_host_id_valid ? 1 : 0;
     MError rc;
     // "suspend" signals as we are going to take semaphores
@@ -258,7 +259,7 @@ MError nvdiCom5thGen(mfile* mf, u_int32_t tlvType, bool is_host_id_valid)
     mnvdiTlv.nv_hdr.writer_id = WRITER_ID_ICMD_MLXCONFIG;
     mnvdiTlv.nv_hdr.writer_host_id = is_host_id_valid ? 1 : 0;
     // tlvType should be in the correct endianess
-    mnvdiTlv.nv_hdr.type.tlv_type_dw.tlv_type_dw = __be32_to_cpu(tlvType);
+    mnvdiTlv.nv_hdr.type.tlv_type_dw.tlv_type_dw = mft_be32_to_cpu(tlvType);
 
     MError rc;
     // "suspend" signals as we are going to take semaphores

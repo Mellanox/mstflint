@@ -37,6 +37,7 @@
 #include <exception>
 #include <cstring>
 #include "common/tools_time.h"
+#include "common/tools_endianness.h"
 
 CmisCdbAccessException::CmisCdbAccessException(const string& msg) : _msg(msg) {}
 const char* CmisCdbAccessException::what() const throw()
@@ -189,7 +190,7 @@ void CmisCdbAccess::InitCommandHeader(u_int16_t code, PayloadMethod payloadMetho
         {
             throw CmisCdbAccessException("EPL payload size is too big.");
         }
-        _header.eplLength = __be16_to_cpu(payloadSize); // eplLength field MSB is the first byte
+        _header.eplLength = mft_be16_to_cpu(payloadSize); // eplLength field MSB is the first byte
     }
     else if (payloadMethod == LPL)
     {
@@ -275,7 +276,7 @@ void CmisCdbAccess::SendCommand(u_int16_t code, const vector<u_int8_t>& lplPaylo
 
     memset(&_header, 0, sizeof(_header));
 
-    _header.eplLength = __be16_to_cpu(eplPayloadSize); // eplLength field MSB is the first byte
+    _header.eplLength = mft_be16_to_cpu(eplPayloadSize); // eplLength field MSB is the first byte
     _header.lplLength = (u_int8_t)lplPayload.size();   // lplLength field MSB is the first byte
     _header.command = code;
     _header.cdbChkCode = CalcChkCode(LPL, lplPayload);

@@ -56,6 +56,7 @@
 #endif
 
 #include <dirent.h>
+#include "common/tools_endianness.h"
 
 #define INDENT  "    "
 #define INDENT2 INDENT INDENT
@@ -475,7 +476,7 @@ void MlxTknGenerator::FromGetMeasurementIndex50ToChallenge(
     std::memcpy(challenge.challenge, getMeasurementIndex50.nonce, sizeof(challenge.challenge));
 
     for (int i = 0; i < 4; i++) {
-        challenge.keypair_uuid[i] = __be32_to_cpu(((u_int32_t*)getMeasurementIndex50.keypair_uuid.data)[i]);
+        challenge.keypair_uuid[i] = mft_be32_to_cpu(((u_int32_t*)getMeasurementIndex50.keypair_uuid.data)[i]);
     }
 
     challenge.fw_version_31_0 = getMeasurementIndex50.fw_version[1];
@@ -484,7 +485,7 @@ void MlxTknGenerator::FromGetMeasurementIndex50ToChallenge(
 
 void MlxTknGenerator::ValidateNewTlvType(u_int16_t actual, u_int16_t expected, const string& fieldName)
 {
-    if (__be16_to_cpu(actual) != expected) {
+    if (mft_be16_to_cpu(actual) != expected) {
         throw MlxTknGeneratorException(("Invalid " + fieldName).c_str());
     }
 }
@@ -499,7 +500,7 @@ void MlxTknGenerator::IsValidGetMeasurementIndex50(
     }
 
     /* Validate header version */
-    if (__be32_to_cpu(getMeasurementIndex50.header_version) != 0x1) {
+    if (mft_be32_to_cpu(getMeasurementIndex50.header_version) != 0x1) {
         throw MlxTknGeneratorException("Invalid header version");
     }
 

@@ -40,6 +40,7 @@
 #include <errno.h>
 #include <string.h>
 #include <compatibility.h>
+#include "common/tools_endianness.h"
 
 //                                         0x(major)(minor)
 //                           0x00000001;  #0x(0000)(0001)
@@ -257,7 +258,7 @@ int mfa_verify_archive(u_int8_t* buf, long sz)
 
     // Check version
     ver = *((u_int32_t*)&buf[4]);
-    ver = __be32_to_cpu(ver);
+    ver = mft_be32_to_cpu(ver);
     major = (ver & 0xFFFF0000) >> 16;
     minor = (ver & 0x0000FFFF);
     (void)mlx_minor;
@@ -269,7 +270,7 @@ int mfa_verify_archive(u_int8_t* buf, long sz)
 
     // Archive CRC
     ar_crc = *((u_int32_t*)&buf[sz - 4]);
-    ar_crc = __be32_to_cpu(ar_crc);
+    ar_crc = mft_be32_to_cpu(ar_crc);
 
     crc = mfasec_crc32(buf, sz - 4, 0);
     if (crc != ar_crc)
@@ -284,7 +285,7 @@ int mfa_verify_archive(u_int8_t* buf, long sz)
 int mfa_get_crc32(u_int8_t* arbuf, long sz, u_int32_t* ar_crc, u_int32_t* calc_crc)
 {
     *ar_crc = *((u_int32_t*)&arbuf[sz - 4]);
-    *ar_crc = __be32_to_cpu(*ar_crc);
+    *ar_crc = mft_be32_to_cpu(*ar_crc);
 
     *calc_crc = mfasec_crc32(arbuf, sz - 4, 0);
 
@@ -298,7 +299,8 @@ int mfa_read_map(struct mfa_desc* mfa_d)
 
     section_hdr* map_hdr = (section_hdr*)&mfa_d->buffer[MAP_SECTION_OFFSET];
 
-    res = mfasec_get_map(&mfa_d->buffer[MAP_SECTION_OFFSET], __be32_to_cpu(map_hdr->size) + sizeof(section_hdr), &buf);
+    res =
+      mfasec_get_map(&mfa_d->buffer[MAP_SECTION_OFFSET], mft_be32_to_cpu(map_hdr->size) + sizeof(section_hdr), &buf);
     if (res < 0)
     {
         goto clean_up;
@@ -321,11 +323,11 @@ int mfa_read_toc(struct mfa_desc* mfa_d)
 
     section_hdr* map_hdr = (section_hdr*)&mfa_d->buffer[MAP_SECTION_OFFSET];
     section_hdr* toc_hdr =
-      (section_hdr*)&mfa_d->buffer[MAP_SECTION_OFFSET + __be32_to_cpu(map_hdr->size) + sizeof(section_hdr)];
-    mfa_d->data_ptr = &mfa_d->buffer[MAP_SECTION_OFFSET + __be32_to_cpu(map_hdr->size) + 2 * sizeof(section_hdr) +
-                                     __be32_to_cpu(toc_hdr->size)];
+      (section_hdr*)&mfa_d->buffer[MAP_SECTION_OFFSET + mft_be32_to_cpu(map_hdr->size) + sizeof(section_hdr)];
+    mfa_d->data_ptr = &mfa_d->buffer[MAP_SECTION_OFFSET + mft_be32_to_cpu(map_hdr->size) + 2 * sizeof(section_hdr) +
+                                     mft_be32_to_cpu(toc_hdr->size)];
 
-    res = mfasec_get_toc((u_int8_t*)toc_hdr, __be32_to_cpu(toc_hdr->size) + sizeof(section_hdr), &buf);
+    res = mfasec_get_toc((u_int8_t*)toc_hdr, mft_be32_to_cpu(toc_hdr->size) + sizeof(section_hdr), &buf);
     if (res < 0)
     {
         goto clean_up;
