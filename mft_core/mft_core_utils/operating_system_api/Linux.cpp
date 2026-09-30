@@ -43,6 +43,7 @@
 #include <stdexcept>
 #include <thread>
 #include "common/compatibility.h"
+#include "common/tools_endianness.h"
 
 #if !defined(__linux__)
 #define HOST_NAME_MAX 64
@@ -131,7 +132,7 @@ void Linux::LittleToBig32(uint32_t& uLittleEndianBuffer, const int iLength)
 {
     for (int iCounter = 0; iCounter < iLength / 4; iCounter++)
     {
-        (&uLittleEndianBuffer)[iCounter] = __be32_to_cpu((&uLittleEndianBuffer)[iCounter]);
+        (&uLittleEndianBuffer)[iCounter] = mft_be32_to_cpu((&uLittleEndianBuffer)[iCounter]);
     }
 }
 

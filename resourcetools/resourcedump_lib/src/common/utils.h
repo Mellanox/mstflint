@@ -34,6 +34,7 @@
 #define RESDUMP_UTILS_H
 
 #include <common/compatibility.h>
+#include <common/tools_endianness.h>
 
 #include <string>
 #include <iostream>
@@ -62,7 +63,7 @@ std::string get_big_endian_string_impl(ISTREAM& is, OSTREAM& os)
         is.read(dword.as_bytes, 4);
         if (__BYTE_ORDER != __BIG_ENDIAN)
         {
-            dword.as_int = __cpu_to_be32(dword.as_int);
+            dword.as_int = mft_cpu_to_be32(dword.as_int);
         }
         be_stream.write(dword.as_bytes, 4);
     }

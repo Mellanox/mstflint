@@ -95,6 +95,7 @@
 
 #include "common/bit_slice.h"
 #include "common/tools_time.h"
+#include "common/tools_endianness.h"
 #include "tools_utils.h"
 #include "mtcr_ul_com.h"
 #include "mtcr_int_defs.h"
@@ -616,7 +617,7 @@ int mtcr_pcicr_mread4(mfile* mf, unsigned int offset, u_int32_t* value)
 
     if (!mf->big_endian)
     {
-        *value = __be32_to_cpu(tmp);
+        *value = mft_be32_to_cpu(tmp);
     }
     else
     {
@@ -636,7 +637,7 @@ int mtcr_pcicr_mwrite4(mfile* mf, unsigned int offset, u_int32_t value)
 
     if (!mf->big_endian)
     {
-        *((u_int32_t*)((char*)mf->bar_virtual_addr + offset)) = __cpu_to_be32(value);
+        *((u_int32_t*)((char*)mf->bar_virtual_addr + offset)) = mft_cpu_to_be32(value);
     }
     else
     {
@@ -752,7 +753,7 @@ enum
             }                                                        \
             action_on_fail;                                          \
         }                                                            \
-        *val_ptr = __le32_to_cpu(*val_ptr);                          \
+        *val_ptr = mft_le32_to_cpu(*val_ptr);                        \
     } while (0)
 
 #define WRITE4_PCI(mf, val, pci_offs, err_prefix, action_on_fail) \
@@ -760,7 +761,7 @@ enum
     {                                                             \
         int rc;                                                   \
         u_int32_t val_le;                                         \
-        val_le = __cpu_to_le32(val);                              \
+        val_le = mft_cpu_to_le32(val);                            \
         rc = pwrite(mf->fd, &val_le, 4, pci_offs);                \
         if (rc != 4)                                              \
         {                                                         \
@@ -1945,7 +1946,7 @@ int mtcr_pciconf_mread4_old(mfile* mf, unsigned int offset, u_int32_t* value)
     new_offset |= (mf->vsec_type == RECOVERY_VSC_32B) ? PCICONF_ADDR_NON_POSTED_MASK_32B : PCICONF_ADDR_NON_POSTED_MASK;
 
     /* adrianc: PCI registers always in le32 */
-    offset = __cpu_to_le32(new_offset);
+    offset = mft_cpu_to_le32(new_offset);
     rc = _flock_int(ctx->fdlock, LOCK_EX);
     if (rc)
     {
@@ -1969,7 +1970,7 @@ int mtcr_pciconf_mread4_old(mfile* mf, unsigned int offset, u_int32_t* value)
         perror("read value");
         goto pciconf_read_cleanup;
     }
-    *value = __le32_to_cpu(*value);
+    *value = mft_le32_to_cpu(*value);
     ;
 pciconf_read_cleanup:
     if (_flock_int(ctx->fdlock, LOCK_UN))
@@ -1987,8 +1988,8 @@ int mtcr_pciconf_mwrite4_old(mfile* mf, unsigned int offset, u_int32_t value)
     ul_ctx_t* ctx = mf->ul_ctx;
     int rc;
 
-    value = __cpu_to_le32(value);
-    offset = __cpu_to_le32(offset);
+    value = mft_cpu_to_le32(value);
+    offset = mft_cpu_to_le32(offset);
     rc = _flock_int(ctx->fdlock, LOCK_EX);
     if (rc)
     {
@@ -2512,13 +2513,13 @@ void fix_endianness(u_int32_t* buf, int len, int be_mode)
         if (be_mode)
         {
             /* printf("-D- before: buf[%d] = %#x\n", i, buf[i]); */
-            buf[i] = __be32_to_cpu(buf[i]);
+            buf[i] = mft_be32_to_cpu(buf[i]);
             /* printf("-D- before: buf[%d] = %#x\n", i, buf[i]); */
         }
         else
         {
             /* printf("-D- before: buf[%d] = %#x\n", i, buf[i]); */
-            buf[i] = __cpu_to_be32(buf[i]);
+            buf[i] = mft_cpu_to_be32(buf[i]);
             /* printf("-D- before: buf[%d] = %#x\n", i, buf[i]); */
         }
     }
@@ -3557,7 +3558,7 @@ int check_force_config(unsigned my_domain, unsigned my_bus, unsigned my_dev, uns
     {
         return 0;
     }
-    u_int32_t devid = __le32_to_cpu(conf_header_32p[0]) >> 16;
+    u_int32_t devid = mft_le32_to_cpu(conf_header_32p[0]) >> 16;
 
     if ((devid == CX3PRO_SW_ID) || (devid == CX3_SW_ID))
     {
@@ -3917,11 +3918,11 @@ dev_info* mdevices_info_v_ul(int mask, int* len, int verbosity)
             goto next;
         }
 
-        dev_info_arr[i].pci.dev_id = __le32_to_cpu(conf_header_32p[0]) >> 16;
-        dev_info_arr[i].pci.vend_id = __le32_to_cpu(conf_header_32p[0]) & 0xffff;
-        dev_info_arr[i].pci.class_id = __le32_to_cpu(conf_header_32p[2]) >> 8;
-        dev_info_arr[i].pci.subsys_id = __le32_to_cpu(conf_header_32p[11]) >> 16;
-        dev_info_arr[i].pci.subsys_vend_id = __le32_to_cpu(conf_header_32p[11]) & 0xffff;
+        dev_info_arr[i].pci.dev_id = mft_le32_to_cpu(conf_header_32p[0]) >> 16;
+        dev_info_arr[i].pci.vend_id = mft_le32_to_cpu(conf_header_32p[0]) & 0xffff;
+        dev_info_arr[i].pci.class_id = mft_le32_to_cpu(conf_header_32p[2]) >> 8;
+        dev_info_arr[i].pci.subsys_id = mft_le32_to_cpu(conf_header_32p[11]) >> 16;
+        dev_info_arr[i].pci.subsys_vend_id = mft_le32_to_cpu(conf_header_32p[11]) & 0xffff;
 
     next:
         dev_name += strlen(dev_name) + 1;

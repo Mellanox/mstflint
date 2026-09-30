@@ -39,6 +39,7 @@
 #include <sys/types.h>
 
 #include "compatibility.h"
+#include "tools_endianness.h"
 
 #ifndef __WIN__
 #include <netinet/in.h>
@@ -116,8 +117,8 @@
 #define BE32_TO_CPU(x) ntohl(x)
 #define CPU_TO_BE16(x) htons(x)
 #define BE16_TO_CPU(x) ntohs(x)
-#define CPU_TO_LE32(x) __cpu_to_le32(x)
-#define LE32_TO_CPU(x) __le32_to_cpu(x)
+#define CPU_TO_LE32(x) mft_cpu_to_le32(x)
+#define LE32_TO_CPU(x) mft_le32_to_cpu(x)
 #ifdef _LITTLE_ENDIANESS
 #define CPU_TO_BE64(x) \
     (((u_int64_t)htonl((u_int32_t)((x)&0xffffffff)) << 32) | ((u_int64_t)htonl((u_int32_t)((x >> 32) & 0xffffffff))))

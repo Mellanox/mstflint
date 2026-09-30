@@ -46,6 +46,7 @@
 #include "pldm_component_image.h"
 #include "pldm_pkg.h"
 #include "pldm_utils/pldm_utils.h"
+#include "common/tools_endianness.h"
 
 PldmPkg::PldmPkg() : deviceIDRecordCount(0), componentImageCount(0), packageHeaderChecksum(0) {}
 
@@ -287,6 +288,6 @@ bool PldmPkg::recomputeHeaderChecksum(PldmBuffer& buff) const
         return false;
     }
     u_int32_t newCrc = pldm_crc32(buff.data(), checksumOffset);
-    u_int32_t le = __cpu_to_le32(newCrc);
+    u_int32_t le = mft_cpu_to_le32(newCrc);
     return buff.writeAt(checksumOffset, (const u_int8_t*)&le, sizeof(le));
 }

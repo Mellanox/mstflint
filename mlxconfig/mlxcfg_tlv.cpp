@@ -51,6 +51,7 @@
 #include "mlxcfg_tlv.h"
 
 #include <muParser.h>
+#include "common/tools_endianness.h"
 
 using namespace mu;
 using namespace std;
@@ -1258,7 +1259,7 @@ void TLVConf::genRaw(string& raw)
 
     for (unsigned int i = 0; i < buff.size(); i++)
     {
-        buff.data()[i] = __be32_to_cpu(buff.data()[i]);
+        buff.data()[i] = mft_be32_to_cpu(buff.data()[i]);
         buffSS << "0x";
         buffSS << std::setfill('0') << std::setw(8) << std::hex;
         buffSS << buff.data()[i] << " ";
@@ -1336,7 +1337,7 @@ void TLVConf::genBin(vector<u_int32_t>& buff, bool withHeader, QueryType qt)
         }
         hdr.priority = (u_int8_t)priority;
 
-        hdr.type.tlv_type_dw.tlv_type_dw = __be32_to_cpu(getTlvTypeBe());
+        hdr.type.tlv_type_dw.tlv_type_dw = mft_be32_to_cpu(getTlvTypeBe());
 
         tools_open_nv_hdr_fifth_gen_pack(&hdr, (u_int8_t*)buff.data());
 

@@ -42,6 +42,7 @@
 #include <string>
 
 #include "pldm_utils.h"
+#include "common/tools_endianness.h"
 
 using namespace std;
 // If a new component is added, update the Confluence page as well:
@@ -200,14 +201,14 @@ void dumpUInt8(vector<u_int8_t>& buff, u_int8_t val)
 
 void dumpUInt16(vector<u_int8_t>& buff, u_int16_t val)
 {
-    val = __cpu_to_le16(val);
+    val = mft_cpu_to_le16(val);
     buff.push_back(((u_int8_t*)&val)[0]);
     buff.push_back(((u_int8_t*)&val)[1]);
 }
 
 void dumpUInt32(vector<u_int8_t>& buff, u_int32_t val)
 {
-    val = __cpu_to_le32(val);
+    val = mft_cpu_to_le32(val);
     buff.push_back(((u_int8_t*)&val)[0]);
     buff.push_back(((u_int8_t*)&val)[1]);
     buff.push_back(((u_int8_t*)&val)[2]);

@@ -48,6 +48,7 @@
  #include "pldmlib/pldm_pkg.h"
  #include "pldmlib/pldm_dev_id_record.h"
  #include "pldmlib/pldm_record_descriptor.h"
+ #include "common/tools_endianness.h"
  
  #define PACKAGE_VERSION_STR "Package Version"
  #define PACKAGE_HEADER_FORMAT_REVISION_STR "Package Header Format Revision"
@@ -325,7 +326,7 @@
      dumpUInt32(buff, 0x0); // will be back-patched later
  
      // set the header size before dumping the components data
-     ((u_int16_t*)(buff.data() + headerSizeFieldOffset))[0] = __cpu_to_le16(buff.size());
+     ((u_int16_t*)(buff.data() + headerSizeFieldOffset))[0] = mft_cpu_to_le16(buff.size());
  
      // dump the components data
      for (unsigned int i = 0; i < _components.size(); i++)
@@ -338,7 +339,7 @@
  
      // calculate the checksum
      ((u_int32_t*)(buff.data() + checksumFieldOffset))[0] =
-       __cpu_to_le32(crc32((unsigned char*)buff.data(), checksumFieldOffset));
+       mft_cpu_to_le32(crc32((unsigned char*)buff.data(), checksumFieldOffset));
  }
  
  void PLDM::AddComponentsValues(Json::Value& componentAttr)

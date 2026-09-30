@@ -225,7 +225,7 @@ void MlxlinkRegParser::sendPrmRegVaList(const string& regName,
             }
             auto fieldToken = MlxlinkRecord::split(token, "=");
             string fieldName = fieldToken[0];
-            u_int32_t fieldValue = stoi(fieldToken[1], nullptr, 0);
+            u_int32_t fieldValue = (u_int32_t)stoul(fieldToken[1], nullptr, 0);
 
             updateField(fieldName, fieldValue);
         }

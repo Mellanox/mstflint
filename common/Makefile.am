@@ -38,6 +38,7 @@ libcommon_la_SOURCES = \
     bit_slice.h \
     compatibility.h \
     tools_algorithm.h \
+    tools_endianness.h \
     tools_filesystem.cpp \
     tools_filesystem.h \
     tools_json.cpp \
@@ -52,7 +53,7 @@ libcommon_la_SOURCES = \
     tools_string.cpp
 
 commonincludedir = $(includedir)/mstflint/common/
-commoninclude_HEADERS = compatibility.h
+commoninclude_HEADERS = compatibility.h tools_endianness.h
 
 update_prefix = sed -e 's,[@]MST_LIB_DIR[@]${CONF_DISABLE_PATH_UPDATE},$(libdir),g'\
                     -e 's,[@]MST_BIN_DIR[@]${CONF_DISABLE_PATH_UPDATE},$(bindir),g'\

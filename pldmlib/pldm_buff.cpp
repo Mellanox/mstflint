@@ -42,6 +42,7 @@
 #include <string>
 
 #include "common/compatibility.h"
+#include "common/tools_endianness.h"
 
 #include "pldm_buff.h"
 
@@ -127,14 +128,14 @@ void PldmBuffer::read(u_int16_t& val)
 {
     val = *(u_int16_t*)(m_buff + m_pos);
     m_pos += sizeof(u_int16_t);
-    val = __le16_to_cpu(val);
+    val = mft_le16_to_cpu(val);
 }
 
 void PldmBuffer::read(u_int32_t& val)
 {
     val = *(u_int32_t*)(m_buff + m_pos);
     m_pos += sizeof(u_int32_t);
-    val = __le32_to_cpu(val);
+    val = mft_le32_to_cpu(val);
 }
 
 void PldmBuffer::read(std::string& str, size_t str_size)

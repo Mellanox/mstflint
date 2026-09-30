@@ -42,6 +42,7 @@
 #include "adb_parser/buf_ops.h"
 #include "mlxreg/mlxreg_lib/mlxreg_parser.h"
 #include "common/compatibility.h"
+#include "common/tools_endianness.h"
 
 MstPrmAccessType convertRegisterAccessType(const std::string& access)
 {
@@ -332,7 +333,7 @@ int PrmRegSdk::fillBuffWithParams(void* regNode,
     // convert to CPU
     for (std::vector<uint32_t>::size_type j = 0; j < buffer.size(); j++)
     {
-        buffer[j] = __be32_to_cpu((buffer[j]));
+        buffer[j] = mft_be32_to_cpu((buffer[j]));
     }
 
     for (const auto& pair : params)

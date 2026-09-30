@@ -9,6 +9,7 @@
 #include "tools_layouts/cables_layouts.h"
 #include "mtcr_ul_com.h"
 #include "nvtoolslogger/nvtoolslogger_c.h"
+#include "common/tools_endianness.h"
 
 
 #define MAX_PORT_NUM                                       128
@@ -71,11 +72,11 @@ void copy_data(u_int8_t* dest, u_int8_t* src, int size, int be2cpu)
     int last_bytes = size % 4;
 
     for (j = 0; j < size / 4; j++) {
-        ((u_int32_t*)dest)[j] = __be32_to_cpu(((u_int32_t*)src)[j]);
+        ((u_int32_t*)dest)[j] = mft_be32_to_cpu(((u_int32_t*)src)[j]);
     }
 
     if (last_bytes) {
-        u_int32_t last_dword = __be32_to_cpu(((u_int32_t*)src)[size / 4]);
+        u_int32_t last_dword = mft_be32_to_cpu(((u_int32_t*)src)[size / 4]);
         if (be2cpu) {
             memcpy(dest + (size - size % 4), &last_dword, last_bytes);
         } else {
@@ -323,7 +324,7 @@ int mcables_read4(mfile* mf, u_int32_t offset, u_int32_t* value)
     int rc = cable_access_rw(mf, offset, 4, value, READ_OP);
 
     if (!rc) {
-        *value = __cpu_to_le32(*value);
+        *value = mft_cpu_to_le32(*value);
         rc = 4;
     }
     return rc;
@@ -352,7 +353,7 @@ int mcables_read4_block(mfile* mf, u_int32_t offset, u_int32_t* value, int byte_
     if (!rc) {
         int i = 0;
         for (; i < byte_len / 4; i++) {
-            value[i] = __cpu_to_le32(value[i]);
+            value[i] = mft_cpu_to_le32(value[i]);
         }
         rc = byte_len;
     }
@@ -432,7 +433,7 @@ int get_cable_id(mfile* mf, u_int32_t* ptr_hw_dev_id, dm_dev_id_t* ptr_dm_dev_id
         /* printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno)); */
         return GET_DEV_ID_ERROR;
     }
-    /* dword = __cpu_to_le32(dword); // Cable pages are read in LE, no need to swap */
+    /* dword = mft_cpu_to_le32(dword); // Cable pages are read in LE, no need to swap */
     *ptr_hw_dev_id = 0xffff;
     u_int8_t         id = EXTRACT(dword, 0, 8);
     enum dm_dev_type cbl_type = getCableType(id);

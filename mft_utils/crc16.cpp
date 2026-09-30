@@ -31,6 +31,7 @@
  */
 #include "crc16.h"
 #include <stdlib.h>
+#include "common/tools_endianness.h"
 void Crc16::add(u_int32_t o)
 {
     if (_debug)
@@ -77,7 +78,7 @@ void Crc16::operator<<(std::vector<u_int8_t> v)
     }
     for (u_int32_t i = 0; i < v.size(); i += 4)
     {
-        u_int32_t dw_be = __cpu_to_be32(*((u_int32_t*)(&v[i])));
+        u_int32_t dw_be = mft_cpu_to_be32(*((u_int32_t*)(&v[i])));
         add(dw_be);
     }
 }

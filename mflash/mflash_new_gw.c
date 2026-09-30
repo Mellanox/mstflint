@@ -39,6 +39,7 @@
  *      Author: edwardg
  */
 #include "common/tools_time.h"
+#include "common/tools_endianness.h"
 #include "mflash_pack_layer.h"
 #include "mflash_dev_capability.h"
 #include "mflash_access_layer.h"
@@ -583,7 +584,7 @@ int new_gw_st_spi_block_read_ex(mflash* mfl,
     CHECK_RC(rc);
     for (i = 0; i < blk_size; i += 4)
     {
-        *(u_int32_t*)(data + i) = __be32_to_cpu(*(u_int32_t*)(data + i));
+        *(u_int32_t*)(data + i) = mft_be32_to_cpu(*(u_int32_t*)(data + i));
     }
     return MFE_OK;
 }
@@ -678,7 +679,7 @@ static int new_gw_addressed_read(mflash* mfl,
     u_int32_t i;
     for (i = 0; i < num_dwords; i++)
     {
-        flash_data[i] = __cpu_to_be32(flash_data[i]);
+        flash_data[i] = mft_cpu_to_be32(flash_data[i]);
     }
     memcpy(out, (u_int8_t*)flash_data + num_dummy_bytes, num_data_bytes);
 

@@ -34,6 +34,7 @@
 #include <mft_utils.h>
 #include "baseHeader.h"
 #include <iostream>
+#include "common/tools_endianness.h"
 
 const map<BaseHeader::StructPriority, string> CertStructHeader::_metadataPriorityToString = {
   {BaseHeader::StructPriority::User, "USER"},
@@ -132,13 +133,13 @@ bool CertStructHeader::Deserialize(vector<u_int8_t>::const_iterator begin, vecto
     _type = CertStructHeader::StructType(*begin);
 
     begin++;
-    _length = __cpu_to_be16(*(reinterpret_cast<const u_int16_t*>(&(*begin))));
+    _length = mft_cpu_to_be16(*(reinterpret_cast<const u_int16_t*>(&(*begin))));
 
     begin += 2;
     _securityMethod = CertStructHeader::StructSecurityMethod((*begin >> 4) & 0x0F);
 
     begin += 4;
-     _crc = __cpu_to_be16(*(reinterpret_cast<const u_int16_t*>(&(*begin))));
+     _crc = mft_cpu_to_be16(*(reinterpret_cast<const u_int16_t*>(&(*begin))));
 
     return true;
 }
