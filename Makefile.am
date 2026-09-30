@@ -69,6 +69,7 @@ if ENABLE_MSTFLINT_SDK
 # builds the convenience libs the SDK links (libmstreg_lib, libmlxreg_sdk,
 # libmodules_lib); mft_core builds the mft_core_utils and NVML libs.
 SDK_BUILD_SUBDIRS = \
+	$(NVML_DIR) \
 	ext_libs \
 	common \
 	cmdparser \
