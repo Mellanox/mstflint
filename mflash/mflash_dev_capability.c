@@ -40,6 +40,7 @@
  */
 
 #include "mflash_dev_capability.h"
+#include "nvtoolslogger/nvtoolslogger_c.h"
 #include <stdlib.h>
 
 // When (*status != MFE_OK) return value is undefined
@@ -176,6 +177,6 @@ FlashGen get_flash_gen(mflash* mfl)
             break;
         }
     }
-    DPRINTF(("get_flash_gen: flash_gen = %d\n", gen));
+    MFLASH_SPI_LOG_DEBUG("flash_gen = %d", gen);
     return gen;
 }

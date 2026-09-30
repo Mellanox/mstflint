@@ -54,6 +54,11 @@ enum mft_layer
     MFT_LAYER_EFUSE,
     MFT_LAYER_COMMON,
     MFT_LAYER_HCA_CAPS,
+    MFT_LAYER_MLXDPA,
+    MFT_LAYER_MLXTOKENGENERATOR,
+    MFT_LAYER_MFLASH,
+    MFT_LAYER_MFLASH_ACCESS,
+    MFT_LAYER_MFLASH_SPI,
 
     MFT_LAYER_COUNT
 };
@@ -83,6 +88,11 @@ enum class Layer
     EFUSE = MFT_LAYER_EFUSE,
     COMMON = MFT_LAYER_COMMON,
     HCA_CAPS = MFT_LAYER_HCA_CAPS,
+    MLXDPA = MFT_LAYER_MLXDPA,
+    MLXTOKENGENERATOR = MFT_LAYER_MLXTOKENGENERATOR,
+    MFLASH = MFT_LAYER_MFLASH,
+    MFLASH_ACCESS = MFT_LAYER_MFLASH_ACCESS,
+    MFLASH_SPI = MFT_LAYER_MFLASH_SPI,
     ALL = MFT_LAYER_COUNT
 };
 
@@ -95,11 +105,25 @@ struct LayerEntry
 inline const std::vector<LayerEntry>& getLayerTable()
 {
     static const std::vector<LayerEntry> table = {
-      {Layer::LOGGER, "logger"},       {Layer::MTCR, "mtcr"},         {Layer::REG_ACCESS, "reg_access"},
-      {Layer::FLINT, "flint"},         {Layer::MLXCONFIG, "mlxconfig"}, {Layer::MLXLINK, "mlxlink"},
-      {Layer::MLXREG, "mlxreg"},       {Layer::MFT_CORE, "mft_core"}, {Layer::MLXFWOPS, "mlxfwops"},
-      {Layer::MST_TOOL, "mst_tool"},   {Layer::EFUSE, "efuse"},       {Layer::COMMON, "common"},
-      {Layer::HCA_CAPS, "hca_caps"},   {Layer::ALL, "all"},
+      {Layer::LOGGER, "logger"},
+      {Layer::MTCR, "mtcr"},
+      {Layer::REG_ACCESS, "reg_access"},
+      {Layer::FLINT, "flint"},
+      {Layer::MLXCONFIG, "mlxconfig"},
+      {Layer::MLXLINK, "mlxlink"},
+      {Layer::MLXREG, "mlxreg"},
+      {Layer::MFT_CORE, "mft_core"},
+      {Layer::MLXFWOPS, "mlxfwops"},
+      {Layer::MST_TOOL, "mst_tool"},
+      {Layer::EFUSE, "efuse"},
+      {Layer::COMMON, "common"},
+      {Layer::HCA_CAPS, "hca_caps"},
+      {Layer::MLXDPA, "mlxdpa"},
+      {Layer::MLXTOKENGENERATOR, "mlxtokengenerator"},
+      {Layer::MFLASH, "mflash"},
+      {Layer::MFLASH_ACCESS, "mflash_access"},
+      {Layer::MFLASH_SPI, "mflash_spi"},
+      {Layer::ALL, "all"},
     };
     return table;
 }

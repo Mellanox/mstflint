@@ -62,6 +62,11 @@ class Layer(IntEnum):
     EFUSE = 10
     COMMON = 11
     HCA_CAPS = 12
+    MLXDPA = 13
+    MLXTOKENGENERATOR = 14
+    MFLASH = 15
+    MFLASH_ACCESS = 16
+    MFLASH_SPI = 17
 
 
 _LIB_NAME = "libnvtoolslogger.so"

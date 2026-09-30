@@ -43,6 +43,7 @@
 #define USER_MFLASH_MFLASH_DEV_CAPABILITY_H_
 
 #include "mflash_pack_layer.h"
+#include "mflash.h" // MFLASH_SPI_LOG_*
 
 #ifndef UEFI_BUILD
 #define FLASH_DPRINTF(args)                          \

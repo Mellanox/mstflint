@@ -36,6 +36,7 @@ AM_CPPFLAGS = \
     -I$(top_srcdir)/${MTCR_CONFIG_DIR} \
     -I$(top_srcdir)/common -I$(top_builddir)/common \
     -I$(top_srcdir)/mft_utils \
+    -I$(top_srcdir)/mft_core/mft_core_utils \
     -I$(top_srcdir)/mlxsign_lib \
     -I$(top_srcdir)/ext_libs/mini-yaml \
     -I$(top_srcdir)/ext_libs/sole \
@@ -93,6 +94,8 @@ mstdpa_LDADD = \
     $(top_builddir)/cmdparser/libcmdparser.a \
     $(top_builddir)/mlxsign_lib/libmlxsign.la \
     $(top_builddir)/mft_utils/libmftutils.la \
+    $(top_builddir)/mft_core/mft_core_utils/nvtoolslogger/libnvtoolslogger.la \
+    $(top_builddir)/mft_core/mft_core_utils/operating_system_api/lib_os_api.la \
     $(top_builddir)/tools_layouts/libtools_layouts.la \
     $(top_builddir)/ext_libs/mini-yaml/libmini_yaml.la \
     $(top_builddir)/ext_libs/sole/libsole.la \

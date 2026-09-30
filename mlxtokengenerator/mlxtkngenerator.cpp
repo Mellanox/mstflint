@@ -47,6 +47,7 @@
 #include "mlxconfig/mlxcfg_generic_commander.h"
 #include "mlxtkngenerator.h"
 #include "mlxtkngenerator_utils.h"
+#include "nvtoolslogger/NvToolsLogger.h"
 #include <tools_layouts/reg_access_switch_layouts.h>
 #include <tools_layouts/tokens_layout_layouts.h>
 
@@ -205,7 +206,8 @@ string MlxTknGenerator::GetDebugFwVersion(string filePath)
 vector < TLVParamsData >
 MlxTknGenerator::GetTokenDataFromQuery(string device, MlxCfgTokenType tokenType, Device_Type deviceType)
 {
-    MLX_TOKEN_DPRINTF(("%s.\n", __FUNCTION__));
+    MLX_TOKEN_LOG_DEBUG("querying token data from device %s (token type %d, device type %d)", device.c_str(),
+                        (int)tokenType, (int)deviceType);
     char errBuff[1024];
 
     vector < TLVParamsData > data;
@@ -400,7 +402,8 @@ vector < TLVParamsData > MlxTknGenerator::GetTokenDataFromChallenge(mfile * mf,
                                                                     MlxCfgTokenType tokenType,
                                                                     bool isNestedToken)
 {
-    MLX_TOKEN_DPRINTF(("%s.\n", __FUNCTION__));
+    MLX_TOKEN_LOG_DEBUG("reading token data from challenge (token type %d, nested %d)", (int)tokenType,
+                        (int)isNestedToken);
     MlxCfgToken mlxCfgToken(mf);
     vector < TLVParamsData > data;
     std::stringstream stream;
@@ -540,7 +543,6 @@ vector < TLVParamsData > MlxTknGenerator::GetDataForToken(MlxCfgTokenType tokenT
 
 void MlxTknGenerator::AutoGenerateTokensXML()
 {
-    MLX_TOKEN_DPRINTF(("%s.\n", __FUNCTION__));
     std::unordered_map<string, string> debugFwPsidToVersion;
     unordered_map<string, vector<string>> tokensPerPsid;
     vector<pair<string, string>> fileNamesAndContents;
@@ -603,6 +605,7 @@ void MlxTknGenerator::AutoGenerateTokensXML()
         }
         catch (const exception& e)
         {
+            MLX_TOKEN_LOG_WARNING("Token generation failed for device %s: %s", devs[i].dev_name, e.what());
             errors += string_format("Error for device: %s, error: %s.\n", devs[i].dev_name, e.what());
         }
         if (mf)
@@ -618,7 +621,7 @@ void MlxTknGenerator::AutoGenerateTokensXML()
         const vector<string>& xmls = tokenPerPsid.second;
         try
         {
-            MLX_TOKEN_DPRINTF(("aggregating %zu tokens for PSID %s\n", xmls.size(), psidKey.c_str()));
+            MLX_TOKEN_LOG_DEBUG("aggregating %d tokens for PSID %s", (int)xmls.size(), psidKey.c_str());
             const vector<string> aggregatedTokens = AggregateLegacyTokenXmlStrings(xmls, true);
             string safePsid = GetSafePsid(psidKey);
             for (size_t i = 0; i < aggregatedTokens.size(); i++)
@@ -629,6 +632,7 @@ void MlxTknGenerator::AutoGenerateTokensXML()
         }
         catch (const exception& e)
         {
+            MLX_TOKEN_LOG_WARNING("Token aggregation failed for PSID %s: %s", psidKey.c_str(), e.what());
             errors += string_format("Error aggregating tokens for PSID %s: %s.\n", psidKey.c_str(), e.what());
         }
     }
@@ -640,7 +644,6 @@ void MlxTknGenerator::AutoGenerateTokensXML()
 
 void MlxTknGenerator::GenerateTokenXML()
 {
-    MLX_TOKEN_DPRINTF(("%s.\n", __FUNCTION__));
     vector < string > tlvs;
     vector < TLVConf * > tlvsConfs;
     string tokenXml;
@@ -712,8 +715,8 @@ vector<string> MlxTknGenerator::AggregateLegacyTokenXmlStrings(const vector<stri
 
 void MlxTknGenerator::AggregateTokensXML()
 {
-    MLX_TOKEN_DPRINTF(("%s.\n", __FUNCTION__));
     vector < string > tokensXML = GetListOfFiles(_tokensDir);
+    MLX_TOKEN_LOG_DEBUG("aggregating token XMLs from %s (%d found)", _tokensDir.c_str(), (int)tokensXML.size());
     shared_ptr < MlxToken > token = MlxTokenFactory::CreateToken(_tokenType, _deviceType);
     shared_ptr < MlxToken > tokenForAggregation = MlxTokenFactory::CreateToken(_tokenType, _deviceType);
 
@@ -877,6 +880,7 @@ bool MlxTknGenerator::ParseAndFindCommand(int argc, char** argv)
 
     if (lastArg != _cmdStringToEnum.end()) {
         _command = lastArg->second;
+        MLX_TOKEN_LOG_INFO("Command: %s", lastArg->first.c_str());
         return true;
     }
 
@@ -986,7 +990,6 @@ void MlxTknGenerator::ParamValidate()
 
 ParseStatus MlxTknGenerator::ParseCommandLine(int argc, char** argv)
 {
-    MLX_TOKEN_DPRINTF(("MlxTknGenerator::ParseCommandLine.\n"));
     ParseStatus rc = PARSE_OK;
 
     if (ParseAndFindCommand(argc, argv)) {
@@ -1037,11 +1040,13 @@ int main(int argc, char** argv)
     }
     catch(const MlxTknGeneratorException& ex)
     {
+        MLX_TOKEN_LOG_ERROR("%s", ex.what());
         cerr << "-E- " << ex.what() << endl;
         return 1;
     }
     catch(const std::exception& ex)
     {
+        MLX_TOKEN_LOG_ERROR("General exception: %s", ex.what());
         cerr << "-E- General Exception: " << ex.what() << endl;
         return 1;
     }

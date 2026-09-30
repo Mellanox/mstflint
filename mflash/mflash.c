@@ -57,6 +57,7 @@
 #include "mflash_common_structs.h"
 #include "mflash_gw.h"
 #include "mflash_new_gw.h"
+#include "nvtoolslogger/nvtoolslogger_c.h"
 #define ICMD_MAX_BLOCK_WRITE 128
 #define INBAND_MAX_BLOCK_WRITE 32
 
@@ -423,7 +424,7 @@ int write_chunks(mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data)
                         if (verify_buffer[i] != block_data[i + prefix_pad_size])
                         {
                             verify_pass = false;
-                            FLASH_DPRINTF(("Write verification failed. Address 0x%08x - expected:0x%02x actual: 0x%02x\n", addr + i, block_data[i + prefix_pad_size], verify_buffer[i]));
+                            MFLASH_LOG_WARNING("Write verification failed. Address 0x%08x - expected:0x%02x actual: 0x%02x", addr + i, block_data[i + prefix_pad_size], verify_buffer[i]);
 
                             if (retries_counter >= retries_num)
                             {
@@ -438,7 +439,7 @@ int write_chunks(mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data)
                     if (!verify_pass)
                     {
                         retries_counter++;
-                        FLASH_DPRINTF(("Retry number %d\n", retries_counter));
+                        MFLASH_LOG_WARNING("Retry number %d", retries_counter);
                         continue;
                     }
                 }
@@ -675,7 +676,7 @@ int get_flash_info_by_res(mflash* mfl, unsigned* type_index, int* log2size, u_in
 
     rc = mfl->f_spi_status(mfl, SFC_RES, es_p);
     CHECK_RC(rc);
-    FLASH_DPRINTF(("get_flash_info_by_res: es = %#x\n", *es_p));
+    MFLASH_LOG_DEBUG("es = %#x", *es_p);
     if (((*es_p >= 0x10) && (*es_p < 0x17)))
     {
         *log2size = *es_p + 1;
@@ -707,12 +708,12 @@ int cntx_get_flash_info(mflash* mfl, flash_info_t* f_info, int* log2size, u_int8
     rc = cntx_spi_get_type(mfl, SFC_JEDEC, &vendor, &type, &capacity);
     CHECK_RC(rc);
     no_flash_rdid = is_no_flash_detected(type, vendor, capacity);
-    FLASH_DPRINTF(("cntx_spi_get_type: rc: %#x, vendor=%#x, type=%#x, capacity=%#x\n", rc, vendor, type, capacity));
-    FLASH_DPRINTF(("rc = %d, no_flash_rdid = %d\n", rc, no_flash_rdid));
+    MFLASH_LOG_DEBUG("cntx_spi_get_type: rc: %#x, vendor=%#x, type=%#x, capacity=%#x", rc, vendor, type, capacity);
+    MFLASH_LOG_DEBUG("rc = %d, no_flash_rdid = %d", rc, no_flash_rdid);
 
     if (no_flash_rdid)
     {
-        FLASH_DPRINTF(("no support for rdid\n"));
+        MFLASH_LOG_DEBUG("no support for rdid");
         /* RDID Failed due to: */
         /* 1- RDID is not supported but RES is - Old flashes. */
         /* 2- There is no Flash */
@@ -747,7 +748,7 @@ int cntx_get_flash_info(mflash* mfl, flash_info_t* f_info, int* log2size, u_int8
     {
         printf("-E- SPI flash #%d (vendor: %#x, memory type: %#x, es: %#x) is not supported.\n", get_bank_int(mfl), vendor, type, es);
     }
-    FLASH_DPRINTF(("rc = %d, no_flash_res = %d, type_index = %d.\n", rc, no_flash_res, type_index));
+    MFLASH_LOG_DEBUG("rc = %d, no_flash_res = %d, type_index = %d.", rc, no_flash_res, type_index);
     if ((rc == MFE_OK) && (*no_flash == 0))
     {
         memcpy(f_info, &g_flash_info_arr[type_index], sizeof(flash_info_t));
@@ -776,7 +777,7 @@ int cntx_get_jedec_id_direct_access(mflash* mfl, u_int32_t* jedec_id_p)
 
     rc = mfl->f_int_spi_get_status_data(mfl, SFC_JEDEC, jedec_id_p, 4);
     *jedec_id_p = ___my_swab32(*jedec_id_p);
-    FLASH_DPRINTF(("jedec_id = %#x\n", *jedec_id_p));
+    MFLASH_LOG_DEBUG("jedec_id = %#x", *jedec_id_p);
 
     return rc;
 }
@@ -849,7 +850,7 @@ int get_flash_params(mflash* mfl, flash_params_t* flash_params, flash_info_t* fl
         rc = mfl->f_get_info(mfl, &tmp_flash_info, &log2size, &no_flash);
         CHECK_RC(rc);
 
-        FLASH_DPRINTF(("spi_sel = %d, num_of_flashes = %d, rc = %d, no_flash = %d\n", spi_sel, num_of_flashes, rc, no_flash));
+        MFLASH_LOG_DEBUG("spi_sel = %d, num_of_flashes = %d, rc = %d, no_flash = %d", spi_sel, num_of_flashes, rc, no_flash);
         if (no_flash == 1)
         {
             /* This bank is empty and also the following banks will be empty. */
@@ -1055,7 +1056,7 @@ int st_spi_fill_attr(mflash* mfl, flash_params_t* flash_params)
      */
     rc = spi_fill_attr_from_params(mfl, cur_flash_params, &flash_info);
     CHECK_RC(rc);
-    FLASH_DPRINTF(("spi_size = %#x,  log2spi_size = %#x, bank_size = %#x, flashes_num = %d\n", mfl->attr.size, mfl->attr.log2_bank_size, mfl->attr.bank_size, cur_flash_params->num_of_flashes));
+    MFLASH_LOG_INFO("spi_size = %#x,  log2spi_size = %#x, bank_size = %#x, flashes_num = %d", mfl->attr.size, mfl->attr.log2_bank_size, mfl->attr.bank_size, cur_flash_params->num_of_flashes);
     return MFE_OK;
 }
 
@@ -1162,7 +1163,7 @@ int gw_wait_ready(mflash* mfl, const char* msg)
     #ifdef ENABLE_MST_DEV_I2C
         if (mfl->mf->tp == MST_DEV_I2C) // Avoid polling on FlashGW busy bit when the flint interface is i2c.
         { // We can assume that FlashGW HW sends the SPI command much faster than it takes the next transaction on i2c bus
-            DPRINTF(("gw_wait_ready: skip polling on FlashGW busy bit for i2c interface\n"));
+            MFLASH_SPI_LOG_DEBUG("skip polling on FlashGW busy bit for i2c interface");
             return MFE_OK;
         }
     #endif
@@ -1290,10 +1291,10 @@ int cntx_spi_get_type(mflash* mfl, u_int8_t op_type, u_int8_t* vendor, u_int8_t*
 
     rc = mfl->f_int_spi_get_status_data(mfl, op_type, &flash_data, 4);
     CHECK_RC(rc);
-    FLASH_DPRINTF(("jedec_info = %#x\n", flash_data));
+    MFLASH_LOG_DEBUG("jedec_info = %#x", flash_data);
     /* Get type and some other info from jededc_id */
     get_info_from_jededc_id(flash_data, vendor, type, density);
-    FLASH_DPRINTF(("cntx_spi_get_type: vendor = %#x, type = %#x, capacity = %#x\n", *vendor, *type, *density));
+    MFLASH_LOG_DEBUG("vendor = %#x, type = %#x, capacity = %#x", *vendor, *type, *density);
     return MFE_OK;
 }
 
@@ -1668,7 +1669,7 @@ int write_flash_div(mflash* mfl, u_int32_t new_flash_div)
 {
     u_int32_t new_flash_div_register = MERGE(mfl->orig_flash_div_reg, new_flash_div, 0, 4);
 
-    FLASH_DPRINTF(("Setting new flash_div = %d\n", new_flash_div));
+    MFLASH_LOG_DEBUG("Setting new flash_div = %d", new_flash_div);
     if (mwrite4(mfl->mf, mfl->flash_div_addr, new_flash_div_register) != 4)
     {
         printf("-E- Writing 0x%08x to flash_div register failed\n", new_flash_div_register);
@@ -1695,14 +1696,13 @@ int decrease_flash_freq(mflash* mfl)
         {
             /* Calculate new flash_div value to decrease flash frequency to valid value for OCR operation */
             u_int32_t new_flash_div = EXTRACT(mfl->orig_flash_div_reg, 0, 4); /* flash_div field is 4bits */
-            FLASH_DPRINTF(
-              ("Flash freq (%dMHz) higher than allowed (%dMHz) for OCR operation: core_clocks_per_usec = %d, flash_div = %d\n", freq, MAX_FLASH_FREQ, mfl->core_clocks_per_usec, new_flash_div));
+            MFLASH_LOG_WARNING("Flash freq (%dMHz) higher than allowed (%dMHz) for OCR operation: core_clocks_per_usec = %d, flash_div = %d", freq, MAX_FLASH_FREQ, mfl->core_clocks_per_usec, new_flash_div);
             while (freq > MAX_FLASH_FREQ)
             {
                 new_flash_div++; /* Reducing freq by incrementing flash_div (incrementing by 1 should to be enough) */
                 freq = mfl->core_clocks_per_usec / (2 * (new_flash_div + 1));
             }
-            FLASH_DPRINTF(("Reducing flash freq to %dMHz, using new flash_div = %d\n", freq, new_flash_div));
+            MFLASH_LOG_DEBUG("Reducing flash freq to %dMHz, using new flash_div = %d", freq, new_flash_div);
             rc = write_flash_div(mfl, new_flash_div);
             CHECK_RC(rc);
             mfl->is_freq_changed = true;
@@ -1718,7 +1718,7 @@ int restore_flash_freq(mflash* mfl)
     if (mfl->is_freq_changed)
     {
         u_int32_t orig_flash_div = EXTRACT(mfl->orig_flash_div_reg, 0, 4); /* flash_div field is 4bits */
-        FLASH_DPRINTF(("Restoring original flash_div = %d\n", orig_flash_div));
+        MFLASH_LOG_DEBUG("Restoring original flash_div = %d", orig_flash_div);
         rc = write_flash_div(mfl, orig_flash_div);
         CHECK_RC(rc);
         mfl->is_freq_changed = false;
@@ -1835,9 +1835,8 @@ static int read_cache_rep_regs(mflash* mfl,
                                int cmd_start,
                                int cmd_len)
 {
-    FLASH_ACCESS_DPRINTF(
-      ("read_cache_rep_regs(): off_addr=0x%08x, cmd_addr=0x%08x, off_start=%d, off_len=%d, cmd_start=%d, cmd_len=%d\n",
-       off_addr, cmd_addr, off_start, off_len, cmd_start, cmd_len));
+    MFLASH_ACCESS_LOG_DEBUG("off_addr=0x%08x, cmd_addr=0x%08x, off_start=%d, off_len=%d, cmd_start=%d, cmd_len=%d",
+                            off_addr, cmd_addr, off_start, off_len, cmd_start, cmd_len);
     u_int32_t data = 0;
     MREAD4(off_addr, &data);
     *off = (off_len == 32) ? data : EXTRACT(data, off_start, off_len);
@@ -1937,7 +1936,7 @@ int check_cache_replacement_guard(mflash* mfl, u_int8_t* needs_cache_replacement
 
         // Read the Cache replacement offset and cmd fields
         cache_rep_or_pager_reg_type_t reg_type = get_reg_type(devid_t);
-        FLASH_ACCESS_DPRINTF(("check_cache_replacement_guard(): reg_type=%d\n", reg_type));
+        MFLASH_ACCESS_LOG_DEBUG("reg_type=%d", reg_type);
 
         switch (reg_type)
         {
@@ -1973,7 +1972,7 @@ int check_cache_replacement_guard(mflash* mfl, u_int8_t* needs_cache_replacement
         }
         CHECK_RC(rc);
 
-        FLASH_ACCESS_DPRINTF(("check_cache_replacement_guard(): off=%d, cmd=%d\n", off, cmd));
+        MFLASH_ACCESS_LOG_DEBUG("off=%d, cmd=%d", off, cmd);
 
         // Check if the offset and cmd are zero in order to continue burning.
         if (cmd != 0 || off != 0)
@@ -2023,6 +2022,10 @@ int mfl_com_lock(mflash* mfl)
         return MFE_OK;
     }
     rc = mfl->f_lock(mfl, 1);
+    if (rc)
+    {
+        MFLASH_LOG_ERROR("Failed to take flash semaphore: %s (ignore_sem_lock = %d)", mf_err2str(rc), mfl->opts[MFO_IGNORE_SEM_LOCK]);
+    }
     if (!mfl->opts[MFO_IGNORE_SEM_LOCK])
     {
         CHECK_RC(rc);
@@ -2057,7 +2060,7 @@ int gen6_flash_init_com(mflash* mfl, flash_params_t* flash_params)
 {
     int rc = 0;
 
-    FLASH_ACCESS_DPRINTF(("gen6_flash_init_com(): Flash init to use direct-access\n"));
+    MFLASH_ACCESS_LOG_INFO("Flash init to use direct-access");
 
     /* TODO: Enable page_read (slightly better perf) */
     mfl->f_read = read_chunks;
@@ -2114,7 +2117,7 @@ int gen4_flash_init_com(mflash* mfl, flash_params_t* flash_params)
 {
     int rc = 0;
 
-    FLASH_ACCESS_DPRINTF(("gen4_flash_init_com(): Flash init to use direct-access\n"));
+    MFLASH_ACCESS_LOG_INFO("Flash init to use direct-access");
 
     /* TODO: Enable page_read (slightly better perf) */
     /* mfl->f_read           = cntx_st_spi_page_read; */
@@ -2344,7 +2347,7 @@ int sx_get_jedec_id(mflash* mfl, u_int32_t* jedec_id_p)
     rc = com_get_jedec(mfl->mf, &mfpa_args);
     *jedec_id_p = mfpa_args.jedec_id;
     *jedec_id_p = ___my_swab32(*jedec_id_p);
-    FLASH_DPRINTF(("jedec_id = %#x\n", *jedec_id_p));
+    MFLASH_LOG_DEBUG("jedec_id = %#x", *jedec_id_p);
 
     return rc;
 }
@@ -2469,7 +2472,7 @@ int flash_init_inband_access(mflash* mfl, flash_params_t* flash_params)
 {
     int rc = 0;
 
-    FLASH_ACCESS_DPRINTF(("flash_init_inband_access(): Flash init to use MFBA\n"));
+    MFLASH_ACCESS_LOG_INFO("Flash init to use MFBA");
 
     mfl->f_read = read_chunks;
     mfl->f_write = write_chunks;
@@ -2514,7 +2517,7 @@ int uefi_flash_init(mflash* mfl, flash_params_t* flash_params)
 {
     int rc = 0;
 
-    FLASH_ACCESS_DPRINTF(("uefi_flash_init(): Flash init to use MFBA\n"));
+    MFLASH_ACCESS_LOG_INFO("Flash init to use MFBA");
 
     mfl->f_read = read_chunks;
     mfl->f_write = write_chunks;
@@ -2610,25 +2613,24 @@ int seven_gen_flash_init(mflash* mfl, flash_params_t* flash_params)
     int rc = MFE_OK;
     if (mfl->opts[MFO_NO_FW_CTRL] == 0)
     {
-        FLASH_ACCESS_DPRINTF(("seven_gen_flash_init(): --no_fw_ctrl flag is not set\n")); // reached here due to mcc
-                                                                                          // failure or ocr flag
+        MFLASH_ACCESS_LOG_DEBUG("--no_fw_ctrl flag is not set"); // reached here due to mcc
+                                                                 // failure or ocr flag
         rc = seventh_gen_init_direct_access(mfl, flash_params);
         CHECK_RC(rc);
     }
     else
     {
-        FLASH_ACCESS_DPRINTF(("seven_gen_flash_init(): no_fw_ctrl flag is set\n"));
+        MFLASH_ACCESS_LOG_DEBUG("no_fw_ctrl flag is set");
         if (dm_is_livefish_mode(mfl->mf))
         {
-            FLASH_ACCESS_DPRINTF(("seven_gen_flash_init(): device is in LF\n"));
+            MFLASH_ACCESS_LOG_DEBUG("device is in LF");
             rc = seventh_gen_init_direct_access(mfl, flash_params);
             CHECK_RC(rc);
         }
         else
         {
-            FLASH_ACCESS_DPRINTF(
-              ("seven_gen_flash_init(): no_fw_ctrl used + device is not in LF\n")); // use legacy decision mechanism for
-                                                                                    // choosing DFA vs MFBA
+            MFLASH_ACCESS_LOG_DEBUG("no_fw_ctrl used + device is not in LF"); // use legacy decision mechanism for
+                                                                              // choosing DFA vs MFBA
             rc = flash_init_with_cache_guard(mfl, flash_params, seventh_gen_init_direct_access, 1);
             CHECK_RC(rc);
         }
@@ -2924,7 +2926,7 @@ void set_gpio_toggle_conf_cx7(gpio_toggle_conf_cx7* conf)
 
 bool toggle_flash_io3_gpio_cx6(mfile* mf, gpio_toggle_conf_cx6 conf)
 {
-    FLASH_DPRINTF(("toggle_flash_io3_gpio_cx6\n"));
+    MFLASH_LOG_DEBUG("toggling flash IO3 GPIO 29 (lock_addr=0x%x, mode0_set_addr=0x%x, dataset_addr=0x%x)", conf.lock_addr, conf.mode0_set_addr, conf.dataset_addr);
     /* Enable lock */
     if (mwrite4(mf, conf.lock_addr, 0xd42f) != 4)
     {
@@ -3005,7 +3007,7 @@ bool toggle_flash_io3_gpio_cx6(mfile* mf, gpio_toggle_conf_cx6 conf)
 
 bool toggle_flash_io3_gpio_cx7(mfile* mf, gpio_toggle_conf_cx7 conf)
 {
-    FLASH_DPRINTF(("toggle_flash_io3_gpio_cx7\n"));
+    MFLASH_LOG_DEBUG("toggling flash IO3 GPIO (select_synced_data_out_addr=0x%x, fw_control_set_addr=0x%x, fw_data_out_set_addr=0x%x)", conf.select_synced_data_out_addr, conf.fw_control_set_addr, conf.fw_data_out_set_addr);
     /* write 0x0 to select_synced_data_out.16:1 */
     u_int32_t select_synced_data_out = 0;
 
@@ -3223,6 +3225,7 @@ int mf_opend_int(mflash** pmfl, void* access_dev, int num_of_banks, flash_params
     *pmfl = (mflash*)malloc(sizeof(mflash));
     if (!*pmfl)
     {
+        MFLASH_LOG_ERROR("Failed to allocate %d bytes for the mflash object", (int)sizeof(mflash));
         return MFE_NOMEM;
     }
 
@@ -3277,10 +3280,13 @@ int mf_open_int(mflash** pmfl, const char* dev, int num_of_banks, flash_params_t
         return MFE_BAD_PARAMS;
     }
 
+    MFLASH_LOG_INFO("Opening flash on device %s (num_of_banks = %d, no_fw_ctrl = %d)", dev, num_of_banks, no_fw_ctrl);
+
     mf = mopen(dev);
 
     if (!mf)
     {
+        MFLASH_LOG_ERROR("Failed to open device %s for flash access", dev);
         return MFE_CR_ERROR;
     }
 
@@ -3664,7 +3670,7 @@ int mf_set_reset_flash_on_warm_reboot(mflash* mfl)
         default:
             return MFE_UNSUPPORTED_DEVICE;
     }
-    FLASH_DPRINTF(("mflash::mf_set_reset_flash_on_warm_reboot setting power_boot_partial_reset at addr 0x%x.%d\n", set_reset_bit_dword_addr, set_reset_bit_offset));
+    MFLASH_LOG_DEBUG("setting power_boot_partial_reset at addr 0x%x.%d", set_reset_bit_dword_addr, set_reset_bit_offset);
     rc = mf_cr_read(mfl, set_reset_bit_dword_addr, &set_reset_bit_dword);
     CHECK_RC(rc);
     set_reset_bit_dword = MERGE(set_reset_bit_dword, 1, set_reset_bit_offset, 1);
@@ -3743,7 +3749,7 @@ int mf_update_boot_addr(mflash* mfl, u_int32_t boot_addr)
     if ((mfl->access_type != MFAT_UEFI) && (mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] != ATBM_MLNXOS_CMDIF))
     {
         /* the boot addr will be updated directly via cr-space */
-        FLASH_DPRINTF(("mflash::mf_update_boot_addr setting boot_start_address at addr 0x%x to 0x%x\n", boot_cr_space_address, boot_addr << offset_in_address));
+        MFLASH_LOG_DEBUG("setting boot_start_address at addr 0x%x to 0x%x", boot_cr_space_address, boot_addr << offset_in_address);
         rc = mf_cr_write(mfl, boot_cr_space_address, boot_addr << offset_in_address);
         CHECK_RC(rc);
         return mf_set_reset_flash_on_warm_reboot(mfl);
@@ -4294,7 +4300,7 @@ int mf_set_quad_en_direct_access(mflash* mfl, u_int8_t quad_en)
     {
         if (quad_en == 1)
         {
-            DPRINTF(("QE is constant 1, skipping\n"));
+            MFLASH_SPI_LOG_DEBUG("QE is constant 1, skipping");
             return MFE_OK;
         }
         return MFE_NOT_SUPPORTED_OPERATION;
@@ -4560,7 +4566,7 @@ int mf_set_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
     int bp_size = is_ISSI_is25wj032f(mfl) ? BP_SIZE : BP_SIZE + 1;
     if (bp_size < 4 && log2_sect_num > 7) // not enough bits to set the BP value
     {
-        DPRINTF(("BP Size (%d) is not enough to set the BP value (%d)\n", bp_size, log2_sect_num));
+        MFLASH_SPI_LOG_ERROR("BP Size (%d) is not enough to set the BP value (%d)", bp_size, log2_sect_num);
         return MFE_NOT_SUPPORTED_OPERATION;
     }
 
@@ -5405,7 +5411,7 @@ int mf_set_driver_strength(mflash* mfl, u_int8_t driver_strength)
         rc = mf_to_vendor_driver_strength(mfl->attr.vendor, driver_strength, &vendor_driver_strength);
     }
     CHECK_RC(rc);
-    DPRINTF(("setting vendor_driver_strength to: %d\n", vendor_driver_strength));
+    MFLASH_SPI_LOG_DEBUG("setting vendor_driver_strength to: %d", vendor_driver_strength);
     return mfl->f_set_driver_strength(mfl, vendor_driver_strength);
 }
 
@@ -5414,7 +5420,7 @@ int mf_get_driver_strength(mflash* mfl, u_int8_t* driver_strength)
     u_int8_t value = 0;
     int rc = mfl->f_get_driver_strength(mfl, &value);
     CHECK_RC(rc);
-    DPRINTF(("driver_strength: %d\n", value));
+    MFLASH_SPI_LOG_DEBUG("driver_strength: %d", value);
     if ((is_macronix_special_case_for_driver_strength(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size) || is_macronix_mx25u51245g(mfl)))
     {
         rc = mf_from_vendor_driver_strength_for_mx25uxxx(value, driver_strength);
@@ -5464,7 +5470,7 @@ int modify_flash_info_if_needed(mflash* mfl, flash_info_t* f_info) // TODO: add 
             f_info->series_code = series_code;
             break;
         default:
-            DPRINTF(("Unknown Macronix series code: 0x%02X\n", series_code));
+            MFLASH_SPI_LOG_ERROR("Unknown Macronix series code: 0x%02X", series_code);
             rc = MFE_UNSUPPORTED_FLASH_TYPE;
             break;
     }
@@ -5489,10 +5495,10 @@ int identify_macronix_flash(mflash* mfl, MacronixSeriesCode* series_code)
     rc = mf_read_sfdp_table(mfl, 0x00, 4, false, &sfdp_signature);
     if (rc != MFE_OK)
     {
-        DPRINTF(("Failed to read SFDP signature: %s", mf_err2str(rc)));
+        MFLASH_SPI_LOG_ERROR("Failed to read SFDP signature: %s", mf_err2str(rc));
         return MFE_ERROR;
     }
-    DPRINTF(("SFDP Signature: 0x%08X (should be 0x50444653)\n", sfdp_signature));
+    MFLASH_SPI_LOG_DEBUG("SFDP Signature: 0x%08X (should be 0x50444653)", sfdp_signature);
     if (sfdp_signature == 0x50444653) // SFDP is supported by the flash
     {
         // get series code from SFDP, this differentiates flashes that have same JEDEC id
@@ -5500,10 +5506,10 @@ int identify_macronix_flash(mflash* mfl, MacronixSeriesCode* series_code)
         rc = mf_read_sfdp_table(mfl, 0x1F2, 1, false, (uint32_t*)series_code);
         if (rc != MFE_OK)
         {
-            DPRINTF(("Failed to read Series Code SFDP: %s", mf_err2str(rc)));
+            MFLASH_SPI_LOG_ERROR("Failed to read Series Code SFDP: %s", mf_err2str(rc));
             return MFE_ERROR;
         }
-        DPRINTF(("Series Code SFDP: 0x%02X\n", *series_code));
+        MFLASH_SPI_LOG_DEBUG("Series Code SFDP: 0x%02X", *series_code);
     }
 
     // check if the series code is supported
@@ -5513,7 +5519,7 @@ int identify_macronix_flash(mflash* mfl, MacronixSeriesCode* series_code)
         case MACRONIX_MX25U51245G:
             break;
         default:
-            DPRINTF(("Unknown Macronix series code: 0x%02X\n", *series_code));
+            MFLASH_SPI_LOG_ERROR("Unknown Macronix series code: 0x%02X", *series_code);
             rc = MFE_UNSUPPORTED_FLASH_TYPE;
             break;
     }
