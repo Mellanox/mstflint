@@ -262,8 +262,14 @@ build_deb() {
         flags=(-F)
     fi
 
-    echo ">> dpkg-buildpackage ${flags[*]} -uc -us"
-    ( cd "$src" && dpkg-buildpackage "${flags[@]}" -uc -us )
+    # -j$JOBS or the SDK builds single-threaded: debian-sdk/rules asks for
+    # `dh --parallel', but under compat 9 that only ENABLES parallelism -- the
+    # job count still comes from DEB_BUILD_OPTIONS=parallel=N, which nothing
+    # here sets. dpkg-buildpackage -j is forced mode: it writes that variable
+    # and adds itself to MAKEFLAGS. Until now $JOBS was parsed (--jobs) and then
+    # used only on the plain `make sdk' path, which --deb never reaches.
+    echo ">> dpkg-buildpackage ${flags[*]} -uc -us -j${JOBS}"
+    ( cd "$src" && dpkg-buildpackage "${flags[@]}" -uc -us -j"$JOBS" )
 
     echo ">> collecting .deb into $out"
     mv "$work"/*.deb "$out"/
