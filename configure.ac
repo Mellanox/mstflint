@@ -36,7 +36,7 @@ AC_SUBST([PROJECT])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_SRCDIR([README])
-AM_INIT_AUTOMAKE([foreign subdir-objects])
+AM_INIT_AUTOMAKE([foreign subdir-objects tar-ustar])
 
 dnl Checks for programs
 AC_PROG_CC

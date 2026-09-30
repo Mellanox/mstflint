@@ -85,6 +85,9 @@ endif
 man_MANS = man/mstflint.1 man/mstconfig.1 man/mstmcra.1 man/mstmread.1 man/mstmwrite.1 man/mstmtserver.1 man/mstregdump.1 man/mstvpd.1 man/mstprivhost.1 man/mstarchive.1 man/mstreg.1 man/mstfwtrace.1 man/mstlink.1 man/mstcongestion.1 man/mstfwmanager.1 man/mstfwreset.1 man/mstresourcedump.1 man/mstflintlogger.1 man/mstserver.1 man/mstremote.1
 
 EXTRA_DIST = \
+	eval_git_sha.sh \
+	kernel/mst.h \
+	mlxfwops/uefi_c/mft_uefi_common.h \
 	mstflint.spec \
 	mstflint-sdk.spec \
 	tools_git_sha \
@@ -235,12 +238,12 @@ EXT_LIBS_JSON_CPPFLAGS = \
     -Wno-missing-field-initializers \
     -Wno-unused-parameter
 noinst_LTLIBRARIES += ext_libs/json/libjson.la
-ext_libs_json_libjson_la_SOURCES = ext_libs/json/json_reader.cpp ext_libs/json/json_value.cpp ext_libs/json/json_tool.h ext_libs/json/json_writer.cpp ext_libs/json/json/*.h
+ext_libs_json_libjson_la_SOURCES = ext_libs/json/json_reader.cpp ext_libs/json/json_value.cpp ext_libs/json/json_tool.h ext_libs/json/json_writer.cpp
 
 ext_libs_json_libjson_la_DEPENDENCIES =
 ext_libs_json_libjson_la_LIBADD =
 
-EXTRA_DIST += ext_libs/json/*.inl
+EXTRA_DIST += $(srcdir)/ext_libs/json/*.inl $(srcdir)/ext_libs/json/json/*.h
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 ext_libs_json_libjson_la_CPPFLAGS = $(EXT_LIBS_JSON_CPPFLAGS)
@@ -344,6 +347,8 @@ $(MST_SERVER_CLIENT_CXX17_OBJECTS): CXXFLAGS += $(CXX17_STD)
 endif
 
 ########### common ###########
+EXTRA_DIST += common/nvtoolslogger.py common/tools_version.h.in
+
 noinst_LTLIBRARIES += common/libcommon.la
 
 COMMON_CPPFLAGS = \
@@ -981,6 +986,8 @@ vfio_driver_access_libvfio_access_driver_la_CXXFLAGS = $(VFIO_DRIVER_ACCESS_CXXF
 endif
 
 ########### mtcr_ul ###########
+EXTRA_DIST += mtcr_ul/mlx5_ifc_stub.h
+
 if !MTCR_FREEBSD
 MTCR_UL_CPPFLAGS = \
     -I$(top_builddir)/mtcr_ul \
@@ -1004,8 +1011,6 @@ mtcr_ul_libmtcr_ul_la_SOURCES = \
     mtcr_ul/mtcr_icmd_cif.h \
     mtcr_ul/mtcr_mem_ops.c \
     mtcr_ul/mtcr_mem_ops.h \
-    mtcr_ul/mtcr_ul_com_defs.h \
-    mtcr_ul/mtcr_mf.h \
     mtcr_ul/mtcr_ul_com.h \
     mtcr_ul/mtcr_ul_com.c \
     mtcr_ul/mtcr_common.h \
@@ -1016,7 +1021,7 @@ mtcr_ul_libmtcr_ul_la_SOURCES = \
     mtcr_ul/packets_layout.h \
     mtcr_ul/fwctrl.c \
     mtcr_ul/fwctrl.h \
-    mtcr_ul/fwctrl_ioctl.h \
+    include/mtcr_ul/fwctrl_ioctl.h \
     mtcr_ul/mtcr_remote.c \
     mtcr_ul/mtcr_remote.h \
     mtcr_ul/mtcr_gpu.c \
@@ -1115,9 +1120,7 @@ mtcr_freebsd_libmtcr_ul_la_SOURCES = \
     mtcr_ul/mtcr_common.c \
     mtcr_ul/mtcr_gpu.c \
     mtcr_ul/mtcr_gpu.h \
-    mtcr_freebsd/mtcr_mf.h \
     mtcr_freebsd/mtcr_ul.c \
-    mtcr_freebsd/mtcr_ul_com_defs.h \
     mtcr_freebsd/mtcr_ul_com_stub.c
 
 mtcr_freebsd_libmtcr_ul_la_CFLAGS = -W -Wall -g -MP -MD -fPIC -DMTCR_API="" -DMST_UL
@@ -1228,6 +1231,8 @@ xz_utils_libxz_utils_la_CFLAGS = $(XZ_UTILS_CFLAGS)
 endif
 
 ########### reg_access ###########
+EXTRA_DIST += reg_access/reg_ids.h
+
 REG_ACCESS_CPPFLAGS = \
     -I$(top_builddir)/reg_access \
     -I$(top_srcdir)/reg_access \
@@ -1277,6 +1282,8 @@ reg_access_libreg_access_la_CFLAGS = $(REG_ACCESS_CFLAGS)
 reg_access_libreg_access_la_CXXFLAGS = $(REG_ACCESS_CXXFLAGS)
 
 ########### cmdif ###########
+EXTRA_DIST += cmdif/cmdif.py cmdif/icmd_cif_macros.h
+
 CMDIF_CPPFLAGS = \
     -I$(top_builddir)/cmdif \
     -I$(top_srcdir)/cmdif \
@@ -1390,6 +1397,8 @@ pci_library_libpci_library_la_CPPFLAGS = $(PCI_LIBRARY_CPPFLAGS)
 pci_library_libpci_library_la_CXXFLAGS = $(PCI_LIBRARY_CXXFLAGS)
 
 ########### mft_utils ###########
+EXTRA_DIST += mft_utils/calc_hw_crc.h mft_utils/mft_utils.h mft_utils/mlarge_buffer.h
+
 MFT_UTILS_CPPFLAGS = \
     -I$(top_builddir)/mft_utils \
     -I$(top_srcdir)/mft_utils \
@@ -1675,6 +1684,8 @@ pldmlib_libpldm_la_CPPFLAGS = $(PLDMLIB_CPPFLAGS)
 pldmlib_libpldm_la_CXXFLAGS = $(PLDMLIB_CXXFLAGS)
 
 ########### mlxdpa ###########
+EXTRA_DIST += mlxdpa/dpa_elf/arm64/libdpa_elf mlxdpa/dpa_elf/x86_64/libdpa_elf mlxdpa/dpa_elf/dpa_elf.h mlxdpa/elfio/elf_types.hpp mlxdpa/elfio/elfio.hpp mlxdpa/elfio/elfio_array.hpp mlxdpa/elfio/elfio_dynamic.hpp mlxdpa/elfio/elfio_header.hpp mlxdpa/elfio/elfio_modinfo.hpp mlxdpa/elfio/elfio_note.hpp mlxdpa/elfio/elfio_relocation.hpp mlxdpa/elfio/elfio_section.hpp mlxdpa/elfio/elfio_segment.hpp mlxdpa/elfio/elfio_strings.hpp mlxdpa/elfio/elfio_symbols.hpp mlxdpa/elfio/elfio_utils.hpp mlxdpa/elfio/elfio_version.hpp mlxdpa/elfio/elfio_versym.hpp
+
 if ENABLE_DPA
 MLXDPA_CPPFLAGS = \
     -I$(top_builddir)/mlxdpa \
@@ -1773,6 +1784,8 @@ mlxdpa_mstdpa_CPPFLAGS = $(MLXDPA_CPPFLAGS)
 endif
 
 ########### mlxfwops/lib ###########
+EXTRA_DIST += mlxfwops/lib/fw_version.h
+
 MLXFWOPS_LIB_CPPFLAGS = \
     -I$(top_builddir)/mlxfwops/lib \
     -I$(top_srcdir)/mlxfwops/lib \
@@ -1868,6 +1881,7 @@ mlxfwops_lib_libmlxfwops_a_CPPFLAGS = $(MLXFWOPS_LIB_CPPFLAGS)
 mlxfwops_lib_libmlxfwops_a_CXXFLAGS = $(MLXFWOPS_LIB_CXXFLAGS)
 
 ########### mlxconfig ###########
+EXTRA_DIST += mlxconfig/mstprivhost.py
 
 MLXCONFIG_CPPFLAGS = \
     -I$(top_builddir)/mlxconfig \
@@ -2627,6 +2641,7 @@ flint_mstflint_CXXFLAGS += -DMST_DEV_EXAMPLE1=\"03:00.0\" -DMST_DEV_EXAMPLE2=\"m
 flint_mstflint_CPPFLAGS = $(FLINT_CPPFLAGS)
 
 ########### small_utils ###########
+EXTRA_DIST += small_utils/binary_file.py small_utils/congestion.h small_utils/mlxpci_lib.py small_utils/mstfwreset.py
 
 SMALL_UTILS_CPPFLAGS = \
     -I$(top_builddir)/small_utils \
@@ -2996,6 +3011,8 @@ mstefusedir = $(pkgdatadir)/efuse
 dist_mstefuse_DATA = $(srcdir)/efuse/efuse_dbs/efuse_config.json
 
 ########### adb_parser ###########
+EXTRA_DIST += adb_parser/adb_condVar.h adb_parser/adb_condition.h adb_parser/adb_config.h adb_parser/adb_db.h adb_parser/adb_exceptionHolder.h adb_parser/adb_expr.h adb_parser/adb_field.h adb_parser/adb_instance.h adb_parser/adb_logfile.h adb_parser/adb_node.h adb_parser/adb_parser.h adb_parser/adb_xmlCreator.h adb_parser/adb_xml_parser.h adb_parser/buf_ops.h adb_parser/expr.h
+
 if ADB_GENERIC_TOOLS_ENABLED
 ADB_PARSER_CPPFLAGS = \
     -I$(top_builddir)/adb_parser \
@@ -3114,6 +3131,8 @@ mlxreg_mlxreg_lib_libmstreg_lib_la_CXXFLAGS = $(MLXREG_MLXREG_LIB_CXXFLAGS)
 endif
 
 ########### mlxreg/scripts ###########
+EXTRA_DIST += mlxreg/scripts/mstgenerate_pgcb_commands.py
+
 if ADB_GENERIC_TOOLS_ENABLED
 bin_SCRIPTS += mlxreg/scripts/mstgenerate_pgcb_commands
 
@@ -3210,6 +3229,8 @@ mlxlink_mstlink_CPPFLAGS = $(MLXLINK_CPPFLAGS)
 endif
 
 ########### mlxlink/modules ###########
+EXTRA_DIST += mlxlink/modules/mlxlink_fields.h
+
 if ADB_GENERIC_TOOLS_ENABLED
 
 MLXLINK_MODULES_CPPFLAGS = \
@@ -3377,12 +3398,13 @@ dist_parseformatterspythonlib_DATA = $(srcdir)/resourcetools/resourceparse_lib/f
 CLEANFILES += resourcetools/mstresourcedump resourcetools/mstresourceparse
 
 ########### resourcetools/resourcedump_lib/src/common ###########
+EXTRA_DIST += resourcetools/resourcedump_lib/src/common/utils.h
+
 noinst_LTLIBRARIES += resourcetools/resourcedump_lib/src/common/libresource_dump_common.la
 
 resourcetools_resourcedump_lib_src_common_libresource_dump_common_la_SOURCES = \
     resourcetools/resourcedump_lib/src/common/resource_dump_error_handling.h \
-    resourcetools/resourcedump_lib/src/common/resource_dump_error_handling.cpp \
-    resourcetools/resourcedump_lib/src/common/resource_dump_constants.h
+    resourcetools/resourcedump_lib/src/common/resource_dump_error_handling.cpp
 resourcetools_resourcedump_lib_src_common_libresource_dump_common_la_CFLAGS = $(COMPILER_FPIC) -I$(top_srcdir)/include/mtcr_ul
 resourcetools_resourcedump_lib_src_common_libresource_dump_common_la_CXXFLAGS = $(COMPILER_FPIC) -I$(top_srcdir)/include/mtcr_ul
 
@@ -3785,6 +3807,8 @@ mft_sdk_libmstflint_sdk_la_CPPFLAGS = $(MFT_SDK_CPPFLAGS)
 endif
 
 ########### tracers/fwtrace ###########
+EXTRA_DIST += tracers/fwtrace/fw_trace_utilities.py tracers/fwtrace/secure_fw_trace.py
+
 bin_SCRIPTS += tracers/fwtrace/mstfwtrace
 
 tracers/fwtrace/mstfwtrace: common/python_wrapper
@@ -3796,6 +3820,8 @@ tracers_fwtrace_pythonlib_DATA = tracers/fwtrace/mstfwtrace.py tracers/fwtrace/f
 EXTRA_DIST += tracers/fwtrace/mstfwtrace.py
 
 ########### ibdump ###########
+EXTRA_DIST += ibdump/gitversion.h ibdump/ibd_device.h ibdump/ibdump.h ibdump/tools_version.h ibdump/vpi_tcpdump
+
 if ENABLE_IBDUMP
 # (DEFAULT_INCLUDES = -I$(top_builddir) -- now part of IBDUMP_CPPFLAGS)
 IBDUMP_CPPFLAGS = \
