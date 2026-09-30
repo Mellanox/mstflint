@@ -1860,7 +1860,7 @@ void _AdbInstance_impl<eval_expr, T_OFFSET>::traverse_layout(
                 }
             }
         }
-        else
+        else if (this->isLeaf())
         {
             T_OFFSET field_offset = this->offset + element_offset_shift;
             uint64_t value = 0;
