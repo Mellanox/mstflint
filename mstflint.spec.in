@@ -164,7 +164,13 @@ MSTFLINT_VERSION_STR="%{name} %{version}-%{release}"
 
 %configure ${config_flags} MSTFLINT_VERSION_STR="${MSTFLINT_VERSION_STR}"
 
-make
+# Pass _smp_mflags or this compiles the whole tree single-threaded: rpmbuild
+# does not export MAKEFLAGS, so a bare `make' in the build step gets no -j at
+# all. (Written without the macro syntax on purpose: rpm expands macros inside
+# comments too.)
+# mstflint-sdk.spec.in has always passed it; this spec had not, which made the
+# CLI package the long pole of every packaged build.
+make %{?_smp_mflags}
 
 %install
 rm -rf $RPM_BUILD_ROOT
