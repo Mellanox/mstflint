@@ -244,6 +244,7 @@ private:
     void initPpbmcAndPepcMapping();
     void initLinkDownInfoMapping();
     void initLinkUpInfo();
+    void initLinkStatusMapping();
     void initSltpStatusMapping();
     void initPSCDRateMaskMapping();
     void initPSCDRoleMaskMapping();
@@ -291,6 +292,7 @@ private:
     void initHostClassMapping();
     void initSDKMappings();
     void initElsMapping();
+    void initNvlinkPhy6CauseListMapping();
     void initSdkOperationalInfoStateMapping();
     void initSdkOperationalInfoPhysicalStateMapping();
     void initSdkOperationalInfoLoopbackModeMapping();
@@ -431,6 +433,11 @@ public:
     std::map<u_int32_t, std::string> _pdFsmState;
     std::map<u_int32_t, std::string> _pdFsmStateNdr;
     std::map<u_int32_t, std::string> _negModeActive;
+    std::map<u_int32_t, std::string> _linkHealth;
+    std::map<u_int32_t, std::string> _attentionTrigger;
+    std::map<u_int32_t, std::string> _linkHealthConfigChanged;
+    std::map<u_int32_t, std::string> _nvlinkPhy6CauseList1;
+    std::map<u_int32_t, std::string> _nvlinkPhy6CauseList2;
     std::map<u_int32_t, std::string> _upReasonPwr;
     std::map<u_int32_t, std::string> _upReasonDrv;
     std::map<u_int32_t, std::string> _upReasonMng;

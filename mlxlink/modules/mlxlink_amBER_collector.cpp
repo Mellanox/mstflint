@@ -83,14 +83,14 @@ MlxlinkAmBerCollector::MlxlinkAmBerCollector(Json::Value& jsonRoot) : _jsonRoot(
 
     _baseSheetsList[AMBER_SHEET_GENERAL] = FIELDS_COUNT{6, 6, 6};
     _baseSheetsList[AMBER_SHEET_INDEXES] = FIELDS_COUNT{8, 3, 4};
-    _baseSheetsList[AMBER_SHEET_LINK_STATUS] = FIELDS_COUNT{97, 99, 41};
+    _baseSheetsList[AMBER_SHEET_LINK_STATUS] = FIELDS_COUNT{100, 99, 41};
     _baseSheetsList[AMBER_SHEET_MODULE_STATUS] = FIELDS_COUNT{106, 117, 0};
     _baseSheetsList[AMBER_SHEET_SYSTEM] = FIELDS_COUNT{22, 19, 10};
     _baseSheetsList[AMBER_SHEET_SERDES_16NM] = FIELDS_COUNT{376, 736, 0};
     _baseSheetsList[AMBER_SHEET_SERDES_7NM] = FIELDS_COUNT{182, 362, 406};
     _baseSheetsList[AMBER_SHEET_SERDES_5NM_GEN7] = FIELDS_COUNT{102, 102, 0};
     _baseSheetsList[AMBER_SHEET_PORT_COUNTERS] = FIELDS_COUNT{45, 0, 50};
-    _baseSheetsList[AMBER_SHEET_TROUBLESHOOTING] = FIELDS_COUNT{2, 2, 0};
+    _baseSheetsList[AMBER_SHEET_TROUBLESHOOTING] = FIELDS_COUNT{6, 2, 0};
     _baseSheetsList[AMBER_SHEET_PHY_OPERATION_INFO] = FIELDS_COUNT{18, 17, 15};
     _baseSheetsList[AMBER_SHEET_LINK_UP_INFO] = FIELDS_COUNT{12, 12, 0};
     _baseSheetsList[AMBER_SHEET_LINK_DOWN_INFO] = FIELDS_COUNT{19, 18, 0};
@@ -98,7 +98,7 @@ MlxlinkAmBerCollector::MlxlinkAmBerCollector(Json::Value& jsonRoot) : _jsonRoot(
     _baseSheetsList[AMBER_SHEET_TEST_MODE_MODULE_INFO] = FIELDS_COUNT{70, 110, 0};
     _baseSheetsList[AMBER_SHEET_PHY_DEBUG_INFO] = FIELDS_COUNT{4, 4, 0};
     _baseSheetsList[AMBER_SHEET_EXT_MODULE_STATUS] = FIELDS_COUNT{335, 269, 0};
-    _baseSheetsList[AMBER_SHEET_RECOVERY_COUNTERS] = FIELDS_COUNT{30, 25, 0};
+    _baseSheetsList[AMBER_SHEET_RECOVERY_COUNTERS] = FIELDS_COUNT{38, 25, 0};
     _baseSheetsList[AMBER_SHEET_SERDES_5NM_GEN8] = FIELDS_COUNT{1482, 0, 0};
 
     for_each(_baseSheetsList.begin(), _baseSheetsList.end(),
@@ -1069,6 +1069,35 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
             }
             fields.push_back(AmberField("Link_Width_Active", widthActive, _isPortIB));
             fields.push_back(AmberField("Active_FEC", _mlxlinkMaps->_fecModeActive[getFieldValue("fec_mode_active")]));
+            u_int32_t linkHealth = getFieldValue("link_health");
+            string linkHealthStr = getStrByValue(linkHealth, _mlxlinkMaps->_linkHealth);
+            fields.push_back(AmberField("link_health", linkHealthStr, _isPortIB));
+
+            string attentionTriggerStr = NA_FIELD_VALUE;
+            string attentionTriggerMetricStr = NA_FIELD_VALUE;
+            string linkHealthConfigChangedStr = NA_FIELD_VALUE;
+            if (linkHealth == LINK_HEALTH_ATTENTION)
+            {
+                try
+                {
+                    attentionTriggerStr =
+                      getStrByValue(getFieldValue("attention_trigger"), _mlxlinkMaps->_attentionTrigger);
+
+                    u_int32_t attentionTriggerMetric = getFieldValue("attention_trigger_metric");
+                    attentionTriggerMetricStr = (attentionTriggerMetric == 0) ?
+                                                  "N/A - no trigger active/supported or not enabled" :
+                                                  ("metric" + to_string(attentionTriggerMetric));
+
+                    linkHealthConfigChangedStr = getStrByValue(getFieldValue("link_health_config_changed"),
+                                                               _mlxlinkMaps->_linkHealthConfigChanged);
+                }
+                catch (const std::exception& exc)
+                {
+                }
+            }
+            fields.push_back(AmberField("attention_trigger", attentionTriggerStr, _isPortIB));
+            fields.push_back(AmberField("attention_trigger_metric", attentionTriggerMetricStr, _isPortIB));
+            fields.push_back(AmberField("link_health_config_changed", linkHealthConfigChangedStr, _isPortIB));
 
             string roundTripLatency = NA_FIELD_VALUE;
             try
@@ -2597,6 +2626,47 @@ vector<AmberField> MlxlinkAmBerCollector::getTroubleshootingInfo()
             fields.push_back(AmberField("Advanced_Status_Opcode", getFieldStr("monitor_opcode")));
             fields.push_back(AmberField("Status_Message", message));
         }
+
+        string nvlinkPhy6CauseList1 = NA_FIELD_VALUE;
+        string nvlinkPhy6CauseList2 = NA_FIELD_VALUE;
+        string linkDownNvlinkPhy6CauseList1 = NA_FIELD_VALUE;
+        string linkDownNvlinkPhy6CauseList2 = NA_FIELD_VALUE;
+
+        if (_isPortIB)
+        {
+            resetLocalParser(ACCESS_REG_PDDR);
+            updateField("local_port", _localPort);
+            updateField("page_select", PDDR_PHY_INFO_PAGE);
+            sendRegister(ACCESS_REG_PDDR, MACCESS_REG_METHOD_GET);
+
+            if (getFieldValue("nv_link_generation") == NV_LINK_6)
+            {
+                resetLocalParser(ACCESS_REG_PPCL);
+                updateField("local_port", _localPort);
+                updateField("link_down_snapshot_sel", PPCL_LINK_DOWN_SNAPSHOT_SEL_CURRENT);
+                updateField("page_select", PPCL_CAUSE_LIST_PAGE);
+                sendRegister(ACCESS_REG_PPCL, MACCESS_REG_METHOD_GET);
+                nvlinkPhy6CauseList1 =
+                  getStrByMask(getFieldValue("nvlink_phy6_cause_list1"), _mlxlinkMaps->_nvlinkPhy6CauseList1);
+                nvlinkPhy6CauseList2 =
+                  getStrByMask(getFieldValue("nvlink_phy6_cause_list2"), _mlxlinkMaps->_nvlinkPhy6CauseList2);
+
+                resetLocalParser(ACCESS_REG_PPCL);
+                updateField("local_port", _localPort);
+                updateField("link_down_snapshot_sel", PPCL_LINK_DOWN_SNAPSHOT_SEL_LINK_DOWN);
+                updateField("page_select", PPCL_CAUSE_LIST_PAGE);
+                sendRegister(ACCESS_REG_PPCL, MACCESS_REG_METHOD_GET);
+                linkDownNvlinkPhy6CauseList1 =
+                  getStrByMask(getFieldValue("nvlink_phy6_cause_list1"), _mlxlinkMaps->_nvlinkPhy6CauseList1);
+                linkDownNvlinkPhy6CauseList2 =
+                  getStrByMask(getFieldValue("nvlink_phy6_cause_list2"), _mlxlinkMaps->_nvlinkPhy6CauseList2);
+            }
+        }
+
+        fields.push_back(AmberField("nvlink_phy6_cause_list1", nvlinkPhy6CauseList1, _isPortIB));
+        fields.push_back(AmberField("nvlink_phy6_cause_list2", nvlinkPhy6CauseList2, _isPortIB));
+        fields.push_back(AmberField("link_down_nvlink_phy6_cause_list1", linkDownNvlinkPhy6CauseList1, _isPortIB));
+        fields.push_back(AmberField("link_down_nvlink_phy6_cause_list2", linkDownNvlinkPhy6CauseList2, _isPortIB));
     }
     catch (const std::exception& exc)
     {
@@ -3263,6 +3333,14 @@ vector<AmberField> MlxlinkAmBerCollector::getRecoveryCounters()
         string totalSuccessfulRecoveryTime = NA_FIELD_VALUE;
         string lastSuccessfulRecoveryTime = NA_FIELD_VALUE;
         string waitForModuleTime = NA_FIELD_VALUE;
+        string timeInLastStep1 = NA_FIELD_VALUE;
+        string timeInLastStep2 = NA_FIELD_VALUE;
+        string totalTimeInStep1 = NA_FIELD_VALUE;
+        string totalTimeInStep2 = NA_FIELD_VALUE;
+        string totalStep1Count = NA_FIELD_VALUE;
+        string totalStep2Count = NA_FIELD_VALUE;
+        string excessiveRecoveriesEventsSinceLinkUp = NA_FIELD_VALUE;
+        string excessiveRecoveriesEventsSinceDeviceReset = NA_FIELD_VALUE;
 
         if (!_isPortPCIE)
         {
@@ -3330,6 +3408,16 @@ vector<AmberField> MlxlinkAmBerCollector::getRecoveryCounters()
                 totalSuccessfulRecoveryTime = to_string(getLocalFieldValue("total_successful_recovery_time"));
                 lastSuccessfulRecoveryTime = to_string(getLocalFieldValue("last_successful_recovery_time"));
                 waitForModuleTime = to_string(getLocalFieldValue("wait_for_module_time"));
+                timeInLastStep1 = to_string(getLocalFieldValue("time_in_last_step1"));
+                timeInLastStep2 = to_string(getLocalFieldValue("time_in_last_step2"));
+                totalTimeInStep1 = to_string(getLocalFieldValue("total_time_in_step1"));
+                totalTimeInStep2 = to_string(getLocalFieldValue("total_time_in_step2"));
+                totalStep1Count = to_string(getLocalFieldValue("total_step1_count"));
+                totalStep2Count = to_string(getLocalFieldValue("total_step2_count"));
+                excessiveRecoveriesEventsSinceLinkUp =
+                  to_string(getLocalFieldValue("excessive_recoveries_events_since_link_up"));
+                excessiveRecoveriesEventsSinceDeviceReset =
+                  to_string(getLocalFieldValue("excessive_recoveries_events_since_device_reset"));
             }
         }
         fields.push_back(AmberField("operational_recovery", operRecoveryStr));
@@ -3368,6 +3456,15 @@ vector<AmberField> MlxlinkAmBerCollector::getRecoveryCounters()
         fields.push_back(AmberField("total_successful_recovery_time", totalSuccessfulRecoveryTime));
         fields.push_back(AmberField("last_successful_recovery_time", lastSuccessfulRecoveryTime));
         fields.push_back(AmberField("wait_for_module_time", waitForModuleTime));
+        fields.push_back(AmberField("time_in_last_step1", timeInLastStep1));
+        fields.push_back(AmberField("time_in_last_step2", timeInLastStep2));
+        fields.push_back(AmberField("total_time_in_step1", totalTimeInStep1));
+        fields.push_back(AmberField("total_time_in_step2", totalTimeInStep2));
+        fields.push_back(AmberField("total_step1_count", totalStep1Count));
+        fields.push_back(AmberField("total_step2_count", totalStep2Count));
+        fields.push_back(AmberField("excessive_recoveries_events_since_link_up", excessiveRecoveriesEventsSinceLinkUp));
+        fields.push_back(
+          AmberField("excessive_recoveries_events_since_device_reset", excessiveRecoveriesEventsSinceDeviceReset));
     }
     catch (const std::exception& exc)
     {
