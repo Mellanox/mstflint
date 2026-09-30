@@ -30,8 +30,12 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
+# NVML discovery is consumed only by the SDK, so configure generates its
+# Makefile only when both are enabled; recurse under the same condition.
+if ENABLE_MSTFLINT_SDK
 if ENABLE_NVML
 MAYBE_NVML = nvml
+endif
 endif
 
 SUBDIRS = device_info $(MAYBE_NVML)
