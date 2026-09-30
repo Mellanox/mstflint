@@ -62,7 +62,7 @@ endif
 if ENABLE_VFIO
 libmtcr_ul_la_DEPENDENCIES += $(top_builddir)/vfio_driver_access/libvfio_access_driver.la
 endif
-libmtcr_ul_la_LDFLAGS = -lstdc++
+libmtcr_ul_la_LDFLAGS = -static -lstdc++
 
 if ENABLE_NVML
 libmtcr_ul_la_DEPENDENCIES += $(top_builddir)/$(NVML_DIR)/libnvml_device.la

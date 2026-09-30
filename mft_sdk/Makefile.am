@@ -97,7 +97,7 @@ libmstflint_sdk_la_SOURCES = \
     mft_sdk_types.h
 
 libmstflint_sdk_la_CXXFLAGS = $(AM_CXXFLAGS) $(COMPILER_FPIC)
-libmstflint_sdk_la_LDFLAGS = -shared -avoid-version -Wl,-soname,libmstflint_sdk.so -Wl,--allow-multiple-definition
+libmstflint_sdk_la_LDFLAGS = -shared -avoid-version -Wl,-soname,libmstflint_sdk.so -Wl,--allow-multiple-definition -Wl,--no-undefined
 
 libmstflint_sdk_la_LIBADD = \
     $(top_builddir)/hca_capabilities/libhca_capabilities.la \

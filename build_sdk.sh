@@ -313,7 +313,7 @@ if [[ "$BUILD_RPM" -eq 1 || "$BUILD_DEB" -eq 1 ]]; then
 fi
 
 if [[ "$DO_CONFIGURE" -eq 1 ]]; then
-    CONFIGURE_FLAGS=(--enable-adb-generic-tools --enable-mstflint-sdk)
+    CONFIGURE_FLAGS=(--enable-adb-generic-tools --enable-mstflint-sdk --disable-rdmem)
     [[ -n "$PREFIX" ]]     && CONFIGURE_FLAGS+=(--prefix="$PREFIX")
     [[ -n "$LIBDIR" ]]     && CONFIGURE_FLAGS+=(--libdir="$LIBDIR")
     [[ -n "$INCLUDEDIR" ]] && CONFIGURE_FLAGS+=(--includedir="$INCLUDEDIR")
