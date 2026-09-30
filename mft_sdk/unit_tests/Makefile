@@ -195,7 +195,7 @@ JOBS ?= $(shell nproc 2>/dev/null || echo 4)
 prepare:
 	@set -e; cd $(REPO_ROOT); \
 	echo "==> [1/3] building and installing the SDK"; \
-	$(MAKE) -C tools_layouts clean >/dev/null 2>&1 || true; \
+	rm -rf tools_layouts/.libs; rm -f tools_layouts/*.o tools_layouts/*.lo tools_layouts/*.la; \
 	rm -f mft_sdk/libmstflint_sdk.la mft_sdk/.libs/libmstflint_sdk.so*; \
 	./autogen.sh >/dev/null; \
 	./configure $(SDK_CONFIGURE_FLAGS) >/dev/null; \
