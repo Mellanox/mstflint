@@ -113,7 +113,7 @@ void MlxlinkCablesCommander::writeMCIA(u_int32_t page,
     memcpy(dwordData, data, size);
     for (; i < dwordDataSize; i++)
     {
-        sprintf(fieldName, ",dword[%d]=%u", i, (u_int32_t)mft_cpu_to_be32(dwordData[i]));
+        sprintf(fieldName, ",dword[%d]=%u", i, mft_cpu_to_be32(dwordData[i]));
         dataCmd += string(fieldName);
     }
     free(dwordData);
