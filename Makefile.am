@@ -94,6 +94,18 @@ EXTRA_DIST = \
 	debian \
 	$(man_MANS)
 
+# Compile once. With shared and static libraries both enabled, libtool compiles
+# every source of a libtool library twice: PIC for shared use and non-PIC for
+# static use. For the internal convenience libraries the non-PIC copy is never
+# used -- libtool builds convenience archives from the PIC objects -- so those
+# libraries are compiled once, PIC only, and their archives are unchanged. The
+# SDK library is linked -shared, so no static archive of it exists to need the
+# non-PIC copy either. Libraries whose non-PIC objects ARE used keep both
+# compiles: those linked -static (libtool archives their non-PIC objects), and
+# libmtcr_ul, cmdif, reg_access, dev_mgt, mvpd and the resource-dump sdk, whose
+# objects the hand-written python .so rules link. With --disable-shared this is
+# a no-op: libtool's disable-static tag only applies when shared libs are built.
+COMPILE_ONCE = --tag=disable-static
 ########### nvml_lib ###########
 if ENABLE_NVML
 NVML_LIB_CPPFLAGS = \
@@ -154,6 +166,7 @@ ext_libs_minixz_libminixz_la_SOURCES = ext_libs/minixz/xz_crc32.c ext_libs/minix
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 ext_libs_minixz_libminixz_la_CPPFLAGS = $(EXT_LIBS_MINIXZ_CPPFLAGS)
+ext_libs_minixz_libminixz_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 
 ########### ext_libs/mini-yaml ###########
 EXT_LIBS_MINI_YAML_CPPFLAGS = \
@@ -174,6 +187,7 @@ ext_libs_mini_yaml_libmini_yaml_la_LIBADD =
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 ext_libs_mini_yaml_libmini_yaml_la_CPPFLAGS = $(EXT_LIBS_MINI_YAML_CPPFLAGS)
+ext_libs_mini_yaml_libmini_yaml_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 
 ########### ext_libs/sole ###########
 EXT_LIBS_SOLE_CPPFLAGS = \
@@ -193,6 +207,7 @@ ext_libs_sole_libsole_la_LIBADD =
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 ext_libs_sole_libsole_la_CPPFLAGS = $(EXT_LIBS_SOLE_CPPFLAGS)
+ext_libs_sole_libsole_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 
 ########### ext_libs/iniParser ###########
 if ENABLE_FWMGR
@@ -218,6 +233,7 @@ ext_libs_iniParser_libiniparser_la_SOURCES = \
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 ext_libs_iniParser_libiniparser_la_CPPFLAGS = $(EXT_LIBS_INIPARSER_CPPFLAGS)
+ext_libs_iniParser_libiniparser_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 ext_libs_iniParser_libiniparser_la_CFLAGS = $(EXT_LIBS_INIPARSER_CFLAGS)
 endif
 endif
@@ -246,6 +262,7 @@ EXTRA_DIST += ext_libs/json/*.inl
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 ext_libs_json_libjson_la_CPPFLAGS = $(EXT_LIBS_JSON_CPPFLAGS)
+ext_libs_json_libjson_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 endif
 
 ########### ext_libs/muparser ###########
@@ -278,6 +295,7 @@ ext_libs_muparser_libmuparser_la_SOURCES = \
 EXT_LIBS_MUPARSER_CPPFLAGS = -I$(top_builddir)/ext_libs/muparser -I$(top_srcdir)/ext_libs/muparser -I$(top_builddir)
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 ext_libs_muparser_libmuparser_la_CPPFLAGS = $(EXT_LIBS_MUPARSER_CPPFLAGS)
+ext_libs_muparser_libmuparser_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 ext_libs_muparser_libmuparser_la_CFLAGS = $(EXT_LIBS_MUPARSER_CFLAGS)
 ext_libs_muparser_libmuparser_la_CXXFLAGS = $(EXT_LIBS_MUPARSER_CXXFLAGS)
 endif
@@ -296,6 +314,7 @@ ext_libs_sqlite_libsqlite3_la_SOURCES = \
 EXT_LIBS_SQLITE_CPPFLAGS = -I$(top_builddir)/ext_libs/sqlite -I$(top_srcdir)/ext_libs/sqlite -I$(top_builddir)
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 ext_libs_sqlite_libsqlite3_la_CPPFLAGS = $(EXT_LIBS_SQLITE_CPPFLAGS)
+ext_libs_sqlite_libsqlite3_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 ext_libs_sqlite_libsqlite3_la_CFLAGS = $(EXT_LIBS_SQLITE_CFLAGS)
 endif
 
@@ -339,6 +358,7 @@ mst_server_client_libmst_http_client_la_LIBADD = \
 MST_SERVER_CLIENT_CPPFLAGS = -I$(top_builddir)/mst_server/client -I$(top_srcdir)/mst_server/client -I$(top_builddir)
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 mst_server_client_libmst_http_client_la_CPPFLAGS = $(MST_SERVER_CLIENT_CPPFLAGS)
+mst_server_client_libmst_http_client_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 # The tree builds at -std=c++14 via CXXFLAGS, which automake puts last on the
 # compile line; this directory needs C++17, so raise it for its objects only.
 MST_SERVER_CLIENT_CXX17_OBJECTS = $(mst_server_client_libmst_http_client_la_OBJECTS)
@@ -424,6 +444,7 @@ CLEANFILES += common/python_wrapper common/tools_version.py
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 common_libcommon_la_CPPFLAGS = $(COMMON_CPPFLAGS)
+common_libcommon_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 
 ########### cmdparser ###########
 CMDPARSER_CPPFLAGS = \
@@ -464,6 +485,7 @@ mft_core_mft_core_utils_operating_system_api_lib_os_api_la_LIBADD = $(LIBSTD_CPP
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 mft_core_mft_core_utils_operating_system_api_lib_os_api_la_CPPFLAGS = $(MFT_CORE_UTILS_OPERATING_SYSTEM_API_CPPFLAGS)
+mft_core_mft_core_utils_operating_system_api_lib_os_api_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 mft_core_mft_core_utils_operating_system_api_lib_os_api_la_CXXFLAGS = $(MFT_CORE_UTILS_OPERATING_SYSTEM_API_CXXFLAGS)
 
 ########### mft_core/mft_core_utils/nvtoolslogger ###########
@@ -555,9 +577,12 @@ dist_nvtoolslogger_so_pylib_DATA = mft_core/mft_core_utils/nvtoolslogger/nvtools
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 mft_core_mft_core_utils_nvtoolslogger_libmft_log_config_la_CPPFLAGS = $(MFT_CORE_UTILS_NVTOOLSLOGGER_CPPFLAGS)
+mft_core_mft_core_utils_nvtoolslogger_libmft_log_config_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 mft_core_mft_core_utils_nvtoolslogger_libmft_log_config_la_CXXFLAGS = $(MFT_CORE_UTILS_NVTOOLSLOGGER_CXXFLAGS)
 mft_core_mft_core_utils_nvtoolslogger_libnvtoolslogger_la_CPPFLAGS = $(MFT_CORE_UTILS_NVTOOLSLOGGER_CPPFLAGS)
+mft_core_mft_core_utils_nvtoolslogger_libnvtoolslogger_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 mft_core_mft_core_utils_nvtoolslogger_libmft_log_config_ui_la_CPPFLAGS = $(MFT_CORE_UTILS_NVTOOLSLOGGER_CPPFLAGS)
+mft_core_mft_core_utils_nvtoolslogger_libmft_log_config_ui_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 mft_core_mft_core_utils_nvtoolslogger_libmft_log_config_ui_la_CXXFLAGS = $(MFT_CORE_UTILS_NVTOOLSLOGGER_CXXFLAGS)
 mft_core_mft_core_utils_nvtoolslogger_mstflintlogger_CPPFLAGS = $(MFT_CORE_UTILS_NVTOOLSLOGGER_CPPFLAGS)
 mft_core_mft_core_utils_nvtoolslogger_mstflintlogger_CXXFLAGS = $(MFT_CORE_UTILS_NVTOOLSLOGGER_CXXFLAGS)
@@ -580,6 +605,7 @@ mft_core_mft_core_utils_logger_liblogger_la_LIBADD = $(LIBSTD_CPP_SO) $(mft_core
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 mft_core_mft_core_utils_logger_liblogger_la_CPPFLAGS = $(MFT_CORE_UTILS_LOGGER_CPPFLAGS)
+mft_core_mft_core_utils_logger_liblogger_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 mft_core_mft_core_utils_logger_liblogger_la_CXXFLAGS = $(MFT_CORE_UTILS_LOGGER_CXXFLAGS)
 
 ########### mft_core/mft_core_utils/mft_exceptions ###########
@@ -608,6 +634,7 @@ mft_core_mft_core_utils_mft_exceptions_libmftexceptions_la_LIBADD = $(LIBSTD_CPP
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 mft_core_mft_core_utils_mft_exceptions_libmftexceptions_la_CPPFLAGS = $(MFT_CORE_UTILS_MFT_EXCEPTIONS_CPPFLAGS)
+mft_core_mft_core_utils_mft_exceptions_libmftexceptions_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 mft_core_mft_core_utils_mft_exceptions_libmftexceptions_la_CXXFLAGS = $(MFT_CORE_UTILS_MFT_EXCEPTIONS_CXXFLAGS)
 
 ########### mft_core/mft_core_utils/load_shared_library ###########
@@ -634,6 +661,7 @@ mft_core_mft_core_utils_load_shared_library_libload_shared_library_la_SOURCES = 
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 mft_core_mft_core_utils_load_shared_library_libload_shared_library_la_CPPFLAGS = $(MFT_CORE_UTILS_LOAD_SHARED_LIBRARY_CPPFLAGS)
+mft_core_mft_core_utils_load_shared_library_libload_shared_library_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 mft_core_mft_core_utils_load_shared_library_libload_shared_library_la_CXXFLAGS = $(MFT_CORE_UTILS_LOAD_SHARED_LIBRARY_CXXFLAGS)
 endif
 endif
@@ -742,6 +770,7 @@ device_info_pylib_DATA = mft_core/device/device_info/generated/device_properties
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 mft_core_device_device_info_libdevice_info_la_CPPFLAGS = $(MFT_CORE_DEVICE_DEVICE_INFO_CPPFLAGS)
+mft_core_device_device_info_libdevice_info_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 mft_core_device_device_info_libdevice_info_la_CXXFLAGS = $(MFT_CORE_DEVICE_DEVICE_INFO_CXXFLAGS)
 mft_core_device_device_info_generate_device_properties_CXXFLAGS = $(MFT_CORE_DEVICE_DEVICE_INFO_CXXFLAGS)
 
@@ -771,6 +800,7 @@ mft_core_device_nvml_libnvml_discovery_la_SOURCES = \
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 mft_core_device_nvml_libnvml_discovery_la_CPPFLAGS = $(MFT_CORE_DEVICE_NVML_CPPFLAGS)
+mft_core_device_nvml_libnvml_discovery_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 mft_core_device_nvml_libnvml_discovery_la_CXXFLAGS = $(MFT_CORE_DEVICE_NVML_CXXFLAGS)
 endif
 endif
@@ -823,6 +853,7 @@ endif
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 mlxsign_lib_libmlxsign_la_CPPFLAGS = $(MLXSIGN_LIB_CPPFLAGS)
+mlxsign_lib_libmlxsign_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 mlxsign_lib_libmlxsign_la_CXXFLAGS = $(MLXSIGN_LIB_CXXFLAGS)
 endif
 
@@ -896,15 +927,19 @@ tools_layouts_libcables_layouts_la_LIBADD = $(tools_layouts_libtools_layouts_la_
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 tools_layouts_libadb_utils_la_CPPFLAGS = $(TOOLS_LAYOUTS_CPPFLAGS)
+tools_layouts_libadb_utils_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 tools_layouts_libadb_utils_la_CFLAGS = $(TOOLS_LAYOUTS_CFLAGS)
 tools_layouts_libadb_utils_la_CXXFLAGS = $(TOOLS_LAYOUTS_CXXFLAGS)
 tools_layouts_libtools_layouts_la_CPPFLAGS = $(TOOLS_LAYOUTS_CPPFLAGS)
+tools_layouts_libtools_layouts_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 tools_layouts_libtools_layouts_la_CFLAGS = $(TOOLS_LAYOUTS_CFLAGS)
 tools_layouts_libtools_layouts_la_CXXFLAGS = $(TOOLS_LAYOUTS_CXXFLAGS)
 tools_layouts_libmlxarchive_layouts_la_CPPFLAGS = $(TOOLS_LAYOUTS_CPPFLAGS)
+tools_layouts_libmlxarchive_layouts_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 tools_layouts_libmlxarchive_layouts_la_CFLAGS = $(TOOLS_LAYOUTS_CFLAGS)
 tools_layouts_libmlxarchive_layouts_la_CXXFLAGS = $(TOOLS_LAYOUTS_CXXFLAGS)
 tools_layouts_libcables_layouts_la_CPPFLAGS = $(TOOLS_LAYOUTS_CPPFLAGS)
+tools_layouts_libcables_layouts_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 tools_layouts_libcables_layouts_la_CFLAGS = $(TOOLS_LAYOUTS_CFLAGS)
 tools_layouts_libcables_layouts_la_CXXFLAGS = $(TOOLS_LAYOUTS_CXXFLAGS)
 
@@ -1190,6 +1225,7 @@ mad_ifc_libmad_ifc_la_LIBADD = $(mad_ifc_libmad_ifc_la_DEPENDENCIES)
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 mad_ifc_libmad_ifc_la_CPPFLAGS = $(MAD_IFC_CPPFLAGS)
+mad_ifc_libmad_ifc_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 mad_ifc_libmad_ifc_la_CFLAGS = $(MAD_IFC_CFLAGS)
 endif
 
@@ -1218,6 +1254,7 @@ xz_utils_libxz_utils_la_LIBADD = $(liblzma_LIBS)
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 xz_utils_libxz_utils_la_CPPFLAGS = $(XZ_UTILS_CPPFLAGS)
+xz_utils_libxz_utils_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 xz_utils_libxz_utils_la_CFLAGS = $(XZ_UTILS_CFLAGS)
 endif
 
@@ -1405,6 +1442,7 @@ mft_utils_libmftutils_la_SOURCES = mft_utils/mft_sig_handler.c mft_utils/errmsg.
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 mft_utils_libmftutils_la_CPPFLAGS = $(MFT_UTILS_CPPFLAGS)
+mft_utils_libmftutils_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 mft_utils_libmftutils_la_CFLAGS = $(MFT_UTILS_CFLAGS)
 mft_utils_libmftutils_la_CXXFLAGS = $(MFT_UTILS_CXXFLAGS)
 
@@ -1443,6 +1481,7 @@ tools_res_mgmt_libtools_res_mgmt_la_SOURCES = tools_res_mgmt/tools_res_mgmt.c to
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 tools_res_mgmt_libtools_res_mgmt_la_CPPFLAGS = $(TOOLS_RES_MGMT_CPPFLAGS)
+tools_res_mgmt_libtools_res_mgmt_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 tools_res_mgmt_libtools_res_mgmt_la_CFLAGS = $(TOOLS_RES_MGMT_CFLAGS)
 
 ########### mvpd ###########
@@ -1519,6 +1558,7 @@ noinst_HEADERS += mflash/mflash.h mflash/mflash_gw.h mflash/mflash_new_gw.h mfla
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 mflash_libmflash_la_CPPFLAGS = $(MFLASH_CPPFLAGS)
+mflash_libmflash_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 mflash_libmflash_la_CFLAGS = $(MFLASH_CFLAGS)
 
 ########### fw_comps_mgr ###########
@@ -1575,6 +1615,7 @@ fw_comps_mgr_libfw_comps_mgr_la_LIBADD = $(fw_comps_mgr_libfw_comps_mgr_la_DEPEN
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 fw_comps_mgr_libfw_comps_mgr_la_CPPFLAGS = $(FW_COMPS_MGR_CPPFLAGS)
+fw_comps_mgr_libfw_comps_mgr_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 fw_comps_mgr_libfw_comps_mgr_la_CFLAGS = $(FW_COMPS_MGR_CFLAGS)
 fw_comps_mgr_libfw_comps_mgr_la_CXXFLAGS = $(FW_COMPS_MGR_CXXFLAGS)
 
@@ -1604,6 +1645,7 @@ libmfa_libmfa_la_SOURCES = \
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 libmfa_libmfa_la_CPPFLAGS = $(LIBMFA_CPPFLAGS)
+libmfa_libmfa_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 libmfa_libmfa_la_CFLAGS = $(LIBMFA_CFLAGS)
 
 ########### pldm_utils ###########
@@ -1626,6 +1668,7 @@ pldm_utils_libpldm_utils_la_SOURCES = \
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 pldm_utils_libpldm_utils_la_CPPFLAGS = $(PLDM_UTILS_CPPFLAGS)
+pldm_utils_libpldm_utils_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 pldm_utils_libpldm_utils_la_CXXFLAGS = $(PLDM_UTILS_CXXFLAGS)
 
 ########### pldmlib ###########
@@ -1660,6 +1703,7 @@ pldmlib_libpldm_la_LIBADD = pldm_utils/libpldm_utils.la
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 pldmlib_libpldm_la_CPPFLAGS = $(PLDMLIB_CPPFLAGS)
+pldmlib_libpldm_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 pldmlib_libpldm_la_CXXFLAGS = $(PLDMLIB_CXXFLAGS)
 
 ########### mlxdpa ###########
@@ -2004,6 +2048,7 @@ MLXCONFIG_CXXFLAGS += -DMST_DEV_EXAMPLE=\"04:00.0\" -DMST_DEV_EXAMPLE2=\"05:00.0
 mlxconfig_mstconfig_CPPFLAGS = $(MLXCONFIG_CPPFLAGS)
 mlxconfig_mstconfig_CXXFLAGS = $(MLXCONFIG_CXXFLAGS)
 mlxconfig_libmlxcfg_la_CPPFLAGS = $(MLXCONFIG_CPPFLAGS)
+mlxconfig_libmlxcfg_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 mlxconfig_libmlxcfg_la_CXXFLAGS = $(MLXCONFIG_CXXFLAGS)
 
 ########### mlxconfig/mlxconfig_dbs ###########
@@ -2179,6 +2224,7 @@ endif
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 mlxarchive_libmstarchive_la_CPPFLAGS = $(MLXARCHIVE_CPPFLAGS)
+mlxarchive_libmstarchive_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 mlxarchive_libmstarchive_la_CXXFLAGS = $(MLXARCHIVE_CXXFLAGS)
 mlxarchive_mstarchive_CPPFLAGS = $(MLXARCHIVE_CPPFLAGS)
 endif
@@ -2394,6 +2440,7 @@ endif
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 pldmgen_libpldmgen_la_CPPFLAGS = $(PLDMGEN_CPPFLAGS)
+pldmgen_libpldmgen_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 pldmgen_libpldmgen_la_CXXFLAGS = $(PLDMGEN_CXXFLAGS)
 pldmgen_mstpldm_pkg_gen_CPPFLAGS = $(PLDMGEN_CPPFLAGS)
 endif
@@ -2721,6 +2768,7 @@ small_utils_mstcongestion_CPPFLAGS = $(SMALL_UTILS_CPPFLAGS)
 small_utils_mstmget_temp_CPPFLAGS = $(SMALL_UTILS_CPPFLAGS)
 small_utils_mstfwctrl_CPPFLAGS = $(SMALL_UTILS_CPPFLAGS)
 small_utils_libmgettemp_la_CPPFLAGS = $(SMALL_UTILS_CPPFLAGS)
+small_utils_libmgettemp_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 
 ########### small_utils/mlxfwresetlib ###########
 small_utils_mlxfwresetlib_docdir = $(libdir)/mstflint/python_tools/mstfwreset/mlxfwresetlib
@@ -2998,6 +3046,7 @@ adb_parser_libadb_parser_la_SOURCES = \
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 adb_parser_libadb_parser_la_CPPFLAGS = $(ADB_PARSER_CPPFLAGS)
+adb_parser_libadb_parser_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 adb_parser_libadb_parser_la_CXXFLAGS = $(ADB_PARSER_CXXFLAGS)
 endif
 
@@ -3079,6 +3128,7 @@ mlxreg_mlxreg_lib_libmstreg_lib_la_LIBADD = $(mlxreg_mlxreg_lib_libmstreg_lib_la
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 mlxreg_mlxreg_lib_libmstreg_lib_la_CPPFLAGS = $(MLXREG_MLXREG_LIB_CPPFLAGS)
+mlxreg_mlxreg_lib_libmstreg_lib_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 mlxreg_mlxreg_lib_libmstreg_lib_la_CXXFLAGS = $(MLXREG_MLXREG_LIB_CXXFLAGS)
 endif
 
@@ -3124,6 +3174,7 @@ mlxreg_mlxreg_sdk_libmlxreg_sdk_la_SOURCES = \
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 mlxreg_mlxreg_sdk_libmlxreg_sdk_la_CPPFLAGS = $(MLXREG_MLXREG_SDK_CPPFLAGS)
+mlxreg_mlxreg_sdk_libmlxreg_sdk_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 mlxreg_mlxreg_sdk_libmlxreg_sdk_la_CXXFLAGS = $(MLXREG_MLXREG_SDK_CXXFLAGS)
 endif
 endif
@@ -3238,6 +3289,7 @@ EXTRA_mlxlink_modules_libmodules_lib_la_DEPENDENCIES = $(JSON_LA)
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 mlxlink_modules_libmodules_lib_la_CPPFLAGS = $(MLXLINK_MODULES_CPPFLAGS)
+mlxlink_modules_libmodules_lib_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 mlxlink_modules_libmodules_lib_la_CFLAGS = $(MLXLINK_MODULES_CFLAGS)
 mlxlink_modules_libmodules_lib_la_CXXFLAGS = $(MLXLINK_MODULES_CXXFLAGS)
 endif
@@ -3269,6 +3321,7 @@ mlxlink_modules_printutil_libprint_util_lib_la_SOURCES = \
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 mlxlink_modules_printutil_libprint_util_lib_la_CPPFLAGS = $(MLXLINK_MODULES_PRINTUTIL_CPPFLAGS)
+mlxlink_modules_printutil_libprint_util_lib_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 mlxlink_modules_printutil_libprint_util_lib_la_CFLAGS = $(MLXLINK_MODULES_PRINTUTIL_CFLAGS)
 endif
 
@@ -3296,6 +3349,7 @@ hca_capabilities_libhca_capabilities_la_SOURCES = \
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 hca_capabilities_libhca_capabilities_la_CPPFLAGS = $(HCA_CAPABILITIES_CPPFLAGS)
+hca_capabilities_libhca_capabilities_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 hca_capabilities_libhca_capabilities_la_CXXFLAGS = $(HCA_CAPABILITIES_CXXFLAGS)
 endif
 
@@ -3360,6 +3414,7 @@ resourcetools_resourcedump_lib_src_common_libresource_dump_common_la_LIBADD = $(
 RD_COMMON_CPPFLAGS = -I$(top_builddir)/resourcetools/resourcedump_lib/src/common -I$(top_srcdir)/resourcetools/resourcedump_lib/src/common -I$(top_builddir)
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 resourcetools_resourcedump_lib_src_common_libresource_dump_common_la_CPPFLAGS = $(RD_COMMON_CPPFLAGS)
+resourcetools_resourcedump_lib_src_common_libresource_dump_common_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 
 ########### resourcetools/resourcedump_lib/src/fetchers ###########
 
@@ -3397,6 +3452,7 @@ resourcetools_resourcedump_lib_src_fetchers_libreg_access_resource_dump_fetcher_
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 resourcetools_resourcedump_lib_src_fetchers_libreg_access_resource_dump_fetcher_la_CPPFLAGS = $(RD_FETCHERS_CPPFLAGS)
+resourcetools_resourcedump_lib_src_fetchers_libreg_access_resource_dump_fetcher_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 
 ########### resourcetools/resourcedump_lib/src/commands ###########
 
@@ -3426,6 +3482,7 @@ resourcetools_resourcedump_lib_src_commands_libresource_dump_commands_la_CXXFLAG
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 resourcetools_resourcedump_lib_src_commands_libresource_dump_commands_la_CPPFLAGS = $(RD_COMMANDS_CPPFLAGS)
+resourcetools_resourcedump_lib_src_commands_libresource_dump_commands_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 
 ########### resourcetools/resourcedump_lib/src/filters ###########
 #MTCR_DIR = $(USER_DIR)/${MTCR_CONFIG_DIR}
@@ -3460,6 +3517,7 @@ resourcetools_resourcedump_lib_src_filters_libresource_dump_filters_la_CXXFLAGS 
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 resourcetools_resourcedump_lib_src_filters_libresource_dump_filters_la_CPPFLAGS = $(RD_FILTERS_CPPFLAGS)
+resourcetools_resourcedump_lib_src_filters_libresource_dump_filters_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 
 ########### resourcetools/resourcedump_lib/src/sdk ###########
 RD_SDK_CPPFLAGS = \
@@ -3716,6 +3774,7 @@ INSTALL_DATA_HOOKS += sdk-install-data-hook
 
 # Directory-wide flags per target (a target's own _XFLAGS replaces them, as before).
 mft_sdk_libmstflint_sdk_la_CPPFLAGS = $(MFT_SDK_CPPFLAGS)
+mft_sdk_libmstflint_sdk_la_LIBTOOLFLAGS = $(COMPILE_ONCE)
 endif
 
 ########### tracers/fwtrace ###########
