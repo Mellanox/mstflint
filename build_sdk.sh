@@ -266,8 +266,10 @@ build_deb() {
         flags=(-F)
     fi
 
-    echo ">> dpkg-buildpackage ${flags[*]} -uc -us"
-    ( cd "$src" && dpkg-buildpackage "${flags[@]}" -uc -us )
+    # Pass --jobs on. Without -j, dpkg-buildpackage (>= 1.18.11) defaults to
+    # -J auto: DEB_BUILD_OPTIONS=parallel=<nproc>.
+    echo ">> dpkg-buildpackage ${flags[*]} -uc -us -j${JOBS}"
+    ( cd "$src" && dpkg-buildpackage "${flags[@]}" -uc -us -j"$JOBS" )
 
     echo ">> collecting .deb into $out"
     mv "$work"/*.deb "$out"/
