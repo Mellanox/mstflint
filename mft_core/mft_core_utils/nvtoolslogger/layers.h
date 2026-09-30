@@ -55,6 +55,7 @@ enum mft_layer
     MFT_LAYER_COMMON,
     MFT_LAYER_HCA_CAPS,
     MFT_LAYER_MLXDPA,
+    MFT_LAYER_MLXTOKENGENERATOR,
 
     MFT_LAYER_COUNT
 };
@@ -85,6 +86,7 @@ enum class Layer
     COMMON = MFT_LAYER_COMMON,
     HCA_CAPS = MFT_LAYER_HCA_CAPS,
     MLXDPA = MFT_LAYER_MLXDPA,
+    MLXTOKENGENERATOR = MFT_LAYER_MLXTOKENGENERATOR,
     ALL = MFT_LAYER_COUNT
 };
 
@@ -111,6 +113,7 @@ inline const std::vector<LayerEntry>& getLayerTable()
       {Layer::COMMON, "common"},
       {Layer::HCA_CAPS, "hca_caps"},
       {Layer::MLXDPA, "mlxdpa"},
+      {Layer::MLXTOKENGENERATOR, "mlxtokengenerator"},
       {Layer::ALL, "all"},
     };
     return table;

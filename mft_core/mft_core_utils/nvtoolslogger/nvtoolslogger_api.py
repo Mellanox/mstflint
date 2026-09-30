@@ -63,6 +63,7 @@ class Layer(IntEnum):
     COMMON = 11
     HCA_CAPS = 12
     MLXDPA = 13
+    MLXTOKENGENERATOR = 14
 
 
 _LIB_NAME = "libnvtoolslogger.so"
