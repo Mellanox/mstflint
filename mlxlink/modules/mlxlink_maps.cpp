@@ -1240,6 +1240,35 @@ void MlxlinkMaps::errorCodeResMapping()
     _elsOperState[ELS_OPER_STATE_LASER_DOWN] = "laser_down";
     _elsOperState[ELS_OPER_STATE_LASER_DOWN_WITH_FAULT] = "laser_down_with_fault";
 
+    _laserEnabled[LASER_DISABLED] = "laser_disabled";
+    _laserEnabled[LASER_ENABLED] = "laser_enabled";
+
+    _laser2Enabled[LASER_DISABLED] = "laser2_disabled";
+    _laser2Enabled[LASER_ENABLED] = "laser2_enabled";
+
+    _laserStatus[LASER_STATUS_OFF] = "laser_off";
+    _laserStatus[LASER_STATUS_RAMPING] = "laser_ramping";
+    _laserStatus[LASER_STATUS_ON] = "laser_on";
+
+    _laser2Status[LASER_STATUS_OFF] = "laser2_off";
+    _laser2Status[LASER_STATUS_RAMPING] = "laser2_ramping";
+    _laser2Status[LASER_STATUS_ON] = "laser2_on";
+
+    _laserRestriction[LASER_RESTRICTION_ON] = "laser_restriction_on";
+    _laserRestriction[LASER_RESTRICTION_OFF] = "laser_restriction_off";
+
+    _laser2Restriction[LASER_RESTRICTION_ON] = "laser2_restriction_on";
+    _laser2Restriction[LASER_RESTRICTION_OFF] = "laser2_restriction_off";
+
+    _elsLaserFaultState[ELS_LASER_FAULT_STATE_NO_FAULT] = "no_fault";
+    _elsLaserFaultState[ELS_LASER_FAULT_STATE_FIBER_CONTAMINATED] = "laser_fiber_contaminated";
+    _elsLaserFaultState[ELS_LASER_FAULT_STATE_APC_FAULT] = "laser_APC_fault";
+    _elsLaserFaultState[ELS_LASER_FAULT_STATE_POWER_EXCEEDED_ALLOWED_RANGE] = "laser_power_exceeded_allowed_range";
+    _elsLaserFaultState[ELS_LASER_FAULT_STATE_POWER_SUBCEEDED_ALLOWED_RANGE] = "laser_power_subceeded_allowed_range";
+    _elsLaserFaultState[ELS_LASER_FAULT_STATE_TEC_CONTROL_LOOP_FAULT] = "laser_TEC_control_loop_fault";
+    _elsLaserFaultState[ELS_LASER_FAULT_STATE_RAMPING_TIMEOUT_FAULT] = "laser_ramping_timeout_fault";
+    _elsLaserFaultState[ELS_LASER_FAULT_STATE_POWER_TUNING_FAULT] = "laser_power_tuning_fault";
+
     _moduleErrType[MODULE_ERROR_TYPE_POWER] = "Power_Budget_Exceeded";
     _moduleErrType[MODULE_ERROR_TYPE_LONG_RANGE] = "Long_Range_for_non_MLNX_cable_or_module";
     _moduleErrType[MODULE_ERROR_TYPE_BUS_STUCK] = "Bus_stuck - (I2C Data or clock shorted)";

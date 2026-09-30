@@ -2310,20 +2310,25 @@ void MlxlinkAmBerCollector::getModuleLaserInfo(vector<AmberField>& fields)
         updateField("page_select", PDDR_MODULE_INFO_PAGE);
         sendRegister(ACCESS_REG_PDDR, MACCESS_REG_METHOD_GET);
 
-        laserEnabled = to_string(getFieldValue("laser_enabled"));
-        laserStatus = to_string(getFieldValue("laser_status"));
-        laserRestriction = to_string(getFieldValue("laser_restriction"));
+        laserEnabled = getStrByValue(getFieldValue("laser_enabled"), _mlxlinkMaps->_laserEnabled);
+        laserStatus = getStrByValue(getFieldValue("laser_status"), _mlxlinkMaps->_laserStatus);
+        laserRestriction = getStrByValue(getFieldValue("laser_restriction"), _mlxlinkMaps->_laserRestriction);
         elsOperState = getStrByValue(getFieldValue("els_oper_state"), _mlxlinkMaps->_elsOperState);
-        elsLaserFaultState = to_string(getFieldValue("els_laser_fault_state"));
+        elsLaserFaultState = getStrByValue(getFieldValue("els_laser_fault_state"), _mlxlinkMaps->_elsLaserFaultState);
 
         if (_isPortETH)
         {
-            fields.push_back(AmberField("laser2_enabled", to_string(getFieldValue("laser2_enabled"))));
-            fields.push_back(AmberField("laser2_status", to_string(getFieldValue("laser2_status"))));
-            fields.push_back(AmberField("laser2_restriction", to_string(getFieldValue("laser2_restriction"))));
+            fields.push_back(AmberField("laser2_enabled",
+                                        getStrByValue(getFieldValue("laser2_enabled"), _mlxlinkMaps->_laser2Enabled)));
+            fields.push_back(
+              AmberField("laser2_status", getStrByValue(getFieldValue("laser2_status"), _mlxlinkMaps->_laser2Status)));
+            fields.push_back(AmberField("laser2_restriction", getStrByValue(getFieldValue("laser2_restriction"),
+                                                                            _mlxlinkMaps->_laser2Restriction)));
             fields.push_back(AmberField("els2_oper_state",
                                         getStrByValue(getFieldValue("els2_oper_state"), _mlxlinkMaps->_elsOperState)));
-            fields.push_back(AmberField("els_laser2_fault_state", to_string(getFieldValue("els_laser2_fault_state"))));
+            fields.push_back(
+              AmberField("els_laser2_fault_state",
+                         getStrByValue(getFieldValue("els_laser2_fault_state"), _mlxlinkMaps->_elsLaserFaultState)));
         }
     }
     fields.push_back(AmberField("laser_enabled", laserEnabled));
