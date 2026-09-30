@@ -498,9 +498,15 @@ struct ModuleField
 struct ModuleFieldValue
 {
     ModuleFieldValue() = default;
-    ModuleFieldValue(string uiName, string fieldName, bool perLane, bool supported = true, bool isAscii = false);
+    ModuleFieldValue(string uiName,
+                     string fieldName,
+                     bool perLane,
+                     bool supported = true,
+                     bool isAscii = false,
+                     const std::map<u_int32_t, std::string>* valueMap = nullptr);
 
     ModuleField descriptor = ModuleField("", "", false, false, false, false, false);
+    const std::map<u_int32_t, std::string>* valueMap = nullptr;
     std::string asciiValue;
     std::vector<uint32_t> values{0};
 };
@@ -677,7 +683,8 @@ public:
                          string uiName,
                          bool supported,
                          bool perLane,
-                         bool isAscii = false);
+                         bool isAscii = false,
+                         const std::map<u_int32_t, std::string>* valueMap = nullptr);
     void initAdditionalModuleInfoFields(RegToModuleInfoFields& infoFields, ModuleInfoFieldsOrdered& infoFieldsOrdered);
     string getModuleStateForEls();
     string getProductionTestRevision();

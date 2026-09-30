@@ -56,8 +56,13 @@ ModuleField::ModuleField(string uiName,
 {
 }
 
-ModuleFieldValue::ModuleFieldValue(string uiName, string fieldName, bool perLane, bool supported, bool isAscii) :
-    descriptor(uiName, fieldName, false, perLane, false, supported, isAscii), values(0)
+ModuleFieldValue::ModuleFieldValue(string uiName,
+                                   string fieldName,
+                                   bool perLane,
+                                   bool supported,
+                                   bool isAscii,
+                                   const std::map<u_int32_t, std::string>* valueMap) :
+    descriptor(uiName, fieldName, false, perLane, false, supported, isAscii), valueMap(valueMap), values(0)
 {
     values.resize(LANES_NUM, 0);
 }
@@ -2531,11 +2536,12 @@ void MlxlinkCommander::initModuleField(RegToModuleInfoFields& infoFields,
                                        string uiName,
                                        bool supported,
                                        bool perLane,
-                                       bool isAscii)
+                                       bool isAscii,
+                                       const std::map<u_int32_t, std::string>* valueMap)
 {
     // infoFields holds fields per reg per page foreasily query each page only once regardless of the requested order of
     // fields in output
-    infoFields[reg][page].emplace_back(uiName, fieldName, perLane, supported, isAscii);
+    infoFields[reg][page].emplace_back(uiName, fieldName, perLane, supported, isAscii, valueMap);
     // infoFieldsOrdered holds pointers to the fields in the order they are requested in output
     infoFieldsOrdered.push_back(&infoFields[reg][page].back());
 }
@@ -2595,6 +2601,11 @@ void MlxlinkCommander::prepareAdditionalModuleInfo(bool valid)
                         {
                             // For non-per-lane fields, put the value in the first element
                             moduleInfoField.values[0] = getFieldValue(fieldName);
+                            if (moduleInfoField.valueMap != nullptr)
+                            {
+                                moduleInfoField.asciiValue =
+                                  getStrByValue(moduleInfoField.values[0], *moduleInfoField.valueMap);
+                            }
                         }
                     }
                 }
@@ -2619,6 +2630,10 @@ void MlxlinkCommander::prepareAdditionalModuleInfo(bool valid)
             {
                 // For per-lane fields, show all lane values
                 valueStr = getValuesOfActiveLanes(getStringFromVector(moduleInfoField->values), true);
+            }
+            else if (!moduleInfoField->asciiValue.empty())
+            {
+                valueStr = moduleInfoField->asciiValue;
             }
             else
             {
@@ -2674,7 +2689,7 @@ void MlxlinkCommander::initAdditionalModuleInfoFields(RegToModuleInfoFields& inf
                     _isCpo && (_userInput._isEls || _protoActive == ETH), true);
 
     initModuleField(infoFields, infoFieldsOrdered, "PDDR", PDDR_MODULE_INFO_PAGE, "laser_enabled", "Laser Enabled",
-                    _isCpo && (_userInput._isEls || _protoActive == ETH), false);
+                    _isCpo && (_userInput._isEls || _protoActive == ETH), false, false, &_mlxlinkMaps->_laserEnabled);
 
     initModuleField(infoFields, infoFieldsOrdered, "PEMI", PEMI_GROUP_SEL_LASER_MONITORS_SAMPLES,
                     "els_input_power_lane", "ELS Input Power [per lane]", _isCpo && !_userInput._isEls, true);

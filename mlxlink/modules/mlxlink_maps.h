@@ -414,6 +414,13 @@ public:
     std::map<u_int32_t, std::string> _dataPathSt;
     std::map<u_int32_t, std::string> _moduleOperSt;
     std::map<u_int32_t, std::string> _elsOperState;
+    std::map<u_int32_t, std::string> _laserEnabled;
+    std::map<u_int32_t, std::string> _laser2Enabled;
+    std::map<u_int32_t, std::string> _laserStatus;
+    std::map<u_int32_t, std::string> _laser2Status;
+    std::map<u_int32_t, std::string> _laserRestriction;
+    std::map<u_int32_t, std::string> _laser2Restriction;
+    std::map<u_int32_t, std::string> _elsLaserFaultState;
     std::map<u_int32_t, std::string> _moduleErrType;
     std::map<u_int32_t, std::string> _errorCodeRes;
     std::map<u_int32_t, std::string> _cimsCableBreakout;
