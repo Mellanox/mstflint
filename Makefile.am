@@ -1023,17 +1023,25 @@ endif
 if ENABLE_VFIO
 mtcr_ul_libmtcr_ul_la_DEPENDENCIES += vfio_driver_access/libvfio_access_driver.la
 endif
+# -static in every configuration. Upstream took the unconditional -static as
+# its own in PR #1983 (mtcr_ul/Makefile.am), so the base line already carries
+# it and what is left here is dropping the two conditional `+= -static' that
+# are now redundant. libmtcr_ul ships as a static archive only -- the
+# install-exec-hook deletes the shared object -- and every consumer absorbs it,
+# the tools via -static and the SDK via MTCR_SDK_WHOLE_ARCHIVE. Built shared,
+# it would make libtool relink the SDK at install time with -lmtcr_ul from
+# $(pkglibdir): in one Makefile a parallel `make -j install' races that relink
+# against the hook (the recursive build always installed mtcr_ul/ first), and
+# `make install-sdk' resolves -lmtcr_ul against whatever the build host has.
 mtcr_ul_libmtcr_ul_la_LDFLAGS = -static -lstdc++
 
 if ENABLE_NVML
 mtcr_ul_libmtcr_ul_la_DEPENDENCIES += $(NVML_DIR)/libnvml_device.la
-mtcr_ul_libmtcr_ul_la_LDFLAGS += -static
 endif
 
 if ENABLE_CABLES
 mtcr_ul_libmtcr_ul_la_SOURCES += mtcr_ul/mtcr_cables.c mtcr_ul/mtcr_cables.h
 mtcr_ul_libmtcr_ul_la_DEPENDENCIES += tools_layouts/libcables_layouts.la
-mtcr_ul_libmtcr_ul_la_LDFLAGS += -static
 endif
 
 # --enable-remote: mtcr_remote.c drives the MST HTTP client, so libmtcr_ul (and
