@@ -69,32 +69,6 @@ string formatAdbSize(uint32_t sizeBits)
     buf << "0x" << hex << ((sizeBits >> 5) << 2) << "." << dec << (sizeBits % 32);
     return buf.str();
 }
-
-// Emit a synthesized node whose fields all sit at offset 0x0.0 with
-// subnode = (addPrefix + field name). Used by toXml's addRootNode
-// synthesis for both the root node (one field) and the union node
-// grouping the filtered nodeNames.
-string xmlSynthesizedNode(const string& nodeName,
-                          bool isUnion,
-                          uint32_t nodeSizeBits,
-                          const vector<pair<string, uint32_t>>& fields,
-                          const string& addPrefix)
-{
-    string xml = "<node name=\"" + nodeName + "\" size=\"" + formatAdbSize(nodeSizeBits) + "\"";
-    if (isUnion)
-    {
-        xml += " attr_is_union=\"1\"";
-    }
-    xml += " descr=\"\" >\n";
-    for (size_t i = 0; i < fields.size(); i++)
-    {
-        const string& fname = fields[i].first;
-        xml += "\t<field name=\"" + fname + "\" offset=\"0x0.0\" size=\"" + formatAdbSize(fields[i].second) +
-               "\" subnode=\"" + addPrefix + fname + "\" descr=\"\" />\n";
-    }
-    xml += "</node>\n";
-    return xml;
-}
 } // namespace
 
 #if 0
@@ -353,6 +327,36 @@ string _Adb_impl<e, O>::_xmlAllNodes(bool excludeRoot, const string& addPrefix, 
         AdbNode* node = it->second;
         xml += node->toXml(addPrefix, bigEndian) + "\n";
     }
+    return xml;
+}
+
+// Emit a node (used by toXml's addRootNode synthesis for the root node and the
+// grouping union node) whose fields all sit at offset 0x0.0 with subnode =
+// (addPrefix + field name). Emitting via AdbNode::toXml() reuses its stable_sort,
+// so field order is deterministic (offset-then-name) whatever order the caller gives.
+template<bool e, typename O>
+string _Adb_impl<e, O>::xmlSynthesizedNode(const string& nodeName,
+                                           bool isUnion,
+                                           uint32_t nodeSizeBits,
+                                           const vector<pair<string, uint32_t>>& fields,
+                                           const string& addPrefix)
+{
+    AdbNode* node = AdbNode::create_AdbNode(nodeName, nodeSizeBits, isUnion);
+    if (isUnion)
+    {
+        node->attrs["attr_is_union"] = "1";
+    }
+    node->attrs["size"] = formatAdbSize(nodeSizeBits);
+    for (size_t i = 0; i < fields.size(); i++)
+    {
+        AdbField* field =
+          AdbField::create_AdbField(fields[i].first, 0, fields[i].second, false, addPrefix + fields[i].first);
+        field->attrs["offset"] = "0x0.0";
+        field->attrs["size"] = formatAdbSize(fields[i].second);
+        node->fields.push_back(field);
+    }
+    string xml = node->toXml("") + "\n";
+    delete node;
     return xml;
 }
 

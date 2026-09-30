@@ -178,6 +178,11 @@ private:
     string _xmlConfigsAndInfo(const string& nameOverride = "", const string& versionOverride = "");
     string _xmlInclude(const string& filename);
     string _xmlAllNodes(bool excludeRoot, const string& addPrefix, bool bigEndian);
+    static string xmlSynthesizedNode(const string& nodeName,
+                                     bool isUnion,
+                                     uint32_t nodeSizeBits,
+                                     const vector<pair<string, uint32_t>>& fields,
+                                     const string& addPrefix);
 
 public:
     void addMissingNodes(int depth, bool allowMultipleExceptions);
