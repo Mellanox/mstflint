@@ -44,6 +44,7 @@
  #include "hostelf.h"
 #include "mft_utils.h"
  #include "mlxdpa_utils.h"
+ #include "nvtoolslogger/NvToolsLogger.h"
  #include "xz_utils/xz_utils.h"
  
  // using namespace ELFIO;
@@ -482,6 +483,7 @@
      if (lastArg != _cmdStringToEnum.end())
      {
          _command = lastArg->second;
+         MLX_DPA_LOG_INFO("Command: %s", lastArg->first.c_str());
          return true;
      }
  
@@ -1229,6 +1231,7 @@ void MlxDpa::SignCertContainer()
          outputElfFile.write(reinterpret_cast<const char*>(_manifest.data()), _manifest.size());
      }
      outputElfFile.close();
+     MLX_DPA_LOG_INFO("%s was signed successfully.", _outputPath.c_str());
      std::cout << _outputPath << " was signed successfully." << std::endl;
  }
  
@@ -1279,8 +1282,8 @@ void MlxDpa::SignCertContainer()
                  _manifest = hostElf.GetManifestDpaApp(*archAppManifest);
                  _manifestPresent = !_manifest.empty();
              }
-             MLX_DPA_DPRINTF(("Generating Hash List for %s, HW version %d\n", app->name,
-                              archAppElf->ID)); // TODO: Maybe need a function to print as string the enum archApp->ID
+             MLX_DPA_LOG_DEBUG("Generating Hash List for %s, HW version %d", app->name,
+                               archAppElf->ID); // TODO: Maybe need a function to print as string the enum archApp->ID
  
              vector<u_int8_t> cryptoDataSectionByteStream = CreateCryptoDataStream(dpaAppElf, signer, cryptoDataSection);
  
@@ -1290,8 +1293,8 @@ void MlxDpa::SignCertContainer()
              {
                  throw MlxDpaException("Failed to open Host ELF file with error: %s", strerror(errno));
              }
-             MLX_DPA_DPRINTF(("Calling updateSignatureData: appName %s, HW version %d, cryptoData size %lu.\n",
-                              app->name, archAppElf->ID, (long)cryptoDataSectionByteStream.size()));
+             MLX_DPA_LOG_DEBUG("Calling updateSignatureData: appName %s, HW version %d, cryptoData size %lu.", app->name,
+                               archAppElf->ID, (long)cryptoDataSectionByteStream.size());
              int rc = updateSignatureData(outHostELF, app->name, archAppElf->ID, cryptoDataSectionByteStream.data(),
                                           cryptoDataSectionByteStream.size());
              if (rc != 0)
@@ -1312,6 +1315,7 @@ void MlxDpa::SignCertContainer()
          }
      }
  
+     MLX_DPA_LOG_INFO("%s was signed successfully.", _outputPath.c_str());
      cout << _outputPath << " was signed successfully." << endl;
  }
  
@@ -1362,11 +1366,13 @@ void MlxDpa::SignCertContainer()
      }
      catch (const MlxDpaException& ex)
      {
+         MLX_DPA_LOG_ERROR("%s", ex.what());
          cerr << "-E- " << ex.what() << endl;
          return 1;
      }
      catch (const std::exception& ex)
      {
+         MLX_DPA_LOG_ERROR("General exception: %s", ex.what());
          cerr << "-E- General Exception: " << ex.what() << endl;
          return 1;
      }

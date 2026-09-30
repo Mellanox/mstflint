@@ -62,6 +62,7 @@ class Layer(IntEnum):
     EFUSE = 10
     COMMON = 11
     HCA_CAPS = 12
+    MLXDPA = 13
 
 
 _LIB_NAME = "libnvtoolslogger.so"
