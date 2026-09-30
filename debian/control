@@ -8,6 +8,7 @@ Build-Depends:
     autotools-dev,
     bzip2,
     debhelper (>= 9.0),
+    dh-sequence-dkms,
     dkms,
     dpkg-dev,
     g++,
