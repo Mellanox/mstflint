@@ -384,15 +384,20 @@ update_tools_version = sed -e 's,[@]MSTFLINT_VERSION_STR[@],${MSTFLINT_VERSION_S
 
 # tools_version.h is included all over the tree, so it is a BUILT_SOURCE: made
 # before anything is compiled. It and tools_version.py are only generated when
-# missing. python_wrapper is the launcher every python tool below is a copy of;
-# it follows its template and the configured paths (hence the Makefile).
+# missing. python_wrapper is the launcher every python tool below is a copy of.
+# Like the old common/ `all:' rule it is regenerated on every make, so a
+# make-time `make prefix=...' reaches the launchers; it is only replaced when
+# its content changes, so an unchanged tree stays a no-op build.
 BUILT_SOURCES += common/tools_version.h
 noinst_SCRIPTS += common/python_wrapper
 
-common/python_wrapper: $(srcdir)/common/python_wrapper.sh Makefile
+common/python_wrapper: $(srcdir)/common/python_wrapper.sh FORCE
 	@$(MKDIR_P) $(@D)
-	$(update_prefix) < $(srcdir)/common/python_wrapper.sh > $@
-	chmod +x $@
+	@$(update_prefix) < $(srcdir)/common/python_wrapper.sh > $@.tmp && chmod +x $@.tmp && \
+	if cmp -s $@.tmp $@; then rm -f $@.tmp; else mv -f $@.tmp $@ && echo "  GEN      $@"; fi
+
+FORCE:
+.PHONY: FORCE
 
 common/tools_version.py:
 	@$(MKDIR_P) $(@D)
