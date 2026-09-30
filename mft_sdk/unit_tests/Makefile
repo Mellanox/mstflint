@@ -138,22 +138,8 @@ OP_INFO_CPP_SRC := $(TESTS_DIR)/mlxlink/op_info_test.cpp $(TESTS_DIR)/test_utils
 # instead of dropping out of the binary, so the gap stays visible in
 # --gtest_list_tests rather than hiding behind a run-time filter.
 CPP_BIN := $(BUILD_DIR)/mstflint_sdk_cpp_test
-CPP_SUITES := \
-	$(TESTS_DIR)/mlxlink/op_info_test.cpp \
-	$(TESTS_DIR)/mlxlink/counters_test.cpp \
-	$(TESTS_DIR)/mlxlink/fec_histogram_test.cpp \
-	$(TESTS_DIR)/mlxlink/cable_ddm_test.cpp \
-	$(TESTS_DIR)/mlxlink/module_info_test.cpp \
-	$(TESTS_DIR)/mlxreg/error_handling_test.cpp \
-	$(TESTS_DIR)/mlxreg/full_path_test.cpp \
-	$(TESTS_DIR)/mlxreg/metadata_test.cpp \
-	$(TESTS_DIR)/mlxreg/register_access_test.cpp \
-	$(TESTS_DIR)/mlxreg/register_list_test.cpp \
-	$(TESTS_DIR)/mlxreg/mlxreg_fields.h \
-	$(TESTS_DIR)/hca_caps/hca_caps_test.cpp \
-	$(TESTS_DIR)/discovery/discovery_test.cpp \
-	$(TESTS_DIR)/telemetry/telemetry_test.cpp \
-	$(TESTS_DIR)/segfault/segfault_test.cpp
+CPP_SUITES := $(sort $(wildcard $(TESTS_DIR)/*/*_test.cpp)) \
+	$(TESTS_DIR)/mlxreg/mlxreg_fields.h
 CPP_SUITE_SRCS := $(filter %.cpp,$(CPP_SUITES))
 
 # Unified C driver. utils.py invokes the C column as `<bin> <suite> <BDF>`,
@@ -161,17 +147,7 @@ CPP_SUITE_SRCS := $(filter %.cpp,$(CPP_SUITES))
 # being validated; each suite's main() is renamed under MFT_SDK_C_UNIFIED.
 C_BIN     := $(BUILD_DIR)/mstflint_sdk_c_test
 C_DRIVER  := $(TESTS_DIR)/mft_sdk_c_test_main.cpp
-C_SUITES  := \
-	$(TESTS_DIR)/mlxlink/cable_ddm_test.c \
-	$(TESTS_DIR)/mlxlink/counters_test.c \
-	$(TESTS_DIR)/mlxlink/fec_histogram_test.c \
-	$(TESTS_DIR)/mlxlink/module_info_test.c \
-	$(TESTS_DIR)/mlxlink/op_info_test.c \
-	$(TESTS_DIR)/mlxreg/error_handling_test.c \
-	$(TESTS_DIR)/mlxreg/full_path_test.c \
-	$(TESTS_DIR)/mlxreg/metadata_test.c \
-	$(TESTS_DIR)/mlxreg/register_access_test.c \
-	$(TESTS_DIR)/mlxreg/register_list_test.c
+C_SUITES  := $(sort $(wildcard $(TESTS_DIR)/*/*_test.c))
 
 # --- hca_caps standalone probe ----------------------------------------------
 # Build canary only: test_hca_caps_validation.py compiles this file itself at
