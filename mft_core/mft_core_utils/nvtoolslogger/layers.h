@@ -56,6 +56,9 @@ enum mft_layer
     MFT_LAYER_HCA_CAPS,
     MFT_LAYER_MLXDPA,
     MFT_LAYER_MLXTOKENGENERATOR,
+    MFT_LAYER_MFLASH,
+    MFT_LAYER_MFLASH_ACCESS,
+    MFT_LAYER_MFLASH_SPI,
 
     MFT_LAYER_COUNT
 };
@@ -87,6 +90,9 @@ enum class Layer
     HCA_CAPS = MFT_LAYER_HCA_CAPS,
     MLXDPA = MFT_LAYER_MLXDPA,
     MLXTOKENGENERATOR = MFT_LAYER_MLXTOKENGENERATOR,
+    MFLASH = MFT_LAYER_MFLASH,
+    MFLASH_ACCESS = MFT_LAYER_MFLASH_ACCESS,
+    MFLASH_SPI = MFT_LAYER_MFLASH_SPI,
     ALL = MFT_LAYER_COUNT
 };
 
@@ -114,6 +120,9 @@ inline const std::vector<LayerEntry>& getLayerTable()
       {Layer::HCA_CAPS, "hca_caps"},
       {Layer::MLXDPA, "mlxdpa"},
       {Layer::MLXTOKENGENERATOR, "mlxtokengenerator"},
+      {Layer::MFLASH, "mflash"},
+      {Layer::MFLASH_ACCESS, "mflash_access"},
+      {Layer::MFLASH_SPI, "mflash_spi"},
       {Layer::ALL, "all"},
     };
     return table;
