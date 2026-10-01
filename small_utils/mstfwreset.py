@@ -2380,6 +2380,8 @@ def status_pending_nvconfig(device):
 ######################################################################
 
 FULL_POWER_CYCLE = "Full power cycle"
+# command_required always carries a value; this one means there is nothing to do
+NO_COMMAND_REQUIRED = "N/A (No command required)"
 
 
 def determine_required_reset(has_pending_fw, has_pending_nvconfig, mfrl, is_any_sync_supported, sync_2_only_supported):
@@ -2438,9 +2440,12 @@ def status_command(device, mfrl, is_any_sync_supported, sync_2_only_supported, d
     has_pending_nvconfig = len(nvconfig_params) > 0
     reset_info = determine_required_reset(has_pending_fw, has_pending_nvconfig, mfrl, is_any_sync_supported, sync_2_only_supported)
 
-    if reset_info['reset_type'] == FULL_POWER_CYCLE:
+    if not has_pending_fw and not has_pending_nvconfig:  # no pending changes
+        description_action = "No action required"
+        command_required = NO_COMMAND_REQUIRED
+    elif reset_info['reset_type'] == FULL_POWER_CYCLE:
         description_action = "Full power cycle is required"
-        command_required = None  # we can't say how to perform power cycle as it's system dependent
+        command_required = command_required = "External host power cycle is required"
     elif pci_rescan_required:
         description_action = "PCI rescan is required"
         command_required = "Reboot external host is required"  # System Level Reset (SLR) - arm shutdown followed by warm reboot
@@ -2450,27 +2455,23 @@ def status_command(device, mfrl, is_any_sync_supported, sync_2_only_supported, d
     elif reset_info['reset_needed']:
         description_action = reset_info['reset_type']
         skip_pci_reset = is_any_sync_supported is None
-        try:
-            default_level = mfrl.default_reset_level(is_any_sync_supported, skip_pci_reset, sync_2_only_supported)
-            default_type = mfrl.default_reset_type()
-            if default_level == CmdRegMfrl.PCI_RESET:
-                default_sync = get_default_reset_sync(devid, default_level, mroq, is_pcie_switch, tool_owner_support)
-                if mroq is not None and mroq.mroq_is_supported():
-                    default_method = mroq.get_default_method(is_pcie_switch, tool_owner_support)
-                else:
-                    default_method = ResetReqMethod.LINK_DISABLE
-                command_required = "mlxfwreset -d %s reset --level %d --type %d --sync %d --method %d" % (
-                    device, default_level, default_type, default_sync, default_method)
+        default_level = mfrl.default_reset_level(is_any_sync_supported, skip_pci_reset, sync_2_only_supported)
+        default_type = mfrl.default_reset_type()
+        if default_level == CmdRegMfrl.PCI_RESET:
+            default_sync = get_default_reset_sync(devid, default_level, mroq, is_pcie_switch, tool_owner_support)
+            if mroq is not None and mroq.mroq_is_supported():
+                default_method = mroq.get_default_method(is_pcie_switch, tool_owner_support)
             else:
-                command_required = "mlxfwreset -d %s reset --level %d --type %d" % (
-                    device, default_level, default_type)
-        except CmdNotSupported:
-            # No reset level is supported, so there is no mlxfwreset command to suggest.
-            # determine_required_reset() already described the action as a full power cycle.
-            command_required = None
+                default_method = ResetReqMethod.LINK_DISABLE
+            command_required = "mlxfwreset -d %s reset --level %d --type %d --sync %d --method %d" % (
+                device, default_level, default_type, default_sync, default_method)
+        else:
+            command_required = "mlxfwreset -d %s reset --level %d --type %d" % (
+                device, default_level, default_type)
     else:
-        description_action = "No action required"
-        command_required = None
+        # there was FW/config change, yet no recommended reset was provided - this should never happen
+        logger.debug("has_pending_fw: %s, has_pending_nvconfig: %s, reset_info: %s" % (has_pending_fw, has_pending_nvconfig, reset_info))
+        raise RuntimeError("No recommended reset found")
 
     if json_output:
         result = {
@@ -2481,8 +2482,7 @@ def status_command(device, mfrl, is_any_sync_supported, sync_2_only_supported, d
             'reset_needed': reset_info['reset_needed'],
             'description_action': description_action,
         }
-        if command_required is not None:
-            result['command_required'] = command_required if command_required is not None else "N/A (No command required)"
+        result['command_required'] = command_required
         result['reasons'] = reset_info['reasons']
         print(json.dumps(result, indent=2))
     else:
@@ -2506,8 +2506,7 @@ def status_command(device, mfrl, is_any_sync_supported, sync_2_only_supported, d
             print("\nPending NVCONFIG parameters: N/A (No pending NVCONFIG parameters)")
 
         print("\nDescription action : %s" % description_action)
-        if command_required:
-            print("Command required : %s" % command_required)
+        print("Command required : %s" % command_required)
         if reset_info['reasons']:
             print("Reasons : %s" % ", ".join(reset_info['reasons']))
 
