@@ -36,6 +36,8 @@
  */
 #include "mtcr.h"
 
+#include <errno.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -46,9 +48,28 @@ void usage(const char* n)
     exit(1);
 }
 
-int main(int ac, char* av[])
+/* Parse a 32-bit unsigned number. Returns 0 on success, 1 if the string is not a number, 2 if it is out of range. */
+static int parse_u32(const char* str, unsigned int* out)
 {
     char* endp;
+    unsigned long long parsed;
+
+    errno = 0;
+    parsed = strtoull(str, &endp, 0);
+    if (endp == str || *endp)
+    {
+        return 1;
+    }
+    if (errno == ERANGE || parsed > UINT_MAX)
+    {
+        return 2;
+    }
+    *out = (unsigned int)parsed;
+    return 0;
+}
+
+int main(int ac, char* av[])
+{
     int rc = 0;
     unsigned int addr, val;
     mfile* mf;
@@ -58,15 +79,23 @@ int main(int ac, char* av[])
         usage(av[0]);
     }
 
-    addr = strtoul(av[2], &endp, 0);
-    if (*endp)
+    switch (parse_u32(av[2], &addr))
     {
-        usage(av[0]);
+        case 1:
+            usage(av[0]);
+            break;
+        case 2:
+            fprintf(stderr, "-E- Address is out of the range\n");
+            exit(1);
     }
-    val = strtoul(av[3], &endp, 0);
-    if (*endp)
+    switch (parse_u32(av[3], &val))
     {
-        usage(av[0]);
+        case 1:
+            usage(av[0]);
+            break;
+        case 2:
+            fprintf(stderr, "-E- Value is out of the range\n");
+            exit(1);
     }
 
     mf = mopen(av[1]);
