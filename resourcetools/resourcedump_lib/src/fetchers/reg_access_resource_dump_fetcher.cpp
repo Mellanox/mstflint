@@ -51,6 +51,9 @@ namespace fetchers
 {
 using namespace std;
 
+bool RegAccessResourceDumpFetcher::_first_send_attempted = false;
+bool RegAccessResourceDumpFetcher::_mord_v2_selected = false;
+
 RegAccessResourceDumpFetcher::RegAccessResourceDumpFetcher(mfile_t* mfile,
                                                            device_attributes device_attrs,
                                                            dump_request segment_params,
@@ -91,7 +94,15 @@ void RegAccessResourceDumpFetcher::init_by_device()
 
     if (dm_is_gpu(dev_id))
     {
-        _reg_handler.reset(new MordV2ResourceDumpRegister(_mf));
+        if (_first_send_attempted && !_mord_v2_selected)
+        {
+            _reg_handler.reset(new BasicResourceDumpRegister(REG_ID_MORD));
+        }
+        else
+        {
+            _reg_handler.reset(new MordV2ResourceDumpRegister(_mf));
+            _mord_v2_selected = true;
+        }
     }
     else if (dm_dev_is_hca(dev_id))
     {
@@ -187,7 +198,7 @@ void RegAccessResourceDumpFetcher::retrieve_from_reg_access()
 
     do
     {
-        reg_access_status_t res = _reg_handler->send(_mf);
+        reg_access_status_t res = safe_send();
         if (res != ME_REG_ACCESS_OK)
         {
             throw ResourceDumpException(ResourceDumpException::Reason::SEND_REG_ACCESS_FAILED, res);
@@ -199,6 +210,26 @@ void RegAccessResourceDumpFetcher::retrieve_from_reg_access()
         validate_reply();
         reset_reg_access_layout();
     } while (_reg_handler->more_dump());
+}
+
+reg_access_status_t RegAccessResourceDumpFetcher::safe_send()
+{
+    reg_access_status_t res = _reg_handler->send(_mf);
+
+    if (!_first_send_attempted)
+    {
+        _first_send_attempted = true;
+
+        if (_mord_v2_selected && res != ME_REG_ACCESS_OK)
+        {
+            _reg_handler.reset(new BasicResourceDumpRegister(REG_ID_MORD));
+            _mord_v2_selected = false;
+            init_reg_access_layout();
+            res = _reg_handler->send(_mf);
+        }
+    }
+
+    return res;
 }
 
 void RegAccessResourceDumpFetcher::init_reg_access_layout()
