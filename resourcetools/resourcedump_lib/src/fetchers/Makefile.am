@@ -47,7 +47,8 @@ noinst_LTLIBRARIES = libreg_access_resource_dump_fetcher.la
 
 libreg_access_resource_dump_fetcher_la_SOURCES = \
     fetcher.h fetcher_factory.h fetcher_factory.cpp\
-    reg_access_resource_dump_fetcher.h reg_access_resource_dump_fetcher.cpp
+    reg_access_resource_dump_fetcher.h reg_access_resource_dump_fetcher.cpp\
+    resource_dump_register.h resource_dump_register.cpp
 if ENABLE_RDMEM
 libreg_access_resource_dump_fetcher_la_SOURCES += \
     reg_access_resource_dump_mkey_fetcher.h reg_access_resource_dump_mkey_fetcher.cpp

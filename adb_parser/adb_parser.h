@@ -158,6 +158,33 @@ public:
                  string addPrefix = "",
                  bool bigEndian = false);
 
+    // Structural-include emission: <NodesDefinition> + every node in
+    // nodesMap except "root". No <config>, no <info>. Pairs with
+    // toXmlWrapper() to produce the wrapper+include file pair.
+    string toXmlStructural();
+
+    // Wrapper emission: <NodesDefinition> + every <config> + <info> +
+    // (optional) <include file="..."/> + the node named "root" from nodesMap.
+    // When sourceDocName / sourceDocVersion are non-empty they override
+    // the values parsed into srcDocName / srcDocVer; otherwise the parsed
+    // values are used. Caller is expected to ensure nodesMap["root"] exists
+    // (the seed file + builder pattern in DPRM provides this); if missing,
+    // the root node is silently omitted from the output.
+    string toXmlWrapper(string includeFilename = "", string sourceDocName = "", string sourceDocVersion = "");
+
+private:
+    // Section emitters shared by toXml / toXmlStructural / toXmlWrapper.
+    string _xmlNodesDefOpen() const;
+    string _xmlConfigsAndInfo(const string& nameOverride = "", const string& versionOverride = "");
+    string _xmlInclude(const string& filename);
+    string _xmlAllNodes(bool excludeRoot, const string& addPrefix, bool bigEndian);
+    static string xmlSynthesizedNode(const string& nodeName,
+                                     bool isUnion,
+                                     uint32_t nodeSizeBits,
+                                     const vector<pair<string, uint32_t>>& fields,
+                                     const string& addPrefix);
+
+public:
     void addMissingNodes(int depth, bool allowMultipleExceptions);
     AdbInstance* createLayout(string rootNodeName,
                               int depth = -1, /* -1 means instantiate full tree */

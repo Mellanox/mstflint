@@ -497,6 +497,14 @@ class ConditionParser:
     symbol_operators = ('~', '|', '==', '!=', '(', ')')
     operators = word_operators + symbol_operators
 
+    allowed_node_types = (ast.Expression, ast.Name, ast.Load,
+                          ast.UnaryOp, ast.unaryop,
+                          ast.BinOp, ast.operator,
+                          ast.BoolOp, ast.And, ast.Or,
+                          ast.Compare, ast.Eq, ast.NotEq, ast.Lt, ast.LtE, ast.Gt, ast.GtE)
+    allowed_number_node_names = ('Constant', 'Num')
+    allowed_number_types = (int, float, complex)
+
     def __init__(self, condition_str: str, consts):
         variable_names = [word for word in re.findall(r"\$\([a-zA-Z_][\w]*\)(?:\.[a-zA-Z_][\w]*)*|[a-zA-Z_][\w]*(?:\.[a-zA-Z_][\w]*)*", condition_str) if word not in ConditionParser.word_operators]
         self._variables = {re.sub(r"\$\(([a-zA-Z_][\w]*)\)", r"___dollar___\1", variable_name.replace(".", "___")): ConditionVariable(variable_name, consts) for variable_name in variable_names}
@@ -507,6 +515,13 @@ class ConditionParser:
             self._condition_str = self._condition_str.replace(variable._name, fixed_variable_name)
         self._condition_str = self._condition_str.strip()
 
+    @staticmethod
+    def _is_allowed_node(node):
+        if type(node).__name__ in ConditionParser.allowed_number_node_names:
+            value = node.value if hasattr(node, 'value') else node.n
+            return isinstance(value, ConditionParser.allowed_number_types) and not isinstance(value, bool)
+        return isinstance(node, ConditionParser.allowed_node_types)
+
     def update_variables(self, layout_item):
         for variable in self._variables.values():
             variable.update_references(layout_item)
@@ -516,11 +531,7 @@ class ConditionParser:
             tree = ast.parse(self._condition_str, mode='eval')
         except SyntaxError:
             raise ResourceParseException("Invalid condition syntax")
-        if not all(isinstance(node, (ast.Expression, ast.Name, ast.Load,
-                                     ast.UnaryOp, ast.unaryop,
-                                     ast.BinOp, ast.operator,
-                                     ast.BoolOp, ast.Num, ast.And, ast.Or,
-                                     ast.Compare, ast.Eq, ast.NotEq, ast.Lt, ast.LtE, ast.Gt, ast.GtE)) for node in ast.walk(tree)):
+        if not all(ConditionParser._is_allowed_node(node) for node in ast.walk(tree)):
             raise ResourceParseException("Condition contains unsupported operation")
         locals = {variable_name: variable.evaluate(bit_array) for variable_name, variable in self._variables.items()}
         return eval(compile(tree, filename='', mode='eval'), None, locals)

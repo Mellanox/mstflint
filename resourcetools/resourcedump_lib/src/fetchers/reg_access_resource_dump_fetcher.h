@@ -34,9 +34,8 @@
 #define RESOURCE_DUMP_REGACCESS_RESDUMP_H
 
 #include "fetcher.h"
+#include "resource_dump_register.h"
 #include "resource_dump_segments.h"
-
-#include "tools_layouts/reg_access_hca_layouts.h"
 
 #include <iostream>
 #include <memory>
@@ -66,8 +65,12 @@ public:
     void fetch_data() override;
 
 protected:
+    // Configure the register handler for the first dump call of a (sub-)segment. The base
+    // (inline) flavor uses the handler's inline defaults; the mkey fetcher overrides this to
+    // switch the handler to non-inline mode and supply the mkey target.
     virtual void init_reg_access_layout();
 
+    // Re-arm the register handler between consecutive more_dump iterations.
     virtual void reset_reg_access_layout();
 
     virtual void write_payload_data_to_ostream();
@@ -79,10 +82,20 @@ protected:
     shared_ptr<std::istream> _istream;
 
     reference_segment_data _segment_params;
-    reg_access_hca_resource_dump_ext _reg_access_layout{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, {0}};
+    std::unique_ptr<ResourceDumpRegister> _reg_handler;
 
 private:
+    // Selects and constructs the concrete register handler based on the device type. Called from
+    // the constructor; holds all device-specific selection logic.
+    // ********************* ATTENTION *********************
+    // * Additional development of discriminatiopn by device type is discouraged. We thrive to have a single resource
+    // dump register for all types of devices.
+    // ************************************************************************************************************************
+    void init_by_device();
+
     void retrieve_from_reg_access();
+
+    reg_access_status_t safe_send();
 
     void validate_reply();
 
@@ -95,6 +108,9 @@ private:
     std::ios::iostate _orig_os_exceptions;
     std::ios::iostate _orig_is_exceptions;
     uint32_t _depth;
+
+    static bool _first_send_attempted;
+    static bool _mord_v2_selected;
 
 protected:
     uint8_t _current_seq_num{0};
