@@ -30,4 +30,6 @@
 
 
 # importing the commands registers them at the factory
+from commands import CountersCommand  # noqa
 from commands import EventsCommand  # noqa
+from commands import LinkCommand  # noqa

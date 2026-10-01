@@ -37,12 +37,10 @@ if sys.version_info[0] < 3:
     print("Error: This tool supports python 3.x only. Exiting...")
     exit(1)
 
-# the commands drive resourcetools, nvltssm and mstdump at the python level,
+# the commands drive resourcetools and mstdump at the python level,
 # from their sibling directories
 mft_py_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(os.path.join(mft_py_dir, "resourcetools"))
-sys.path.append(os.path.join(mft_py_dir, "nvltssm"))
-sys.path.append(os.path.join(mft_py_dir, "mstltssm"))
 sys.path.append(os.path.join(mft_py_dir, "mstdump"))
 
 from commands.CommandFactory import CommandFactory  # noqa
