@@ -80,7 +80,7 @@ KERNEL_VER=`uname -r | egrep -E -o '[[0-9]]+\.[[0-9]]+' | head -1`
 OFED_VER=`ofed_info -s | egrep -E -o '[[0-9]]+\.[[0-9]]+' | head -1`
 MIN_OFED_VER="5.6"
 MIN_RDMA_CORE_VER="2607"
-RDMA_CORE_VER=`{ rpm -q rdma-core --queryformat '%{VERSION}\n' 2>/dev/null; dpkg-query -W -f='${Version}\n' rdma-core 2>/dev/null; } | egrep -E -o '^[[0-9]]+' | head -1`
+RDMA_CORE_VER=`{ rpm -q rdma-core --queryformat '%{VERSION}\n' 2>/dev/null; dpkg-query -W -f='${Version}\n' rdma-core 2>/dev/null; apk info -e -v rdma-core 2>/dev/null | sed -e 's/^rdma-core-//'; } | egrep -E -o '^[[0-9]]+' | head -1`
 MTCR_CONF_DIR=""
 LDL=""
 LDFLAGS="$LDFLAGS -lstdc++"
