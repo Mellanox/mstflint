@@ -53,6 +53,8 @@ namespace resource_dump
 {
 namespace fetchers
 {
+constexpr uint8_t DWORD_SIZE = 4;
+
 /*
  * Encapsulates a resource-dump register layout and the direct operations performed on it
  * (init / reset / send over reg-access / payload extraction). Concrete flavors select the
@@ -185,7 +187,7 @@ public:
 private:
     reg_access_switch_mord_v2_ext _layout{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, nullptr};
     std::vector<uint32_t> _inline_data;
-    uint32_t _inline_bytes{0};
+    uint32_t _inline_dwords{0};
 };
 
 } // namespace fetchers

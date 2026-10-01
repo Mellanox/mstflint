@@ -122,9 +122,8 @@ MordV2ResourceDumpRegister::MordV2ResourceDumpRegister(mfile_t* mf) : ResourceDu
         throw ResourceDumpException(ResourceDumpException::Reason::BUFFER_TOO_SMALL);
     }
 
-    // inline_data must be dword-aligned; clamp the available payload to a whole number of dwords.
-    _inline_bytes = (max_reg_size - header_size) & ~3u;
-    _inline_data.resize(_inline_bytes / 4, 0);
+    _inline_dwords = (max_reg_size - header_size) / DWORD_SIZE;
+    _inline_data.resize(_inline_dwords, 0);
 }
 
 void MordV2ResourceDumpRegister::init(const reference_segment_data& params,
@@ -142,7 +141,7 @@ void MordV2ResourceDumpRegister::init(const reference_segment_data& params,
       inline_dump ? (uint8_t)1 : (uint8_t)0, // inline_dump
       0,                                     // more_dump
       0,                                     // vhca_id
-      0,                                     // data_size
+      static_cast<uint16_t>(_inline_dwords), // data_size
       params.segment_params.index1,          // index1
       params.segment_params.index2,          // index2
       params.segment_params.num_of_obj2,     // num_of_obj2
@@ -151,7 +150,7 @@ void MordV2ResourceDumpRegister::init(const reference_segment_data& params,
       mkey,                                  // mkey
       size,                                  // size
       address,                               // address
-      nullptr                                // inline_data
+      _inline_data.data()                    // inline_data
     };
 
     if (vhca != DEFAULT_VHCA)
@@ -175,22 +174,22 @@ void MordV2ResourceDumpRegister::reset(const reference_segment_data& params,
     _layout.mkey = mkey;
     _layout.size = size;
     _layout.address = address;
-    _layout.data_size = 0;
+    _layout.data_size = static_cast<uint16_t>(_inline_dwords);
     _layout.inline_data = _inline_data.data();
 }
 
 reg_access_status_t MordV2ResourceDumpRegister::send(mfile_t* mf)
 {
-    return reg_access_mord_v2(mf, REG_ACCESS_METHOD_GET, &_layout, static_cast<int>(_inline_bytes));
+    return reg_access_mord_v2(mf, REG_ACCESS_METHOD_GET, &_layout, static_cast<int>(_inline_dwords * DWORD_SIZE));
 }
 
 void MordV2ResourceDumpRegister::write_payload(std::ostream& os) const
 {
-    if (_layout.data_size > _inline_bytes)
+    if (_layout.size > _inline_dwords * DWORD_SIZE)
     {
         throw ResourceDumpException(ResourceDumpException::Reason::REGISTER_DATA_SIZE_TOO_LONG);
     }
-    os.write(reinterpret_cast<const char*>(_inline_data.data()), _layout.data_size);
+    os.write(reinterpret_cast<const char*>(_inline_data.data()), _layout.size);
 }
 
 } // namespace fetchers
