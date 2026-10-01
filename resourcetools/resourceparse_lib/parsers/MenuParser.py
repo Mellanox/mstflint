@@ -38,13 +38,20 @@
 
 from resourceparse_lib.utils import constants as cs
 from resourceparse_lib.parsers.ResourceParser import ResourceParser, PARSER_CLASSES
+from resourceparse_lib.formatters.AdbBasicFormatter import AdbBasicFormatter
 
 
 class MenuParser(ResourceParser):
     PARSER_TYPE = "menu"
 
-    def __init__(self, parser_args):
-        pass
+    @classmethod
+    def get_supported_formatters(cls):
+        # this parse method emits its own text, so only the basic formatter
+        # (which yields that same output) is compatible for now
+        return [AdbBasicFormatter.FORMATTER_TYPE]
+
+    def __init__(self, parser_args, formatter):
+        self._formatter = formatter
 
     def parse_segment(self, segment):
         if segment.get_type() == cs.RESOURCE_DUMP_SEGMENT_TYPE_MENU:

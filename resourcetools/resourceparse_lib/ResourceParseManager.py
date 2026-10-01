@@ -54,25 +54,27 @@ class ResourceParseManager:
     and adb segments by organize the given inputs and print them after the parsing
     posses.
     """
-    def __init__(self, manager_args, parser_args, segments):
+    def __init__(self, manager_args, parser_args, formatter_args, segments):
         """This method initialize the class members
         """
         self._verbosity = manager_args.verbose
         self._out_file = manager_args.out
         self._out_dir = manager_args.out_dir
-        self._printer = DataPrinter(self._verbosity, self._out_file, self._out_dir)
+        self._formatter = manager_args.formatter(formatter_args)
+        self._printer = DataPrinter(self._verbosity, self._out_file, self._out_dir, self._formatter)
         self._warning_counter = 0
         self._error_counter = 0
         self._notice_counter = 0
 
         try:
-            self._dumped_segment_db = segments if segments else self._retrieve_dumped_segment_db(manager_args.dump_file, manager_args.resource_parser)
+            self._dumped_segment_db = segments if segments else self._retrieve_dumped_segment_db(
+                manager_args.dump_file, manager_args.resource_parser, manager_args.input_byte_order)
         except ResourceParseException as rpe:
             raise ResourceParseException("{0}\nFail to generate segment db from raw data.".format(rpe))
 
         try:
             parser_args.manager = self
-            self._parser = manager_args.resource_parser(parser_args)
+            self._parser = manager_args.resource_parser(parser_args, self._formatter)
         except ResourceParseException as rpe:
             raise ResourceParseException("{0}\nFailed to parse with parser - {1}.".format(rpe, manager_args.resource_parser.PARSER_TYPE))
 
@@ -130,8 +132,8 @@ class ResourceParseManager:
     def get_num_dumped_segments(self):
         return len(self._dumped_segment_db)
 
-    def _retrieve_dumped_segment_db(self, dumped_file_path, parser_type):
+    def _retrieve_dumped_segment_db(self, dumped_file_path, parser_type, input_byte_order):
         """This method get the segment list generated from the dumped input file by calling
         the RawData class.
         """
-        return RawData(dumped_file_path).to_segments(parser_type is not RawParser)
+        return RawData(dumped_file_path, input_byte_order).to_segments(parser_type is not RawParser)

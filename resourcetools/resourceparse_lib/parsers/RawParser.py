@@ -37,6 +37,7 @@
 #######################################################
 
 from resourceparse_lib.parsers.ResourceParser import ResourceParser, PARSER_CLASSES
+from resourceparse_lib.formatters.AdbBasicFormatter import AdbBasicFormatter
 
 import struct
 
@@ -46,7 +47,14 @@ class RawParser(ResourceParser):
     NUM_OF_DW_IN_ROW = 4
     SEGMENT_SEPARATOR = "-" * 43
 
-    def __init__(self, parser_args):
+    @classmethod
+    def get_supported_formatters(cls):
+        # this parse method emits its own text, so only the basic formatter
+        # (which yields that same output) is compatible for now
+        return [AdbBasicFormatter.FORMATTER_TYPE]
+
+    def __init__(self, parser_args, formatter):
+        self._formatter = formatter
         self._num_segments = parser_args.manager.get_num_dumped_segments()
 
     def get_title(self):

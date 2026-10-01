@@ -53,6 +53,12 @@ class InfoSegment(Segment):
     INFO_SEGMENT_FMT_BE = "3sBII"
     INFO_SEGMENT_FMT_LE = "B3sII"
 
+    FW_MAJOR_SHIFT = 24
+    FW_MINOR_SHIFT = 16
+    FW_VERSION_PART_MASK = 0xff
+    FW_SUBMINOR_MASK = 0xffff
+    FW_VERSION_FORMAT = "{0:02d}.{1:02d}.{2:04d}"
+
     info_segment_struct = struct.Struct(INFO_SEGMENT_FMT_BE if sys.byteorder == 'big' else INFO_SEGMENT_FMT_LE)
 
     def __init__(self, data):
@@ -66,6 +72,20 @@ class InfoSegment(Segment):
             dump_version, hw_version, fw_version = self.unpack_info()
             return "{}.{}.{}".format(dump_version, hw_version, fw_version)
         return ""
+
+    def get_display_fw_version(self):
+        """This method return the firmware version of the device at the format
+        XX.XX.XXXX, or an empty string when the segment carries no info data.
+
+        get_version() joins the three numbers of the segment for the adb name
+        comparison; this is the firmware version alone, out of its own dword.
+        """
+        if len(self.raw_data) <= self.segment_header_struct.size:
+            return ""
+        _, _, fw_version = self.unpack_info()
+        return self.FW_VERSION_FORMAT.format((fw_version >> self.FW_MAJOR_SHIFT) & self.FW_VERSION_PART_MASK,
+                                             (fw_version >> self.FW_MINOR_SHIFT) & self.FW_VERSION_PART_MASK,
+                                             fw_version & self.FW_SUBMINOR_MASK)
 
     def unpack_info(self):
         fields = self.info_segment_struct.unpack_from(self.raw_data, self.segment_header_struct.size)

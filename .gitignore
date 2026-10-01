@@ -48,6 +48,7 @@ libtool
 /mstflint-sdk.spec
 /resourcetools/mstresourcedump
 /resourcetools/mstresourceparse
+/nvpcie/mstpcie
 /small_utils/mstcongestion
 /small_utils/mstfwctrl
 /small_utils/mstfwreset

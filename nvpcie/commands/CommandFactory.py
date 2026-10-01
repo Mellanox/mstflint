@@ -1,4 +1,4 @@
-# Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,4 +28,27 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from resourceparse_lib.parsers import AdbResourceParser, AddressValueParser, CompactMapParser, RawParser, MenuParser
+class CommandFactory:
+    """This class hold the nvpcie sub-commands by their CLI name.
+
+    Command modules register themselves at import time, so the tool entry point
+    builds its sub-parsers from the registry and never needs to know the
+    concrete command classes.
+    """
+
+    commands = {}
+
+    @classmethod
+    def register(cls, command_name, command_class):
+        cls.commands[command_name] = command_class
+
+    @classmethod
+    def get(cls, command_name):
+        command_class = cls.commands.get(command_name)
+        if not command_class:
+            raise Exception("Unknown command - {0}.".format(command_name))
+        return command_class
+
+    @classmethod
+    def create(cls, command_name, **kwargs):
+        return cls.get(command_name)(**kwargs)

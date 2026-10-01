@@ -28,42 +28,4 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-#######################################################
-#
-# constants.py
-# Python implementation of resource dump constants
-# This file will supply all the constants needed
-# for the resource parse tool
-# Original author: talve
-#
-#######################################################
-
-TOOL_NAME = "ResourceParse"
-
-RESOURCE_DUMP_SEGMENT_TYPE_INFO = 0xfffe
-RESOURCE_DUMP_SEGMENT_TYPE_MENU = 0xffff
-RESOURCE_DUMP_SEGMENT_TYPE_REFERENCE = 0xfffd
-RESOURCE_DUMP_SEGMENT_TYPE_NOTICE = 0xfff9
-RESOURCE_DUMP_SEGMENT_TYPE_ERROR = 0xfffc
-
-# segment start/end specify where the 'type' attr starts and ends in the raw_data of each segment.
-# should be 0-16 bits
-RAW_DATA_FILE_TYPE_BIN = 0
-RAW_DATA_FILE_TYPE_HUMAN_READABLE = 1
-RAW_DATA_FILE_TYPE_JSON = 2
-DWORD_SIZE = 4
-
-RESOURCE_SEGMENT_START_OFFSET_IN_DW = 4
-RESOURCE_SEGMENT_START_OFFSET_IN_BYTES = 4 * RESOURCE_SEGMENT_START_OFFSET_IN_DW
-PARSER_STRING_NOT_FOUND = -1
-
-DATA_PRINTER_SEPARATOR = 80 * "-"
-
-LABEL_NOT_AVAILABLE = "N/A"
-
-WARNING_SIZE_DOESNT_MATCH = " Segment size({0} DWs) doesn't match the adb segment size({1} DWs)"
-WARNING_FAILED_EVAL_CONDITION = ' Failed evaluating condition: {}, at field - "{}", exporting field by default'
-WARNING_WRONG_PAIR_SIZE = " Segment size for Address-Value parsing is odd"
-
-PARENT_PREFIX_LIST = ["#(parent)", "$(parent)"]
-SEGMENT_PREFIX = "$(segment)"
+from resourceparse_lib.formatters import AdbBasicFormatter, PcieEventFormatter, PcieEventJsonFormatter  # noqa
