@@ -51,6 +51,13 @@ static const char* const FIELD_PRIMARY_SECONDARY = "Primary/Secondary";
 static const char* const FIELD_TX_PRECODING_STATUS = "Tx Precoding Status";
 static const char* const FIELD_RX_PRECODING_STATUS = "Rx Precoding Status";
 
+// PCIe Operational Info section name (the PCIe counterpart of FIELD_OPERATIONAL_INFO)
+static const char* const FIELD_PCIE_OPERATIONAL_INFO = "PCIe Operational (Enabled) Info";
+static const char* const FIELD_DEPTH_PCIE_INDEX_NODE = "Depth, pcie index, node";
+static const char* const FIELD_LINK_SPEED_ACTIVE_ENABLED = "Link Speed Active (Enabled)";
+static const char* const FIELD_LINK_WIDTH_ACTIVE_ENABLED = "Link Width Active (Enabled)";
+static const char* const FIELD_CLOCK_MODE = "Clock Mode";
+
 // Port Info field names
 static const char* const FIELD_LABEL_PORT = "Label Port";
 static const char* const FIELD_LOCAL_PORT = "Local Port";
@@ -83,6 +90,17 @@ static const char* const FIELD_RX_AM_LOCK = "RX AM Lock Per Lane";
 static const char* const FIELD_RX_AM_LOCK_LATCHED = "RX AM Lock Latched Per Lane";
 static const char* const FIELD_LINK_DOWN_COUNTER = "Link Down Counter";
 static const char* const FIELD_LINK_ERROR_RECOVERY_COUNTER = "Link Error Recovery Counter";
+
+// The PCIe counterpart of FIELD_PHYSICAL_COUNTERS_AND_BER_INFO
+static const char* const FIELD_MANAGEMENT_PCIE_PERFORMANCE_COUNTERS_INFO = "Management PCIe Performance Counters Info";
+static const char* const FIELD_RX_ERRORS = "RX Errors";
+static const char* const FIELD_TX_ERRORS = "TX Errors";
+static const char* const FIELD_CRC_ERROR_DLLP = "CRC Error dllp";
+static const char* const FIELD_CRC_ERROR_TLP = "CRC Error tlp";
+static const char* const FIELD_FEC_CORRECTABLE_ERROR_COUNT = "FEC Correctable Error count";
+static const char* const FIELD_FEC_UNCORRECTABLE_ERROR_COUNT = "FEC Uncorrectable Error count";
+static const char* const FIELD_MRR = "MRR";
+static const char* const FIELD_MPR = "MPR";
 
 // CPO Info field names
 static const char* const FIELD_ELS_INDEX = "ELS Index";

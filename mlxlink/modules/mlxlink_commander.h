@@ -534,6 +534,8 @@ public:
     void checkIBDeviceCompatibility();
     void initPCIDomain();
     void updatePortInfo();
+    void initPortMapping();
+    void initForPort(const string& portStr, bool pcie);
     void updateSysFsPath();
     void checkRegCmd();
     bool isBackplane();
@@ -593,6 +595,7 @@ public:
     void cpoInfoPage();
     virtual void supportedInfoPage();
     virtual void troubInfoPage();
+    void preparePddrInfo();
     void showPddr();
     void getPtys();
     virtual void showBer();
@@ -616,6 +619,8 @@ public:
     void showExternalPhy();
     void showPcie();
     void showPcieLinks();
+    void showOperationalInfo();
+    void showCountersInfo();
     virtual void collectAMBER();
     void collectBER();
     void showTxGroupMapping();
@@ -777,7 +782,9 @@ public:
     void performModulePrecoding();
     void printOutput(const string& output);
     void printOutput(const MlxlinkCmdPrint& output);
-    void setSilentMode();
+    void setSilentMode(bool silent = true);
+    void setReportSink(std::ostream* sink);
+    std::ostream& getReportStream() const;
 
     MlxlinkCmdPrint _toolInfoCmd;
     MlxlinkCmdPrint _operatingInfoCmd;
@@ -976,6 +983,8 @@ public:
     string _fomStr;
     string _attenuationTitle;
     bool _silentMode;
+    std::ostream* _reportSink;
+    bool _portMappingResolved;
     bool _elsOperationTimedOut;
     u_int8_t _elsLaserMask;
 

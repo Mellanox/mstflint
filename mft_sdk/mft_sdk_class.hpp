@@ -39,6 +39,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 #include <mft_sdk/mft_sdk.h>
@@ -100,6 +101,8 @@ public:
     MstStatus getModuleInfo(MstModuleInfo* moduleInfo, const MstTelemetryContext& context = MstTelemetryContext{0, ""});
     MstStatus getTroubleShootingInfo(MstTroubleShootingInfo* troubleShootingInfo,
                                      const MstTelemetryContext& context = MstTelemetryContext{0, ""});
+    MstStatus getTelemetryJson(uint32_t views, const MstTelemetryContext& context, char** jsonOut);
+    MstStatus getTelemetryText(uint32_t views, const MstTelemetryContext& context, char** textOut);
 
     // HCA capabilities SDK functions
     MstStatus getCapabilityTypesList(std::vector<std::string>& capabilityTypes);
@@ -162,9 +165,13 @@ private:
     MstStatus setErrorFromMlxregSDKError(int32_t errorCode);
 
     // mlxlink SDK private functions
-    MstStatus initMlxLinkSdk(MlxLinkInitMode initMode = MlxLinkInitMode::NONE, const std::string& port = "");
-    void initMlxLinkSdkPortInfo();
+    MlxlinkCommander* getMlxlinkCommanderInstance();
+    MstStatus initMlxLinkSdk(MlxLinkInitMode initMode = MlxLinkInitMode::NONE,
+                             const std::string& port = "",
+                             MstTelemetryPortType portType = MST_TELEMETRY_PORT_TYPE_NETWORK);
     void initMlxLinkSdkUserInput(MlxLinkInitMode initMode);
+    MstStatus
+      runTelemetryViews(uint32_t views, const std::string& port, MstTelemetryPortType portType, Json::Value& root);
     MstStatus extractOperationalInfoFromJson(MstTelemetryOperationalInfo* operationalInfo);
     MstStatus extractCountersInfoFromJson(MstCountersInfo* countersInfo);
     MstStatus extractCableDDMInfoFrom(MstCableDDMInfo* cableDDMInfo);
@@ -174,9 +181,11 @@ private:
     Json::Value getOperationalInfoJsonSection();
     std::string getJsonStringValue(const Json::Value& jsonValue, const std::string& fieldName, bool isOptional = true);
     Json::Value getCountersInfoJsonSection();
-    Json::Value getCableDDMInfoJsonSection();
     Json::Value getModuleInfoJsonSection();
     Json::Value getTroubleShootingInfoJsonSection();
+    void appendGeneralSections(Json::Value& root);
+    void appendShowModuleSections(Json::Value& root);
+    MstStatus serializeJsonToBuffer(const Json::Value& root, char** jsonOut);
     void setVendorInfoFromJson(const Json::Value& moduleInfoJson, MstModuleInfo* moduleInfo);
     void setFwVersionFromJson(const Json::Value& moduleInfoJson, MstModuleInfo* moduleInfo);
     void setAttenuationInfoFromJson(const Json::Value& moduleInfoJson, MstModuleInfo* moduleInfo);
@@ -235,6 +244,8 @@ private:
                             uint32_t bitIndex,
                             bool isOptional = true);
     void extractOperationalInfoWidth(const Json::Value& jsonSection, MstTelemetryOperationalInfo* operationalInfo);
+    void extractOperationalInfoAutoNegotiation(const Json::Value& jsonSection,
+                                               MstTelemetryOperationalInfo* operationalInfo);
 
     // hca capabilities SDK private functions
     MstStatus initHcaCapabilities();
@@ -255,9 +266,10 @@ private:
     std::unique_ptr<MlxlinkCommander> _mstMlxLinkSdkInstance;
     std::unique_ptr<HcaCapabilities> _hcaCapabilitiesSdkInstance;
     std::vector<mfile*> _mfiles;
+
     std::map<MlxLinkInitMode, bool> mlxlinkSdkInitialized;
-    // Currently bound mlxlink port label (empty => device default). Guards redundant re-binds.
     std::string _currentMlxLinkPort;
-    // Tracks the per-port init flow (updatePortInfo()+showPddr()) already run for each (port, mode).
-    std::map<std::pair<std::string, MlxLinkInitMode>, bool> _portModeInitialized;
+    MstTelemetryPortType _currentMlxLinkPortType = MST_TELEMETRY_PORT_TYPE_NETWORK;
+    bool _mlxLinkPortBound = false;
+    std::map<std::tuple<std::string, MlxLinkInitMode, MstTelemetryPortType>, bool> _portModeInitialized;
 };

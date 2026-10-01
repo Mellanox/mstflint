@@ -33,6 +33,7 @@
  */
 
 #include "mlxlink_commander.h"
+#include "mlxlink_report_capture.h"
 #include "common/tools_time.h"
 #include "pci_library/PCILibrary.h"
 #include <sstream>
@@ -65,6 +66,37 @@ ModuleFieldValue::ModuleFieldValue(string uiName,
     descriptor(uiName, fieldName, false, perLane, false, supported, isAscii), valueMap(valueMap), values(0)
 {
     values.resize(LANES_NUM, 0);
+}
+
+void MlxlinkCommander::initPortMapping()
+{
+    updateLocalPortGroup();
+}
+
+void MlxlinkCommander::initForPort(const string& portStr, bool pcie)
+{
+    MlxlinkReportCapture discardSetupOutput(*this);
+
+    _userInput._pcie = pcie;
+    _userInput._portType = pcie ? "PCIE" : "NETWORK";
+
+    if (pcie)
+    {
+        _pcieMgmtSupported = checkPcieMgmtSupport();
+    }
+    else if (!_portMappingResolved)
+    {
+        initPortMapping();
+        _portMappingResolved = true;
+    }
+
+    handlePortStr(portStr);
+    updatePortInfo();
+
+    if (!pcie)
+    {
+        preparePddrInfo();
+    }
 }
 
 void MlxlinkCommander::updateSysFsPath()
@@ -290,6 +322,8 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _attenuationTitle = "";
     _rxRecoveryCountersCmd.setLineLen(RX_RECOVERY_COUNTERS_LINE_LEN);
     _silentMode = false;
+    _reportSink = NULL;
+    _portMappingResolved = false;
     _elsOperationTimedOut = false;
     _elsLaserMask = ELS_NO_LASER_MASK;
     _allPortsCurrentLabelStr = "";
@@ -343,7 +377,7 @@ void MlxlinkCommander::printOutput(const string& output)
 {
     if (!_silentMode)
     {
-        std::cout << output;
+        getReportStream() << output;
     }
 }
 
@@ -351,13 +385,23 @@ void MlxlinkCommander::printOutput(const MlxlinkCmdPrint& output)
 {
     if (!_silentMode)
     {
-        std::cout << output;
+        getReportStream() << output;
     }
 }
 
-void MlxlinkCommander::setSilentMode()
+void MlxlinkCommander::setSilentMode(bool silent)
 {
-    _silentMode = true;
+    _silentMode = silent;
+}
+
+void MlxlinkCommander::setReportSink(std::ostream* sink)
+{
+    _reportSink = sink;
+}
+
+std::ostream& MlxlinkCommander::getReportStream() const
+{
+    return _reportSink ? *_reportSink : *MlxlinkRecord::cOut;
 }
 
 bool MlxlinkCommander::errorObserved()
@@ -3404,16 +3448,21 @@ void MlxlinkCommander::troubInfoPage()
     }
 }
 
+void MlxlinkCommander::preparePddrInfo()
+{
+    operatingInfoPage();
+    portInfoSection();
+    cpoInfoPage();
+    supportedInfoPage();
+    troubInfoPage();
+    runningVersion();
+}
+
 void MlxlinkCommander::showPddr()
 {
     try
     {
-        operatingInfoPage();
-        portInfoSection();
-        cpoInfoPage();
-        supportedInfoPage();
-        troubInfoPage();
-        runningVersion();
+        preparePddrInfo();
         if (_prbsTestMode && !_userInput._showMultiPortInfo && !_userInput._showMultiPortModuleInfo && !_userInput._showMultiPortCpoInfo)
         {
             showTestMode();
@@ -3957,23 +4006,25 @@ void MlxlinkCommander::showMpcntPerformance(DPN& dpn)
     {
         sendPrmReg(ACCESS_REG_MPCNT, REG_GET, "depth=%d,pcie_index=%d,node=%d,grp=%d", dpn.depth, dpn.pcieIndex, dpn.node, MPCNT_PERFORMANCE_GROUP);
 
-        setPrintTitle(_mpcntPerfInfCmd, "Management PCIe Performance Counters Info", recordsNum);
-        setPrintVal(_mpcntPerfInfCmd, "RX Errors", getFieldStr("rx_errors"));
-        setPrintVal(_mpcntPerfInfCmd, "TX Errors", getFieldStr("tx_errors"));
-        setPrintVal(_mpcntPerfInfCmd, "CRC Error dllp", getFieldStr("crc_error_dllp"));
-        setPrintVal(_mpcntPerfInfCmd, "CRC Error tlp", getFieldStr("crc_error_tlp"));
+        setPrintTitle(_mpcntPerfInfCmd, FIELD_MANAGEMENT_PCIE_PERFORMANCE_COUNTERS_INFO, recordsNum);
+        setPrintVal(_mpcntPerfInfCmd, FIELD_RX_ERRORS, getFieldStr("rx_errors"));
+        setPrintVal(_mpcntPerfInfCmd, FIELD_TX_ERRORS, getFieldStr("tx_errors"));
+        setPrintVal(_mpcntPerfInfCmd, FIELD_CRC_ERROR_DLLP, getFieldStr("crc_error_dllp"));
+        setPrintVal(_mpcntPerfInfCmd, FIELD_CRC_ERROR_TLP, getFieldStr("crc_error_tlp"));
 
         if (flitActive)
         {
-            setPrintVal(_mpcntPerfInfCmd, "FEC Correctable Error count", getFieldStr("fec_correctable_error_counter"));
-            setPrintVal(_mpcntPerfInfCmd, "FEC Uncorrectable Error count", getFieldStr("fec_uncorrectable_error_counter"));
+            setPrintVal(_mpcntPerfInfCmd, FIELD_FEC_CORRECTABLE_ERROR_COUNT,
+                        getFieldStr("fec_correctable_error_counter"));
+            setPrintVal(_mpcntPerfInfCmd, FIELD_FEC_UNCORRECTABLE_ERROR_COUNT,
+                        getFieldStr("fec_uncorrectable_error_counter"));
         }
 
         getPcieNdrCounters(flitActive);
         if (_userInput._extendedPcie)
         {
-            setPrintVal(_mpcntPerfInfCmd, "MRR", mrrStr);
-            setPrintVal(_mpcntPerfInfCmd, "MPR", mprStr);
+            setPrintVal(_mpcntPerfInfCmd, FIELD_MRR, mrrStr);
+            setPrintVal(_mpcntPerfInfCmd, FIELD_MPR, mprStr);
         }
     }
     catch (const std::exception& exc)
@@ -5344,6 +5395,33 @@ void MlxlinkCommander::showPcie()
     }
 }
 
+void MlxlinkCommander::showOperationalInfo()
+{
+    if (_userInput._pcie)
+    {
+        _operatingInfoCmd.clear();
+        showPcie();
+    }
+    else
+    {
+        operatingInfoPage();
+        printOutput(_operatingInfoCmd);
+    }
+}
+
+void MlxlinkCommander::showCountersInfo()
+{
+    if (_userInput._pcie)
+    {
+        _berInfoCmd.clear();
+    }
+    else
+    {
+        _mpcntPerfInfCmd.clear();
+    }
+    showBer();
+}
+
 void MlxlinkCommander::showPcieState(DPN& dpn)
 {
     MlxlinkCmdPrint pcieInfoCmd;
@@ -5354,20 +5432,20 @@ void MlxlinkCommander::showPcieState(DPN& dpn)
     _numOfLanesPcie = getFieldValue("link_width_active");
 
     // Include extra line for extended PCIe info if requested
-    setPrintTitle(pcieInfoCmd, "PCIe Operational (Enabled) Info",
+    setPrintTitle(pcieInfoCmd, FIELD_PCIE_OPERATIONAL_INFO,
                   _userInput._extendedPcie ? (PCIE_INFO_LAST + EXTENDED_PCIE_INFO_LAST) : PCIE_INFO_LAST);
 
     char dpnStr[15];
     sprintf(dpnStr, "%d, %d, %d", dpn.depth, dpn.pcieIndex, dpn.node);
-    setPrintVal(pcieInfoCmd, "Depth, pcie index, node", dpnStr);
-    setPrintVal(pcieInfoCmd, "Link Speed Active (Enabled)",
+    setPrintVal(pcieInfoCmd, FIELD_DEPTH_PCIE_INDEX_NODE, dpnStr);
+    setPrintVal(pcieInfoCmd, FIELD_LINK_SPEED_ACTIVE_ENABLED,
                 pcieSpeedStr(getFieldValue("link_speed_active")) + linkSpeedEnabled);
-    setPrintVal(pcieInfoCmd, "Link Width Active (Enabled)", to_string(_numOfLanesPcie) + "X" + linkWidthEnabled);
+    setPrintVal(pcieInfoCmd, FIELD_LINK_WIDTH_ACTIVE_ENABLED, to_string(_numOfLanesPcie) + "X" + linkWidthEnabled);
     if (_userInput._extendedPcie)
     {
         u_int32_t cmnClkMode = getFieldValue("cmn_clk_mode");
         string clkModeStr = (cmnClkMode == 1) ? "Common" : "Separate";
-        setPrintVal(pcieInfoCmd, "Clock Mode", clkModeStr);
+        setPrintVal(pcieInfoCmd, FIELD_CLOCK_MODE, clkModeStr);
     }
 
     pcieInfoCmd.toJsonFormat(_jsonRoot);

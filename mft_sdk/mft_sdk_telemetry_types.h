@@ -44,8 +44,20 @@
 #define MAX_NUM_OF_LANES 16
 #define MAX_NUM_OF_BINS 32
 #define MAX_NUM_OF_CHANNELS 8
-
 #define MST_TELEMETRY_PORT_MAX_LENGTH 32
+
+/**
+ * @brief The kind of port a telemetry request addresses.
+ *
+ * A network port is named by MstTelemetryContext_t::label_port. A PCIe port is
+ * not: the firmware identifies a PCIe link by a depth/pcie_index/node triple,
+ * which the SDK lets mlxlink resolve to the links the device actually reports.
+ */
+typedef enum MstTelemetryPortType
+{
+    MST_TELEMETRY_PORT_TYPE_NETWORK = 0, /**< Network port, selected by label_port. */
+    MST_TELEMETRY_PORT_TYPE_PCIE = 1     /**< PCIe port; label_port is not used. */
+} MstTelemetryPortType;
 
 /**
  * @brief Telemetry context options, passed by pointer to the SDK.
@@ -58,6 +70,12 @@
  * struct and stamps @ref size); an empty @ref label_port selects the device
  * default port. Pass NULL to a telemetry function to use the device defaults.
  *
+ * @ref port_type selects between a network port and a PCIe one; it defaults to
+ * MST_TELEMETRY_PORT_TYPE_NETWORK, which is what a caller compiled against an
+ * older struct is taken to mean. Only MST_TELEMETRY_VIEW_OPERATIONAL and
+ * MST_TELEMETRY_VIEW_COUNTERS have a PCIe meaning - every other view returns
+ * MST_ERROR_NOT_SUPPORTED under MST_TELEMETRY_PORT_TYPE_PCIE.
+ *
  * @code
  *   MstTelemetryContext context;
  *   MST_TELEMETRY_CONTEXT_INIT(&context);
@@ -69,6 +87,7 @@ typedef struct MstTelemetryContext_t
 {
     unsigned int size; /**< Must be first; set to sizeof(MstTelemetryContext) before use. */
     char label_port[MST_TELEMETRY_PORT_MAX_LENGTH]; /**< Port label (e.g. "1/1/1"); empty string => device default. */
+    unsigned int port_type; /**< An MstTelemetryPortType; 0 (network) when the caller predates this field. */
 } MstTelemetryContext;
 
 /**
