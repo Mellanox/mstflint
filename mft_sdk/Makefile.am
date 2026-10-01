@@ -152,6 +152,13 @@ sdkinclude_HEADERS = \
     mft_sdk_telemetry_types.h \
     mft_sdk_types.h
 
+# The ctypes bindings live with the rest of the SDK rather than under
+# python_tools, which holds tool entry points. common/python_wrapper.sh puts the
+# parent directory on PYTHONPATH, so `import mft_sdk` resolves with no sys.path
+# manipulation by the importing tool.
+sdkpythonlibdir = $(sdklibdir)/mft_sdk_py/mft_sdk
+dist_sdkpythonlib_DATA = $(srcdir)/mft_sdk_py/src/mft_sdk/*.py
+
 # pkg-config metadata so consumers can build against the SDK with
 # `pkg-config --cflags --libs mstflint_sdk`. Installed to the conventional
 # $(libdir)/pkgconfig, generated from mstflint_sdk.pc.in by configure.

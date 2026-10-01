@@ -52,6 +52,14 @@ void MlxlinkCmdPrint::initRecords(int size)
     mlxlinkRecords.insert(mlxlinkRecords.begin(), size, MlxlinkRecord());
 }
 
+void MlxlinkCmdPrint::clear()
+{
+    title = "";
+    mlxlinkRecords.clear();
+    visible = false;
+    lastInsertedRow = 0;
+}
+
 u_int32_t MlxlinkCmdPrint::getCurrRow()
 {
     if (!lastInsertedRow)

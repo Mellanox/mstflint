@@ -75,6 +75,8 @@ libmodules_lib_la_SOURCES = \
     mlxlink_port_info.h \
     mlxlink_reg_parser.cpp \
     mlxlink_reg_parser.h \
+    mlxlink_report_capture.cpp \
+    mlxlink_report_capture.h \
     mlxlink_ui.cpp \
     mlxlink_ui.h \
     mlxlink_user_input.cpp \

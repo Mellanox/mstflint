@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -32,30 +32,25 @@
  *
  */
 
-#ifndef MLXLINK_CMD_PRINT_H
-#define MLXLINK_CMD_PRINT_H
+#include "mlxlink_report_capture.h"
 
-#include <vector>
-#include "mlxlink_record.h"
-#include <json/json.h>
+#include "mlxlink_commander.h"
 
-class MlxlinkCmdPrint
+MlxlinkReportCapture::MlxlinkReportCapture(MlxlinkCommander& commander) :
+    _commander(commander), _previousSink(commander._reportSink), _previousSilent(commander._silentMode)
 {
-public:
-    MlxlinkCmdPrint();
-    virtual ~MlxlinkCmdPrint();
-    friend std::ostream& operator<<(std::ostream& out, const MlxlinkCmdPrint& cmdPrint);
-    void initRecords(int size);
-    void clear();
-    void toJsonFormat(Json::Value& jsonRoot);
-    u_int32_t getCurrRow();
-    void setLineLen(int lineLen);
+    _commander.setSilentMode(true);
+}
 
-    std::string title;
-    std::vector<MlxlinkRecord> mlxlinkRecords;
-    bool visible;
-    u_int32_t lastInsertedRow;
-    int lineLen;
-};
+MlxlinkReportCapture::MlxlinkReportCapture(MlxlinkCommander& commander, std::ostream& sink) :
+    _commander(commander), _previousSink(commander._reportSink), _previousSilent(commander._silentMode)
+{
+    _commander.setReportSink(&sink);
+    _commander.setSilentMode(false);
+}
 
-#endif /* MLXLINK_CMD_PRINT_H */
+MlxlinkReportCapture::~MlxlinkReportCapture()
+{
+    _commander.setSilentMode(_previousSilent);
+    _commander.setReportSink(_previousSink);
+}

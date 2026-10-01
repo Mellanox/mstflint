@@ -60,6 +60,7 @@ extern "C"
         MTUSB,
         NDC,
         I2C,
+        Redfish,
         UnknownInterfaceType
     } MstInterfaceType;
 
@@ -86,6 +87,7 @@ extern "C"
         NIC,
         Switch,
         GPU,
+        CPU,
         Retimer,
         UnknownProductType
     } MstProductType;
@@ -106,6 +108,7 @@ extern "C"
         ConnectX8_Pure_PCIe_Switch,
         ConnectX9,
         ConnectX9_Pure_PCIe_Switch,
+        ConnectX10,
         BlueField,
         BlueField2,
         BlueField3,
@@ -116,11 +119,19 @@ extern "C"
         Spectrum4,
         Spectrum5,
         Spectrum6,
+
+        Spectrum7,
         Quantum2,
         Quantum3,
         NVLink6_Switch,
+        NVLink7_Switch,
         GB100,
         GR100,
+        GR150,
+        GR150A01P,
+        NR10,
+        FN100,
+        NVLink8_Switch,
         UnknownDeviceType
     } MstDeviceType;
 

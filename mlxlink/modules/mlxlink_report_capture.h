@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -32,30 +32,31 @@
  *
  */
 
-#ifndef MLXLINK_CMD_PRINT_H
-#define MLXLINK_CMD_PRINT_H
+#ifndef MLXLINK_REPORT_CAPTURE_H
+#define MLXLINK_REPORT_CAPTURE_H
 
-#include <vector>
-#include "mlxlink_record.h"
-#include <json/json.h>
+#include <ostream>
 
-class MlxlinkCmdPrint
+class MlxlinkCommander;
+
+/* Redirects a commander's report output for the duration of a scope and restores it on every
+ * exit path. Constructed with a sink the commander prints into it; constructed without one the
+ * report is discarded.
+ */
+class MlxlinkReportCapture
 {
 public:
-    MlxlinkCmdPrint();
-    virtual ~MlxlinkCmdPrint();
-    friend std::ostream& operator<<(std::ostream& out, const MlxlinkCmdPrint& cmdPrint);
-    void initRecords(int size);
-    void clear();
-    void toJsonFormat(Json::Value& jsonRoot);
-    u_int32_t getCurrRow();
-    void setLineLen(int lineLen);
+    explicit MlxlinkReportCapture(MlxlinkCommander& commander);
+    MlxlinkReportCapture(MlxlinkCommander& commander, std::ostream& sink);
+    ~MlxlinkReportCapture();
 
-    std::string title;
-    std::vector<MlxlinkRecord> mlxlinkRecords;
-    bool visible;
-    u_int32_t lastInsertedRow;
-    int lineLen;
+    MlxlinkReportCapture(const MlxlinkReportCapture&) = delete;
+    MlxlinkReportCapture& operator=(const MlxlinkReportCapture&) = delete;
+
+private:
+    MlxlinkCommander& _commander;
+    std::ostream* _previousSink;
+    bool _previousSilent;
 };
 
-#endif /* MLXLINK_CMD_PRINT_H */
+#endif /* MLXLINK_REPORT_CAPTURE_H */

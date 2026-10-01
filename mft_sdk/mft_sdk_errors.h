@@ -79,6 +79,7 @@ extern "C"
         MST_ERROR_INSUFFICIENT_BUFFER = 20,            /**< The buffer is too small; the call reports
                                                             the size it needs. */
         MST_ERROR_FAILED_TO_DUMP_RESOURCE = 21,        /**< A resource dump failed. */
+        MST_ERROR_FAILED_TO_COLLECT_AMBER = 22,        /**< An amBER collection failed. */
     } MstStatus;
 
     /**
