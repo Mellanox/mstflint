@@ -201,6 +201,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/mstresourcedump
 %{_bindir}/mstresourceparse
 %{_bindir}/mstpcie
+%{_bindir}/mstparsebin
 %{_bindir}/mstdevices_info
 %{_bindir}/mstflintlogger
 %if %{enableremote}
