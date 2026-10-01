@@ -130,6 +130,7 @@
 /* RESOURCE DUMP FEATURE */
 #define REG_ID_RES_DUMP 0xC000
 #define REG_ID_MORD     0x9153
+#define REG_ID_MORD_V2  0x915b
 /*================================== */
 #define REG_ID_MPEGC                0x9056
 #define REG_ID_NIC_CAP_EXT          0xC011
@@ -421,6 +422,14 @@ reg_access_status_t reg_access_mord(mfile                                  * mf,
                                     struct reg_access_hca_resource_dump_ext* resource_dump)
 {
     REG_ACCCESS(mf, method, REG_ID_MORD, resource_dump, resource_dump_ext, reg_access_hca);
+}
+
+reg_access_status_t reg_access_mord_v2(mfile                                * mf,
+                                       reg_access_method_t                    method,
+                                       struct reg_access_switch_mord_v2_ext * mord,
+                                       int                                    data_array_size)
+{
+    REG_ACCCESS_VAR_DYNAMIC_ARR(mf, method, REG_ID_MORD_V2, mord, mord_v2_ext, reg_access_switch, data_array_size);
 }
 /*================================================================================================================================= */
 
