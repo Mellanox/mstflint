@@ -74,6 +74,14 @@
       "is_dynamic_device_without_irisc_id": true,
       "support_nvrisc": true
     },
+    "ltssm_info": {
+      "ltssm_pcore_node": "pcore_top_pcore_pxdp_xpl_top",
+      "ltssm_link_node": "xpl_nv_xpl",
+      "ltssm_link_status_node": "link0_cr_link_status",
+      "ltssm_state_node": "link0_pl_ltssm_state",
+      "ltssm_ring_node": "link0_dl_ltssm_dfd_logger_line",
+      "ltssm_logger_ctrl_node": "link0_dl_ltssm_dfd_logger_ctrl2"
+    },
     "devmon_info": {
       "market_name": "4131",
       "project_name": "gilboa",

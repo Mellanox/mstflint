@@ -171,6 +171,7 @@ rm -rf $RPM_BUILD_ROOT
 make DESTDIR=${RPM_BUILD_ROOT} install
 # remove unpackaged files from the buildroot
 rm -f $RPM_BUILD_ROOT%{_libdir}/*.la
+rm -f $RPM_BUILD_ROOT%{mstflint_python_tools}/mstltssm/*.la
 
 # create softlinks to old mtcr header and lib locations
 # link mtcr_ul to old location
@@ -202,6 +203,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/mstresourceparse
 %{_bindir}/mstpcie
 %{_bindir}/mstparsebin
+%{_bindir}/mstltssm
 %{_bindir}/mstdevices_info
 %{_bindir}/mstflintlogger
 %if %{enableremote}
@@ -296,6 +298,12 @@ rm -rf $RPM_BUILD_ROOT
 %{mstflint_python_tools}/mstpcie/__init__.py
 %{mstflint_python_tools}/mstpcie/commands/*.py
 %{mstflint_python_tools}/mstpcie/data/*.adb
+%{mstflint_python_tools}/mstltssm/mstltssm.py
+%{mstflint_python_tools}/mstltssm/cltssm_trace.so
+%{mstflint_python_tools}/mstltssm/nvltssm_lib/*.py
+%{mstflint_python_tools}/mstltssm/nvltssm_lib/cnvltssm/*.py
+%{mstflint_python_tools}/mstltssm/nvltssm_lib/formatters/*.py
+%{mstflint_python_tools}/mstdump/mstdump.py
 
 %if %{enableadbgenerictools}
  %{mstflint_python_tools}/mstgenerate_pgcb_commands.py

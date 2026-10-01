@@ -115,6 +115,14 @@ PROP_SUPPORT_PHY_UC = "supportPhyUc"
 PROP_IS_DYNAMIC_DEVICE_WITHOUT_IRISC_ID = "is_dynamic_device_without_irisc_id"
 PROP_SUPPORT_NVRISC = "support_nvrisc"
 
+# LTSSM ring logger node names, as the device's reduced ADB spells them
+PROP_LTSSM_PCORE_NODE = "ltssm_pcore_node"
+PROP_LTSSM_LINK_NODE = "ltssm_link_node"
+PROP_LTSSM_LINK_STATUS_NODE = "ltssm_link_status_node"
+PROP_LTSSM_STATE_NODE = "ltssm_state_node"
+PROP_LTSSM_RING_NODE = "ltssm_ring_node"
+PROP_LTSSM_LOGGER_CTRL_NODE = "ltssm_logger_ctrl_node"
+
 # Devmon properties
 PROP_MARKET_NAME = "market_name"
 PROP_PROJECT_NAME = "project_name"

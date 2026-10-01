@@ -41,7 +41,6 @@ if sys.version_info[0] < 3:
 # from their sibling directories
 mft_py_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(os.path.join(mft_py_dir, "resourcetools"))
-sys.path.append(os.path.join(mft_py_dir, "nvltssm"))
 sys.path.append(os.path.join(mft_py_dir, "mstltssm"))
 sys.path.append(os.path.join(mft_py_dir, "mstdump"))
 

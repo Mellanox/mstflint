@@ -28,9 +28,5 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-
-# importing the commands registers them at the factory
-from commands import CountersCommand  # noqa
-from commands import EventsCommand  # noqa
-from commands import LinkCommand  # noqa
-from commands import LtssmTraceCommand  # noqa
+class LtssmTraceException(Exception):
+    pass
