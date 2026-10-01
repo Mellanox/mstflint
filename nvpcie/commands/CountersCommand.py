@@ -28,8 +28,29 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+from commands.MlxLinkCommand import MlxLinkCommand
+from commands.CommandFactory import CommandFactory
 
-# importing the commands registers them at the factory
-from commands import CountersCommand  # noqa
-from commands import EventsCommand  # noqa
-from commands import LinkCommand  # noqa
+
+class CountersCommand(MlxLinkCommand):
+    """Reports the performance counters of the PCIe link of the device.
+
+    The report is the "Management PCIe Performance Counters Info" section mlxlink
+    reads out of MPCNT - the error and retransmission counts the link accumulated
+    since they were last cleared.
+
+    Clearing them is not offered: which counters may be cleared, and by whom, is
+    still open with Architecture and firmware.
+    """
+
+    COMMAND_NAME = "counters"
+    DESCRIPTION = "show the performance counters of the PCIe link"
+
+    @classmethod
+    def _telemetry_view(cls):
+        from mft_sdk import TelemetryView
+
+        return TelemetryView.COUNTERS
+
+
+CommandFactory.register(CountersCommand.COMMAND_NAME, CountersCommand)
