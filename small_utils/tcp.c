@@ -485,6 +485,7 @@ INSIDE_MTCR int open_serv_connection(const int port)
     {
         int err = SOCK_ERRNO();
         MTCR_LOG_ERROR("socket() failed for the server on port %d: %d (%s)", port, err, strerror(err));
+        errno = err;
         return -1;
     }
 
@@ -495,12 +496,12 @@ INSIDE_MTCR int open_serv_connection(const int port)
     serv_addr.sin_port = (short)(htons((short)port));
     if (bind(SockFD, (const struct sockaddr*)&serv_addr, (socklen_t)sizeof(serv_addr)) < 0)
     {
-#ifdef __WIN__
-        errno = WSAGetLastError();
-#endif
         int err = SOCK_ERRNO();
         MTCR_LOG_ERROR("bind() failed on port %d: %d (%s)", port, err, strerror(err));
         COMP_CLOSE(SockFD);
+        /* The caller (mtserver) distinguishes "address already in use" by errno, and both the log call and the
+         * socket close above can overwrite it, so hand back the error the socket call actually reported. */
+        errno = err;
         return -1;
     }
 
@@ -510,6 +511,7 @@ INSIDE_MTCR int open_serv_connection(const int port)
         int err = SOCK_ERRNO();
         MTCR_LOG_ERROR("listen() failed on port %d: %d (%s)", port, err, strerror(err));
         COMP_CLOSE(SockFD);
+        errno = err;
         return -1;
     }
 
@@ -527,6 +529,7 @@ INSIDE_MTCR int open_serv_connection(const int port)
                 int err = SOCK_ERRNO();
                 MTCR_LOG_ERROR("accept() failed on port %d: %d (%s)", port, err, strerror(err));
                 COMP_CLOSE(SockFD);
+                errno = err;
                 return -1;
             }
         }
