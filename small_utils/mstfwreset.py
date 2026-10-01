@@ -2438,7 +2438,10 @@ def status_command(device, mfrl, is_any_sync_supported, sync_2_only_supported, d
     has_pending_nvconfig = len(nvconfig_params) > 0
     reset_info = determine_required_reset(has_pending_fw, has_pending_nvconfig, mfrl, is_any_sync_supported, sync_2_only_supported)
 
-    if reset_info['reset_type'] == FULL_POWER_CYCLE:
+    if not has_pending_fw and not has_pending_nvconfig:  # no pending changes
+        description_action = "No action required"
+        command_required = None
+    elif reset_info['reset_type'] == FULL_POWER_CYCLE:
         description_action = "Full power cycle is required"
         command_required = None  # we can't say how to perform power cycle as it's system dependent
     elif pci_rescan_required:
@@ -2469,8 +2472,9 @@ def status_command(device, mfrl, is_any_sync_supported, sync_2_only_supported, d
             # determine_required_reset() already described the action as a full power cycle.
             command_required = None
     else:
-        description_action = "No action required"
-        command_required = None
+        # there was FW/config change, yet no recommended reset was provided - this should never happen
+        logger.debug("has_pending_fw: %s, has_pending_nvconfig: %s, reset_info: %s" % (has_pending_fw, has_pending_nvconfig, reset_info))
+        raise RuntimeError("No recommended reset found")
 
     if json_output:
         result = {
