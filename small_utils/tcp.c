@@ -48,6 +48,9 @@ typedef enum proto_type
 } proto_type_t;
 #endif
 
+#include "mtcr_int_defs.h"
+#include "nvtoolslogger/nvtoolslogger_c.h"
+
 #include <errno.h>
 #include <fcntl.h>
 #include <memory.h>
@@ -56,6 +59,13 @@ typedef enum proto_type
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+/* Winsock reports through WSAGetLastError(), not errno. */
+#ifdef __WIN__
+#define SOCK_ERRNO() WSAGetLastError()
+#else
+#define SOCK_ERRNO() errno
+#endif
 
 #define UDP_RECV_FLAGS 0
 
@@ -235,7 +245,11 @@ INSIDE_MTCR int tcp_reads(int fd, char* ptr, int maxlen)
                 break;
 
             default:
+            {
+                int err = SOCK_ERRNO();
+                MTCR_LOG_ERROR("Read from fd %d failed after %d bytes: %d (%s)", fd, n, err, strerror(err));
                 return -1; /*  error */
+            }
         }
     }
     *ptr = '\0';
@@ -331,6 +345,9 @@ INSIDE_MTCR int writen(int fd, void* vptr, int nbytes, proto_type_t proto)
 
         if (nwritten < 0)
         {
+            int err = SOCK_ERRNO();
+            MTCR_LOG_ERROR("Write to fd %d failed with %d of %d bytes left: %d (%s)", fd, nleft, nbytes, err,
+                           strerror(err));
             return -1;
         }
 
@@ -466,6 +483,8 @@ INSIDE_MTCR int open_serv_connection(const int port)
 
     if ((SockFD = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
+        int err = SOCK_ERRNO();
+        MTCR_LOG_ERROR("socket() failed for the server on port %d: %d (%s)", port, err, strerror(err));
         return -1;
     }
 
@@ -479,6 +498,8 @@ INSIDE_MTCR int open_serv_connection(const int port)
 #ifdef __WIN__
         errno = WSAGetLastError();
 #endif
+        int err = SOCK_ERRNO();
+        MTCR_LOG_ERROR("bind() failed on port %d: %d (%s)", port, err, strerror(err));
         COMP_CLOSE(SockFD);
         return -1;
     }
@@ -486,9 +507,13 @@ INSIDE_MTCR int open_serv_connection(const int port)
     /*  Get ready to accept connection */
     if (listen(SockFD, SOCKET_BACKLOG) < 0)
     {
+        int err = SOCK_ERRNO();
+        MTCR_LOG_ERROR("listen() failed on port %d: %d (%s)", port, err, strerror(err));
         COMP_CLOSE(SockFD);
         return -1;
     }
+
+    MTCR_LOG_INFO("Listening for remote connections on port %d", port);
 
     /*  Accept connection */
     EXEC_FOR()
@@ -499,6 +524,8 @@ INSIDE_MTCR int open_serv_connection(const int port)
         {
             if (errno != EINTR)
             {
+                int err = SOCK_ERRNO();
+                MTCR_LOG_ERROR("accept() failed on port %d: %d (%s)", port, err, strerror(err));
                 COMP_CLOSE(SockFD);
                 return -1;
             }
@@ -508,6 +535,7 @@ INSIDE_MTCR int open_serv_connection(const int port)
 
         if (childpid < 0)
         {
+            MTCR_LOG_ERROR("Failed to fork a handler for the connection on port %d: %s", port, strerror(errno));
             COMP_CLOSE(newsockfd);
             COMP_CLOSE(SockFD);
             return -1;
