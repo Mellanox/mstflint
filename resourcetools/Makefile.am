@@ -73,5 +73,7 @@ parseutilspythonlibdir=$(libdir)/mstflint/python_tools/resourcetools/resourcepar
 dist_parseutilspythonlib_DATA = $(srcdir)/resourceparse_lib/utils/*.py
 parsedatapythonlibdir=$(libdir)/mstflint/python_tools/resourcetools/resourceparse_lib/resource_data
 dist_parsedatapythonlib_DATA = $(srcdir)/resourceparse_lib/resource_data/*.py
+parseformatterspythonlibdir=$(libdir)/mstflint/python_tools/resourcetools/resourceparse_lib/formatters
+dist_parseformatterspythonlib_DATA = $(srcdir)/resourceparse_lib/formatters/*.py
 
 CLEANFILES = ${PYTHON_WRAPPER} ${PYTHON_WRAPPER2}

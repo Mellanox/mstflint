@@ -195,8 +195,8 @@ Dump Arguments:
         return arguments, resourceparse_argv
 
     def parse_resourceparse_args(self, resourceparse_argv):
-        parse_manager_args, resource_parser_args = ResourceParse.run_arg_parse(resourceparse_argv, self.tool_name)
-        return parse_manager_args, resource_parser_args
+        parse_manager_args, resource_parser_args, formatter_args = ResourceParse.run_arg_parse(resourceparse_argv, self.tool_name)
+        return parse_manager_args, resource_parser_args, formatter_args
 
 
 def create_command(arguments):
@@ -225,12 +225,12 @@ if __name__ == '__main__':
         sys.exit(1)
 
     try:
-        parse_manager_args, resource_parser_args = MlxResDump().parse_resourceparse_args(resourceparse_argv)
+        parse_manager_args, resource_parser_args, formatter_args = MlxResDump().parse_resourceparse_args(resourceparse_argv)
         parse_data = not (parse_manager_args.resource_parser is RawParser and dump_args.bin)
         if parse_data:
             print("{:#^100}".format(" Parse started "))
             segments = command.get_segments(parse_manager_args.resource_parser is not RawParser) if not dump_args.bin else None
-            parse_manager = ResourceParseManager(parse_manager_args, resource_parser_args, segments)
+            parse_manager = ResourceParseManager(parse_manager_args, resource_parser_args, formatter_args, segments)
             parse_manager.parse()
             print("{:#^100}".format(" Parse finished successfully "))
 

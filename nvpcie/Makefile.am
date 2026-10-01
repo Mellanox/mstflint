@@ -1,4 +1,4 @@
-# Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,4 +28,25 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from resourceparse_lib.parsers import AdbResourceParser, AddressValueParser, CompactMapParser, RawParser, MenuParser
+# Makefile.am -- Process this file with automake to produce Makefile.in
+
+USER_DIR = $(top_builddir)
+bin_SCRIPTS = mstpcie
+
+PYTHON_WRAPPER=mstpcie
+PYTHON_WRAPPER_SCRIPT=$(USER_DIR)/common/python_wrapper
+${PYTHON_WRAPPER}: $(PYTHON_WRAPPER_SCRIPT)
+	cp $(PYTHON_WRAPPER_SCRIPT) $@
+
+pythonlibdir=$(libdir)/mstflint/python_tools/mstpcie
+dist_pythonlib_SCRIPTS = mstpcie.py
+dist_pythonlib_DATA = $(srcdir)/__init__.py
+
+commandspythonlibdir=$(libdir)/mstflint/python_tools/mstpcie/commands
+dist_commandspythonlib_DATA = $(srcdir)/commands/*.py
+
+# the event layout the events command decodes the dumped segments against
+datapythonlibdir=$(libdir)/mstflint/python_tools/mstpcie/data
+dist_datapythonlib_DATA = $(srcdir)/data/*.adb
+
+CLEANFILES = ${PYTHON_WRAPPER}

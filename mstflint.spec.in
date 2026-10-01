@@ -207,6 +207,7 @@ fi
 %{_bindir}/mstfwtrace
 %{_bindir}/mstresourcedump
 %{_bindir}/mstresourceparse
+%{_bindir}/mstpcie
 %{_bindir}/mstdevices_info
 %{_bindir}/mstflintlogger
 %if %{enableremote}
@@ -296,6 +297,11 @@ fi
 %{mstflint_python_tools}/resourcetools/resourceparse_lib/parsers/*.py
 %{mstflint_python_tools}/resourcetools/resourceparse_lib/resource_data/*.py
 %{mstflint_python_tools}/resourcetools/resourceparse_lib/utils/*.py
+%{mstflint_python_tools}/resourcetools/resourceparse_lib/formatters/*.py
+%{mstflint_python_tools}/mstpcie/mstpcie.py
+%{mstflint_python_tools}/mstpcie/__init__.py
+%{mstflint_python_tools}/mstpcie/commands/*.py
+%{mstflint_python_tools}/mstpcie/data/*.adb
 
 %if %{enableadbgenerictools}
  %{mstflint_python_tools}/mstgenerate_pgcb_commands.py

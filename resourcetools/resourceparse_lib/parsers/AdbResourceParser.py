@@ -41,10 +41,14 @@ from resourceparse_lib.utils.common_functions import calculate_aligned_offset, i
 from resourceparse_lib.utils.Exceptions import ResourceParseException
 from resourceparse_lib.parsers.ResourceParser import ResourceParser, PARSER_CLASSES
 from resourceparse_lib.parsers.AdbParser import AdbParser
+from resourceparse_lib.formatters.AdbBasicFormatter import AdbBasicFormatter
+from resourceparse_lib.formatters.PcieEventFormatter import PcieEventFormatter
+from resourceparse_lib.formatters.PcieEventJsonFormatter import PcieEventJsonFormatter
 import os
 import re
 import math
-import struct
+from argparse import Namespace
+from xml.etree.ElementTree import ParseError
 
 
 class AdbResourceParser(ResourceParser):
@@ -57,10 +61,6 @@ class AdbResourceParser(ResourceParser):
         required_named = arg_parser.add_argument_group('required arguments')
         required_named.add_argument("-a", "--adb-file", type=valid_path_arg_type, required=True, help='Location of the ADB file')
 
-        optional_named = arg_parser.add_argument_group('optional arguments')
-        optional_named.add_argument("-r", "--raw", action="store_true", help='Prints the raw data in addition to the parsed data')
-        optional_named.add_argument("--hide-segment-header", action="store_true", help='Hide segment header during printing')
-
         return arg_parser
 
     @staticmethod
@@ -70,13 +70,25 @@ class AdbResourceParser(ResourceParser):
         according to the adb layout of the node with segment_id attribute corresponds to the segment
 """
 
-    def __init__(self, parser_args):
+    @classmethod
+    def get_supported_formatters(cls):
+        # listed explicitly, since a formatter added later may be dedicated to
+        # another parse method
+        return [AdbBasicFormatter.FORMATTER_TYPE,
+                PcieEventFormatter.FORMATTER_TYPE,
+                PcieEventJsonFormatter.FORMATTER_TYPE]
+
+    def __init__(self, parser_args, formatter):
         self._adb_file_path = parser_args.adb_file
-        self._adb_obj = AdbParser(self._adb_file_path)
+        try:
+            self._adb_obj = AdbParser(self._adb_file_path)
+        except ParseError:
+            raise ResourceParseException("Failed to parse adb file - {0}.".format(self._adb_file_path))
+
         self._segment_map = self._adb_obj.segment_id_nodes_dict
-        self._raw = parser_args.raw
-        self._hide_segment_header = parser_args.hide_segment_header
         self._manager = parser_args.manager
+        # the decode walk below is shared by all output shapes, only the formatter varies
+        self._formatter = formatter
 
     # Segment Parsing
 
@@ -90,6 +102,9 @@ class AdbResourceParser(ResourceParser):
         """This method responsible for the parsing algorithm that take the raw data of
         each segment and generate his content according the adb map
         """
+
+        # Reset all condition parsers before parsing this segment
+        self._adb_obj.reset_conditions()
 
         seg_for_parse = False
         segment_parse_method = "adb"
@@ -114,8 +129,9 @@ class AdbResourceParser(ResourceParser):
             else:
                 segment_name = "UNKNOWN"
 
-        if not self._hide_segment_header:
-            seg.add_parsed_data(20 * " " + "Segment - {0} ({1:#06x}){2}".format(segment_name, seg.get_type(), seg.additional_title_info()))
+        # segment_name is passed rather than derived from the segment, since it is
+        # the only correct name for a segment that is missing from the adb
+        self._formatter.format_segment_header(seg.get_type(), segment_name, seg.additional_title_info(), seg)
 
         if is_resource_segment(seg.get_type()):
             data_start_position = cs.RESOURCE_SEGMENT_START_OFFSET_IN_BYTES
@@ -129,44 +145,30 @@ class AdbResourceParser(ResourceParser):
 
         if seg_for_parse:
             if segment_parse_method == 'adb':
+                self._formatter.format_inner_field(segment_name, seg, segment_layout)
                 for field in self._get_union_selected_items(segment_layout):
                     prefix = self._build_union_prefix(field.nodeDesc)
                     self._parse_seg_field(field, prefix + field.name, 0, seg)
-                if self._raw:
-                    self._build_and_add_raw_data(seg)
+                self._formatter.format_raw_data(seg, is_fallback=False)
             else:
                 segment_resource_parser = PARSER_CLASSES.get(segment_parse_method)
                 if segment_resource_parser:
-                    segment_resource_parser([]).parse_segment(seg)
+                    segment_resource_parser(self._build_delegated_parser_args(), self._formatter).parse_segment(seg)
                 else:
-                    self._build_and_add_raw_data(seg)
-        else:  # if segment not for parse, need to set raw data
-            self._build_and_add_raw_data(seg)
+                    self._formatter.format_raw_data(seg, is_fallback=True)
+        else:  # if segment not for parse, the raw data is all there is
+            self._formatter.format_raw_data(seg, is_fallback=True)
+        self._formatter.end_segment(seg)
         seg._parsed_data.extend(seg.get_messages())
 
-    @classmethod
-    def _build_and_add_raw_data(cls, seg):
-        """This method build the raw data in the right format and add it to the
-        parsed data of the segment.
+    def _build_delegated_parser_args(self):
+        """This method build the arguments for a parser selected by the adb parse_method.
+
+        Such a parser is chosen by the adb during the parse rather than by the user,
+        so there are no command line arguments to pass it - the manager is what the
+        delegated parsers need out of them.
         """
-        hex_list = []
-        line_counter = 0
-        dw_counter = 0
-        seg.add_parsed_data("RAW DATA:")
-
-        for dw in struct.unpack("{}I".format(len(seg.get_data()) // cs.DWORD_SIZE), seg.get_data()):
-            hex_list.append('0x{0:0{1}X} '.format(dw, 8))
-            dw_counter += 1
-
-            if (dw_counter % cs.PARSER_NUM_OF_DW_IN_ROW) == 0:
-                seg.add_parsed_data("{:<15}:{}".format("DWORD [{0}-{1}]".format(line_counter * 4, (line_counter * 4) + (len(hex_list) - 1)), ''.join(hex_list[:])))
-                line_counter += 1
-                hex_list.clear()
-
-        if len(hex_list) > 1:
-            seg.add_parsed_data("{:<15}:{}".format("DWORD [{0}-{1}]".format(line_counter * 4, (line_counter * 4) + (len(hex_list) - 1)), ''.join(hex_list[:])))
-        elif len(hex_list) == 1:
-            seg.add_parsed_data("{:<15}:{}".format("DWORD [{0}]".format(line_counter * 4), ''.join(hex_list[:])))
+        return Namespace(manager=self._manager)
 
     @classmethod
     def _build_union_prefix(cls, node_desc):
@@ -231,6 +233,7 @@ class AdbResourceParser(ResourceParser):
                 self._parse_enum_field(field, element_field_str, element_offset_shift, seg)
 
             elif len(field.subItems) > 0:
+                self._formatter.format_inner_field(element_field_str, seg, field)
                 for sub_field in self._get_union_selected_items(field):
                     prefix = self._build_union_prefix(sub_field.nodeDesc)
                     self._parse_seg_field(sub_field, element_field_str + "." + prefix + sub_field.name, element_offset_shift, seg)
@@ -240,7 +243,7 @@ class AdbResourceParser(ResourceParser):
                     value = hex(int(self._current_bit_array[field_offset:field_offset + field.size], 2))
                     if ("printf" in field.attrs):
                         value = self._parse_printf_format(value, field.attrs["printf"])
-                    seg.add_parsed_data("{} = {}".format(element_field_str, value))
+                    self._formatter.format_terminal_field(element_field_str, value, seg, field)
 
     def _parse_enum_field(self, field, field_str, offset_shift, seg):
         """This method parse enum field and present the enum name as well as the enum value.
@@ -250,9 +253,9 @@ class AdbResourceParser(ResourceParser):
         if len(self._current_bit_array) >= (field_offset + field.size):
             enum_string = field.adb_enum.num_to_string.get(enum_value)
             if enum_string is not None:
-                seg.add_parsed_data("{} = ({} = {})".format(field_str, enum_string, hex(enum_value)))
+                self._formatter.format_terminal_field(field_str, "({} = {})".format(enum_string, hex(enum_value)), seg, field)
             else:
-                seg.add_parsed_data("{} = {}".format(field_str, hex(enum_value)))
+                self._formatter.format_terminal_field(field_str, hex(enum_value), seg, field)
 
     def _parse_printf_format(self, value, format):
         """ Enables specifying how a field should be dumped

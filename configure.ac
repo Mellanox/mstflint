@@ -1254,6 +1254,7 @@ AC_CONFIG_FILES([\
     pldm_utils/Makefile \
     pldmlib/Makefile \
     reg_access/Makefile \
+    nvpcie/Makefile \
     resourcetools/Makefile \
     resourcetools/resourcedump_lib/Makefile \
     resourcetools/resourcedump_lib/src/Makefile \

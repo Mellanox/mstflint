@@ -55,6 +55,7 @@ class AdbParser:
             self._build_xml_elements_dict()
             self._parse_config()
             self._dependant_layout_items = set()
+            self._first_segment_parsed = False
             # build a dictionary with only the adb nodes that contain segment id field.
             self.segment_id_nodes_dict = {}
             self._build_nodes_with_seg_id()
@@ -444,6 +445,19 @@ class AdbParser:
         # node_description.lineNumber = -1
         return node_descriptor
 
+    def reset_conditions(self):
+        """Reset all condition parsers before parsing a new segment.
+
+        This method should be called before parsing each segment to ensure
+        condition variables are re-evaluated with fresh data.
+        """
+        if self._first_segment_parsed:
+            for layout_item in self._dependant_layout_items:
+                if layout_item.condition:
+                    layout_item.condition.reset()
+        else:
+            self._first_segment_parsed = True
+
     def _parse_node_size(self, size_str):
         """This method return the size of the 'size' attribute in bits.
         """
@@ -488,6 +502,12 @@ class ConditionVariable:
             else:
                 raise ResourceParseException('Condition variable - "{}", was not found in the adb'.format(self._name))
         return self.value
+
+    def reset(self):
+        """Reset the evaluated flag and optionally reset value to allow re-evaluation for each new data parse"""
+        if self.layout_item:  # Only reset if it's not a constant from consts
+            self.evaluated = False
+            self.value = 0
 
 
 class ConditionParser:
@@ -535,6 +555,11 @@ class ConditionParser:
             raise ResourceParseException("Condition contains unsupported operation")
         locals = {variable_name: variable.evaluate(bit_array) for variable_name, variable in self._variables.items()}
         return eval(compile(tree, filename='', mode='eval'), None, locals)
+
+    def reset(self):
+        """Reset all condition variables to allow re-evaluation for each new data parse"""
+        for variable in self._variables.values():
+            variable.reset()
 
 
 class AdbLayoutItem(object):

@@ -52,6 +52,7 @@ from resourceparse_lib.utils.common_functions import valid_path_arg_type
 from resourceparse_lib.ResourceParseManager import ResourceParseManager
 from resourceparse_lib.utils.Exceptions import ResourceParseException
 from resourceparse_lib.parsers.ResourceParser import PARSER_CLASSES, parser_type
+from resourceparse_lib.formatters.SegmentFormatter import FORMATTER_CLASSES, formatter_type
 
 sys.path.append(os.path.join("common"))
 
@@ -80,6 +81,7 @@ class ResourceParse:
         required_args = cls._arg_parser.add_argument_group('required arguments')
         optional_args = cls._arg_parser.add_argument_group('optional arguments')
         optional_args.add_argument("-p", "--parser", dest="resource_parser", type=parser_type, nargs="?", const=PARSER_CLASSES["adb"], default=PARSER_CLASSES["adb"] if not prog else PARSER_CLASSES["raw"], help="Available options: {}. Default: 'adb'. see (Parsing methods) ".format(list(PARSER_CLASSES.keys())))
+        optional_args.add_argument("-f", "--formatter", dest="formatter", type=formatter_type, nargs="?", const=FORMATTER_CLASSES["basic"], default=FORMATTER_CLASSES["basic"], help="Available options: {}. Default: 'basic'. Each parse method supports a subset, see (Formatters) ".format(list(FORMATTER_CLASSES.keys())))
         output_group = optional_args.add_mutually_exclusive_group(required=False)
         output_group.add_argument("-o", "--out", help='Location of the output file')
         output_group.add_argument("--out-dir", help='Location of the output directory, a separate file is created for each segment')
@@ -89,23 +91,41 @@ class ResourceParse:
         cls._common_usage = cls._arg_parser.format_usage().rstrip() + " [PARSE_METHOD_ARGUMENTS]\n"
 
         parse_methods_help = "Parse Methods:\n    The parse method can be chosen by the common --parser option. Below the description of each parse method and its arguments.\n\n"
-        parse_methods_help += "\n".join(['Parse Method - "{}":\n'.format(parser_name) + parser_class.get_arg_parser(cls._arg_parser.prog).format_help() for parser_name, parser_class in PARSER_CLASSES.items()])
+        parse_methods_help += "\n".join(['Parse Method - "{}" (supported formatters: {}):\n'.format(parser_name, parser_class.get_supported_formatters()) +
+                                         parser_class.get_arg_parser(cls._arg_parser.prog).format_help() for parser_name, parser_class in PARSER_CLASSES.items()])
 
-        cls._common_help = "\n".join(cls._arg_parser.format_help().split("\n")[1:]) + "\n" + parse_methods_help
+        formatters_help = "Formatters:\n    The formatter can be chosen by the common --formatter option. Below the description of each formatter and its arguments.\n\n"
+        formatters_help += "\n".join(['Formatter - "{}":\n'.format(formatter_name) + formatter_class.get_arg_parser(cls._arg_parser.prog).format_help() for formatter_name, formatter_class in FORMATTER_CLASSES.items()])
+
+        methods_and_formatters_help = parse_methods_help + "\n" + formatters_help
+
+        cls._common_help = "\n".join(cls._arg_parser.format_help().split("\n")[1:]) + "\n" + methods_and_formatters_help
 
         input_named = required_args.add_mutually_exclusive_group(required=True)
         input_named.add_argument("-d", "--dump-file", type=valid_path_arg_type, help='Location of the dump file used for parsing')
         input_named.add_argument("--segments_provided", action="store_true", help=argparse.SUPPRESS)
 
+        optional_args.add_argument("--input_byte_order", choices=("be", "le"), default="be",
+                                   help="Byte order of the dwords in a binary dump file, ignored for a textual one. Default: 'be'")
         optional_args.add_argument('--version', action='version', help="Shows the tool's version and exit", version=tools_version.GetVersionString(tool_name, None))
         optional_args.add_argument("-v", help='Verbosity notice', dest="verbose", default=0, action='count')
         optional_args.add_argument("-h", "--help", action="help", help="show this help message and exit")
 
         standalone_usage = cls._arg_parser.format_usage().rstrip() + " [PARSE_METHOD_ARGUMENTS]\n"
-        standalone_help_body = "\n".join(cls._arg_parser.format_help().split("\n")[1:]) + "\n" + parse_methods_help
+        standalone_help_body = "\n".join(cls._arg_parser.format_help().split("\n")[1:]) + "\n" + methods_and_formatters_help
         standalone_help = standalone_usage + standalone_help_body
 
         cls._arg_parser.format_help = lambda: standalone_help
+
+    @classmethod
+    def _validate_formatter_support(cls, parser_class, formatter_class):
+        """This method verify that the selected formatter can present the output of
+        the selected parse method, and fail the argument parsing if it can't.
+        """
+        supported_formatters = parser_class.get_supported_formatters()
+        if formatter_class.FORMATTER_TYPE not in supported_formatters:
+            cls._arg_parser.error("formatter '{0}' is not supported by parse method '{1}' (supported: {2})".format(
+                formatter_class.FORMATTER_TYPE, parser_class.PARSER_TYPE, supported_formatters))
 
     @classmethod
     def get_help(cls, prog):
@@ -121,17 +141,26 @@ class ResourceParse:
             cls._init_arg_parser(prog)
 
         manager_args, remaining = cls._arg_parser.parse_known_args(argv)
+        cls._validate_formatter_support(manager_args.resource_parser, manager_args.formatter)
+
         parsing_method_arg_parser = manager_args.resource_parser.get_arg_parser(cls._arg_parser.prog)
+        parser_args, remaining = parsing_method_arg_parser.parse_known_args(remaining)
 
-        parser_args = parsing_method_arg_parser.parse_args(remaining) if parsing_method_arg_parser else argparse.Namespace
+        formatter_arg_parser = manager_args.formatter.get_arg_parser(cls._arg_parser.prog)
+        formatter_args, remaining = formatter_arg_parser.parse_known_args(remaining)
 
-        return manager_args, parser_args
+        # what is left belongs to neither group, so it's reported by the tool itself
+        # rather than by the group that happened to be parsed last
+        if remaining:
+            cls._arg_parser.error("unrecognized arguments: {0}".format(" ".join(remaining)))
+
+        return manager_args, parser_args, formatter_args
 
     def run(self, argv=None, segments=None):
         """This method run the parser with the needed arguments
         """
-        manager_args, parser_args = self.run_arg_parse(argv)
-        creator = ResourceParseManager(manager_args, parser_args, segments)
+        manager_args, parser_args, formatter_args = self.run_arg_parse(argv)
+        creator = ResourceParseManager(manager_args, parser_args, formatter_args, segments)
         creator.parse()
 
 

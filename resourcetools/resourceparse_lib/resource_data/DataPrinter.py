@@ -39,15 +39,17 @@
 #######################################################
 import os
 from resourceparse_lib.utils import constants as cs
+from resourceparse_lib.utils.Exceptions import ResourceParseException
 
 
 class DataPrinter:
     """This class is responsible for set and manage the parser output.
     """
-    def __init__(self, verbosity, out_file, out_dir):
+    def __init__(self, verbosity, out_file, out_dir, formatter):
         self._verbosity = verbosity
         self._out_file = out_file
         self._out_dir = out_dir
+        self._formatter = formatter
         self._top_notice_db = []
 
     def print_notice_before_parse(self, notice_msg):
@@ -62,27 +64,45 @@ class DataPrinter:
     def print_parsed_segment(self, parsed_segment_db, title, segment_separator):
         """This method prints the parsed segments after check if we need to print to a file or to screen.
         """
+        if self._out_dir and self._formatter.get_output(parsed_segment_db) is not None:
+            raise ResourceParseException("The '{0}' formatter produces a single document and can't be split "
+                                         "into a file per segment, use --out instead of --out-dir.".format(self._formatter.FORMATTER_TYPE))
+
         if self._out_file:
-            self._print_to_file(parsed_segment_db, title, segment_separator, self._out_file)
+            self._print_to_file(self._build_output_lines(parsed_segment_db, title, segment_separator), self._out_file)
             print("write to file: ", self._out_file)
         elif self._out_dir:
             self._print_to_multiple_files(parsed_segment_db)
         else:
-            self._print_to_screen(parsed_segment_db, title, segment_separator)
+            self._print_to_screen(self._build_output_lines(parsed_segment_db, title, segment_separator))
 
-    def _print_to_screen(self, parsed_segment_db, title, segment_separator):
-        """This method prints the parsed segments to the screen.
+    def _build_output_lines(self, parsed_segment_db, title, segment_separator):
+        """This method build the lines to output.
+
+        A formatter that produces a whole document (like JSON) returns it here,
+        otherwise the output is built from the data the parser added to each segment.
         """
+        document = self._formatter.get_output(parsed_segment_db)
+        if document is not None:
+            return list(document)
+
+        lines = []
         if title:
-            print(title)
+            lines.append(title)
         for seg in parsed_segment_db:
             if segment_separator:
-                print(segment_separator)
-            parsed_seg = seg.get_parsed_data()
-            for field in parsed_seg:
-                print(field)
+                lines.append(segment_separator)
+            lines.extend(seg.get_parsed_data())
         if segment_separator:
-            print(segment_separator)
+            lines.append(segment_separator)
+        return lines
+
+    @classmethod
+    def _print_to_screen(cls, lines):
+        """This method prints the output lines to the screen.
+        """
+        for line in lines:
+            print(line)
 
     def _print_to_multiple_files(self, parsed_segment_db):
         """This method prints the parsed segments to multiple files, each containing a single segment.
@@ -98,7 +118,7 @@ class DataPrinter:
             # Aggregate segment occurence and use the value only if the segment has duplicates
             occurence = current_segment_occurence[parsed_segment.get_type()] = current_segment_occurence.get(parsed_segment.get_type(), 0) + 1
             segment_out_file = self._get_segment_out_file(parsed_segment, occurence if total_segment_occurence[parsed_segment.get_type()] > 1 else None)
-            self._print_to_file([parsed_segment], "", "", segment_out_file)
+            self._print_to_file(self._build_output_lines([parsed_segment], "", ""), segment_out_file)
             files.append(segment_out_file)
         if len(files):
             print("write to files: ", ", ".join(files))
@@ -110,22 +130,14 @@ class DataPrinter:
         segment_out_file = "%s%s.dump" % (parsed_segment.get_name(), occurence_str)
         return os.path.join(self._out_dir, segment_out_file)
 
-    def _print_to_file(self, parsed_segment_db, title, segment_separator, file_path):
-        """This method prints the parsed segments to a file.
+    def _print_to_file(self, lines, file_path):
+        """This method prints the output lines to a file.
         """
         with open(file_path, "w") as out_file:
             for notice_section in self._top_notice_db:
                 out_file.write(notice_section + "\n")
-            if title:
-                out_file.write(title + "\n")
-            for seg in parsed_segment_db:
-                if segment_separator:
-                    out_file.write(segment_separator + "\n")
-                parsed_seg = seg.get_parsed_data()
-                for field in parsed_seg:
-                    out_file.write(field + "\n")
-            if segment_separator:
-                out_file.write(segment_separator + "\n")
+            for line in lines:
+                out_file.write(line + "\n")
 
     @classmethod
     def _get_fixed_field(cls, field):

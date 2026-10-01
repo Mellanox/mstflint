@@ -51,7 +51,16 @@ def parser_type(name):
 
 class ResourceParser(ABC):
     @abstractmethod
-    def __init__(self, parser_args):
+    def __init__(self, parser_args, formatter):
+        pass
+
+    @classmethod
+    @abstractmethod
+    def get_supported_formatters(cls):
+        """This method return the names of the formatters this parse method can
+        render its output with. The selected combination is validated by the tool
+        at the argument parsing stage.
+        """
         pass
 
     @abstractmethod
