@@ -115,6 +115,14 @@
 #define PROP_IS_DYNAMIC_DEVICE_WITHOUT_IRISC_ID "is_dynamic_device_without_irisc_id"
 #define PROP_SUPPORT_NVRISC "support_nvrisc"
 
+/* LTSSM ring logger node names, as the device's reduced ADB spells them */
+#define PROP_LTSSM_PCORE_NODE "ltssm_pcore_node"
+#define PROP_LTSSM_LINK_NODE "ltssm_link_node"
+#define PROP_LTSSM_LINK_STATUS_NODE "ltssm_link_status_node"
+#define PROP_LTSSM_STATE_NODE "ltssm_state_node"
+#define PROP_LTSSM_RING_NODE "ltssm_ring_node"
+#define PROP_LTSSM_LOGGER_CTRL_NODE "ltssm_logger_ctrl_node"
+
 /* Devmon properties */
 #define PROP_MARKET_NAME "market_name"
 #define PROP_PROJECT_NAME "project_name"
