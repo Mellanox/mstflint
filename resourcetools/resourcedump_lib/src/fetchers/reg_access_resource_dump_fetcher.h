@@ -95,6 +95,8 @@ private:
 
     void retrieve_from_reg_access();
 
+    reg_access_status_t safe_send();
+
     void validate_reply();
 
     void enable_streams_exceptions();
@@ -106,6 +108,9 @@ private:
     std::ios::iostate _orig_os_exceptions;
     std::ios::iostate _orig_is_exceptions;
     uint32_t _depth;
+
+    static bool _first_send_attempted;
+    static bool _mord_v2_selected;
 
 protected:
     uint8_t _current_seq_num{0};
