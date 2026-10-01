@@ -28,8 +28,26 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+from commands.MlxLinkCommand import MlxLinkCommand
+from commands.CommandFactory import CommandFactory
 
-# importing the commands registers them at the factory
-from commands import CountersCommand  # noqa
-from commands import EventsCommand  # noqa
-from commands import LinkCommand  # noqa
+
+class LinkCommand(MlxLinkCommand):
+    """Reports the operational state of the PCIe links of the device.
+
+    The report is the "PCIe Operational (Enabled) Info" section mlxlink reads out
+    of MPEIN - the speed and width each link negotiated against the ones it was
+    enabled for - one section per link the device reports.
+    """
+
+    COMMAND_NAME = "link"
+    DESCRIPTION = "show the operational state of the PCIe links"
+
+    @classmethod
+    def _telemetry_view(cls):
+        from mft_sdk import TelemetryView
+
+        return TelemetryView.OPERATIONAL
+
+
+CommandFactory.register(LinkCommand.COMMAND_NAME, LinkCommand)
