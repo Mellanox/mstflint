@@ -36,7 +36,9 @@
 
 #define REG_ID_MMHI 0x904A
 #define REG_ID_MGIR  0x9020
+#define REG_ID_RES_DUMP 0xC000
 #define REG_ID_MORD  0x9153
+#define REG_ID_MORD_V2 0x915b
 #define REG_ID_MCAM  0x907f
 #define REG_ID_MPQD 0x9700
 #define REG_ID_PLIB  0x500a

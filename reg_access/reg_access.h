@@ -140,6 +140,11 @@ reg_access_status_t reg_access_res_dump(mfile                                  *
 reg_access_status_t reg_access_mord(mfile                                  * mf,
                                     reg_access_method_t                      method,
                                     struct reg_access_hca_resource_dump_ext* res_dump);
+struct reg_access_switch_mord_v2_ext;
+reg_access_status_t reg_access_mord_v2(mfile                                 * mf,
+                                       reg_access_method_t                     method,
+                                       struct reg_access_switch_mord_v2_ext  * mord,
+                                       int                                     data_array_size);
 
 struct switchen_ppcnt_reg;
 reg_access_status_t reg_access_ppcnt(mfile* mf, reg_access_method_t method, struct switchen_ppcnt_reg* ricnt);

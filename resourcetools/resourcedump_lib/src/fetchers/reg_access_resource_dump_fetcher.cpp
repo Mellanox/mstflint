@@ -35,6 +35,8 @@
 #include "resource_dump_types.h"
 
 #include "reg_access/reg_access.h"
+#include "reg_access/reg_ids.h"
+#include "mft_core/device/device_info/device_properties_api.h"
 #include "dev_mgt/tools_dev_types.h"
 
 #include <common/compatibility.h>
@@ -67,6 +69,38 @@ RegAccessResourceDumpFetcher::RegAccessResourceDumpFetcher(mfile_t* mfile,
     _segment_params.segment_params.index2 = segment_params.index2;
     _segment_params.segment_params.num_of_obj1 = segment_params.num_of_obj1;
     _segment_params.segment_params.num_of_obj2 = segment_params.num_of_obj2;
+
+    init_by_device();
+}
+
+/*********************** ATTENTION *********************************************/
+/* Additional development of this function is discouraged. *********************/
+/* We thrive to have a single resource dump register for all types of devices. */
+/*******************************************************************************/
+void RegAccessResourceDumpFetcher::init_by_device()
+{
+    dm_dev_id_t dev_id = DeviceUnknown;
+    u_int32_t hw_id = 0, hw_rev = 0;
+    dm_get_device_id(_mf, &dev_id, &hw_id, &hw_rev);
+
+    const char* device_type = get_property_as_cstring(_mf->functional_device_id, PROP_DEVICE_TYPE);
+    if (device_type[0] == '\0')
+    {
+        throw ResourceDumpException(ResourceDumpException::Reason::DEVICE_TYPE_UNSUPPORTED);
+    }
+
+    if (dm_is_gpu(dev_id))
+    {
+        _reg_handler.reset(new MordV2ResourceDumpRegister(_mf));
+    }
+    else if (dm_dev_is_hca(dev_id))
+    {
+        _reg_handler.reset(new BasicResourceDumpRegister(REG_ID_RES_DUMP));
+    }
+    else
+    {
+        _reg_handler.reset(new BasicResourceDumpRegister(REG_ID_MORD));
+    }
 }
 
 void RegAccessResourceDumpFetcher::set_streams(shared_ptr<ostream> os, shared_ptr<istream> is)
@@ -153,15 +187,7 @@ void RegAccessResourceDumpFetcher::retrieve_from_reg_access()
 
     do
     {
-        dm_dev_id_t dev_id = DeviceUnknown;
-        u_int32_t hw_id = 0, hw_rev = 0;
-        dm_get_device_id(_mf, &dev_id, &hw_id, &hw_rev);
-        /***********************************************************/
-        /*********************** ATTENTION *************************/
-        /******** The functions below must be equivalent ***********/
-        /** Changes in them should be made both in switch and nic **/
-        auto reg_access_func = dm_dev_is_hca(dev_id) ? reg_access_res_dump : reg_access_mord;
-        reg_access_status_t res = reg_access_func(_mf, REG_ACCESS_METHOD_GET, &_reg_access_layout);
+        reg_access_status_t res = _reg_handler->send(_mf);
         if (res != ME_REG_ACCESS_OK)
         {
             throw ResourceDumpException(ResourceDumpException::Reason::SEND_REG_ACCESS_FAILED, res);
@@ -172,63 +198,30 @@ void RegAccessResourceDumpFetcher::retrieve_from_reg_access()
 
         validate_reply();
         reset_reg_access_layout();
-    } while (_reg_access_layout.more_dump);
+    } while (_reg_handler->more_dump());
 }
 
 void RegAccessResourceDumpFetcher::init_reg_access_layout()
 {
-    _reg_access_layout = {
-      _segment_params.reference_segment_type,     // segment_type
-      _current_seq_num,                           // seq_num
-      0,                                          // vhca_id_valid
-      1,                                          // inline_dump
-      0,                                          // more_dump
-      0,                                          // vhca_id
-      _segment_params.segment_params.index1,      // index1
-      _segment_params.segment_params.index2,      // index2
-      _segment_params.segment_params.num_of_obj2, // num_of_obj2
-      _segment_params.segment_params.num_of_obj1, // num_of_obj1
-      0,                                          // device_opaque
-      0,                                          // mkey
-      0,                                          // size
-      0,                                          // address
-      {0}                                         // inline_data
-    };
+    _reg_handler->init(_segment_params, _current_seq_num, _vhca);
+}
 
-    if (_vhca != DEFAULT_VHCA)
-    {
-        _reg_access_layout.vhca_id = _vhca;
-        _reg_access_layout.vhca_id_valid = 1;
-    }
+void RegAccessResourceDumpFetcher::reset_reg_access_layout()
+{
+    _reg_handler->reset(_segment_params, _vhca);
 }
 
 void RegAccessResourceDumpFetcher::validate_reply()
 {
-    if ((++_current_seq_num) % 16 != _reg_access_layout.seq_num)
+    if ((++_current_seq_num) % 16 != _reg_handler->seq_num())
     {
         throw ResourceDumpException(ResourceDumpException::Reason::WRONG_SEQUENCE_NUMBER);
     }
 }
 
-void RegAccessResourceDumpFetcher::reset_reg_access_layout()
-{
-    _reg_access_layout.segment_type = _segment_params.reference_segment_type;
-    _reg_access_layout.vhca_id = _vhca != DEFAULT_VHCA ? _vhca : 0;
-    _reg_access_layout.vhca_id_valid = _vhca != DEFAULT_VHCA ? 1 : 0;
-    _reg_access_layout.inline_dump = 1;
-    _reg_access_layout.mkey = 0;
-    _reg_access_layout.size = 0;
-    _reg_access_layout.address = 0;
-}
-
 void RegAccessResourceDumpFetcher::write_payload_data_to_ostream()
 {
-    if (_reg_access_layout.size > NUM_INLINE_DATA_DWORDS * 4)
-    {
-        throw ResourceDumpException(ResourceDumpException::Reason::REGISTER_DATA_SIZE_TOO_LONG);
-    }
-    _ostream->write(reinterpret_cast<const char*>(_reg_access_layout.inline_data), _reg_access_layout.size);
-    return;
+    _reg_handler->write_payload(*_ostream);
 }
 
 uint32_t RegAccessResourceDumpFetcher::calculate_segment_data_size(uint16_t full_size_dw)
