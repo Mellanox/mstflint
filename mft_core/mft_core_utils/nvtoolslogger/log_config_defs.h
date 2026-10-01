@@ -170,6 +170,7 @@ static const uint32_t DEFAULT_MAX_LOG_DIR_FILES = 100;
 // Every tool scans and stats the whole log directory on startup, so the ceiling keeps
 // one tool's setting from slowing down all the others.
 static const uint32_t MAX_LOG_DIR_FILES_LIMIT = 1000;
+static const int CONFIG_VERSION = 1;
 
 } // namespace nvtoolslogger
 
