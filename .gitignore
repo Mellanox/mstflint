@@ -39,6 +39,7 @@ libtool
 /mlxconfig/mstconfig
 /mlxconfig/mstprivhost
 /mlxlink/mstlink
+/mlxparsebin/mstparsebin
 /mlxreg/mstreg
 /mlxreg/scripts/mstgenerate_pgcb_commands
 /mlxtokengenerator/msttokengenerator
