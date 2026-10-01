@@ -36,7 +36,7 @@ AC_SUBST([PROJECT])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_SRCDIR([README])
-AM_INIT_AUTOMAKE([foreign subdir-objects])
+AM_INIT_AUTOMAKE([foreign subdir-objects tar-ustar])
 
 dnl Checks for programs
 AC_PROG_CC
@@ -529,7 +529,6 @@ AM_CONDITIONAL(ENABLE_CABLES, [ test "x$enable_cables" = "xyes" ])
 
 AS_IF([test "x$enable_cables" = "xyes"],
     [
-        AC_CONFIG_FILES(cable_access/Makefile)
         CABLE_ACCESS_DIR="cable_access"
     ]
 )
@@ -639,16 +638,11 @@ if test "x$enable_mstflint_sdk" = "xyes"; then
     # automake does not reject the -Wl tokens in the SDK's _LIBADD.
     MTCR_SDK_WHOLE_ARCHIVE="-Wl,--whole-archive \$(top_builddir)/$MTCR_CONF_DIR/.libs/libmtcr_ul.a -Wl,--no-whole-archive"
     MSTREG_SDK_WHOLE_ARCHIVE="-Wl,--whole-archive \$(top_builddir)/mlxreg/mlxreg_lib/.libs/libmstreg_lib.a -Wl,--no-whole-archive"
-    AC_CONFIG_FILES(mft_sdk/Makefile)
     AC_CONFIG_FILES(mft_sdk/mstflint_sdk.pc)
-    AC_CONFIG_FILES(hca_capabilities/Makefile)
-    AC_CONFIG_FILES(mlxreg/mlxreg_sdk/Makefile)
     # NVML-backed GPU discovery is pulled in only when NVML is enabled; the SDK
     # source gates its use of it on ENABLE_NVML to keep the build self-consistent.
     if test "x$enable_nvml" = "xyes"; then
         LOAD_SHARED_LIB_DIR="load_shared_library"
-        AC_CONFIG_FILES(mft_core/device/nvml/Makefile)
-        AC_CONFIG_FILES(mft_core/mft_core_utils/load_shared_library/Makefile)
     fi
 fi
 
@@ -1036,7 +1030,6 @@ AC_SUBST(MSTFLINT_VERSION_STR)
 AC_DEFINE([MSTFLINT_VERSION_STR], [], [The MSTFLINT version])
 AC_DEFINE_UNQUOTED(MSTFLINT_VERSION_STR, "$MSTFLINT_VERSION_STR")
 
-AC_CONFIG_FILES(tools_crypto/Makefile)
 
 AM_CONDITIONAL(ENABLE_NVFWRESET, [test "x$OS" != "xFreeBSD" && test "x$enable_nvfwreset" = "xyes" ])
 
@@ -1049,7 +1042,6 @@ if test "x$OS" != "xFreeBSD"; then
     )
     AC_MSG_RESULT($enable_nvfwreset)
     AS_IF([test "x$enable_nvfwreset" = "xyes"], [
-        AC_CONFIG_FILES(nvfwreset/Makefile)
         NVFWRESET_DIR="nvfwreset"
     ])
     AC_SUBST(enable_nvfwreset)
@@ -1074,7 +1066,6 @@ if test "x$with_ibdump" = "xyes"; then
     AC_CHECK_HEADER(infiniband/verbs.h, [],
         AC_MSG_ERROR([cannot find infiniband/verbs.h (omit --with-ibdump to remove this dependency).])
     )
-    AC_CONFIG_FILES(ibdump/Makefile)
     IBDUMP_DIR="ibdump"
 fi
 AM_CONDITIONAL(ENABLE_IBDUMP, [test "x$with_ibdump" = "xyes"])
@@ -1083,7 +1074,7 @@ AC_SUBST(IBDUMP_DIR)
 AS_IF([test "x$enable_openssl" = "xyes"],
     [
         AS_IF(test x"$OPENSSL_VERSION_VALID" = "xyes",
-           [AC_CONFIG_FILES(mlxsign_lib/Makefile)],
+           [],
            [AC_MSG_ERROR([Required openssl version >= $MIN_OPENSSL_VER (or use --disable-openssl)])]
         )
     ]
@@ -1096,9 +1087,6 @@ fi
 
 AS_IF([test "x$enable_fw_mgr" = "xyes"], 
     [
-        AC_CONFIG_FILES(mlxfwupdate/Makefile)
-        AC_CONFIG_FILES(ext_libs/iniParser/Makefile)
-        AC_CONFIG_FILES(mlxarchive/Makefile)
         FW_MGR_TOOLS="mlxarchive mlxfwupdate"
     ]
 )
@@ -1107,7 +1095,6 @@ AC_SUBST(FW_MGR_TOOLS)
 
 AS_IF([test "x$enable_dpa" = "xyes"], 
     [
-        AC_CONFIG_FILES(mlxdpa/Makefile)
         DPA="mlxdpa"
     ]
 )
@@ -1117,7 +1104,6 @@ AC_SUBST(DPA)
 
 AS_IF([test "x$enable_pldm_pkg_gen" = "xyes"],
     [
-        AC_CONFIG_FILES(pldmgen/Makefile)
         PLDM_PKG_GEN="pldmgen"
     ]
 )
@@ -1131,21 +1117,6 @@ if [ test "x$enable_openssl" = "xno" ] && \
 fi
 
 AS_IF([test "x$enable_adb_generic_tools" = "xyes"], [
-        AC_CONFIG_FILES(adb_parser/Makefile)
-        AC_CONFIG_FILES(tools_layouts/adb/Makefile)
-        AC_CONFIG_FILES(tools_layouts/adb/prm/Makefile)
-        AC_CONFIG_FILES(tools_layouts/adb/prm/hca/Makefile)
-        AC_CONFIG_FILES(tools_layouts/adb/prm/hca/ext/Makefile)
-        AC_CONFIG_FILES(tools_layouts/adb/prm/switch/Makefile)
-        AC_CONFIG_FILES(tools_layouts/adb/prm/switch/ext/Makefile)
-        AC_CONFIG_FILES(tools_layouts/adb/prm/gpu/Makefile)
-        AC_CONFIG_FILES(tools_layouts/adb/prm/gpu/ext/Makefile)
-        AC_CONFIG_FILES(mlxreg/Makefile)
-        AC_CONFIG_FILES(mlxreg/scripts/Makefile)
-        AC_CONFIG_FILES(mlxreg/mlxreg_lib/Makefile)
-        AC_CONFIG_FILES(mlxlink/Makefile)
-        AC_CONFIG_FILES(mlxlink/modules/Makefile)
-        AC_CONFIG_FILES(mlxlink/modules/printutil/Makefile)
         ADABE_TOOLS="adb_parser mlxreg mlxlink"
         ADABE_DBS="adb"
         ADABE_DBS_EXTRA_DIST="adb/prm/hca/ext/*.adb adb/prm/switch/ext/*.adb adb/prm/gpu/ext/*.adb"])
@@ -1154,14 +1125,12 @@ AM_CONDITIONAL([ADB_GENERIC_TOOLS_ENABLED], [test "x$enable_adb_generic_tools" =
 
 AS_IF([test "x$enable_fw_mgr" = "xyes" || test "x$enable_adb_generic_tools" = "xyes" || test "x$enable_dpa" = "xyes" || test "x$enable_pldm_pkg_gen" = "xyes"],
     [
-        AC_CONFIG_FILES(xz_utils/Makefile)
         XZ_UTILS_DIR="xz_utils"
     ]
 )
 
 AS_IF([test "x$enable_nvml" = "xyes"],
     [
-        AC_CONFIG_FILES(nvml_lib/Makefile)
         NVML_DIR="nvml_lib"
     ]
 )
@@ -1175,10 +1144,8 @@ AC_SUBST(CABLE_ACCESS_DIR)
 
 if test "x$OS" = "xFreeBSD"; then
     AC_MSG_NOTICE(FreeBSD MTCR)
-    AC_CONFIG_FILES(mtcr_freebsd/Makefile)
 else
     AC_MSG_NOTICE(Linux MTCR)
-    AC_CONFIG_FILES(mtcr_ul/Makefile)
 fi
 
 AM_CONDITIONAL(LINUX_BUILD, [test  "x$OS" = "xLinux"])
@@ -1216,69 +1183,15 @@ TOOLS_GIT_SHA=$(cd $(dirname "$0"); ./eval_git_sha.sh)
 AC_SUBST([TOOLS_GIT_SHA])
 AC_MSG_NOTICE(TOOLS_GIT_SHA $TOOLS_GIT_SHA)
 
+# The whole tree builds from the one top-level Makefile.am, where each
+# directory's section is guarded by the condition that used to put it into
+# SUBDIRS. These three directories were chosen by a variable alone, so they get
+# a conditional computed from that same variable.
+AM_CONDITIONAL([MTCR_FREEBSD], [test "x$MTCR_CONF_DIR" = "xmtcr_freebsd"])
+AM_CONDITIONAL([BUILD_VFIO_DRIVER], [test -n "$VFIO_DRIVER_DIR"])
+AM_CONDITIONAL([BUILD_XZ_UTILS], [test -n "$XZ_UTILS_DIR"])
+
 AC_CONFIG_FILES([debian/mstflint.install])
 
-AC_CONFIG_FILES([\
-    Makefile \
-    cmdif/Makefile \
-    cmdparser/Makefile \
-    common/Makefile \
-    dev_mgt/Makefile \
-    pci_library/Makefile \
-    ext_libs/Makefile \
-    ext_libs/json/Makefile \
-    ext_libs/mini-yaml/Makefile \
-    ext_libs/sole/Makefile \
-    ext_libs/minixz/Makefile \
-    ext_libs/muparser/Makefile \
-    ext_libs/sqlite/Makefile \
-    flint/Makefile \
-    fw_comps_mgr/Makefile \
-    libmfa/Makefile \
-    mad_ifc/Makefile \
-    mflash/Makefile \
-    mft_utils/Makefile \
-    mlxconfig/Makefile \
-    mlxtokengenerator/Makefile \
-    mlxconfig/mlxconfig_dbs/Makefile \
-    mlxfwops/Makefile \
-    mlxfwops/lib/Makefile \
-    mstdump/Makefile \
-    mstdump/crd_lib/Makefile \
-    mstdump/crd_main/Makefile \
-    mstdump/mstdump_dbs/Makefile \
-    efuse/Makefile \
-    efuse/efuse_dbs/Makefile \
-    mtcr_py/Makefile \
-    mvpd/Makefile \
-    pldm_utils/Makefile \
-    pldmlib/Makefile \
-    reg_access/Makefile \
-    resourcetools/Makefile \
-    resourcetools/resourcedump_lib/Makefile \
-    resourcetools/resourcedump_lib/src/Makefile \
-    resourcetools/resourcedump_lib/src/commands/Makefile \
-    resourcetools/resourcedump_lib/src/common/Makefile \
-    resourcetools/resourcedump_lib/src/fetchers/Makefile \
-    resourcetools/resourcedump_lib/src/filters/Makefile \
-    resourcetools/resourcedump_lib/src/sdk/Makefile \
-    small_utils/Makefile \
-    mst_utils/Makefile \
-    mst_server/client/Makefile \
-    mst_server/service/Makefile \
-    small_utils/mlxfwresetlib/Makefile \
-    tools_layouts/Makefile \
-    tools_res_mgmt/Makefile \
-    tracers/Makefile \
-    tracers/fwtrace/Makefile \
-    vfio_driver_access/Makefile \
-    mft_core/Makefile \
-    mft_core/mft_core_utils/Makefile \
-    mft_core/mft_core_utils/logger/Makefile \
-    mft_core/mft_core_utils/operating_system_api/Makefile \
-    mft_core/mft_core_utils/mft_exceptions/Makefile \
-    mft_core/mft_core_utils/nvtoolslogger/Makefile \
-    mft_core/device/Makefile \
-    mft_core/device/device_info/Makefile \
- ])
+AC_CONFIG_FILES([Makefile])
 AC_OUTPUT

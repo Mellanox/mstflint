@@ -80,7 +80,7 @@ If the tree is already configured with `--enable-mstflint-sdk` (which requires
 
 ```sh
 ./configure --enable-adb-generic-tools --enable-mstflint-sdk
-make sdk           # build only the SDK and the subdirs it links against
+make sdk           # build only the SDK and the libraries it links against
 make install-sdk   # install the SDK library, headers and PRM databases
 ```
 

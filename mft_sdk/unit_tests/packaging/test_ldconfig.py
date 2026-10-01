@@ -104,7 +104,7 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(
     os.path.dirname(os.path.abspath(__file__)))))
 BUILD_SDK = os.path.join(REPO_ROOT, "build_sdk.sh")
 CONFIGURE_AC = os.path.join(REPO_ROOT, "configure.ac")
-SDK_MAKEFILE_AM = os.path.join(REPO_ROOT, "mft_sdk", "Makefile.am")
+SDK_MAKEFILE_AM = os.path.join(REPO_ROOT, "Makefile.am")
 SDK_SPEC_IN = os.path.join(REPO_ROOT, "mstflint-sdk.spec.in")
 DEBIAN_SDK = os.path.join(REPO_ROOT, "debian-sdk")
 
@@ -414,7 +414,7 @@ class LdconfigSuite(object):
         m = re.search(r"^ldsoconfdir\s*=.*?^endif\s*$", text, re.M | re.S)
         if not m:
             self._record("mk_block_present", "FAIL",
-                         "no ldsoconfdir..endif block in mft_sdk/Makefile.am")
+                         "no ldsoconfdir..endif block in Makefile.am")
             return None
         block = m.group(0)
         if "install-data-local" not in block or "uninstall-local" not in block:
@@ -926,7 +926,7 @@ def main():
         print("{}[ERROR] ldconfig tests require --so{}".format(RED, RESET))
         return 1
     for path, what in ((BUILD_SDK, "build_sdk.sh"), (CONFIGURE_AC, "configure.ac"),
-                       (SDK_MAKEFILE_AM, "mft_sdk/Makefile.am"),
+                       (SDK_MAKEFILE_AM, "Makefile.am"),
                        (SDK_SPEC_IN, "mstflint-sdk.spec.in")):
         if not os.path.isfile(path):
             print("{}[ERROR] {} not found at {}{}".format(RED, what, path, RESET))

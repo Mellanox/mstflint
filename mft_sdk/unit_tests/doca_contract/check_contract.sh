@@ -86,7 +86,7 @@ else
     fail "not found at \$includedir/mft_sdk/mft_sdk.h"
     if [ -f "$SDK_INCDIR/mft_sdk.h" ]; then
         note "found a FLAT $SDK_INCDIR/mft_sdk.h instead -- the mft_sdk/"
-        note "subdirectory level is required; see mft_sdk/Makefile.am."
+        note "subdirectory level is required; see the SDK section of Makefile.am."
     fi
 fi
 
