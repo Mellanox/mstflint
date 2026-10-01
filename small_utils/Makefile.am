@@ -91,6 +91,7 @@ mstfwctrl_LDFLAGS = -static
 endif
 
 mstmtserver_SOURCES = mtserver.c tcp.c tcp.h
+mstmtserver_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/${MTCR_CONF_DIR} -I$(top_srcdir)/mft_core/mft_core_utils
 mstmtserver_CFLAGS = -DMST_UL
 mstmtserver_DEPENDENCIES = $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la
 mstmtserver_LDADD = $(mstmtserver_DEPENDENCIES) ${LDL}
