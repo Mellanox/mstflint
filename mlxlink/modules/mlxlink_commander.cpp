@@ -5447,15 +5447,21 @@ void MlxlinkCommander::showPcieState(DPN& dpn)
     printOutput(pcieInfoCmd);
 }
 
-void MlxlinkCommander::collectAMBER()
+void MlxlinkCommander::collectAMBER(AmberOutput output)
 {
     try
     {
         if (_productTechnology >= PRODUCT_16NM)
         {
-            MlxlinkRecord::printCmdLine("Collecting amBER and producing report to " + _userInput._csvBer, _jsonRoot);
+            if (output == AmberOutput::Csv)
+            {
+                MlxlinkRecord::printCmdLine("Collecting amBER and producing report to " + _userInput._csvBer,
+                                            _jsonRoot);
+            }
 
             initAmBerCollector();
+
+            _amberCollector->_localPorts.clear();
 
             if (!_isHCA)
             {
@@ -5467,10 +5473,7 @@ void MlxlinkCommander::collectAMBER()
                     {
                         pg.secondSplit = _userInput._secondSplitProvided ? _userInput._secondSplitPort : 0;
                     }
-                    if (_amberCollector->_localPorts.empty())
-                    {
-                        _amberCollector->_localPorts.push_back(pg);
-                    }
+                    _amberCollector->_localPorts.push_back(pg);
                 }
                 else
                 {
@@ -5492,7 +5495,7 @@ void MlxlinkCommander::collectAMBER()
                 }
             }
 
-            _amberCollector->startCollector();
+            _amberCollector->startCollector(output);
         }
         else
         {
@@ -5504,6 +5507,20 @@ void MlxlinkCommander::collectAMBER()
     {
         _allUnhandledErrors += string("Collecting AMBER raised the following exception: \n") + string(exc.what()) + string("\n");
     }
+}
+
+string MlxlinkCommander::collectAmberJson()
+{
+    runAmberCollection(AmberOutput::Json);
+
+    return _amberCollector->exportToJSON();
+}
+
+vector<AmberPortReport> MlxlinkCommander::collectAmberReport()
+{
+    runAmberCollection(AmberOutput::Report);
+
+    return _amberCollector->exportToReport();
 }
 
 void MlxlinkCommander::collectBER()
@@ -8844,6 +8861,8 @@ void MlxlinkCommander::setAmBerCollectorFields()
     _amberCollector->_isNvlinkModeB = _isNvlinkModeB;
     _amberCollector->_isCpo = _isCpo;
     _amberCollector->_originalModuleIndexType = _userInput._moduleIndType;
+    _amberCollector->_amberRewrite = _userInput.amberRewrite;
+    _amberCollector->setSheetsToDump(_userInput._amberPagesStr);
 }
 
 void MlxlinkCommander::initAmBerCollector()
@@ -8852,6 +8871,26 @@ void MlxlinkCommander::initAmBerCollector()
     {
         _amberCollector = new MlxlinkAmBerCollector(_jsonRoot);
         setAmBerCollectorFields();
+    }
+}
+
+void MlxlinkCommander::runAmberCollection(AmberOutput output)
+{
+    if (_productTechnology < PRODUCT_16NM)
+    {
+        throw MlxRegException("amBER collect is supported on 16nm devices and above");
+    }
+
+    initAmBerCollector();
+    setAmBerCollectorFields();
+
+    size_t errorsBefore = _allUnhandledErrors.size();
+
+    collectAMBER(output);
+
+    if (_allUnhandledErrors.size() > errorsBefore)
+    {
+        throw MlxRegException("%s", _allUnhandledErrors.substr(errorsBefore).c_str());
     }
 }
 

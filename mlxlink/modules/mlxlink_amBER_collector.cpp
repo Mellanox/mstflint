@@ -78,6 +78,7 @@ MlxlinkAmBerCollector::MlxlinkAmBerCollector(Json::Value& jsonRoot) : _jsonRoot(
     _cablePlugged = false;
     _inPRBSMode = false;
     _isCpo = false;
+    _amberRewrite = false;
 
     _mlxlinkMaps = NULL;
 
@@ -273,8 +274,10 @@ u_int32_t MlxlinkAmBerCollector::getLocalFieldValue(const string& fieldName)
     return fieldVal;
 }
 
-void MlxlinkAmBerCollector::startCollector()
+void MlxlinkAmBerCollector::startCollector(AmberOutput output)
 {
+    prepareOutput(output);
+
     if (_localPorts.empty())
     {
         _localPorts.push_back(PortGroup(_localPort, _localPort, 0, 0));
@@ -287,17 +290,121 @@ void MlxlinkAmBerCollector::startCollector()
         _secondSplit = it->secondSplit;
         _isFnmPort = it->isFnm;
 
-        init();
-        collect();
-        exportToCSV();
-
-        _amberCollection.clear();
-        AmberField::reset();
+        collectLine(output);
     }
+}
+
+void MlxlinkAmBerCollector::collectLine(AmberOutput output)
+{
+    init();
+    collect();
+    fixFieldsData();
+
+    switch (output)
+    {
+        case AmberOutput::Json:
+            appendPortToJson();
+            break;
+        case AmberOutput::Report:
+            appendPortToReport();
+            break;
+        case AmberOutput::Csv:
+            exportToCSV();
+            break;
+    }
+
+    _amberCollection.clear();
+    AmberField::reset();
+}
+
+void MlxlinkAmBerCollector::prepareOutput(AmberOutput output)
+{
+    _amberCollection.clear();
+    AmberField::reset();
+
+    switch (output)
+    {
+        case AmberOutput::Json:
+            _amberJson = Json::Value(Json::objectValue);
+            _amberJson["amber_version"] = AMBER_VERSION;
+            _amberJson["ports"] = Json::Value(Json::objectValue);
+            break;
+        case AmberOutput::Report:
+            _amberReport.clear();
+            break;
+        case AmberOutput::Csv:
+            break;
+    }
+}
+
+string MlxlinkAmBerCollector::getLabelPortStr() const
+{
+    string labelPortStr = to_string(_labelPort);
+    if (_splitPort != 0)
+    {
+        labelPortStr += "/" + to_string(_splitPort);
+    }
+    if (_secondSplit != 0)
+    {
+        labelPortStr += "/" + to_string(_secondSplit);
+    }
+    return labelPortStr;
+}
+
+string MlxlinkAmBerCollector::getPortKey() const
+{
+    if (_pnat == PNAT_PCIE)
+    {
+        return to_string(_depth) + "/" + to_string(_pcieIndex) + "/" + to_string(_node);
+    }
+    return getLabelPortStr();
+}
+
+vector<AmberReportField> MlxlinkAmBerCollector::_collectVisibleFields() const
+{
+    vector<AmberReportField> result;
+    for (const auto& sheet : _sheetsList)
+    {
+        auto it = _amberCollection.find(sheet.first);
+        if (it == _amberCollection.end())
+        {
+            continue;
+        }
+        for (const auto& field : it->second)
+        {
+            if (field.isVisible())
+            {
+                result.push_back({static_cast<unsigned int>(sheet.first), field.getUiField(), field.getUiValue()});
+            }
+        }
+    }
+    return result;
+}
+
+void MlxlinkAmBerCollector::appendPortToJson()
+{
+    Json::Value& portJson = _amberJson["ports"][getPortKey()];
+    portJson = Json::Value(Json::objectValue);
+    for (const auto& field : _collectVisibleFields())
+    {
+        portJson[field.field_name] = field.value;
+    }
+}
+
+void MlxlinkAmBerCollector::appendPortToReport()
+{
+    _amberReport.push_back({getPortKey(), _collectVisibleFields()});
+}
+
+string MlxlinkAmBerCollector::exportToJSON() const
+{
+    return _amberJson.toStyledString();
 }
 
 void MlxlinkAmBerCollector::init()
 {
+    _lastCollectError.clear();
+
     try
     {
         _isPortPCIE = (_pnat == PNAT_PCIE);
@@ -449,21 +556,60 @@ void MlxlinkAmBerCollector::init()
 
         initAmberSheetsToDump();
     }
+    catch (const std::exception& exc)
+    {
+        // Record the failure instead of swallowing it silently. init() still does not propagate
+        // (CLI behavior unchanged), but the SDK path can inspect _lastCollectError.
+        _lastCollectError = exc.what();
+    }
     catch (...)
     {
+        _lastCollectError = "Unknown error during amBER init()";
     }
+}
+
+void MlxlinkAmBerCollector::setSheetsToDump(const vector<string>& sheetIds)
+{
+    u_int32_t sheetId = 0;
+
+    _sheetsToDump.clear();
+
+    for (const string& sheetIdStr : sheetIds)
+    {
+        strToUint32((char*)sheetIdStr.c_str(), sheetId);
+        if (_baseSheetsList.find((AMBER_SHEET)sheetId) == _baseSheetsList.end())
+        {
+            throw MlxRegException("Invalid sheet index [" + std::to_string(sheetId) +
+                                  "], check the help menu for valid sheets indexes");
+        }
+        if (isIn((AMBER_SHEET)sheetId, _sheetsToDump))
+        {
+            throw MlxRegException("Duplicated sheet index [" + std::to_string(sheetId) +
+                                  "], please fix the duplication and run again");
+        }
+        _sheetsToDump.push_back((AMBER_SHEET)sheetId);
+    }
+
+    initAmberSheetsToDump();
 }
 
 void MlxlinkAmBerCollector::initAmberSheetsToDump()
 {
-    // Custom sheet\s dump
-    if (!_sheetsToDump.empty())
+    _sheetsList.clear();
+
+    if (_sheetsToDump.empty())
     {
-        _sheetsList.clear();
-        for_each(_sheetsToDump.begin(), _sheetsToDump.end(),
-                 [&](AMBER_SHEET& sheet) {
-                     _sheetsList.push_back({sheet, _baseSheetsList[sheet]});
-                 });
+        for (const auto& sheet : _baseSheetsList)
+        {
+            _sheetsList.push_back({sheet.first, sheet.second});
+        }
+    }
+    else
+    {
+        for (AMBER_SHEET sheet : _sheetsToDump)
+        {
+            _sheetsList.push_back({sheet, _baseSheetsList.at(sheet)});
+        }
     }
 }
 
@@ -561,15 +707,7 @@ vector<AmberField> MlxlinkAmBerCollector::getIndexesInfo()
     string aggregatedPort = NA_FIELD_VALUE;
     string planePort = NA_FIELD_VALUE;
     AmberField::_dataValid = true;
-    string labelPortStr = to_string(_labelPort);
-    if (_splitPort != 0)
-    {
-        labelPortStr += "/" + to_string(_splitPort);
-    }
-    if (_secondSplit != 0)
-    {
-        labelPortStr += "/" + to_string(_secondSplit);
-    }
+    string labelPortStr = getLabelPortStr();
     fields.push_back(AmberField(
       "Port_Number", labelPortStr + "(" + to_string(_localPort) + ")" + (_isFnmPort ? "(FNM)" : ""), !_isPortPCIE));
     fields.push_back(AmberField("depth", to_string(_depth), _isPortPCIE));
@@ -3686,46 +3824,71 @@ void MlxlinkAmBerCollector::exportToCSV()
     const char* fileName = _csvFileName.c_str();
     ifstream ifile(fileName);
     ofstream berFile(fileName, std::ofstream::app);
-
-    u_int32_t totalNumOfFields = fixFieldsData();
-    // Preparing CSV header line
-    if (!ifile.good())
+    if (_amberRewrite)
     {
-        if (!berFile.good())
-        {
-            throw MlxRegException("The provided file path does not exist!");
-        }
-        // Going over all groups inside _amberCollection and getting the field name for each one
-        for (const auto& sheet : _sheetsList)
-        {
-            for (const auto& field : _amberCollection[sheet.first])
-            {
-                if (field.isVisible())
-                {
-                    berFile << field.getUiField();
-                    if (field.getFieldIndex() < totalNumOfFields)
-                    {
-                        berFile << ",";
-                    }
-                }
-            }
-        }
-        berFile << endl;
+        berFile.close();
+        berFile.open(fileName);
     }
-    // Preparing CSV values
-    // Going over all groups inside _amberCollection and getting the field value for each one
+
+    vector<const AmberField*> visibleFields;
     for (const auto& sheet : _sheetsList)
     {
         for (const auto& field : _amberCollection[sheet.first])
         {
             if (field.isVisible())
             {
-                berFile << field.getUiValue();
-                if (field.getFieldIndex() < totalNumOfFields)
-                {
-                    berFile << ",";
-                }
+                visibleFields.push_back(&field);
             }
+        }
+    }
+
+    string header;
+    for (size_t i = 0; i < visibleFields.size(); i++)
+    {
+        header += visibleFields[i]->getUiField();
+        if (i + 1 < visibleFields.size())
+        {
+            header += ",";
+        }
+    }
+
+    // Reject appending a row whose columns don't match the file's existing header.
+    if (!_amberRewrite && ifile.good())
+    {
+        ifstream headerFile(fileName);
+        string existingHeader;
+        if (getline(headerFile, existingHeader))
+        {
+            if (!existingHeader.empty() && existingHeader.back() == '\r')
+            {
+                existingHeader.pop_back();
+            }
+            if (existingHeader != header)
+            {
+                throw MlxRegException("The columns of %s do not match the selected amBER sheets, "
+                                      "use --" AMBER_REWRITE_FLAG " or provide a different file",
+                                      fileName);
+            }
+        }
+    }
+
+    // Preparing CSV header line
+    if (!ifile.good() || _amberRewrite)
+    {
+        _amberRewrite = false;
+        if (!berFile.good())
+        {
+            throw MlxRegException("The provided file path does not exist!");
+        }
+        berFile << header << endl;
+    }
+    // Preparing CSV values
+    for (size_t i = 0; i < visibleFields.size(); i++)
+    {
+        berFile << visibleFields[i]->getUiValue();
+        if (i + 1 < visibleFields.size())
+        {
+            berFile << ",";
         }
     }
 

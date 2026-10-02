@@ -160,6 +160,7 @@ public:
     std::map<u_int32_t, u_int32_t> _sltpParams;
     std::vector<std::string> _ptysSpeeds;
     std::vector<string> _amberPagesStr;
+    bool amberRewrite;
     u_int32_t _lane;
     u_int32_t _bkvGroupId;
     std::vector<std::string> _bkvRates;

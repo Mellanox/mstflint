@@ -379,6 +379,18 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(AMBER_COLLECT_FLAG_SHORT, AMBER_COLLECT_FLAG, "csv_file",
                                  "AmBER Port Extended Information Collection For 16nm Products and Later [CSV File]");
     printf(IDENT);
+    MlxlinkRecord::printFlagLine(AMBER_INDEX_FLAG_SHORT, AMBER_INDEX_FLAG, "page",
+                                 "AmBER group selection, working with " AMBER_COLLECT_FLAG
+                                 " option [1(GENERAL)/2(INDEXES)/3(Link_STATUS)/4(MODULE_STATUS)/5(SYSTEM)/"
+                                 "6(HDR_SERDES)/7(NDR_SERDES)/8(PORT_COUNTERS)/9(TROUBLESHOOTING)/10(PHY_OP)/"
+                                 "11(LINK_UP)/12(LINK_DOWN)/13(TEST_MODE)/14(MODULE_TEST_MODE)/15(PHY_DEBUG)/"
+                                 "16(EXT_MODULE_STATUS)/17(SERDES_5NM_GEN7)/20(RECOVERY_COUNTERS)/"
+                                 "21(SERDES_5NM_GEN8)]");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(AMBER_REWRITE_FLAG_SHORT, AMBER_REWRITE_FLAG, "",
+                                 "Rewrite the amBER csv instead of appending to it, working with " AMBER_COLLECT_FLAG
+                                 " option");
+    printf(IDENT);
     MlxlinkRecord::printFlagLine(BER_LIMIT_FLAG_SHORT, BER_LIMIT_FLAG, "limit_criteria",
                                  "BER Limit Criteria [Nominal(Default)/Corner/Drift] (Optional - Default Nominal)");
     printf(IDENT);
@@ -1314,6 +1326,14 @@ void MlxlinkUi::validateAmberCollectParams()
     {
         throw MlxRegException("Amber collect is not supported for specific OE \\ ELS!");
     }
+    if (!_userInput._amberPagesStr.empty() && !isIn(SEND_AMBER_COLLECT, _sendRegFuncMap))
+    {
+        throw MlxRegException(AMBER_INDEX_FLAG " option is used with " AMBER_COLLECT_FLAG);
+    }
+    if (_userInput.amberRewrite && !isIn(SEND_AMBER_COLLECT, _sendRegFuncMap))
+    {
+        throw MlxRegException(AMBER_REWRITE_FLAG " option is used with " AMBER_COLLECT_FLAG);
+    }
 }
 
 void MlxlinkUi::validateMultiPortInfoParams()
@@ -1616,6 +1636,8 @@ void MlxlinkUi::initCmdParser()
                "Transceiver loopback state (only with -l TRAN) [input|output|disable]");
     AddOptions(BER_COLLECT_FLAG, BER_COLLECT_FLAG_SHORT, "BERCollectFile", "BER Collection csv file");
     AddOptions(AMBER_COLLECT_FLAG, AMBER_COLLECT_FLAG_SHORT, "AMBERCollectFile", "AMBER Collection csv file");
+    AddOptions(AMBER_INDEX_FLAG, AMBER_INDEX_FLAG_SHORT, "Page index", "Amber pages to dump");
+    AddOptions(AMBER_REWRITE_FLAG, AMBER_REWRITE_FLAG_SHORT, "", "Rewrite the amber csv instead of append to it");
     AddOptions(BER_LIMIT_FLAG, BER_LIMIT_FLAG_SHORT, "Mode", "Test Mode of Ber Collect (Nominal/Corner/Drift)");
     AddOptions(ITERATION_FLAG, ITERATION_FLAG_SHORT, "Iteration", "Iteration of BER Collect");
     AddOptions(PHY_RECOVERY_FLAG, PHY_RECOVERY_FLAG_SHORT, "Recovery", "Enable/Disable PHY Recovery");
@@ -2478,6 +2500,16 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     {
         addCmd(SEND_AMBER_COLLECT);
         _userInput._csvBer = value;
+        return PARSE_OK;
+    }
+    else if (name == AMBER_INDEX_FLAG)
+    {
+        _userInput._amberPagesStr = parseParamsFromLine(value);
+        return PARSE_OK;
+    }
+    else if (name == AMBER_REWRITE_FLAG)
+    {
+        _userInput.amberRewrite = true;
         return PARSE_OK;
     }
     else if (name == BER_LIMIT_FLAG)
