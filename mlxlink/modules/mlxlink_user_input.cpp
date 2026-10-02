@@ -216,4 +216,6 @@ UserInput::UserInput()
     _setTxPrecodingProvided = false;
     _setRxPrecodingProvided = false;
     _showModuleCap = false;
+
+    amberRewrite = false;
 }

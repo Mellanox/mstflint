@@ -237,6 +237,10 @@
 #define ITERATION_FLAG_SHORT ' '
 #define AMBER_COLLECT_FLAG "amber_collect"
 #define AMBER_COLLECT_FLAG_SHORT ' '
+#define AMBER_INDEX_FLAG "amber_index"
+#define AMBER_INDEX_FLAG_SHORT ' '
+#define AMBER_REWRITE_FLAG "amber_rewrite"
+#define AMBER_REWRITE_FLAG_SHORT ' '
 #define PPCNT_CLEAR_FLAG "pc"
 #define PPCNT_CLEAR_FLAG_SHORT ' '
 #define PEPC_SET_FLAG "set_external_phy"
@@ -473,6 +477,7 @@ enum OPTION_TYPE
     SEND_PRECODING,
     SAVE_LASER_SETPOINT,
     HANDLE_ELS_OPERATION,
+    AMBER_REWRITE,
 
     // Any new function's index should be added before FUNCTION_LAST in this enum
     FUNCTION_LAST
@@ -621,7 +626,9 @@ public:
     void showPcieLinks();
     void showOperationalInfo();
     void showCountersInfo();
-    virtual void collectAMBER();
+    virtual void collectAMBER(AmberOutput output = AmberOutput::Csv);
+    std::string collectAmberJson();
+    std::vector<AmberPortReport> collectAmberReport();
     void collectBER();
     void showTxGroupMapping();
     void showPlr();
@@ -769,6 +776,7 @@ public:
     void initPortInfo();
     void setAmBerCollectorFields();
     virtual void initAmBerCollector();
+    void runAmberCollection(AmberOutput output);
     void showCableDump();
     void showCableDDM();
     vector<u_int8_t> validateBytes(const vector<string>& strBytes);

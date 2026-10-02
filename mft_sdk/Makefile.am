@@ -69,6 +69,7 @@ sdklibdir = $(libdir)/mstflint/sdk
 sdklib_LTLIBRARIES = libmstflint_sdk.la
 
 libmstflint_sdk_la_SOURCES = \
+    mft_sdk_amber.cpp \
     mft_sdk_class.cpp \
     mft_sdk_cr_space_access.cpp \
     mft_sdk_discovery.cpp \
@@ -81,6 +82,7 @@ libmstflint_sdk_la_SOURCES = \
     mft_sdk_temperature.cpp \
     mft_sdk_telemetry.cpp \
     mft_sdk.h \
+    mft_sdk_amber.h \
     mft_sdk_class.hpp \
     mft_sdk_cr_space_access.h \
     mft_sdk_discovery.h \
@@ -138,6 +140,7 @@ libmstflint_sdk_la_LIBADD = \
 sdkincludedir = $(includedir)/mstflint/sdk/mft_sdk
 sdkinclude_HEADERS = \
     mft_sdk.h \
+    mft_sdk_amber.h \
     mft_sdk_cr_space_access.h \
     mft_sdk_discovery.h \
     mft_sdk_errors.h \
