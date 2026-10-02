@@ -106,6 +106,14 @@ from .mft_sdk_telemetry import (
     TelemetryPortType,
     TelemetryView,
 )
+from .mft_sdk_amber import (
+    MST_AMBER_FIELD_NAME_MAX,
+    MST_AMBER_VALUE_MAX,
+    MST_AMBER_VERSION_MAX,
+    AmberSheet,
+    mstGetAmberJson,
+    mstGetAmberReport,
+)
 from .mft_sdk_temperature import (
     get_device_temperature,
 )
@@ -168,7 +176,13 @@ __all__ = [
     "TelemetryPortType",
     "TelemetryView",
 
+    "mstGetAmberJson",
+    "mstGetAmberReport",
 
+    "AmberSheet",
 
+    "MST_AMBER_FIELD_NAME_MAX",
+    "MST_AMBER_VALUE_MAX",
+    "MST_AMBER_VERSION_MAX",
     "get_device_temperature",
 ]

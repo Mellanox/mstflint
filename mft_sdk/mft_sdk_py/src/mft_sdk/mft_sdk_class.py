@@ -35,7 +35,7 @@ This file provides Python ctypes bindings for the MFT SDK device discovery funct
 """
 
 from ctypes import byref, c_void_p, c_uint8
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Sequence
 
 from .mft_sdk_core import LIB
 from .mft_sdk_types import MstDevice
@@ -49,6 +49,7 @@ from .mft_sdk_telemetry import (
     TelemetryPortType,
     TelemetryView,
 )
+from .mft_sdk_amber import mstGetAmberJson, mstGetAmberReport
 
 
 class MftSdk():
@@ -159,6 +160,14 @@ class MftSdk():
     ) -> str:
         """Get one or more telemetry views as the report mlxlink itself would print."""
         return mstGetTelemetryText(self._device_handle, views, port, port_type)
+
+    def get_amber_json(self, port: str = "", sheets: Sequence[int] = ()) -> dict:
+        """Collect amBER as a JSON dict keyed by port; empty port/sheets collect all ports/sheets."""
+        return mstGetAmberJson(self._device_handle, port, sheets)
+
+    def get_amber_report(self, port: str = "", sheets: Sequence[int] = ()) -> dict:
+        """Collect amBER as an amber_version envelope over per-port field dicts."""
+        return mstGetAmberReport(self._device_handle, port, sheets)
 
     def set_i2c_secondary_address(self, i2c_secondary_address: int) -> None:
         """Set the I2C secondary address for the device.

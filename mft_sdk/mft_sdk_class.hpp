@@ -103,6 +103,8 @@ public:
                                      const MstTelemetryContext& context = MstTelemetryContext{0, ""});
     MstStatus getTelemetryJson(uint32_t views, const MstTelemetryContext& context, char** jsonOut);
     MstStatus getTelemetryText(uint32_t views, const MstTelemetryContext& context, char** textOut);
+    MstStatus getAmberJson(const std::string& port, const std::vector<unsigned int>& sheets, char** jsonOut);
+    MstStatus getAmberReport(const std::string& port, const std::vector<unsigned int>& sheets, MstAmberReport* report);
 
     // HCA capabilities SDK functions
     MstStatus getCapabilityTypesList(std::vector<std::string>& capabilityTypes);
@@ -172,6 +174,7 @@ private:
     void initMlxLinkSdkUserInput(MlxLinkInitMode initMode);
     MstStatus
       runTelemetryViews(uint32_t views, const std::string& port, MstTelemetryPortType portType, Json::Value& root);
+    void applyAmberSheetSelection(const std::vector<unsigned int>& sheets);
     MstStatus extractOperationalInfoFromJson(MstTelemetryOperationalInfo* operationalInfo);
     MstStatus extractCountersInfoFromJson(MstCountersInfo* countersInfo);
     MstStatus extractCableDDMInfoFrom(MstCableDDMInfo* cableDDMInfo);

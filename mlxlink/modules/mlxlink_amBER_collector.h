@@ -50,6 +50,26 @@ struct FIELDS_COUNT
     u_int32_t numOfPcieFields;
 };
 
+struct AmberReportField
+{
+    unsigned int sheet_id;
+    std::string field_name;
+    std::string value;
+};
+
+struct AmberPortReport
+{
+    std::string port;
+    std::vector<AmberReportField> fields;
+};
+
+enum class AmberOutput
+{
+    Csv,
+    Json,
+    Report
+};
+
 class MlxlinkAmBerCollector : public MlxlinkRegParser
 {
 public:
@@ -95,7 +115,13 @@ public:
     bool isMCMValid();
 
     string getClRawBer();
-    void startCollector();
+    void startCollector(AmberOutput output);
+    void collectLine(AmberOutput output);
+
+    void setSheetsToDump(const vector<string>& sheetIds);
+
+    string exportToJSON() const;
+    const std::vector<AmberPortReport>& exportToReport() const { return _amberReport; }
 
     u_int32_t _pnat;
     u_int32_t _localPort;
@@ -118,6 +144,8 @@ public:
     bool _isHca;
     bool _isCpo;
     vector<AMBER_SHEET> _sheetsToDump;
+    bool _amberRewrite;
+    string _lastCollectError;
 
 private:
     void sendLocalPrmRegVaList(const string& regName,
@@ -165,6 +193,12 @@ private:
     u_int32_t fixFieldsData();
     void exportToCSV();
     void exportToConsole();
+    std::vector<AmberReportField> _collectVisibleFields() const;
+    void prepareOutput(AmberOutput output);
+    void appendPortToJson();
+    void appendPortToReport();
+    string getPortKey() const;
+    string getLabelPortStr() const;
     bool createPemiCacheKey(u_int32_t& keyOut,
                             uint8_t pemiPage,
                             MODULE_IND_TYPE moduleIndType = MODULE_IND_TYPE_DEFAULT_CPO);
@@ -182,6 +216,9 @@ private:
     map<AMBER_SHEET, vector<AmberField>> _amberCollection;
     map<AMBER_SHEET, FIELDS_COUNT> _baseSheetsList;
     map<u_int32_t, vector<u_int32_t>> _registerCache;
+
+    Json::Value _amberJson;
+    std::vector<AmberPortReport> _amberReport;
 
 protected:
     void resetLocalParser(const string& regName);

@@ -42,6 +42,7 @@
 #include <mft_sdk/mft_sdk_discovery.h>
 #include <mft_sdk/mft_sdk_reg_access.h>
 #include <mft_sdk/mft_sdk_telemetry.h>
+#include <mft_sdk/mft_sdk_amber.h>
 #include <mft_sdk/mft_sdk_hca_caps.h>
 #include <mft_sdk/mft_sdk_cr_space_access.h>
 #include <mft_sdk/mft_sdk_i2c_access.h>
