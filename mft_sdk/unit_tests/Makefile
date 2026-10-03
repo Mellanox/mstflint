@@ -187,6 +187,16 @@ endif
 # runs against that one installation. The CLI step must configure WITHOUT
 # --enable-mstflint-sdk or it overwrites the SDK installed first. Its
 # mstreg/mstlink are the oracle; utils.py otherwise defaults to MFT's tools.
+#
+# The clean between the two passes is TREE-WIDE and load-bearing. configure.ac
+# mutates GLOBAL CFLAGS/CXXFLAGS, not just one directory's: enabling the SDK
+# appends -DMFT_SDK_EXTERNAL -DMFT_SDK_STANDALONE_BUILD, and --disable-rdmem
+# appends -DNO_RDMEM. So every translation unit pass 1 compiles differs from
+# what pass 2 needs, and automake's object rules do not depend on the Makefile,
+# so a surviving .o/.lo is silently reused. Cleaning while the tree is still
+# SDK-configured is deliberate: the SDK SUBDIRS are a superset of the CLI ones.
+# The leftover check turns "that clean was sufficient" from a claim in this
+# comment into something the recipe verifies on every run.
 SDK_CONFIGURE_FLAGS ?= --enable-mstflint-sdk --enable-adb-generic-tools --prefix=/usr
 CLI_CONFIGURE_FLAGS ?= --prefix=/usr --enable-adb-generic-tools
 SUDO ?= sudo
@@ -208,6 +218,14 @@ prepare:
 	SDK_SUM=$$(md5sum $$($(PKG_CONFIG) --variable=libdir $(SDK_PKG))/libmstflint_sdk.so | cut -d' ' -f1); \
 	echo "    SDK installed, md5 $$SDK_SUM"; \
 	echo "==> [2/3] building and installing the mstflint CLI (no SDK flag)"; \
+	$(MAKE) clean >/dev/null 2>&1 || true; \
+	leftover=$$(find $(REPO_ROOT) -path '$(BUILD_DIR)' -prune -o \
+	                 -path '$(REPO_ROOT)/kernel' -prune -o \
+	                 \( -name '*.o' -o -name '*.lo' \) -print -quit); \
+	test -z "$$leftover" || { \
+	  echo "error: [$$leftover] survived the between-pass clean." >&2; \
+	  echo "       The CLI pass would reuse objects compiled with the SDK's" >&2; \
+	  echo "       global defines and silently produce a wrong oracle." >&2; exit 1; }; \
 	./configure $(CLI_CONFIGURE_FLAGS) >/dev/null; \
 	$(MAKE) -j$(JOBS) >/dev/null; \
 	$(SUDO) $(MAKE) install >/dev/null; \
