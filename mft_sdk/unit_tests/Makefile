@@ -149,6 +149,16 @@ C_BIN     := $(BUILD_DIR)/mstflint_sdk_c_test
 C_DRIVER  := $(TESTS_DIR)/mft_sdk_c_test_main.cpp
 C_SUITES  := $(sort $(wildcard $(TESTS_DIR)/*/*_test.c))
 
+# What each public target produces, tagged by ROLE rather than listed flat.
+# install-tests looks these up from TEST_TARGET, so a caller names a target and
+# never a binary -- renaming a binary here cannot strand an out-of-tree
+# installer that hardcoded the name -- and it can record which installed binary
+# is the gtest harness and which is the C driver without matching on filenames.
+op_info_CPP := $(OP_INFO_CPP_BIN)
+op_info_C   := $(C_BIN)
+unified_CPP := $(CPP_BIN)
+unified_C   := $(C_BIN)
+
 # --- hca_caps standalone probe ----------------------------------------------
 # Build canary only: test_hca_caps_validation.py compiles this file itself at
 # run time. hca_caps_probe.c must NEVER join C_SUITES -- its unguarded main()
@@ -179,7 +189,8 @@ DOCA_CFLAGS := -I$(SDK_INCDIR)
 DOCA_LIBS   := -L$(SDK_LIBDIR) -lmstflint_sdk
 endif
 
-.PHONY: all op_info unified gtest clean distclean check-sdk print-env help \
+.PHONY: all op_info unified gtest install-tests clean distclean check-sdk \
+        print-env help \
         doca-contract check-doca hca-caps-probe prepare test check-ref-cli
 
 # --- one-time preparation ----------------------------------------------------
@@ -287,6 +298,8 @@ help:
 	@echo "  hca-caps-probe compile hca_caps/hca_caps_probe.c (build canary)"
 	@echo "  doca-contract build the DOCA-shaped probe (pkg-config, no rpath)"
 	@echo "  check-doca    build the probe and assert DOCA's integration contract"
+	@echo "  install-tests build TEST_TARGET and install its binaries into"
+	@echo "                TESTS_INSTALLDIR (now $(TESTS_INSTALLDIR))"
 	@echo "  print-env     print the env block the Python suites expect"
 	@echo "  clean         remove built test binaries (keeps gtest)"
 	@echo "  distclean     remove everything under $(BUILD_DIR)"
@@ -333,7 +346,7 @@ $(GTEST_LIB): | $(BUILD_DIR)
 	echo "  AR       $(GTEST_LIB)"
 
 # --- op_info ----------------------------------------------------------------
-op_info: $(OP_INFO_CPP_BIN) $(C_BIN)
+op_info: $(op_info_CPP) $(op_info_C)
 	@echo ""
 	@echo "Built:"
 	@echo "  C++  $(OP_INFO_CPP_BIN)"
@@ -347,11 +360,44 @@ $(OP_INFO_CPP_BIN): $(OP_INFO_CPP_SRC) $(GTEST_LIB) | $(BUILD_DIR)
 	  $(LDFLAGS) $(LDLIBS) -o $@
 
 # --- unified ----------------------------------------------------------------
-unified: $(CPP_BIN) $(C_BIN)
+unified: $(unified_CPP) $(unified_C)
 	@echo ""
 	@echo "Built:"
 	@echo "  C++  $(CPP_BIN)   (all compilable gtest suites)"
 	@echo "  C    $(C_BIN)"
+
+# --- install ----------------------------------------------------------------
+# Build TEST_TARGET and install exactly the binaries it produces, into the MFT
+# SDK's layout (<sdk libdir>/tests) where the Python suites look for them.
+TESTS_INSTALLDIR ?= $(SDK_LIBDIR)/tests
+TEST_BINS        ?= $($(TEST_TARGET)_CPP) $($(TEST_TARGET)_C)
+
+# Which installed binary plays which role, written next to them so it survives
+# the source tree being deleted -- which the MARS regression does before the
+# first case runs, leaving the Python suites with nothing to ask. `print-env`
+# cannot serve this: it names the BUILD directory and is fixed to the unified
+# harness, so it cannot describe what op_info installed. The keys are the
+# variable names the suites already use, so the contract reads the same on both
+# sides.
+TESTS_MANIFEST ?= $(TESTS_INSTALLDIR)/harness.env
+
+install-tests: $(TEST_TARGET)
+	@test -n "$(strip $(TEST_BINS))" || { \
+	  echo "error: no binaries listed for TEST_TARGET=$(TEST_TARGET)." >&2; \
+	  echo "       Add '$(TEST_TARGET)_CPP' and '$(TEST_TARGET)_C' here," >&2; \
+	  echo "       or pass TEST_BINS=..." >&2; \
+	  exit 1; }
+	install -d -m 0755 $(TESTS_INSTALLDIR)
+	install -m 0755 $(TEST_BINS) $(TESTS_INSTALLDIR)
+	@printf '%s\n' \
+	  '# written by: make install-tests' \
+	  '# which installed binary plays which role' \
+	  'MFT_SDK_SO_TEST_BIN=$(TESTS_INSTALLDIR)/$(notdir $($(TEST_TARGET)_CPP))' \
+	  'MFT_SDK_C_SO_TEST_BIN=$(TESTS_INSTALLDIR)/$(notdir $($(TEST_TARGET)_C))' \
+	  > $(TESTS_MANIFEST)
+	@chmod 0644 $(TESTS_MANIFEST)
+	@echo "installed into $(TESTS_INSTALLDIR): $(notdir $(TEST_BINS))"
+	@echo "recorded $(TESTS_MANIFEST)"
 
 # mft_sdk_test_main.cpp owns main() here, so every suite TU is compiled with
 # MFT_SDK_SO_UNIFIED to suppress its own.
