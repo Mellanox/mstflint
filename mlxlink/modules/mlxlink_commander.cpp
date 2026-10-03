@@ -4022,11 +4022,11 @@ void MlxlinkCommander::prepare40_28_16nmEyeInfo(u_int32_t numOfLanes)
     {
         sendPrmReg(ACCESS_REG_SLRG, REG_GET, "lane=%d", lane);
 
-        physicalGrades.push_back(MlxlinkRecord::addSpaceForSlrg(to_string(getFieldValue("grade"))));
+        physicalGrades.push_back(MlxlinkRecord::addSpaceForSlrg(to_string(getFieldValue("grade", 0, 0, false, true))));
         if (validPhaseHeight)
         {
-            int offsetEOPos = getHeight(getFieldValue(height_eo_pos));
-            int offsetEONeg = getHeight(getFieldValue(height_eo_neg));
+            int offsetEOPos = getHeight(getFieldValue(height_eo_pos, 0, 0, false, true));
+            int offsetEONeg = getHeight(getFieldValue(height_eo_neg, 0, 0, false, true));
             if (_productTechnology == PRODUCT_16NM && (offsetEOPos + offsetEONeg) == 0)
             {
                 offsetEONegStr = NA_FIELD_VALUE;
@@ -4035,8 +4035,8 @@ void MlxlinkCommander::prepare40_28_16nmEyeInfo(u_int32_t numOfLanes)
             {
                 offsetEONegStr = to_string(offsetEOPos + offsetEONeg);
             }
-            int phaseEOPos = getPhase(getFieldValue(phase_eo_pos));
-            int phaseEONeg = getPhase(getFieldValue(phase_eo_neg));
+            int phaseEOPos = getPhase(getFieldValue(phase_eo_pos, 0, 0, false, true));
+            int phaseEONeg = getPhase(getFieldValue(phase_eo_neg, 0, 0, false, true));
             if (_productTechnology == PRODUCT_16NM && (phaseEOPos + phaseEONeg) == 0)
             {
                 phaseEONegStr = NA_FIELD_VALUE;
@@ -4074,7 +4074,7 @@ void MlxlinkCommander::startSlrgPciScan(u_int32_t numOfLanesToUse)
         {
             sendPrmReg(ACCESS_REG_SLRG, REG_GET, "lane=%d", lane);
 
-            if (getFieldValue("status"))
+            if (getFieldValue("status", 0, 0, false, true))
             {
                 break;
             }
@@ -4110,14 +4110,14 @@ void MlxlinkCommander::prepare7nmEyeInfo(u_int32_t numOfLanesToUse)
 
         sendPrmReg(ACCESS_REG_SLRG, REG_GET, "lane=%d,fom_measurement=%d", lane, fomMeasurement);
 
-        status = getFieldValue("status");
-        std::string initialFomStr = status ? getFieldStr("initial_fom", (u_int32_t)8) : NA_FIELD_VALUE;
+        status = getFieldValue("status", 0, 0, false, true);
+        std::string initialFomStr = status ? getFieldStr("initial_fom", 0, 0, false, true) : NA_FIELD_VALUE;
 
         initialFom.push_back(MlxlinkRecord::addSpaceForSlrg(initialFomStr));
-        lastFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("last_fom", (u_int32_t)8) : NA_FIELD_VALUE));
-        upperFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("upper_eye", (u_int32_t)8) : NA_FIELD_VALUE));
-        midFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("mid_eye", (u_int32_t)8) : NA_FIELD_VALUE));
-        lowerFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("lower_eye", (u_int32_t)8) : NA_FIELD_VALUE));
+        lastFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("last_fom", 0, 0, false, true) : NA_FIELD_VALUE));
+        upperFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("upper_eye", 0, 0, false, true) : NA_FIELD_VALUE));
+        midFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("mid_eye", 0, 0, false, true) : NA_FIELD_VALUE));
+        lowerFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("lower_eye", 0, 0, false, true) : NA_FIELD_VALUE));
 
         _fomStr += initialFomStr + " ";
 
@@ -4125,7 +4125,7 @@ void MlxlinkCommander::prepare7nmEyeInfo(u_int32_t numOfLanesToUse)
     }
     if (!_userInput._showMultiPortInfo && !_userInput._showMultiPortModuleInfo && !_userInput._showMultiPortCpoInfo)
     {
-        string fomMode = status ? _mlxlinkMaps->_slrgFomMode[getFieldValue("fom_mode")] : NA_FIELD_VALUE;
+        string fomMode = status ? _mlxlinkMaps->_slrgFomMode[getFieldValue("fom_mode", 0, 0, false, true)] : NA_FIELD_VALUE;
         setPrintVal(_eyeOpeningInfoCmd, "FOM Mode", fomMode, ANSI_COLOR_RESET, true, true, true);
         setPrintVal(_eyeOpeningInfoCmd, "Lane", status ? getStringFromVector(legand) : NA_FIELD_VALUE, ANSI_COLOR_RESET, true, true, true);
         setPrintVal(_eyeOpeningInfoCmd, "Initial FOM", status ? getStringFromVector(initialFom) : NA_FIELD_VALUE, ANSI_COLOR_RESET, true, true, true);
@@ -4164,14 +4164,14 @@ void MlxlinkCommander::prepare5nmEyeInfo(u_int32_t numOfLanesToUse)
 
         sendPrmReg(ACCESS_REG_SLRG, REG_GET, "lane=%d,fom_measurement=%d", lane, fomMeasurement);
 
-        status = getFieldValue("status");
-        std::string initialFomStr = status ? getFieldStr("initial_fom", (u_int32_t)16) : NA_FIELD_VALUE;
+        status = getFieldValue("status", 0, 0, false, true);
+        std::string initialFomStr = status ? getFieldStr("initial_fom", 0, 0, false, true) : NA_FIELD_VALUE;
 
         initialFom.push_back(MlxlinkRecord::addSpaceForSlrg(initialFomStr));
-        lastFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("last_fom", (u_int32_t)16) : NA_FIELD_VALUE));
-        upperFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("upper_eye", (u_int32_t)16) : NA_FIELD_VALUE));
-        midFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("mid_eye", (u_int32_t)16) : NA_FIELD_VALUE));
-        lowerFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("lower_eye", (u_int32_t)16) : NA_FIELD_VALUE));
+        lastFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("last_fom", 0, 0, false, true) : NA_FIELD_VALUE));
+        upperFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("upper_eye", 0, 0, false, true) : NA_FIELD_VALUE));
+        midFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("mid_eye", 0, 0, false, true) : NA_FIELD_VALUE));
+        lowerFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("lower_eye", 0, 0, false, true) : NA_FIELD_VALUE));
 
         _fomStr += initialFomStr + " ";
 
@@ -4180,7 +4180,7 @@ void MlxlinkCommander::prepare5nmEyeInfo(u_int32_t numOfLanesToUse)
 
     if (!_userInput._showMultiPortInfo && !_userInput._showMultiPortModuleInfo && !_userInput._showMultiPortCpoInfo)
     {
-        string fomMode = status ? _mlxlinkMaps->_slrgFomMode5nm[getFieldValue("fom_mode")] : NA_FIELD_VALUE;
+        string fomMode = status ? _mlxlinkMaps->_slrgFomMode5nm[getFieldValue("fom_mode", 0, 0, false, true)] : NA_FIELD_VALUE;
         setPrintVal(_eyeOpeningInfoCmd, "FOM Mode", fomMode, ANSI_COLOR_RESET, true, true, true);
         setPrintVal(_eyeOpeningInfoCmd, "Lane", status ? getStringFromVector(legand) : NA_FIELD_VALUE, ANSI_COLOR_RESET, true, true, true);
         setPrintVal(_eyeOpeningInfoCmd, "Initial FOM", status ? getStringFromVector(initialFom) : NA_FIELD_VALUE, ANSI_COLOR_RESET, true, true, true);
@@ -4196,11 +4196,11 @@ void MlxlinkCommander::prepareSpc6EyeInfo(u_int32_t numOfLanesToUse)
     std::vector<string> legand, fomPerLane;
 
     sendPrmReg(ACCESS_REG_SLRG, REG_GET, "all_lanes=%u", 1);
-    u_int32_t status = getFieldValue("status");
+    u_int32_t status = getFieldValue("status", 0, 0, false, true);
 
     for (u_int32_t lane = 0; lane < numOfLanesToUse; lane++)
     {
-        string fomStr = status ? getFieldStr("fom_lane" + to_string(lane), (u_int32_t)16) : NA_FIELD_VALUE;
+        string fomStr = status ? getFieldStr("fom_lane" + to_string(lane), 0, 0, false, true) : NA_FIELD_VALUE;
         fomPerLane.push_back(MlxlinkRecord::addSpaceForSlrg(fomStr));
         legand.push_back(MlxlinkRecord::addSpaceForSlrg(to_string(lane)));
         _fomStr += fomStr + " ";
@@ -4208,7 +4208,7 @@ void MlxlinkCommander::prepareSpc6EyeInfo(u_int32_t numOfLanesToUse)
 
     if (!_userInput._showMultiPortInfo && !_userInput._showMultiPortModuleInfo)
     {
-        string fomMode = status ? _mlxlinkMaps->_slrgFomMode5nm[getFieldValue("fom_mode")] : NA_FIELD_VALUE;
+        string fomMode = status ? _mlxlinkMaps->_slrgFomMode5nm[getFieldValue("fom_mode", 0, 0, false, true)] : NA_FIELD_VALUE;
         setPrintVal(_eyeOpeningInfoCmd, "FOM Mode", fomMode, ANSI_COLOR_RESET, true, true, true);
         setPrintVal(_eyeOpeningInfoCmd, "Lane", status ? getStringFromVector(legand) : NA_FIELD_VALUE, ANSI_COLOR_RESET,
                     true, true, true);
@@ -4235,7 +4235,7 @@ void MlxlinkCommander::showEye()
         {
             sendPrmReg(ACCESS_REG_MPEIN, REG_GET, "depth=%d,pcie_index=%d,node=%d", _dpn.depth, _dpn.pcieIndex, _dpn.node);
 
-            if (getFieldValue("link_speed_active") < GEN3)
+            if (getFieldValue("link_speed_active", 0, 0, false, true) < GEN3)
             {
                 throw MlxRegException("Eye information available for Gen3 and above");
             }
