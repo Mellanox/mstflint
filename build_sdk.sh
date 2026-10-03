@@ -60,7 +60,7 @@ Options:
   --no-ldsoconf            Do not install the ld.so.conf.d snippet
   -j, --jobs N             Parallel build jobs (default: nproc)
   --extra-configure FLAGS  Extra flags appended verbatim to ./configure, e.g.
-                           --extra-configure=--disable-openssl. Word-split, so
+                           --extra-configure "--disable-openssl". Word-split, so
                            several may be passed in one quoted string.
   --no-configure           Skip autogen/configure; reuse the existing configuration
   --build-only             Build the SDK but do not install it
@@ -292,7 +292,6 @@ while [[ $# -gt 0 ]]; do
         --no-ldsoconf)         LDSOCONFDIR="no"; shift ;;
         -j|--jobs)             JOBS="$2"; shift 2 ;;
         --extra-configure)     EXTRA_CONFIGURE="$2"; shift 2 ;;
-        --extra-configure=*)   EXTRA_CONFIGURE="${1#*=}"; shift ;;
         --no-configure)        DO_CONFIGURE=0; shift ;;
         --build-only)          INSTALL=0; shift ;;
         --rpm)                 BUILD_RPM=1; shift ;;

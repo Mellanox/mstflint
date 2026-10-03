@@ -221,7 +221,7 @@ prepare:
 	echo "==> [1/3] building and installing the SDK"; \
 	$(MAKE) -C tools_layouts clean >/dev/null 2>&1 || true; \
 	rm -f mft_sdk/libmstflint_sdk.la mft_sdk/.libs/libmstflint_sdk.so*; \
-	./build_sdk.sh --prefix=$(SDK_PREFIX) -j $(JOBS) --build-only \
+	./build_sdk.sh --prefix $(SDK_PREFIX) -j $(JOBS) --build-only \
 	    $(if $(SDK_CONFIGURE_EXTRA),--extra-configure "$(SDK_CONFIGURE_EXTRA)") >/dev/null; \
 	grep -q '^#define PACKAGE_STRING' config.h || { \
 	  echo "error: config.h has no #defines; re-run ./autogen.sh && ./configure" >&2; exit 1; }; \
