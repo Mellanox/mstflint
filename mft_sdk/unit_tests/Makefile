@@ -197,7 +197,13 @@ endif
 # SDK-configured is deliberate: the SDK SUBDIRS are a superset of the CLI ones.
 # The leftover check turns "that clean was sufficient" from a claim in this
 # comment into something the recipe verifies on every run.
-SDK_CONFIGURE_FLAGS ?= --enable-mstflint-sdk --enable-adb-generic-tools --prefix=/usr
+# Pass 1 is delegated to ../../build_sdk.sh, which is the canonical SDK build
+# recipe -- the same one mstflint-sdk.spec.in mirrors. Keeping a second copy of
+# the configure flags here is how this target came to be missing
+# --disable-rdmem while the spec and build_sdk.sh both had it. Override
+# SDK_PREFIX / SDK_CONFIGURE_EXTRA rather than restating the flag set.
+SDK_PREFIX ?= /usr
+SDK_CONFIGURE_EXTRA ?=
 CLI_CONFIGURE_FLAGS ?= --prefix=/usr --enable-adb-generic-tools
 SUDO ?= sudo
 JOBS ?= $(shell nproc 2>/dev/null || echo 4)
@@ -207,11 +213,10 @@ prepare:
 	echo "==> [1/3] building and installing the SDK"; \
 	$(MAKE) -C tools_layouts clean >/dev/null 2>&1 || true; \
 	rm -f mft_sdk/libmstflint_sdk.la mft_sdk/.libs/libmstflint_sdk.so*; \
-	./autogen.sh >/dev/null; \
-	./configure $(SDK_CONFIGURE_FLAGS) >/dev/null; \
+	./build_sdk.sh --prefix=$(SDK_PREFIX) -j $(JOBS) --build-only \
+	    $(if $(SDK_CONFIGURE_EXTRA),--extra-configure "$(SDK_CONFIGURE_EXTRA)") >/dev/null; \
 	grep -q '^#define PACKAGE_STRING' config.h || { \
 	  echo "error: config.h has no #defines; re-run ./autogen.sh && ./configure" >&2; exit 1; }; \
-	$(MAKE) sdk -j$(JOBS) >/dev/null; \
 	test -f mft_sdk/.libs/libmstflint_sdk.so || { echo "error: SDK did not build" >&2; exit 1; }; \
 	$(SUDO) $(MAKE) install-sdk >/dev/null; \
 	$(SUDO) $(shell command -v ldconfig || echo /sbin/ldconfig); \
