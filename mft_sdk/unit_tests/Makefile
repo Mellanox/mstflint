@@ -205,6 +205,14 @@ endif
 SDK_PREFIX ?= /usr
 SDK_CONFIGURE_EXTRA ?=
 CLI_CONFIGURE_FLAGS ?= --prefix=/usr --enable-adb-generic-tools
+# Where the oracle CLI lands. CLI_CONFIGURE_FLAGS above puts it in /usr/bin;
+# a caller that configures the CLI with a different --prefix must move this
+# with it. The MARS regression builds the CLI into /usr/local, because
+# MFTPlayerModule.setupMSTFLINTEnv() appends exactly /usr/local/bin to PATH.
+REF_CLI_BINDIR ?= /usr/bin
+# Which harness prepare builds. "unified" is the one every Python compare
+# suite expects; "op_info" is the narrower pair the MARS op-info case runs.
+TEST_TARGET ?= unified
 SUDO ?= sudo
 JOBS ?= $(shell nproc 2>/dev/null || echo 4)
 
@@ -241,7 +249,7 @@ prepare:
 	  echo "       step 2 must not pass --enable-mstflint-sdk." >&2; exit 1; }; \
 	echo "    SDK unchanged after the CLI install"; \
 	echo "==> [3/3] building the test harness"; \
-	$(MAKE) -C $(TESTS_DIR) unified >/dev/null; \
+	$(MAKE) -C $(TESTS_DIR) $(TEST_TARGET) >/dev/null; \
 	echo "==> prepare complete"
 	@$(MAKE) --no-print-directory -C $(TESTS_DIR) check-ref-cli
 
@@ -249,10 +257,10 @@ prepare:
 # even when prepare was run earlier or by someone else.
 check-ref-cli:
 	@for t in mstreg mstlink; do \
-	  test -x /usr/bin/$$t || { \
-	    echo "error: /usr/bin/$$t missing -- run 'make prepare'" >&2; exit 1; }; \
+	  test -x $(REF_CLI_BINDIR)/$$t || { \
+	    echo "error: $(REF_CLI_BINDIR)/$$t missing -- run 'make prepare'" >&2; exit 1; }; \
 	done
-	@echo "reference CLI: /usr/bin/mstreg /usr/bin/mstlink (mstflint's own)"
+	@echo "reference CLI: $(REF_CLI_BINDIR)/mstreg $(REF_CLI_BINDIR)/mstlink (mstflint's own)"
 
 # Run every comparison suite against the ONE installed SDK and the ONE harness
 # built by prepare. DEVICE is required; pass DEVICE=0000:21:00.0.
@@ -422,8 +430,8 @@ print-env:
 	@echo "export MFT_SDK_SO_DIR=$(SDK_LIBDIR)"
 	@echo "export MFT_SDK_SO_TEST_BIN=$(CPP_BIN)"
 	@echo "export MFT_SDK_C_SO_TEST_BIN=$(C_BIN)"
-	@echo "export MFT_SDK_LINK_TOOL=/usr/bin/mstlink"
-	@echo "export MFT_SDK_REG_TOOL=/usr/bin/mstreg"
+	@echo "export MFT_SDK_LINK_TOOL=$(REF_CLI_BINDIR)/mstlink"
+	@echo "export MFT_SDK_REG_TOOL=$(REF_CLI_BINDIR)/mstreg"
 
 clean:
 	rm -rf $(BUILD_DIR)/c $(OP_INFO_CPP_BIN) $(C_BIN) $(CPP_BIN) $(DOCA_PROBE_BIN) \
