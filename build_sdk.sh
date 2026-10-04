@@ -33,6 +33,7 @@ RPM_NAME=""
 RPM_RELEASE=""
 BUILD_RPM_SRC=0
 LDSOCONFDIR=""
+EXTRA_CONFIGURE=""
 
 usage() {
     cat <<'EOF'
@@ -58,6 +59,9 @@ Options:
                            the SDK library dir with ldconfig (default: /etc/ld.so.conf.d)
   --no-ldsoconf            Do not install the ld.so.conf.d snippet
   -j, --jobs N             Parallel build jobs (default: nproc)
+  --extra-configure FLAGS  Extra flags appended verbatim to ./configure, e.g.
+                           --extra-configure "--disable-openssl". Word-split, so
+                           several may be passed in one quoted string.
   --no-configure           Skip autogen/configure; reuse the existing configuration
   --build-only             Build the SDK but do not install it
   --rpm                    Build a standalone mstflint-sdk .rpm (uses mstflint-sdk.spec)
@@ -287,6 +291,7 @@ while [[ $# -gt 0 ]]; do
         --ldsoconfdir)         LDSOCONFDIR="$2"; shift 2 ;;
         --no-ldsoconf)         LDSOCONFDIR="no"; shift ;;
         -j|--jobs)             JOBS="$2"; shift 2 ;;
+        --extra-configure)     EXTRA_CONFIGURE="$2"; shift 2 ;;
         --no-configure)        DO_CONFIGURE=0; shift ;;
         --build-only)          INSTALL=0; shift ;;
         --rpm)                 BUILD_RPM=1; shift ;;
@@ -330,6 +335,10 @@ if [[ "$DO_CONFIGURE" -eq 1 ]]; then
     elif [[ -n "$LDSOCONFDIR" ]]; then
         CONFIGURE_FLAGS+=(--with-ldsoconfdir="$LDSOCONFDIR")
     fi
+    # Appended last so a caller can override anything set above. Deliberately
+    # unquoted: the value is word-split so several flags fit in one argument.
+    # shellcheck disable=SC2206
+    [[ -n "$EXTRA_CONFIGURE" ]] && CONFIGURE_FLAGS+=($EXTRA_CONFIGURE)
 
     echo ">> ./autogen.sh"
     ./autogen.sh

@@ -149,6 +149,16 @@ C_BIN     := $(BUILD_DIR)/mstflint_sdk_c_test
 C_DRIVER  := $(TESTS_DIR)/mft_sdk_c_test_main.cpp
 C_SUITES  := $(sort $(wildcard $(TESTS_DIR)/*/*_test.c))
 
+# What each public target produces, tagged by ROLE rather than listed flat.
+# install-tests looks these up from TEST_TARGET, so a caller names a target and
+# never a binary -- renaming a binary here cannot strand an out-of-tree
+# installer that hardcoded the name -- and it can record which installed binary
+# is the gtest harness and which is the C driver without matching on filenames.
+op_info_CPP := $(OP_INFO_CPP_BIN)
+op_info_C   := $(C_BIN)
+unified_CPP := $(CPP_BIN)
+unified_C   := $(C_BIN)
+
 # --- hca_caps standalone probe ----------------------------------------------
 # Build canary only: test_hca_caps_validation.py compiles this file itself at
 # run time. hca_caps_probe.c must NEVER join C_SUITES -- its unguarded main()
@@ -179,7 +189,8 @@ DOCA_CFLAGS := -I$(SDK_INCDIR)
 DOCA_LIBS   := -L$(SDK_LIBDIR) -lmstflint_sdk
 endif
 
-.PHONY: all op_info unified gtest clean distclean check-sdk print-env help \
+.PHONY: all op_info unified gtest install-tests clean distclean check-sdk \
+        print-env help \
         doca-contract check-doca hca-caps-probe prepare test check-ref-cli
 
 # --- one-time preparation ----------------------------------------------------
@@ -187,8 +198,32 @@ endif
 # runs against that one installation. The CLI step must configure WITHOUT
 # --enable-mstflint-sdk or it overwrites the SDK installed first. Its
 # mstreg/mstlink are the oracle; utils.py otherwise defaults to MFT's tools.
-SDK_CONFIGURE_FLAGS ?= --enable-mstflint-sdk --enable-adb-generic-tools --prefix=/usr
+#
+# The clean between the two passes is TREE-WIDE and load-bearing. configure.ac
+# mutates GLOBAL CFLAGS/CXXFLAGS, not just one directory's: enabling the SDK
+# appends -DMFT_SDK_EXTERNAL -DMFT_SDK_STANDALONE_BUILD, and --disable-rdmem
+# appends -DNO_RDMEM. So every translation unit pass 1 compiles differs from
+# what pass 2 needs, and automake's object rules do not depend on the Makefile,
+# so a surviving .o/.lo is silently reused. Cleaning while the tree is still
+# SDK-configured is deliberate: the SDK SUBDIRS are a superset of the CLI ones.
+# The leftover check turns "that clean was sufficient" from a claim in this
+# comment into something the recipe verifies on every run.
+# Pass 1 is delegated to ../../build_sdk.sh, which is the canonical SDK build
+# recipe -- the same one mstflint-sdk.spec.in mirrors. Keeping a second copy of
+# the configure flags here is how this target came to be missing
+# --disable-rdmem while the spec and build_sdk.sh both had it. Override
+# SDK_PREFIX / SDK_CONFIGURE_EXTRA rather than restating the flag set.
+SDK_PREFIX ?= /usr
+SDK_CONFIGURE_EXTRA ?=
 CLI_CONFIGURE_FLAGS ?= --prefix=/usr --enable-adb-generic-tools
+# Where the oracle CLI lands. CLI_CONFIGURE_FLAGS above puts it in /usr/bin;
+# a caller that configures the CLI with a different --prefix must move this
+# with it. The MARS regression builds the CLI into /usr/local, because
+# MFTPlayerModule.setupMSTFLINTEnv() appends exactly /usr/local/bin to PATH.
+REF_CLI_BINDIR ?= /usr/bin
+# Which harness prepare builds. "unified" is the one every Python compare
+# suite expects; "op_info" is the narrower pair the MARS op-info case runs.
+TEST_TARGET ?= unified
 SUDO ?= sudo
 JOBS ?= $(shell nproc 2>/dev/null || echo 4)
 
@@ -197,17 +232,24 @@ prepare:
 	echo "==> [1/3] building and installing the SDK"; \
 	$(MAKE) -C tools_layouts clean >/dev/null 2>&1 || true; \
 	rm -f mft_sdk/libmstflint_sdk.la mft_sdk/.libs/libmstflint_sdk.so*; \
-	./autogen.sh >/dev/null; \
-	./configure $(SDK_CONFIGURE_FLAGS) >/dev/null; \
+	./build_sdk.sh --prefix $(SDK_PREFIX) -j $(JOBS) --build-only \
+	    $(if $(SDK_CONFIGURE_EXTRA),--extra-configure "$(SDK_CONFIGURE_EXTRA)") >/dev/null; \
 	grep -q '^#define PACKAGE_STRING' config.h || { \
 	  echo "error: config.h has no #defines; re-run ./autogen.sh && ./configure" >&2; exit 1; }; \
-	$(MAKE) sdk -j$(JOBS) >/dev/null; \
 	test -f mft_sdk/.libs/libmstflint_sdk.so || { echo "error: SDK did not build" >&2; exit 1; }; \
 	$(SUDO) $(MAKE) install-sdk >/dev/null; \
 	$(SUDO) $(shell command -v ldconfig || echo /sbin/ldconfig); \
 	SDK_SUM=$$(md5sum $$($(PKG_CONFIG) --variable=libdir $(SDK_PKG))/libmstflint_sdk.so | cut -d' ' -f1); \
 	echo "    SDK installed, md5 $$SDK_SUM"; \
 	echo "==> [2/3] building and installing the mstflint CLI (no SDK flag)"; \
+	$(MAKE) clean >/dev/null 2>&1 || true; \
+	leftover=$$(find $(REPO_ROOT) -path '$(BUILD_DIR)' -prune -o \
+	                 -path '$(REPO_ROOT)/kernel' -prune -o \
+	                 \( -name '*.o' -o -name '*.lo' \) -print -quit); \
+	test -z "$$leftover" || { \
+	  echo "error: [$$leftover] survived the between-pass clean." >&2; \
+	  echo "       The CLI pass would reuse objects compiled with the SDK's" >&2; \
+	  echo "       global defines and silently produce a wrong oracle." >&2; exit 1; }; \
 	./configure $(CLI_CONFIGURE_FLAGS) >/dev/null; \
 	$(MAKE) -j$(JOBS) >/dev/null; \
 	$(SUDO) $(MAKE) install >/dev/null; \
@@ -218,7 +260,7 @@ prepare:
 	  echo "       step 2 must not pass --enable-mstflint-sdk." >&2; exit 1; }; \
 	echo "    SDK unchanged after the CLI install"; \
 	echo "==> [3/3] building the test harness"; \
-	$(MAKE) -C $(TESTS_DIR) unified >/dev/null; \
+	$(MAKE) -C $(TESTS_DIR) $(TEST_TARGET) >/dev/null; \
 	echo "==> prepare complete"
 	@$(MAKE) --no-print-directory -C $(TESTS_DIR) check-ref-cli
 
@@ -226,10 +268,10 @@ prepare:
 # even when prepare was run earlier or by someone else.
 check-ref-cli:
 	@for t in mstreg mstlink; do \
-	  test -x /usr/bin/$$t || { \
-	    echo "error: /usr/bin/$$t missing -- run 'make prepare'" >&2; exit 1; }; \
+	  test -x $(REF_CLI_BINDIR)/$$t || { \
+	    echo "error: $(REF_CLI_BINDIR)/$$t missing -- run 'make prepare'" >&2; exit 1; }; \
 	done
-	@echo "reference CLI: /usr/bin/mstreg /usr/bin/mstlink (mstflint's own)"
+	@echo "reference CLI: $(REF_CLI_BINDIR)/mstreg $(REF_CLI_BINDIR)/mstlink (mstflint's own)"
 
 # Run every comparison suite against the ONE installed SDK and the ONE harness
 # built by prepare. DEVICE is required; pass DEVICE=0000:21:00.0.
@@ -256,6 +298,8 @@ help:
 	@echo "  hca-caps-probe compile hca_caps/hca_caps_probe.c (build canary)"
 	@echo "  doca-contract build the DOCA-shaped probe (pkg-config, no rpath)"
 	@echo "  check-doca    build the probe and assert DOCA's integration contract"
+	@echo "  install-tests build TEST_TARGET and install its binaries into"
+	@echo "                TESTS_INSTALLDIR (now $(TESTS_INSTALLDIR))"
 	@echo "  print-env     print the env block the Python suites expect"
 	@echo "  clean         remove built test binaries (keeps gtest)"
 	@echo "  distclean     remove everything under $(BUILD_DIR)"
@@ -302,7 +346,7 @@ $(GTEST_LIB): | $(BUILD_DIR)
 	echo "  AR       $(GTEST_LIB)"
 
 # --- op_info ----------------------------------------------------------------
-op_info: $(OP_INFO_CPP_BIN) $(C_BIN)
+op_info: $(op_info_CPP) $(op_info_C)
 	@echo ""
 	@echo "Built:"
 	@echo "  C++  $(OP_INFO_CPP_BIN)"
@@ -316,11 +360,44 @@ $(OP_INFO_CPP_BIN): $(OP_INFO_CPP_SRC) $(GTEST_LIB) | $(BUILD_DIR)
 	  $(LDFLAGS) $(LDLIBS) -o $@
 
 # --- unified ----------------------------------------------------------------
-unified: $(CPP_BIN) $(C_BIN)
+unified: $(unified_CPP) $(unified_C)
 	@echo ""
 	@echo "Built:"
 	@echo "  C++  $(CPP_BIN)   (all compilable gtest suites)"
 	@echo "  C    $(C_BIN)"
+
+# --- install ----------------------------------------------------------------
+# Build TEST_TARGET and install exactly the binaries it produces, into the MFT
+# SDK's layout (<sdk libdir>/tests) where the Python suites look for them.
+TESTS_INSTALLDIR ?= $(SDK_LIBDIR)/tests
+TEST_BINS        ?= $($(TEST_TARGET)_CPP) $($(TEST_TARGET)_C)
+
+# Which installed binary plays which role, written next to them so it survives
+# the source tree being deleted -- which the MARS regression does before the
+# first case runs, leaving the Python suites with nothing to ask. `print-env`
+# cannot serve this: it names the BUILD directory and is fixed to the unified
+# harness, so it cannot describe what op_info installed. The keys are the
+# variable names the suites already use, so the contract reads the same on both
+# sides.
+TESTS_MANIFEST ?= $(TESTS_INSTALLDIR)/harness.env
+
+install-tests: $(TEST_TARGET)
+	@test -n "$(strip $(TEST_BINS))" || { \
+	  echo "error: no binaries listed for TEST_TARGET=$(TEST_TARGET)." >&2; \
+	  echo "       Add '$(TEST_TARGET)_CPP' and '$(TEST_TARGET)_C' here," >&2; \
+	  echo "       or pass TEST_BINS=..." >&2; \
+	  exit 1; }
+	install -d -m 0755 $(TESTS_INSTALLDIR)
+	install -m 0755 $(TEST_BINS) $(TESTS_INSTALLDIR)
+	@printf '%s\n' \
+	  '# written by: make install-tests' \
+	  '# which installed binary plays which role' \
+	  'MFT_SDK_SO_TEST_BIN=$(TESTS_INSTALLDIR)/$(notdir $($(TEST_TARGET)_CPP))' \
+	  'MFT_SDK_C_SO_TEST_BIN=$(TESTS_INSTALLDIR)/$(notdir $($(TEST_TARGET)_C))' \
+	  > $(TESTS_MANIFEST)
+	@chmod 0644 $(TESTS_MANIFEST)
+	@echo "installed into $(TESTS_INSTALLDIR): $(notdir $(TEST_BINS))"
+	@echo "recorded $(TESTS_MANIFEST)"
 
 # mft_sdk_test_main.cpp owns main() here, so every suite TU is compiled with
 # MFT_SDK_SO_UNIFIED to suppress its own.
@@ -399,8 +476,8 @@ print-env:
 	@echo "export MFT_SDK_SO_DIR=$(SDK_LIBDIR)"
 	@echo "export MFT_SDK_SO_TEST_BIN=$(CPP_BIN)"
 	@echo "export MFT_SDK_C_SO_TEST_BIN=$(C_BIN)"
-	@echo "export MFT_SDK_LINK_TOOL=/usr/bin/mstlink"
-	@echo "export MFT_SDK_REG_TOOL=/usr/bin/mstreg"
+	@echo "export MFT_SDK_LINK_TOOL=$(REF_CLI_BINDIR)/mstlink"
+	@echo "export MFT_SDK_REG_TOOL=$(REF_CLI_BINDIR)/mstreg"
 
 clean:
 	rm -rf $(BUILD_DIR)/c $(OP_INFO_CPP_BIN) $(C_BIN) $(CPP_BIN) $(DOCA_PROBE_BIN) \
