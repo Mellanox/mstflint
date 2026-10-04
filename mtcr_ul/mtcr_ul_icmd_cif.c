@@ -748,6 +748,7 @@ static int icmd_take_semaphore_com(mfile* mf, u_int32_t expected_read_val)
                                    "This might indicate a FW or HW issue.\n");
                         if (device_supports_sem_lock_verify(mf->hw_dev_id))
                         {
+                            icmd_clear_semaphore_com(mf);
                             return ME_ICMD_UNABLE_TO_TAKE_SEMAOHORE;
                         }
                     }
