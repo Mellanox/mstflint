@@ -144,8 +144,8 @@ int mib_semaphore_lock_vs_mad(mfile* mf,
     cmd.semaphore_addr = sem_addr;
     cmd.op = op;
     cmd.lock_key = lock_key;
-    MTCR_LOG_DEBUG("#######BFORE#####\n# SEM_ADDR: 0x%x\n# OP: %d\n# Lock_Key: 0x%x\n#################",
-               cmd.semaphore_addr, cmd.op, cmd.lock_key);
+    MTCR_LOG_DEBUG("semaphore lock before: sem_addr=0x%x, op=%d, lock_key=0x%x", cmd.semaphore_addr, cmd.op,
+                   cmd.lock_key);
     semaphore_lock_cmd_pack(&cmd, mad_data);
     if (method == SEM_LOCK_SET)
     {
@@ -156,8 +156,8 @@ int mib_semaphore_lock_vs_mad(mfile* mf,
         rc = mib_semaphore_lock_smp(mf, mad_data, method);
     }
     semaphore_lock_cmd_unpack(&cmd, mad_data);
-    MTCR_LOG_DEBUG("#######AFTER#####\n# SEM_ADDR: 0x%x\n# OP: %d\n# Lock_Key: 0x%x\n#################",
-               cmd.semaphore_addr, cmd.op, cmd.lock_key);
+    MTCR_LOG_DEBUG("semaphore lock after: sem_addr=0x%x, op=%d, lock_key=0x%x", cmd.semaphore_addr, cmd.op,
+                   cmd.lock_key);
     *res = cmd.lock_key;
     *is_leaseable = (int)cmd.is_lease;
     *lease_time_exp = cmd.lease_time_exponent;
@@ -183,7 +183,7 @@ int mib_semaphore_lock_is_supported(mfile* mf)
     memset(&cmd, 0, sizeof(cmd));
     mib_smp_get(mf, mad_data, SMP_SEMAPHOE_LOCK_CMD, 0);
     semaphore_lock_cmd_unpack(&cmd, mad_data);
-    MTCR_LOG_DEBUG("###### QUERY #####\n# MAX_SEM_ADDR: 0x%x\n#################", cmd.semaphore_max_addr);
+    MTCR_LOG_DEBUG("semaphore query: max_sem_addr=0x%x", cmd.semaphore_max_addr);
     if (cmd.semaphore_max_addr > 0)
     {
         return 1;

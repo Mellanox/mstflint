@@ -835,7 +835,7 @@ int mtcr_fwctl_driver_mread4(mfile* mf, unsigned int offset, u_int32_t* value)
     }
     else
     {
-        FWCTL_DEBUG_PRINT(mf, "fwctl driver doesn't support VSEC access.\n")
+        MTCR_LOG_DEBUG("fwctl driver doesn't support VSEC access");
         errno = EOPNOTSUPP;
     }
 
@@ -848,7 +848,7 @@ int mtcr_fwctl_driver_mwrite4(mfile* mf, unsigned int offset, u_int32_t value)
     (void)offset;
     (void)value;
 
-    FWCTL_DEBUG_PRINT(mf, "fwctl driver doesn't support VSEC access.\n")
+    MTCR_LOG_DEBUG("fwctl driver doesn't support VSEC access");
     errno = EOPNOTSUPP;
 
     return -1;
@@ -861,7 +861,7 @@ static int fwctl_driver_mread4_block(mfile* mf, unsigned int offset, u_int32_t* 
     (void)data;
     (void)length;
 
-    FWCTL_DEBUG_PRINT(mf, "fwctl driver doesn't support VSEC access.\n")
+    MTCR_LOG_DEBUG("fwctl driver doesn't support VSEC access");
     errno = EOPNOTSUPP;
 
     return -1;
@@ -874,7 +874,7 @@ static int fwctl_driver_mwrite4_block(mfile* mf, unsigned int offset, u_int32_t*
     (void)data;
     (void)length;
 
-    FWCTL_DEBUG_PRINT(mf, "fwctl driver doesn't support VSEC access.\n")
+    MTCR_LOG_DEBUG("fwctl driver doesn't support VSEC access");
     errno = EOPNOTSUPP;
 
     return -1;
@@ -1128,7 +1128,7 @@ static void fwctl_set_pci_device_id(mfile* mf, const char* full_path_name)
     snprintf(device_link, sizeof(device_link), "/sys/class/fwctl/%s/device", node_name);
     if (realpath(device_link, resolved) == NULL)
     {
-        FWCTL_DEBUG_PRINT(mf, "fwctl_set_pci_device_id: failed to resolve %s\n", device_link);
+        MTCR_LOG_WARNING("failed to resolve %s", device_link);
         return;
     }
 
@@ -1137,17 +1137,17 @@ static void fwctl_set_pci_device_id(mfile* mf, const char* full_path_name)
     f = fopen(fname, "r");
     if (f == NULL)
     {
-        FWCTL_DEBUG_PRINT(mf, "fwctl_set_pci_device_id: failed to open %s\n", fname);
+        MTCR_LOG_WARNING("failed to open %s", fname);
         return;
     }
     if (fgets(inbuf, sizeof(inbuf), f))
     {
         mf->pci_device_id = (u_int16_t)strtol(inbuf, NULL, 0);
-        FWCTL_DEBUG_PRINT(mf, "fwctl_set_pci_device_id: pci_device_id=0x%x\n", mf->pci_device_id);
+        MTCR_LOG_DEBUG("pci_device_id=0x%x", mf->pci_device_id);
     }
     else
     {
-        FWCTL_DEBUG_PRINT(mf, "fwctl_set_pci_device_id: failed to read pci device id from %s\n", fname);
+        MTCR_LOG_WARNING("failed to read pci device id from %s", fname);
     }
     fclose(f);
 }
@@ -1184,7 +1184,6 @@ static int fwctrl_driver_open(mfile* mf, const char* name)
     ctx->mwrite4_block = (f_mwrite4_block)fwctl_driver_mwrite4_block;
     ctx->mclose = mtcr_driver_mclose;
     mf->bar_virtual_addr = NULL;
-    mf->fwctl_env_var_debug = getenv(FWCTL_ENV_VAR_DEBUG);
 
     fwctl_set_device_id(mf);
     fwctl_set_pci_device_id(mf, full_path_name);
@@ -1593,7 +1592,6 @@ void open_fwctl_dev(mfile* mf, u_int32_t domain, u_int8_t bus, u_int8_t dev, u_i
                 closedir(dir);
                 return;
             }
-            mf->fwctl_env_var_debug = getenv(FWCTL_ENV_VAR_DEBUG);
             break;
         }
     }

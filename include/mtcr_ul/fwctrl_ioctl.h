@@ -40,13 +40,6 @@
 
 #define FWCTL_METHOD_READ   1
 #define FWCTL_METHOD_WRITE  0
-#define FWCTL_ENV_VAR_DEBUG "FWCTL_DEBUG"
-
-#define FWCTL_DEBUG_PRINT(mf, format, arg ...)                                         \
-    if (mf->fwctl_env_var_debug) {                                                     \
-        printf("%s: %s %d: " format, FWCTL_ENV_VAR_DEBUG, __func__, __LINE__, ## arg); \
-    }
-
 int fwctl_control_access_register(int fd, void *data_in,
                                   int size_in, __u16 reg_id,
                                   int method, int *reg_status,

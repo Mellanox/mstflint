@@ -200,7 +200,7 @@ extern "C"
         {
             if (!property_name)
             {
-                LOG.Error("-E- property_name cannot be null");
+                LOG.Error("property_name cannot be null");
                 return "";
             }
 
@@ -228,7 +228,7 @@ extern "C"
         {
             if (!property_name)
             {
-                LOG.Error("-E- property_name cannot be null");
+                LOG.Error("property_name cannot be null");
                 return 0;
             }
             return get_property_as_uint_cpp(device_id, property_name);
@@ -247,7 +247,7 @@ extern "C"
         {
             if (!property_name)
             {
-                LOG.Error("-E- property_name cannot be null");
+                LOG.Error("property_name cannot be null");
                 return 0;
             }
             return static_cast<int>(get_property_as_uint_cpp(device_id, property_name));
@@ -266,7 +266,7 @@ extern "C"
         {
             if (!property_name)
             {
-                LOG.Error("-E- property_name cannot be null");
+                LOG.Error("property_name cannot be null");
                 return false;
             }
             return get_property_as_bool_cpp(device_id, property_name);
