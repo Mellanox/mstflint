@@ -24,10 +24,8 @@ mstflintlogger
 > no output is produced at all, unless NVTOOLSLOGGER_LEVEL is set (see
 > ENVIRONMENT).
 >
-> The configuration file records the mstflint build that wrote it. A file
-> written by a different build, for example before an upgrade, is ignored and
-> the defaults apply, so logging is off again until it is turned back on; the
-> next mstflintlogger command rewrites the file.
+> Installing or upgrading the mstflint package removes /var/lib/mstflint,
+> so logging is off again until it is turned back on.
 >
 > A configuration change affects processes started afterwards; a tool that is
 > already running is unaffected.

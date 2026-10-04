@@ -1,0 +1,13 @@
+#!/bin/sh
+
+set -e
+
+#DEBHELPER#
+
+# State left by a previous installation (logger configuration, mst_server identity,
+# known hosts) would otherwise outlive upgrades and reinstalls; start from a clean state.
+if [ "$1" = "configure" ] && [ -d /var/lib/mstflint ]; then
+	rm -rf /var/lib/mstflint
+fi
+
+exit 0

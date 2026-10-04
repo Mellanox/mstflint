@@ -32,7 +32,6 @@
 
 #include "nvtoolslogger/log_config.h"
 #include "nvtoolslogger/layers.h"
-#include "common/tools_version.h"
 
 #include "json/json.h"
 #include "json/reader.h"
@@ -85,18 +84,6 @@ static bool ensureParentDirExists(const std::string& filePath)
     return mkdirSingle(dir);
 }
 
-static const char* const BUILD_STAMP_KEY = "written_by";
-
-static std::string currentBuildStamp()
-{
-    char buf[256] = {0};
-    if (get_version_string(buf, sizeof(buf), "nvtoolslogger", NULL) < 0)
-    {
-        return "";
-    }
-    return buf;
-}
-
 namespace nvtoolslogger
 {
 LogConfig::LogConfig()
@@ -110,7 +97,6 @@ void LogConfig::initDefaults()
     _moduleLevels.clear();
     _activeSinks.clear();
     _maxLogDirFiles = DEFAULT_MAX_LOG_DIR_FILES;
-    _staleConfigIgnored = false;
 }
 
 void LogConfig::reset()
@@ -120,7 +106,6 @@ void LogConfig::reset()
 
 bool LogConfig::load(const std::string& path)
 {
-    _staleConfigIgnored = false;
     std::ifstream file(path);
     if (!file.is_open())
     {
@@ -172,11 +157,6 @@ bool LogConfig::save(const std::string& path) const
     }
 
     return true;
-}
-
-bool LogConfig::isStaleConfigIgnored() const
-{
-    return _staleConfigIgnored;
 }
 
 void LogConfig::setGlobalLevel(Severity level)
@@ -323,7 +303,7 @@ void LogConfig::show() const
 std::string LogConfig::toJson() const
 {
     Json::Value root;
-    root[BUILD_STAMP_KEY] = currentBuildStamp();
+    root["version"] = CONFIG_VERSION;
     root["global_level"] = getSeverityName(_globalLevel);
     root["max_log_dir_files"] = static_cast<Json::UInt>(_maxLogDirFiles);
 
@@ -357,13 +337,6 @@ bool LogConfig::fromJson(const std::string& jsonStr)
     if (!reader->parse(jsonStr.c_str(), jsonStr.c_str() + jsonStr.length(), &root, &errs))
     {
         std::cerr << "Error: Failed to parse config JSON: " << errs << std::endl;
-        return false;
-    }
-
-    if (!root.isMember(BUILD_STAMP_KEY) || !root[BUILD_STAMP_KEY].isString() ||
-        root[BUILD_STAMP_KEY].asString() != currentBuildStamp())
-    {
-        _staleConfigIgnored = true;
         return false;
     }
 
