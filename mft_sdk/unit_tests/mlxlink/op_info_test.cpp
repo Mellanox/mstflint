@@ -41,6 +41,7 @@
 
 #include <cstdio>
 #include <string>
+#include <utility>
 #include <vector>
 
 // Test fixture for SDK telemetry tests
@@ -159,6 +160,26 @@ TEST_F(MftSdkTelemetryTest, ExtendedFecModesHaveNames)
     }
 }
 
+// Snapshot every reported operational-info field as display strings, so two queries can be
+// compared without naming a single mlxlink UserInput field. Deliberately field-agnostic: that is
+// what lets it catch a port-state leak this test does not know about yet.
+static std::vector<std::pair<std::string, std::string>> snapshotOpInfo(const MstTelemetryOperationalInfo& info)
+{
+    const FieldDescriptor* fields = getOpInfoFields();
+    std::vector<std::pair<std::string, std::string>> snapshot;
+    snapshot.reserve(NUM_OP_INFO_FIELDS);
+    for (size_t i = 0; i < NUM_OP_INFO_FIELDS; i++)
+    {
+        // fieldValueToString() hands back a pointer into a shared thread_local buffer
+        // (test_utils.cpp:47), so copy before the next call overwrites it.
+        const std::string value = MST_QUERY_HAS(&info, fields[i].capabilityBit)
+                                    ? std::string(fieldValueToString(&info, &fields[i]))
+                                    : std::string(NA_FIELD_VALUE);
+        snapshot.emplace_back(fields[i].displayName, value);
+    }
+    return snapshot;
+}
+
 TEST_F(MftSdkTelemetryTest, DefaultPortAfterSpecificPortDoesNotThrow)
 {
     MstStatus status = mstGetDeviceHandle(&mstDevice, g_devicePci.c_str());
@@ -174,19 +195,79 @@ TEST_F(MftSdkTelemetryTest, DefaultPortAfterSpecificPortDoesNotThrow)
     status = mstGetTelemetryOperationalInfo(mstDevice, &specificPort, &operationalInfo);
     ASSERT_EQ(status, MST_SUCCESS) << "Failed to bind port 1: " << mstGetLastErrorString(mstDevice);
 
-    // 2) Switch back to the device default; must not throw "Invalid port number!".
+    // 2) Switch back to the device default. Known SDK defect, not a test bug --
+    // do not relax this assertion. Redmine #5319177.
     //
-    // Known SDK defect, not a test bug -- do not relax this assertion.
-    // initMlxLinkSdk() re-binds whenever the port differs from the last one and
-    // the device default is the empty label, which handlePortStr() rejects, so
-    // one call with an explicit port leaves the handle unable to serve a NULL
-    // context (a fresh handle still works).
+    // initMlxLinkSdk() re-binds whenever the port differs from the last one, and
+    // the device default is the empty label. handlePortStr() rejects it: it runs
+    // MlxlinkRecord::split("", "/"), which returns {""} rather than {}, so its
+    // validation loop throws `Argument:  is invalid.`
+    // (mlxlink/modules/mlxlink_commander.cpp:678-688). One call with an explicit
+    // port therefore leaves the handle unable to serve a NULL context; a fresh
+    // handle still works. MFT already fixed this in handlePortStr() itself.
     MST_QUERY_INIT(&operationalInfo);
     status = mstGetTelemetryOperationalInfo(mstDevice, nullptr, &operationalInfo);
     EXPECT_EQ(status, MST_SUCCESS) << "Default port after a specific port failed: " << mstGetLastErrorString(mstDevice)
-                                   << " -- this is the known telemetry port-state defect in the SDK "
-                                      "(initMlxLinkSdk passes the empty default label to handlePortStr), "
-                                      "not a problem with this test.";
+                                   << " -- known SDK port-binding defect (Redmine #5319177): initMlxLinkSdk "
+                                      "passes the empty default label to handlePortStr. Not a test bug.";
+}
+
+// Split labels are a documented public input (mft_sdk_telemetry_types.h shows "1/1/1"), and
+// handlePortStr() only ever SETS _splitProvided/_secondSplitProvided -- it never clears them
+// (mlxlink_commander.cpp:689-714). So a split label followed by a plain one leaves the split
+// behind: "1/2" then "3" resolves port 3/2 and returns MST_SUCCESS --
+// the wrong port's data with no error. Known defect, Redmine #5319177; the same MFT fix closes it.
+// EXPECT, not ASSERT, so it reports rather than aborting the suite while the defect is open.
+TEST_F(MftSdkTelemetryTest, PlainPortAfterSplitPortDoesNotInheritTheSplit)
+{
+    MstStatus status = MST_SUCCESS;
+    MstTelemetryOperationalInfo operationalInfo;
+
+    std::vector<std::pair<std::string, std::string>> freshHandlePort1;
+    {
+        MstDevice freshDevice = nullptr;
+        status = mstGetDeviceHandle(&freshDevice, g_devicePci.c_str());
+        ASSERT_EQ(status, MST_SUCCESS) << "Failed to get device handle for " << g_devicePci;
+        MstTelemetryContext plainPort;
+        MST_TELEMETRY_CONTEXT_INIT(&plainPort);
+        snprintf(plainPort.label_port, sizeof(plainPort.label_port), "1");
+        MST_QUERY_INIT(&operationalInfo);
+        status = mstGetTelemetryOperationalInfo(freshDevice, &plainPort, &operationalInfo);
+        ASSERT_EQ(status, MST_SUCCESS) << "Port 1 query on a fresh handle failed: "
+                                       << mstGetLastErrorString(freshDevice);
+        freshHandlePort1 = snapshotOpInfo(operationalInfo);
+        mstReleaseDeviceHandle(freshDevice);
+    }
+
+    status = mstGetDeviceHandle(&mstDevice, g_devicePci.c_str());
+    ASSERT_EQ(status, MST_SUCCESS) << "Failed to get device handle for " << g_devicePci;
+
+    // A split label first. Whether this device has a split 2 on port 1 is not the point and the
+    // query is allowed to fail; what matters is the state it leaves behind.
+    MstTelemetryContext splitPort;
+    MST_TELEMETRY_CONTEXT_INIT(&splitPort);
+    snprintf(splitPort.label_port, sizeof(splitPort.label_port), "1/2");
+    MST_QUERY_INIT(&operationalInfo);
+    (void)mstGetTelemetryOperationalInfo(mstDevice, &splitPort, &operationalInfo);
+
+    // Now a plain label on the same handle. It must mean exactly what it means on a fresh handle.
+    MstTelemetryContext plainPort;
+    MST_TELEMETRY_CONTEXT_INIT(&plainPort);
+    snprintf(plainPort.label_port, sizeof(plainPort.label_port), "1");
+    MST_QUERY_INIT(&operationalInfo);
+    status = mstGetTelemetryOperationalInfo(mstDevice, &plainPort, &operationalInfo);
+    ASSERT_EQ(status, MST_SUCCESS) << "Plain port 1 after a split label failed: "
+                                   << mstGetLastErrorString(mstDevice);
+
+    const std::vector<std::pair<std::string, std::string>> reboundPort1 = snapshotOpInfo(operationalInfo);
+    ASSERT_EQ(reboundPort1.size(), freshHandlePort1.size());
+    for (size_t i = 0; i < reboundPort1.size(); i++)
+    {
+        EXPECT_EQ(reboundPort1[i].second, freshHandlePort1[i].second)
+          << "Field '" << reboundPort1[i].first
+          << "': port \"1\" after port \"1/2\" did not match port \"1\" on a fresh handle -- the "
+             "split from the previous label leaked into the plain one.";
+    }
 }
 
 #ifndef MFT_SDK_SO_UNIFIED
