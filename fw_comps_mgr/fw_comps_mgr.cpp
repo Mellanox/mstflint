@@ -45,6 +45,7 @@
 #include "reg_access/mcam_capabilities.h"
 #include <signal.h>
 #include <iostream>
+#include <chrono>
 
 #include "mflash/mflash_access_layer.h"
 #include "dev_mgt/tools_dev_types.h"
@@ -554,6 +555,10 @@ const char* CommandsName[256] = {"QUERY",
 #define SLEEP_TIME                80
 #define MAX_SLEEP_TIME            800
 #define INIT_PARTITION_SLEEP_TIME 240
+// While an FSM command keeps getting "resource not available" (device busy, e.g. still completing a
+// previously interrupted burn), tell the user once after this many seconds so the silent wait is not
+// mistaken for a hang.
+#define FSM_BUSY_MSG_SEC 30
 
 #define MTCR_IB_TIMEOUT_VAR "MTCR_IB_TIMEOUT"
 #define MTCR_IB_TIMEOUT_VAL "30000"
@@ -719,6 +724,8 @@ bool FwCompsMgr::controlFsm(fsm_command_t          command,
     DPRINTF(("controlFsm : command %s current state %s expected state %s\n", CommandsName[command],
              StateNames[currentState], StateNames[expectedState]));
     unsigned int count = 0;
+    std::chrono::steady_clock::time_point busyWaitStart = std::chrono::steady_clock::now();
+    bool busyMsgShown = false;
 
     do{
         unsigned sleep_time = SLEEP_TIME;
@@ -765,6 +772,16 @@ bool FwCompsMgr::controlFsm(fsm_command_t          command,
         rc = reg_access_mcc(_mf, method, &_lastFsmCtrl);
         /* add here auto_update + device_index_size */
         deal_with_signal();
+
+        // The device can stay busy ("resource not available") for minutes while it finishes a
+        // previously interrupted burn. Tell the user once so the silent wait is not mistaken for a hang.
+        if (rc == ME_REG_ACCESS_RES_NOT_AVLBL && !busyMsgShown &&
+            std::chrono::steady_clock::now() - busyWaitStart >= std::chrono::seconds(FSM_BUSY_MSG_SEC))
+        {
+            FWCOMPS_PRINT("-I- The device is busy (it may be completing a previously interrupted operation); "
+                          "waiting for the FSM to be freed...\n");
+            busyMsgShown = true;
+        }
     } while (rc == ME_REG_ACCESS_RES_NOT_AVLBL && count++ < reg_access_timeout);
  
      if (_lastFsmCtrl.warning_code && !rc)
