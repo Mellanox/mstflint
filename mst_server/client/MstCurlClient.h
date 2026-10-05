@@ -50,7 +50,6 @@
 #include <functional>
 #include <map>
 #include <memory>
-#include <mutex>
 #include <string>
 #include <utility>
 
@@ -179,8 +178,8 @@ class Client
 public:
     Client(const std::string& host, int port) : host_(host), port_(port)
     {
-        static std::once_flag once;
-        std::call_once(once, []() { curl_global_init(CURL_GLOBAL_DEFAULT); });
+        static const CURLcode global_init = curl_global_init(CURL_GLOBAL_DEFAULT);
+        (void)global_init;
         curl_ = curl_easy_init();
     }
 
