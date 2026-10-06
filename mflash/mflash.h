@@ -330,6 +330,7 @@ int modify_flash_info_if_needed(mflash* mfl, flash_info_t* f_info);
 int mf_read_sfdp_table(mflash* mfl, uint32_t address, uint8_t bytes_num, bool swap, uint32_t* data);
 int is_macronix_mx25u51245g(mflash* mfl);
 int is_gigadevice_gd25lfxxx_512(mflash* mfl);
+int is_gigadevice_gd25q256d(mflash* mfl);
 int is_macronix_mx25u51294g_mx25u51294gxdi08_wrapper(mflash* mfl);
 int is_macronix_mx25u51294g_mx25u51294gxdi08(uint8_t vendor,
                                              uint16_t type,

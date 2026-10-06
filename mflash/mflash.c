@@ -525,7 +525,8 @@ flash_info_t g_flash_info_arr[] = {{"M25PXxx", FV_ST, FMT_ST_M25PX, FD_LEGACY, M
                                    {ISSI_NAME, FV_IS25LPXXX, FMT_IS25WPXXX, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 1, 0, 0},
 
                                    {GIGA_1V8_NAME, FV_GD25QXXX, FVT_GD25LFXXX, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 1, 1, 0, 0},
-                                   {GIGA_3V_NAME, FV_GD25QXXX, FVT_GD25QXXX, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 0, 0, 0},
+                                   // https://download.gigadevice.com/Datasheet/DS-00285-GD25Q256D-Rev2.1.pdf
+                                   {GIGA_3V_NAME, FV_GD25QXXX, FVT_GD25QXXX, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 0, 0, 0},
                                    {GIGA_3V_NAME, FV_GD25QXXX, FVT_GD25QXXX, 1 << FD_128, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 1, 0, 0, 0},
                                    /* https://www.gigadevice.com.cn/Public/Uploads/uploadfile/files/20231213/DS-01012-GD25LB512MF-Rev1.0.pdf */
                                    {GIGA_1V8_NAME, FV_GD25QXXX, FVT_GD25LBXXX, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 0, 0, 0}};
@@ -3836,6 +3837,12 @@ int is_gigadevice_gd25lfxxx_512(mflash* mfl)
     return mfl->attr.vendor == FV_GD25QXXX && mfl->attr.type == FVT_GD25LFXXX && mfl->attr.log2_bank_size == FD_512;
 }
 
+// JEDEC ID 0x1940c8
+int is_gigadevice_gd25q256d(mflash* mfl)
+{
+    return mfl->attr.vendor == FV_GD25QXXX && mfl->attr.type == FVT_GD25QXXX && mfl->attr.log2_bank_size == FD_256;
+}
+
 int is_macronix_mx25u51294g_mx25u51294gxdi08_wrapper(mflash* mfl)
 {
     return is_macronix_mx25u51294g_mx25u51294gxdi08(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size, mfl->attr.series_code);
@@ -3912,9 +3919,10 @@ int mf_read_modify_status_winbond(mflash* mfl, u_int8_t bank_num, u_int8_t is_fi
         status = status >> 8;
     }
     /* Write register status */
-    if (is_gigadevice_gd25lfxxx_512(mfl))
+    if (is_gigadevice_gd25lfxxx_512(mfl) || is_gigadevice_gd25q256d(mfl))
     {
-        // GD25LF512MF uses the standard WRSR (01h) to write SR1&2; 0x31 is not a WRSR opcode on this part.
+        // 0x31 can't write SR1 on these parts (GD25LF512MF: not a WRSR opcode; GD25Q256D: writes SR2), so use the
+        // standard WRSR (01h). GD25LF512MF always writes SR1&2 (see above); on GD25Q256D a single byte writes SR1 only.
         rc = mfl->f_spi_write_status_reg(mfl, status, SFC_WRSR, bytes_to_write);
     }
     else if (mfl->attr.vendor == FV_GD25QXXX)
@@ -4344,6 +4352,12 @@ int mf_set_quad_en_direct_access(mflash* mfl, u_int8_t quad_en)
             rc = mf_read_modify_status_winbond(mfl, bank, 1, quad_en, QUAD_EN_OFFSET_ISSI_MACRONIX, 1);
             CHECK_RC(rc);
         }
+        else if (is_gigadevice_gd25q256d(mfl))
+        {
+            // QE lives in SR2, so read-modify-write SR2 itself to keep SRP1 and the OTP lock bits intact.
+            rc = mf_read_modify_status_new(mfl, bank, SFC_RDSR2, SFC_WRSR2, quad_en, QUAD_EN_OFFSET_GIGABYTE, 1, 1);
+            CHECK_RC(rc);
+        }
         else if (mfl->attr.vendor == FV_GD25QXXX)
         {
             rc = mf_read_modify_status_winbond(mfl, bank, 1, quad_en, QUAD_EN_OFFSET_GIGABYTE, 1);
@@ -4384,6 +4398,10 @@ int mf_get_quad_en_direct_access(mflash* mfl, u_int8_t* quad_en_p)
     else if ((mfl->attr.vendor == FV_IS25LPXXX) || (mfl->attr.vendor == FV_MX25K16XXX && !is_macronix_mx25u51294g_mx25u51294gxdi08_wrapper(mfl)))
     {
         return mf_get_param_int(mfl, quad_en_p, SFC_RDSR, QUAD_EN_OFFSET_ISSI_MACRONIX, 1, 1, 1);
+    }
+    else if (is_gigadevice_gd25q256d(mfl))
+    {
+        return mf_get_param_int(mfl, quad_en_p, SFC_RDSR2, QUAD_EN_OFFSET_GIGABYTE, 1, 1, 1);
     }
     else if (mfl->attr.vendor == FV_GD25QXXX)
     {
@@ -4597,7 +4615,7 @@ int mf_set_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
              ((mfl->attr.vendor == FV_S25FLXXXX) && (mfl->attr.type == FMT_S25FLXXXL) && (mfl->attr.log2_bank_size == FD_256)) ||
              ((mfl->attr.vendor == FV_WINBOND) && ((mfl->attr.type == FMT_WINBOND_3V) || (mfl->attr.type == FMT_WINBOND_IQ)) && (mfl->attr.log2_bank_size == FD_256)) ||
              (is_WINBOND_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size)) ||
-             (is_gigadevice_gd25lfxxx_512(mfl)))
+             (is_gigadevice_gd25lfxxx_512(mfl)) || (is_gigadevice_gd25q256d(mfl)))
     {
         if (mfl->attr.vendor == FV_MX25K16XXX && !is_macronix_mx25u51294g_mx25u51294gxdi08_wrapper(mfl))
         {
@@ -4714,7 +4732,7 @@ int mf_get_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
         if (((mfl->attr.vendor == FV_S25FLXXXX) && (mfl->attr.type == FMT_S25FLXXXL) && (mfl->attr.log2_bank_size == FD_256)) ||
             ((mfl->attr.vendor == FV_WINBOND) && ((mfl->attr.type == FMT_WINBOND_3V) || (mfl->attr.type == FMT_WINBOND_IQ)) && (mfl->attr.log2_bank_size == FD_256)) ||
             (is_WINBOND_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size)) || (is_macronix_mx25u51294g_mx25u51294gxdi08_wrapper(mfl)) ||
-            is_gigadevice_gd25lfxxx_512(mfl)) // for this flash BP4 acts as TB
+            is_gigadevice_gd25lfxxx_512(mfl) || is_gigadevice_gd25q256d(mfl)) // TB is at bit 6 for these flashes
         {
             tb_offset = TB_OFFSET_CYPRESS_WINBOND_MACRONIX_256;
         }
@@ -4739,7 +4757,7 @@ int mf_get_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
     if (mfl->attr.vendor == FV_MX25K16XXX || mfl->attr.vendor == FV_IS25LPXXX || (mfl->attr.vendor == FV_S25FLXXXX && mfl->attr.type == FMT_S25FLXXXL && mfl->attr.log2_bank_size == FD_256) ||
         ((mfl->attr.vendor == FV_WINBOND) && ((mfl->attr.type == FMT_WINBOND_3V) || (mfl->attr.type == FMT_WINBOND_IQ)) && (mfl->attr.log2_bank_size == FD_256)) ||
         (is_WINBOND_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size)) ||
-        (is_gigadevice_gd25lfxxx_512(mfl)))
+        (is_gigadevice_gd25lfxxx_512(mfl)) || (is_gigadevice_gd25q256d(mfl)))
     {
         flash_specific_bp_size = BP_SIZE + 1;
     }
