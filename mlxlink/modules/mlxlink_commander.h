@@ -49,6 +49,7 @@
 #include "mlxlink_err_inj_commander.h"
 #include "mlxlink_port_info.h"
 #include "mlxlink_amBER_collector.h"
+#include "mlxlink_ltx.h"
 #include <deque>
 
 #ifdef MST_UL
@@ -130,6 +131,8 @@
 #define PLR_TX_CRC_FLAG_SHORT ' '
 #define KR_INFO_FLAG "show_kr"
 #define KR_INFO_FLAG_SHORT ' '
+#define LTX_INFO_FLAG "show_ltx"
+#define LTX_INFO_FLAG_SHORT ' '
 #define HOST_CLASS_FLAG "show_host_class"
 #define HOST_CLASS_FLAG_SHORT ' '
 #define RX_RECOVERY_COUNTERS_FLAG "show_rx_recovery_counters"
@@ -459,6 +462,7 @@ enum OPTION_TYPE
     SHOW_PLR,
     SET_PLR,
     SHOW_KR,
+    SHOW_LTX,
     SHOW_HOST_CLASS,
     SHOW_RX_RECOVERY_COUNTERS,
     SEND_PHY_RECOVERY,
@@ -618,6 +622,7 @@ public:
     void showPlr();
     void setPlr();
     void showKr();
+    void showLtx();
     void showHostClass();
     void showRxRecoveryCounters();
     void showPeriodicEq();
@@ -751,6 +756,7 @@ public:
     bool isPassiveQSFP();
     bool isSFP51Paging();
     void initCablesCommander();
+    void initLtx();
     void initEyeOpener();
     void initErrInj();
     void initPortInfo();
@@ -960,6 +966,7 @@ public:
     Json::Value _jsonRoot;
     MlxlinkMaps* _mlxlinkMaps;
     MlxlinkCablesCommander* _cablesCommander;
+    MlxlinkLtx* _ltx;
     MlxlinkEyeOpener* _eyeOpener;
     MlxlinkErrInjCommander* _errInjector;
     MlxlinkPortInfo* _portInfo;

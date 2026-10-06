@@ -2034,15 +2034,22 @@ int getStringLengthWOColorCodes(const std::string& s)
 }
 
 void printMlxlinkTable(const std::vector<std::string>& tableData,
-                       const std::vector<std::pair<std::string, u_int32_t>>& tableHeader)
+                       const std::vector<std::pair<std::string, u_int32_t>>& tableHeader,
+                       const std::vector<u_int32_t>& separatorAfterRows)
 {
     u_int32_t numCols = tableHeader.size();
+    if (numCols == 0)
+    {
+        return;
+    }
     std::string tableHeaderRow = generateTableRow(tableHeader, "|");
     std::string underscoreRow(tableHeaderRow.length() - 2, '-');
-    std::cout << "|" << underscoreRow << "|" << std::endl;
+    std::string rule = "|" + underscoreRow + "|";
+    std::cout << rule << std::endl;
     std::cout << tableHeaderRow << std::endl;
-    std::cout << "|" << underscoreRow << "|" << std::endl;
-    for (u_int32_t i = 0; i < tableData.size() / numCols; i++)
+    std::cout << rule << std::endl;
+    u_int32_t numRows = (u_int32_t)(tableData.size() / numCols);
+    for (u_int32_t i = 0; i < numRows; i++)
     {
         std::vector<std::pair<std::string, u_int32_t>> rowData = {};
         for (u_int32_t j = 0; j < numCols; j++)
@@ -2050,6 +2057,10 @@ void printMlxlinkTable(const std::vector<std::string>& tableData,
             rowData.push_back(std::make_pair(tableData[i * numCols + j], tableHeader[j].second));
         }
         std::cout << generateTableRow(rowData, "|") << std::endl;
+        if (std::find(separatorAfterRows.begin(), separatorAfterRows.end(), i) != separatorAfterRows.end())
+        {
+            std::cout << rule << std::endl;
+        }
     }
 }
 

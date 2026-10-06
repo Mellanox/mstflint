@@ -59,6 +59,15 @@ static const char* const FIELD_LOCAL_PORT = "Local Port";
 static const char* const FIELD_LOCAL_HOST_CLASS = "Local Host Class";
 static const char* const FIELD_REMOTE_HOST_CLASS = "Remote Host Class";
 
+// LTX status / logger history field names
+static const char* const FIELD_LTX_STATUS = "Status";
+static const char* const FIELD_LTX_FAIL_REASON = "Fail Reason";
+static const char* const FIELD_LTX_RETRY = "Retry";
+static const char* const FIELD_LTX_RAW_BER = "Raw BER";
+static const char* const FIELD_LTX_RAW_BER_TARGET = "Raw BER Target";
+static const char* const FIELD_LTX_HIST = "Hist";
+static const char* const FIELD_LTX_HIST_TARGET = "Hist Target";
+
 // Counters Info field names
 static const char* const FIELD_PHYSICAL_COUNTERS_AND_BER_INFO = "Physical Counters and BER Info";
 static const char* const FIELD_TIME_SINCE_LAST_CLEAR = "Time Since Last Clear [Min]";

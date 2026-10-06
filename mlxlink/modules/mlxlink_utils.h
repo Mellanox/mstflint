@@ -188,7 +188,8 @@ std::string generateTableRow(const std::vector<std::pair<std::string, u_int32_t>
                              const std::string& delimiter);
 int getStringLengthWOColorCodes(const std::string& s);
 void printMlxlinkTable(const std::vector<std::string>& tableData,
-                       const std::vector<std::pair<std::string, u_int32_t>>& tableHeader);
+                       const std::vector<std::pair<std::string, u_int32_t>>& tableHeader,
+                       const std::vector<u_int32_t>& separatorAfterRows = std::vector<u_int32_t>());
 void updateColumnWidthPopulateTable(std::vector<std::pair<std::string, u_int32_t>>& vectorToAmend,
                                     const u_int32_t locationInVector,
                                     std::vector<std::string>& tableData,

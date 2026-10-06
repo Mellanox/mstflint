@@ -288,6 +288,7 @@ private:
     void initTableHeaders();
     void initPlrRejectModeMapping();
     void initKrMapping();
+    void initLtxMapping();
     void initPmpeModuleStatusMapping();
     void initHostClassMapping();
     void initSDKMappings();
@@ -398,6 +399,8 @@ public:
     std::map<u_int32_t, std::string> _plrMarginThMaskToStr;
     std::map<u_int32_t, std::string> _krExtOper;
     std::map<u_int32_t, std::string> _krPrbsType;
+    std::map<u_int32_t, std::string> _ltxStatus;
+    std::map<u_int32_t, std::string> _ltxFailReason;
     std::map<u_int32_t, std::string> _hostClass;
     std::map<u_int32_t, pair<string, string>> _fecModeMask;
     std::vector<pair<string, string>> _fecPerSpeed;
@@ -503,6 +506,11 @@ public:
     std::vector<std::pair<std::string, u_int32_t>> _multiPortCpoInfoTableHeader;
     std::vector<std::pair<std::string, u_int32_t>> _bkvGroupsTableHeader;
     std::vector<std::pair<std::string, u_int32_t>> _bkvGroupEntriesTableHeader;
+    std::vector<std::pair<std::string, u_int32_t>> _ltxStatusTableHeader;
+    std::vector<std::pair<std::string, u_int32_t>> _ltxLoggerHistoryTableHeader;
+    std::vector<std::pair<std::string, u_int32_t>> _ltxNvl5PortTableHeader;
+    std::vector<std::pair<std::string, u_int32_t>> _ltxNvl5LaneTableHeader;
+    std::vector<std::pair<std::string, u_int32_t>> _ltxNvl5IterTableHeader;
 
     string _sltpHeader;
     string _showErrorsTitle;

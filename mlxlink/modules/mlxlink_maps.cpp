@@ -2125,6 +2125,34 @@ void MlxlinkMaps::initTableHeaders()
 
     _bkvGroupEntriesTableHeader = {
       {"Entry ID", SHIFT_10}, {"Address", SHIFT_15}, {"WData", SHIFT_15}, {"WMask", SHIFT_15}};
+
+    _ltxStatusTableHeader = {
+      {"Lane", SHIFT_8},          {FIELD_LTX_STATUS, SHIFT_8},      {FIELD_LTX_FAIL_REASON, SHIFT_20},
+      {FIELD_LTX_RETRY, SHIFT_8}, {FIELD_LTX_RAW_BER, SHIFT_10},    {FIELD_LTX_RAW_BER_TARGET, SHIFT_15},
+      {FIELD_LTX_HIST, SHIFT_8},  {FIELD_LTX_HIST_TARGET, SHIFT_15}};
+
+    _ltxLoggerHistoryTableHeader = {{"Lane", SHIFT_8},
+                                    {"#", SHIFT_8},
+                                    {FIELD_LTX_STATUS, SHIFT_8},
+                                    {FIELD_LTX_FAIL_REASON, SHIFT_20},
+                                    {FIELD_LTX_RETRY, SHIFT_8},
+                                    {"Retry Fail", SHIFT_15},
+                                    {"Eff Err", SHIFT_10},
+                                    {FIELD_LTX_HIST, SHIFT_8},
+                                    {FIELD_LTX_RAW_BER, SHIFT_10},
+                                    {"PRBS BER mag", SHIFT_15}};
+
+    _ltxNvl5PortTableHeader = {{"Restore Count", SHIFT_15},    {"Total Rounds", SHIFT_15},
+                               {"BER Meas Done", SHIFT_15},    {"Auto Reversals", SHIFT_15},
+                               {"Limiter Allow", SHIFT_15},    {"Reached Max Retry", SHIFT_20},
+                               {"Entered LTX Flow", SHIFT_20}, {"BER Based In Progress", SHIFT_20}};
+
+    _ltxNvl5LaneTableHeader = {{"Lane", SHIFT_8},        {"Stores", SHIFT_8},    {"Winner", SHIFT_8},
+                               {"Violation", SHIFT_10},  {"Viol idx", SHIFT_10}, {"Viol type", SHIFT_20},
+                               {"Fail stage", SHIFT_20}, {"Force", SHIFT_8}};
+
+    _ltxNvl5IterTableHeader = {{"Lane", SHIFT_8},          {"Iter", SHIFT_8},       {"BER", SHIFT_15},
+                               {"serdes_valid", SHIFT_15}, {"phy_valid", SHIFT_15}, {"meas_invalid", SHIFT_15}};
 }
 
 void MlxlinkMaps::initPlrRejectModeMapping()
@@ -2160,6 +2188,29 @@ void MlxlinkMaps::initKrMapping()
 
     _krPrbsType[KR_PRBS_TYPE_PRBS13] = "PRBS13";
     _krPrbsType[KR_PRBS_TYPE_PRBS31] = "PRBS31";
+}
+
+void MlxlinkMaps::initLtxMapping()
+{
+    _ltxStatus[LTX_STATUS_PASS] = "PASS";
+    _ltxStatus[LTX_STATUS_FAIL] = "FAIL";
+
+    _ltxFailReason[LTX_FAIL_REASON_NONE] = "NONE";
+    _ltxFailReason[LTX_FAIL_REASON_EFFECTIVE] = "EFFECTIVE";
+    _ltxFailReason[LTX_FAIL_REASON_HISTOGRAM] = "HISTOGRAM";
+    _ltxFailReason[LTX_FAIL_REASON_EFFECTIVE_HISTOGRAM] = "EFFECTIVE_HISTOGRAM";
+    _ltxFailReason[LTX_FAIL_REASON_RAW] = "RAW";
+    _ltxFailReason[LTX_FAIL_REASON_EFFECTIVE_RAW] = "EFFECTIVE_RAW";
+    _ltxFailReason[LTX_FAIL_REASON_HISTOGRAM_RAW] = "HISTOGRAM_RAW";
+    _ltxFailReason[LTX_FAIL_REASON_EFFECTIVE_HISTOGRAM_RAW] = "EFFECTIVE_HISTOGRAM_RAW";
+    _ltxFailReason[LTX_FAIL_REASON_PRBS] = "PRBS";
+    _ltxFailReason[LTX_FAIL_REASON_EFFECTIVE_PRBS] = "EFFECTIVE_PRBS";
+    _ltxFailReason[LTX_FAIL_REASON_HISTOGRAM_PRBS] = "HISTOGRAM_PRBS";
+    _ltxFailReason[LTX_FAIL_REASON_EFFECTIVE_HISTOGRAM_PRBS] = "EFFECTIVE_HISTOGRAM_PRBS";
+    _ltxFailReason[LTX_FAIL_REASON_RAW_PRBS] = "RAW_PRBS";
+    _ltxFailReason[LTX_FAIL_REASON_EFFECTIVE_RAW_PRBS] = "EFFECTIVE_RAW_PRBS";
+    _ltxFailReason[LTX_FAIL_REASON_HISTOGRAM_RAW_PRBS] = "HISTOGRAM_RAW_PRBS";
+    _ltxFailReason[LTX_FAIL_REASON_EFFECTIVE_HISTOGRAM_RAW_PRBS] = "EFFECTIVE_HISTOGRAM_RAW_PRBS";
 }
 
 void MlxlinkMaps::initHostClassMapping()
@@ -2212,6 +2263,7 @@ MlxlinkMaps::MlxlinkMaps()
     initTableHeaders();
     initPlrRejectModeMapping();
     initKrMapping();
+    initLtxMapping();
     initHostClassMapping();
     initPprmOperationRecoveryMapping();
     initPprmRecoveryStatusMapping();
