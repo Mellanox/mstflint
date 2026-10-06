@@ -3384,6 +3384,9 @@ const char* mf_err2str(int err_code)
         case MFE_UNSUPPORTED_FLASH_TYPE:
             return "MFE_UNSUPPORTED_FLASH_TYPE";
 
+        case MFE_UNSUPPORTED_SERIES_CODE:
+            return "MFE_UNSUPPORTED_SERIES_CODE";
+
         case MFE_CFI_FAILED:
             return "MFE_CFI_FAILED";
 
@@ -5520,7 +5523,7 @@ int identify_macronix_flash(mflash* mfl, MacronixSeriesCode* series_code)
             break;
         default:
             MFLASH_SPI_LOG_ERROR("Unknown Macronix series code: 0x%02X", *series_code);
-            rc = MFE_UNSUPPORTED_FLASH_TYPE;
+            rc = MFE_UNSUPPORTED_SERIES_CODE;
             break;
     }
 
