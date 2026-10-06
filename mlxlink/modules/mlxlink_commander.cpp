@@ -278,6 +278,7 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _allUnhandledErrors = "";
     _mlxlinkMaps = MlxlinkMaps::getInstance();
     _cablesCommander = NULL;
+    _ltx = NULL;
     _eyeOpener = NULL;
     _errInjector = NULL;
     _portInfo = NULL;
@@ -298,6 +299,10 @@ MlxlinkCommander::~MlxlinkCommander()
     if (_cablesCommander)
     {
         delete _cablesCommander;
+    }
+    if (_ltx)
+    {
+        delete _ltx;
     }
     if (_eyeOpener)
     {
@@ -8243,6 +8248,25 @@ void MlxlinkCommander::printOuptputVector(vector<MlxlinkCmdPrint>& cmdOut)
     }
 }
 
+void MlxlinkCommander::initLtx()
+{
+    delete _ltx;
+    _ltx = new MlxlinkLtx(_jsonRoot);
+    _ltx->_mf = _mf;
+    _ltx->_regLib = _regLib;
+    _ltx->_gvmiAddress = _gvmiAddress;
+    _ltx->_localPort = _localPort;
+    _ltx->_pnat = _pnat;
+    _ltx->_portType = _portType;
+    _ltx->_planeInd = _planeInd;
+    _ltx->_isHCA = _isHCA;
+    _ltx->_isDPNvSupported = _isDPNvSupported;
+    _ltx->_currentModuleIndexType = _currentModuleIndexType;
+    _ltx->_originalModuleIndexType = _originalModuleIndexType;
+    _ltx->_mlxlinkMaps = _mlxlinkMaps;
+    _ltx->_silentMode = _silentMode;
+}
+
 void MlxlinkCommander::initCablesCommander()
 {
     gearboxBlock(CABLE_FLAG);
@@ -8803,6 +8827,10 @@ void MlxlinkCommander::prepareJsonOut()
     _portGroupMapping.toJsonFormat(_jsonRoot);
     _plrInfoCmd.toJsonFormat(_jsonRoot);
     _krInfoCmd.toJsonFormat(_jsonRoot);
+    if (_ltx)
+    {
+        _ltx->toJsonFormat();
+    }
     _hostClassCmd.toJsonFormat(_jsonRoot);
     _rxRecoveryCountersCmd.toJsonFormat(_jsonRoot);
     _periodicEqInfoCmd.toJsonFormat(_jsonRoot);
@@ -9099,6 +9127,21 @@ void MlxlinkCommander::showKr()
         throw MlxRegException("KR is not supported for the current device!");
     }
     printOutput(_krInfoCmd);
+}
+
+void MlxlinkCommander::showLtx()
+{
+    if (_userInput._pcie)
+    {
+        throw MlxRegException("\"--" LTX_INFO_FLAG "\" option is not supported for PCIE");
+    }
+    if (!_isNVLINK)
+    {
+        throw MlxRegException("\"--" LTX_INFO_FLAG "\" is supported on GPU/switch NVLink ports only");
+    }
+
+    initLtx();
+    _ltx->showLtxNvl6();
 }
 
 void MlxlinkCommander::showHostClass()

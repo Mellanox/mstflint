@@ -140,6 +140,7 @@ void MlxlinkUi::printSynopsisQueries()
                                  "Show valid PCIe links (with --" PORT_TYPE_FLAG " PCIE)");
     MlxlinkRecord::printFlagLine(PLR_INFO_FLAG_SHORT, PLR_INFO_FLAG, "", "Show PLR Info");
     MlxlinkRecord::printFlagLine(KR_INFO_FLAG_SHORT, KR_INFO_FLAG, "", "Show KR Info");
+    MlxlinkRecord::printFlagLine(LTX_INFO_FLAG_SHORT, LTX_INFO_FLAG, "", "Show LTX status and logger history");
     MlxlinkRecord::printFlagLine(HOST_CLASS_FLAG_SHORT, HOST_CLASS_FLAG, "", "Show Host Class Info");
     MlxlinkRecord::printFlagLine(MODULE_INFO_FLAG_SHORT, MODULE_INFO_FLAG, "", "Show Module Info");
     MlxlinkRecord::printFlagLine(BER_FLAG_SHORT, BER_FLAG, "", "Show Physical Counters and BER Info");
@@ -1576,6 +1577,7 @@ void MlxlinkUi::initCmdParser()
     AddOptions(PLR_TX_CRC_FLAG, PLR_TX_CRC_FLAG_SHORT, "PLR_TX_CRC",
                "TX CRC over PLR: 0/DS(disable), 1/EN(enable) (Optional)");
     AddOptions(KR_INFO_FLAG, KR_INFO_FLAG_SHORT, "", "Show KR Info");
+    AddOptions(LTX_INFO_FLAG, LTX_INFO_FLAG_SHORT, "", "Show LTX status and logger history");
     AddOptions(HOST_CLASS_FLAG, HOST_CLASS_FLAG_SHORT, "", "Show Host Class Info");
     AddOptions(PERIODIC_EQ_FLAG, PERIODIC_EQ_FLAG_SHORT, "", "Show Link PEQ (Periodic Equalization) Info");
     AddOptions(RX_RECOVERY_COUNTERS_FLAG, RX_RECOVERY_COUNTERS_FLAG_SHORT, "", "Show Rx Recovery Counters");
@@ -1880,6 +1882,9 @@ void MlxlinkUi::commandsCaller()
             case SHOW_KR:
                 _mlxlinkCommander->showKr();
                 break;
+            case SHOW_LTX:
+                _mlxlinkCommander->showLtx();
+                break;
             case SHOW_HOST_CLASS:
                 _mlxlinkCommander->showHostClass();
                 break;
@@ -2077,6 +2082,13 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     {
         addCmd(SHOW_KR);
         _userInput._showKr = true;
+        return PARSE_OK;
+    }
+    else if (name == LTX_INFO_FLAG)
+    {
+        addCmd(SHOW_LTX);
+        _userInput._showLtx = true;
+        _userInput._uniqueCmds++;
         return PARSE_OK;
     }
     else if (name == HOST_CLASS_FLAG)

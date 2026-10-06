@@ -69,6 +69,8 @@ libmodules_lib_la_SOURCES = \
     mlxlink_err_inj_commander.h \
     mlxlink_eye_opener.cpp \
     mlxlink_eye_opener.h \
+    mlxlink_ltx.cpp \
+    mlxlink_ltx.h \
     mlxlink_maps.cpp \
     mlxlink_maps.h \
     mlxlink_port_info.cpp \

@@ -110,6 +110,7 @@ UserInput::UserInput()
     _showPlr = false;
     _setPlr = false;
     _showKr = false;
+    _showLtx = false;
     _showRxRecoveryCounters = false;
     _extendedPcie = false;
     _device = "";

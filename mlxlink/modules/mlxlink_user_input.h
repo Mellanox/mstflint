@@ -111,6 +111,7 @@ public:
     bool _showPlr;
     bool _setPlr;
     bool _showKr;
+    bool _showLtx;
     bool _showRxRecoveryCounters;
     bool _extendedPcie;
 
