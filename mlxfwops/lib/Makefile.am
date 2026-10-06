@@ -39,6 +39,7 @@ AM_CPPFLAGS = \
     -I$(top_srcdir)/ext_libs/minixz \
     -I$(top_srcdir)/include/mtcr_ul \
     -I$(top_srcdir)/mflash \
+    -I$(top_srcdir)/mft_core/mft_core_utils \
     -I$(top_srcdir)/mft_utils \
     -I$(top_srcdir)/mlxfwops/uefi_c \
     -I$(top_srcdir)/mtcr_ul \

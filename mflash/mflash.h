@@ -140,6 +140,12 @@ EXTERN_C_START
 
 #define MAX_FLASH_FREQ 90 // MHz
 
+// overridable by the MFLASH_WRITE_RETRIES env var.
+#define DEFAULT_WRITE_RETRIES 3
+
+// overridable by the MFLASH_ERASE_RETRIES env var.
+#define DEFAULT_ERASE_RETRIES 3
+
 #define MAX_NUM_OF_CYCLES 15
 #define MIN_NUM_OF_CYCLES 1
 #define MAX_NUM_OF_CYCLES_FOR_MX25UXXX 3

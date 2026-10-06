@@ -290,14 +290,14 @@ int write_chunks(mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data)
 {
     static bool env_vars_evaluated = false;
     static bool erase_verification_enable = false;
-    static int retries_num = 0;
+    static int retries_num = DEFAULT_WRITE_RETRIES;
     int rc = 0;
 
     if (!env_vars_evaluated)
     {
         erase_verification_enable = getenv("MFLASH_ERASE_VERIFY") ? true : false;
         const char* retries_num_str = getenv("MFLASH_WRITE_RETRIES");
-        retries_num = retries_num_str ? atoi(retries_num_str) : 0;
+        retries_num = retries_num_str ? atoi(retries_num_str) : DEFAULT_WRITE_RETRIES;
         env_vars_evaluated = true;
     }
     u_int8_t* p = (u_int8_t*)data;
@@ -417,29 +417,42 @@ int write_chunks(mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data)
                     CHECK_RC(rc);
                     rc = mfl->f_read(mfl, addr, data_size, verify_buffer, false);
                     CHECK_RC(rc);
-                    /* Verify data */
+
                     bool verify_pass = true;
+                    bool erase_miss = false;
                     for (i = 0; i < data_size; i++)
                     {
-                        if (verify_buffer[i] != block_data[i + prefix_pad_size])
+                        u_int8_t want = block_data[i + prefix_pad_size];
+                        u_int8_t got = verify_buffer[i];
+                        if (got != want)
                         {
-                            verify_pass = false;
-                            MFLASH_LOG_WARNING("Write verification failed. Address 0x%08x - expected:0x%02x actual: 0x%02x", addr + i, block_data[i + prefix_pad_size], verify_buffer[i]);
-
-                            if (retries_counter >= retries_num)
+                            if (verify_pass) // log only the first mismatched byte
                             {
-                                return MFE_VERIFY_ERROR;
+                                MFLASH_LOG_WARNING("Write verification failed. Address 0x%08x - expected:0x%02x actual: 0x%02x", addr + i, want, got);
                             }
-                            else
+                            verify_pass = false;
+                            if ((got & want) != want)
                             {
+                                erase_miss = true;
                                 break;
                             }
                         }
                     }
+
                     if (!verify_pass)
                     {
+                        if (erase_miss)
+                        {
+                            MFLASH_LOG_ERROR("Failure is due to erase miss -> skip write-only retries");
+                            return MFE_ERASE_ERROR;
+                        }
+                        if (retries_counter >= retries_num)
+                        {
+                            MFLASH_LOG_ERROR("Write verification failed after %d retries", retries_counter);
+                            return MFE_VERIFY_ERROR;
+                        }
                         retries_counter++;
-                        MFLASH_LOG_WARNING("Retry number %d", retries_counter);
+                        MFLASH_LOG_WARNING("Write retry number %d", retries_counter);
                         continue;
                     }
                 }

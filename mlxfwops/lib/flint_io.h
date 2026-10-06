@@ -400,7 +400,8 @@ public:
         _cr_space_locked(0),
         _flash_working_mode(FBase::Fwm_Default),
         _cputUtilizationApplied(false),
-        _cpuPercent(-1)
+        _cpuPercent(-1),
+        _erase_needed(false)
     {
         memset(&_attr, 0, sizeof(_attr));
     }
@@ -568,6 +569,7 @@ protected:
     int _flash_working_mode;
     bool _cputUtilizationApplied;
     int _cpuPercent;
+    bool _erase_needed;
 };
 
 #endif

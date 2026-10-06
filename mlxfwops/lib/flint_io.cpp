@@ -41,6 +41,7 @@
 #include <stdint.h>
 #include <tools_dev_types.h>
 #include "flint_io.h"
+#include "nvtoolslogger/nvtoolslogger_c.h"
 
 using std::to_string;
 #include <stdexcept>
@@ -694,6 +695,7 @@ bool Flash::write(u_int32_t addr, void* data, int cnt, bool noerase)
 {
     // FIX:
     noerase = _no_erase || noerase;
+    _erase_needed = false;
 
     if (!_mfl)
     {
@@ -765,6 +767,7 @@ bool Flash::write(u_int32_t addr, void* data, int cnt, bool noerase)
             mf_set_cpu_utilization(_mfl, _cpuPercent);
         }
         rc = mf_write(_mfl, phys_addr, chunk_size, p);
+        _erase_needed = (rc == MFE_ERASE_ERROR);
         deal_with_signal(_mfl);
 
         if (rc != MFE_OK)
@@ -853,8 +856,56 @@ bool Flash::write_sector_with_erase(u_int32_t addr, void* data, int cnt)
 
     memcpy(&buff[word_in_sector], data, cnt);
 
-    // no need to erase twice noerase=true
-    return write(sector, &buff[0], sector_size, true);
+    // We only re-erase when a read-back confirms the un-erased signature (a bit that must be 1 is still 0)
+    static bool reerase_retries_evaluated = false;
+    static int reerase_retries = DEFAULT_ERASE_RETRIES;
+    if (!reerase_retries_evaluated)
+    {
+        const char* reerase_retries_str = getenv("MFLASH_ERASE_RETRIES");
+        reerase_retries = reerase_retries_str ? atoi(reerase_retries_str) : DEFAULT_ERASE_RETRIES;
+        reerase_retries_evaluated = true;
+    }
+    if (reerase_retries <= 0)
+    {
+        // no need to erase twice noerase=true
+        return write(sector, &buff[0], sector_size, true);
+    }
+
+    for (int reerase_attempt = 0; reerase_attempt <= reerase_retries; reerase_attempt++)
+    {
+        if (write(sector, &buff[0], sector_size, true))
+        {
+            if (reerase_attempt > 0)
+            {
+                MFLASH_LOG_WARNING("Write succeeded after %d re-erase attempts", reerase_attempt);
+            }
+            return true;
+        }
+
+        if (reerase_attempt == reerase_retries)
+        {
+            MFLASH_LOG_ERROR("Write failed, re-erase attempts exhausted (%d)", reerase_retries);
+            return false;
+        }
+        MFLASH_LOG_WARNING("Write failed, re-erase attempt %d", reerase_attempt);
+
+        // Re-erase only when the write failed because the sector wasn't erased. write() sets
+        // _erase_needed from mf_write's rc, so we act on it directly - no need to re-read the sector
+        // (a re-read is unreliable on SPC6 after a bad write). Any other failure can't be fixed by
+        // re-erasing, so return it as-is.
+        if (!_erase_needed)
+        {
+            MFLASH_LOG_DEBUG("Write failed but not an erase failure - skipping re-erase");
+            return false;
+        }
+
+        if (!erase_sector(sector))
+        {
+            MFLASH_LOG_ERROR("Erase sector failed");
+            return false;
+        }
+    }
+    return false; // unreachable
 }
 
 bool Flash::write_with_erase(u_int32_t addr, void* data, int cnt)
