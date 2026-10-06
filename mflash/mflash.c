@@ -4332,7 +4332,9 @@ int mf_set_quad_en_direct_access(mflash* mfl, u_int8_t quad_en)
 
     for (bank = 0; bank < mfl->attr.banks_num; bank++)
     {
-        if ((mfl->attr.vendor == FV_WINBOND) && ((mfl->attr.type == FMT_WINBOND_3V) || (mfl->attr.type == FMT_WINBOND_IQ) || (mfl->attr.type == FMT_WINBOND_IM) || is_ISSI_is25wj032f(mfl)))
+        if (is_ISSI_is25wj032f(mfl) ||
+            (mfl->attr.vendor == FV_WINBOND && (mfl->attr.type == FMT_WINBOND_3V || mfl->attr.type == FMT_WINBOND_IQ ||
+                                                mfl->attr.type == FMT_WINBOND_IM)))
         {
             rc = mf_read_modify_status_new(mfl, bank, SFC_RDSR2, SFC_WRSR2, quad_en, QUAD_EN_OFFSET_WINBOND_CYPRESS, 1, 1);
             CHECK_RC(rc);
