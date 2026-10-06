@@ -623,6 +623,8 @@ public:
     void setPlr();
     void showKr();
     void showLtx();
+    bool isNvlinkCapable() const;
+    bool isNvl5IbPort();
     void showHostClass();
     void showRxRecoveryCounters();
     void showPeriodicEq();

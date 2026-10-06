@@ -263,6 +263,7 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _pcieMgmtSupported = false;
     _isBonusPort = false;
     _ignoreIbFECCheck = true;
+    _devID = DeviceUnknown;
     _isNVLINK = false;
     _isNvlinkModeA = false;
     _isNvlinkModeB = false;
@@ -9129,19 +9130,53 @@ void MlxlinkCommander::showKr()
     printOutput(_krInfoCmd);
 }
 
+bool MlxlinkCommander::isNvlinkCapable() const
+{
+    return dm_is_gpu(_devID) || _devID == DeviceQuantum3 || _devID == DeviceNVLink6_Switch;
+}
+
+bool MlxlinkCommander::isNvl5IbPort()
+{
+    if (_protoActive != IB || !isNvlinkCapable())
+    {
+        return false;
+    }
+
+    try
+    {
+        sendPrmReg(ACCESS_REG_PDDR, REG_GET, "page_select=%d", PDDR_PHY_INFO_PAGE);
+    }
+    catch (MlxRegException& exc)
+    {
+        return false;
+    }
+
+    return getFieldValue("nv_link_generation") == NV_LINK_5;
+}
+
 void MlxlinkCommander::showLtx()
 {
     if (_userInput._pcie)
     {
         throw MlxRegException("\"--" LTX_INFO_FLAG "\" option is not supported for PCIE");
     }
-    if (!_isNVLINK)
+
+    bool isNvl5 = isNvl5IbPort();
+
+    if (!_isNVLINK && !isNvl5)
     {
         throw MlxRegException("\"--" LTX_INFO_FLAG "\" is supported on GPU/switch NVLink ports only");
     }
 
     initLtx();
-    _ltx->showLtxNvl6();
+    if (isNvl5)
+    {
+        _ltx->showLtxNvl5();
+    }
+    else
+    {
+        _ltx->showLtxNvl6();
+    }
 }
 
 void MlxlinkCommander::showHostClass()
