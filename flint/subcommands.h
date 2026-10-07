@@ -262,7 +262,9 @@ private:
                           bool downloadTransferNeeded,
                           int activate_delay_sec,
                           ProgressCallBackAdvSt* ProgressFuncAdv,
-                          FwComponent::comps_ids_t fwComponent);
+                          FwComponent::comps_ids_t fwComponent,
+                          bool noStopOnError);
+    void ReportSkippedCables(FwCompsMgr& fwCompsAccess);
     FlintStatus BurnCMISCable();
     FlintStatus ResetModule(string device);
     FlintStatus WaitForModuleInit(string device);

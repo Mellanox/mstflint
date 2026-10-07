@@ -58,6 +58,8 @@ using namespace std;
 #define PRODUCT_VER_LEN 16
 #define MAX_MSG_SIZE 128
 #define MAX_REG_DATA 128
+/* MCC.error_count is 4 bits, so the device cannot report more than this many failures per stage. */
+#define MCC_MAX_ERROR_COUNT 15
 
 typedef struct reg_access_hca_mqis_reg_ext mqisReg;
 typedef struct reg_access_hca_mcqs_reg_ext comp_status_st;
@@ -576,7 +578,13 @@ public:
                          bool autoUpdate = false,
                          bool activationNeeded = true,
                          bool downloadTransferNeeded = true,
-                         int activate_delay_sec = 0);
+                         int activate_delay_sec = 0,
+                         bool noStopOnError = false);
+    /* Failures the device reported while skipping cables. FW clears the counter between the transfer and the
+     * activation, so the two stages are counted apart and summed only when reporting. */
+    u_int32_t GetTransferErrorCount() const { return _transferErrorCount; }
+    u_int32_t GetActivateErrorCount() const { return _activateErrorCount; }
+    u_int32_t GetBurnErrorCount() const { return _transferErrorCount + _activateErrorCount; }
     void SetActivationStep(bool activationNeeded) { _activationNeeded = activationNeeded; }
     bool RefreshComponentsStatus(comp_status_st* ComponentStatus = NULL);
     bool GetComponentLinkxProperties(FwComponent::comps_ids_t compType, component_linkx_st* cmpLinkX);
@@ -788,6 +796,9 @@ private:
     fw_comps_error_t _lastError;
      fw_comps_warning_t _warningCode;
      string _lastSpecificError;
+    bool _noStopOnError = false;
+    u_int8_t _transferErrorCount = 0;
+    u_int8_t _activateErrorCount = 0;
     reg_access_status_t _lastRegAccessStatus;
     u_int32_t _hwDevId;
     mfile* _mf;

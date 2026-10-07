@@ -189,6 +189,7 @@ public:
     bool cable_device_index_specified;
     bool cable_device_size_specified;
     bool linkx_auto_update;
+    bool no_stop_on_error;
     bool activate;
     bool run_module_image;
     bool commit_module_image;
