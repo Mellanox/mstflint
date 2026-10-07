@@ -43,10 +43,6 @@ enum mft_layer
     // startup banner). Kept first so it has a stable home as tool layers are added.
     MFT_LAYER_LOGGER = 0,
     MFT_LAYER_MTCR,
-    MFT_LAYER_REG_ACCESS,
-    MFT_LAYER_FLINT,
-    MFT_LAYER_MLXCONFIG,
-    MFT_LAYER_MLXLINK,
     MFT_LAYER_MLXREG,
     MFT_LAYER_MFT_CORE,
     MFT_LAYER_MLXFWOPS,
@@ -79,10 +75,6 @@ enum class Layer
 {
     LOGGER = MFT_LAYER_LOGGER,
     MTCR = MFT_LAYER_MTCR,
-    REG_ACCESS = MFT_LAYER_REG_ACCESS,
-    FLINT = MFT_LAYER_FLINT,
-    MLXCONFIG = MFT_LAYER_MLXCONFIG,
-    MLXLINK = MFT_LAYER_MLXLINK,
     MLXREG = MFT_LAYER_MLXREG,
     MFT_CORE = MFT_LAYER_MFT_CORE,
     MLXFWOPS = MFT_LAYER_MLXFWOPS,
@@ -111,10 +103,6 @@ inline const std::vector<LayerEntry>& getLayerTable()
     static const std::vector<LayerEntry> table = {
       {Layer::LOGGER, "logger"},
       {Layer::MTCR, "mtcr"},
-      {Layer::REG_ACCESS, "reg_access"},
-      {Layer::FLINT, "flint"},
-      {Layer::MLXCONFIG, "mlxconfig"},
-      {Layer::MLXLINK, "mlxlink"},
       {Layer::MLXREG, "mlxreg"},
       {Layer::MFT_CORE, "mft_core"},
       {Layer::MLXFWOPS, "mlxfwops"},
