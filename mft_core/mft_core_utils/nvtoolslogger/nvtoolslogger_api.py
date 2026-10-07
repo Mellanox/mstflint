@@ -51,24 +51,20 @@ class Layer(IntEnum):
     # Always-enabled meta layer for the logger's own output.
     LOGGER = 0
     MTCR = 1
-    REG_ACCESS = 2
-    FLINT = 3
-    MLXCONFIG = 4
-    MLXLINK = 5
-    MLXREG = 6
-    MFT_CORE = 7
-    MLXFWOPS = 8
-    MST_TOOL = 9
-    EFUSE = 10
-    COMMON = 11
-    HCA_CAPS = 12
-    MLXDPA = 13
-    MLXTOKENGENERATOR = 14
-    MFLASH = 15
-    MFLASH_ACCESS = 16
-    MFLASH_SPI = 17
-    CABLE_ACCESS = 18
-    CABLE_CDB = 19
+    MLXREG = 2
+    MFT_CORE = 3
+    MLXFWOPS = 4
+    MST_TOOL = 5
+    EFUSE = 6
+    COMMON = 7
+    HCA_CAPS = 8
+    MLXDPA = 9
+    MLXTOKENGENERATOR = 10
+    MFLASH = 11
+    MFLASH_ACCESS = 12
+    MFLASH_SPI = 13
+    CABLE_ACCESS = 14
+    CABLE_CDB = 15
 
 
 _LIB_NAME = "libnvtoolslogger.so"
