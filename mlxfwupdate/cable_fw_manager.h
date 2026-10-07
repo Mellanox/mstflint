@@ -39,6 +39,7 @@
 #include <vector>
 
 #include "common/compatibility.h"
+#include <mtcr.h>
 #include "cmd_line_params.h"
 
 using namespace std;
@@ -77,8 +78,9 @@ enum CableImageSlot
     CABLE_IMAGE_SLOT_B
 };
 
-/* What phase 3 decided to do with a cable. Every discovered cable gets one of these,
- * including the ones left alone, because the report has to account for every port.
+/* What was decided for a cable. Phase 3 rules on every entry it can reach, and phase 1 rules on
+ * the ones it already knows it will never be able to address. Every discovered cable gets one of
+ * these, including the ones left alone, because the report has to account for every port.
  */
 enum CableUpdateAction
 {
@@ -86,6 +88,9 @@ enum CableUpdateAction
     // instruction to burn, which is what the first enumerator would otherwise mean.
     CABLE_ACTION_UNDECIDED,
     CABLE_ACTION_UPDATE,
+    // Decided in phase 1 rather than phase 3: MMAM.ga is Reserved for some module types, and for
+    // those the entry names no owner ASIC and nothing downstream can address it.
+    CABLE_ACTION_SKIP_ASIC_DETECTION_NOT_SUPPORTED,
     CABLE_ACTION_SKIP_NOT_PRESENT,
     CABLE_ACTION_SKIP_3RD_PARTY,    // not an NVIDIA cable, or detected as fake
     CABLE_ACTION_SKIP_NOT_BURNABLE, // MCQI reports neither firmware-update procedure
@@ -324,6 +329,15 @@ private:
      * Fills _asics, and the identity half of _cables.
      */
     int discoverSystem();
+
+    /* Key every switch ASIC in `devs` into _asics by the Geographical Address it reports. */
+    int collectSwitchAsics(dev_info* devs, int devsNum);
+
+    /* Read the system-wide cable map into _cables, through the ASIC at Geographical Address 0. */
+    int buildCableMap();
+
+    /* Walk MMAM over `total` global indexes on `mf` and append every port to _cables. */
+    int walkCableMap(mfile* mf, u_int32_t total);
 
     /* Phase 2 - Cable discovery.
      *
