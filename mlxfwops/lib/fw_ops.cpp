@@ -44,6 +44,10 @@
 #include "fs5_ops.h"
 #include "fs4_ops.h"
 #include "fs3_ops.h"
+#include "nvtoolslogger/NvToolsLogger.h"
+
+const char* file_handle_type_to_str(fw_hndl_type_t type);
+#include "nvtoolslogger/nvtoolslogger_c.h"
 #include "fs_pldm.h"
 #include "fsctrl_ops.h"
 #include "fs_comps_factory.h"
@@ -271,7 +275,7 @@ void FwOperations::GetFwParams(fw_ops_params_t& fwParams)
 
 bool FwOperations::CheckBoot2(u_int32_t beg, u_int32_t offs, u_int32_t& next, bool fullRead, const char* pref, VerifyCallBack verifyCallBackFunc)
 {
-    DPRINTF(("FwOperations::CheckBoot2\n"));
+    MLXFWOPS_LOG_DEBUG("beg=0x%x offs=0x%x fullRead=%d pref=%s", beg, offs, (int)fullRead, pref ? pref : "");
     u_int32_t size = 0x0;
 
     char* pr = new char[strlen(pref) + 512];
@@ -284,7 +288,7 @@ bool FwOperations::CheckBoot2(u_int32_t beg, u_int32_t offs, u_int32_t& next, bo
         return false;
     }
     TOCPU1(size);
-    DPRINTF(("FwOperations::CheckBoot2 size = 0x%x\n", size));
+    MLXFWOPS_LOG_DEBUG("size = 0x%x", size);
     if (size > 1048576 || size < 4)
     {
         report_callback(verifyCallBackFunc, "%s /0x%08x/ - unexpected size (0x%x)\n", pr, offs + beg + 4, size);
@@ -324,7 +328,7 @@ bool FwOperations::CheckBoot2(u_int32_t beg, u_int32_t offs, u_int32_t& next, bo
         delete[] buff;
         if (crc.get() != crc_act)
         {
-            DPRINTF(("FwOperations::CheckBoot2 wrong CRC (exp:0x%x, act:0x%x)\n", crc.get(), crc_act));
+            MLXFWOPS_LOG_DEBUG("wrong CRC (exp:0x%x, act:0x%x)", crc.get(), crc_act);
             report_callback(verifyCallBackFunc, "%s /0x%08x/ - wrong CRC (exp:0x%x, act:0x%x)\n", pr, offs + beg, crc.get(), crc_act);
             if (!_fwParams.ignoreCrcCheck)
             {
@@ -392,14 +396,14 @@ bool FwOperations::FindMagicPattern(FBase* ioAccess, u_int32_t addr, u_int32_t c
         TOCPU1(w);
         if (w != cntx_magic_pattern[i])
         {
-            DPRINTF(("FwOperations::FindMagicPattern addr=0x%x false\n", addr));
+            MLXFWOPS_LOG_DEBUG("addr=0x%x false", addr);
             // printf("-D- Looking for magic pattern %d addr %06x: Exp=%08x Act=%08x\n", i, addr + i * 4,
             // _cntx_magic_pattern[i], w);
             return false;
         }
     }
 
-    DPRINTF(("FwOperations::FindMagicPattern addr=0x%x true\n", addr));
+    MLXFWOPS_LOG_DEBUG("addr=0x%x true", addr);
     return true;
 }
 
@@ -408,7 +412,7 @@ bool FwOperations::FindMagicPattern(FBase* ioAccess, u_int32_t addr, u_int32_t c
 // OUT: found_images:    Number of found images (and number of valid entries in the start_locations array).
 bool FwOperations::FindAllImageStart(FBase* ioAccess, u_int32_t start_locations[CNTX_START_POS_SIZE], u_int32_t* found_images, u_int32_t const cntx_magic_pattern[])
 {
-    DPRINTF(("FwOperations::FindAllImageStart\n"));
+    MLXFWOPS_LOG_DEBUG("FwOperations::FindAllImageStart");
     int needed_pos_num;
 
     needed_pos_num = CNTX_START_POS_SIZE;
@@ -425,7 +429,7 @@ bool FwOperations::FindAllImageStart(FBase* ioAccess, u_int32_t start_locations[
                 (*found_images)++;
             }
         }
-        DPRINTF(("FwOperations::FindAllImageStart found %d image(s)\n", *found_images));
+        MLXFWOPS_LOG_DEBUG("found %d image(s)", *found_images);
     }
 
     return true;
@@ -441,7 +445,7 @@ bool FwOperations::GetSectData(std::vector<u_int8_t>& file_sect, const u_int32_t
 
 bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase** ioAccessP, u_int16_t swDevId)
 {
-    DPRINTF(("FwOperations::FwAccessCreate\n"));
+    MLXFWOPS_LOG_DEBUG("hndlType=%s swDevId=0x%x", file_handle_type_to_str(fwParams.hndlType), (unsigned int)swDevId);
     if (fwParams.hndlType == FHT_FW_FILE)
     {
         int sig = getFileSignature(fwParams.fileHndl);
@@ -601,13 +605,13 @@ bool FwOperations::GetImageFormatVersion(FBase& f, u_int32_t boot_version_offset
     memset(&boot_version, 0, sizeof(boot_version));
     image_layout_boot_version_unpack(&boot_version, (u_int8_t*)&data);
     image_format_version = boot_version.image_format_version;
-    DPRINTF(("FwOperations::GetImageFormatVersion image_format_version = %d\n", image_format_version));
+    MLXFWOPS_LOG_DEBUG("image_format_version = %d", image_format_version);
     return true;
 }
 
 u_int8_t FwOperations::IsFS4OrFS5Image(FBase& f, u_int32_t* found_images)
 {
-    DPRINTF(("FwOperations::IsFS4OrFS5Image\n"));
+    MLXFWOPS_LOG_DEBUG("FwOperations::IsFS4OrFS5Image");
     u_int8_t image_format_version;
     u_int32_t image_start[CNTX_START_POS_SIZE] = {0};
 
@@ -722,7 +726,7 @@ bool FwOperations::IsPLDMHeader(const u_int8_t* data)
 
 u_int8_t FwOperations::CheckFwFormat(FBase& f, bool getFwFormatFromImg, u_int16_t swDevId)
 {
-    DPRINTF(("FwOperations::CheckFwFormat\n"));
+    MLXFWOPS_LOG_DEBUG("getFwFormatFromImg=%d swDevId=0x%x", (int)getFwFormatFromImg, (unsigned int)swDevId);
     u_int8_t v;
     u_int32_t found_images = 0;
 
@@ -787,7 +791,7 @@ bool FwOperations::CheckBinVersion(u_int8_t binVerMajor, u_int8_t binVerMinor)
 
 FwOperations* FwOperations::FwOperationsCreate(void* fwHndl, void* info, char* psid, fw_hndl_type_t hndlType, char* errBuff, int buffSize, bool ignore_crc_check)
 {
-    DPRINTF(("FwOperations::FwOperationsCreate\n"));
+    MLXFWOPS_LOG_DEBUG("hndlType=%s psid=%s", file_handle_type_to_str(hndlType), psid ? psid : "none");
     fw_ops_params_t fwParams;
     memset(&fwParams, 0, sizeof(fwParams));
     fwParams.psid = psid;
@@ -942,7 +946,7 @@ bool FwOperations::IsDeviceSupported(fw_ops_params_t& fwParams)
 
 FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
 {
-    DPRINTF(("FwOperations::FwOperationsCreate\n"));
+    MLXFWOPS_LOG_DEBUG("hndlType=%s", file_handle_type_to_str(fwParams.hndlType));
     FwOperations* fwops;
     u_int8_t fwFormat;
     FBase* ioAccess = (FBase*)NULL;
@@ -1035,31 +1039,32 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
                     u_int32_t hwRevId = 0x0;
                     if ((fwCompsAccess->getMfileObj()->flags & MDEVS_MLNX_OS) != 0)
                     {
-                        FLASH_ACCESS_DPRINTF(("MLNXOS device interface\n"));
+                        MFLASH_ACCESS_LOG_DEBUG("MLNXOS device interface");
                         if (dm_get_device_id(fwCompsAccess->getMfileObj(), &deviceId, &hwDevId, &hwRevId) == MFE_OK)
                         {
-                            FLASH_ACCESS_DPRINTF(("deviceId = %s\n", dm_dev_type2str(deviceId)));
+                            MFLASH_ACCESS_LOG_DEBUG("deviceId = %s", dm_dev_type2str(deviceId));
                             if (deviceId == DeviceQuantum2)
                             {
-                                FLASH_ACCESS_DPRINTF(("BB device identified\n"));
+                                MFLASH_ACCESS_LOG_DEBUG("BB device identified");
                                 if (fwCompsAccess->queryFwInfo(&fwInfo))
                                 {
                                     if (fwInfo.security_type.secure_fw == 0)
                                     {
-                                        FLASH_ACCESS_DPRINTF(("Non secured BB device, deleting fw comps mgr object and "
-                                                              "setting no_fw_ctrl mode\n"));
+                                        MFLASH_ACCESS_LOG_DEBUG(
+                                          "Non secured BB device, deleting fw comps mgr object and "
+                                          "setting no_fw_ctrl mode");
                                         delete fwCompsAccess;
                                         fwCompsAccess = (FwCompsMgr*)NULL;
                                         fwParams.noFwCtrl = 1;
                                     }
                                     else
                                     {
-                                        FLASH_ACCESS_DPRINTF(("Secured BB device, using MCC flow\n"));
+                                        MFLASH_ACCESS_LOG_DEBUG("Secured BB device, using MCC flow");
                                     }
                                 }
                                 else
                                 {
-                                    FLASH_ACCESS_DPRINTF(("Failed to query fw comps mgr object\n"));
+                                    MFLASH_ACCESS_LOG_WARNING("Failed to query fw comps mgr object");
                                 }
                             }
                         }
@@ -1067,7 +1072,7 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
                     //* MCC flow
                     if (fwParams.noFwCtrl == 0)
                     {
-                        FLASH_ACCESS_DPRINTF(("Flash init to use MCC flow\n"));
+                        MFLASH_ACCESS_LOG_DEBUG("Flash init to use MCC flow");
                         fwFormat = FS_FSCTRL_GEN;
                         goto init_fwops;
                     }
@@ -1076,6 +1081,10 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
         }
         if (!FwAccessCreate(fwParams, &ioAccess, fwParams.swDevId))
         {
+            MLXFWOPS_LOG_ERROR("Failed to open FW access for %s: %s", file_handle_type_to_str(fwParams.hndlType),
+                               (fwParams.hndlType == FHT_FW_FILE) ?
+                                 (fwParams.fileHndl ? fwParams.fileHndl : "unnamed") :
+                                 (fwParams.mstHndl ? fwParams.mstHndl : "unnamed"));
             return (FwOperations*)NULL;
         }
         if (fwParams.hndlType == FHT_UEFI_DEV)
@@ -1090,28 +1099,28 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
         {
             case FS_FS3_GEN:
             {
-                DPRINTF(("FS3 ops created for %s\n", file_handle_type_to_str(fwParams.hndlType)));
+                MLXFWOPS_LOG_DEBUG("FS3 ops created for %s", file_handle_type_to_str(fwParams.hndlType));
                 fwops = new Fs3Operations(ioAccess);
                 break;
             }
 
             case FS_FS4_GEN:
             {
-                DPRINTF(("FS4 ops created for %s\n", file_handle_type_to_str(fwParams.hndlType)));
+                MLXFWOPS_LOG_DEBUG("FS4 ops created for %s", file_handle_type_to_str(fwParams.hndlType));
                 fwops = new Fs4Operations(ioAccess);
                 break;
             }
 
             case FS_FS5_GEN:
             {
-                DPRINTF(("FS5 ops created for %s\n", file_handle_type_to_str(fwParams.hndlType)));
+                MLXFWOPS_LOG_DEBUG("FS5 ops created for %s", file_handle_type_to_str(fwParams.hndlType));
                 fwops = new Fs5Operations(ioAccess);
                 break;
             }
 
             case FS_COMPS_GEN:
             {
-                DPRINTF(("FS COMPS ops created for %s\n", file_handle_type_to_str(fwParams.hndlType)));
+                MLXFWOPS_LOG_DEBUG("FS COMPS ops created for %s", file_handle_type_to_str(fwParams.hndlType));
                 fwops = FsCompsFactory::Create(ioAccess);
                 break;
             }
@@ -1123,13 +1132,13 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
                     delete ioAccess;
                     return (FwOperations*)NULL;
                 }
-                DPRINTF(("FSCTRL ops created for %s\n", file_handle_type_to_str(fwParams.hndlType)));
+                MLXFWOPS_LOG_DEBUG("FSCTRL ops created for %s", file_handle_type_to_str(fwParams.hndlType));
                 fwops = new FsCtrlOperations(fwCompsAccess);
                 break;
             }
             case FS_PLDM_1_0:
             {
-                DPRINTF(("FS_PLDM_1_0 ops created for %s\n", file_handle_type_to_str(fwParams.hndlType)));
+                MLXFWOPS_LOG_DEBUG("FS_PLDM_1_0 ops created for %s", file_handle_type_to_str(fwParams.hndlType));
                 fwops = new FsPldmOperations(ioAccess);
                 if (!fwops->FwInit())
                 {
@@ -1149,6 +1158,8 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
 
 #endif
             default:
+                MLXFWOPS_LOG_ERROR("Invalid firmware format %d for %s", (int)fwFormat,
+                                   file_handle_type_to_str(fwParams.hndlType));
                 delete ioAccess;
                 WriteToErrBuff(fwParams.errBuff, (char*)"Invalid Firmware Format (found FS Gen 1)", fwParams.errBuffSize);
                 return (FwOperations*)NULL;
@@ -2376,17 +2387,17 @@ bool FwOperations::checkAndDisableFlashWpIfRequired()
     u_int8_t fwType = this->FwType();
     if (fwType != FIT_FS5)
     {
-        DPRINTF(("FwOperations::checkAndDisableFlashWpIfRequired not supported for fw type %d\n", fwType));
+        MLXFWOPS_LOG_DEBUG("not supported for fw type %d", fwType);
         return true; // only supported for FS5 and FS6
     }
 
-    DPRINTF(("FwOperations::checkAndDisableFlashWpIfRequired\n"));
+    MLXFWOPS_LOG_DEBUG("FwOperations::checkAndDisableFlashWpIfRequired");
     bool rc = true;
     if (_ioAccess->is_flash())
     {
         if (((Flash*)_ioAccess)->get_ignore_cache_replacment())
         {
-            DPRINTF(("check and disable flash wp if from bottom for selected flashes\n"));
+            MLXFWOPS_LOG_DEBUG("check and disable flash wp if from bottom for selected flashes");
             Flash* flash = (Flash*)_ioAccess;
             rc = flash->backup_write_protect_info(_protect_info_backup);
             if (!rc)
@@ -2401,11 +2412,11 @@ bool FwOperations::checkAndDisableFlashWpIfRequired()
 
 bool FwOperations::restoreWriteProtectInfo()
 {
-    DPRINTF(("FwOperations::restoreWriteProtectInfo\n"));
+    MLXFWOPS_LOG_DEBUG("FwOperations::restoreWriteProtectInfo");
     u_int8_t fwType = this->FwType();
     if (fwType != FIT_FS5)
     {
-        DPRINTF(("FwOperations::restoreWriteProtectInfo not supported for fw type %d\n", fwType));
+        MLXFWOPS_LOG_DEBUG("not supported for fw type %d", fwType);
         return true; // only supported for FS5 and FS6
     }
 
@@ -2414,7 +2425,7 @@ bool FwOperations::restoreWriteProtectInfo()
     {
         if (_ioAccess)
         {
-            DPRINTF(("restoring write protect info..\n"));
+            MLXFWOPS_LOG_DEBUG("restoring write protect info..");
             Flash* flash = (Flash*)_ioAccess;
             rc = flash->restore_write_protect_info(_protect_info_backup);
         }
@@ -2495,7 +2506,7 @@ bool FwOperations::openEncryptedImageAccess(const char* encrypted_image_path)
 bool FwOperations::isEncrypted(bool& is_encrypted)
 {
     is_encrypted = false;
-    DPRINTF(("FwOperations::isEncrypted res = FALSE\n"));
+    MLXFWOPS_LOG_DEBUG("res = FALSE");
     return true;
 }
 bool FwOperations::FwExtractEncryptedImage(vector<u_int8_t>&, bool, bool, bool)

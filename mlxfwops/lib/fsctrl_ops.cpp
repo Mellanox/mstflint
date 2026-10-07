@@ -32,6 +32,7 @@
  */
 
 #include "fsctrl_ops.h"
+#include "nvtoolslogger/NvToolsLogger.h"
 #include "fw_version.h"
 #include "fs_comps_ops.h"
 #include "mft_utils/mft_utils.h"
@@ -288,7 +289,7 @@ bool FsCtrlOperations::FsIntQuery()
     {
         mfsv_reg_supported = EXTRACT(mcam.mng_access_reg_cap_mask[3 - 0], 21, 1);
     }
-    DPRINTF(("mfsv_reg_supported = %d\n", mfsv_reg_supported));
+    MLXFWOPS_LOG_DEBUG("mfsv_reg_supported = %d", mfsv_reg_supported);
 
     if (_fsCtrlImgInfo.sec_boot == 1 && CRSpaceRegisters::IsLifeCycleSecured(_fsCtrlImgInfo.life_cycle) && mfsv_reg_supported == 1)
     {
@@ -800,7 +801,7 @@ bool FsCtrlOperations::CheckITOCSignature(u_int8_t* signature)
     {
         u_int32_t sig_dword = ((u_int32_t*)signature)[i];
         TOCPU1(sig_dword);
-        DPRINTF(("Comparing itoc_sig[%d]=0x%x with expected_sig[%d]=0x%x\n", i, sig_dword, i, expected_sig[i]));
+        MLXFWOPS_LOG_DEBUG("Comparing itoc_sig[%d]=0x%x with expected_sig[%d]=0x%x", i, sig_dword, i, expected_sig[i]);
         if (sig_dword != expected_sig[i])
         {
             return false;
@@ -812,7 +813,7 @@ bool FsCtrlOperations::CheckITOCSignature(u_int8_t* signature)
 bool FsCtrlOperations::isEncrypted(bool& is_encrypted)
 {
     is_encrypted = _fsCtrlImgInfo.encryption;
-    DPRINTF(("FsCtrlOperations::isEncrypted() = %s\n", is_encrypted ? "TRUE" : "FALSE"));
+    MLXFWOPS_LOG_DEBUG("= %s", is_encrypted ? "TRUE" : "FALSE");
     return true;
 }
 
@@ -935,6 +936,7 @@ bool FsCtrlOperations::_Burn(std::vector<u_int8_t> imageOps4MData, ProgressCallB
 #endif
       FwComponent bootImageComponent;
 
+    MLXFWOPS_LOG_INFO("MCC burn started (component %d, %d bytes)", (int)ComponentId, (int)imageOps4MData.size());
     bootImageComponent.init(imageOps4MData, imageOps4MData.size(), ComponentId);
     if (!_fwCompsAccess->lock_flash_semaphore())
     {
@@ -1119,7 +1121,7 @@ FsCtrlOperations::~FsCtrlOperations()
 
 bool FsCtrlOperations::FwReadBlock(u_int32_t addr, u_int32_t size, std::vector<u_int8_t>& dataVec)
 {
-    DPRINTF(("Read from flash using MCC"));
+    MLXFWOPS_LOG_DEBUG("Read from flash using MCC");
     if (!_fwCompsAccess->readBlockFromComponent(FwComponent::COMPID_BOOT_IMG, addr, size, dataVec))
     {
         fw_comps_error_t errCode = _fwCompsAccess->getLastError();
@@ -1473,7 +1475,7 @@ bool FsCtrlOperations::GetAllDpaAppsMetadataFromMcqi(FwComponent::comps_ids_t co
 
 bool FsCtrlOperations::QueryComponentData(FwComponent::comps_ids_t comp, u_int32_t deviceIndex, vector<u_int8_t>& data)
 {
-    DPRINTF(("QueryComponentData - %X\n", comp));
+    MLXFWOPS_LOG_DEBUG("QueryComponentData - %X", comp);
     if (comp == FwComponent::DPA_COMPONENT)
     {
 #ifdef MST_CPU_armv7l_umbriel // {
@@ -1548,7 +1550,7 @@ bool FsCtrlOperations::IsComponentSupported(FwComponent::comps_ids_t component)
 
 bool FsCtrlOperations::getBFBComponentsVersions(std::map<std::string, std::string>& name_to_version, bool pending)
 {
-    DPRINTF(("Getting BFB components versions (pending=%d)...\n", pending));
+    MLXFWOPS_LOG_DEBUG("Getting BFB components versions (pending=%d)...", pending);
 
     const std::map<u_int32_t, std::string> MISOC_TYPE_TO_NAME = {
       {0x0, "BF3_ATF"},
@@ -1565,21 +1567,21 @@ bool FsCtrlOperations::getBFBComponentsVersions(std::map<std::string, std::strin
     for (const auto& pair : MISOC_TYPE_TO_NAME)
     {
         version.clear(); // Clear any previous version
-        DPRINTF(("Querying MISOC type 0x%x (%s)...\n", pair.first, pair.second.c_str()));
+        MLXFWOPS_LOG_DEBUG("Querying MISOC type 0x%x (%s)...", pair.first, pair.second.c_str());
         if (!_fwCompsAccess->queryMISOC(version, pair.first, pending))
         {
-            DPRINTF(("Failed to query MISOC type 0x%x\n", pair.first));
+            MLXFWOPS_LOG_DEBUG("Failed to query MISOC type 0x%x", pair.first);
             name_to_version[pair.second] = "Info not available";
         }
         else
         {
-            DPRINTF(("Got version: %s\n", version.c_str()));
+            MLXFWOPS_LOG_DEBUG("Got version: %s", version.c_str());
             name_to_version[pair.second] = version;
         }
     }
 
     // Get NIC FW version from MGIR
-    DPRINTF(("Querying NIC firmware version...\n"));
+    MLXFWOPS_LOG_DEBUG("Querying NIC firmware version...");
     if (pending)
     {
         FwVersion pending_fw_version = FwOperations::createFwVersion(&_fwImgInfo.ext_info);
@@ -1592,7 +1594,7 @@ bool FsCtrlOperations::getBFBComponentsVersions(std::map<std::string, std::strin
         name_to_version["BF3_NIC_FW"] =
           running_fw_version.get_fw_version(VERSION_FORMAT(_fwImgInfo.ext_info.running_fw_ver[1]));
     }
-    DPRINTF(("Got NIC FW version: %s\n", name_to_version["BF3_NIC_FW"].c_str()));
+    MLXFWOPS_LOG_DEBUG("Got NIC FW version: %s", name_to_version["BF3_NIC_FW"].c_str());
 
     return true;
 }
@@ -1615,29 +1617,29 @@ psid_utils::MinorPsidLockStatus FsCtrlOperations::queryMinorPsidLockStatus()
     mfile* mf = getMfileObj();
     if (mf == nullptr)
     {
-        DPRINTF(("queryMinorPsidLockStatus: mfile is null\n"));
+        MLXFWOPS_LOG_DEBUG("queryMinorPsidLockStatus: mfile is null");
         return status;
     }
 
     struct reg_access_hca_mnvqc_reg_ext mnvqcTlv;
     memset(&mnvqcTlv, 0, sizeof(mnvqcTlv));
     mnvqcTlv.type = NV_MINOR_PSID_LOCK_TLV_TYPE;
-    DPRINTF(("queryMinorPsidLockStatus: read MNVQC type=0x%x\n", mnvqcTlv.type));
+    MLXFWOPS_LOG_DEBUG("queryMinorPsidLockStatus: read MNVQC type=0x%x", mnvqcTlv.type);
 
     reg_access_status_t rc = reg_access_mnvqc(mf, REG_ACCESS_METHOD_GET, &mnvqcTlv);
     if (rc != ME_OK)
     {
-        DPRINTF(("queryMinorPsidLockStatus: MNVQC failed rc=%d type=0x%x\n", rc, mnvqcTlv.type));
+        MLXFWOPS_LOG_DEBUG("queryMinorPsidLockStatus: MNVQC failed rc=%d type=0x%x", rc, mnvqcTlv.type);
         return status;
     }
 
     status.featureSupported = mnvqcTlv.support_rd;
-    DPRINTF(("queryMinorPsidLockStatus: MNVQC ok support_rd=%d support_wr=%d ver=0x%x\n", mnvqcTlv.support_rd ? 1 : 0,
-             mnvqcTlv.support_wr ? 1 : 0, mnvqcTlv.version));
+    MLXFWOPS_LOG_DEBUG("queryMinorPsidLockStatus: MNVQC ok support_rd=%d support_wr=%d ver=0x%x",
+                       mnvqcTlv.support_rd ? 1 : 0, mnvqcTlv.support_wr ? 1 : 0, mnvqcTlv.version);
     if (!status.featureSupported)
     {
-        DPRINTF((
-          "queryMinorPsidLockStatus: minor PSID lock TLV not readable, PSID major-minor split feature not supported\n"));
+        MLXFWOPS_LOG_DEBUG(
+          "queryMinorPsidLockStatus: minor PSID lock TLV not readable, PSID major-minor split feature not supported");
         return status;
     }
 
@@ -1645,14 +1647,14 @@ psid_utils::MinorPsidLockStatus FsCtrlOperations::queryMinorPsidLockStatus()
     memset(&mnvdaTlv, 0, sizeof(mnvdaTlv));
     mnvdaTlv.nv_hdr.length = NV_MINOR_PSID_LOCK_DATA_SIZE;
     mnvdaTlv.nv_hdr.type.tlv_type_dw.tlv_type_dw = NV_MINOR_PSID_LOCK_TLV_TYPE;
-    DPRINTF(("queryMinorPsidLockStatus: read MNVDA type=0x%x len=%u\n", mnvdaTlv.nv_hdr.type.tlv_type_dw.tlv_type_dw,
-             mnvdaTlv.nv_hdr.length));
+    MLXFWOPS_LOG_DEBUG("queryMinorPsidLockStatus: read MNVDA type=0x%x len=%u",
+                       mnvdaTlv.nv_hdr.type.tlv_type_dw.tlv_type_dw, mnvdaTlv.nv_hdr.length);
 
     rc = reg_access_mnvda(mf, REG_ACCESS_METHOD_GET, &mnvdaTlv);
     if (rc != ME_OK)
     {
-        DPRINTF(("queryMinorPsidLockStatus: MNVDA failed rc=%d type=0x%x len=%u\n", rc,
-                 mnvdaTlv.nv_hdr.type.tlv_type_dw.tlv_type_dw, mnvdaTlv.nv_hdr.length));
+        MLXFWOPS_LOG_DEBUG("queryMinorPsidLockStatus: MNVDA failed rc=%d type=0x%x len=%u", rc,
+                           mnvdaTlv.nv_hdr.type.tlv_type_dw.tlv_type_dw, mnvdaTlv.nv_hdr.length);
         status.featureSupported = false;
         return status;
     }
@@ -1660,7 +1662,7 @@ psid_utils::MinorPsidLockStatus FsCtrlOperations::queryMinorPsidLockStatus()
     u_int32_t firstDword;
     BYTES_TO_DWORD_BE(&firstDword, mnvdaTlv.data);
     status.isLocked = EXTRACT(firstDword, 31, 1);
-    DPRINTF(("queryMinorPsidLockStatus: MNVDA ok dword=0x%08x lock=%u\n", firstDword, status.isLocked ? 1 : 0));
+    MLXFWOPS_LOG_DEBUG("queryMinorPsidLockStatus: MNVDA ok dword=0x%08x lock=%u", firstDword, status.isLocked ? 1 : 0);
 
     if (status.isLocked)
     {
@@ -1668,7 +1670,8 @@ psid_utils::MinorPsidLockStatus FsCtrlOperations::queryMinorPsidLockStatus()
         status.lockedPsid[psid_utils::PSID_MAX_LEN] = '\0';
     }
 
-    DPRINTF(("queryMinorPsidLockStatus: result supported=%d locked=%d psid=%s\n", status.featureSupported ? 1 : 0,
-             status.isLocked ? 1 : 0, status.isLocked ? status.lockedPsid : "<none>"));
+    MLXFWOPS_LOG_DEBUG("queryMinorPsidLockStatus: result supported=%d locked=%d psid=%s",
+                       status.featureSupported ? 1 : 0, status.isLocked ? 1 : 0,
+                       status.isLocked ? status.lockedPsid : "<none>");
     return status;
 }

@@ -34,6 +34,7 @@
  */
 
 #include "fs_pldm.h"
+#include "nvtoolslogger/NvToolsLogger.h"
 #include "pldmlib/pldm_dev_id_record.h"
 #include "pldmlib/pldm_component_image.h"
 #ifdef MFT_LEGACY_BUILD
@@ -122,7 +123,7 @@ bool FsPldmOperations::FwReadData(void* image, u_int32_t*, bool)
 
 bool FsPldmOperations::GetPldmComponentDataByPsid(string component, string psid, u_int8_t** buff, u_int32_t& buffSize)
 {
-    DPRINTF(("FsPldmOperations::GetPldmComponentDataByPsid\n"));
+    MLXFWOPS_LOG_DEBUG("component=%s psid=%s", component.c_str(), psid.c_str());
     std::string strPsid(psid);
     ComponentIdentifier compIdentifier;
     try
@@ -180,7 +181,7 @@ bool FsPldmOperations::GetComponentData(const string& pldmFile,
 
 string FsPldmOperations::GetPldmVendorDefinedDescriptor(string psid, PldmRecordDescriptor::VendorDefinedType type)
 {
-    DPRINTF(("FsPldmOperations::GetPldmVendorDefinedDescriptor\n"));
+    MLXFWOPS_LOG_DEBUG("psid=%s type=%d", psid.c_str(), (int)type);
     return _pkg.getPldmVendorDefinedDescriptorByPsid(psid, type);
 }
 
@@ -190,7 +191,7 @@ bool FsPldmOperations::CreateFwOpsImage(u_int32_t* buff,
                                         u_int16_t swDevId,
                                         bool isStripedImage)
 {
-    DPRINTF(("FsPldmOperations::CreateFwOpsImage\n"));
+    MLXFWOPS_LOG_DEBUG("buffSize=0x%x swDevId=0x%x", buffSize, (unsigned int)swDevId);
     if (!CreateBasicImageFromData(buff, buffSize, newImageOps, swDevId, isStripedImage))
     {
         return false;
@@ -212,7 +213,7 @@ bool FsPldmOperations::FwOperationsCreate(const char* requestedPsid,
                                         FwOperations** newImageOps,
                                         mfile* deviceMfile)
 {
-    DPRINTF(("FsPldmOperations::FwOperationsCreate\n"));
+    MLXFWOPS_LOG_DEBUG("psid=%s componentType=%s", requestedPsid ? requestedPsid : "none", componentType.c_str());
     u_int8_t* buff;
     u_int32_t buffSize = 0;
     // TODO:: look for the image with relvant psid , if not found try to extract full image and query it.
@@ -233,7 +234,7 @@ bool FsPldmOperations::FwOperationsCreate(const char* requestedPsid,
         // use PSID or if empty take the first image in PLDM fwpkg
         if (!psid.empty() || deviceMfile == nullptr)
         {
-            DPRINTF(("FsPldmOperations::FwOperationsCreate: use psid to get swDevId\n"));
+            MLXFWOPS_LOG_DEBUG("use psid to get swDevId");
             if (!GetPldmDescriptor(psid, DEV_ID_TYPE, swDevId))
             {
                 delete[] buff;
@@ -243,7 +244,7 @@ bool FsPldmOperations::FwOperationsCreate(const char* requestedPsid,
         // use device mfile to detect SW DEVICE ID
         else
         {
-            DPRINTF(("FsPldmOperations::FwOperationsCreate: use device mfile to get swDevId\n"));
+            MLXFWOPS_LOG_DEBUG("use device mfile to get swDevId");
             dm_dev_id_t devid_t = DeviceUnknown;
             u_int32_t devid = 0, revid = 0;
             int rc = dm_get_device_id(deviceMfile, &devid_t, &devid, &revid);

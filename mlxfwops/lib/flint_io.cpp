@@ -466,6 +466,8 @@ bool Flash::open_com_checks(const char* device, int rc, bool force_lock)
         return errmsg("Failed getting flash attributes for device %s: %s", device, mf_err2str(rc));
     }
     _curr_sector_size = _attr.sector_size;
+    MFLASH_LOG_INFO("Flash opened on %s: type %s, size 0x%x, sector size 0x%x, %d bank(s)", device,
+                    _attr.type_str ? _attr.type_str : "unknown", _attr.size, _attr.sector_size, _attr.banks_num);
     // The mirror describes a sector on whatever device was open before - never carry it across.
     _sector_mirror_valid = false;
 

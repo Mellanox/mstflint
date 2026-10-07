@@ -103,23 +103,6 @@
 
 EXTERN_C_START
 
-#ifndef UEFI_BUILD
-#define FLASH_ACCESS_DPRINTF(args)                      \
-    do                                                  \
-    {                                                   \
-        char* reacDebug = getenv("FLASH_ACCESS_DEBUG"); \
-        if (reacDebug != NULL)                          \
-        {                                               \
-            printf("\33[2K\r");                         \
-            printf("[FLASH_ACCESS_DEBUG]: -D- ");       \
-            printf args;                                \
-            fflush(stdout);                             \
-        }                                               \
-    } while (0)
-#else
-#define FLASH_ACCESS_DPRINTF(...)
-#endif
-
 #define MFLASH_LOG_DEBUG(...) MFT_LOG_C_DEBUGF(MFT_LAYER_MFLASH, __VA_ARGS__)
 #define MFLASH_LOG_INFO(...) MFT_LOG_C_INFOF(MFT_LAYER_MFLASH, __VA_ARGS__)
 #define MFLASH_LOG_WARNING(...) MFT_LOG_C_WARNINGF(MFT_LAYER_MFLASH, __VA_ARGS__)
