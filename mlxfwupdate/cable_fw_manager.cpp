@@ -363,6 +363,13 @@ int CableFwManager::run()
 #define CABLE_OPER_STATUS_INITIALIZING 0
 #define CABLE_OPER_STATUS_PLUGGED_ENABLED 1
 #define CABLE_OPER_STATUS_UNPLUGGED 2
+#define CABLE_OPER_STATUS_PLUGGED_WITH_ERROR 3
+
+/* What the State column says for a populated cage whose cable could not be read, in place of a
+ * link state that would read as N/A and look like an empty cage. Both fit the column.
+ */
+#define CABLE_STATE_UNREADABLE "Unreadable"
+#define CABLE_STATE_PLUGGED_WITH_ERROR "Plugged w/ error"
 
 /* Where the identity fields sit, as flat byte addresses in the cable's memory map. CMIS and
  * SFF-8636 disagree on all of them, and the identifier at page 0 byte 0 is what says which map
@@ -1488,6 +1495,7 @@ int CableFwManager::discoverCables()
 {
     u_int32_t plugged = 0;
     u_int32_t burnable = 0;
+    u_int32_t unreadable = 0;
 
     for (AsicsByGa::iterator asic = _asics.begin(); asic != _asics.end(); ++asic)
     {
@@ -1532,9 +1540,15 @@ int CableFwManager::discoverCables()
         {
             burnable++;
         }
+        if (_cables[i].isPlugged && !_cables[i].isReadable)
+        {
+            unreadable++;
+        }
     }
+    // Counted as found, since the cage is populated, but said apart: they are the cables no action can reach.
     emitProgress("-I- Found " + int_to_string((int)plugged) + " cable(s), " + int_to_string((int)burnable) +
-                 " of them updatable\n");
+                 " of them updatable" +
+                 ((unreadable > 0) ? ", " + int_to_string((int)unreadable) + " unreadable" : string()) + "\n");
     return MLX_FWM_SUCCESS;
 }
 
@@ -1684,6 +1698,10 @@ void CableFwManager::queryCable(mfile* mf, CableInfo& cable)
     }
     if (!cable.isReadable && !readCableIdentity(mf, cable))
     {
+        // Switch FW reports a cage it cannot read the module in as plugged_with_error, which is
+        // what mlxlink warns about; any other unreadable cable is named for what the tool saw.
+        cable.linkState = (operStatus == CABLE_OPER_STATUS_PLUGGED_WITH_ERROR) ? CABLE_STATE_PLUGGED_WITH_ERROR :
+                                                                                 CABLE_STATE_UNREADABLE;
         return;
     }
     // The firmware does not fill every field of the page - the hardware revision reads zero on
