@@ -1551,6 +1551,9 @@ void CableFwManager::fillIdentityGapsFromEeprom(mfile* mf, CableInfo& cable)
     CableInfo eeprom;
 
     eeprom.localIndex = cable.localIndex;
+    // Carried so the identity trace names the port it read, rather than the zero a scratch record
+    // is constructed with.
+    eeprom.globalPort = cable.globalPort;
     if (!readCableIdentity(mf, eeprom))
     {
         return;
