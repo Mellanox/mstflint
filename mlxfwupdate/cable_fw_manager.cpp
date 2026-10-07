@@ -54,6 +54,9 @@
 #ifndef NO_OPEN_SSL
 #include <openssl/sha.h>
 #endif
+#include "common/tools_time.h"
+#include "reg_access/mcam_capabilities.h"
+#include "reg_access/reg_ids.h"
 
 /* The extended header a cable firmware image can carry: its magic and the layout the device
  * matches the image against. Only the pieces the cable flow uses are defined here. */
@@ -658,6 +661,13 @@ static bool metadataMatchesCable(const FwPackageEntry& entry, const CableInfo& c
     }
     return true;
 }
+
+/* Every LinkX burn in this tree hands the device eight 0xFF bytes ahead of the image. The device
+ * cannot tell this flow from an ordinary cable burn and was never told about it, so what goes on
+ * the wire has to be what an ordinary burn puts there: the same prefix, and the extended header at
+ * the front of the image behind it, exactly where a package that already carries one puts it.
+ */
+#define CABLE_BURN_IMAGE_PREFIX_SIZE 8
 
 int CableFwManager::discoverSystem()
 {
@@ -1332,8 +1342,182 @@ int CableFwManager::groupUpdatePlan(const map<string, vector<u_int8_t> >& conten
 
 int CableFwManager::downloadAndActivate()
 {
-    _errMsg = "Phase 4 (download and activate) is not implemented yet";
-    return ERR_CODE_CABLE_UPDATE_FAILED;
+    int rc = checkNoStopOnErrorSupport();
+
+    if (rc != MLX_FWM_SUCCESS)
+    {
+        return rc;
+    }
+
+    for (size_t i = 0; i < _plan.size(); i++)
+    {
+        size_t firstResult = _results.size();
+        for (size_t j = 0; j < _plan[i].cableIndices.size(); j++)
+        {
+            const CableInfo& cable = _cables[_plan[i].cableIndices[j]];
+            CableUpdateResult result;
+
+            result.globalIndex = cable.globalIndex;
+            result.localIndex = cable.localIndex;
+            result.asicDevName = cable.asicDevName;
+            result.status = "not attempted";
+            _results.push_back(result);
+        }
+        burnPlanEntry(_plan[i], firstResult);
+    }
+
+    for (size_t i = 0; i < _results.size(); i++)
+    {
+        if (!_results[i].succeeded)
+        {
+            // The report is what names the cables that failed, so the run reaches it either way.
+            return ERR_CODE_CABLE_UPDATE_FAILED;
+        }
+    }
+    return MLX_FWM_SUCCESS;
+}
+
+int CableFwManager::checkNoStopOnErrorSupport()
+{
+    for (AsicsByGa::const_iterator asic = _asics.begin(); asic != _asics.end(); ++asic)
+    {
+        mfile* mf = mopen(asic->second.devName.c_str());
+        if (mf == NULL)
+        {
+            _errMsg = "Failed to open " + asic->second.devName + " to check its firmware update support";
+            return ERR_CODE_CABLE_UPDATE_FAILED;
+        }
+        bool supported = false;
+        reg_access_status_t status = isRegisterValidAccordingToMcamReg(mf, REG_ID_MCCE, &supported);
+        mclose(mf);
+        if (status != ME_OK || !supported)
+        {
+            _errMsg = "The firmware on " + asic->second.devName +
+                      " cannot report which cable failed a burn, so a failure would stop the update at the first bad "
+                      "cable; align the firmware across the system before updating cables";
+            return ERR_CODE_CABLE_NOT_SUPPORTED;
+        }
+    }
+    return MLX_FWM_SUCCESS;
+}
+
+void CableFwManager::burnPlanEntry(const CablePlanEntry& group, size_t firstResult)
+{
+    vector<u_int8_t> image(CABLE_BURN_IMAGE_PREFIX_SIZE, 0xff);
+    string errMsg;
+
+    try
+    {
+        vector<u_int8_t> payload = mft_utils::ReadBinFile(group.burnImagePath);
+        image.insert(image.end(), payload.begin(), payload.end());
+    }
+    catch (const std::exception& e)
+    {
+        for (size_t i = firstResult; i < _results.size(); i++)
+        {
+            _results[i].status = string("download: ") + e.what();
+        }
+        return;
+    }
+
+    mfile* mf = mopen(group.asicDevName.c_str());
+    if (mf == NULL)
+    {
+        for (size_t i = firstResult; i < _results.size(); i++)
+        {
+            _results[i].status = "download: " + group.asicDevName + " could not be opened";
+        }
+        return;
+    }
+
+    // The wait belongs between the transfer and the activation, and it is only there for cables
+    // that need it; with none asked for, the burn runs as one transaction, the way it is shipped.
+    bool separateActivation = _cmdParams.cable_activation_wait > 0;
+    bool ok = runBurnStage(mf, image, true, !separateActivation, firstResult, errMsg);
+    if (ok && separateActivation)
+    {
+        msleep((unsigned int)_cmdParams.cable_activation_wait * 1000);
+        ok = runBurnStage(mf, image, false, true, firstResult, errMsg);
+    }
+    mclose(mf);
+
+    for (size_t i = firstResult; i < _results.size(); i++)
+    {
+        if (_results[i].status == "not attempted")
+        {
+            // The device picks the cables itself in this mode, so a group that came back clean
+            // covered everything the plan expected of it.
+            _results[i].succeeded = ok;
+            _results[i].status = ok ? "burned" : errMsg;
+        }
+    }
+    if (!ok)
+    {
+        _log += "Cable update failed on " + group.asicDevName + " for " + group.packageImagePath + ": " + errMsg + "\n";
+    }
+}
+
+bool CableFwManager::runBurnStage(mfile* mf,
+                                  const vector<u_int8_t>& image,
+                                  bool download,
+                                  bool activate,
+                                  size_t firstResult,
+                                  string& errMsg)
+{
+    // A manager that has queried a cable keeps that cable's index and sends it on every command
+    // afterwards, so the burn gets one of its own.
+    FwCompsMgr fwComps(mf, FwCompsMgr::DEVICE_HCA_SWITCH, 0);
+    FwComponent component;
+
+    fwComps.GenerateHandle();
+    // No index and no range: with auto update set the device matches the image against its own
+    // cables, and the plan's list is what the group is expected to cover rather than an
+    // instruction. no_stop_on_error is what keeps one bad cable from stranding the rest.
+    fwComps.SetIndexAndSize(0, 0, true, activate, download, 0, true);
+    if (!fwComps.RefreshComponentsStatus())
+    {
+        errMsg = "download: " + string((const char*)fwComps.getLastErrMsg());
+        return false;
+    }
+    if (!component.init(image, (u_int32_t)image.size(), FwComponent::COMPID_LINKX))
+    {
+        errMsg = "download: failed to prepare the firmware image";
+        return false;
+    }
+
+    // No progress callback: its only job is to print, and this class cannot.
+    bool ok = fwComps.burnComponents(component, NULL);
+    if (!ok)
+    {
+        errMsg = string(download ? "download: " : "activation: ") + (const char*)fwComps.getLastErrMsg();
+        if (fwComps.isSpecificError)
+        {
+            errMsg += " " + fwComps.getLastSpecificError();
+        }
+    }
+
+    // The failure log has to be drained before the manager goes out of scope, and before anything
+    // else calls SetIndexAndSize on it, which is what clears it.
+    const std::vector<FwCompsMgr::burn_failure_t>& failures = fwComps.GetBurnFailures();
+    u_int32_t transferFailures = fwComps.GetTransferErrorCount();
+    for (size_t i = 0; i < failures.size(); i++)
+    {
+        // The device reports the cable in the number the user already sees, so it is matched
+        // against the label port rather than shifted.
+        for (size_t j = firstResult; j < _results.size(); j++)
+        {
+            if (cableLabelPort(_results[j].localIndex) != failures[i].module_id)
+            {
+                continue;
+            }
+            _results[j].succeeded = false;
+            _results[j].mccErrorCode = failures[i].mcc_error_code;
+            _results[j].cdbErrorCode = failures[i].cdb_error_code;
+            _results[j].status =
+              (i < transferFailures) ? "download: rejected by the device" : "activation: rejected by the device";
+        }
+    }
+    return ok;
 }
 
 int CableFwManager::verifyAndReport()
