@@ -50,6 +50,8 @@
 
 #define BIN_FILE_FINGERPRINT "MLNX.CONFIG.BIN!"
 #define BIN_FILE_FINGERPRINT_SIZE 16 // bytes
+static constexpr const char* REBOOT_TO_LOAD_CFG_MSG = "Please reboot machine to load new configurations.";
+static constexpr const char* POWER_CYCLE_TO_LOAD_CFG_MSG = "Please power cycle machine to load new configurations.";
 
 class GenericCommander : public Commander
 {

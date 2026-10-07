@@ -236,7 +236,7 @@ private:
     mlxCfgStatus handlecompleteSetWithDefault(Commander* commander);
     // reset Cmd
     mlxCfgStatus resetDevsCfg();
-    mlxCfgStatus resetDevCfg(const char* dev);
+    mlxCfgStatus resetDevCfg(const char* dev, string& loadCfgMsg);
     // Set\Get Raw TLV file
     mlxCfgStatus devRawCfg(RawTlvMode mode);
     mlxCfgStatus backupCfg(string deviceName);

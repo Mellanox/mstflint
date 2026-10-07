@@ -1101,11 +1101,11 @@ const char* GenericCommander::loadConfigurationGetStr()
         dealWithSignal();
         if (rc)
         {
-            return "Please power cycle machine to load new configurations.";
+            return POWER_CYCLE_TO_LOAD_CFG_MSG;
         }
     }
 
-    return "Please reboot machine to load new configurations.";
+    return REBOOT_TO_LOAD_CFG_MSG;
 }
 
 bool GenericCommander::checkPCIResetRequired()
