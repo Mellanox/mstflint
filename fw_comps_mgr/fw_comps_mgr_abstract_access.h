@@ -51,11 +51,16 @@ public:
     virtual fw_comps_error_t getLastFirmwareError() = 0;
     virtual reg_access_status_t getLastRegisterAccessStatus() = 0;
 
+    // The progress callback asked to stop the last access. FWCOMPS_ABORTED alone cannot say so: DMA
+    // also reports a device that stays busy with it.
+    bool isStoppedByCaller() const { return _stoppedByCaller; }
+
     AbstractComponentAccess(FwCompsMgr* manager, mfile* mf)
     {
         _mf = mf;
         _manager = manager;
         _lastFwError = FWCOMPS_SUCCESS;
+        _stoppedByCaller = false;
         _lastRegisterAccessStatus = ME_REG_ACCESS_OK;
     }
     virtual ~AbstractComponentAccess() {}
@@ -65,6 +70,7 @@ protected:
     FwCompsMgr* _manager;
     fw_comps_error_t _lastFwError;
     reg_access_status_t _lastRegisterAccessStatus;
+    bool _stoppedByCaller;
 };
 
 class ComponentAccessFactory

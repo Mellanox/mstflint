@@ -337,6 +337,14 @@ static void printCableProgress(const char* text)
     print_out("%s", text);
 }
 
+/* Ctrl-C during the cable flow only raises abort_request (IS_OKAY_To_INTERRUPT stays false), so the
+ * flow can cancel a burn in progress, release the device and exit cleanly.
+ */
+static bool cableInterrupted()
+{
+    return abort_request != 0;
+}
+
 int mainEntry(int argc, char* argv[])
 {
     int res = 0;
@@ -590,7 +598,7 @@ int mainEntry(int argc, char* argv[])
     // runs its own discovery and image matching instead of joining the MlnxDev list.
     if (cmd_params.cable_query || cmd_params.cable_dry_run || cmd_params.cable_update)
     {
-        CableFwManager cableMgr(cmd_params, printCableProgress);
+        CableFwManager cableMgr(cmd_params, printCableProgress, cableInterrupted);
         res = cableMgr.run();
         if (res != MLX_FWM_SUCCESS)
         {
@@ -1536,6 +1544,12 @@ bool checkCmdParams(CmdLineParams& cmd_params, config_t& config)
     {
         fprintf(stderr,
                 "-E- --cable_report_file_only is only valid with --cable_query, --cable_dry_run or --cable_update\n");
+        return false;
+    }
+    if (cmd_params.cable_include_service_ports && !cable_mode)
+    {
+        fprintf(stderr, "-E- --cable_include_service_ports is only valid with --cable_query, --cable_dry_run or "
+                        "--cable_update\n");
         return false;
     }
     if (cable_mode && (cmd_params.use_mfa_file || cmd_params.use_mfa_dir))

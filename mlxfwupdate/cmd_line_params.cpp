@@ -92,6 +92,7 @@ CmdLineParams::CmdLineParams()
     cable_verify_wait = -1;     // same
     cable_report_dir = "";
     cable_report_file_only = false;
+    cable_include_service_ports = false;
 #ifdef __WIN__
     char execName[1024];
     char certificatPath[1024];

@@ -246,6 +246,9 @@ using namespace mft_utils;
 #define CABLE_REPORT_FILE_ONLY_L "cable_report_file_only"
 #define CABLE_REPORT_FILE_ONLY_S ' '
 
+#define CABLE_INCLUDE_SERVICE_PORTS_L "cable_include_service_ports"
+#define CABLE_INCLUDE_SERVICE_PORTS_S ' '
+
 string toolName = "";
 /************************************
  * Function: CmdLineParser
@@ -523,6 +526,9 @@ void CmdLineParser::initOptions()
 
     this->AddOptions(CABLE_REPORT_FILE_ONLY_L, CABLE_REPORT_FILE_ONLY_S, "",
                      "Write the cable report to its file only, without printing it to the screen");
+
+    this->AddOptions(CABLE_INCLUDE_SERVICE_PORTS_L, CABLE_INCLUDE_SERVICE_PORTS_S, "",
+                     "Include the switch's service (FNM) ports in the cable scan, which skips them by default");
 }
 
 bool csvSplit(string str, vector<string>& strv)
@@ -958,6 +964,11 @@ ParseStatus CmdLineParser::HandleOption(string name, string value)
     else if (name == CABLE_REPORT_FILE_ONLY_L)
     {
         _cmdLineParams->cable_report_file_only = true;
+        return PARSE_OK;
+    }
+    else if (name == CABLE_INCLUDE_SERVICE_PORTS_L)
+    {
+        _cmdLineParams->cable_include_service_ports = true;
         return PARSE_OK;
     }
     else if (name == VERBOSE_L)
