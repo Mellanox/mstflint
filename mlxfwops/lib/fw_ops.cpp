@@ -44,6 +44,7 @@
 #include "fs5_ops.h"
 #include "fs4_ops.h"
 #include "fs3_ops.h"
+#include "nvtoolslogger/nvtoolslogger_c.h"
 #include "fs_pldm.h"
 #include "fsctrl_ops.h"
 #include "fs_comps_factory.h"
@@ -1035,31 +1036,32 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
                     u_int32_t hwRevId = 0x0;
                     if ((fwCompsAccess->getMfileObj()->flags & MDEVS_MLNX_OS) != 0)
                     {
-                        FLASH_ACCESS_DPRINTF(("MLNXOS device interface\n"));
+                        MFLASH_ACCESS_LOG_DEBUG("MLNXOS device interface");
                         if (dm_get_device_id(fwCompsAccess->getMfileObj(), &deviceId, &hwDevId, &hwRevId) == MFE_OK)
                         {
-                            FLASH_ACCESS_DPRINTF(("deviceId = %s\n", dm_dev_type2str(deviceId)));
+                            MFLASH_ACCESS_LOG_DEBUG("deviceId = %s", dm_dev_type2str(deviceId));
                             if (deviceId == DeviceQuantum2)
                             {
-                                FLASH_ACCESS_DPRINTF(("BB device identified\n"));
+                                MFLASH_ACCESS_LOG_DEBUG("BB device identified");
                                 if (fwCompsAccess->queryFwInfo(&fwInfo))
                                 {
                                     if (fwInfo.security_type.secure_fw == 0)
                                     {
-                                        FLASH_ACCESS_DPRINTF(("Non secured BB device, deleting fw comps mgr object and "
-                                                              "setting no_fw_ctrl mode\n"));
+                                        MFLASH_ACCESS_LOG_DEBUG(
+                                          "Non secured BB device, deleting fw comps mgr object and "
+                                          "setting no_fw_ctrl mode");
                                         delete fwCompsAccess;
                                         fwCompsAccess = (FwCompsMgr*)NULL;
                                         fwParams.noFwCtrl = 1;
                                     }
                                     else
                                     {
-                                        FLASH_ACCESS_DPRINTF(("Secured BB device, using MCC flow\n"));
+                                        MFLASH_ACCESS_LOG_DEBUG("Secured BB device, using MCC flow");
                                     }
                                 }
                                 else
                                 {
-                                    FLASH_ACCESS_DPRINTF(("Failed to query fw comps mgr object\n"));
+                                    MFLASH_ACCESS_LOG_WARNING("Failed to query fw comps mgr object");
                                 }
                             }
                         }
@@ -1067,7 +1069,7 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
                     //* MCC flow
                     if (fwParams.noFwCtrl == 0)
                     {
-                        FLASH_ACCESS_DPRINTF(("Flash init to use MCC flow\n"));
+                        MFLASH_ACCESS_LOG_DEBUG("Flash init to use MCC flow");
                         fwFormat = FS_FSCTRL_GEN;
                         goto init_fwops;
                     }

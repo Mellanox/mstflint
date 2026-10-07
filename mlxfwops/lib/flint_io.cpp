@@ -40,6 +40,7 @@
 #include <errno.h>
 #include <stdint.h>
 #include <tools_dev_types.h>
+#include "nvtoolslogger/nvtoolslogger_c.h"
 #include "flint_io.h"
 
 using std::to_string;
@@ -465,6 +466,8 @@ bool Flash::open_com_checks(const char* device, int rc, bool force_lock)
         return errmsg("Failed getting flash attributes for device %s: %s", device, mf_err2str(rc));
     }
     _curr_sector_size = _attr.sector_size;
+    MFLASH_LOG_INFO("Flash opened on %s: type %s, size 0x%x, sector size 0x%x, %d bank(s)", device,
+                    _attr.type_str ? _attr.type_str : "unknown", _attr.size, _attr.sector_size, _attr.banks_num);
 
     rc = mf_set_opt(_mfl, MFO_NO_VERIFY, _no_flash_verify ? 1 : 0);
     if (rc != MFE_OK)
