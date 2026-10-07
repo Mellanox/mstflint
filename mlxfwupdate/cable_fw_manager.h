@@ -120,6 +120,15 @@ inline u_int32_t cableLabelPort(u_int32_t localIndex)
     return localIndex + 1;
 }
 
+/* The index MCC, MCQI and MCQS take on the wire, one above the label port. Kept here beside
+ * cableLabelPort() for the same reason: the two conversions are the whole of the arithmetic, and a
+ * second copy of either is a second place that can disagree.
+ */
+inline u_int32_t cableMccIndex(u_int32_t localIndex)
+{
+    return cableLabelPort(localIndex) + 1;
+}
+
 /* One pluggable cable, addressed by three different index spaces.
  *
  * For a cable sitting in cage L of the ASIC that owns it:
@@ -360,6 +369,22 @@ private:
      * Fills the remaining discovery fields of _cables.
      */
     int discoverCables();
+
+    /* Fill one cable's presence, identity and firmware properties from its owning ASIC. A cable
+     * that cannot be read is recorded and skipped rather than ending the sweep, so one bad cage
+     * cannot hide the rest of the chassis.
+     */
+    void queryCable(mfile* mf, CableInfo& cable);
+
+    /* Read the EEPROM identity - part number, vendor, revision, serial. The field offsets differ
+     * between CMIS and SFF-8636, and the identifier byte is what says which.
+     */
+    bool readCableIdentity(mfile* mf, CableInfo& cable);
+
+    /* Read the MCQI LinkX properties: both image versions, the running slot, the management
+     * interface protocol and the activation type.
+     */
+    bool readCableFwProperties(mfile* mf, CableInfo& cable);
 
     /* Phase 3 - Analysis and planning.
      *
