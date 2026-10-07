@@ -510,7 +510,7 @@ void CmdLineParser::initOptions()
                      "Update cable firmware from the package given by --cable_package");
 
     this->AddOptions(CABLE_PACKAGE_L, CABLE_PACKAGE_S, "PackageFile",
-                     "Cable firmware update package to update from: a directory holding its extracted contents");
+                     "Cable firmware update package to update from: a tgz file, or a directory holding its contents");
 
     this->AddOptions(CABLE_ACTIVATION_WAIT_L, CABLE_ACTIVATION_WAIT_S, "Seconds",
                      "Seconds to wait between downloading the cable firmware and activating it (default 0)");

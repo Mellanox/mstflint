@@ -47,6 +47,8 @@
 #include <vector>
 #include <cstdarg>
 #include <cstdio>
+#include <cstring>
+#include <fstream>
 
 #include "pldm_utils/pldm_utils.h"
 #include "mft_utils/mft_utils.h"
@@ -1332,6 +1334,20 @@ clean_up:
     return res;
 }
 
+/* Whether a package file is a gzipped or plain tar. Those are checked when the package is read; only a
+ * ZIP is checked up front.
+ */
+static bool isTarPackage(const string& path)
+{
+    char head[262] = {0};
+    std::ifstream file(path.c_str(), std::ios::binary);
+
+    file.read(head, sizeof(head));
+    std::streamsize read = file.gcount();
+    return (read >= 2 && (unsigned char)head[0] == 0x1f && (unsigned char)head[1] == 0x8b) ||
+           (read == (std::streamsize)sizeof(head) && memcmp(&head[257], "ustar", 5) == 0);
+}
+
 /* The package is only opened much later, when the update plan is built, so a file that is
  * not an archive, or is an archive with nothing in it, would be accepted here and fail deep
  * in the flow instead of at the argument that named it.
@@ -1477,7 +1493,8 @@ bool checkCmdParams(CmdLineParams& cmd_params, config_t& config)
                 fprintf(stderr, "-E- Can't find file or directory %s\n", cmd_params.cable_package.c_str());
                 return false;
             }
-            ZipCheckResult zipCheck = checkZipFile(cmd_params.cable_package);
+            ZipCheckResult zipCheck =
+              isTarPackage(cmd_params.cable_package) ? ZIP_CHECK_OK : checkZipFile(cmd_params.cable_package);
             if (zipCheck == ZIP_CHECK_EMPTY)
             {
                 fprintf(stderr, "-E- %s is an empty archive and holds no firmware images\n",
