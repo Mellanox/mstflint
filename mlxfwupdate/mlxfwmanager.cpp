@@ -1462,22 +1462,27 @@ bool checkCmdParams(CmdLineParams& cmd_params, config_t& config)
     {
         cmd_params.cable_package = adjustRelPath(cmd_params.cable_package, config.adjuster_path);
         Filesystem::path p(cmd_params.cable_package);
-        if (!Filesystem::is_regular_file(p))
+        // A directory holding the extracted package is accepted alongside the archive, because
+        // the archive reader is not built on every platform the tool runs on.
+        if (!mft_utils::IsDirectory(cmd_params.cable_package))
         {
-            fprintf(stderr, "-E- Can't find file %s\n", cmd_params.cable_package.c_str());
-            return false;
-        }
-        ZipCheckResult zipCheck = checkZipFile(cmd_params.cable_package);
-        if (zipCheck == ZIP_CHECK_EMPTY)
-        {
-            fprintf(stderr, "-E- %s is an empty archive and holds no firmware images\n",
-                    cmd_params.cable_package.c_str());
-            return false;
-        }
-        if (zipCheck != ZIP_CHECK_OK)
-        {
-            fprintf(stderr, "-E- %s is not a cable firmware update package\n", cmd_params.cable_package.c_str());
-            return false;
+            if (!Filesystem::is_regular_file(p))
+            {
+                fprintf(stderr, "-E- Can't find file or directory %s\n", cmd_params.cable_package.c_str());
+                return false;
+            }
+            ZipCheckResult zipCheck = checkZipFile(cmd_params.cable_package);
+            if (zipCheck == ZIP_CHECK_EMPTY)
+            {
+                fprintf(stderr, "-E- %s is an empty archive and holds no firmware images\n",
+                        cmd_params.cable_package.c_str());
+                return false;
+            }
+            if (zipCheck != ZIP_CHECK_OK)
+            {
+                fprintf(stderr, "-E- %s is not a cable firmware update package\n", cmd_params.cable_package.c_str());
+                return false;
+            }
         }
     }
     if (cmd_params.cable_report_dir.length())

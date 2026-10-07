@@ -228,6 +228,13 @@ struct FwPackageEntry
     string vendorRev;
     u_int8_t hwRevMajor = 0;
     CableFwVersion fwVersion;
+    // Which of the optional keys the file carried. A field the metadata omits is not compared at
+    // all, which is how the package decides how narrowly each binary matches; without these an
+    // omitted vendor revision would be indistinguishable from one that is genuinely empty.
+    bool hasVendorName = false;
+    bool hasVendorOui = false;
+    bool hasVendorRev = false;
+    bool hasHwRevMajor = false;
     bool hasExtendedHeader = false; // the binary already carries the 48-byte header, so no copy is needed
     bool isValid = false;
     string parseError; // why isValid is false; reported rather than fatal
@@ -242,12 +249,11 @@ struct CablePlanEntry
 {
     string asicDevName;
     u_int8_t asicGa = 0;
-    // Two paths, because the file the user is told about and the file the burn opens are not
-    // always the same one. packageImagePath is the entry in the user's package and is the only
-    // one that reaches the report; burnImagePath is what phase 4 hands to the device, which for
-    // an image that needed the extended header synthesized is the copy phase 3 wrote. Phase 3
-    // sets them equal whenever the package binary already carried the header, so phase 4 opens
-    // burnImagePath unconditionally.
+    // Two paths, because the file the user is told about and the file the burn opens are never
+    // the same one. packageImagePath names the entry inside the user's ZIP and is the only one
+    // that reaches the report; burnImagePath is the copy phase 3 extracted to disk, carrying the
+    // synthesized extended header when the package binary had none. A ZIP entry cannot be opened
+    // by path, so phase 4 opens burnImagePath unconditionally.
     string packageImagePath;
     string burnImagePath;
     CableFwVersion fwVersion; // the version this binary installs
@@ -388,9 +394,12 @@ private:
 
     /* Phase 3 - Analysis and planning.
      *
-     * Open the package named by `--cable_package`: one ZIP holding a folder per part
-     * number, each folder holding metadata files and the binaries they describe, each
-     * metadata file naming its binary by a path relative to itself.
+     * Open the package named by `--cable_package`: a folder per part number, each folder
+     * holding metadata files and the binaries they describe, each metadata file naming its
+     * binary by a path relative to itself. It comes either as one ZIP or as a directory
+     * already holding that layout - the archive reader is not built on every platform, so an
+     * extracted directory is the way in where it is missing, and the two are read into the
+     * same shape so nothing downstream can tell them apart.
      *
      * For each candidate cable, take the folder matching its part number and find the
      * one metadata file in it that matches. The metadata file is the authority: compare
@@ -434,6 +443,22 @@ private:
      * Fills _packages, the decision fields of _cables, and _plan.
      */
     int buildUpdatePlan();
+
+    /* Read every metadata file in the package into _packages, resolving each one's binary and
+     * checking the digest it carries. A file that does not parse is recorded against itself and
+     * the rest of the package is still used.
+     */
+    int loadPackage(map<string, vector<u_int8_t> >& contents);
+
+    /* Give every cable an outcome. A cable matching more than one metadata file is a packaging
+     * error rather than a choice to make, so it ends the run.
+     */
+    int decideCableActions();
+
+    /* Group the chosen cables by owning ASIC and binary - the unit one burn transaction carries -
+     * and write the temporary header-prefixed copy for any image that needs one.
+     */
+    int groupUpdatePlan(const map<string, vector<u_int8_t> >& contents);
 
     /* Phase 4 - Download and activate.
      *
@@ -498,6 +523,9 @@ private:
     vector<CableUpdateResult> _results;
     string _errMsg;
     string _log;
+    // Holds the header-prefixed copies phase 3 writes. Removed with the manager, because phase 4
+    // opens the copies and the report must never name them.
+    string _tempDir;
 };
 
 #endif

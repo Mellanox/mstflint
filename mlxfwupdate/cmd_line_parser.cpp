@@ -496,7 +496,8 @@ void CmdLineParser::initOptions()
     this->AddOptions(CABLE_UPDATE_L, CABLE_UPDATE_S, "",
                      "Update cable firmware from the package given by --cable_package");
 
-    this->AddOptions(CABLE_PACKAGE_L, CABLE_PACKAGE_S, "PackageFile", "Cable firmware update package to update from");
+    this->AddOptions(CABLE_PACKAGE_L, CABLE_PACKAGE_S, "PackageFile",
+                     "Cable firmware update package to update from: a directory holding its extracted contents");
 
     this->AddOptions(CABLE_ACTIVATION_WAIT_L, CABLE_ACTIVATION_WAIT_S, "Seconds",
                      "Seconds to wait after the update stage finishes, before verifying the cables (default 60)");

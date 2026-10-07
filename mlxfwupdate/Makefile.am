@@ -49,7 +49,8 @@ AM_CPPFLAGS = \
     -I$(top_srcdir)/pldmlib \
     $(libxml2_CFLAGS) \
     $(libcurl_CFLAGS) \
-    $(openssl_CFLAGS)
+    $(openssl_CFLAGS) \
+    -isystem $(top_srcdir)/ext_libs/fkYAML
 
 bin_PROGRAMS = mstfwmanager
 
@@ -120,6 +121,8 @@ LDADD_mstfwmanager = $(libcurl_LIBS) $(libz_LIBS) $(liblzma_LIBS) $(libxml2_LIBS
 if ENABLE_OPENSSL
 mstfwmanager_DEPENDENCIES += $(top_builddir)/mlxsign_lib/libmlxsign.la
 LDADD_mstfwmanager += $(openssl_LIBS)
+else
+mstfwmanager_CXXFLAGS += -DNO_OPEN_SSL
 endif
 
 if ENABLE_CS
