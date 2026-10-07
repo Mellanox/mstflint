@@ -743,8 +743,8 @@ static string archiveDirectory(const string& entryName)
 
 static bool metadataEntriesCollide(const FwPackageEntry& left, const FwPackageEntry& right)
 {
-    if (!equalsIgnoringCase(left.vendorPartNumber, right.vendorPartNumber) ||
-        left.fwVersion.major != right.fwVersion.major)
+    // Compared the way a cable is matched, so two entries collide only when one cable could match both.
+    if (left.vendorPartNumber != right.vendorPartNumber || left.fwVersion.major != right.fwVersion.major)
     {
         return false;
     }
@@ -756,7 +756,7 @@ static bool metadataEntriesCollide(const FwPackageEntry& left, const FwPackageEn
     {
         return false;
     }
-    if (left.hasVendorRev && right.hasVendorRev && !equalsIgnoringCase(left.vendorRev, right.vendorRev))
+    if (left.hasVendorRev && right.hasVendorRev && left.vendorRev != right.vendorRev)
     {
         return false;
     }
@@ -773,7 +773,11 @@ static bool metadataMatchesCable(const FwPackageEntry& entry, const CableInfo& c
 
     // Part number and firmware major are the two keys every metadata file carries. An image for
     // another major describes a different cable generation, not an upgrade for this one.
-    if (!equalsIgnoringCase(entry.vendorPartNumber, cable.partNumber) || entry.fwVersion.major != running.major)
+    //
+    // The part number and the revision are compared exactly: the extended header carries the
+    // metadata's own bytes, and the device compares those against the EEPROM, so a cable that
+    // differs only in case would be planned and then never matched.
+    if (entry.vendorPartNumber != cable.partNumber || entry.fwVersion.major != running.major)
     {
         return false;
     }
@@ -786,7 +790,7 @@ static bool metadataMatchesCable(const FwPackageEntry& entry, const CableInfo& c
     {
         return false;
     }
-    if (entry.hasVendorRev && !equalsIgnoringCase(entry.vendorRev, cable.vendorRev))
+    if (entry.hasVendorRev && entry.vendorRev != cable.vendorRev)
     {
         return false;
     }
@@ -800,12 +804,10 @@ static bool metadataMatchesCable(const FwPackageEntry& entry, const CableInfo& c
 /* The 48-byte header the device matches a cable against, for a package image that carries none of
  * its own.
  *
- * Measured on a Quantum-3, by zeroing one field at a time from an image that burns: the part
- * number, the product id, the hardware major and the vendor revision all have to be right, while
- * the vendor byte, the firmware minor and build and the reserved bytes are accepted as zero. A
- * header no cage can match is not refused - the firmware stops answering and the transfer stalls
- * at 0%, which costs a switch reboot - so the four come from the cable itself, and an image is
- * wrapped only for cables that can supply them.
+ * Every field comes from the metadata. The part number and the product id are always there; the
+ * hardware major and the vendor revision only when the metadata states them, and zero otherwise,
+ * which the device treats as a wildcard. The vendor byte, the firmware minor and build and the
+ * reserved bytes are zero.
  */
 #define CABLE_EXT_HEADER_PN_LENGTH 16
 #define CABLE_EXT_HEADER_REV_LENGTH 2
@@ -813,22 +815,14 @@ static bool metadataMatchesCable(const FwPackageEntry& entry, const CableInfo& c
 
 bool CableExtHeaderKey::isComplete() const
 {
-    // The revision is trimmed of the padding the EEPROM field carries, so a cable whose revision is
-    // a single character reads back as one - present, not missing.
-    //
-    // The hardware major has to be the EEPROM's own byte, which is ASCII - 0x41 for a cable
-    // printing 'A1'. PDDR publishes the same field as a firmware-decoded number and wins wherever
-    // it answers; it is measured to answer zero on every cable so far, but a firmware that started
-    // filling it in would put a 1 where the cage expects 0x41, and the burn would stall.
-    return !partNumber.empty() && !vendorRev.empty() && vendorRev.size() <= CABLE_EXT_HEADER_REV_LENGTH &&
-           isprint(hwRevMajor) && productId != 0;
+    return !partNumber.empty() && partNumber.size() <= CABLE_EXT_HEADER_PN_LENGTH &&
+           vendorRev.size() <= CABLE_EXT_HEADER_REV_LENGTH && productId != 0;
 }
 
 string CableExtHeaderKey::groupKey() const
 {
-    // Length prefixed rather than delimited. MFCDR reports counterfeit cables, so a part number
-    // holding the delimiter is in scope, and two cables whose fields differ must never produce one
-    // key: they would share a header that only one of them matches, and the other would stall.
+    // Length prefixed rather than delimited, so two headers whose fields differ never produce one
+    // key: they would share a burn that only one of them describes.
     return int_to_string((int)partNumber.size()) + ':' + partNumber + int_to_string((int)vendorRev.size()) + ':' +
            vendorRev + ':' + int_to_string((int)hwRevMajor) + ':' + int_to_string((int)productId);
 }
@@ -854,20 +848,19 @@ static string planEntryHeaderText(const CablePlanEntry& group)
            "this plan skipped";
 }
 
-/* The header an image would have to carry for this one cable to accept it.
+/* The header a package image gets from the metadata entry a cable matched.
  *
- * Every field comes from the cable or from the version phase 3 decided for it, rather than from a
- * metadata lookup: two metadata files in one folder may name the same binary for different part
- * numbers, and a header built from the wrong one of them matches no cage and stalls the burn.
+ * Built from that entry rather than looked up by image path: two metadata files may name the same
+ * binary for different part numbers.
  */
-static CableExtHeaderKey cableExtHeaderKey(const CableInfo& cable)
+static CableExtHeaderKey cableExtHeaderKey(const FwPackageEntry& entry)
 {
     CableExtHeaderKey key;
 
-    key.partNumber = cable.partNumber;
-    key.vendorRev = cable.vendorRev;
-    key.hwRevMajor = cable.hwRevMajor;
-    key.productId = cable.targetVersion.major;
+    key.partNumber = entry.vendorPartNumber;
+    key.vendorRev = entry.hasVendorRev ? entry.vendorRev : string();
+    key.hwRevMajor = entry.hasHwRevMajor ? entry.hwRevMajor : 0;
+    key.productId = entry.fwVersion.major;
     return key;
 }
 
@@ -893,9 +886,10 @@ static vector<u_int8_t> withExtendedHeader(const CableExtHeaderKey& key, const v
     wrapped.push_back(key.hwRevMajor);
     for (size_t i = 0; i < CABLE_EXT_HEADER_REV_LENGTH; i++)
     {
-        // Space padded like the part number above, being the same kind of fixed-width EEPROM
-        // ASCII field. Every cable measured carries two characters, so this pads nothing today.
-        wrapped.push_back((i < key.vendorRev.size()) ? (u_int8_t)key.vendorRev[i] : (u_int8_t)' ');
+        // An omitted revision is zero, the wildcard. A stated one is space padded like the part
+        // number above, being the same kind of fixed-width EEPROM ASCII field.
+        u_int8_t pad = key.vendorRev.empty() ? 0 : (u_int8_t)' ';
+        wrapped.push_back((i < key.vendorRev.size()) ? (u_int8_t)key.vendorRev[i] : pad);
     }
     wrapped.push_back(key.productId);    // the LinkX product id
     wrapped.insert(wrapped.end(), 3, 0); // firmware minor and build
@@ -2122,6 +2116,7 @@ int CableFwManager::decideCableActions()
         cable.targetSlot = (cable.runningSlot == CABLE_IMAGE_SLOT_A) ? CABLE_IMAGE_SLOT_B : CABLE_IMAGE_SLOT_A;
         cable.targetVersion = match->fwVersion;
         cable.packageImagePath = match->imagePath;
+        cable.packageEntryIndex = (int)(match - &_packages[0]);
         // An older target still goes ahead; it is flagged rather than refused.
         cable.isDowngrade = compareCableFwVersions(match->fwVersion, running) < 0;
     }
@@ -2140,6 +2135,15 @@ const FwPackageEntry* CableFwManager::packageEntryFor(const string& imagePath) c
     return NULL;
 }
 
+const FwPackageEntry* CableFwManager::matchedEntryFor(const CableInfo& cable) const
+{
+    if (cable.packageEntryIndex < 0 || (size_t)cable.packageEntryIndex >= _packages.size())
+    {
+        return NULL;
+    }
+    return &_packages[cable.packageEntryIndex];
+}
+
 int CableFwManager::groupUpdatePlan(const map<string, vector<u_int8_t> >& contents)
 {
     map<string, size_t> groupIndex;
@@ -2148,9 +2152,8 @@ int CableFwManager::groupUpdatePlan(const map<string, vector<u_int8_t> >& conten
     //
     // An image carrying no header is matched on its product id alone, so the burn reaches every
     // cable of that product id the ASIC owns - a cable the plan skipped was burned three times
-    // that way on a populated chassis. A header narrows it to the cables it was built from, but it
-    // needs the cable's hardware major and vendor revision, and a cable that supplies neither
-    // cannot be given one. Once such a cable is in the burn the unwrapped image reaches all the
+    // that way on a populated chassis. A header narrows it to the part number its metadata names.
+    // Once an entry that cannot be given one is in the burn, the unwrapped image reaches all the
     // others regardless, so the whole set goes unwrapped rather than wrapping part of it for
     // nothing.
     map<string, bool> wrappable;
@@ -2161,10 +2164,10 @@ int CableFwManager::groupUpdatePlan(const map<string, vector<u_int8_t> >& conten
         {
             continue;
         }
-        const FwPackageEntry* entry = packageEntryFor(_cables[i].packageImagePath);
+        const FwPackageEntry* entry = matchedEntryFor(_cables[i]);
         // A package that ships its image already wrapped put that header there deliberately, and
         // the image goes to the device as supplied.
-        bool canWrap = entry != NULL && !entry->hasExtendedHeader && cableExtHeaderKey(_cables[i]).isComplete();
+        bool canWrap = entry != NULL && !entry->hasExtendedHeader && cableExtHeaderKey(*entry).isComplete();
         string reach = _cables[i].asicDevName + '\n' + _cables[i].packageImagePath;
         map<string, bool>::iterator known = wrappable.find(reach);
 
@@ -2184,19 +2187,19 @@ int CableFwManager::groupUpdatePlan(const map<string, vector<u_int8_t> >& conten
         {
             continue;
         }
-        const FwPackageEntry* entry = packageEntryFor(_cables[i].packageImagePath);
+        const FwPackageEntry* entry = matchedEntryFor(_cables[i]);
         string reach = _cables[i].asicDevName + '\n' + _cables[i].packageImagePath;
         bool wrap = entry != NULL && wrappable[reach];
         CableExtHeaderKey header;
 
         if (wrap)
         {
-            header = cableExtHeaderKey(_cables[i]);
+            header = cableExtHeaderKey(*entry);
         }
         // One burn carries one image through one ASIC, and an ASIC cannot address another ASIC's
         // cables, so that much of the grouping is forced by the transport rather than chosen. A
-        // wrapped image splits the set further, because the header only matches the cables whose
-        // own fields built it.
+        // wrapped image splits the set further when two metadata entries name the same binary,
+        // because each entry gets a header of its own.
         string key = reach + (wrap ? '\n' + header.groupKey() : "");
         map<string, size_t>::iterator existing = groupIndex.find(key);
         if (existing == groupIndex.end())
@@ -2877,6 +2880,62 @@ string CableFwManager::buildReport()
     return report.str();
 }
 
+/* Two spaces, so the widest value in a column still ends clear of the next one. */
+#define CABLE_REPORT_COLUMN_GAP 2
+
+/* The width a column needs for its header and every value in it.
+ *
+ * Text that comes from the package or from the device has no length the tool can rely on, so a
+ * fixed width would either cut it or push every column after it out of line.
+ */
+static int columnWidth(const string& header, const vector<string>& values)
+{
+    size_t width = header.size();
+
+    for (size_t i = 0; i < values.size(); i++)
+    {
+        if (values[i].size() > width)
+        {
+            width = values[i].size();
+        }
+    }
+    return (int)(width + CABLE_REPORT_COLUMN_GAP);
+}
+
+/* A header row and its rows, every column as wide as it needs to be. The last column is left
+ * unpadded, since nothing follows it.
+ */
+static void
+  appendSizedTable(std::ostringstream& report, const vector<string>& headers, const vector<vector<string> >& rows)
+{
+    vector<int> widths;
+
+    for (size_t column = 0; column + 1 < headers.size(); column++)
+    {
+        vector<string> values;
+
+        for (size_t i = 0; i < rows.size(); i++)
+        {
+            values.push_back(rows[i][column]);
+        }
+        widths.push_back(columnWidth(headers[column], values));
+    }
+    report << std::left;
+    for (size_t column = 0; column + 1 < headers.size(); column++)
+    {
+        report << std::setw(widths[column]) << headers[column];
+    }
+    report << headers.back() << "\n";
+    for (size_t i = 0; i < rows.size(); i++)
+    {
+        for (size_t column = 0; column + 1 < headers.size(); column++)
+        {
+            report << std::setw(widths[column]) << rows[i][column];
+        }
+        report << rows[i].back() << "\n";
+    }
+}
+
 /* Every metadata file the package held, whether or not it was usable. */
 void CableFwManager::appendPackagesTable(std::ostringstream& report)
 {
@@ -2886,10 +2945,8 @@ void CableFwManager::appendPackagesTable(std::ostringstream& report)
         report << CABLE_REPORT_NOT_AVAILABLE << "\n\n";
         return;
     }
-    report << std::left << std::setw(50) << "File" << std::setw(20) << "Vendor (OUI)" << std::setw(20) << "Vendor PN"
-           << std::setw(12) << "Vendor Rev" << std::setw(14) << "HW Rev Major" << std::setw(14) << "Build Date"
-           << std::setw(14) << "FW Version"
-           << "Valid\n";
+    vector<vector<string> > rows;
+
     for (size_t i = 0; i < _packages.size(); i++)
     {
         const FwPackageEntry& entry = _packages[i];
@@ -2905,14 +2962,29 @@ void CableFwManager::appendPackagesTable(std::ostringstream& report)
         {
             vendor = entry.vendorName;
         }
-        report << std::left << std::setw(50) << (entry.imagePath.empty() ? entry.metadataPath : entry.imagePath)
-               << std::setw(20) << vendor << std::setw(20) << orNotAvailable(entry.vendorPartNumber) << std::setw(12)
-               << (entry.hasVendorRev ? entry.vendorRev : string(CABLE_REPORT_NOT_AVAILABLE)) << std::setw(14)
-               << (entry.hasHwRevMajor ? int_to_string((int)entry.hwRevMajor) : string(CABLE_REPORT_NOT_AVAILABLE))
-               << std::setw(14) << orNotAvailable(entry.buildDate) << std::setw(14)
-               << cableFwVersionText(entry.fwVersion)
-               << (entry.isValid ? string("yes") : "no (" + entry.parseError + ")") << "\n";
+        vector<string> row;
+
+        row.push_back(entry.imagePath.empty() ? entry.metadataPath : entry.imagePath);
+        row.push_back(vendor);
+        row.push_back(orNotAvailable(entry.vendorPartNumber));
+        row.push_back(entry.hasVendorRev ? entry.vendorRev : string(CABLE_REPORT_NOT_AVAILABLE));
+        row.push_back(entry.hasHwRevMajor ? int_to_string((int)entry.hwRevMajor) : string(CABLE_REPORT_NOT_AVAILABLE));
+        row.push_back(orNotAvailable(entry.buildDate));
+        row.push_back(cableFwVersionText(entry.fwVersion));
+        row.push_back(entry.isValid ? string("yes") : "no (" + entry.parseError + ")");
+        rows.push_back(row);
     }
+    vector<string> headers;
+
+    headers.push_back("File");
+    headers.push_back("Vendor (OUI)");
+    headers.push_back("Vendor PN");
+    headers.push_back("Vendor Rev");
+    headers.push_back("HW Rev Major");
+    headers.push_back("Build Date");
+    headers.push_back("FW Version");
+    headers.push_back("Valid");
+    appendSizedTable(report, headers, rows);
     report << "\n";
 }
 
@@ -2984,8 +3056,17 @@ void CableFwManager::appendPlanTable(std::ostringstream& report)
         report << CABLE_REPORT_NOT_AVAILABLE << "\n\n";
         return;
     }
+    // The image path comes from the package, so its column is sized to the paths this plan holds.
+    vector<string> files;
+
+    for (size_t i = 0; i < _cables.size(); i++)
+    {
+        files.push_back(orNotAvailable(_cables[i].packageImagePath));
+    }
+    int fileWidth = columnWidth("FW File", files);
+
     appendCableColumns(report, false);
-    report << std::setw(14) << "Target FW" << std::setw(50) << "FW File"
+    report << std::setw(14) << "Target FW" << std::setw(fileWidth) << "FW File"
            << "Action\n";
     for (size_t i = 0; i < _cables.size(); i++)
     {
@@ -2995,7 +3076,7 @@ void CableFwManager::appendPlanTable(std::ostringstream& report)
         report << std::setw(14)
                << ((cable.action == CABLE_ACTION_UPDATE) ? cableFwVersionText(cable.targetVersion) :
                                                            string(CABLE_REPORT_NOT_AVAILABLE))
-               << std::setw(50) << orNotAvailable(cable.packageImagePath) << cableActionName(cable.action)
+               << std::setw(fileWidth) << files[i] << cableActionName(cable.action)
                << (cable.isDowngrade ? " (downgrade)" : "") << "\n";
     }
     report << "\n";
@@ -3041,25 +3122,14 @@ void CableFwManager::appendVerificationTable(std::ostringstream& report)
 
 void CableFwManager::appendErrorsTable(std::ostringstream& report)
 {
-    bool any = false;
+    vector<vector<string> > rows;
 
-    report << "ERRORS\n------\n";
     for (size_t i = 0; i < _results.size(); i++)
     {
         if (_results[i].succeeded)
         {
             continue;
         }
-        if (!any)
-        {
-            // The device answers in its own per-ASIC label port, so both numbers are always here:
-            // nothing else lets an MCCE report be lined up with a cable.
-            report << std::left << std::setw(6) << "Port" << std::setw(6) << "ASIC" << std::setw(11) << "Label Port"
-                   << std::setw(13) << "Phase" << std::setw(40) << "ASIC Error Code"
-                   << "Module Error Code\n";
-            any = true;
-        }
-        string phase = orNotAvailable(_results[i].phase);
         string asicError = CABLE_REPORT_NOT_AVAILABLE;
         string moduleError = CABLE_REPORT_NOT_AVAILABLE;
 
@@ -3075,16 +3145,37 @@ void CableFwManager::appendErrorsTable(std::ostringstream& report)
             asicError = mccText;
             moduleError = cdbErrorText(_results[i].cdbErrorCode);
         }
-        report << std::left << std::setw(6) << _results[i].globalPort << std::setw(6) << (int)_results[i].asicGa
-               << std::setw(11) << cableLabelPort(_results[i].localIndex) << std::setw(13) << clamped(phase, 13)
-               << std::setw(40) << clamped(asicError, 40) << moduleError << "\n";
+        vector<string> row;
+
+        row.push_back(int_to_string((int)_results[i].globalPort));
+        row.push_back(int_to_string((int)_results[i].asicGa));
+        row.push_back(int_to_string((int)cableLabelPort(_results[i].localIndex)));
+        row.push_back(orNotAvailable(_results[i].phase));
+        row.push_back(asicError);
+        row.push_back(moduleError);
+        rows.push_back(row);
     }
-    if (!any)
+
+    report << "ERRORS\n------\n";
+    if (rows.empty())
     {
         // N/A is for a section the run never reached. An update that burned and found nothing to
         // report is a different answer, and saying so is the point of the section.
-        report << (_cmdParams.cable_update ? "No errors were found" : CABLE_REPORT_NOT_AVAILABLE) << "\n";
+        report << (_cmdParams.cable_update ? "No errors were found" : CABLE_REPORT_NOT_AVAILABLE) << "\n\n";
+        return;
     }
+
+    // The device answers in its own per-ASIC label port, so both numbers are always here:
+    // nothing else lets an MCCE report be lined up with a cable.
+    vector<string> headers;
+
+    headers.push_back("Port");
+    headers.push_back("ASIC");
+    headers.push_back("Label Port");
+    headers.push_back("Phase");
+    headers.push_back("ASIC Error Code");
+    headers.push_back("Module Error Code");
+    appendSizedTable(report, headers, rows);
     report << "\n";
 }
 
