@@ -108,19 +108,17 @@ void MlxlinkCablesCommander::writeMCIA(u_int32_t page,
     char fieldName[64];
     string dataCmd = "";
     u_int32_t dwordDataSize = (u_int32_t)ceil((double)size / sizeof(u_int32_t));
-    u_int32_t* dwordData = (u_int32_t*)malloc(dwordDataSize);
-    memset(dwordData, 0, dwordDataSize);
-    memcpy(dwordData, data, size);
+    std::vector<u_int32_t> dwordData(dwordDataSize);
+    memcpy(dwordData.data(), data, size);
     for (; i < dwordDataSize; i++)
     {
         sprintf(fieldName, ",dword[%d]=%u", i, mft_cpu_to_be32(dwordData[i]));
         dataCmd += string(fieldName);
     }
-    free(dwordData);
 
     sendPrmReg(ACCESS_REG_MCIA, REG_SET,
                "module=%d,slot_index=%d,size=%d,page_number=%d,device_address=%d,i2c_device_address=%d%s",
-               _moduleNumber, _slotIndex, size, page, offset, i2cAddress, dataCmd.c_str());
+               _moduleNumber, _slotIndex, dataSize, page, offset, i2cAddress, dataCmd.c_str());
 }
 
 // Reading EEPROM data from MCIA register and loading it to readable pages
