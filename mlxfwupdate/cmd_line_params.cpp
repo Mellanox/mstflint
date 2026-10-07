@@ -83,6 +83,12 @@ CmdLineParams::CmdLineParams()
     numberOfRetrials = 5;
     component_type = "";
     skip_if_same = false;
+    cable_query = false;
+    cable_dry_run = false;
+    cable_update = false;
+    cable_package = "";
+    cable_activation_wait = -1; // resolved to the default once the mode is known
+    cable_report_dir = "";
 #ifdef __WIN__
     char execName[1024];
     char certificatPath[1024];

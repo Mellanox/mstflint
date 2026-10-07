@@ -49,6 +49,7 @@
 #include <cstdio>
 
 #include "pldm_utils/pldm_utils.h"
+#include "mft_utils/mft_utils.h"
 
 #define TUPLE_POS_COMPID 0
 #define TUPLE_POS_BUFF_PTR 1
@@ -571,6 +572,23 @@ int mainEntry(int argc, char* argv[])
             fprintf(FLog, "%s ", argv[i]);
         }
         fprintf(FLog, "\n");
+    }
+
+    // Cables are reached through their owning ASIC and have no PSID, so the cable flow
+    // runs its own discovery and image matching instead of joining the MlnxDev list.
+    if (cmd_params.cable_query || cmd_params.cable_dry_run || cmd_params.cable_update)
+    {
+        CableFwManager cableMgr(cmd_params);
+        res = cableMgr.run();
+        if (!cableMgr.getLog().empty())
+        {
+            print_out("%s", cableMgr.getLog().c_str());
+        }
+        if (res != MLX_FWM_SUCCESS)
+        {
+            print_err("-E- %s\n", cableMgr.getLastErrMsg().c_str());
+        }
+        goto clean_up;
     }
 
     // Create Dev list
@@ -1308,6 +1326,57 @@ clean_up:
     return res;
 }
 
+/* The package is only opened much later, when the update plan is built, so a file that is
+ * not an archive, or is an archive with nothing in it, would be accepted here and fail deep
+ * in the flow instead of at the argument that named it.
+ *
+ * Identify it the way a zip reader does, from the end. Every reader finds the archive by its
+ * End Of Central Directory record, so a file this accepts is a file the reader can open -
+ * including one carrying a prepended stub, which a first-bytes check would refuse even
+ * though unzip reads it. The record also carries the entry count, which is what tells an
+ * empty archive from a usable one rather than a signature standing in for it.
+ */
+enum ZipCheckResult
+{
+    ZIP_CHECK_OK,
+    ZIP_CHECK_EMPTY,
+    ZIP_CHECK_NOT_A_ZIP
+};
+
+static ZipCheckResult checkZipFile(const string& path)
+{
+    // The record is last in the file, followed only by a comment of at most 64KB.
+    const long maxTailSize = 22 + 0xFFFF;
+    FILE* f = fopen(path.c_str(), "rb");
+    if (f == NULL)
+    {
+        return ZIP_CHECK_NOT_A_ZIP;
+    }
+    ZipCheckResult res = ZIP_CHECK_NOT_A_ZIP;
+    long fileSize = (fseek(f, 0, SEEK_END) == 0) ? ftell(f) : -1;
+    long tailSize = (fileSize < maxTailSize) ? fileSize : maxTailSize;
+    if (tailSize >= 22 && fseek(f, fileSize - tailSize, SEEK_SET) == 0)
+    {
+        vector<unsigned char> tail(tailSize);
+        if (fread(&tail[0], 1, tailSize, f) == (size_t)tailSize)
+        {
+            for (long i = tailSize - 22; i >= 0; i--)
+            {
+                if (tail[i] == 'P' && tail[i + 1] == 'K' && tail[i + 2] == 0x05 && tail[i + 3] == 0x06)
+                {
+                    // Entry count on this disk. 0xFFFF means the real count lives in the zip64
+                    // record, which only happens far above zero, so it counts as non-empty.
+                    u_int16_t entries = (u_int16_t)(tail[i + 10] | (tail[i + 11] << 8));
+                    res = (entries == 0) ? ZIP_CHECK_EMPTY : ZIP_CHECK_OK;
+                    break;
+                }
+            }
+        }
+    }
+    fclose(f);
+    return res;
+}
+
 bool checkCmdParams(CmdLineParams& cmd_params, config_t& config)
 {
     if (cmd_params.use_mfa_dir)
@@ -1371,6 +1440,121 @@ bool checkCmdParams(CmdLineParams& cmd_params, config_t& config)
             return false;
         }
     }
+    bool cable_mode = cmd_params.cable_query || cmd_params.cable_dry_run || cmd_params.cable_update;
+    bool plans_update = cmd_params.cable_dry_run || cmd_params.cable_update;
+
+    if ((int)cmd_params.cable_query + (int)cmd_params.cable_dry_run + (int)cmd_params.cable_update > 1)
+    {
+        fprintf(stderr, "-E- Please specify only one of --cable_query, --cable_dry_run and --cable_update\n");
+        return false;
+    }
+    if (plans_update && cmd_params.cable_package.empty())
+    {
+        fprintf(stderr, "-E- Please specify a firmware package with --cable_package\n");
+        return false;
+    }
+    if (cmd_params.cable_package.length() && !plans_update)
+    {
+        fprintf(stderr, "-E- Please use --cable_dry_run or --cable_update along with --cable_package\n");
+        return false;
+    }
+    if (cmd_params.cable_package.length())
+    {
+        cmd_params.cable_package = adjustRelPath(cmd_params.cable_package, config.adjuster_path);
+        Filesystem::path p(cmd_params.cable_package);
+        if (!Filesystem::is_regular_file(p))
+        {
+            fprintf(stderr, "-E- Can't find file %s\n", cmd_params.cable_package.c_str());
+            return false;
+        }
+        ZipCheckResult zipCheck = checkZipFile(cmd_params.cable_package);
+        if (zipCheck == ZIP_CHECK_EMPTY)
+        {
+            fprintf(stderr, "-E- %s is an empty archive and holds no firmware images\n",
+                    cmd_params.cable_package.c_str());
+            return false;
+        }
+        if (zipCheck != ZIP_CHECK_OK)
+        {
+            fprintf(stderr, "-E- %s is not a cable firmware update package\n", cmd_params.cable_package.c_str());
+            return false;
+        }
+    }
+    if (cmd_params.cable_report_dir.length())
+    {
+        if (!cable_mode)
+        {
+            fprintf(stderr,
+                    "-E- --cable_report_dir is only valid with --cable_query, --cable_dry_run or --cable_update\n");
+            return false;
+        }
+        cmd_params.cable_report_dir = adjustRelPath(cmd_params.cable_report_dir, config.adjuster_path);
+        if (!mft_utils::IsDirectory(cmd_params.cable_report_dir))
+        {
+            fprintf(stderr, "-E- Can't find directory %s\n", cmd_params.cable_report_dir.c_str());
+            return false;
+        }
+    }
+    if (cable_mode && (cmd_params.use_mfa_file || cmd_params.use_mfa_dir))
+    {
+        fprintf(stderr, "-E- --cable_query, --cable_dry_run and --cable_update cannot be combined with -i or -D\n");
+        return false;
+    }
+    if (cable_mode && cmd_params.device_names.size() != 0)
+    {
+        fprintf(stderr, "-E- --cable_query, --cable_dry_run and --cable_update cannot be combined with -d: the whole "
+                        "system is scanned, and the device selects the cables itself\n");
+        return false;
+    }
+    // The cable flow returns before the device list is built, and the modes dispatched before it
+    // would win over it silently, so a combination is always a mistake rather than a preference.
+    if (cable_mode &&
+        (cmd_params.update_fw || cmd_params.query_device || cmd_params.query_device_xml || cmd_params.download ||
+         cmd_params.update_online || cmd_params.extract_image || cmd_params.extract_all ||
+         cmd_params.list_file_contents || cmd_params.clear_semaphore || !cmd_params.burnFailsafe ||
+         cmd_params.onlineQueryPsids.length() || cmd_params.get_download_opt.length() || cmd_params.calc_crc))
+    {
+        fprintf(stderr, "-E- --cable_query, --cable_dry_run and --cable_update cannot be combined with another "
+                        "operation mode\n");
+        return false;
+    }
+    // Device-scoped selection and burn options are read only on the PSID/MFA path, which the
+    // cable dispatch jumps over, so they cannot be honoured and would otherwise be ignored in
+    // silence.
+    if (cable_mode && (cmd_params.force_update || cmd_params.skip_if_same || cmd_params.no_fw_ctrl ||
+                       cmd_params.use_lookup_file || cmd_params.psid.length() || cmd_params.component_type.length()))
+    {
+        fprintf(stderr, "-E- --cable_query, --cable_dry_run and --cable_update do not support --force, --skip_if_same, "
+                        "--no_fw_ctrl, --lookup, --psid and --component_type\n");
+        return false;
+    }
+    // --log-on-update keeps the log only when a device was burned, and burned devices are
+    // counted on the PSID/MFA path the cable flow never enters. --log writes the same file
+    // unconditionally, so there is a supported way to get it.
+    if (cable_mode && cmd_params.log_on_update)
+    {
+        fprintf(stderr, "-E- --log-on-update is not supported with --cable_query, --cable_dry_run and "
+                        "--cable_update; use --log instead\n");
+        return false;
+    }
+    // --xml sets formatted_output, which makes the print_out/print_err the cable flow writes
+    // through drop everything, so the run would look silent rather than unsupported.
+    if (cable_mode && cmd_params.write_xml)
+    {
+        fprintf(stderr, "-E- XML output is not supported with --cable_query, --cable_dry_run and --cable_update\n");
+        return false;
+    }
+    if (cmd_params.cable_activation_wait >= 0 && !cable_mode)
+    {
+        fprintf(stderr,
+                "-E- --cable_activation_wait is only valid with --cable_query, --cable_dry_run or --cable_update\n");
+        return false;
+    }
+    if (cable_mode && cmd_params.cable_activation_wait < 0)
+    {
+        cmd_params.cable_activation_wait = CABLE_ACTIVATION_WAIT_DEFAULT;
+    }
+
     if (cmd_params.onlineQueryPsids.length() || cmd_params.download || cmd_params.update_online)
     {
         cmd_params.certificate = adjustRelPath(cmd_params.certificate, config.adjuster_path);

@@ -219,6 +219,24 @@ using namespace mft_utils;
 #define SKIP_IF_SAME_L "skip_if_same"
 #define SKIP_IF_SAME_S ' '
 
+#define CABLE_QUERY_L "cable_query"
+#define CABLE_QUERY_S ' '
+
+#define CABLE_DRY_RUN_L "cable_dry_run"
+#define CABLE_DRY_RUN_S ' '
+
+#define CABLE_UPDATE_L "cable_update"
+#define CABLE_UPDATE_S ' '
+
+#define CABLE_PACKAGE_L "cable_package"
+#define CABLE_PACKAGE_S ' '
+
+#define CABLE_ACTIVATION_WAIT_L "cable_activation_wait"
+#define CABLE_ACTIVATION_WAIT_S ' '
+
+#define CABLE_REPORT_DIR_L "cable_report_dir"
+#define CABLE_REPORT_DIR_S ' '
+
 string toolName = "";
 /************************************
  * Function: CmdLineParser
@@ -470,6 +488,21 @@ void CmdLineParser::initOptions()
     this->AddOptions(COMP_TYPE_L, COMP_TYPE_S, "componentName", "Specify the PLDM component type to extract");
 
     this->AddOptions(SKIP_IF_SAME_L, SKIP_IF_SAME_S, "", "Skip firmware update if current and new versions match");
+
+    this->AddOptions(CABLE_QUERY_L, CABLE_QUERY_S, "", "Query the firmware of the cables plugged into the system");
+
+    this->AddOptions(CABLE_DRY_RUN_L, CABLE_DRY_RUN_S, "", "Show the cable update plan without updating anything");
+
+    this->AddOptions(CABLE_UPDATE_L, CABLE_UPDATE_S, "",
+                     "Update cable firmware from the package given by --cable_package");
+
+    this->AddOptions(CABLE_PACKAGE_L, CABLE_PACKAGE_S, "PackageFile", "Cable firmware update package to update from");
+
+    this->AddOptions(CABLE_ACTIVATION_WAIT_L, CABLE_ACTIVATION_WAIT_S, "Seconds",
+                     "Seconds to wait after the update stage finishes, before verifying the cables (default 60)");
+
+    this->AddOptions(CABLE_REPORT_DIR_L, CABLE_REPORT_DIR_S, "DirectoryName",
+                     "Directory to write the cable update report to (default current directory)");
 }
 
 bool csvSplit(string str, vector<string>& strv)
@@ -841,6 +874,49 @@ ParseStatus CmdLineParser::HandleOption(string name, string value)
     else if (name == SKIP_IF_SAME_L)
     {
         _cmdLineParams->skip_if_same = true;
+        return PARSE_OK;
+    }
+    else if (name == CABLE_QUERY_L)
+    {
+        _cmdLineParams->cable_query = true;
+        return PARSE_OK;
+    }
+    else if (name == CABLE_DRY_RUN_L)
+    {
+        _cmdLineParams->cable_dry_run = true;
+        return PARSE_OK;
+    }
+    else if (name == CABLE_UPDATE_L)
+    {
+        _cmdLineParams->cable_update = true;
+        return PARSE_OK;
+    }
+    else if (name == CABLE_PACKAGE_L)
+    {
+        _cmdLineParams->cable_package = value;
+        return PARSE_OK;
+    }
+    else if (name == CABLE_ACTIVATION_WAIT_L)
+    {
+        std::istringstream iss(value);
+        iss >> _cmdLineParams->cable_activation_wait;
+        // Not followed by std::ws: the extraction above consumes the last character, and the
+        // std::ws sentry sets failbit on a stream already at eof, which rejected every value.
+        if (iss.fail() || !iss.eof())
+        {
+            cout << "-E- Could not parse val: " << value << "\n";
+            return PARSE_ERROR_SHOW_USAGE;
+        }
+        if (_cmdLineParams->cable_activation_wait < 0)
+        {
+            cout << "-E- Negative value is not allowed " << value << "\n";
+            return PARSE_ERROR;
+        }
+        return PARSE_OK;
+    }
+    else if (name == CABLE_REPORT_DIR_L)
+    {
+        _cmdLineParams->cable_report_dir = value;
         return PARSE_OK;
     }
     else
