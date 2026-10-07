@@ -2441,6 +2441,26 @@ bool Fs4Operations::DoAfterBurnJobs(const u_int32_t magic_pattern[], ExtBurnPara
     return true;
 }
 
+// The main image payload is burnt with plain writes by default (no RMW).
+// (The DTOC and signature writes always use RMW, regardless of this setting, to preserve the rest of the erase block.)
+// The erase retry enhancement is no longer tied to RMW - Flash::write() retries an erase-miss on
+// the plain path too, so FS5 gen and below get it by default at no cost in burn time.
+// MFLASH_BURN_RMW=1 remains as an escape hatch to force the full read-modify-write path (which pre-reads every sector
+// before writing it) - that is why it is not the default, it would effect burn times.
+static bool burn_with_read_modify_write()
+{
+    static bool evaluated = false;
+    static bool enabled = false;
+
+    if (!evaluated)
+    {
+        const char* env = getenv("MFLASH_BURN_RMW");
+        enabled = env ? (strtoul(env, (char**)NULL, 0) != 0) : false;
+        evaluated = true;
+    }
+    return enabled;
+}
+
 bool Fs4Operations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& burnParams)
 {
     u_int8_t is_curr_image_on_second_partition;
@@ -2532,7 +2552,10 @@ bool Fs4Operations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& bu
     //* Burn
     int alreadyWrittenSz = 0;
     //* Burn image without signature
-    DPRINTF(("Fs4Operations::burnEncryptedImage - Burning image without magic-pattern\n"));
+    bool readModifyWrite = burn_with_read_modify_write();
+    DPRINTF(("Fs4Operations::burnEncryptedImage - Burning image without magic-pattern (read-modify-write = %d)\n",
+             readModifyWrite));
+
     if (!writeImageEx(burnParams.progressFuncEx,
                       burnParams.progressUserData,
                       burnParams.progressFunc,
@@ -2540,7 +2563,7 @@ bool Fs4Operations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& bu
                       imgBuff.data() + FS3_FW_SIGNATURE_SIZE,       // data
                       imgBuff.size() - FS3_FW_SIGNATURE_SIZE,       // size
                       true,                                         // phys addr
-                      false,
+                      readModifyWrite,
                       total_img_size,
                       alreadyWrittenSz))
     {

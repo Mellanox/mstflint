@@ -84,6 +84,8 @@ static int set_gw_data_size(mflash* mfl, u_int32_t data_size, u_int32_t* gw_cmd)
     }
     else if (flash_gen == SEVEN_GEN_FLASH)
     {
+        int rc = mfl_com_lock(mfl);
+        CHECK_RC(rc);
         if (mwrite4(mfl->mf, mfl->gw_data_size_register_addr, data_size) != 4)
         {
             release_semaphore(mfl, 0);
