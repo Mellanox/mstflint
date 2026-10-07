@@ -39,6 +39,7 @@
  */
 
 #include "fw_comps_mgr_direct_access.h"
+#include "nvtoolslogger/NvToolsLogger.h"
 #include "common/tools_endianness.h"
 
 #ifndef UEFI_BUILD
@@ -85,7 +86,7 @@ bool DirectComponentAccess::accessComponent(u_int32_t updateHandle,
     std::vector<u_int32_t> dataToRW(maxDataSize, 0);
     while (leftSize > 0)
     {
-        DPRINTF(("0x%x bytes left to %s\n", leftSize, access == MCC_READ_COMP ? "read" : "burn"));
+        MLXFWOPS_LOG_DEBUG("0x%x bytes left to %s", leftSize, access == MCC_READ_COMP ? "read" : "burn");
         memset(&accessData, 0, sizeof(mcdaReg));
 
         memcpy(accessData.data, dataToRW.data(), sizeof(accessData.data));

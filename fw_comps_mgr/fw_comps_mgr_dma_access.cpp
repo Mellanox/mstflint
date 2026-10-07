@@ -39,6 +39,7 @@
  */
 
 #include <math.h>
+#include "nvtoolslogger/NvToolsLogger.h"
 #include "fw_comps_mgr_dma_access.h"
 #include "common/bit_slice.h"
 #include "common/tools_time.h"
@@ -79,29 +80,6 @@ static int allocate_uefi_dma_memory_page(mfile* mf, mtcr_alloc_page* user_alloc_
 
 #define TIMETOSLEEP (1000 * PAGE_SIZE / FLASH_WRITE_SPEED) // 6 msec
 #define MAXIMUM_SLEEP_TIME_MS 20000
-#define _MCDD_DEBUG_ 0
-
-#if _MCDD_DEBUG_
-void printData(u_int32_t* data, int data_size, int format)
-{
-    for (int i = 0; i < data_size / 4; i++)
-    {
-        if (format == 0)
-        {
-            DPRINTF("\n DWORD[%04x]: 0x%08x\n", (i), (data[i]));
-        }
-        else
-        {
-            u_int32_t x1 = (data[i] & 0xff) << 24;
-            u_int32_t x2 = (data[i] & 0xff00) >> 8;
-            u_int32_t x3 = (data[i] & 0xff0000) >> 16;
-            u_int32_t x4 = (data[i] & 0xff000000) >> 24;
-            u_int32_t tmp = x1 + x4 + (x2 << 16) + (x3 << 8);
-            DPRINTF("\n DWORD[%04x]: 0x%08x\n", (i), tmp);
-        }
-    }
-}
-#endif
 
 bool DMAComponentAccess::prepareParameters(u_int32_t updateHandle,
                                            mcddReg* accessData,
@@ -157,16 +135,10 @@ bool DMAComponentAccess::allocateMemory()
 
     for (int page_counter = 0; page_counter < FMPT_ALLOCATED_LIST_LENGTH; page_counter++)
     {
-#if _MCDD_DEBUG_
-        u_int32_t va_lsb = EXTRACT64(page_info.page_addresses_array[page_counter]->virtual_address, 0, 32);
-        u_int32_t va_msb = EXTRACT64(page_info.page_addresses_array[page_counter]->virtual_address, 32, 32);
-        u_int32_t pa_lsb = EXTRACT64(page_info.page_addresses_array[page_counter]->dma_address, 0, 32);
-        u_int32_t pa_msb = EXTRACT64(page_info.page_addresses_array[page_counter]->dma_address, 32, 32);
-
-        DPRINTF(("Allocated for page %d data PA 0x%08x%08x VA 0x%08x%08x \r\n", i, pa_msb, pa_lsb, va_msb, va_lsb));
-#endif
         _allocatedListVect.push_back(page_info.page_addresses_array[page_counter]);
     }
+    MLXFWOPS_LOG_DEBUG("allocated %d DMA pages, %d tracked in total", (int)FMPT_ALLOCATED_LIST_LENGTH,
+                       (int)_allocatedListVect.size());
     return true;
 }
 
@@ -210,11 +182,8 @@ bool DMAComponentAccess::readFromDataPage(mcddReg* accessData,
     {
         data[currentOffset + i] = ___my_swab32(*data_ptr);
         data_ptr++;
-#if _MCDD_DEBUG_
-        if (i % 100 == 0)
-            DPRINTF(("\nReading data[%#02x]: %#08x\n", (i)*4, data[(data_size - leftSize) / 4 + i]));
-#endif
     }
+    MLXFWOPS_LOG_DEBUG("read %d bytes into the buffer at word offset %d", (int)accessData->size, currentOffset);
     return true;
 }
 
@@ -233,10 +202,10 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle,
         //* Allocating memory on first access only (lazy allocation)
         if (_allocatedListVect.empty())
         {
-            DPRINTF(("DMAComponentAccess::AccessComponent allocating memory for DMA\n"));
+            MLXFWOPS_LOG_DEBUG("allocating memory for DMA");
             if (!allocateMemory())
             {
-                DPRINTF(("DMAComponentAccess::AccessComponent memory allocation for DMA failed\n"));
+                MLXFWOPS_LOG_DEBUG("memory allocation for DMA failed");
                 setLastError(FWCOMPS_MEM_ALLOC_FAILED);
                 return false; // this will trigger a fallback to direct_access instead of dma_access
             }
@@ -254,8 +223,7 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle,
                      currComponentStr);
         }
         // updateHandle &= ~0xff000000;
-        DPRINTF(("DMAComponentAccess::AccessComponent BEGIN size %d access %s\n", data_size,
-                 (access == MCC_READ_COMP) ? "READ" : "WRITE"));
+        MLXFWOPS_LOG_DEBUG("BEGIN size %d access %s", data_size, (access == MCC_READ_COMP) ? "READ" : "WRITE");
         mcddReg accessData;
         mtcr_page_addresses page = _allocatedListVect[CurrentPage];
         mtcr_page_addresses mailboxPage = _allocatedListVect[FMPT_MAILBOX_PAGE];
@@ -272,7 +240,7 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle,
         int nIteration = 0;
         while (leftSize > 0)
         {
-            DPRINTF(("0x%x bytes left to %s\n", leftSize, access == MCC_READ_COMP ? "read" : "burn"));
+            MLXFWOPS_LOG_DEBUG("0x%x bytes left to %s", leftSize, access == MCC_READ_COMP ? "read" : "burn");
             memset((u_int8_t*)mailboxPage.virtual_address, 0, TOOLS_OPEN_MCDD_DESCRIPTOR_SIZE);
             memset(&mailboxVirtPtr_1, 0, TOOLS_OPEN_MCDD_DESCRIPTOR_SIZE); // set zero before each transaction
             maxDataSize = leftSize > PAGE_SIZE ? PAGE_SIZE : leftSize;
@@ -283,7 +251,7 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle,
             _manager->deal_with_signal();
             if (rc)
             {
-                DPRINTF(("CRITICAL : DMAComponentAccess::AccessComponent reg_access_mcdd ERROR: %#x\n", rc));
+                MLXFWOPS_LOG_DEBUG("CRITICAL : DMAComponentAccess::AccessComponent reg_access_mcdd ERROR: %#x", rc);
                 setLastError(_manager->regErrTrans(rc));
                 _lastRegisterAccessStatus = rc;
                 return false;
@@ -311,8 +279,8 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle,
             // operation. meanwhile, the SW has to wait until FW is really starting. It's possible, though, that we will
             // not enter to this loop at all or only sometimes.
             tools_open_mcdd_descriptor_unpack(&mailboxVirtPtr_1, (const u_int8_t*)mailboxPage.virtual_address);
-            DPRINTF(("AccessComponent1 status %d err %d reserved3 %d\n", mailboxVirtPtr_1.status,
-                     mailboxVirtPtr_1.error, mailboxVirtPtr_1.reserved3));
+            MLXFWOPS_LOG_DEBUG("AccessComponent1 status %d err %d reserved3 %d", mailboxVirtPtr_1.status,
+                               mailboxVirtPtr_1.error, mailboxVirtPtr_1.reserved3);
             nMaximumSleepTime = 0;
             while (mailboxVirtPtr_1.status == FFS_FW_UNKNOWN)
             {
@@ -329,8 +297,8 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle,
             // here the FW started to work
             msleep(TIMETOSLEEP);
             tools_open_mcdd_descriptor_unpack(&mailboxVirtPtr_1, (const u_int8_t*)mailboxPage.virtual_address);
-            DPRINTF(("AccessComponent2 status %d err %d reserved3 %d\n", mailboxVirtPtr_1.status,
-                     mailboxVirtPtr_1.error, mailboxVirtPtr_1.reserved3));
+            MLXFWOPS_LOG_DEBUG("AccessComponent2 status %d err %d reserved3 %d", mailboxVirtPtr_1.status,
+                               mailboxVirtPtr_1.error, mailboxVirtPtr_1.reserved3);
 
             nMaximumSleepTime = 0;
             while (mailboxVirtPtr_1.status == FFS_FW_BUSY)
@@ -345,8 +313,8 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle,
                 }
             }
             tools_open_mcdd_descriptor_unpack(&mailboxVirtPtr_1, (const u_int8_t*)mailboxPage.virtual_address);
-            DPRINTF(("AccessComponent3 status %d err %d reserved3 %d\n", mailboxVirtPtr_1.status,
-                     mailboxVirtPtr_1.error, mailboxVirtPtr_1.reserved3));
+            MLXFWOPS_LOG_DEBUG("AccessComponent3 status %d err %d reserved3 %d", mailboxVirtPtr_1.status,
+                               mailboxVirtPtr_1.error, mailboxVirtPtr_1.reserved3);
 
             if (mailboxVirtPtr_1.status == FFS_FW_ERROR)
             {
@@ -354,15 +322,15 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle,
                                                              FWCOMPS_MCC_ERR_CODES); // return error to high level app.
                                                                                      // Errors are defined as MCC errors
                 setLastError(fw_err);
-                DPRINTF(("CRITICAL : DMAComponentAccess::AccessComponent status %d err %d FW ERROR: %#x\n",
-                         mailboxVirtPtr_1.status, mailboxVirtPtr_1.error, fw_err));
+                MLXFWOPS_LOG_DEBUG("CRITICAL : DMAComponentAccess::AccessComponent status %d err %d FW ERROR: %#x",
+                                   mailboxVirtPtr_1.status, mailboxVirtPtr_1.error, fw_err);
                 return false;
             }
 
             // read the data from FW (from page.virtual_address -> to 'data' array)
             if (access == MCC_READ_COMP)
             {
-                DPRINTF(("READ mailboxVirtPtr->status = %d\r\n", mailboxVirtPtr_1.status));
+                MLXFWOPS_LOG_DEBUG("READ mailboxVirtPtr->status = %d\r", mailboxVirtPtr_1.status);
                 readFromDataPage(&accessData, page, data, data_size, leftSize);
                 leftSize -= maxDataSize;
                 if (leftSize > 0)
@@ -407,13 +375,13 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle,
                 return false;
             }
         }
-        DPRINTF(("DMAComponentAccess::AccessComponent END \n"));
+        MLXFWOPS_LOG_DEBUG("END ");
         return true;
 #ifndef UEFI_BUILD
     }
     catch (std::exception& e)
     {
-        DPRINTF(("DMAComponentAccess::Exception occurred %s\n", e.what()));
+        MLXFWOPS_LOG_ERROR("Exception occurred %s", e.what());
         return false;
     }
 #endif
