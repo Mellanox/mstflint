@@ -245,37 +245,39 @@ struct CableInfo
     bool isDowngrade = false;   // the target version is older than the running one
 };
 
-/* One metadata file from the update package and the binary it names.
+/* One metadata entry from the update package and the binary it names.
  *
- * Which fields a file carries is itself information: a file giving only a part number
- * and a firmware major describes a LinkX image with no extended header, and the match
- * narrows to exactly the fields present.
+ * Which keys an entry carries is itself information: the match narrows to exactly the keys
+ * present.
  */
 struct FwPackageEntry
 {
-    string metadataPath;     // location inside the package, for the report and for error messages
-    string imagePath;        // the binary the metadata names, resolved relative to the metadata file
-    string vendorPartNumber; // the package folder this entry came from
+    string metadataPath; // location inside the package, for the report and for error messages
+    string imagePath;    // the binary the metadata names, resolved relative to the metadata file
+    // The match keys, as the metadata wrote them; all but the vendor name may hold ? and *
+    // wildcards. The part number is the package folder's when the entry states none.
     string vendorName;
-    u_int32_t vendorOui = 0;
+    string vendorPartNumber;
+    string vendorOui;
     string vendorRev;
-    u_int8_t hwRevMajor = 0;
-    CableFwVersion fwVersion;
-    string buildDate; // optional, straight from the metadata
-    // Which of the optional keys the file carried. A field the metadata omits is not compared at
+    string vendorSn;
+    string hwRevMajor;
+    string hwRevMinor;
+    string activeFwVersion;
+    CableFwVersion fwVersion; // the load's version, which the cable is updated to
+    // Which of the optional keys the entry carried. A key the metadata omits is not compared at
     // all, which is how the package decides how narrowly each binary matches; without these an
     // omitted vendor revision would be indistinguishable from one that is genuinely empty.
-    bool hasVendorName = false;
     bool hasVendorOui = false;
     bool hasVendorRev = false;
+    bool hasVendorSn = false;
     bool hasHwRevMajor = false;
+    bool hasHwRevMinor = false;
+    bool hasActiveFwVersion = false;
     bool hasExtendedHeader = false;      // the binary carries the 48-byte header already
     bool hasLinkXExtendedHeader = false; // and it is the LinkX wrap, which no cable can be matched against
     bool isValid = false;
     string parseError; // why isValid is false; reported rather than fatal
-    // Another entry this one cannot be told apart from: they agree on every key both constrain,
-    // so no cable could ever choose between them. Both are rejected.
-    string conflictsWith;
 };
 
 /* The fields the device matches an image against before it will write it to a cable, all taken
@@ -286,9 +288,9 @@ struct FwPackageEntry
  */
 struct CableExtHeaderKey
 {
-    string partNumber;       // vendor_pn, as the metadata spells it
-    string vendorRev;        // vendor_rev when the metadata states it, empty (zero bytes) otherwise
-    u_int8_t hwRevMajor = 0; // hw_rev_major when the metadata states it, zero otherwise
+    string partNumber;       // VendorPN, as the metadata spells it
+    string vendorRev;        // VendorRev when the metadata states it, empty (zero bytes) otherwise
+    u_int8_t hwRevMajor = 0; // the hardware major when the metadata states it, zero otherwise
     u_int8_t productId = 0;  // the LinkX product id, which is the metadata firmware major
 
     /* An image can only be wrapped when the part number and product id are known and fit. */
@@ -506,22 +508,20 @@ private:
     /* Phase 3 - Analysis and planning.
      *
      * Open the package named by `--cable_package`: a folder per part number, each folder
-     * holding metadata files and the binaries they describe, each metadata file naming its
-     * binary by a path relative to itself. It comes either as one ZIP or as a directory
+     * holding metadata files and the binaries they describe, each metadata entry naming its
+     * binary by FwLoadName, relative to the file. It comes either as one ZIP or as a directory
      * already holding that layout - the archive reader is not built on every platform, so an
      * extracted directory is the way in where it is missing, and the two are read into the
      * same shape so nothing downstream can tell them apart.
      *
-     * A metadata file comes in one of two shapes and is rejected if it is neither: a CM or JDM
-     * entry carrying vendor part number and firmware major, or an ODM entry additionally
-     * carrying vendor name, OUI, revision and hardware major revision. Vendor name/OUI matters
-     * because two suppliers can ship the same part number, revision and hardware major, and
-     * burning one vendor's image into the other's cable is the failure this whole flow exists
-     * to avoid.
+     * Metadata follows the OIF CMIS Firmware Update Package IA: a file holds one entry or a list
+     * of them, keyed by the CMIS field names. VendorName is matched exactly; every other key the
+     * entry states is matched with ? and * wildcards, and a key it omits does not narrow the
+     * match. A CM or JDM entry states no part number and takes its folder's. The load's FW major
+     * must equal the cable's running one, since it is the product id the device checks.
      *
-     * Part number and firmware major are matched on always; the ODM fields narrow it further.
-     * Two entries that agree on every key both constrain describe the same cable, so both are
-     * rejected at load time and named in the report - a cable cannot be asked to choose.
+     * A cable that several entries match takes the one with the highest load version, the
+     * first of them on a tie, and the trace names every candidate.
      *
      * Give every cable an outcome, not only the ones to burn, and leave none UNDECIDED -
      * SKIP_NOT_PLUGGED,
@@ -530,11 +530,10 @@ private:
      * version still goes ahead but is flagged as a downgrade. The target slot is
      * whichever of A and B is not running; phase 5 checks that it became the running one.
      *
-     * A metadata file carrying only part number and firmware major describes a LinkX
-     * image with no extended header. The 48-byte extended header is synthesized in memory and
-     * prepended, filled from the metadata and leaving vendor revision and hardware revision
-     * zeroed: the device treats zeroed keys as wildcards, so it ends up validating exactly the
-     * part number and firmware major the tool matched on.
+     * A raw LinkX image gets the 48-byte extended header synthesized in memory and prepended:
+     * the part number and the load's FW major always, the vendor revision and hardware major only
+     * when the entry states them without wildcards, zero otherwise, which the device treats as a
+     * wildcard. The device then validates the same keys the tool matched on.
      * That is a second, independent check on the same decision - worth the copy,
      * because a wrong image reaching a cable is unrecoverable in the field. The
      * package on disk is never modified, and the plan entry keeps the package path beside the
@@ -557,13 +556,13 @@ private:
      * the rest of the package is still used.
      */
     int loadPackage(map<string, vector<u_int8_t> >& contents);
-    /* One metadata file, validated against the package files around it. */
-    FwPackageEntry parseMetadataEntry(const string& name,
-                                      const vector<u_int8_t>& bytes,
-                                      const map<string, vector<u_int8_t> >& contents) const;
+    /* One metadata file, its entries each validated against the package files around it. */
+    vector<FwPackageEntry> parseMetadataFile(const string& name,
+                                             const vector<u_int8_t>& bytes,
+                                             const map<string, vector<u_int8_t> >& contents) const;
 
-    /* Give every cable an outcome. A cable matching more than one metadata file is a packaging
-     * error rather than a choice to make, so it ends the run.
+    /* Give every cable an outcome. A cable that more than one metadata entry matches takes the
+     * highest load version.
      */
     int decideCableActions();
 
@@ -627,11 +626,6 @@ private:
                       size_t lastResult,
                       string& errMsg,
                       string& stageName);
-
-    /* Reject metadata files that no cable could choose between: two entries that agree on every
-     * key both constrain describe the same cable and would make any match ambiguous.
-     */
-    void findPackageConflicts();
 
     /* Phase 5 - Verification and report.
      *
