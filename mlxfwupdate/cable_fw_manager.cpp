@@ -317,6 +317,10 @@ int CableFwManager::run()
         // cables failed, and it is most needed exactly when phase 4 did not go cleanly.
         rc = downloadAndActivate();
     }
+    if (rc != MLX_FWM_SUCCESS && _cmdParams.cable_update && _results.empty())
+    {
+        _notStartedReason = _errMsg;
+    }
 
     int reportRc = verifyAndReport();
     return (rc != MLX_FWM_SUCCESS) ? rc : reportRc;
@@ -1107,10 +1111,12 @@ static bool readCableModuleInfo(mfile* mf, u_int32_t localPort, CableInfo& cable
 /* PDDR page_select for the operational info page, which carries the link state machine. */
 #define CABLE_PDDR_OPERATIONAL_INFO_PAGE 0
 
-/* Local ports are not numbered from one and nothing reports the highest, so the PLLP sweep is
- * bounded rather than exact. Measured on Quantum-3: label port 1 sits at local port 129.
+/* Local ports are not numbered from one and nothing reports the highest, so the PLLP sweep runs to
+ * the most PLLP can address: local_port plus its 2-bit lp_msb, 10 bits. The sweep stops as soon as
+ * every cage is mapped. Measured: label port 1 sits at local port 129 on Quantum-3 and at 417 on
+ * Spectrum-6, whose local ports reach 516.
  */
-#define CABLE_MAX_LOCAL_PORT 256
+#define CABLE_MAX_LOCAL_PORT 1023
 
 /* phy_mngr_fsm_state. The link is carrying traffic on exactly one of these. */
 #define CABLE_LINK_STATE_ACTIVE 3
@@ -3247,7 +3253,13 @@ void CableFwManager::appendErrorsTable(std::ostringstream& report)
     if (rows.empty())
     {
         // N/A is for a section the run never reached. An update that burned and found nothing to
-        // report is a different answer, and saying so is the point of the section.
+        // report is a different answer, and saying so is the point of the section - as is an update
+        // that stopped before its first burn, which found nothing because it tried nothing.
+        if (!_notStartedReason.empty())
+        {
+            report << "The update did not start: " << _notStartedReason << "\n\n";
+            return;
+        }
         report << (_cmdParams.cable_update ? "No errors were found" : CABLE_REPORT_NOT_AVAILABLE) << "\n\n";
         return;
     }

@@ -719,6 +719,9 @@ private:
     // Phase 3 ruled on every cable. Until it has, every action is the default, and neither the plan
     // table nor the skipped count can say anything true about them.
     bool _planned;
+    // Why an update ended before its first burn, for the report: without it the ERRORS section of
+    // an update that never started reads the same as one that burned cleanly.
+    string _notStartedReason;
 };
 
 #endif
