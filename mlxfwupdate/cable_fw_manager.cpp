@@ -1486,9 +1486,8 @@ static bool readCableModuleInfo(mfile* mf, u_int32_t localPort, CableInfo& cable
 #define CABLE_PDDR_OPERATIONAL_INFO_PAGE 0
 
 /* Local ports are not numbered from one and nothing reports the highest, so the PLLP sweep runs to
- * the most PLLP can address: local_port plus its 2-bit lp_msb, 10 bits. The sweep stops as soon as
- * every cage is mapped. Measured: label port 1 sits at local port 129 on Quantum-3 and at 417 on
- * Spectrum-6, whose local ports reach 516.
+ * the most PLLP can address: local_port plus its 2-bit lp_msb, 10 bits. Measured: label port 1
+ * sits at local port 129 on Quantum-3 and at 417 on Spectrum-6, whose local ports reach 516.
  */
 #define CABLE_MAX_LOCAL_PORT 1023
 
@@ -1554,25 +1553,34 @@ static reg_access_status_t readCableLinkState(mfile* mf, u_int32_t localPort, u_
 }
 
 /* PLLP carries both a local port and the label port it serves, and is indexed by the local port,
- * so the map a cage needs is built by sweeping it. Only the first sub-port of a split cage is
- * kept - they share one cable.
+ * so the map a cage needs is built by sweeping it. Only the first sub-port of a cage is kept - the
+ * one mlxlink resolves a bare label port to - since they share one cable.
+ *
+ * The whole range is swept: an ASIC can carry sub-ports of cages it does not own, so no count of
+ * its own cages tells when it is done. Measured on a four-ASIC Quantum-3: every ASIC carries one
+ * split of each cage, and only the GA 0 ASIC carries split 0.
  */
-static void buildLocalPortMap(mfile* mf, map<u_int32_t, u_int32_t>& localPortByCage, u_int32_t cages)
+static void buildLocalPortMap(mfile* mf, map<u_int32_t, u_int32_t>& localPortByCage)
 {
-    for (u_int32_t localPort = 1; localPort <= CABLE_MAX_LOCAL_PORT && localPortByCage.size() < cages; localPort++)
+    for (u_int32_t localPort = 1; localPort <= CABLE_MAX_LOCAL_PORT; localPort++)
     {
         struct reg_access_switch_pllp_reg_ext pllp;
 
         memset(&pllp, 0, sizeof(pllp));
         pllp.local_port = (u_int8_t)(localPort & 0xff);
         pllp.lp_msb = (u_int8_t)((localPort >> 8) & 0x3);
-        if (reg_access_pllp(mf, REG_ACCESS_METHOD_GET, &pllp) != ME_OK || pllp.label_port == 0 || pllp.split_num != 0)
+        if (reg_access_pllp(mf, REG_ACCESS_METHOD_GET, &pllp) != ME_OK || pllp.label_port == 0)
         {
             continue;
         }
-        localPortByCage.insert(std::make_pair((u_int32_t)pllp.label_port - 1, localPort));
+        bool firstSubPort =
+          (pllp.ipil_stat == 0 || pllp.ipil_num == 1) && (pllp.split_stat == 0 || pllp.split_num == 0);
+        if (firstSubPort)
+        {
+            localPortByCage.insert(std::make_pair((u_int32_t)pllp.label_port - 1, localPort));
+        }
     }
-    FWMANAGER_LOG_DEBUG("PLLP sweep: mapped %u cage(s) of %u", (unsigned)localPortByCage.size(), cages);
+    FWMANAGER_LOG_DEBUG("PLLP sweep: mapped %u cage(s)", (unsigned)localPortByCage.size());
 }
 
 #define CABLE_REPORT_RULE "===================================================="
@@ -1872,15 +1880,18 @@ int CableFwManager::discoverCables()
             _errMsg = "Failed to open " + asic->second.devName + " to query the cables it owns";
             return ERR_CODE_CABLE_UPDATE_FAILED;
         }
-        u_int32_t owned = 0;
-        for (size_t j = 0; j < _cables.size(); j++)
+        buildLocalPortMap(mf, asic->second.localPortByCage);
+    }
+    // Every map is built before any cage is queried: a cage can be served by an ASIC later in the
+    // order than its owner.
+    for (AsicsByGa::iterator asic = _asics.begin(); asic != _asics.end(); ++asic)
+    {
+        mfile* mf = deviceHandle(asic->second.devName);
+        if (mf == NULL)
         {
-            if (_cables[j].asicGa == asic->first)
-            {
-                owned++;
-            }
+            _errMsg = "Failed to open " + asic->second.devName + " to query the cables it owns";
+            return ERR_CODE_CABLE_UPDATE_FAILED;
         }
-        buildLocalPortMap(mf, asic->second.localPortByCage, owned);
         for (size_t j = 0; j < _cables.size(); j++)
         {
             // This port is never updated, so there is nothing to query it for.
@@ -1927,35 +1938,88 @@ int CableFwManager::discoverCables()
     return MLX_FWM_SUCCESS;
 }
 
-/* The local port serving a cage, from its owning ASIC's swept map. PDDR needs it; MMAM never
- * names one.
+/* The ASIC and local port serving a cage's first sub-port. PDDR needs them; MMAM never names one.
+ *
+ * The owner's map is asked first. Where the owner does not carry the first sub-port, another ASIC
+ * may: on a four-ASIC Quantum-3 the GA 0 ASIC carries it for every cage. Another ASIC is taken only
+ * when none of its own cages has this label number, because where labels restart on each ASIC its
+ * entry would be a different cable, and only when it is the one such ASIC.
  */
-bool CableFwManager::cableLocalPort(const CableInfo& cable, u_int32_t& localPort)
+bool CableFwManager::cableLocalPort(const CableInfo& cable, string& portDevName, u_int32_t& localPort)
 {
-    AsicsByGa::const_iterator asic = _asics.find(cable.asicGa);
+    AsicsByGa::const_iterator owner = _asics.find(cable.asicGa);
 
-    if (asic == _asics.end())
+    if (owner == _asics.end())
     {
         return false;
     }
-    map<u_int32_t, u_int32_t>::const_iterator port = asic->second.localPortByCage.find(cable.localIndex);
-    if (port == asic->second.localPortByCage.end())
+    map<u_int32_t, u_int32_t>::const_iterator port = owner->second.localPortByCage.find(cable.localIndex);
+    if (port != owner->second.localPortByCage.end())
     {
-        return false;
+        portDevName = owner->second.devName;
+        localPort = port->second;
+        return true;
     }
-    localPort = port->second;
-    return true;
+    portDevName.clear();
+    for (AsicsByGa::const_iterator asic = _asics.begin(); asic != _asics.end(); ++asic)
+    {
+        if (asic == owner)
+        {
+            continue;
+        }
+        port = asic->second.localPortByCage.find(cable.localIndex);
+        if (port == asic->second.localPortByCage.end())
+        {
+            continue;
+        }
+        bool labelIsItsOwn = false;
+        for (size_t i = 0; i < _cables.size() && !labelIsItsOwn; i++)
+        {
+            labelIsItsOwn = _cables[i].asicGa == asic->first && _cables[i].localIndex == cable.localIndex &&
+                            _cables[i].action != CABLE_ACTION_SKIP_ASIC_DETECTION_NOT_SUPPORTED;
+        }
+        if (labelIsItsOwn)
+        {
+            continue;
+        }
+        if (!portDevName.empty())
+        {
+            FWMANAGER_LOG_DEBUG("Cable %u: both %s and %s carry a first sub-port for it, so neither is used",
+                                cable.globalPort, portDevName.c_str(), asic->second.devName.c_str());
+            portDevName.clear();
+            return false;
+        }
+        portDevName = asic->second.devName;
+        localPort = port->second;
+    }
+    return !portDevName.empty();
 }
 
 /* The link state for one cable, which is what mlxlink shows as "State". */
-string CableFwManager::readCableLinkStateText(mfile* mf, const CableInfo& cable)
+string CableFwManager::readCableLinkStateText(const CableInfo& cable)
 {
+    string portDevName;
     u_int32_t localPort = 0;
     u_int8_t state = 0;
 
-    if (!cableLocalPort(cable, localPort) || readCableLinkState(mf, localPort, state) != ME_OK)
+    if (!cableLocalPort(cable, portDevName, localPort))
     {
-        FWMANAGER_LOG_DEBUG("Cable %u: link state read failed or no local port maps to this cage", cable.globalPort);
+        FWMANAGER_LOG_DEBUG("Cable %u: no local port maps to this cage, so its link state is unknown",
+                            cable.globalPort);
+        return CABLE_REPORT_NOT_AVAILABLE;
+    }
+    mfile* portMf = deviceHandle(portDevName);
+    if (portMf == NULL)
+    {
+        FWMANAGER_LOG_DEBUG("Cable %u: %s could not be opened to read its link state", cable.globalPort,
+                            portDevName.c_str());
+        return CABLE_REPORT_NOT_AVAILABLE;
+    }
+    reg_access_status_t status = readCableLinkState(portMf, localPort, state);
+    if (status != ME_OK)
+    {
+        FWMANAGER_LOG_DEBUG("Cable %u: link state read failed on %s local port %u, status %d", cable.globalPort,
+                            portDevName.c_str(), localPort, (int)status);
         return CABLE_REPORT_NOT_AVAILABLE;
     }
     return cableLinkStateName(state);
@@ -2064,9 +2128,22 @@ void CableFwManager::queryCable(mfile* mf, CableInfo& cable)
     // prints comes from, whether a cable is plugged included, so the two tools agree. It is
     // addressed by local port; a cage the PLLP sweep could not map has no PDDR, and PMAOS decides
     // for it instead.
+    string portDevName;
     u_int32_t localPort = 0;
-    bool mapped = cableLocalPort(cable, localPort);
-    bool pddrRead = mapped && readCableModuleInfo(mf, localPort, cable);
+    bool mapped = cableLocalPort(cable, portDevName, localPort);
+    // PDDR and MFCDR go to the ASIC carrying the local port, which need not be the owner.
+    mfile* portMf = mapped ? deviceHandle(portDevName) : mf;
+    if (portMf == NULL)
+    {
+        mapped = false;
+        portMf = mf;
+    }
+    else if (mapped && portDevName != cable.asicDevName)
+    {
+        FWMANAGER_LOG_DEBUG("Cable %u: owned by %s, its first sub-port is local port %u on %s", cable.globalPort,
+                            cable.asicDevName.c_str(), localPort, portDevName.c_str());
+    }
+    bool pddrRead = mapped && readCableModuleInfo(portMf, localPort, cable);
 
     if (pddrRead)
     {
@@ -2107,7 +2184,7 @@ void CableFwManager::queryCable(mfile* mf, CableInfo& cable)
     // MFCDR answers this directly where the firmware carries it; the OUI list is what is left
     // when it does not. A fake cable can copy an NVIDIA OUI, so where the firmware could have
     // answered and did not, the cable is unreadable rather than judged by its OUI.
-    u_int8_t vendorStatus = readCableVendorStatus(mf, mapped, localPort);
+    u_int8_t vendorStatus = readCableVendorStatus(portMf, mapped, localPort);
     cable.vendorStatus = vendorStatus;
     if (vendorStatus == CABLE_VENDOR_STATUS_READ_FAILED)
     {
@@ -2138,7 +2215,7 @@ void CableFwManager::queryCable(mfile* mf, CableInfo& cable)
                             CABLE_STATE_UNREADABLE;
         return;
     }
-    cable.linkState = readCableLinkStateText(mf, cable);
+    cable.linkState = readCableLinkStateText(cable);
 }
 
 bool CableFwManager::readCableIdentity(mfile* mf, CableInfo& cable)
@@ -3335,7 +3412,7 @@ void CableFwManager::verifyBurnedCables()
         // A link that was carrying traffic before the update has to be carrying it after. This is
         // the thing an operator actually loses. A
         // state the register would not report is unknown rather than down.
-        result.stateAfter = readCableLinkStateText(mf, current);
+        result.stateAfter = readCableLinkStateText(current);
         result.stateRegressed = (result.stateBefore == CABLE_LINK_STATE_ACTIVE_NAME) &&
                                 (result.stateAfter != CABLE_LINK_STATE_ACTIVE_NAME) &&
                                 (result.stateAfter != CABLE_REPORT_NOT_AVAILABLE);

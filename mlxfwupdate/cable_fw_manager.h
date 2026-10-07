@@ -62,9 +62,10 @@ struct AsicInfo
     string devName;     // MST device name or PCI address, in the form mopen() accepts
     string description; // model description, truncated at the first ';' the way flint prints it
     string fwVersion;   // running firmware, from MGIR
-    // Local module index -> local port, swept out of PLLP once. PDDR is addressed by local port
-    // and nothing maps a cage to one, so the mapping has to be inverted from the register that
-    // carries both.
+    // Label port - 1 -> the local port of that cage's first sub-port on this ASIC, swept out of
+    // PLLP once. PDDR is addressed by local port and nothing maps a cage to one, so the mapping has
+    // to be inverted from the register that carries both. A cage can have its first sub-port on
+    // an ASIC other than its MMAM owner, so this can hold cages the ASIC does not own.
     map<u_int32_t, u_int32_t> localPortByCage;
 };
 
@@ -485,11 +486,13 @@ private:
     /* Fill whatever PDDR left empty from the EEPROM, field by field. */
     void fillIdentityGapsFromEeprom(mfile* mf, CableInfo& cable);
 
-    /* The local port serving a cage, from the swept map. PDDR is indexed by it. */
-    bool cableLocalPort(const CableInfo& cable, u_int32_t& localPort);
+    /* The ASIC and local port serving a cage's first sub-port, from the swept maps. PDDR and MFCDR
+     * are indexed by it and must be sent to that ASIC, which is not always the cage's owner.
+     */
+    bool cableLocalPort(const CableInfo& cable, string& portDevName, u_int32_t& localPort);
 
     /* The link state for one cable, which PDDR indexes by local port rather than by cage. */
-    string readCableLinkStateText(mfile* mf, const CableInfo& cable);
+    string readCableLinkStateText(const CableInfo& cable);
 
     void queryCable(mfile* mf, CableInfo& cable);
 
