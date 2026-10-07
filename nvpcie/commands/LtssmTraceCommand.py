@@ -34,14 +34,13 @@ import tempfile
 
 from commands.PcieSwCommand import PcieSwCommand
 from commands.CommandFactory import CommandFactory
-from nvltssm_lib.LtssmTraceException import LtssmTraceException
-from nvltssm_lib.LtssmTraceManager import LtssmTraceManager
-from nvltssm_lib.formatters.LtssmReportFormatter import LtssmReportFormatter
 from resourceparse_lib.utils.common_functions import valid_path_arg_type
 
-# the nvltssm library is imported above because none of it reaches the C SDK
-# until the trace is run, while mstdump is imported inside the device path: it
-# pulls in the build generated tools_version, which the help must not need
+# the nvltssm library is imported lazily inside the paths that use it: it is built
+# only with --enable-adb-generic-tools, so importing it at module scope would make
+# the tool unusable - help included - wherever it is absent. mstdump is imported
+# inside the device path for its own reason: it pulls in the build generated
+# tools_version, which the help must not need
 
 
 class LtssmTraceCommand(PcieSwCommand):
@@ -125,6 +124,7 @@ class LtssmTraceCommand(PcieSwCommand):
         configuration space in one resource dump where the device supports it,
         and falls back to the address by address read where it does not.
         """
+        from nvltssm_lib.LtssmTraceException import LtssmTraceException
         import mstdump
 
         if mstdump.dump_device(self._device, output_file=dump_file, fast=True):
@@ -132,6 +132,9 @@ class LtssmTraceCommand(PcieSwCommand):
 
     def _trace(self, dump_file):
         """This method read the history of the selected link and present it."""
+        from nvltssm_lib.LtssmTraceManager import LtssmTraceManager
+        from nvltssm_lib.formatters.LtssmReportFormatter import LtssmReportFormatter
+
         self._trace_manager = LtssmTraceManager(dump_file, LtssmReportFormatter(),
                                                 self._pcore, self._link, self._port, self._lport)
         output = "\n".join(self._trace_manager.get_output()) + "\n"
