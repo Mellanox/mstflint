@@ -45,6 +45,7 @@
 #include <string>
 #include <map>
 #include "reg_access/reg_access.h"
+#include "common/package_error_codes.h"
 #include "mlxfwops/uefi_c/mft_uefi_common.h"
 #include "mlxfwops/lib/mlxfwops_com.h"
 #ifndef UEFI_BUILD
@@ -58,6 +59,11 @@ using namespace std;
 #define PRODUCT_VER_LEN 16
 #define MAX_MSG_SIZE 128
 #define MAX_REG_DATA 128
+/* MCC.error_count is 4 bits, so the device cannot report more than this many failures per stage. */
+#define MCC_MAX_ERROR_COUNT 15
+/* MCCE reports cdb_error_code as this when the CDB 0xA100 result is not relevant: a non-LinkX module, or a
+ * CDB command error other than 0x107. */
+#define MCCE_CDB_ERROR_NOT_RELEVANT 0xFF00
 
 typedef struct reg_access_hca_mqis_reg_ext mqisReg;
 typedef struct reg_access_hca_mcqs_reg_ext comp_status_st;
@@ -568,6 +574,8 @@ public:
     void setLastFirmwareError(fw_comps_error_t fw_error);
     void setLastRegisterAccessStatus(reg_access_status_t err);
     fw_comps_error_t mccErrTrans(u_int8_t err);
+    unsigned char* getErrMsg(fw_comps_error_t err, bool withDeviceIndex = true);
+    void collectBurnFailures();
     fw_comps_error_t regErrTrans(reg_access_status_t err);
     bool lock_flash_semaphore();
     void unlock_flash_semaphore();
@@ -576,7 +584,24 @@ public:
                          bool autoUpdate = false,
                          bool activationNeeded = true,
                          bool downloadTransferNeeded = true,
-                         int activate_delay_sec = 0);
+                         int activate_delay_sec = 0,
+                         bool noStopOnError = false);
+    /* Failures the device reported while skipping cables. FW clears the counter between the transfer and the
+     * activation, so the two stages are counted apart and summed only when reporting. */
+    u_int32_t GetTransferErrorCount() const { return _transferErrorCount; }
+    u_int32_t GetActivateErrorCount() const { return _activateErrorCount; }
+    // Whether the burn goes on past a failed cable: what SetIndexAndSize() was asked for, unless MCAM shows no MCCE.
+    bool GetNoStopOnError() const { return _noStopOnError; }
+    u_int32_t GetBurnErrorCount() const { return _transferErrorCount + _activateErrorCount; }
+    /* One MCCE entry: which cable failed and what the device and the module each reported. */
+    typedef struct burn_failure
+    {
+        u_int8_t module_id;
+        u_int8_t mcc_error_code;
+        u_int16_t cdb_error_code;
+    } burn_failure_t;
+    const std::vector<burn_failure_t>& GetBurnFailures() const { return _burnFailures; }
+    string GetMccErrorString(u_int8_t mccErrorCode);
     void SetActivationStep(bool activationNeeded) { _activationNeeded = activationNeeded; }
     bool RefreshComponentsStatus(comp_status_st* ComponentStatus = NULL);
     bool GetComponentLinkxProperties(FwComponent::comps_ids_t compType, component_linkx_st* cmpLinkX);
@@ -651,69 +676,6 @@ private:
         IMAGE_REACTIVATION_FW_PROGRAMMING_NEEDED = 9
     } image_reactivation_command_error_t;
 
-    enum PackageErrorCode : u_int16_t
-    {
-        PKG_OK = 0,
-        PKG_FW_PRODUCT_ID_ERR = 1,
-        PKG_HASH_SIZE_ERR = 2,
-        PKG_SIGNATURE_SIZE_ERR = 3,
-        PKG_TOC_SZ_ERR = 4,
-        PKG_TOC_OFFSET_ERR = 5,
-        PKG_BAD_LEN_ERR = 6,
-        PKG_COMPONENT_OFFSET_ERR = 7,
-        PKG_COMPONENT_SIZE_ERR = 8,
-        PKG_MAGIC_NUM_ERR = 9,
-        PKG_HASH_ITEMS_ERR = 10,
-        PKG_SIGN_ITEMS_ERR = 11,
-        PKG_DESC_ERR = 12,
-        PKG_CERT_DESC_ERR = 13,
-        PKG_NO_HASH_SECTION_ERR = 14,
-        PKG_NO_SIG_SECTION_ERR = 15,
-        PKG_HASH_IDX_ERR = 16,
-        PKG_SIGN_IDX_ERR = 17,
-        PKG_HASH_NUM_IDX_ERR = 18,
-        PKG_SIGN_NUM_IDX_ERR = 19,
-        PKG_COMPONENTS_NO_OFFSET_ERR = 20,
-        PKG_COMP_KIND_NOT_FOUND_ERR = 21,
-        PKG_HASH_SECTION_LEN_ERR = 22,
-        PKG_SIGNATURE_SECTION_LEN_ERR = 23,
-        PKG_COMP_DESC_SECTION_LEN_ERR = 24,
-        PKG_TOC_KIND_DUPLICATE_ERR = 25,
-        PKG_COMPONENT_KIND_DUPLICATE_ERR = 26,
-        PKG_TOC_KIND_INVALID_ERR = 27,
-        PKG_IMG_LOAD_ADDR_ERR = 28,
-        PKG_NO_TRAILER_ERR = 29,
-        PKG_NO_TRAILER_HASH_ERR = 30,
-        PKG_NO_TRAILER_SIG_ERR = 31,
-        PKG_TRAILER_HASH_ERR = 32,
-        PKG_TRAILER_SECTION_LEN_ERR = 33,
-        PKG_CERTIFICATE_ERR = 34,
-        PKG_COMPONENT_KIND_INVALID_ERR = 35,
-        PKG_FW_UPGRADE_VERSION_ERR = 36,
-        PKG_NOT_FOUND_ERR = 37,
-        PKG_MAIN_FW_COMP_NOT_FOUND_ERR = 38,
-        PKG_PACKAGE_SIGNATURE_ERR = 39,
-        PKG_PACKAGE_SIZE_ERR = 40,
-        PKG_NO_PERMISSIONS_ERR = 41,
-        PKG_UNEXPECTED_VERSION_ERR = 42,
-        PKG_UNEXPECTED_CID_ERR = 43,
-        PKG_FORBIDDEN_DATE_ERR = 44,
-        PKG_FORBIDDEN_VERSION_ERR = 45,
-        PKG_FORBIDDEN_UNKNOWN_ERR = 46,
-        PKG_HEADER_VERSION_ERR = 47,
-        PKG_NO_AUTHENTICATOR_ERR = 48,
-        PKG_AUTHENTICATOR_SECTION_HASH_ERR = 49,
-        PKG_AUTHENTICATOR_SECTION_SIG_ERR = 50,
-        PKG_AUTHENTICATOR_SECTION_LEN_ERR = 51,
-        PKG_AUTHENTICATOR_HASH_ERR = 52,
-        PKG_NON_AUTH_COMP_HASH_ERR = 53,
-        PKG_NON_AUTH_COMP_ERR = 54,
-        RETIMER_BOOT_ERR = 55,
-        RETIMER_SIGNATURE_ERR = 56,
-        RETIMER_FORBIDDEN_VERSION_ERR = 57,
-        RETIMER_FW_UPDATE_ERR = 58,
-        PKG_UNKNOWN_ERR
-    };
 
     const char* stateToStr(fsm_state_t);
     const char* commandToStr(fsm_command_t cmd);
@@ -769,7 +731,6 @@ private:
     void extractRomInfo(mgirReg* mgir, fwInfoT* fwQuery);
     bool isDMAAccess();
     bool fallbackToRegisterAccess();
-    static const vector<pair<PackageErrorCode, string>> _packageErrorToString;
 
     std::vector<comp_query_st> _compsQueryMap;
     bool _fwSupport;
@@ -788,6 +749,10 @@ private:
     fw_comps_error_t _lastError;
      fw_comps_warning_t _warningCode;
      string _lastSpecificError;
+    bool _noStopOnError = false;
+    u_int8_t _transferErrorCount = 0;
+    u_int8_t _activateErrorCount = 0;
+    std::vector<burn_failure_t> _burnFailures;
     reg_access_status_t _lastRegAccessStatus;
     u_int32_t _hwDevId;
     mfile* _mf;

@@ -55,7 +55,9 @@
 #define REG_ID_PPSLS 0x50e3
 #define REG_ID_MTCAP 0x9009
 #define REG_ID_MMTA  0x9113
+#define REG_ID_MCCE 0x9108
 #define REG_ID_MTECR 0x9109
+#define REG_ID_MFCDR 0x9178
 #define REG_ID_MTSH 0x910a
 #define REG_ID_MPEGC 0x9056
 #define REG_ID_MPIR 0x9059

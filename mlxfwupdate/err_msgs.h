@@ -70,6 +70,8 @@ enum
     ERR_CODE_SERVER_QUERY_FAILED = 28,
     ERR_CODE_INVALID_PLDM_COMPONENT = 29,
     ERR_CODE_INVALID_PLDM_FORMAT = 30,
+    ERR_CODE_CABLE_UPDATE_FAILED = 31,
+    ERR_CODE_CABLE_NOT_SUPPORTED = 32,
     ERR_CODES_NUM
 };
 
@@ -103,5 +105,7 @@ enum
 #define ERR_MSG_SERVER_QUERY "Failed to query PSIDs from server"
 #define ERR_MSG_PLDM_COMPONENT "Not valid PLDM component type"
 #define ERR_MSG_INVALID_PLDM_FORMAT "Can't parse PLDM format"
+#define ERR_MSG_CABLE_UPDATE_FAILED "Failed to update one or more cables"
+#define ERR_MSG_CABLE_NOT_SUPPORTED "Cable firmware update is not supported on this device"
 
 #endif

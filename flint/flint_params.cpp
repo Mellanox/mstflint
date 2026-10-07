@@ -108,6 +108,7 @@ FlintParams::FlintParams()
     cable_device_size_specified = false;
     cable_device_index_specified = false;
     linkx_auto_update = false;
+    no_stop_on_error = false;
     activate = false;
     run_module_image = false;
     commit_module_image = false;

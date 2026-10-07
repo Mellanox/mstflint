@@ -2428,6 +2428,14 @@ bool BurnSubCommand::verifyParams()
             reportErr(true, "Must supply the download_transfer and/or activation flags for cables burn.\n");
             return false;
         }
+        /* Both the transfer and the activation carry the flag, so an activation-only burn takes it too. What the
+         * device needs is one of the flows it skips within, whatever the range turns out to cover. */
+        if (_flintParams.no_stop_on_error && !_flintParams.linkx_auto_update &&
+            !_flintParams.cable_device_size_specified)
+        {
+            reportErr(true, "Flag 'no_stop_on_error' is relevant only for auto-update or range burn.\n");
+            return false;
+        }
         else if (_flintParams.activate == true && _flintParams.download_transfer == false)
         {
             // the image is not necessary if only activation is required
@@ -2518,6 +2526,12 @@ bool BurnSubCommand::verifyParams()
         {
             reportErr(true, FLINT_COMMAND_FLAGS_ERROR, _name.c_str(),
                       "Flags 'activate'/'download_transfer'/'activate_delay_sec' relevant only for cable components.");
+            return false;
+        }
+        if (_flintParams.no_stop_on_error)
+        {
+            reportErr(true, FLINT_COMMAND_FLAGS_ERROR, _name.c_str(),
+                      "Flag 'no_stop_on_error' relevant only for cable components.");
             return false;
         }
         if ((_flintParams.guid_specified || _flintParams.guids_specified) && (_flintParams.uid_specified))
@@ -3265,7 +3279,7 @@ FlintStatus BurnSubCommand::executeCommand()
         return BurnLinkX(_flintParams.device, _flintParams.cableDeviceIndex, _flintParams.cableDeviceSize,
                          _flintParams.image, _flintParams.linkx_auto_update, _flintParams.activate,
                          _flintParams.download_transfer, _flintParams.activate_delay_sec, &ProgressFuncAdv,
-                         fwComponent);
+                         fwComponent, _flintParams.no_stop_on_error);
     }
 
     if (_flintParams.device.find("_cable") != string::npos && _flintParams.device.find("_rt") == string::npos)

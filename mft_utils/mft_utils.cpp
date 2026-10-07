@@ -47,6 +47,9 @@
 #include <string>
 #include <sys/stat.h>
 #include <dirent.h>
+#ifndef __WIN__
+#include <unistd.h>
+#endif
 
 #define APSKU_LEN 8
 
@@ -460,6 +463,35 @@ int IsDirectory(const string& path)
     return (S_ISDIR(st.st_mode));
 }
 
+int IsRegularFile(const string& path)
+{
+    struct stat st;
+
+    if (stat(path.c_str(), &st) != 0)
+    {
+        return 0;
+    }
+
+    return (S_ISREG(st.st_mode));
+}
+
+int IsSymlink(const string& path)
+{
+#ifdef __WIN__
+    (void)path;
+    return 0;
+#else
+    struct stat st;
+
+    if (lstat(path.c_str(), &st) != 0)
+    {
+        return 0;
+    }
+
+    return (S_ISLNK(st.st_mode));
+#endif
+}
+
 void MkDirIfNotExists(const string& path)
 {
     int rc;
@@ -505,5 +537,24 @@ vector<string> GetListOfFiles(const string& dirPath)
     return files;
 }
 
+string CreateSiblingTempFile(const string& sibling)
+{
+    string tmpl = sibling + ".XXXXXX";
+    vector<char> buf(tmpl.c_str(), tmpl.c_str() + tmpl.size() + 1);
+#ifdef __WIN__
+    if (_mktemp_s(&buf[0], buf.size()) != 0)
+    {
+        return string();
+    }
+#else
+    int fd = mkstemp(&buf[0]);
+    if (fd == -1)
+    {
+        return string();
+    }
+    close(fd);
+#endif
+    return string(&buf[0]);
+}
 
 } // namespace mft_utils

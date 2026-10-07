@@ -37,6 +37,7 @@ AM_CPPFLAGS = $(JSON_CFLAGS) -I$(top_srcdir) -I$(top_srcdir)/include/mtcr_ul
 libcommon_la_SOURCES = \
     bit_slice.h \
     compatibility.h \
+    package_error_codes.h \
     tools_algorithm.h \
     tools_endianness.h \
     tools_filesystem.cpp \
