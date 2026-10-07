@@ -486,6 +486,28 @@ private:
      */
     int downloadAndActivate();
 
+    /* Refuse the run unless every ASIC can report per-cable burn errors. A device that cannot
+     * stops at the first bad cable, which turns a fleet update into a partial one nobody asked
+     * for, so a mixed system has to be aligned before it is burned rather than during.
+     */
+    int checkNoStopOnErrorSupport();
+
+    /* Burn one group and record what became of each of its cables. A group that fails is recorded
+     * and the run moves to the next one, since the whole point is that one bad cable cannot
+     * strand a chassis.
+     */
+    void burnPlanEntry(const CablePlanEntry& group, size_t firstResult);
+
+    /* One pass of the burn state machine. The download and the activation are separable, which is
+     * what lets a wait sit between them.
+     */
+    bool runBurnStage(mfile* mf,
+                      const vector<u_int8_t>& image,
+                      bool download,
+                      bool activate,
+                      size_t firstResult,
+                      string& errMsg);
+
     /* Phase 5 - Verification and report.
      *
      * In query mode this reports the inventory phase 2 built. After an update it
