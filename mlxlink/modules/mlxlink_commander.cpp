@@ -3117,6 +3117,7 @@ void MlxlinkCommander::operatingInfoPage()
         u_int32_t ethAnFsmState = getFieldValue("eth_an_fsm_state");
         u_int32_t ib_phy_fsm_state = getFieldValue("ib_phy_fsm_state");
         string color = MlxlinkRecord::state2Color(_phyMngrFsmState == PHY_MNGR_RX_DISABLE ? YELLOW : (STATUS_COLOR)_phyMngrFsmState);
+        _isNVLINK = false;
         _protoActive = getFieldValue("proto_active");
         if (_protoActive == NVLINK)
         {
@@ -9247,30 +9248,6 @@ void MlxlinkCommander::showKr()
     printOutput(_krInfoCmd);
 }
 
-bool MlxlinkCommander::isNvlinkCapable() const
-{
-    return dm_is_gpu(_devID) || _devID == DeviceQuantum3 || _devID == DeviceNVLink6_Switch;
-}
-
-bool MlxlinkCommander::isNvl5IbPort()
-{
-    if (_protoActive != IB || !isNvlinkCapable())
-    {
-        return false;
-    }
-
-    try
-    {
-        sendPrmReg(ACCESS_REG_PDDR, REG_GET, "page_select=%d", PDDR_PHY_INFO_PAGE);
-    }
-    catch (MlxRegException& exc)
-    {
-        return false;
-    }
-
-    return getFieldValue("nv_link_generation") == NV_LINK_5;
-}
-
 void MlxlinkCommander::showLtx()
 {
     if (_userInput._pcie)
@@ -9278,11 +9255,20 @@ void MlxlinkCommander::showLtx()
         throw MlxRegException("\"--" LTX_INFO_FLAG "\" option is not supported for PCIE");
     }
 
-    bool isNvl5 = isNvl5IbPort();
-
-    if (!_isNVLINK && !isNvl5)
+    if (!_isNVLINK)
     {
         throw MlxRegException("\"--" LTX_INFO_FLAG "\" is supported on GPU/switch NVLink ports only");
+    }
+
+    bool isNvl5 = false;
+    try
+    {
+        sendPrmReg(ACCESS_REG_PDDR, REG_GET, "page_select=%d", PDDR_PHY_INFO_PAGE);
+        isNvl5 = getFieldValue("nv_link_generation") == NV_LINK_5;
+    }
+    catch (MlxRegException& exc)
+    {
+        throw MlxRegException("LTX is not supported for the current device!");
     }
 
     initLtx();
