@@ -590,6 +590,8 @@ public:
      * activation, so the two stages are counted apart and summed only when reporting. */
     u_int32_t GetTransferErrorCount() const { return _transferErrorCount; }
     u_int32_t GetActivateErrorCount() const { return _activateErrorCount; }
+    // Whether the burn goes on past a failed cable: what SetIndexAndSize() was asked for, unless MCAM shows no MCCE.
+    bool GetNoStopOnError() const { return _noStopOnError; }
     u_int32_t GetBurnErrorCount() const { return _transferErrorCount + _activateErrorCount; }
     /* One MCCE entry: which cable failed and what the device and the module each reported. */
     typedef struct burn_failure

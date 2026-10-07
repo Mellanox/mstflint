@@ -483,6 +483,15 @@ FlintStatus BurnSubCommand::BurnLinkX(string deviceName,
     }
     fwCompsAccess.SetIndexAndSize(deviceIndex + 1, deviceSize, linkx_auto_update, activationNeeded,
                                   downloadTransferNeeded, activate_delay_sec, noStopOnError);
+    // With a delay the activate command is only handed to the FW, so its outcome is never read and the failure
+    // summary can name transfer errors only. Asked after the call above, which turns the flag off where the FW has no
+    // per-cable error reporting and says so itself.
+    if (fwCompsAccess.GetNoStopOnError() && activationNeeded && activate_delay_sec > 0)
+    {
+        printf("-W- With an activation delay, flint does not wait for the activation, so only transfer errors can be "
+               "reported.\n"
+               "    For activation errors, rerun with --activate_delay_sec 0.\n");
+    }
     if (!fwCompsAccess.RefreshComponentsStatus())
     {
         printf("-E- Refresh components failed, error is %s.\n", fwCompsAccess.getLastErrMsg());
