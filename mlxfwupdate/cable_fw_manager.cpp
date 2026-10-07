@@ -2120,7 +2120,7 @@ void CableFwManager::setAsideServicePorts()
     if (!_servicePorts.empty())
     {
         emitProgress("-I- Skipping " + int_to_string((int)_servicePorts.size()) + " service (FNM) port(s): " + ports +
-                     "; use --cable_include_service_ports to include them\n");
+                     "; use --module_include_service_ports to include them\n");
     }
     _cables.swap(kept);
 }
@@ -3563,7 +3563,7 @@ int CableFwManager::verifyAndReport()
         emitProgress("-W- " + int_to_string((int)regressed) + " cable(s) had not come back up after " +
                      int_to_string(_cmdParams.cable_verify_wait) +
                      "s; check with 'mstlink -d <device> --port <label port> -m' before believing it\n");
-        emitProgress("-W- If the link is Active there, re-run with a larger --cable_verify_wait\n");
+        emitProgress("-W- If the link is Active there, re-run with a larger --module_verify_wait\n");
     }
     if (pending > 0)
     {
@@ -3780,7 +3780,7 @@ string CableFwManager::buildReport()
     }
 
     // One device line, from the first ASIC: every ASIC in a chassis carries the same description,
-    // and the per-ASIC detail is what --verbose is for.
+    // and the per-ASIC detail is what --module_report_verbose is for.
     string description = _asics.empty() ? string() : _asics.begin()->second.description;
 
     report << CABLE_REPORT_RULE << "\n";
