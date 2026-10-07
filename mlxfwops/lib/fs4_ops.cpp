@@ -149,7 +149,7 @@ bool Fs4Operations::IsEncryptedImage(bool& is_encrypted)
     {
         if (!InitHwPtrs(true))
         {
-            MLXFWOPS_LOG_DEBUG("HW pointers not found");
+            MLXFWOPS_LOG_ERROR("HW pointers not found");
             return false;
         }
     }
@@ -918,7 +918,7 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
 
     if (!ParseImageInfoFromEncryptedImage())
     {
-        MLXFWOPS_LOG_DEBUG("Failed to read IMAGE_INFO section");
+        MLXFWOPS_LOG_ERROR("Failed to read IMAGE_INFO section");
         return false;
     }
 
@@ -1253,13 +1253,13 @@ bool Fs4Operations::ParseDevData(bool quickQuery, bool verbose, VerifyCallBack v
     {
         if (!InitHwPtrs())
         {
-            MLXFWOPS_LOG_DEBUG("HW pointers not found");
+            MLXFWOPS_LOG_ERROR("HW pointers not found");
             return false;
         }
 
         if (!ParseImageInfoFromEncryptedImage())
         {
-            MLXFWOPS_LOG_DEBUG("Failed to read IMAGE_INFO section");
+            MLXFWOPS_LOG_ERROR("Failed to read IMAGE_INFO section");
             return false;
         }
 
@@ -1298,13 +1298,13 @@ bool Fs4Operations::encryptedFwQuery(fw_info_t* fwInfo, bool quickQuery, bool ig
 
     if (!InitHwPtrs())
     {
-        MLXFWOPS_LOG_DEBUG("HW pointers not found");
+        MLXFWOPS_LOG_ERROR("HW pointers not found");
         return false;
     }
 
     if (!ParseImageInfoFromEncryptedImage())
     {
-        MLXFWOPS_LOG_DEBUG("Failed to read IMAGE_INFO section");
+        MLXFWOPS_LOG_ERROR("Failed to read IMAGE_INFO section");
         return false;
     }
 
@@ -1513,14 +1513,14 @@ bool Fs4Operations::GetEncryptedImageSizeFromImageInfo(u_int32_t* imageSize)
     {
         if (!InitHwPtrs())
         {
-            MLXFWOPS_LOG_DEBUG("HW pointers not found");
+            MLXFWOPS_LOG_ERROR("HW pointers not found");
             return false;
         }
     }
 
     if (!ParseImageInfoFromEncryptedImage())
     {
-        MLXFWOPS_LOG_DEBUG("Failed to read IMAGE_INFO section");
+        MLXFWOPS_LOG_ERROR("Failed to read IMAGE_INFO section");
         return false;
     }
     *imageSize = _fwImgInfo.ext_info.burn_image_size;
@@ -3003,7 +3003,17 @@ bool Fs4Operations::FsBurnAux(FwOperations* imgops, ExtBurnParams& burnParams)
         }
     }
 
+    MLXFWOPS_LOG_INFO("FS4 burn started (failsafe=%d, allowPsidChange=%d)", (int)burnParams.burnFailsafe,
+                      (int)burnParams.allowPsidChange);
     rc = BurnFs4Image(imageOps, burnParams);
+    if (rc)
+    {
+        MLXFWOPS_LOG_INFO("FS4 burn completed");
+    }
+    else
+    {
+        MLXFWOPS_LOG_ERROR("FS4 burn failed: %s", err() ? err() : "no detail");
+    }
 
     return rc;
 }

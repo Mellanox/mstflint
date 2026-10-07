@@ -936,6 +936,7 @@ bool FsCtrlOperations::_Burn(std::vector<u_int8_t> imageOps4MData, ProgressCallB
 #endif
       FwComponent bootImageComponent;
 
+    MLXFWOPS_LOG_INFO("MCC burn started (component %d, %d bytes)", (int)ComponentId, (int)imageOps4MData.size());
     bootImageComponent.init(imageOps4MData, imageOps4MData.size(), ComponentId);
     if (!_fwCompsAccess->lock_flash_semaphore())
     {

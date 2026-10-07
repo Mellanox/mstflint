@@ -1079,6 +1079,10 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
         }
         if (!FwAccessCreate(fwParams, &ioAccess, fwParams.swDevId))
         {
+            MLXFWOPS_LOG_ERROR("Failed to open FW access for %s: %s", file_handle_type_to_str(fwParams.hndlType),
+                               (fwParams.hndlType == FHT_FW_FILE) ?
+                                 (fwParams.fileHndl ? fwParams.fileHndl : "unnamed") :
+                                 (fwParams.mstHndl ? fwParams.mstHndl : "unnamed"));
             return (FwOperations*)NULL;
         }
         if (fwParams.hndlType == FHT_UEFI_DEV)
