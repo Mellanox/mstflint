@@ -243,6 +243,9 @@ using namespace mft_utils;
 #define CABLE_REPORT_DIR_L "cable_report_dir"
 #define CABLE_REPORT_DIR_S ' '
 
+#define CABLE_REPORT_FILE_ONLY_L "cable_report_file_only"
+#define CABLE_REPORT_FILE_ONLY_S ' '
+
 string toolName = "";
 /************************************
  * Function: CmdLineParser
@@ -517,6 +520,9 @@ void CmdLineParser::initOptions()
 
     this->AddOptions(CABLE_REPORT_DIR_L, CABLE_REPORT_DIR_S, "DirectoryName",
                      "Directory to write the cable update report to (default current directory)");
+
+    this->AddOptions(CABLE_REPORT_FILE_ONLY_L, CABLE_REPORT_FILE_ONLY_S, "",
+                     "Write the cable report to its file only, without printing it to the screen");
 }
 
 bool csvSplit(string str, vector<string>& strv)
@@ -947,6 +953,11 @@ ParseStatus CmdLineParser::HandleOption(string name, string value)
     else if (name == CABLE_REPORT_DIR_L)
     {
         _cmdLineParams->cable_report_dir = value;
+        return PARSE_OK;
+    }
+    else if (name == CABLE_REPORT_FILE_ONLY_L)
+    {
+        _cmdLineParams->cable_report_file_only = true;
         return PARSE_OK;
     }
     else if (name == VERBOSE_L)

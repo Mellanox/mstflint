@@ -91,6 +91,7 @@ CmdLineParams::CmdLineParams()
     cable_activation_wait = -1; // resolved to the default once the mode is known
     cable_verify_wait = -1;     // same
     cable_report_dir = "";
+    cable_report_file_only = false;
 #ifdef __WIN__
     char execName[1024];
     char certificatPath[1024];
