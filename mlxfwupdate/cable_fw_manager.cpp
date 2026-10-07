@@ -54,6 +54,7 @@
 #ifndef NO_OPEN_SSL
 #include <openssl/sha.h>
 #endif
+#include <zlib.h>
 #include <iomanip>
 #include <fstream>
 
@@ -781,8 +782,250 @@ static void readPackageArchive(const string& path, map<string, vector<u_int8_t> 
 {
     (void)path;
     (void)contents;
-    throw std::runtime_error("reading a ZIP package is not supported on this platform; extract it and pass the "
-                             "directory instead");
+    throw std::runtime_error("reading a ZIP package is not supported on this platform; pass a tgz package, or "
+                             "extract it and pass the directory instead");
+}
+
+/* The tar and gzip half of the package readers: the OIF CMIS Firmware Update Package IA ships a
+ * package as one gzipped tar (.tgz). Unlike the ZIP reader this needs only zlib, so it works on
+ * every platform.
+ */
+#define CABLE_TAR_BLOCK 512
+#define CABLE_GZIP_CHUNK 65536
+// A package holds a few cable images of a megabyte or two each; anything near this is not one,
+// and inflating it unchecked would let a small file exhaust memory.
+#define CABLE_PACKAGE_MAX_SIZE (1024u * 1024u * 1024u)
+
+static bool isGzip(const vector<u_int8_t>& data)
+{
+    return data.size() >= 2 && data[0] == 0x1f && data[1] == 0x8b;
+}
+
+static bool isTar(const vector<u_int8_t>& data)
+{
+    return data.size() >= CABLE_TAR_BLOCK && memcmp(&data[257], "ustar", 5) == 0;
+}
+
+static vector<u_int8_t> gunzip(const vector<u_int8_t>& data)
+{
+    z_stream stream;
+    vector<u_int8_t> result;
+    vector<u_int8_t> chunk(CABLE_GZIP_CHUNK);
+
+    memset(&stream, 0, sizeof(stream));
+    // 16 on top of the window bits selects the gzip wrapper rather than raw zlib.
+    if (inflateInit2(&stream, 16 + MAX_WBITS) != Z_OK)
+    {
+        throw std::runtime_error("cannot start decompressing the package");
+    }
+    stream.next_in = (Bytef*)&data[0];
+    stream.avail_in = (uInt)data.size();
+    while (true)
+    {
+        stream.next_out = &chunk[0];
+        stream.avail_out = (uInt)chunk.size();
+        int rc = inflate(&stream, Z_NO_FLUSH);
+        if (rc != Z_OK && rc != Z_STREAM_END)
+        {
+            inflateEnd(&stream);
+            throw std::runtime_error("is not a valid gzip file");
+        }
+        result.insert(result.end(), chunk.begin(), chunk.end() - stream.avail_out);
+        if (result.size() > CABLE_PACKAGE_MAX_SIZE)
+        {
+            inflateEnd(&stream);
+            throw std::runtime_error("decompresses to more than a firmware package should hold");
+        }
+        if (rc == Z_STREAM_END)
+        {
+            // gzip allows several members back to back, and their contents run on as one stream.
+            if (stream.avail_in == 0)
+            {
+                break;
+            }
+            inflateReset(&stream);
+            continue;
+        }
+        if (stream.avail_in == 0 && stream.avail_out != 0)
+        {
+            inflateEnd(&stream);
+            throw std::runtime_error("is a truncated gzip file");
+        }
+    }
+    inflateEnd(&stream);
+    return result;
+}
+
+static string tarText(const u_int8_t* field, size_t length)
+{
+    size_t end = 0;
+
+    while (end < length && field[end] != '\0')
+    {
+        end++;
+    }
+    return string((const char*)field, end);
+}
+
+/* Tar keys a file by the path it was archived under, often with a leading ./, where the other readers
+ * key it relative to the package root.
+ */
+static string tarRelativePath(const string& name)
+{
+    size_t start = 0;
+
+    while (true)
+    {
+        if (name.compare(start, 2, "./") == 0)
+        {
+            start += 2;
+        }
+        else if (name.compare(start, 1, "/") == 0)
+        {
+            start += 1;
+        }
+        else
+        {
+            break;
+        }
+    }
+    return name.substr(start);
+}
+
+/* The path a pax extended header gives the next entry, from its "length path=value\n" records. */
+static string paxPath(const u_int8_t* data, size_t size)
+{
+    string records((const char*)data, size);
+    string path;
+    size_t pos = 0;
+
+    while (pos < records.size())
+    {
+        size_t space = records.find(' ', pos);
+        if (space == string::npos)
+        {
+            break;
+        }
+        unsigned long length = strtoul(records.substr(pos, space - pos).c_str(), NULL, 10);
+        if (length == 0 || pos + length > records.size())
+        {
+            break;
+        }
+        string record = records.substr(space + 1, pos + length - space - 2); // drops the trailing newline
+        if (record.compare(0, 5, "path=") == 0)
+        {
+            path = record.substr(5);
+        }
+        pos += length;
+    }
+    return path;
+}
+
+static void readTarEntries(const vector<u_int8_t>& tar, map<string, vector<u_int8_t> >& contents)
+{
+    size_t pos = 0;
+    string nextName;
+    bool ended = false;
+
+    while (pos + CABLE_TAR_BLOCK <= tar.size())
+    {
+        const u_int8_t* header = &tar[pos];
+        bool empty = true;
+
+        for (size_t i = 0; i < CABLE_TAR_BLOCK && empty; i++)
+        {
+            empty = header[i] == 0;
+        }
+        // Two zero blocks end the archive; the first is enough to stop on.
+        if (empty)
+        {
+            ended = true;
+            break;
+        }
+        // The checksum is what tells a tar header from arbitrary bytes: the sum of the header with
+        // its own field read as spaces.
+        unsigned long sum = 0;
+        for (size_t i = 0; i < CABLE_TAR_BLOCK; i++)
+        {
+            sum += (i >= 148 && i < 156) ? (unsigned long)' ' : (unsigned long)header[i];
+        }
+        if (strtoul(tarText(header + 148, 8).c_str(), NULL, 8) != sum)
+        {
+            throw std::runtime_error("is not a valid tar archive");
+        }
+        string name = tarText(header, 100);
+        string prefix = tarText(header + 345, 155);
+        if (memcmp(header + 257, "ustar", 5) == 0 && !prefix.empty())
+        {
+            name = prefix + "/" + name;
+        }
+        if (!nextName.empty())
+        {
+            name = nextName;
+            nextName.clear();
+        }
+        unsigned long long size = strtoull(tarText(header + 124, 12).c_str(), NULL, 8);
+        char type = (char)header[156];
+
+        pos += CABLE_TAR_BLOCK;
+        if (size > tar.size() - pos)
+        {
+            throw std::runtime_error("is a truncated tar archive");
+        }
+        const u_int8_t* data = tar.empty() ? NULL : &tar[pos];
+        if (type == 'L')
+        {
+            // GNU tar puts a name longer than 100 characters in an entry of its own, ahead of the file.
+            nextName = tarText(data, (size_t)size);
+        }
+        else if (type == 'x')
+        {
+            nextName = paxPath(data, (size_t)size);
+        }
+        else if (type == '0' || type == '\0' || type == '7')
+        {
+            string relative = tarRelativePath(name);
+            if (!relative.empty())
+            {
+                contents[relative] = vector<u_int8_t>(data, data + size);
+            }
+        }
+        // Directories need no entry, and links are dropped as the other readers drop them.
+        pos += (size_t)((size + CABLE_TAR_BLOCK - 1) / CABLE_TAR_BLOCK) * CABLE_TAR_BLOCK;
+    }
+    // Every tar writer ends the archive with zero blocks, so running out of data first means files
+    // past this point were lost.
+    if (!ended)
+    {
+        throw std::runtime_error("is a truncated tar archive");
+    }
+}
+
+/* Read a package file, whichever archive it is: a gzipped tar, a plain tar, or a ZIP. Told apart by
+ * content rather than by name, since a package is named however its vendor chose.
+ */
+static void readPackageFile(const string& path, map<string, vector<u_int8_t> >& contents)
+{
+    std::ifstream file(path.c_str(), std::ios::binary | std::ios::ate);
+    if (file && file.tellg() > (std::streamoff)CABLE_PACKAGE_MAX_SIZE)
+    {
+        throw std::runtime_error("is larger than a firmware package should be");
+    }
+    file.close();
+    vector<u_int8_t> data = mft_utils::ReadBinFile(path);
+
+    if (isGzip(data))
+    {
+        readTarEntries(gunzip(data), contents);
+    }
+    else if (isTar(data))
+    {
+        readTarEntries(data, contents);
+    }
+    else
+    {
+        readPackageArchive(path, contents);
+    }
 }
 
 static string pathBaseName(const string& path)
@@ -2315,7 +2558,7 @@ int CableFwManager::loadPackage(map<string, vector<u_int8_t> >& contents)
     }
     else
     {
-        readPackageArchive(_cmdParams.cable_package, contents);
+        readPackageFile(_cmdParams.cable_package, contents);
     }
 
     for (map<string, vector<u_int8_t> >::const_iterator file = contents.begin(); file != contents.end(); ++file)

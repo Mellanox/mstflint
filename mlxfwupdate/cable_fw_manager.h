@@ -509,10 +509,10 @@ private:
      *
      * Open the package named by `--cable_package`: a folder per part number, each folder
      * holding metadata files and the binaries they describe, each metadata entry naming its
-     * binary by FwLoadName, relative to the file. It comes either as one ZIP or as a directory
-     * already holding that layout - the archive reader is not built on every platform, so an
-     * extracted directory is the way in where it is missing, and the two are read into the
-     * same shape so nothing downstream can tell them apart.
+     * binary by FwLoadName, relative to the file. It comes as one tgz (the IA's format), tar or
+     * ZIP, or as a directory already holding that layout - the ZIP reader is not built on every
+     * platform, so a tgz or an extracted directory is the way in where it is missing, and all of
+     * them are read into the same shape so nothing downstream can tell them apart.
      *
      * Metadata follows the OIF CMIS Firmware Update Package IA: a file holds one entry or a list
      * of them, keyed by the CMIS field names. VendorName is matched exactly; every other key the
