@@ -98,9 +98,9 @@ class PCIDeviceBase(object):
 
         # Persistent secure directory
         secure_dir = "/var/lib/mft"
-        # Create directory with 750 permissions (owner can access, group can access, others cannot access)
+        # Create directory with 700 permissions (owner can access, group cannot access, others cannot access)
         if not os.path.exists(secure_dir):
-            os.makedirs(secure_dir, mode=0o750)
+            os.makedirs(secure_dir, mode=0o700)
         self.dump_file_path = os.path.join(secure_dir, "{0}.json".format(str(self.dbdf)))
 
         self._pci_conf_space = {}  # <capability-id> : <value:integer>
@@ -167,10 +167,10 @@ class PCIDeviceBase(object):
 
         if to_file:
             self.logger.debug("Save PCI configuration space to a file ...")
-            # Create file with 750 permissions (owner can access, group can access, others cannot access)
+            # Create file with 700 permissions (owner can access, group canot access cannot access)
             fd = os.open(self.dump_file_path,
                          os.O_CREAT | os.O_WRONLY | os.O_TRUNC,
-                         0o750)
+                         0o700)
             with os.fdopen(fd, 'w') as f:
                 json.dump(self._pci_conf_space, f)
             self.logger.debug("PCI Configuration space dict {0} saved to a file {1}".format(self._pci_conf_space, self.dump_file_path))

@@ -123,6 +123,12 @@ EXTERN_C_START
 
 #define MAX_FLASH_FREQ 90 // MHz
 
+// overridable by the MFLASH_WRITE_RETRIES env var.
+#define DEFAULT_WRITE_RETRIES 3
+
+// overridable by the MFLASH_ERASE_RETRIES env var.
+#define DEFAULT_ERASE_RETRIES 3
+
 #define MAX_NUM_OF_CYCLES 15
 #define MIN_NUM_OF_CYCLES 1
 #define MAX_NUM_OF_CYCLES_FOR_MX25UXXX 3
@@ -307,6 +313,7 @@ int modify_flash_info_if_needed(mflash* mfl, flash_info_t* f_info);
 int mf_read_sfdp_table(mflash* mfl, uint32_t address, uint8_t bytes_num, bool swap, uint32_t* data);
 int is_macronix_mx25u51245g(mflash* mfl);
 int is_gigadevice_gd25lfxxx_512(mflash* mfl);
+int is_gigadevice_gd25q256d(mflash* mfl);
 int is_macronix_mx25u51294g_mx25u51294gxdi08_wrapper(mflash* mfl);
 int is_macronix_mx25u51294g_mx25u51294gxdi08(uint8_t vendor,
                                              uint16_t type,
