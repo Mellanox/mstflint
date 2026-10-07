@@ -45,6 +45,8 @@
 #include "fs4_ops.h"
 #include "fs3_ops.h"
 #include "nvtoolslogger/NvToolsLogger.h"
+
+const char* file_handle_type_to_str(fw_hndl_type_t type);
 #include "nvtoolslogger/nvtoolslogger_c.h"
 #include "fs_pldm.h"
 #include "fsctrl_ops.h"
@@ -273,7 +275,7 @@ void FwOperations::GetFwParams(fw_ops_params_t& fwParams)
 
 bool FwOperations::CheckBoot2(u_int32_t beg, u_int32_t offs, u_int32_t& next, bool fullRead, const char* pref, VerifyCallBack verifyCallBackFunc)
 {
-    MLXFWOPS_LOG_DEBUG("FwOperations::CheckBoot2");
+    MLXFWOPS_LOG_DEBUG("beg=0x%x offs=0x%x fullRead=%d pref=%s", beg, offs, (int)fullRead, pref ? pref : "");
     u_int32_t size = 0x0;
 
     char* pr = new char[strlen(pref) + 512];
@@ -443,7 +445,7 @@ bool FwOperations::GetSectData(std::vector<u_int8_t>& file_sect, const u_int32_t
 
 bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase** ioAccessP, u_int16_t swDevId)
 {
-    MLXFWOPS_LOG_DEBUG("FwOperations::FwAccessCreate");
+    MLXFWOPS_LOG_DEBUG("hndlType=%s swDevId=0x%x", file_handle_type_to_str(fwParams.hndlType), (unsigned int)swDevId);
     if (fwParams.hndlType == FHT_FW_FILE)
     {
         int sig = getFileSignature(fwParams.fileHndl);
@@ -724,7 +726,7 @@ bool FwOperations::IsPLDMHeader(const u_int8_t* data)
 
 u_int8_t FwOperations::CheckFwFormat(FBase& f, bool getFwFormatFromImg, u_int16_t swDevId)
 {
-    MLXFWOPS_LOG_DEBUG("FwOperations::CheckFwFormat");
+    MLXFWOPS_LOG_DEBUG("getFwFormatFromImg=%d swDevId=0x%x", (int)getFwFormatFromImg, (unsigned int)swDevId);
     u_int8_t v;
     u_int32_t found_images = 0;
 
@@ -789,7 +791,7 @@ bool FwOperations::CheckBinVersion(u_int8_t binVerMajor, u_int8_t binVerMinor)
 
 FwOperations* FwOperations::FwOperationsCreate(void* fwHndl, void* info, char* psid, fw_hndl_type_t hndlType, char* errBuff, int buffSize, bool ignore_crc_check)
 {
-    MLXFWOPS_LOG_DEBUG("FwOperations::FwOperationsCreate");
+    MLXFWOPS_LOG_DEBUG("hndlType=%s psid=%s", file_handle_type_to_str(hndlType), psid ? psid : "none");
     fw_ops_params_t fwParams;
     memset(&fwParams, 0, sizeof(fwParams));
     fwParams.psid = psid;
@@ -944,7 +946,7 @@ bool FwOperations::IsDeviceSupported(fw_ops_params_t& fwParams)
 
 FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
 {
-    MLXFWOPS_LOG_DEBUG("FwOperations::FwOperationsCreate");
+    MLXFWOPS_LOG_DEBUG("hndlType=%s", file_handle_type_to_str(fwParams.hndlType));
     FwOperations* fwops;
     u_int8_t fwFormat;
     FBase* ioAccess = (FBase*)NULL;

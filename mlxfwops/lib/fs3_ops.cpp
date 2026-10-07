@@ -176,7 +176,7 @@ const Fs3Operations::SectionInfo Fs3Operations::_fs3SectionsInfoArr[] = {
 
 bool Fs3Operations::Fs3UpdateImgCache(u_int8_t* buff, u_int32_t addr, u_int32_t size)
 {
-    MLXFWOPS_LOG_DEBUG("Fs3Operations::Fs3UpdateImgCache");
+    MLXFWOPS_LOG_DEBUG("addr=0x%x size=0x%x", addr, size);
     if (size == 0)
     {
         return true;
@@ -565,7 +565,7 @@ bool Fs3Operations::VerifyTOC(u_int32_t dtoc_addr,
                               bool ignoreDToc,
                               bool verbose)
 {
-    MLXFWOPS_LOG_DEBUG("Fs3Operations::VerifyTOC");
+    MLXFWOPS_LOG_DEBUG("dtoc_addr=0x%x show_itoc=%d", dtoc_addr, (int)show_itoc);
     u_int8_t buffer[TOC_HEADER_SIZE], entry_buffer[TOC_ENTRY_SIZE];
     struct cibfw_itoc_header itoc_header;
     bool ret_val = true, mfg_exists = false;
@@ -769,7 +769,7 @@ bool Fs3Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
                                 bool ignoreDToc,
                                 bool verbose)
 {
-    MLXFWOPS_LOG_DEBUG("Fs3Operations::FsVerifyAux");
+    MLXFWOPS_LOG_DEBUG("show_itoc=%d ignoreDToc=%d", (int)show_itoc, (int)ignoreDToc);
     u_int32_t cntx_image_start[CNTX_START_POS_SIZE] = {0};
     u_int32_t cntx_image_num;
     u_int32_t buff[FS3_BOOT_START_IN_DW];
@@ -865,7 +865,7 @@ bool Fs3Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
 
 bool Fs3Operations::FsIntQueryAux(bool readRom, bool quickQuery, bool ignoreDToc, bool verbose)
 {
-    MLXFWOPS_LOG_DEBUG("Fs3Operations::FsIntQueryAux");
+    MLXFWOPS_LOG_DEBUG("readRom=%d quickQuery=%d ignoreDToc=%d", (int)readRom, (int)quickQuery, (int)ignoreDToc);
     struct QueryOptions queryOptions;
 
     queryOptions.readRom = readRom;
@@ -1015,7 +1015,8 @@ bool Fs3Operations::FwQuery(fw_info_t* fwInfo,
                             bool verbose)
 {
     /* isStripedImage flag is not needed in FS3 image format */
-    MLXFWOPS_LOG_DEBUG("Fs3Operations::FwQuery");
+    MLXFWOPS_LOG_DEBUG("readRom=%d isStripedImage=%d quickQuery=%d", (int)readRom, (int)isStripedImage,
+                       (int)quickQuery);
     if (isStripedImage)
     {
         ignoreDToc = true;

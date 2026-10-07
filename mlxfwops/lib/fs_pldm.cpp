@@ -123,7 +123,7 @@ bool FsPldmOperations::FwReadData(void* image, u_int32_t*, bool)
 
 bool FsPldmOperations::GetPldmComponentDataByPsid(string component, string psid, u_int8_t** buff, u_int32_t& buffSize)
 {
-    MLXFWOPS_LOG_DEBUG("FsPldmOperations::GetPldmComponentDataByPsid");
+    MLXFWOPS_LOG_DEBUG("component=%s psid=%s", component.c_str(), psid.c_str());
     std::string strPsid(psid);
     ComponentIdentifier compIdentifier;
     try
@@ -181,7 +181,7 @@ bool FsPldmOperations::GetComponentData(const string& pldmFile,
 
 string FsPldmOperations::GetPldmVendorDefinedDescriptor(string psid, PldmRecordDescriptor::VendorDefinedType type)
 {
-    MLXFWOPS_LOG_DEBUG("FsPldmOperations::GetPldmVendorDefinedDescriptor");
+    MLXFWOPS_LOG_DEBUG("psid=%s type=%d", psid.c_str(), (int)type);
     return _pkg.getPldmVendorDefinedDescriptorByPsid(psid, type);
 }
 
@@ -191,7 +191,7 @@ bool FsPldmOperations::CreateFwOpsImage(u_int32_t* buff,
                                         u_int16_t swDevId,
                                         bool isStripedImage)
 {
-    MLXFWOPS_LOG_DEBUG("FsPldmOperations::CreateFwOpsImage");
+    MLXFWOPS_LOG_DEBUG("buffSize=0x%x swDevId=0x%x", buffSize, (unsigned int)swDevId);
     if (!CreateBasicImageFromData(buff, buffSize, newImageOps, swDevId, isStripedImage))
     {
         return false;
@@ -213,7 +213,7 @@ bool FsPldmOperations::FwOperationsCreate(const char* requestedPsid,
                                         FwOperations** newImageOps,
                                         mfile* deviceMfile)
 {
-    MLXFWOPS_LOG_DEBUG("FsPldmOperations::FwOperationsCreate");
+    MLXFWOPS_LOG_DEBUG("psid=%s componentType=%s", requestedPsid ? requestedPsid : "none", componentType.c_str());
     u_int8_t* buff;
     u_int32_t buffSize = 0;
     // TODO:: look for the image with relvant psid , if not found try to extract full image and query it.

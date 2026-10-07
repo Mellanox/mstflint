@@ -199,7 +199,7 @@ bool Fs5Operations::GetHashesTableSize(u_int32_t& size)
 
 bool Fs5Operations::CheckBoot2(bool fullRead, const char* pref, VerifyCallBack verifyCallBackFunc)
 {
-    MLXFWOPS_LOG_DEBUG("FwOperations::CheckBoot2");
+    MLXFWOPS_LOG_DEBUG("fullRead=%d pref=%s", (int)fullRead, pref ? pref : "");
     char* pr = new char[strlen(pref) + 512];
     sprintf(pr, "%s /0x%08x/ (BOOT2)", pref, _boot2_ptr);
 
@@ -258,7 +258,7 @@ bool Fs5Operations::CheckBoot2(u_int32_t, u_int32_t __attribute__((unused)) offs
 
 bool Fs5Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_itoc, struct QueryOptions queryOptions, bool ignoreDToc, bool verbose)
 {
-    MLXFWOPS_LOG_DEBUG("Fs5Operations::FsVerifyAux");
+    MLXFWOPS_LOG_DEBUG("show_itoc=%d ignoreDToc=%d", (int)show_itoc, (int)ignoreDToc);
     u_int8_t* buff;
     u_int32_t log2_chunk_size;
     bool is_image_in_odd_chunks;
@@ -403,7 +403,8 @@ bool Fs5Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
 
 bool Fs5Operations::FwQuery(fw_info_t* fwInfo, bool, bool isStripedImage, bool quickQuery, bool ignoreDToc, bool verbose)
 {
-    MLXFWOPS_LOG_DEBUG("Fs5Operations::FwQuery");
+    MLXFWOPS_LOG_DEBUG("isStripedImage=%d quickQuery=%d ignoreDToc=%d", (int)isStripedImage, (int)quickQuery,
+                       (int)ignoreDToc);
     if (isStripedImage)
     {
         SetIsReducedImage(true);

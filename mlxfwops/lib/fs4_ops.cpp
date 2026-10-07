@@ -274,7 +274,7 @@ bool Fs4Operations::IsValidGapImageSize(u_int32_t imageGapSize)
 
 bool Fs4Operations::getExtendedHWAravaPtrs(VerifyCallBack verifyCallBackFunc, FBase* ioAccess, bool IsBurningProcess, bool isVerify)
 {
-    MLXFWOPS_LOG_DEBUG("Fs4Operations::getExtendedHWAravaPtrs");
+    MLXFWOPS_LOG_DEBUG("IsBurningProcess=%d isVerify=%d", (int)IsBurningProcess, (int)isVerify);
 #if defined(UEFI_BUILD)
     (void)verifyCallBackFunc;
     (void)ioAccess;
@@ -358,7 +358,7 @@ bool Fs4Operations::getExtendedHWAravaPtrs(VerifyCallBack verifyCallBackFunc, FB
 
 bool Fs4Operations::openEncryptedImageAccess(const char* encrypted_image_path)
 {
-    MLXFWOPS_LOG_DEBUG("Fs4Operations::openEncryptedImageAccess");
+    MLXFWOPS_LOG_DEBUG("encrypted_image_path=%s", encrypted_image_path ? encrypted_image_path : "none");
     // After this method is done we won't be able verify 'this' (nonencrypted) image
     // since we'll replace its read/write with the encrypted image
     // so we we'll verify it now just to make sure it's valid
@@ -895,7 +895,7 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
 
 bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_itoc, struct QueryOptions queryOptions, bool ignoreDToc, bool verbose)
 {
-    MLXFWOPS_LOG_DEBUG("Fs4Operations::FsVerifyAux");
+    MLXFWOPS_LOG_DEBUG("show_itoc=%d ignoreDToc=%d", (int)show_itoc, (int)ignoreDToc);
     u_int32_t dtocPtr;
     u_int8_t* buff;
     u_int32_t log2_chunk_size;
@@ -1294,7 +1294,7 @@ bool Fs4Operations::ParseDevData(bool quickQuery, bool verbose, VerifyCallBack v
 
 bool Fs4Operations::encryptedFwQuery(fw_info_t* fwInfo, bool quickQuery, bool ignoreDToc, bool verbose)
 {
-    MLXFWOPS_LOG_DEBUG("Fs4Operations::encryptedFwQuery");
+    MLXFWOPS_LOG_DEBUG("quickQuery=%d ignoreDToc=%d", (int)quickQuery, (int)ignoreDToc);
 
     if (!InitHwPtrs())
     {
@@ -1336,7 +1336,8 @@ bool Fs4Operations::encryptedFwQuery(fw_info_t* fwInfo, bool quickQuery, bool ig
 
 bool Fs4Operations::FwQuery(fw_info_t* fwInfo, bool readRom, bool isStripedImage, bool quickQuery, bool ignoreDToc, bool verbose)
 {
-    MLXFWOPS_LOG_DEBUG("Fs4Operations::FwQuery");
+    MLXFWOPS_LOG_DEBUG("readRom=%d isStripedImage=%d quickQuery=%d", (int)readRom, (int)isStripedImage,
+                       (int)quickQuery);
     if (isStripedImage)
     {
         SetIsReducedImage(true);
@@ -1371,7 +1372,7 @@ bool Fs4Operations::FwQuery(fw_info_t* fwInfo, bool readRom, bool isStripedImage
 
 bool Fs4Operations::IsLifeCycleAccessible(chip_type_t chip_type)
 {
-    MLXFWOPS_LOG_DEBUG("Fs4Operations::IsLifeCycleAccessible");
+    MLXFWOPS_LOG_DEBUG("chip_type=%d", (int)chip_type);
     bool res = true;
     if (IsLifeCycleSupported())
     {
@@ -1401,7 +1402,7 @@ bool Fs4Operations::IsLifeCycleAccessible(chip_type_t chip_type)
 
 bool Fs4Operations::IsSecurityVersionAccessible(chip_type_t chip_type)
 {
-    MLXFWOPS_LOG_DEBUG("Fs4Operations::IsSecurityVersionAccessible");
+    MLXFWOPS_LOG_DEBUG("chip_type=%d", (int)chip_type);
     bool res = true;
     // Security version feature depends on life-cycle
     if (IsLifeCycleSupported())
@@ -1529,7 +1530,7 @@ bool Fs4Operations::GetEncryptedImageSizeFromImageInfo(u_int32_t* imageSize)
 
 bool Fs4Operations::FwReadEncryptedData(void* image, u_int32_t imageSize, bool verbose)
 {
-    MLXFWOPS_LOG_DEBUG("Fs4Operations::FwReadEncryptedData");
+    MLXFWOPS_LOG_DEBUG("imageSize=0x%x", imageSize);
     vector<u_int8_t> data;
     data.resize(imageSize);
     if (!(*_ioAccess).read(_fwImgInfo.imgStart, data.data(), imageSize, verbose))
@@ -5098,7 +5099,7 @@ bool Fs4Operations::storeSecureBootSignaturesInSection(vector<u_int8_t> boot_sig
 
 bool Fs4Operations::InitHwPtrs(bool isVerify)
 {
-    MLXFWOPS_LOG_DEBUG("Fs4Operations::InitHwPtrs");
+    MLXFWOPS_LOG_DEBUG("isVerify=%d", (int)isVerify);
     if (!getImgStart())
     { // Set _fwImgInfo.imgStart with the image start address
         return false;
