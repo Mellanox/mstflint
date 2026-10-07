@@ -55,6 +55,7 @@
 #include <openssl/sha.h>
 #endif
 #include <zlib.h>
+#include <chrono>
 #include <iomanip>
 #include <fstream>
 
@@ -262,8 +263,17 @@ static reg_access_status_t readCableMapEntry(mfile* mf, u_int32_t globalIndex, s
     return status;
 }
 
-CableFwManager::CableFwManager(const CmdLineParams& cmdParams, ProgressPrinter printer) :
-    _cmdParams(cmdParams), _errMsg(""), _printer(printer), _planned(false)
+CableFwManager::CableFwManager(const CmdLineParams& cmdParams, ProgressPrinter printer, InterruptQuery interrupted) :
+    _cmdParams(cmdParams),
+    _errMsg(""),
+    _printer(printer),
+    _interrupted(interrupted),
+    _progressLineOpen(false),
+    _progressSpinner(0),
+    _discoverySeconds(-1),
+    _updateSeconds(-1),
+    _verificationSeconds(-1),
+    _planned(false)
 {
 }
 
@@ -291,8 +301,14 @@ mfile* CableFwManager::deviceHandle(const string& devName)
     return mf;
 }
 
+static double secondsSince(std::chrono::steady_clock::time_point start)
+{
+    return std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
+}
+
 int CableFwManager::run()
 {
+    std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
     int rc = discoverSystem();
     if (rc != MLX_FWM_SUCCESS)
     {
@@ -304,6 +320,7 @@ int CableFwManager::run()
     {
         return rc;
     }
+    _discoverySeconds = secondsSince(start);
 
     if (_cmdParams.cable_dry_run || _cmdParams.cable_update)
     {
@@ -315,12 +332,30 @@ int CableFwManager::run()
             _notPlannedReason = _errMsg;
         }
     }
+    // Nothing has been written yet, so there is nothing to report on.
+    if (isInterrupted())
+    {
+        _errMsg = "Interrupted by the user";
+        return ERR_CODE_INTERRUPTED;
+    }
 
     if (rc == MLX_FWM_SUCCESS && _cmdParams.cable_update)
     {
         // Keep the burn result and report anyway: phase 5 is what tells the user which
         // cables failed, and it is most needed exactly when phase 4 did not go cleanly.
+        start = std::chrono::steady_clock::now();
         rc = downloadAndActivate();
+        // The burn was cancelled and its handle released; the user asked to stop, not for a report.
+        if (rc == ERR_CODE_INTERRUPTED)
+        {
+            // Ends the progress line the burn stopped on, so the caller's error starts a line of its own.
+            emitProgress("");
+            return rc;
+        }
+        if (!_results.empty())
+        {
+            _updateSeconds = secondsSince(start);
+        }
     }
     // A plan that was never built is named in the plan section, which already explains the rest.
     if (rc != MLX_FWM_SUCCESS && _cmdParams.cable_update && _results.empty() && _notPlannedReason.empty())
@@ -422,20 +457,12 @@ static bool isCmisIdentifier(u_int8_t identifier)
  * "Module State"; SFF-8636 has no equivalent. PMAOS.oper_status is the cage's state, not the
  * cable's, and is used here only to decide whether a cable is plugged in at all.
  */
-/* CMIS page 01h bytes 130-131 are the hardware revision major and minor, and the PRM treats them
- * as numbers - but every cable measured so far writes the ASCII revision it also prints as its
- * vendor revision, "A1". Render what the vendor meant when both bytes are printable.
+/* CMIS page 01h bytes 130-131 are the hardware revision major and minor, and CMIS defines them as
+ * numbers. Shown in decimal even where a vendor wrote ASCII into them ("A3" reads 65.51): the
+ * vendor revision column already carries the text, and metadata matches the major as a number.
  */
 static string cableHwRevisionText(u_int8_t major, u_int8_t minor)
 {
-    if (isprint(major) && isprint(minor))
-    {
-        string text;
-
-        text += (char)major;
-        text += (char)minor;
-        return text;
-    }
     return int_to_string((int)major) + "." + int_to_string((int)minor);
 }
 
@@ -1554,13 +1581,14 @@ static reg_access_status_t readCableLinkState(mfile* mf, u_int32_t localPort, u_
 
 /* PLLP carries both a local port and the label port it serves, and is indexed by the local port,
  * so the map a cage needs is built by sweeping it. Only the first sub-port of a cage is kept - the
- * one mlxlink resolves a bare label port to - since they share one cable.
+ * one mlxlink resolves a bare label port to - since they share one cable. The same read says
+ * whether that port is a service (FNM) port, which is how mlxlink tags one.
  *
  * The whole range is swept: an ASIC can carry sub-ports of cages it does not own, so no count of
  * its own cages tells when it is done. Measured on a four-ASIC Quantum-3: every ASIC carries one
  * split of each cage, and only the GA 0 ASIC carries split 0.
  */
-static void buildLocalPortMap(mfile* mf, map<u_int32_t, u_int32_t>& localPortByCage)
+static void buildLocalPortMap(mfile* mf, map<u_int32_t, u_int32_t>& localPortByCage, set<u_int32_t>& serviceCages)
 {
     for (u_int32_t localPort = 1; localPort <= CABLE_MAX_LOCAL_PORT; localPort++)
     {
@@ -1578,12 +1606,33 @@ static void buildLocalPortMap(mfile* mf, map<u_int32_t, u_int32_t>& localPortByC
         if (firstSubPort)
         {
             localPortByCage.insert(std::make_pair((u_int32_t)pllp.label_port - 1, localPort));
+            if (pllp.is_fnm)
+            {
+                serviceCages.insert((u_int32_t)pllp.label_port - 1);
+            }
         }
     }
-    FWMANAGER_LOG_DEBUG("PLLP sweep: mapped %u cage(s)", (unsigned)localPortByCage.size());
+    FWMANAGER_LOG_DEBUG("PLLP sweep: mapped %u cage(s), %u of them service ports", (unsigned)localPortByCage.size(),
+                        (unsigned)serviceCages.size());
 }
 
 #define CABLE_REPORT_RULE "===================================================="
+
+/* A phase's duration for the summary, to the second and spelled the way `time` does: "9s", "4m5s". */
+static string elapsedText(double seconds)
+{
+    if (seconds < 0)
+    {
+        return CABLE_REPORT_NOT_AVAILABLE;
+    }
+    long total = (long)(seconds + 0.5);
+
+    if (total < 60)
+    {
+        return int_to_string((int)total) + "s";
+    }
+    return int_to_string((int)(total / 60)) + "m" + int_to_string((int)(total % 60)) + "s";
+}
 
 /* Human-readable local time for the report header. */
 static string reportTimestamp()
@@ -1880,8 +1929,14 @@ int CableFwManager::discoverCables()
             _errMsg = "Failed to open " + asic->second.devName + " to query the cables it owns";
             return ERR_CODE_CABLE_UPDATE_FAILED;
         }
-        buildLocalPortMap(mf, asic->second.localPortByCage);
+        buildLocalPortMap(mf, asic->second.localPortByCage, asic->second.serviceCages);
+        if (isInterrupted())
+        {
+            _errMsg = "Interrupted by the user";
+            return ERR_CODE_INTERRUPTED;
+        }
     }
+    setAsideServicePorts();
     // Every map is built before any cage is queried: a cage can be served by an ASIC later in the
     // order than its owner.
     for (AsicsByGa::iterator asic = _asics.begin(); asic != _asics.end(); ++asic)
@@ -1898,6 +1953,11 @@ int CableFwManager::discoverCables()
             if (_cables[j].action == CABLE_ACTION_SKIP_ASIC_DETECTION_NOT_SUPPORTED)
             {
                 continue;
+            }
+            if (isInterrupted())
+            {
+                _errMsg = "Interrupted by the user";
+                return ERR_CODE_INTERRUPTED;
             }
             // Query each cage from the ASIC that owns it - only there do MCIA, PMAOS and MCQI
             // answer for the right cable. Ownership is what MMAM said in phase 1.
@@ -1945,7 +2005,7 @@ int CableFwManager::discoverCables()
  * when none of its own cages has this label number, because where labels restart on each ASIC its
  * entry would be a different cable, and only when it is the one such ASIC.
  */
-bool CableFwManager::cableLocalPort(const CableInfo& cable, string& portDevName, u_int32_t& localPort)
+bool CableFwManager::cableLocalPort(const CableInfo& cable, string& portDevName, u_int32_t& localPort) const
 {
     AsicsByGa::const_iterator owner = _asics.find(cable.asicGa);
 
@@ -1993,6 +2053,76 @@ bool CableFwManager::cableLocalPort(const CableInfo& cable, string& portDevName,
         localPort = port->second;
     }
     return !portDevName.empty();
+}
+
+bool CableFwManager::isServicePort(const CableInfo& cable) const
+{
+    if (cable.action != CABLE_ACTION_SKIP_ASIC_DETECTION_NOT_SUPPORTED)
+    {
+        string portDevName;
+        u_int32_t localPort = 0;
+
+        if (!cableLocalPort(cable, portDevName, localPort))
+        {
+            return false;
+        }
+        for (AsicsByGa::const_iterator asic = _asics.begin(); asic != _asics.end(); ++asic)
+        {
+            if (asic->second.devName == portDevName)
+            {
+                return asic->second.serviceCages.count(cable.localIndex) != 0;
+            }
+        }
+        return false;
+    }
+    // Without an owner the port cannot be told apart from another ASIC's port of the same label, so
+    // one ASIC calling that label a mission port is enough to keep it.
+    bool carried = false;
+
+    for (AsicsByGa::const_iterator asic = _asics.begin(); asic != _asics.end(); ++asic)
+    {
+        if (asic->second.localPortByCage.count(cable.localIndex) == 0)
+        {
+            continue;
+        }
+        if (asic->second.serviceCages.count(cable.localIndex) == 0)
+        {
+            return false;
+        }
+        carried = true;
+    }
+    return carried;
+}
+
+void CableFwManager::setAsideServicePorts()
+{
+    vector<CableInfo> kept;
+    string ports;
+
+    for (size_t i = 0; i < _cables.size(); i++)
+    {
+        if (!isServicePort(_cables[i]))
+        {
+            kept.push_back(_cables[i]);
+            continue;
+        }
+        FWMANAGER_LOG_DEBUG("Port %u is a service (FNM) port%s", _cables[i].globalPort,
+                            _cmdParams.cable_include_service_ports ? ", included as asked" : ", skipped");
+        ports += (ports.empty() ? "" : ", ") + int_to_string((int)_cables[i].globalPort);
+        _servicePorts.push_back(_cables[i].globalPort);
+    }
+    if (_cmdParams.cable_include_service_ports)
+    {
+        // Named in the trace above, and reported like every other port.
+        _servicePorts.clear();
+        return;
+    }
+    if (!_servicePorts.empty())
+    {
+        emitProgress("-I- Skipping " + int_to_string((int)_servicePorts.size()) + " service (FNM) port(s): " + ports +
+                     "; use --cable_include_service_ports to include them\n");
+    }
+    _cables.swap(kept);
 }
 
 /* The link state for one cable, which is what mlxlink shows as "State". */
@@ -2987,10 +3117,84 @@ void CableFwManager::emitProgress(const string& text)
 {
     // Guarded rather than required: losing a progress line is a defect, but faulting in the middle
     // of a burn costs a switch reboot.
-    if (_printer != NULL)
+    if (_printer == NULL)
     {
-        _printer(text.c_str());
+        return;
     }
+    // A burn that stopped mid-stage leaves its progress line unterminated.
+    if (_progressLineOpen)
+    {
+        _printer("\n");
+        _progressLineOpen = false;
+    }
+    _printer(text.c_str());
+}
+
+bool CableFwManager::isInterrupted() const
+{
+    return _interrupted != NULL && _interrupted();
+}
+
+/* The burn stages a user waits on, named for what they do. The component manager reports the
+ * others too (initialize, verify, lock), which pass too fast to be worth a line.
+ */
+static string burnStageLabel(const string& stage)
+{
+    if (stage.compare(0, 7, "Writing") == 0)
+    {
+        return "Downloading the image to the switch";
+    }
+    if (stage == "FSMST_DOWNSTREAM_DEVICE_TRANSFER")
+    {
+        return "Transferring the image to the cables";
+    }
+    if (stage == "FSMST_ACTIVATE")
+    {
+        return "Activating the cables";
+    }
+    return string();
+}
+
+int CableFwManager::burnProgress(int completion, const char* stage, prog_t type, void* opaque)
+{
+    CableFwManager* self = static_cast<CableFwManager*>(opaque);
+    string label = burnStageLabel(stage != NULL ? stage : "");
+
+    if (!label.empty() && self->_printer != NULL)
+    {
+        static const char* spinner[] = {"[.    ]", "[..   ]", "[...  ]", "[.... ]", "[.....]",
+                                        "[ ....]", "[  ...]", "[   ..]", "[    .]", "[     ]"};
+        char percent[8];
+        string line;
+
+        switch (type)
+        {
+            case PROG_WITH_PRECENTAGE:
+                snprintf(percent, sizeof(percent), "%3d%%", completion);
+                line = "\r      " + label + " - " + percent;
+                break;
+
+            case PROG_WITHOUT_PRECENTAGE:
+                line = "\r      " + label + " - " +
+                       spinner[self->_progressSpinner++ % (int)(sizeof(spinner) / sizeof(spinner[0]))];
+                break;
+
+            case PROG_OK:
+                line = "\r      " + label + " - OK     \n";
+                break;
+
+            default:
+                break;
+        }
+        if (!line.empty())
+        {
+            self->_printer(line.c_str());
+            self->_progressLineOpen = (type != PROG_OK);
+        }
+    }
+    // Non-zero makes the component manager stop, and its destructor then cancels the update and
+    // releases the handle - what flint does on Ctrl-C, whatever the stage.
+    return self->isInterrupted() ? 1 : 0;
 }
 
 /* What the user is told before the first byte reaches a cable.
@@ -3055,6 +3259,12 @@ int CableFwManager::downloadAndActivate()
 
     for (size_t i = 0; i < _plan.size(); i++)
     {
+        if (isInterrupted())
+        {
+            _errMsg =
+              "Interrupted by the user; " + int_to_string((int)(_plan.size() - i)) + " group(s) were not started";
+            return ERR_CODE_INTERRUPTED;
+        }
         size_t firstResult = _results.size();
         for (size_t j = 0; j < _plan[i].cableIndices.size(); j++)
         {
@@ -3072,16 +3282,23 @@ int CableFwManager::downloadAndActivate()
         }
         string groupOfTotal = int_to_string((int)(i + 1)) + " of " + int_to_string((int)_plan.size());
 
-        // The device runs a whole group as one transaction and reports nothing while it does, so
-        // this is the only sign of life across a burn that takes minutes.
-        emitProgress("-I- Updating group " + groupOfTotal + " on " + _plan[i].asicDevName +
-                     ", this can take a while...\n");
+        // The stages below it show their own progress.
+        emitProgress("-I- Updating group " + groupOfTotal + " on " + _plan[i].asicDevName + "\n");
         FWMANAGER_LOG_DEBUG("Starting auto update on %s for group %s: %s, %u byte(s), expecting %u cable(s) to update, "
                             "%s",
                             _plan[i].asicDevName.c_str(), groupOfTotal.c_str(), _plan[i].packageImagePath.c_str(),
                             (unsigned)_plan[i].burnImage.size(), (unsigned)_plan[i].cableIndices.size(),
                             planEntryHeaderText(_plan[i]).c_str());
         burnPlanEntry(_plan[i], firstResult);
+        if (isInterrupted())
+        {
+            _errMsg = "Interrupted by the user; the update of group " + groupOfTotal + " was cancelled";
+            if (i + 1 < _plan.size())
+            {
+                _errMsg += " and " + int_to_string((int)(_plan.size() - i - 1)) + " group(s) were not started";
+            }
+            return ERR_CODE_INTERRUPTED;
+        }
 
         u_int32_t burned = 0;
 
@@ -3151,8 +3368,21 @@ void CableFwManager::burnPlanEntry(const CablePlanEntry& group, size_t firstResu
     bool ok = runBurnStage(mf, group.burnImage, true, !separateActivation, firstResult, lastResult, errMsg, stageName);
     if (ok && separateActivation)
     {
-        msleep((unsigned int)_cmdParams.cable_activation_wait * 1000);
-        ok = runBurnStage(mf, group.burnImage, false, true, firstResult, lastResult, errMsg, stageName);
+        // In slices, so Ctrl-C does not have to wait out the whole pause.
+        for (int waited = 0; waited < _cmdParams.cable_activation_wait * 10 && !isInterrupted(); waited++)
+        {
+            msleep(100);
+        }
+        if (isInterrupted())
+        {
+            ok = false;
+            stageName = "activation";
+            errMsg = "activation: interrupted by the user before it started";
+        }
+        else
+        {
+            ok = runBurnStage(mf, group.burnImage, false, true, firstResult, lastResult, errMsg, stageName);
+        }
     }
 
     for (size_t i = firstResult; i < lastResult; i++)
@@ -3170,7 +3400,8 @@ void CableFwManager::burnPlanEntry(const CablePlanEntry& group, size_t firstResu
             }
         }
     }
-    if (!ok)
+    // An interrupted burn is reported once, by the caller, as the reason the run ended.
+    if (!ok && !isInterrupted())
     {
         emitProgress("-E- Cable update failed on " + group.asicDevName + " for " + group.packageImagePath + ": " +
                      errMsg + "\n");
@@ -3212,11 +3443,18 @@ bool CableFwManager::runBurnStage(mfile* mf,
         return false;
     }
 
-    // No progress callback: it reports one completion percentage for a transaction that covers a
-    // whole group, so the number names no cable, and it would print on its own rather than through
-    // the caller's printer.
-    bool ok = fwComps.burnComponents(component, NULL);
-    if (!ok)
+    // The percentages are the whole group's, one transaction for every cable in it.
+    ProgressCallBackAdvSt progress;
+
+    memset(&progress, 0, sizeof(progress));
+    progress.func = &CableFwManager::burnProgress;
+    progress.opaque = this;
+    bool ok = fwComps.burnComponents(component, &progress);
+    if (!ok && isInterrupted())
+    {
+        errMsg = stage + "interrupted by the user";
+    }
+    else if (!ok)
     {
         if (download && activate)
         {
@@ -3290,6 +3528,8 @@ int CableFwManager::verifyAndReport()
 {
     if (_cmdParams.cable_update)
     {
+        std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+
         // A self-activating cable resets, so its link drops and re-trains. Verifying before that
         // finishes reports a working cable as failed.
         if (!_results.empty() && _cmdParams.cable_verify_wait > 0)
@@ -3299,6 +3539,10 @@ int CableFwManager::verifyAndReport()
             msleep((unsigned int)_cmdParams.cable_verify_wait * 1000);
         }
         verifyBurnedCables();
+        if (!_results.empty())
+        {
+            _verificationSeconds = secondsSince(start);
+        }
     }
     u_int32_t regressed = 0;
     u_int32_t pending = 0;
@@ -3559,7 +3803,7 @@ string CableFwManager::buildReport()
     }
 
     report << "SUMMARY\n-------\n";
-    report << "Ports scanned:     " << _cables.size() << "\n";
+    report << "Ports scanned:     " << _cables.size() + _servicePorts.size() << "\n";
     report << "Modules found:     " << plugged << "\n";
     report << "Updates attempted: "
            << (_cmdParams.cable_update ? int_to_string((int)_results.size()) : string(CABLE_REPORT_NOT_AVAILABLE))
@@ -3568,11 +3812,26 @@ string CableFwManager::buildReport()
            << (_cmdParams.cable_update ? int_to_string((int)succeeded) : string(CABLE_REPORT_NOT_AVAILABLE)) << "\n";
     report << "Failed:            "
            << (_cmdParams.cable_update ? int_to_string((int)failed) : string(CABLE_REPORT_NOT_AVAILABLE)) << "\n";
+    // Service ports were set aside before any cable was queried, so no table lists them; this is
+    // where they are accounted for.
+    string skippedText = CABLE_REPORT_NOT_AVAILABLE;
+
+    if (_planned)
+    {
+        skippedText = int_to_string((int)(skipped + _servicePorts.size()));
+    }
+    else
+    {
+        // A query, or a plan that was never built, rules on no port; the service ports are set aside
+        // either way.
+        skippedText = int_to_string((int)_servicePorts.size());
+    }
+    report << "Skipped:           " << skippedText << "\n";
     report << "Needs power cycle: "
            << (_cmdParams.cable_update ? int_to_string((int)pending) : string(CABLE_REPORT_NOT_AVAILABLE)) << "\n";
-    report << "Skipped:           "
-           << ((_cmdParams.cable_query || !_planned) ? string(CABLE_REPORT_NOT_AVAILABLE) : int_to_string((int)skipped))
-           << "\n\n";
+    report << "Discovery time:    " << elapsedText(_discoverySeconds) << "\n";
+    report << "Update time:       " << elapsedText(_updateSeconds) << "\n";
+    report << "Verification time: " << elapsedText(_verificationSeconds) << "\n\n";
 
     appendPackagesTable(report);
     appendDiscoveryTable(report);
@@ -3695,7 +3954,7 @@ void CableFwManager::appendCableColumns(std::ostringstream& report, bool withAsi
         report << std::setw(6) << "ASIC" << std::setw(11) << "Label Port";
     }
     report << std::setw(18) << "Vendor" << std::setw(20) << "Vendor PN" << std::setw(18) << "Vendor SN" << std::setw(17)
-           << "State" << std::setw(12) << "Vendor Rev" << std::setw(8) << "HW Rev" << std::setw(14) << "FW A"
+           << "State" << std::setw(12) << "Vendor Rev" << std::setw(14) << "HW Rev (dec)" << std::setw(14) << "FW A"
            << std::setw(14) << "FW B" << std::setw(12) << "FW Running";
 }
 
@@ -3718,7 +3977,7 @@ void CableFwManager::appendCableRow(std::ostringstream& report, const CableInfo&
     }
     report << std::setw(18) << orNotAvailable(cable.vendorName) << std::setw(20) << orNotAvailable(cable.partNumber)
            << std::setw(18) << orNotAvailable(cable.serialNumber) << std::setw(17) << orNotAvailable(cable.linkState)
-           << std::setw(12) << orNotAvailable(cable.vendorRev) << std::setw(8) << cableHwRevisionText(cable)
+           << std::setw(12) << orNotAvailable(cable.vendorRev) << std::setw(14) << cableHwRevisionText(cable)
            << std::setw(14) << (showFirmware ? cableFwVersionText(cable.fwImageA) : string(CABLE_REPORT_NOT_AVAILABLE))
            << std::setw(14) << (showFirmware ? cableFwVersionText(cable.fwImageB) : string(CABLE_REPORT_NOT_AVAILABLE))
            << std::setw(12)
@@ -3906,7 +4165,7 @@ int CableFwManager::writeReport(const string& text)
     {
         path += PATH_SEPARATOR;
     }
-    path += "cable_fw_update_report_" + string(stamp) + ".txt";
+    path += "module_fw_update_report_" + string(stamp) + ".txt";
 
     FILE* file = fopen(path.c_str(), "w");
     if (file == NULL)

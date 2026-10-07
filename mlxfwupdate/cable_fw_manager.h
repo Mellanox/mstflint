@@ -35,12 +35,14 @@
 #define __CABLE_FW_MANAGER_H__
 
 #include <map>
+#include <set>
 #include <sstream>
 #include <string>
 #include <vector>
 
 #include "common/compatibility.h"
 #include <mtcr.h>
+#include "mlxfwops/lib/mlxfwops_com.h"
 #include "cmd_line_params.h"
 
 using namespace std;
@@ -67,6 +69,9 @@ struct AsicInfo
     // to be inverted from the register that carries both. A cage can have its first sub-port on
     // an ASIC other than its MMAM owner, so this can hold cages the ASIC does not own.
     map<u_int32_t, u_int32_t> localPortByCage;
+    // The cages of localPortByCage whose first sub-port PLLP marks is_fnm: a service port, which
+    // mlxlink tags (FNM) and which carries no cable to update.
+    set<u_int32_t> serviceCages;
 };
 
 /* The switch ASICs of the system, keyed by the Geographical Address each reports in MGIR.
@@ -400,8 +405,10 @@ class CableFwManager
 public:
     /* Puts one piece of text in front of the user straight away. */
     typedef void (*ProgressPrinter)(const char* text);
+    /* Whether the user asked to stop (Ctrl-C). The signal handler belongs to the caller. */
+    typedef bool (*InterruptQuery)();
 
-    CableFwManager(const CmdLineParams& cmdParams, ProgressPrinter printer);
+    CableFwManager(const CmdLineParams& cmdParams, ProgressPrinter printer, InterruptQuery interrupted);
     ~CableFwManager();
 
     /* Run the phases the requested mode needs and return an err_msgs.h code.
@@ -475,6 +482,9 @@ private:
      * No cable state disqualifies a cable: a cable that is not Active or Ready is
      * still eligible, so state is recorded for the report and never used as a filter.
      *
+     * Service (FNM) ports carry no cable to update and are set aside before any query unless
+     * `--cable_include_service_ports`; the summary still counts them.
+     *
      * Fills the remaining discovery fields of _cables.
      */
     int discoverCables();
@@ -489,7 +499,16 @@ private:
     /* The ASIC and local port serving a cage's first sub-port, from the swept maps. PDDR and MFCDR
      * are indexed by it and must be sent to that ASIC, which is not always the cage's owner.
      */
-    bool cableLocalPort(const CableInfo& cable, string& portDevName, u_int32_t& localPort);
+    bool cableLocalPort(const CableInfo& cable, string& portDevName, u_int32_t& localPort) const;
+
+    /* Whether a port is a service (FNM) port, the way mlxlink tells: PLLP is_fnm on its first
+     * sub-port. A chip2chip or backplane port has no owner to look it up on, so it is one only
+     * when every ASIC carrying its label marks it.
+     */
+    bool isServicePort(const CableInfo& cable) const;
+
+    /* Name every service port, and take them out of _cables unless --cable_include_service_ports. */
+    void setAsideServicePorts();
 
     /* The link state for one cable, which PDDR indexes by local port rather than by cage. */
     string readCableLinkStateText(const CableInfo& cable);
@@ -588,8 +607,11 @@ private:
      *
      * A failed group is recorded and the run continues to the next one; never abandon
      * the remaining groups, since the whole point is that one bad cable cannot strand a
-     * chassis. In auto-update mode the device chooses the cables, so there is no
-     * per-cable progress here - the per-cable verdict comes from phase 5.
+     * chassis. In auto-update mode the device chooses the cables, so the progress shown is the
+     * group's, not a cable's - the per-cable verdict comes from phase 5.
+     *
+     * Ctrl-C is the exception: it stops the stage in progress the way flint does, cancelling the
+     * update and releasing the handle, starts no further group, and ends the run without a report.
      *
      * The download and the activation are separable, and `--cable_activation_wait` puts a pause
      * between them. Waiting after the activation would buy nothing: the activation reports its
@@ -648,7 +670,7 @@ private:
      * number the user sees, so report them as they arrive.
      *
      * The report is plain text, self-contained, and named
-     * cable_fw_update_report_<YYYYMMDD_HHMMSS>.txt in the current directory or in
+     * module_fw_update_report_<YYYYMMDD_HHMMSS>.txt in the current directory or in
      * `--cable_report_dir`: a summary count, the packages used, the pre-update
      * inventory, the plan, the post-update state, and an errors table of port, phase
      * and the two error codes. Every path the report prints is a package path; a copy the tool
@@ -703,6 +725,13 @@ private:
     /* Put text in front of the user now. Every progress line in this class goes through here. */
     void emitProgress(const string& text);
 
+    /* Show the burn's progress on one line that rewrites itself. Returns non-zero to stop the
+     * burn, which is how Ctrl-C reaches the FW component manager.
+     */
+    static int burnProgress(int completion, const char* stage, prog_t type, void* opaque);
+
+    bool isInterrupted() const;
+
     const CmdLineParams& _cmdParams;
     AsicsByGa _asics;
     // One open handle per switch, so a run that touches an ASIC once per cable, once per burn
@@ -715,6 +744,16 @@ private:
     vector<CableUpdateResult> _results;
     string _errMsg;
     ProgressPrinter _printer;
+    InterruptQuery _interrupted;
+    // A burn progress line was printed without its newline; the next line has to end it first.
+    bool _progressLineOpen;
+    int _progressSpinner;
+    // Service ports taken out of _cables, by global port, so the summary still accounts for them.
+    vector<u_int32_t> _servicePorts;
+    // Seconds each phase took, for the summary; negative when the phase did not run.
+    double _discoverySeconds;
+    double _updateSeconds;
+    double _verificationSeconds;
     // Phase 3 ruled on every cable. Until it has, every action is the default, and neither the plan
     // table nor the skipped count can say anything true about them.
     bool _planned;

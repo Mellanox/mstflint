@@ -619,7 +619,9 @@ bool FwCompsMgr::accessComponent(u_int32_t              offset,
     bool bRes =
         _accessObj->accessComponent(_updateHandle, offset, size, data, access, _currComponentStr, progressFuncAdv);
 
-    if (!bRes && (lastFsmCommandArgs != NULL) && isDMAAccess()) {
+    // A stop the caller asked for is not a DMA failure; retrying over register access would only
+    // print a false DMA error and ask the caller again.
+    if (!bRes && (lastFsmCommandArgs != NULL) && isDMAAccess() && !_accessObj->isStoppedByCaller()) {
         FWCOMPS_PRINT("\nDMA access has failed, switching to Register-Access burn.\n");
         bRes = fallbackToRegisterAccess();
 
