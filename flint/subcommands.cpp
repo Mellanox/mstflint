@@ -85,6 +85,7 @@
 #endif // WIN
 
 #include "subcommands.h"
+#include "nvtoolslogger/NvToolsLogger.h"
 #include "tools_layouts/cx4fw_layouts.h"
 #include "tools_layouts/image_layout_layouts.h"
 #include "common/tools_endianness.h"
@@ -605,7 +606,7 @@ void SubCommand::initDeviceFwParams(char* errBuff, FwOperations::fw_ops_params_t
 
 FlintStatus SubCommand::openOps(bool ignoreSecurityAttributes, bool ignoreDToc)
 {
-    DPRINTF(("SubCommand::openOps\n"));
+    MLXFWOPS_LOG_DEBUG("ignoreSecurityAttributes=%d ignoreDToc=%d", (int)ignoreSecurityAttributes, (int)ignoreDToc);
     char errBuff[ERR_BUFF_SIZE] = {0};
     if (_flintParams.device_specified)
     {
@@ -825,7 +826,7 @@ bool SubCommand::basicVerifyParams()
 
 FlintStatus SubCommand::preFwOps(bool ignoreSecurityAttributes, bool ignoreDToc)
 {
-    DPRINTF(("SubCommand::preFwOps\n"));
+    MLXFWOPS_LOG_DEBUG("ignoreSecurityAttributes=%d ignoreDToc=%d", (int)ignoreSecurityAttributes, (int)ignoreDToc);
     if (!basicVerifyParams())
     {
         return FLINT_FAILED;
@@ -2992,7 +2993,7 @@ void BurnSubCommand::cleanInterruptedCommand()
 FlintStatus BurnSubCommand::BurnCMISCable()
 {
 #if defined(CABLES_SUPPORT) && !defined(MST_CPU_armv7l_umbriel)
-    DPRINTF(("BurnSubCommand::BurnCMISCable\n"));
+    MLXFWOPS_LOG_DEBUG("BurnSubCommand::BurnCMISCable");
     CableBurnFlow burnFlow(CableBurnFlow::Burn3rdParty);
     std::vector<u_int8_t> fwImage;
     std::vector<u_int8_t> vendorData;
@@ -3055,12 +3056,12 @@ FlintStatus BurnSubCommand::BurnCMISCable()
                 {
                     return FLINT_FAILED;
                 }
-                DPRINTF(("BurnSubCommand::BurnCMISCable retry burn after reset, counter = %d.\n", countResets));
+                MLXFWOPS_LOG_WARNING("retry burn after reset, counter = %d.", countResets);
                 countResets++;
             }
             else if (rc == FLINT_BURN_TO)
             {
-                DPRINTF(("BurnSubCommand::BurnCMISCable retry burn after to, counter = %d.\n", countRetry));
+                MLXFWOPS_LOG_WARNING("retry burn after to, counter = %d.", countRetry);
                 countRetry++;
             }
             else
@@ -3170,7 +3171,7 @@ FlintStatus BurnSubCommand::PerformBurn(std::vector<u_int8_t>& fwImage, std::vec
     }
     catch (const std::exception& e)
     {
-        DPRINTF(("BurnSubCommand::PerformBurn cable burn failed with erro =%s\n", e.what()));
+        MLXFWOPS_LOG_DEBUG("cable burn failed with erro =%s", e.what());
         string err = "got unknown status (0x43) in response to cdb command.";
         string err2 = "time out while waiting for command completion.";
         string err3 = "Cable access R/W failed status: 4. ";
@@ -4354,7 +4355,7 @@ bool HwSubCommand::FillAttrIfNeeded(ext_flash_attr_t& attr, char* param_val_str,
 
 FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
 {
-    DPRINTF(("QuerySubCommand::printInfo fullQuery=%d\n", fullQuery));
+    MLXFWOPS_LOG_DEBUG("fullQuery=%d", fullQuery);
     bool isFs3 = (fwInfo.fw_type == FIT_FS3) ? true : false;
     bool isFs4 = (fwInfo.fw_type == FIT_FS4 || fwInfo.fw_type == FIT_FS5) ? true : false;
     bool isFsCtrl = (fwInfo.fw_type == FIT_FSCTRL) ? true : false;
@@ -4750,7 +4751,7 @@ FlintStatus QuerySubCommand::queryMFA2()
 #if defined(CABLES_SUPPORT) && !defined(MST_CPU_armv7l_umbriel)
 FlintStatus QuerySubCommand::QueryCableAttributes()
 {
-    DPRINTF(("QuerySubCommand::QueryCableAttributes\n"));
+    MLXFWOPS_LOG_DEBUG("QuerySubCommand::QueryCableAttributes");
 
     try
     {
@@ -4769,7 +4770,7 @@ FlintStatus QuerySubCommand::QueryCableAttributes()
 
 FlintStatus QuerySubCommand::executeCommand()
 {
-    DPRINTF(("QuerySubCommand::executeCommand\n"));
+    MLXFWOPS_LOG_DEBUG("QuerySubCommand::executeCommand");
 
     if (_flintParams.linkx_control == true)
     {
