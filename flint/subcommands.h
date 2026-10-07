@@ -265,6 +265,8 @@ private:
                           FwComponent::comps_ids_t fwComponent,
                           bool noStopOnError);
     void ReportSkippedCables(FwCompsMgr& fwCompsAccess);
+    void ReportBurnFailures(FwCompsMgr& fwCompsAccess, u_int32_t transfer, u_int32_t activate);
+    string FormatFailureTable(FwCompsMgr& fwCompsAccess, const std::vector<FwCompsMgr::burn_failure_t>& details);
     FlintStatus BurnCMISCable();
     FlintStatus ResetModule(string device);
     FlintStatus WaitForModuleInit(string device);

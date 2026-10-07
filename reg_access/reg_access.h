@@ -77,6 +77,9 @@ reg_access_status_t
 struct reg_access_switch_mtecr_ext;
 reg_access_status_t
   reg_access_mtecr_ext(mfile* mf, reg_access_method_t method, struct reg_access_switch_mtecr_ext* mtecr);
+struct reg_access_switch_mcce_reg_ext;
+reg_access_status_t
+  reg_access_mcce(mfile* mf, reg_access_method_t method, struct reg_access_switch_mcce_reg_ext* mcce);
 struct reg_access_switch_mgpir_ext;
 reg_access_status_t reg_access_mgpir_switch_ext(mfile* mf, reg_access_method_t method,
                                                 struct reg_access_switch_mgpir_ext* mgpir);

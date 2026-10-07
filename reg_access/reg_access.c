@@ -85,6 +85,7 @@
 #define REG_ID_MCQI      0x9061
 #define REG_ID_MCC       0x9062
 #define REG_ID_MCDA      0x9063
+#define REG_ID_MCCE      0x9108
 #define REG_ID_MQIS      0x9064
 #define REG_ID_MTCQ      0x9065
 #define REG_ID_MKDC      0x9066
@@ -869,6 +870,14 @@ reg_access_status_t reg_access_nic_dpa_eu_partition(mfile                       
 reg_access_status_t reg_access_mrsr(mfile* mf, reg_access_method_t method, struct reg_access_switch_mrsr_ext* mrsr)
 {
     REG_ACCCESS(mf, method, REG_ID_MRSR, mrsr, mrsr_ext, reg_access_switch);
+}
+
+/************************************
+* Function: reg_access_mcce
+************************************/
+reg_access_status_t reg_access_mcce(mfile* mf, reg_access_method_t method, struct reg_access_switch_mcce_reg_ext* mcce)
+{
+    REG_ACCCESS(mf, method, REG_ID_MCCE, mcce, mcce_reg_ext, reg_access_switch);
 }
 
 /************************************
