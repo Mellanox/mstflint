@@ -32,6 +32,7 @@
 
 #include "psid_utils.h"
 #include "mlxfwops_com.h"
+#include "nvtoolslogger/NvToolsLogger.h"
 #include <cstdio>
 #include <cstdlib>
 
@@ -49,22 +50,6 @@ static_assert(PSID_MAX_LEN == PSID_LEN, "psid_utils::PSID_MAX_LEN must match mlx
 
 static const char* const ALLOWED_HEADERS[] = {"MT_00", "NVD00"};
 static const size_t ALLOWED_HEADERS_COUNT = sizeof(ALLOWED_HEADERS) / sizeof(ALLOWED_HEADERS[0]);
-
-static bool isFwCompsDebugEnabled()
-{
-    static const bool enabled = (getenv("FW_COMPS_DEBUG") != nullptr);
-    return enabled;
-}
-
-#define PSID_DBG(fmt, ...)                                          \
-    do                                                              \
-    {                                                               \
-        if (isFwCompsDebugEnabled())                                \
-        {                                                           \
-            printf("psid_utils:%s: " fmt, __func__, ##__VA_ARGS__); \
-            fflush(stdout);                                         \
-        }                                                           \
-    } while (0)
 
 static bool hasAllowedHeader(const char* psid)
 {
@@ -190,13 +175,13 @@ std::string PsidValidator::getMinor(const char* psid)
 PsidCompatibilityStatus PsidValidator::checkCompatibility() const
 {
     bool exactMatch = (strncmp(_devicePsid, _imagePsid, PSID_MAX_LEN) == 0);
-    PSID_DBG("dev=%s img=%s supported=%d locked=%d lockedPsid=%s exact=%d\n", _devicePsid, _imagePsid,
-             _lockStatus.featureSupported ? 1 : 0, _lockStatus.isLocked ? 1 : 0,
-             _lockStatus.lockedPsid[0] ? _lockStatus.lockedPsid : "<none>", exactMatch ? 1 : 0);
+    MLXFWOPS_LOG_DEBUG("dev=%s img=%s supported=%d locked=%d lockedPsid=%s exact=%d", _devicePsid, _imagePsid,
+                       _lockStatus.featureSupported ? 1 : 0, _lockStatus.isLocked ? 1 : 0,
+                       _lockStatus.lockedPsid[0] ? _lockStatus.lockedPsid : "<none>", exactMatch ? 1 : 0);
 
     if (!_lockStatus.featureSupported)
     {
-        PSID_DBG("feature not supported -> %s\n", exactMatch ? "ALLOWED" : "BLOCKED_PSID_MISMATCH");
+        MLXFWOPS_LOG_DEBUG("feature not supported -> %s", exactMatch ? "ALLOWED" : "BLOCKED_PSID_MISMATCH");
         return exactMatch ? PsidCompatibilityStatus::ALLOWED : PsidCompatibilityStatus::BLOCKED_PSID_MISMATCH;
     }
 
@@ -205,8 +190,8 @@ PsidCompatibilityStatus PsidValidator::checkCompatibility() const
 
     if (!deviceSplittable || !imageSplittable)
     {
-        PSID_DBG("not splittable dev=%d img=%d -> %s\n", deviceSplittable ? 1 : 0, imageSplittable ? 1 : 0,
-                 exactMatch ? "ALLOWED" : "BLOCKED_PSID_MISMATCH");
+        MLXFWOPS_LOG_DEBUG("not splittable dev=%d img=%d -> %s", deviceSplittable ? 1 : 0, imageSplittable ? 1 : 0,
+                           exactMatch ? "ALLOWED" : "BLOCKED_PSID_MISMATCH");
         return exactMatch ? PsidCompatibilityStatus::ALLOWED : PsidCompatibilityStatus::BLOCKED_PSID_MISMATCH;
     }
 
@@ -215,24 +200,24 @@ PsidCompatibilityStatus PsidValidator::checkCompatibility() const
     std::string deviceMajor = getMajor(_devicePsid);
     std::string imageMajor = getMajor(_imagePsid);
     std::string imageMinor = getMinor(_imagePsid);
-    PSID_DBG("parsed dev(%s/%s) img(%s/%s/%s)\n", deviceHeader.c_str(), deviceMajor.c_str(), imageHeader.c_str(),
-             imageMajor.c_str(), imageMinor.c_str());
+    MLXFWOPS_LOG_DEBUG("parsed dev(%s/%s) img(%s/%s/%s)", deviceHeader.c_str(), deviceMajor.c_str(),
+                       imageHeader.c_str(), imageMajor.c_str(), imageMinor.c_str());
 
     if (deviceHeader != imageHeader)
     {
-        PSID_DBG("BLOCKED_HEADER_MISMATCH %s vs %s\n", deviceHeader.c_str(), imageHeader.c_str());
+        MLXFWOPS_LOG_DEBUG("BLOCKED_HEADER_MISMATCH %s vs %s", deviceHeader.c_str(), imageHeader.c_str());
         return PsidCompatibilityStatus::BLOCKED_HEADER_MISMATCH;
     }
 
     if (deviceMajor != imageMajor)
     {
-        PSID_DBG("BLOCKED_MAJOR_MISMATCH %s vs %s\n", deviceMajor.c_str(), imageMajor.c_str());
+        MLXFWOPS_LOG_DEBUG("BLOCKED_MAJOR_MISMATCH %s vs %s", deviceMajor.c_str(), imageMajor.c_str());
         return PsidCompatibilityStatus::BLOCKED_MAJOR_MISMATCH;
     }
 
     if (isMinorReserved(imageMinor))
     {
-        PSID_DBG("BLOCKED_MINOR_RESERVED minor=%s\n", imageMinor.c_str());
+        MLXFWOPS_LOG_DEBUG("BLOCKED_MINOR_RESERVED minor=%s", imageMinor.c_str());
         return PsidCompatibilityStatus::BLOCKED_MINOR_RESERVED;
     }
 
@@ -240,12 +225,12 @@ PsidCompatibilityStatus PsidValidator::checkCompatibility() const
     {
         if (strncmp(_imagePsid, _lockStatus.lockedPsid, PSID_MAX_LEN) != 0)
         {
-            PSID_DBG("BLOCKED_MINOR_LOCKED lockedPsid=%s\n", _lockStatus.lockedPsid);
+            MLXFWOPS_LOG_DEBUG("BLOCKED_MINOR_LOCKED lockedPsid=%s", _lockStatus.lockedPsid);
             return PsidCompatibilityStatus::BLOCKED_MINOR_LOCKED;
         }
     }
 
-    PSID_DBG("ALLOWED\n");
+    MLXFWOPS_LOG_DEBUG("ALLOWED");
     return PsidCompatibilityStatus::ALLOWED;
 }
 

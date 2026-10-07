@@ -657,4 +657,10 @@ typedef enum fw_ver_info
     FVI_GREATER = 1,
 } fw_ver_info_t;
 
+#define MLXFWOPS_LOG_DEBUG(...) MFT_LOG_DEBUGF(nvtoolslogger::Layer::MLXFWOPS, __VA_ARGS__)
+#define MLXFWOPS_LOG_INFO(...) MFT_LOG_INFOF(nvtoolslogger::Layer::MLXFWOPS, __VA_ARGS__)
+#define MLXFWOPS_LOG_WARNING(...) MFT_LOG_WARNINGF(nvtoolslogger::Layer::MLXFWOPS, __VA_ARGS__)
+#define MLXFWOPS_LOG_ERROR(...) MFT_LOG_ERRORF(nvtoolslogger::Layer::MLXFWOPS, __VA_ARGS__)
+#define MLXFWOPS_LOG_FATAL(...) MFT_LOG_FATALF(nvtoolslogger::Layer::MLXFWOPS, __VA_ARGS__)
+
 #endif
