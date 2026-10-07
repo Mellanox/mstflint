@@ -44,11 +44,11 @@
 
 using namespace std;
 
-/* Seconds to let the cables finish switching image before they are verified. A cable slower
- * than this fails verification even though its burn succeeded, so --cable_activation_wait
- * raises it.
+/* Seconds to pause between the download and the activation. Activation reports its own
+ * completion, so nothing has to be waited out after it; the pause exists only for cables that
+ * want settling time between the two, and no cable in the supported set asks for it.
  */
-#define CABLE_ACTIVATION_WAIT_DEFAULT 60
+#define CABLE_ACTIVATION_WAIT_DEFAULT 0
 
 /* A switch ASIC reachable from this host. */
 struct AsicInfo
@@ -477,10 +477,11 @@ private:
      * chassis. In auto-update mode the device chooses the cables, so there is no
      * per-cable progress here - the per-cable verdict comes from phase 5.
      *
-     * After the last activation, give the cables time to finish switching image before
-     * verifying - `--cable_activation_wait`, sixty seconds by default. A cable slower
-     * than the wait fails verification even though its burn succeeded, which is why the
-     * wait is the caller's to raise.
+     * The download and the activation are separable, and `--cable_activation_wait` puts a pause
+     * between them. Waiting after the activation would buy nothing: the activation reports its
+     * own completion, so a cable is either running the new image by then or is one of the cables
+     * that needs a host power cycle, which no wait can shorten. With no wait asked for, the two
+     * run as a single transaction.
      *
      * Fills the outcome half of _results.
      */

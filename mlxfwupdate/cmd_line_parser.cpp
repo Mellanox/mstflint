@@ -500,7 +500,7 @@ void CmdLineParser::initOptions()
                      "Cable firmware update package to update from: a directory holding its extracted contents");
 
     this->AddOptions(CABLE_ACTIVATION_WAIT_L, CABLE_ACTIVATION_WAIT_S, "Seconds",
-                     "Seconds to wait after the update stage finishes, before verifying the cables (default 60)");
+                     "Seconds to wait between downloading the cable firmware and activating it (default 0)");
 
     this->AddOptions(CABLE_REPORT_DIR_L, CABLE_REPORT_DIR_S, "DirectoryName",
                      "Directory to write the cable update report to (default current directory)");
