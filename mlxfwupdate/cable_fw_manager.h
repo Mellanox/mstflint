@@ -376,8 +376,8 @@ struct CableUpdateResult
  * instead of joining the MlnxDev list.
  *
  * The flow is five phases, described one by one on the private methods below.
- * `--cable_query` runs phases 1, 2 and 5; `--cable_dry_run` adds phase 3 and stops
- * before anything is written to a cable; `--cable_update` runs all five.
+ * `--module_query` runs phases 1, 2 and 5; `--module_dry_run` adds phase 3 and stops
+ * before anything is written to a cable; `--module_update` runs all five.
  *
  * Scope, which is narrower than the general cable-update problem:
  *  - only NVIDIA LinkX images and images carrying the 48-byte extended header are
@@ -483,7 +483,7 @@ private:
      * still eligible, so state is recorded for the report and never used as a filter.
      *
      * Service (FNM) ports carry no cable to update and are set aside before any query unless
-     * `--cable_include_service_ports`; the summary still counts them.
+     * `--module_include_service_ports`; the summary still counts them.
      *
      * Fills the remaining discovery fields of _cables.
      */
@@ -507,7 +507,7 @@ private:
      */
     bool isServicePort(const CableInfo& cable) const;
 
-    /* Name every service port, and take them out of _cables unless --cable_include_service_ports. */
+    /* Name every service port, and take them out of _cables unless --module_include_service_ports. */
     void setAsideServicePorts();
 
     /* The link state for one cable, which PDDR indexes by local port rather than by cage. */
@@ -529,7 +529,7 @@ private:
 
     /* Phase 3 - Analysis and planning.
      *
-     * Open the package named by `--cable_package`: a folder per part number, each folder
+     * Open the package named by `--fw_update_package`: a folder per part number, each folder
      * holding metadata files and the binaries they describe, each metadata entry naming its
      * binary by FwLoadName, relative to the file. It comes as one tgz (the IA's format), tar or
      * ZIP, or as a directory already holding that layout - the ZIP reader is not built on every
@@ -565,7 +565,7 @@ private:
      * Finally group the chosen cables by owning ASIC and binary, since that is the
      * unit one burn transaction can carry.
      *
-     * This is where `--cable_dry_run` stops. Everything up to here is read-only, so a
+     * This is where `--module_dry_run` stops. Everything up to here is read-only, so a
      * dry run is the way to check a package against a live chassis before committing to
      * a maintenance window.
      *
@@ -613,7 +613,7 @@ private:
      * Ctrl-C is the exception: it stops the stage in progress the way flint does, cancelling the
      * update and releasing the handle, starts no further group, and ends the run without a report.
      *
-     * The download and the activation are separable, and `--cable_activation_wait` puts a pause
+     * The download and the activation are separable, and `--module_activation_wait` puts a pause
      * between them. Waiting after the activation would buy nothing: the activation reports its
      * own completion, so a cable is either running the new image by then or is one of the cables
      * that needs a host power cycle, which no wait can shorten. With no wait asked for, the two
@@ -671,11 +671,11 @@ private:
      *
      * The report is plain text, self-contained, and named
      * module_fw_update_report_<YYYYMMDD_HHMMSS>.txt in the current directory or in
-     * `--cable_report_dir`: a summary count, the packages used, the pre-update
+     * `--module_report_dir`: a summary count, the packages used, the pre-update
      * inventory, the plan, the post-update state, and an errors table of port, phase
      * and the two error codes. Every path the report prints is a package path; a copy the tool
      * wrote is never named, because the user has to be able to open, diff and re-ship the file
-     * the report cites. It is printed to the screen first unless `--cable_report_file_only`.
+     * the report cites. It is printed to the screen first unless `--module_report_silent`.
      *
      * Fills _results and emits the report.
      */
@@ -702,7 +702,7 @@ private:
      */
     void appendPackagesTable(std::ostringstream& report);
     /* withAsic adds the owning ASIC and its label port. Only DISCOVERY offers them, and only
-     * under --verbose: the plan and the verification tables already carry columns of their own.
+     * under --module_report_verbose: the plan and the verification tables already carry columns of their own.
      * ERRORS builds its own header and carries both unconditionally.
      */
     void appendCableColumns(std::ostringstream& report, bool withAsic);

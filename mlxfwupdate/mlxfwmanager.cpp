@@ -1475,17 +1475,17 @@ bool checkCmdParams(CmdLineParams& cmd_params, config_t& config)
 
     if ((int)cmd_params.cable_query + (int)cmd_params.cable_dry_run + (int)cmd_params.cable_update > 1)
     {
-        fprintf(stderr, "-E- Please specify only one of --cable_query, --cable_dry_run and --cable_update\n");
+        fprintf(stderr, "-E- Please specify only one of --module_query, --module_dry_run and --module_update\n");
         return false;
     }
     if (plans_update && cmd_params.cable_package.empty())
     {
-        fprintf(stderr, "-E- Please specify a firmware package with --cable_package\n");
+        fprintf(stderr, "-E- Please specify a firmware package with --fw_update_package\n");
         return false;
     }
     if (cmd_params.cable_package.length() && !plans_update)
     {
-        fprintf(stderr, "-E- Please use --cable_dry_run or --cable_update along with --cable_package\n");
+        fprintf(stderr, "-E- Please use --module_dry_run or --module_update along with --fw_update_package\n");
         return false;
     }
     if (cmd_params.cable_package.length())
@@ -1516,13 +1516,10 @@ bool checkCmdParams(CmdLineParams& cmd_params, config_t& config)
             }
         }
     }
-    // Nothing outside the cable flow reads it yet, so refuse it there rather than accept a flag
-    // that silently does nothing.
     if (cmd_params.verbose && !cable_mode)
     {
         fprintf(stderr,
-                "-E- --verbose is currently only supported with --cable_query, --cable_dry_run or "
-                "--cable_update\n");
+                "-E- --module_report_verbose is only valid with --module_query, --module_dry_run or --module_update\n");
         return false;
     }
     if (cmd_params.cable_report_dir.length())
@@ -1530,7 +1527,7 @@ bool checkCmdParams(CmdLineParams& cmd_params, config_t& config)
         if (!cable_mode)
         {
             fprintf(stderr,
-                    "-E- --cable_report_dir is only valid with --cable_query, --cable_dry_run or --cable_update\n");
+                    "-E- --module_report_dir is only valid with --module_query, --module_dry_run or --module_update\n");
             return false;
         }
         cmd_params.cable_report_dir = adjustRelPath(cmd_params.cable_report_dir, config.adjuster_path);
@@ -1543,24 +1540,25 @@ bool checkCmdParams(CmdLineParams& cmd_params, config_t& config)
     if (cmd_params.cable_report_file_only && !cable_mode)
     {
         fprintf(stderr,
-                "-E- --cable_report_file_only is only valid with --cable_query, --cable_dry_run or --cable_update\n");
+                "-E- --module_report_silent is only valid with --module_query, --module_dry_run or --module_update\n");
         return false;
     }
     if (cmd_params.cable_include_service_ports && !cable_mode)
     {
-        fprintf(stderr, "-E- --cable_include_service_ports is only valid with --cable_query, --cable_dry_run or "
-                        "--cable_update\n");
+        fprintf(stderr, "-E- --module_include_service_ports is only valid with --module_query, --module_dry_run or "
+                        "--module_update\n");
         return false;
     }
     if (cable_mode && (cmd_params.use_mfa_file || cmd_params.use_mfa_dir))
     {
-        fprintf(stderr, "-E- --cable_query, --cable_dry_run and --cable_update cannot be combined with -i or -D\n");
+        fprintf(stderr, "-E- --module_query, --module_dry_run and --module_update cannot be combined with -i or -D\n");
         return false;
     }
     if (cable_mode && cmd_params.device_names.size() != 0)
     {
-        fprintf(stderr, "-E- --cable_query, --cable_dry_run and --cable_update cannot be combined with -d: the whole "
-                        "system is scanned, and the device selects the cables itself\n");
+        fprintf(stderr,
+                "-E- --module_query, --module_dry_run and --module_update cannot be combined with -d: the whole "
+                "system is scanned, and the device selects the cables itself\n");
         return false;
     }
     // The cable flow returns before the device list is built, and the modes dispatched before it
@@ -1571,7 +1569,7 @@ bool checkCmdParams(CmdLineParams& cmd_params, config_t& config)
          cmd_params.list_file_contents || cmd_params.clear_semaphore || !cmd_params.burnFailsafe ||
          cmd_params.onlineQueryPsids.length() || cmd_params.get_download_opt.length() || cmd_params.calc_crc))
     {
-        fprintf(stderr, "-E- --cable_query, --cable_dry_run and --cable_update cannot be combined with another "
+        fprintf(stderr, "-E- --module_query, --module_dry_run and --module_update cannot be combined with another "
                         "operation mode\n");
         return false;
     }
@@ -1581,8 +1579,9 @@ bool checkCmdParams(CmdLineParams& cmd_params, config_t& config)
     if (cable_mode && (cmd_params.force_update || cmd_params.skip_if_same || cmd_params.no_fw_ctrl ||
                        cmd_params.use_lookup_file || cmd_params.psid.length() || cmd_params.component_type.length()))
     {
-        fprintf(stderr, "-E- --cable_query, --cable_dry_run and --cable_update do not support --force, --skip_if_same, "
-                        "--no_fw_ctrl, --lookup, --psid and --component_type\n");
+        fprintf(stderr,
+                "-E- --module_query, --module_dry_run and --module_update do not support --force, --skip_if_same, "
+                "--no_fw_ctrl, --lookup, --psid and --component_type\n");
         return false;
     }
     // --log-on-update keeps the log only when a device was burned, and burned devices are
@@ -1590,27 +1589,28 @@ bool checkCmdParams(CmdLineParams& cmd_params, config_t& config)
     // unconditionally, so there is a supported way to get it.
     if (cable_mode && cmd_params.log_on_update)
     {
-        fprintf(stderr, "-E- --log-on-update is not supported with --cable_query, --cable_dry_run and "
-                        "--cable_update; use --log instead\n");
+        fprintf(stderr, "-E- --log-on-update is not supported with --module_query, --module_dry_run and "
+                        "--module_update; use --log instead\n");
         return false;
     }
     // --xml sets formatted_output, which makes the print_out/print_err the cable flow writes
     // through drop everything, so the run would look silent rather than unsupported.
     if (cable_mode && cmd_params.write_xml)
     {
-        fprintf(stderr, "-E- XML output is not supported with --cable_query, --cable_dry_run and --cable_update\n");
+        fprintf(stderr, "-E- XML output is not supported with --module_query, --module_dry_run and --module_update\n");
         return false;
     }
     if (cmd_params.cable_verify_wait >= 0 && !cable_mode)
     {
         fprintf(stderr,
-                "-E- --cable_verify_wait is only valid with --cable_query, --cable_dry_run or --cable_update\n");
+                "-E- --module_verify_wait is only valid with --module_query, --module_dry_run or --module_update\n");
         return false;
     }
     if (cmd_params.cable_activation_wait >= 0 && !cable_mode)
     {
-        fprintf(stderr,
-                "-E- --cable_activation_wait is only valid with --cable_query, --cable_dry_run or --cable_update\n");
+        fprintf(
+          stderr,
+          "-E- --module_activation_wait is only valid with --module_query, --module_dry_run or --module_update\n");
         return false;
     }
     if (cable_mode && cmd_params.cable_verify_wait < 0)

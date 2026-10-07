@@ -60,9 +60,6 @@ using namespace mft_utils;
 #define VERSION_L "version"
 #define VERSION_S 'v'
 
-#define VERBOSE_L "verbose"
-#define VERBOSE_S ' ' // -v is already --version
-
 #define CURRENT_DIR_L "current-dir"
 #define CURRENT_DIR_S ' '
 
@@ -222,32 +219,38 @@ using namespace mft_utils;
 #define SKIP_IF_SAME_L "skip_if_same"
 #define SKIP_IF_SAME_S ' '
 
-#define CABLE_QUERY_L "cable_query"
-#define CABLE_QUERY_S ' '
+#define MODULE_QUERY_L "module_query"
+#define MODULE_QUERY_S ' '
 
-#define CABLE_DRY_RUN_L "cable_dry_run"
-#define CABLE_DRY_RUN_S ' '
+#define MODULE_DRY_RUN_L "module_dry_run"
+#define MODULE_DRY_RUN_S ' '
 
-#define CABLE_UPDATE_L "cable_update"
-#define CABLE_UPDATE_S ' '
+#define MODULE_UPDATE_L "module_update"
+#define MODULE_UPDATE_S ' '
 
-#define CABLE_PACKAGE_L "cable_package"
-#define CABLE_PACKAGE_S ' '
+#define FW_UPDATE_PACKAGE_L "fw_update_package"
+#define FW_UPDATE_PACKAGE_S ' '
 
-#define CABLE_ACTIVATION_WAIT_L "cable_activation_wait"
-#define CABLE_ACTIVATION_WAIT_S ' '
+#define FW_UPD_PKG_L "fw_upd_pkg"
+#define FW_UPD_PKG_S ' '
 
-#define CABLE_VERIFY_WAIT_L "cable_verify_wait"
-#define CABLE_VERIFY_WAIT_S ' '
+#define MODULE_ACTIVATION_WAIT_L "module_activation_wait"
+#define MODULE_ACTIVATION_WAIT_S ' '
 
-#define CABLE_REPORT_DIR_L "cable_report_dir"
-#define CABLE_REPORT_DIR_S ' '
+#define MODULE_VERIFY_WAIT_L "module_verify_wait"
+#define MODULE_VERIFY_WAIT_S ' '
 
-#define CABLE_REPORT_FILE_ONLY_L "cable_report_file_only"
-#define CABLE_REPORT_FILE_ONLY_S ' '
+#define MODULE_REPORT_DIR_L "module_report_dir"
+#define MODULE_REPORT_DIR_S ' '
 
-#define CABLE_INCLUDE_SERVICE_PORTS_L "cable_include_service_ports"
-#define CABLE_INCLUDE_SERVICE_PORTS_S ' '
+#define MODULE_REPORT_SILENT_L "module_report_silent"
+#define MODULE_REPORT_SILENT_S ' '
+
+#define MODULE_REPORT_VERBOSE_L "module_report_verbose"
+#define MODULE_REPORT_VERBOSE_S ' '
+
+#define MODULE_INCLUDE_SERVICE_PORTS_L "module_include_service_ports"
+#define MODULE_INCLUDE_SERVICE_PORTS_S ' '
 
 string toolName = "";
 /************************************
@@ -357,10 +360,6 @@ void CmdLineParser::initOptions()
                      true); // Hidden
 
     this->AddOptions(VERSION_L, VERSION_S, "", "Show the executable version and exit");
-
-    this->AddOptions(VERBOSE_L, VERBOSE_S, "",
-                     "Print additional detail. Currently reaches the cable report only, where it adds "
-                     "the owning ASIC and the per-ASIC port number");
 
     this->AddOptions(QUERY_L, QUERY_S, "", "Query device(s) info");
 
@@ -505,30 +504,35 @@ void CmdLineParser::initOptions()
 
     this->AddOptions(SKIP_IF_SAME_L, SKIP_IF_SAME_S, "", "Skip firmware update if current and new versions match");
 
-    this->AddOptions(CABLE_QUERY_L, CABLE_QUERY_S, "", "Query the firmware of the cables plugged into the system");
+    this->AddOptions(MODULE_QUERY_L, MODULE_QUERY_S, "", "Query the firmware of the modules plugged into the system");
 
-    this->AddOptions(CABLE_DRY_RUN_L, CABLE_DRY_RUN_S, "", "Show the cable update plan without updating anything");
+    this->AddOptions(MODULE_DRY_RUN_L, MODULE_DRY_RUN_S, "", "Show the module update plan without updating anything");
 
-    this->AddOptions(CABLE_UPDATE_L, CABLE_UPDATE_S, "",
-                     "Update cable firmware from the package given by --cable_package");
+    this->AddOptions(MODULE_UPDATE_L, MODULE_UPDATE_S, "",
+                     "Update module firmware from the package given by --fw_update_package");
 
-    this->AddOptions(CABLE_PACKAGE_L, CABLE_PACKAGE_S, "PackageFile",
-                     "Cable firmware update package to update from: a tgz file, or a directory holding its contents");
+    this->AddOptions(FW_UPDATE_PACKAGE_L, FW_UPDATE_PACKAGE_S, "PackageFile",
+                     "Module firmware update package to update from: a tgz file, or a directory holding its contents");
 
-    this->AddOptions(CABLE_ACTIVATION_WAIT_L, CABLE_ACTIVATION_WAIT_S, "Seconds",
-                     "Seconds to wait between downloading the cable firmware and activating it (default 0)");
+    this->AddOptions(FW_UPD_PKG_L, FW_UPD_PKG_S, "PackageFile", "Short for --fw_update_package");
 
-    this->AddOptions(CABLE_VERIFY_WAIT_L, CABLE_VERIFY_WAIT_S, "Seconds",
-                     "Seconds to let the cables finish re-training before the update is verified (default 5)");
+    this->AddOptions(MODULE_ACTIVATION_WAIT_L, MODULE_ACTIVATION_WAIT_S, "Seconds",
+                     "Seconds to wait between downloading the module firmware and activating it (default 0)");
 
-    this->AddOptions(CABLE_REPORT_DIR_L, CABLE_REPORT_DIR_S, "DirectoryName",
-                     "Directory to write the cable update report to (default current directory)");
+    this->AddOptions(MODULE_VERIFY_WAIT_L, MODULE_VERIFY_WAIT_S, "Seconds",
+                     "Seconds to let the modules finish re-training before the update is verified (default 5)");
 
-    this->AddOptions(CABLE_REPORT_FILE_ONLY_L, CABLE_REPORT_FILE_ONLY_S, "",
-                     "Write the cable report to its file only, without printing it to the screen");
+    this->AddOptions(MODULE_REPORT_DIR_L, MODULE_REPORT_DIR_S, "DirectoryName",
+                     "Directory to write the module update report to (default current directory)");
 
-    this->AddOptions(CABLE_INCLUDE_SERVICE_PORTS_L, CABLE_INCLUDE_SERVICE_PORTS_S, "",
-                     "Include the switch's service (FNM) ports in the cable scan, which skips them by default");
+    this->AddOptions(MODULE_REPORT_SILENT_L, MODULE_REPORT_SILENT_S, "",
+                     "Write the module report to its file only, without printing it to the screen");
+
+    this->AddOptions(MODULE_REPORT_VERBOSE_L, MODULE_REPORT_VERBOSE_S, "",
+                     "Add the owning ASIC and the per-ASIC port number to the module report");
+
+    this->AddOptions(MODULE_INCLUDE_SERVICE_PORTS_L, MODULE_INCLUDE_SERVICE_PORTS_S, "",
+                     "Include the switch's service (FNM) ports in the module scan, which skips them by default");
 }
 
 bool csvSplit(string str, vector<string>& strv)
@@ -902,27 +906,27 @@ ParseStatus CmdLineParser::HandleOption(string name, string value)
         _cmdLineParams->skip_if_same = true;
         return PARSE_OK;
     }
-    else if (name == CABLE_QUERY_L)
+    else if (name == MODULE_QUERY_L)
     {
         _cmdLineParams->cable_query = true;
         return PARSE_OK;
     }
-    else if (name == CABLE_DRY_RUN_L)
+    else if (name == MODULE_DRY_RUN_L)
     {
         _cmdLineParams->cable_dry_run = true;
         return PARSE_OK;
     }
-    else if (name == CABLE_UPDATE_L)
+    else if (name == MODULE_UPDATE_L)
     {
         _cmdLineParams->cable_update = true;
         return PARSE_OK;
     }
-    else if (name == CABLE_PACKAGE_L)
+    else if (name == FW_UPDATE_PACKAGE_L || name == FW_UPD_PKG_L)
     {
         _cmdLineParams->cable_package = value;
         return PARSE_OK;
     }
-    else if (name == CABLE_ACTIVATION_WAIT_L)
+    else if (name == MODULE_ACTIVATION_WAIT_L)
     {
         std::istringstream iss(value);
         iss >> _cmdLineParams->cable_activation_wait;
@@ -940,13 +944,13 @@ ParseStatus CmdLineParser::HandleOption(string name, string value)
         }
         return PARSE_OK;
     }
-    else if (name == CABLE_VERIFY_WAIT_L)
+    else if (name == MODULE_VERIFY_WAIT_L)
     {
         std::istringstream iss(value);
         iss >> _cmdLineParams->cable_verify_wait;
         if (iss.fail() || !iss.eof())
         {
-            cout << "-E- Invalid value for " CABLE_VERIFY_WAIT_L ": " << value << "\n";
+            cout << "-E- Invalid value for " MODULE_VERIFY_WAIT_L ": " << value << "\n";
             return PARSE_ERROR_SHOW_USAGE;
         }
         if (_cmdLineParams->cable_verify_wait < 0)
@@ -956,22 +960,22 @@ ParseStatus CmdLineParser::HandleOption(string name, string value)
         }
         return PARSE_OK;
     }
-    else if (name == CABLE_REPORT_DIR_L)
+    else if (name == MODULE_REPORT_DIR_L)
     {
         _cmdLineParams->cable_report_dir = value;
         return PARSE_OK;
     }
-    else if (name == CABLE_REPORT_FILE_ONLY_L)
+    else if (name == MODULE_REPORT_SILENT_L)
     {
         _cmdLineParams->cable_report_file_only = true;
         return PARSE_OK;
     }
-    else if (name == CABLE_INCLUDE_SERVICE_PORTS_L)
+    else if (name == MODULE_INCLUDE_SERVICE_PORTS_L)
     {
         _cmdLineParams->cable_include_service_ports = true;
         return PARSE_OK;
     }
-    else if (name == VERBOSE_L)
+    else if (name == MODULE_REPORT_VERBOSE_L)
     {
         _cmdLineParams->verbose = true;
         return PARSE_OK;
