@@ -44,6 +44,7 @@ AM_CPPFLAGS = \
     -I$(top_srcdir)/libmfa \
     -I$(top_srcdir)/mflash \
     -I$(top_srcdir)/mft_utils \
+    -I$(top_srcdir)/mft_core/mft_core_utils \
     -I$(top_srcdir)/mlxarchive \
     -I$(top_srcdir)/mlxfwops/lib \
     -I$(top_srcdir)/pldmlib \

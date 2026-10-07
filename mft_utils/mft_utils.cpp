@@ -463,6 +463,35 @@ int IsDirectory(const string& path)
     return (S_ISDIR(st.st_mode));
 }
 
+int IsRegularFile(const string& path)
+{
+    struct stat st;
+
+    if (stat(path.c_str(), &st) != 0)
+    {
+        return 0;
+    }
+
+    return (S_ISREG(st.st_mode));
+}
+
+int IsSymlink(const string& path)
+{
+#ifdef __WIN__
+    (void)path;
+    return 0;
+#else
+    struct stat st;
+
+    if (lstat(path.c_str(), &st) != 0)
+    {
+        return 0;
+    }
+
+    return (S_ISLNK(st.st_mode));
+#endif
+}
+
 void MkDirIfNotExists(const string& path)
 {
     int rc;

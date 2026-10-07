@@ -54,6 +54,9 @@
 #ifndef NO_OPEN_SSL
 #include <openssl/sha.h>
 #endif
+#include <iomanip>
+
+#include "common/bit_slice.h"
 #include "common/tools_time.h"
 #include "reg_access/mcam_capabilities.h"
 #include "reg_access/reg_ids.h"
@@ -64,26 +67,16 @@
  * matches the image against. Only the pieces the cable flow uses are defined here. */
 #define CABLE_EXT_HEADER_MAGIC_STRING "MT2C"
 #define CABLE_EXT_HEADER_MAGIC_LENGTH 4
-struct cable_ext_header
-{
-    u_int32_t magicPattern;
-    u_int8_t headerVersion;
-    u_int8_t vendorOUI;
-    u_int16_t reserved;
-    u_int32_t vendorPN[4];
-    u_int8_t reserved2;
-    u_int8_t vendorHWMajor;
-    u_int16_t vendorRev;
-    u_int8_t vendorFWMajor;
-    u_int8_t vendorFWMinor;
-    u_int16_t vendorFWbuild;
-    u_int32_t imageSize;
-    u_int32_t reserved3[3];
-};
+/* The vendor byte sits right behind the magic and the header version. */
+#define CABLE_EXT_HEADER_VENDOR_BYTE_OFFSET 5
 static bool isCableExtendedHeaderMagic(const u_int8_t* data, u_int32_t len)
 {
     return len >= CABLE_EXT_HEADER_MAGIC_LENGTH &&
            !strncmp((const char*)data, CABLE_EXT_HEADER_MAGIC_STRING, CABLE_EXT_HEADER_MAGIC_LENGTH);
+}
+static bool hasCableExtendedHeader(const u_int8_t* data, u_int32_t len)
+{
+    return isCableExtendedHeaderMagic(data, len) && len > CABLE_EXT_HEADER_VENDOR_BYTE_OFFSET;
 }
 
 /* Every MMAM.module_type the PRM defines. */
@@ -198,17 +191,24 @@ static string moduleTypeName(u_int8_t moduleType)
     }
 }
 
-static reg_access_status_t readAsicGa(mfile* mf, u_int8_t& ga)
+static reg_access_status_t readAsicGa(mfile* mf, u_int8_t& ga, string& fwVersion)
 {
     struct reg_access_hca_mgir_ext mgir;
 
     memset(&mgir, 0, sizeof(mgir));
     reg_access_status_t status = reg_access_mgir(mf, REG_ACCESS_METHOD_GET, &mgir);
+    FWMANAGER_LOG_DEBUG("MGIR: status %d, ga %d, ga_valid %d", (int)status, (int)mgir.hw_info.ga,
+                        (int)mgir.hw_info.ga_valid);
     if (status == ME_OK)
     {
         // Reads 0 when ga_valid is clear, so such a system is only mappable if it holds one ASIC;
         // that one is taken as ASIC 0, and a second reporting 0 as well fails as a duplicate.
         ga = mgir.hw_info.ga;
+        // The legacy major/minor/sub_minor fields are deprecated and read 0.
+        char text[32];
+        snprintf(text, sizeof(text), "%u.%u.%u", (unsigned)mgir.fw_info.extended_major,
+                 (unsigned)mgir.fw_info.extended_minor, (unsigned)mgir.fw_info.extended_sub_minor);
+        fwVersion = text;
     }
     return status;
 }
@@ -225,6 +225,7 @@ static reg_access_status_t readCageCount(mfile* mf, u_int32_t& total)
         total = ((u_int32_t)mgpir.hw_info.num_of_modules_per_system_msb << 8) |
                 (u_int32_t)mgpir.hw_info.num_of_modules_per_system;
     }
+    FWMANAGER_LOG_DEBUG("MGPIR: status %d, cages %u", (int)status, total);
     return status;
 }
 
@@ -233,17 +234,39 @@ static reg_access_status_t readCableMapEntry(mfile* mf, u_int32_t globalIndex, s
     memset(&entry, 0, sizeof(entry));
     entry.module = (u_int8_t)(globalIndex & 0xff);
     entry.module_msb = (u_int8_t)(globalIndex >> 8);
-    return reg_access_mmam(mf, REG_ACCESS_METHOD_GET, &entry);
+    reg_access_status_t status = reg_access_mmam(mf, REG_ACCESS_METHOD_GET, &entry);
+    FWMANAGER_LOG_DEBUG("MMAM: global %u, status %d, ga %d, local_module %d, module_type %d", globalIndex, (int)status,
+                        (int)entry.ga, (int)entry.local_module, (int)entry.module_type);
+    return status;
 }
 
-CableFwManager::CableFwManager(const CmdLineParams& cmdParams) : _cmdParams(cmdParams), _errMsg(""), _log("") {}
+CableFwManager::CableFwManager(const CmdLineParams& cmdParams, ProgressPrinter printer) :
+    _cmdParams(cmdParams), _errMsg(""), _printer(printer), _planned(false)
+{
+}
 
 CableFwManager::~CableFwManager()
 {
-    if (!_tempDir.empty())
+    for (map<string, mfile*>::iterator it = _openDevices.begin(); it != _openDevices.end(); ++it)
     {
-        RemoveDir(_tempDir);
+        mclose(it->second);
     }
+}
+
+mfile* CableFwManager::deviceHandle(const string& devName)
+{
+    map<string, mfile*>::iterator it = _openDevices.find(devName);
+
+    if (it != _openDevices.end())
+    {
+        return it->second;
+    }
+    mfile* mf = mopen(devName.c_str());
+    if (mf != NULL)
+    {
+        _openDevices[devName] = mf;
+    }
+    return mf;
 }
 
 int CableFwManager::run()
@@ -262,14 +285,12 @@ int CableFwManager::run()
 
     if (_cmdParams.cable_dry_run || _cmdParams.cable_update)
     {
+        // Keep the plan's result and report anyway. A package the tool could not read is exactly
+        // when its packages table is wanted: it names every metadata file it rejected and why.
         rc = buildUpdatePlan();
-        if (rc != MLX_FWM_SUCCESS)
-        {
-            return rc;
-        }
     }
 
-    if (_cmdParams.cable_update)
+    if (rc == MLX_FWM_SUCCESS && _cmdParams.cable_update)
     {
         // Keep the burn result and report anyway: phase 5 is what tells the user which
         // cables failed, and it is most needed exactly when phase 4 did not go cleanly.
@@ -279,6 +300,9 @@ int CableFwManager::run()
     int reportRc = verifyAndReport();
     return (rc != MLX_FWM_SUCCESS) ? rc : reportRc;
 }
+
+/* What the report prints for anything the cable or the package did not supply. */
+#define CABLE_REPORT_NOT_AVAILABLE "N/A"
 
 /* The cable EEPROM lives behind this I2C address on every cage. */
 #define CABLE_EEPROM_I2C_ADDRESS 0x50
@@ -290,12 +314,29 @@ int CableFwManager::run()
 #define CABLE_EEPROM_ID_LEN 16
 #define CABLE_EEPROM_REV_LEN 2
 
-/* The one OUI that makes a cable NVIDIA's. */
-#define CABLE_NVIDIA_OUI 0x0002C9
+/* The vendor OUIs NVIDIA ships cables under. Measured on a switch: a genuine NVIDIA OSFP cable
+ * carries 0x48B02D, not the older Mellanox block, so one value is not enough. The list is only
+ * the fallback - MFCDR answers the question directly where the firmware supports it.
+ */
+#define CABLE_NVIDIA_OUI_MELLANOX 0x0002C9
+#define CABLE_NVIDIA_OUI 0x48B02D
+
+/* MCQI fw_image_status_bitmap: which image the cable is running, if any. */
+#define CABLE_FW_STATUS_BIT_A_RUNNING 0
+#define CABLE_FW_STATUS_BIT_B_RUNNING 4
+
+/* MFCDR.status. */
+#define CABLE_VENDOR_STATUS_UNKNOWN 0
+#define CABLE_VENDOR_STATUS_FAKE 1
+#define CABLE_VENDOR_STATUS_NVIDIA 2
+#define CABLE_VENDOR_STATUS_NON_NVIDIA 3
 
 /* PMAOS.oper_status: the cage is empty only on this one value. Every other state - including
- * initializing and plugged_with_error - is a cable that is there and may still be updated.
+ * initializing and plugged_with_error - is a cable that is there and may still be updated. This
+ * is the same test mlxlink makes in checkPmaosDown().
  */
+#define CABLE_OPER_STATUS_INITIALIZING 0
+#define CABLE_OPER_STATUS_PLUGGED_ENABLED 1
 #define CABLE_OPER_STATUS_UNPLUGGED 2
 
 /* Where the identity fields sit, as flat byte addresses in the cable's memory map. CMIS and
@@ -309,10 +350,19 @@ struct CableEepromLayout
     u_int16_t partNumber;   // 16 ASCII
     u_int16_t vendorRev;    // 2 ASCII
     u_int16_t serialNumber; // 16 ASCII
+    u_int16_t dateCode;     // 8 ASCII, YYMMDD followed by a 2-character lot code
 };
 
-static const CableEepromLayout CMIS_LAYOUT = {129, 145, 148, 164, 166};
-static const CableEepromLayout SFF8636_LAYOUT = {148, 165, 168, 184, 196};
+static const CableEepromLayout CMIS_LAYOUT = {129, 145, 148, 164, 166, 182};
+static const CableEepromLayout SFF8636_LAYOUT = {148, 165, 168, 184, 196, 212};
+
+/* Page 0 lower, the part of the map every cable implements. */
+#define CABLE_EEPROM_FLAT_MEM_OFFSET 2
+#define CABLE_EEPROM_FLAT_MEM_BIT 7
+#define CABLE_EEPROM_MODULE_STATE_BIT 1
+#define CABLE_EEPROM_MODULE_STATE_WIDTH 3
+#define CABLE_EEPROM_MODULE_STATE_OFFSET 3
+#define CABLE_EEPROM_DATE_LEN 6
 
 /* CMIS identifiers. Anything else is read as SFF-8636, which is the older map and the safer
  * assumption for an identifier this code has not seen.
@@ -326,24 +376,73 @@ static bool isCmisIdentifier(u_int8_t identifier)
  * the older map reports major 0 and can never match package metadata that names one.
  */
 #define CABLE_EEPROM_CMIS_HW_REV_PAGE 1
-#define CABLE_EEPROM_CMIS_HW_REV_MAJOR_OFFSET 130
+#define CABLE_EEPROM_CMIS_HW_REV_OFFSET 130
 
-static const char* cableStateName(u_int8_t operStatus)
+/* The CMIS module state, page 0 byte 3 bits 3:1. This is the state mlxlink reports as
+ * "Module State"; SFF-8636 has no equivalent. PMAOS.oper_status is the cage's state, not the
+ * cable's, and is used here only to decide whether a cable is plugged in at all.
+ */
+/* CMIS page 01h bytes 130-131 are the hardware revision major and minor, and the PRM treats them
+ * as numbers - but every cable measured so far writes the ASCII revision it also prints as its
+ * vendor revision, "A1". Render what the vendor meant when both bytes are printable.
+ */
+static string cableHwRevisionText(u_int8_t major, u_int8_t minor)
 {
-    switch (operStatus)
+    if (isprint(major) && isprint(minor))
     {
-        case 0:
-            return "initializing";
+        string text;
+
+        text += (char)major;
+        text += (char)minor;
+        return text;
+    }
+    return int_to_string((int)major) + "." + int_to_string((int)minor);
+}
+
+static const char* cableModuleStateName(u_int8_t moduleState)
+{
+    switch (moduleState)
+    {
         case 1:
-            return "plugged_enable";
-        case CABLE_OPER_STATUS_UNPLUGGED:
-            return "unplugged";
+            return "LowPwr state";
+        case 2:
+            return "PwrUp state";
         case 3:
-            return "module_plugged_with_error";
+            return "Ready state";
         case 4:
-            return "plugged_disabled";
+            return "PwrDn state";
+        case 5:
+            return "Fault state";
         default:
-            return "unknown";
+            return CABLE_REPORT_NOT_AVAILABLE;
+    }
+}
+
+/* SFF-8024 identifier, page 0 byte 0. This is the raw EEPROM byte, not the firmware enum mlxlink
+ * prints, so the two are not interchangeable.
+ */
+static const char* cableIdentifierName(u_int8_t identifier)
+{
+    switch (identifier)
+    {
+        case 0x0c:
+            return "QSFP";
+        case 0x0d:
+            return "QSFP+";
+        case 0x11:
+            return "QSFP28";
+        case 0x18:
+            return "QSFP-DD";
+        case 0x19:
+            return "OSFP";
+        case 0x1b:
+            return "DSFP";
+        case 0x1e:
+            return "QSFP+ CMIS";
+        case 0x03:
+            return "SFP";
+        default:
+            return CABLE_REPORT_NOT_AVAILABLE;
     }
 }
 
@@ -378,6 +477,8 @@ static reg_access_status_t
     mcia.i2c_device_address = CABLE_EEPROM_I2C_ADDRESS;
     mcia.size = size;
     reg_access_status_t status = reg_access_mcia(mf, REG_ACCESS_METHOD_GET, &mcia);
+    FWMANAGER_LOG_DEBUG("MCIA: module %u, page %d, offset %d, size %d -> status %d, mcia.status %d", localIndex,
+                        (int)page, (int)offset, (int)size, (int)status, (int)mcia.status);
     if (status != ME_OK)
     {
         return status;
@@ -410,38 +511,49 @@ static reg_access_status_t readCableOperStatus(mfile* mf, u_int32_t localIndex, 
     {
         operStatus = pmaos.oper_status;
     }
+    FWMANAGER_LOG_DEBUG("PMAOS: module %u, status %d, oper_status %d", localIndex, (int)status, (int)operStatus);
     return status;
 }
 
-/* Whether the cable is a counterfeit.
- *
- * The check belongs to MFCDR (register 0x9178), which returns a status of 0 for N/A, 1 for a fake
- * cable, 2 for an NVIDIA cable and 3 for a non-NVIDIA one, queried per cable with query_type = 1
- * and module = the local cage index:
- *
- *     struct reg_access_switch_mfcdr_reg_ext mfcdr;
- *     memset(&mfcdr, 0, sizeof(mfcdr));
- *     mfcdr.query_type = 1;
- *     mfcdr.module = (u_int8_t)localIndex;
- *     if (reg_access_mfcdr(mf, REG_ACCESS_METHOD_GET, &mfcdr) == ME_OK)
- *     {
- *         return mfcdr.status == 1;
- *     }
- *
- * It needs two gates first: isRegisterValidAccordingToMcamReg(mf, REG_ID_MFCDR, ...) for the
- * register, and isCapabilitySupportedAccordingToMcamReg(mf, MCAM_CAP_MFCDR_MODULE_AND_QUERY_TYPE,
- * ...) for the module-based query - on firmware without the second, query_type reads as reserved
- * and the answer comes back for local port 0 on every cable.
- *
- * MFCDR has no generated C yet: its ADB node carries no pack/unpack and there is no accessor, so
- * the call cannot be written. Until it is generated, no cable is reported as fake and isNvidia
- * rests on the vendor OUI, which is the other method MFCDR's own description names.
- */
-static bool isFakeCable(mfile* mf, u_int32_t localIndex)
+/* mstflint's isCapabilitySupportedAccordingToMcamReg takes the MCAM dword swap from its caller;
+ * it is worked out here the way MFT's version works it out for itself. */
+static bool isMcamDwordSwapNeeded(mfile* mf)
 {
-    (void)mf;
-    (void)localIndex;
-    return false;
+    dm_dev_id_t devid = DeviceUnknown;
+    u_int32_t hwDevId = 0, revId = 0;
+
+    return dm_get_device_id(mf, &devid, &hwDevId, &revId) == ME_OK && dm_dev_is_mcam_dword_swap_needed(devid);
+}
+
+/* What MFCDR says a cable is: 0 N/A, 1 fake, 2 NVIDIA, 3 non-NVIDIA.
+ *
+ * Both MCAM gates are required. Without the capability, query_type reads as reserved and the
+ * answer comes back for local port 0 on every cable.
+ */
+static u_int8_t readCableVendorStatus(mfile* mf, u_int32_t localIndex)
+{
+    struct reg_access_switch_mfcdr_reg_ext mfcdr;
+    bool supported = false;
+
+    if (isRegisterValidAccordingToMcamReg(mf, REG_ID_MFCDR, &supported) != ME_OK || !supported)
+    {
+        return CABLE_VENDOR_STATUS_UNKNOWN;
+    }
+    if (isCapabilitySupportedAccordingToMcamReg(mf, MCAM_CAP_MFCDR_MODULE_AND_QUERY_TYPE, isMcamDwordSwapNeeded(mf), &supported) != ME_OK ||
+        !supported)
+    {
+        return CABLE_VENDOR_STATUS_UNKNOWN;
+    }
+    memset(&mfcdr, 0, sizeof(mfcdr));
+    mfcdr.query_type = 1; // module based query; local_port is ignored
+    mfcdr.module = (u_int8_t)localIndex;
+    reg_access_status_t status = reg_access_mfcdr(mf, REG_ACCESS_METHOD_GET, &mfcdr);
+    FWMANAGER_LOG_DEBUG("MFCDR: module %u, status %d, vendor status %d", localIndex, (int)status, (int)mfcdr.status);
+    if (status != ME_OK)
+    {
+        return CABLE_VENDOR_STATUS_UNKNOWN;
+    }
+    return mfcdr.status;
 }
 
 /* The metadata keys this tool reads.
@@ -457,11 +569,11 @@ static bool isFakeCable(mfile* mf, u_int32_t localIndex)
 #define CABLE_YAML_KEY_FW_VERSION "fw_version"
 #define CABLE_YAML_KEY_IMAGE "image"
 #define CABLE_YAML_KEY_SHA256 "sha256"
-#define CABLE_YAML_KEY_SHA_ALT "sha"
 #define CABLE_YAML_KEY_VENDOR_NAME "vendor_name"
 #define CABLE_YAML_KEY_VENDOR_OUI "vendor_oui"
 #define CABLE_YAML_KEY_VENDOR_REV "vendor_rev"
 #define CABLE_YAML_KEY_HW_REV_MAJOR "hw_rev_major"
+#define CABLE_YAML_KEY_BUILD_DATE "build_date"
 
 #define CABLE_METADATA_SUFFIX ".yaml"
 
@@ -510,7 +622,13 @@ static bool parseCableFwVersion(const string& text, CableFwVersion& version)
     unsigned int minor = 0;
     unsigned int subminor = 0;
 
-    if (sscanf(text.c_str(), "%u.%u.%u", &major, &minor, &subminor) != 3)
+    int consumed = 0;
+
+    // %n is not counted in the return value, so it is only read once all three conversions ran.
+    // Without it "28.10.1010.4" parses as 28.10.1010 and the tool reports a version no metadata
+    // file ever stated.
+    if (text.empty() || !isdigit((unsigned char)text[0]) ||
+        sscanf(text.c_str(), "%u.%u.%u%n", &major, &minor, &subminor, &consumed) != 3 || consumed != (int)text.size())
     {
         return false;
     }
@@ -565,25 +683,56 @@ static string pathBaseName(const string& path)
  * relative to the package root, with forward slashes, so nothing downstream can tell the two
  * apart.
  */
-static void readPackageDirectory(const string& path, const string& prefix, map<string, vector<u_int8_t> >& contents)
+/* How deep a package directory may nest before the walk calls it a loop. */
+#define CABLE_PACKAGE_MAX_DEPTH 8
+
+static void readPackageDirectory(const string& path,
+                                 const string& prefix,
+                                 map<string, vector<u_int8_t> >& contents,
+                                 unsigned int depth)
 {
+    // A package is a folder per part number holding a metadata file and its binary, so nothing
+    // legitimate is this deep. The cap is what stops a reparse-point loop on the platforms where
+    // IsSymlink() cannot see one, so it has to come before the directory is read.
+    if (depth > CABLE_PACKAGE_MAX_DEPTH)
+    {
+        throw std::runtime_error("is nested deeper than a firmware package should be: " + path);
+    }
     vector<string> entries = mft_utils::GetListOfFiles(path);
 
     for (size_t i = 0; i < entries.size(); i++)
     {
         string relative = prefix.empty() ? pathBaseName(entries[i]) : prefix + "/" + pathBaseName(entries[i]);
 
+        // The archive reader drops symlink entries, so the directory reader has to as well: the
+        // same package read the two documented ways must give the same files. A symlinked folder
+        // would otherwise deliver every metadata file under it twice, and two identical entries
+        // are exactly what the conflict check rejects.
+        if (mft_utils::IsSymlink(entries[i]))
+        {
+            continue;
+        }
         if (mft_utils::IsDirectory(entries[i]))
         {
-            readPackageDirectory(entries[i], relative, contents);
+            readPackageDirectory(entries[i], relative, contents, depth + 1);
         }
-        else
+        else if (mft_utils::IsRegularFile(entries[i]))
         {
+            // A FIFO or a device node is not part of a firmware package, and reading one blocks.
             contents[relative] = mft_utils::ReadBinFile(entries[i]);
         }
     }
 }
 
+static bool hasSuffix(const string& text, const string& suffix)
+{
+    return text.size() >= suffix.size() && text.compare(text.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
+
+/* Whether two metadata files describe the same cable. Every key both entries constrain has to
+ * agree; a key only one of them states cannot separate them, because a cable carrying that value
+ * matches both.
+ */
 /* Archive entries always use forward slashes, whatever wrote them. */
 static string archiveDirectory(const string& entryName)
 {
@@ -592,55 +741,39 @@ static string archiveDirectory(const string& entryName)
     return (slash == string::npos) ? "" : entryName.substr(0, slash + 1);
 }
 
-static string archiveBaseName(const string& entryName)
+static bool metadataEntriesCollide(const FwPackageEntry& left, const FwPackageEntry& right)
 {
-    size_t slash = entryName.find_last_of('/');
-
-    return (slash == string::npos) ? entryName : entryName.substr(slash + 1);
-}
-
-static bool hasSuffix(const string& text, const string& suffix)
-{
-    return text.size() >= suffix.size() && text.compare(text.size() - suffix.size(), suffix.size(), suffix) == 0;
-}
-
-/* Build the 48-byte extended header the device validates the image against.
- *
- * Only the keys the tool actually matched on are filled. Everything else is left zero, which the
- * device treats as a wildcard, so the device ends up checking exactly what the metadata claimed
- * and nothing the tool had to invent.
- */
-static vector<u_int8_t> withExtendedHeader(const FwPackageEntry& entry, const vector<u_int8_t>& image)
-{
-    struct cable_ext_header header;
-    vector<u_int8_t> output;
-
-    memset(&header, 0, sizeof(header));
-    // The magic is four ASCII characters at offset 0, not a number: written as an integer it
-    // would come out reversed on a little-endian host.
-    memcpy(&header, CABLE_EXT_HEADER_MAGIC_STRING, CABLE_EXT_HEADER_MAGIC_LENGTH);
-    header.headerVersion = 1; // carries an explicit imageSize rather than implying it from the file
-    memcpy(header.vendorPN, entry.vendorPartNumber.c_str(),
-           (entry.vendorPartNumber.size() < sizeof(header.vendorPN)) ? entry.vendorPartNumber.size() :
-                                                                       sizeof(header.vendorPN));
-    header.vendorFWMajor = entry.fwVersion.major;
-    header.vendorFWMinor = entry.fwVersion.minor;
-    header.vendorFWbuild = entry.fwVersion.subminor;
-    header.imageSize = (u_int32_t)image.size();
-
-    output.resize(sizeof(header) + image.size());
-    memcpy(&output[0], &header, sizeof(header));
-    if (!image.empty())
+    if (!equalsIgnoringCase(left.vendorPartNumber, right.vendorPartNumber) ||
+        left.fwVersion.major != right.fwVersion.major)
     {
-        memcpy(&output[sizeof(header)], &image[0], image.size());
+        return false;
     }
-    return output;
+    if (left.hasVendorName && right.hasVendorName && !equalsIgnoringCase(left.vendorName, right.vendorName))
+    {
+        return false;
+    }
+    if (left.hasVendorOui && right.hasVendorOui && left.vendorOui != right.vendorOui)
+    {
+        return false;
+    }
+    if (left.hasVendorRev && right.hasVendorRev && !equalsIgnoringCase(left.vendorRev, right.vendorRev))
+    {
+        return false;
+    }
+    if (left.hasHwRevMajor && right.hasHwRevMajor && left.hwRevMajor != right.hwRevMajor)
+    {
+        return false;
+    }
+    return true;
 }
 
 static bool metadataMatchesCable(const FwPackageEntry& entry, const CableInfo& cable)
 {
-    // The part number is the one key every metadata file carries.
-    if (!equalsIgnoringCase(entry.vendorPartNumber, cable.partNumber))
+    const CableFwVersion& running = (cable.runningSlot == CABLE_IMAGE_SLOT_B) ? cable.fwImageB : cable.fwImageA;
+
+    // Part number and firmware major are the two keys every metadata file carries. An image for
+    // another major describes a different cable generation, not an upgrade for this one.
+    if (!equalsIgnoringCase(entry.vendorPartNumber, cable.partNumber) || entry.fwVersion.major != running.major)
     {
         return false;
     }
@@ -664,14 +797,120 @@ static bool metadataMatchesCable(const FwPackageEntry& entry, const CableInfo& c
     return true;
 }
 
+/* The 48-byte header the device matches a cable against, for a package image that carries none of
+ * its own.
+ *
+ * Measured on a Quantum-3, by zeroing one field at a time from an image that burns: the part
+ * number, the product id, the hardware major and the vendor revision all have to be right, while
+ * the vendor byte, the firmware minor and build and the reserved bytes are accepted as zero. A
+ * header no cage can match is not refused - the firmware stops answering and the transfer stalls
+ * at 0%, which costs a switch reboot - so the four come from the cable itself, and an image is
+ * wrapped only for cables that can supply them.
+ */
+#define CABLE_EXT_HEADER_PN_LENGTH 16
+#define CABLE_EXT_HEADER_REV_LENGTH 2
+#define CABLE_EXT_HEADER_RESERVED 12
+
+bool CableExtHeaderKey::isComplete() const
+{
+    // The revision is trimmed of the padding the EEPROM field carries, so a cable whose revision is
+    // a single character reads back as one - present, not missing.
+    //
+    // The hardware major has to be the EEPROM's own byte, which is ASCII - 0x41 for a cable
+    // printing 'A1'. PDDR publishes the same field as a firmware-decoded number and wins wherever
+    // it answers; it is measured to answer zero on every cable so far, but a firmware that started
+    // filling it in would put a 1 where the cage expects 0x41, and the burn would stall.
+    return !partNumber.empty() && !vendorRev.empty() && vendorRev.size() <= CABLE_EXT_HEADER_REV_LENGTH &&
+           isprint(hwRevMajor) && productId != 0;
+}
+
+string CableExtHeaderKey::groupKey() const
+{
+    // Length prefixed rather than delimited. MFCDR reports counterfeit cables, so a part number
+    // holding the delimiter is in scope, and two cables whose fields differ must never produce one
+    // key: they would share a header that only one of them matches, and the other would stall.
+    return int_to_string((int)partNumber.size()) + ':' + partNumber + int_to_string((int)vendorRev.size()) + ':' +
+           vendorRev + ':' + int_to_string((int)hwRevMajor) + ':' + int_to_string((int)productId);
+}
+
+string CableExtHeaderKey::text() const
+{
+    return "part number '" + partNumber + "', vendor revision '" + vendorRev + "', hardware major " +
+           int_to_string((int)hwRevMajor) + ", product id " + int_to_string((int)productId);
+}
+
+/* How the device will decide whether this group's image belongs on a cable. */
+static string planEntryHeaderText(const CablePlanEntry& group)
+{
+    if (group.isWrapped)
+    {
+        return "extended header built here from " + group.header.text();
+    }
+    if (group.imageHasOwnHeader)
+    {
+        return "extended header as the package supplied it";
+    }
+    return "no extended header: the device matches on the product id alone and may reach cables "
+           "this plan skipped";
+}
+
+/* The header an image would have to carry for this one cable to accept it.
+ *
+ * Every field comes from the cable or from the version phase 3 decided for it, rather than from a
+ * metadata lookup: two metadata files in one folder may name the same binary for different part
+ * numbers, and a header built from the wrong one of them matches no cage and stalls the burn.
+ */
+static CableExtHeaderKey cableExtHeaderKey(const CableInfo& cable)
+{
+    CableExtHeaderKey key;
+
+    key.partNumber = cable.partNumber;
+    key.vendorRev = cable.vendorRev;
+    key.hwRevMajor = cable.hwRevMajor;
+    key.productId = cable.targetVersion.major;
+    return key;
+}
+
+static vector<u_int8_t> withExtendedHeader(const CableExtHeaderKey& key, const vector<u_int8_t>& image)
+{
+    vector<u_int8_t> wrapped;
+    u_int32_t imageSize = (u_int32_t)image.size();
+    // Least significant byte first, rather than a memcpy of the host's own representation: the
+    // device reads these four bytes off the wire, and linux-ppc64 is big endian.
+    u_int8_t sizeBytes[4] = {(u_int8_t)(imageSize & 0xff), (u_int8_t)((imageSize >> 8) & 0xff),
+                             (u_int8_t)((imageSize >> 16) & 0xff), (u_int8_t)((imageSize >> 24) & 0xff)};
+    const char* magic = CABLE_EXT_HEADER_MAGIC_STRING;
+
+    wrapped.assign(magic, magic + CABLE_EXT_HEADER_MAGIC_LENGTH);
+    wrapped.push_back(1);                // header version: carries an explicit image size
+    wrapped.insert(wrapped.end(), 3, 0); // vendor byte and the reserved pair
+    for (size_t i = 0; i < CABLE_EXT_HEADER_PN_LENGTH; i++)
+    {
+        // The device compares this against the 16-byte EEPROM part number, which is space padded.
+        wrapped.push_back((i < key.partNumber.size()) ? (u_int8_t)key.partNumber[i] : (u_int8_t)' ');
+    }
+    wrapped.push_back(0); // reserved
+    wrapped.push_back(key.hwRevMajor);
+    for (size_t i = 0; i < CABLE_EXT_HEADER_REV_LENGTH; i++)
+    {
+        // Space padded like the part number above, being the same kind of fixed-width EEPROM
+        // ASCII field. Every cable measured carries two characters, so this pads nothing today.
+        wrapped.push_back((i < key.vendorRev.size()) ? (u_int8_t)key.vendorRev[i] : (u_int8_t)' ');
+    }
+    wrapped.push_back(key.productId);    // the LinkX product id
+    wrapped.insert(wrapped.end(), 3, 0); // firmware minor and build
+    wrapped.insert(wrapped.end(), sizeBytes, sizeBytes + sizeof(sizeBytes));
+    wrapped.insert(wrapped.end(), CABLE_EXT_HEADER_RESERVED, 0);
+    wrapped.insert(wrapped.end(), image.begin(), image.end());
+    return wrapped;
+}
+
 /* Every LinkX burn in this tree hands the device eight 0xFF bytes ahead of the image. The device
  * cannot tell this flow from an ordinary cable burn and was never told about it, so what goes on
  * the wire has to be what an ordinary burn puts there: the same prefix, and the extended header at
  * the front of the image behind it, exactly where a package that already carries one puts it.
  */
 #define CABLE_BURN_IMAGE_PREFIX_SIZE 8
-
-#define CABLE_REPORT_NOT_AVAILABLE "N/A"
 
 static string cableFwVersionText(const CableFwVersion& version)
 {
@@ -686,26 +925,306 @@ static string orNotAvailable(const string& value)
     return value.empty() ? CABLE_REPORT_NOT_AVAILABLE : value;
 }
 
+/* std::setw pads but never truncates, so a value wider than its column pushes every column after
+ * it out of line. One short of the width, so the column always keeps a separating space. */
+static string clamped(const string& value, size_t width)
+{
+    return (value.size() < width) ? value : value.substr(0, width - 1);
+}
+
+/* PDDR page_select for the module info page, where the firmware republishes the cable EEPROM. */
+#define CABLE_PDDR_MODULE_INFO_PAGE 3
+
+/* PDDR cable_type: the firmware says the cage is empty with this one value. */
+#define CABLE_PDDR_TYPE_UNPLUGGED 4
+
+/* The form factor as the firmware names it. This is not the SFF-8024 identifier byte - the two
+ * are different number spaces - and it is what mlxlink prints.
+ */
+static const char* cablePddrIdentifierName(u_int8_t identifier)
+{
+    switch (identifier)
+    {
+        case 0:
+            return "QSFP28";
+        case 1:
+            return "QSFP+";
+        case 2:
+            return "SFP28/SFP+";
+        case 3:
+            return "QSA";
+        case 4:
+            return "Backplane";
+        case 5:
+            return "SFP-DD";
+        case 6:
+            return "QSFP-DD";
+        case 7:
+            return "QSFP_CMIS";
+        case 8:
+            return "OSFP";
+        case 9:
+            return "C2C";
+        case 10:
+            return "DSFP";
+        case 11:
+            return "QSFP_Split";
+        case 12:
+            return "CPO";
+        case 13:
+            return "OE";
+        case 14:
+            return "ELS";
+        case 15:
+            return "NPO";
+        default:
+            return CABLE_REPORT_NOT_AVAILABLE;
+    }
+}
+
+/* PDDR keeps the ASCII identity fields in dword arrays, most significant byte first. NULs are
+ * padding wherever they fall - the vendor revision is right-aligned and NUL-padded on the left -
+ * but a space is only padding at the end: a vendor name or part number may contain one, and these
+ * fields are what the package is matched on.
+ */
+static string pddrAsciiText(const u_int32_t* words, size_t count)
+{
+    string text;
+
+    for (size_t i = 0; i < count; i++)
+    {
+        for (int shift = 24; shift >= 0; shift -= 8)
+        {
+            char c = (char)((words[i] >> shift) & 0xff);
+            if (c != '\0')
+            {
+                text += c;
+            }
+        }
+    }
+    size_t end = text.find_last_not_of(' ');
+    return (end == string::npos) ? string() : text.substr(0, end + 1);
+}
+
+static string pddrAsciiWord(u_int32_t word)
+{
+    return pddrAsciiText(&word, 1);
+}
+
+/* Read one cable's identity and state off the PDDR module info page. The firmware has already
+ * decoded the EEPROM into it, so this is one register read where MCIA takes four, and it is the
+ * same source every field mlxlink prints comes from.
+ */
+static bool readCableModuleInfo(mfile* mf, u_int32_t localPort, CableInfo& cable)
+{
+    struct reg_access_switch_pddr_reg_ext pddr;
+
+    memset(&pddr, 0, sizeof(pddr));
+    pddr.local_port = (u_int8_t)(localPort & 0xff);
+    pddr.lp_msb = (u_int8_t)((localPort >> 8) & 0x3);
+    pddr.page_select = CABLE_PDDR_MODULE_INFO_PAGE;
+    reg_access_status_t status = reg_access_pddr(mf, REG_ACCESS_METHOD_GET, &pddr);
+    if (status != ME_OK)
+    {
+        FWMANAGER_LOG_DEBUG("PDDR module info: local_port %u, status %d", localPort, (int)status);
+        return false;
+    }
+
+    const struct reg_access_switch_pddr_module_info_ext& info = pddr.page_data.pddr_module_info_ext;
+
+    cable.isPlugged = (info.cable_type != CABLE_PDDR_TYPE_UNPLUGGED);
+    if (!cable.isPlugged)
+    {
+        return true;
+    }
+    cable.identifier = cablePddrIdentifierName(info.cable_identifier);
+    cable.state = cableModuleStateName(info.module_st);
+    cable.vendorName = pddrAsciiText(info.vendor_name, 4);
+    cable.partNumber = pddrAsciiText(info.vendor_pn, 4);
+    cable.serialNumber = pddrAsciiText(info.vendor_sn, 4);
+    cable.vendorRev = pddrAsciiWord(info.vendor_rev);
+    cable.vendorOui = info.vendor_oui;
+    cable.hwRevMajor = info.module_hw_revision_major;
+    cable.hwRevMinor = info.module_hw_revision_minor;
+
+    // Eight ASCII characters, year first, of which the last two are a lot code. Rendered the way
+    // mlxlink does, which puts the day first.
+    string date;
+    for (int shift = 56; shift >= 0; shift -= 8)
+    {
+        char c = (char)((info.date_code >> shift) & 0xff);
+        if (c != '\0' && c != ' ')
+        {
+            date += c;
+        }
+    }
+    if (date.size() >= CABLE_EEPROM_DATE_LEN)
+    {
+        cable.manufacturingDate = date.substr(4, 2) + "_" + date.substr(2, 2) + "_" + date.substr(0, 2);
+    }
+    FWMANAGER_LOG_DEBUG("PDDR module info: local_port %u, %s %s pn %s sn %s rev %s oui 0x%06x hw %d.%d", localPort,
+                        cable.identifier.c_str(), cable.state.c_str(), cable.partNumber.c_str(),
+                        cable.serialNumber.c_str(), cable.vendorRev.c_str(), cable.vendorOui, (int)cable.hwRevMajor,
+                        (int)cable.hwRevMinor);
+    return true;
+}
+
+/* PDDR page_select for the operational info page, which carries the link state machine. */
+#define CABLE_PDDR_OPERATIONAL_INFO_PAGE 0
+
+/* Local ports are not numbered from one and nothing reports the highest, so the PLLP sweep is
+ * bounded rather than exact. Measured on Quantum-3: label port 1 sits at local port 129.
+ */
+#define CABLE_MAX_LOCAL_PORT 256
+
+/* phy_mngr_fsm_state. The link is carrying traffic on exactly one of these. */
+#define CABLE_LINK_STATE_ACTIVE 3
+#define CABLE_LINK_STATE_ACTIVE_NAME "Active"
+
+/* The PHY manager link state, which is what mlxlink prints as "State". It is the link, not the
+ * cable: a healthy cable with nothing at the far end sits in Polling forever.
+ */
+static const char* cableLinkStateName(u_int8_t state)
+{
+    switch (state)
+    {
+        case 0:
+            return "Disable";
+        case 1:
+            return "Port PLL Down";
+        case 2:
+            return "Polling";
+        case CABLE_LINK_STATE_ACTIVE:
+            return "Active";
+        case 4:
+            return "Close port";
+        case 5:
+            return "Physical LinkUp";
+        case 6:
+            return "Sleep";
+        case 7:
+            return "Rx disable";
+        case 8:
+            return "Signal detect";
+        case 9:
+            return "Receiver detect";
+        case 10:
+            return "Sync peer";
+        case 11:
+            return "Negotiation";
+        case 12:
+            return "Training";
+        case 13:
+            return "SubFSM active";
+        default:
+            return CABLE_REPORT_NOT_AVAILABLE;
+    }
+}
+
+static reg_access_status_t readCableLinkState(mfile* mf, u_int32_t localPort, u_int8_t& state)
+{
+    struct reg_access_switch_pddr_reg_ext pddr;
+
+    memset(&pddr, 0, sizeof(pddr));
+    pddr.local_port = (u_int8_t)(localPort & 0xff);
+    pddr.lp_msb = (u_int8_t)((localPort >> 8) & 0x3);
+    pddr.page_select = CABLE_PDDR_OPERATIONAL_INFO_PAGE;
+    reg_access_status_t status = reg_access_pddr(mf, REG_ACCESS_METHOD_GET, &pddr);
+    if (status == ME_OK)
+    {
+        state = pddr.page_data.pddr_operation_info_page_ext.phy_mngr_fsm_state;
+    }
+    FWMANAGER_LOG_DEBUG("PDDR: local_port %u, status %d, phy_mngr_fsm_state %d", localPort, (int)status, (int)state);
+    return status;
+}
+
+/* PLLP carries both a local port and the label port it serves, and is indexed by the local port,
+ * so the map a cage needs is built by sweeping it. Only the first sub-port of a split cage is
+ * kept - they share one cable.
+ */
+static void buildLocalPortMap(mfile* mf, map<u_int32_t, u_int32_t>& localPortByCage, u_int32_t cages)
+{
+    for (u_int32_t localPort = 1; localPort <= CABLE_MAX_LOCAL_PORT && localPortByCage.size() < cages; localPort++)
+    {
+        struct reg_access_switch_pllp_reg_ext pllp;
+
+        memset(&pllp, 0, sizeof(pllp));
+        pllp.local_port = (u_int8_t)(localPort & 0xff);
+        pllp.lp_msb = (u_int8_t)((localPort >> 8) & 0x3);
+        if (reg_access_pllp(mf, REG_ACCESS_METHOD_GET, &pllp) != ME_OK || pllp.label_port == 0 || pllp.split_num != 0)
+        {
+            continue;
+        }
+        localPortByCage.insert(std::make_pair((u_int32_t)pllp.label_port - 1, localPort));
+    }
+    FWMANAGER_LOG_DEBUG("PLLP sweep: mapped %u cage(s) of %u", (unsigned)localPortByCage.size(), cages);
+}
+
+#define CABLE_REPORT_RULE "===================================================="
+
+/* Human-readable local time for the report header. */
+static string reportTimestamp()
+{
+    time_t now = time(0);
+    tm* localNow = localtime(&now);
+    char stamp[32];
+
+    // strftime keeps the fixed buffer provably in range; the equivalent snprintf does not, because
+    // every %d is bounded only by the width of an int.
+    if (localNow == NULL || strftime(stamp, sizeof(stamp), "%Y-%m-%d %H:%M:%S", localNow) == 0)
+    {
+        return CABLE_REPORT_NOT_AVAILABLE;
+    }
+    return stamp;
+}
+
+/* Which image slot is running, if any. runningSlot alone cannot say "neither". */
+static string cableRunningSlotText(bool isRunningImage, CableImageSlot slot)
+{
+    if (!isRunningImage)
+    {
+        return CABLE_REPORT_NOT_AVAILABLE;
+    }
+    return (slot == CABLE_IMAGE_SLOT_B) ? "B" : "A";
+}
+
+static string cableHwRevisionText(const CableInfo& cable)
+{
+    if (cable.hwRevMajor == 0 && cable.hwRevMinor == 0)
+    {
+        return CABLE_REPORT_NOT_AVAILABLE;
+    }
+    return cableHwRevisionText(cable.hwRevMajor, cable.hwRevMinor);
+}
+
+/* The action the report names, spelled as the enumerator it came from.
+ *
+ * A reader matching a row against the code, or grepping a stored report, wants the constant rather
+ * than a sentence that could be reworded; the reason each one means is in the code beside its
+ * enumerator.
+ */
 static const char* cableActionName(CableUpdateAction action)
 {
     switch (action)
     {
         case CABLE_ACTION_UPDATE:
-            return "update";
+            return "UPDATE";
         case CABLE_ACTION_SKIP_ASIC_DETECTION_NOT_SUPPORTED:
-            return "skipped, owning ASIC cannot be identified";
-        case CABLE_ACTION_SKIP_NOT_PRESENT:
-            return "skipped, no cable in the cage";
+            return "SKIP_ASIC_DETECTION_NOT_SUPPORTED";
+        case CABLE_ACTION_SKIP_NOT_PLUGGED:
+            return "SKIP_NOT_PLUGGED";
+        case CABLE_ACTION_SKIP_UNREADABLE:
+            return "SKIP_UNREADABLE";
         case CABLE_ACTION_SKIP_3RD_PARTY:
-            return "skipped, not an NVIDIA cable";
+            return "SKIP_3RD_PARTY";
         case CABLE_ACTION_SKIP_NOT_BURNABLE:
-            return "skipped, no firmware update procedure";
+            return "SKIP_NOT_BURNABLE";
         case CABLE_ACTION_SKIP_NO_FW_FILE:
-            return "skipped, no matching image in the package";
+            return "SKIP_NO_FW_FILE";
         case CABLE_ACTION_SKIP_CURRENT:
-            return "skipped, already running this version";
+            return "SKIP_CURRENT";
         default:
-            return "undecided";
+            return "UNDECIDED";
     }
 }
 
@@ -763,7 +1282,7 @@ int CableFwManager::collectSwitchAsics(dev_info* devs, int devsNum)
         mfile* mf = mopen(devs[i].dev_name);
         if (mf == NULL)
         {
-            _log += "-W- Skipped " + string(devs[i].dev_name) + ": the device could not be opened\n";
+            emitProgress("-W- Skipped " + string(devs[i].dev_name) + ": the device could not be opened\n");
             continue;
         }
 
@@ -775,19 +1294,19 @@ int CableFwManager::collectSwitchAsics(dev_info* devs, int devsNum)
         {
             if (devIdRc == MFE_UNSUPPORTED_DEVICE)
             {
-                _log += "-W- Skipped " + string(devs[i].dev_name) + ": the device type is not recognised\n";
+                emitProgress("-W- Skipped " + string(devs[i].dev_name) + ": the device type is not recognised\n");
             }
             else
             {
-                _log += "-W- Skipped " + string(devs[i].dev_name) + ": recognising the device type failed with error " +
-                        int_to_string(devIdRc) + "\n";
+                emitProgress("-W- Skipped " + string(devs[i].dev_name) +
+                             ": recognising the device type failed with error " + int_to_string(devIdRc) + "\n");
             }
             mclose(mf);
             continue;
         }
         if (!dm_dev_is_switch(devType))
         {
-            _log += "-I- Skipped " + string(devs[i].dev_name) + ": " + dm_dev_type2str(devType) + " is not a switch\n";
+            FWMANAGER_LOG_DEBUG("Skipped %s: %s is not a switch", devs[i].dev_name, dm_dev_type2str(devType));
             mclose(mf);
             continue;
         }
@@ -795,7 +1314,7 @@ int CableFwManager::collectSwitchAsics(dev_info* devs, int devsNum)
         AsicInfo asic;
         u_int8_t ga = 0;
         asic.devName = devs[i].dev_name;
-        reg_access_status_t status = readAsicGa(mf, ga);
+        reg_access_status_t status = readAsicGa(mf, ga, asic.fwVersion);
         mclose(mf);
         if (status != ME_OK)
         {
@@ -825,7 +1344,7 @@ int CableFwManager::collectSwitchAsics(dev_info* devs, int devsNum)
         return ERR_CODE_CABLE_NOT_SUPPORTED;
     }
 
-    _log += "-I- Found " + int_to_string((int)_asics.size()) + " switch ASIC(s)\n";
+    emitProgress("-I- Found " + int_to_string((int)_asics.size()) + " switch ASIC(s)\n");
     return MLX_FWM_SUCCESS;
 }
 
@@ -841,7 +1360,7 @@ int CableFwManager::buildCableMap()
         return ERR_CODE_CABLE_NOT_SUPPORTED;
     }
 
-    mfile* mf = mopen(source->second.devName.c_str());
+    mfile* mf = deviceHandle(source->second.devName);
     if (mf == NULL)
     {
         _errMsg = "Failed to open " + source->second.devName + " to read the cable map";
@@ -852,19 +1371,17 @@ int CableFwManager::buildCableMap()
     reg_access_status_t status = readCageCount(mf, total);
     if (status != ME_OK)
     {
-        mclose(mf);
         _errMsg = "Failed to read MGPIR from " + source->second.devName + ": " + reg_access_err2str(status);
         return ERR_CODE_CABLE_UPDATE_FAILED;
     }
 
     int rc = walkCableMap(mf, total);
-    mclose(mf);
     if (rc != MLX_FWM_SUCCESS)
     {
         return rc;
     }
 
-    _log += "-I- Found " + int_to_string((int)_cables.size()) + " port(s), scanning for cables\n";
+    emitProgress("-I- Found " + int_to_string((int)_cables.size()) + " port(s), scanning for cables\n");
     return MLX_FWM_SUCCESS;
 }
 
@@ -901,8 +1418,9 @@ int CableFwManager::walkCableMap(mfile* mf, u_int32_t total)
             // reported, and the reason a module was left alone is part of that account.
             cable.action = CABLE_ACTION_SKIP_ASIC_DETECTION_NOT_SUPPORTED;
             cable.asicGa = 0; // default, the action is what reports this port as skipped
-            _log += "-W- Port " + globalPort + " is of module type " + moduleTypeName(entry.module_type) +
-                    ", which leaves MMAM.ga Reserved, so its owning ASIC cannot be identified\n";
+            FWMANAGER_LOG_DEBUG("Port %s is of module type %s, which leaves MMAM.ga Reserved, so its owning ASIC "
+                                "cannot be identified",
+                                globalPort.c_str(), moduleTypeName(entry.module_type).c_str());
             _cables.push_back(cable);
             continue;
         }
@@ -927,17 +1445,26 @@ int CableFwManager::walkCableMap(mfile* mf, u_int32_t total)
 
 int CableFwManager::discoverCables()
 {
-    u_int32_t present = 0;
+    u_int32_t plugged = 0;
     u_int32_t burnable = 0;
 
-    for (AsicsByGa::const_iterator asic = _asics.begin(); asic != _asics.end(); ++asic)
+    for (AsicsByGa::iterator asic = _asics.begin(); asic != _asics.end(); ++asic)
     {
-        mfile* mf = mopen(asic->second.devName.c_str());
+        mfile* mf = deviceHandle(asic->second.devName);
         if (mf == NULL)
         {
             _errMsg = "Failed to open " + asic->second.devName + " to query the cables it owns";
             return ERR_CODE_CABLE_UPDATE_FAILED;
         }
+        u_int32_t owned = 0;
+        for (size_t j = 0; j < _cables.size(); j++)
+        {
+            if (_cables[j].asicGa == asic->first)
+            {
+                owned++;
+            }
+        }
+        buildLocalPortMap(mf, asic->second.localPortByCage, owned);
         for (size_t j = 0; j < _cables.size(); j++)
         {
             // This port is never updated, so there is nothing to query it for.
@@ -945,31 +1472,141 @@ int CableFwManager::discoverCables()
             {
                 continue;
             }
-            // MCIA, PMAOS and MCQI answer for a cage only on the ASIC that owns it, and on a
-            // system that numbers cages system-wide the other ASICs answer too, with the wrong
-            // cable. Ownership stays what MMAM said in phase 1.
+            // Query each cage from the ASIC that owns it - only there do MCIA, PMAOS and MCQI
+            // answer for the right cable. Ownership is what MMAM said in phase 1.
             if (_cables[j].asicGa == asic->first)
             {
                 queryCable(mf, _cables[j]);
             }
         }
-        mclose(mf);
     }
 
     for (size_t i = 0; i < _cables.size(); i++)
     {
         if (_cables[i].isPlugged)
         {
-            present++;
+            plugged++;
         }
         if (_cables[i].isBurnable)
         {
             burnable++;
         }
     }
-    _log +=
-      "Found " + int_to_string((int)present) + " cable(s), " + int_to_string((int)burnable) + " of them updatable\n";
+    emitProgress("-I- Found " + int_to_string((int)plugged) + " cable(s), " + int_to_string((int)burnable) +
+                 " of them updatable\n");
     return MLX_FWM_SUCCESS;
+}
+
+/* The local port serving a cage, from its owning ASIC's swept map. PDDR needs it; MMAM never
+ * names one.
+ */
+bool CableFwManager::cableLocalPort(const CableInfo& cable, u_int32_t& localPort)
+{
+    AsicsByGa::const_iterator asic = _asics.find(cable.asicGa);
+
+    if (asic == _asics.end())
+    {
+        return false;
+    }
+    map<u_int32_t, u_int32_t>::const_iterator port = asic->second.localPortByCage.find(cable.localIndex);
+    if (port == asic->second.localPortByCage.end())
+    {
+        return false;
+    }
+    localPort = port->second;
+    return true;
+}
+
+/* The link state for one cable, which is what mlxlink shows as "State". */
+string CableFwManager::readCableLinkStateText(mfile* mf, const CableInfo& cable)
+{
+    u_int32_t localPort = 0;
+    u_int8_t state = 0;
+
+    if (!cableLocalPort(cable, localPort) || readCableLinkState(mf, localPort, state) != ME_OK)
+    {
+        return CABLE_REPORT_NOT_AVAILABLE;
+    }
+    return cableLinkStateName(state);
+}
+
+/* Whether PDDR left anything the EEPROM can supply. */
+static bool hasIdentityGap(const CableInfo& cable)
+{
+    return cable.vendorName.empty() || cable.partNumber.empty() || cable.serialNumber.empty() ||
+           cable.vendorRev.empty() || cable.manufacturingDate.empty() || cable.vendorOui == 0 ||
+           (cable.hwRevMajor == 0 && cable.hwRevMinor == 0) || cable.identifier == CABLE_REPORT_NOT_AVAILABLE ||
+           cable.state == CABLE_REPORT_NOT_AVAILABLE;
+}
+
+/* Fill whatever PDDR left empty from the EEPROM, field by field. PDDR stays authoritative for
+ * everything it does answer, so the two tools still agree wherever they can.
+ */
+void CableFwManager::fillIdentityGapsFromEeprom(mfile* mf, CableInfo& cable)
+{
+    if (!hasIdentityGap(cable))
+    {
+        return;
+    }
+    CableInfo eeprom;
+
+    eeprom.localIndex = cable.localIndex;
+    if (!readCableIdentity(mf, eeprom))
+    {
+        return;
+    }
+    if (cable.vendorName.empty())
+    {
+        cable.vendorName = eeprom.vendorName;
+    }
+    if (cable.partNumber.empty())
+    {
+        cable.partNumber = eeprom.partNumber;
+    }
+    if (cable.serialNumber.empty())
+    {
+        cable.serialNumber = eeprom.serialNumber;
+    }
+    if (cable.vendorRev.empty())
+    {
+        cable.vendorRev = eeprom.vendorRev;
+    }
+    if (cable.manufacturingDate.empty())
+    {
+        cable.manufacturingDate = eeprom.manufacturingDate;
+    }
+    if (cable.vendorOui == 0)
+    {
+        cable.vendorOui = eeprom.vendorOui;
+    }
+    // The hardware revision is a package match key, and PDDR reports zero for it on every cable
+    // measured, so the EEPROM is the only place it comes from today.
+    if (cable.hwRevMajor == 0 && cable.hwRevMinor == 0)
+    {
+        cable.hwRevMajor = eeprom.hwRevMajor;
+        cable.hwRevMinor = eeprom.hwRevMinor;
+    }
+    if (cable.identifier == CABLE_REPORT_NOT_AVAILABLE)
+    {
+        cable.identifier = eeprom.identifier;
+    }
+    if (cable.state == CABLE_REPORT_NOT_AVAILABLE)
+    {
+        cable.state = eeprom.state;
+    }
+}
+
+/* Whether anything identifying came back.
+ *
+ * A cage can answer PMAOS and PDDR and still report nothing about what is in it - PDDR calls that
+ * cable_type Unidentified - and every identity field then reads empty, the vendor OUI as zero. A
+ * zero OUI is the absence of an answer, not another vendor's, so without this the OUI fallback
+ * reads an unidentified module as a third party cable.
+ */
+static bool cableIdentityRead(const CableInfo& cable)
+{
+    return !cable.partNumber.empty() || !cable.vendorName.empty() || !cable.serialNumber.empty() ||
+           cable.vendorOui != 0;
 }
 
 void CableFwManager::queryCable(mfile* mf, CableInfo& cable)
@@ -981,43 +1618,82 @@ void CableFwManager::queryCable(mfile* mf, CableInfo& cable)
         cable.state = "unreadable";
         return;
     }
-    cable.state = cableStateName(operStatus);
-    /* Presence belongs on PDDR.cable_type, the same field mlxlink reads for its own plugged state
-     * (UNPLUGGED is 4). PDDR has no generated struct or reg_access accessor yet, so until it has
-     * one every cage is taken as plugged and the reads below run on empty cages too:
-     *
-     *   cable.isPlugged = (cableType != PDDR_CABLE_TYPE_UNPLUGGED);
-     *   if (!cable.isPlugged)
-     *   {
-     *       _log += "Port " + int_to_string((int)cable.globalPort) + ": no cable in the cage, skipping query\n";
-     *       return;
-     *   }
-     */
-    cable.isPlugged = true;
-
-    if (!readCableIdentity(mf, cable))
+    cable.operStatus = operStatus;
+    cable.isPlugged = (operStatus != CABLE_OPER_STATUS_UNPLUGGED);
+    if (!cable.isPlugged)
     {
         return;
     }
-    cable.isNvidia = (cable.vendorOui == CABLE_NVIDIA_OUI) && !isFakeCable(mf, cable.localIndex);
+
+    // PDDR is where the firmware republishes the EEPROM, and it is the source every field mlxlink
+    // prints comes from, so the two tools agree. It is addressed by local port; a cage the PLLP
+    // sweep could not map falls back to reading the EEPROM directly.
+    u_int32_t localPort = 0;
+
+    if (cableLocalPort(cable, localPort))
+    {
+        cable.isReadable = readCableModuleInfo(mf, localPort, cable);
+        if (cable.isReadable && !cable.isPlugged)
+        {
+            return;
+        }
+    }
+    if (!cable.isReadable && !readCableIdentity(mf, cable))
+    {
+        return;
+    }
+    // The firmware does not fill every field of the page - the hardware revision reads zero on
+    // every cable measured - so anything it left empty is read off the EEPROM itself.
+    fillIdentityGapsFromEeprom(mf, cable);
+    cable.isReadable = cableIdentityRead(cable);
+    // MFCDR answers this directly where the firmware carries it; the OUI list is what is left
+    // when it does not, and a fake cable can copy an OUI.
+    u_int8_t vendorStatus = readCableVendorStatus(mf, cable.localIndex);
+    cable.vendorStatus = vendorStatus;
+    if (vendorStatus != CABLE_VENDOR_STATUS_UNKNOWN)
+    {
+        cable.isNvidia = (vendorStatus == CABLE_VENDOR_STATUS_NVIDIA);
+    }
+    else
+    {
+        cable.isNvidia = (cable.vendorOui == CABLE_NVIDIA_OUI) || (cable.vendorOui == CABLE_NVIDIA_OUI_MELLANOX);
+    }
     if (!readCableFwProperties(mf, cable))
     {
         return;
     }
     // A cable that implements neither firmware-update procedure reports protocol 0.
     cable.isBurnable = (cable.managementInterfaceProtocol != 0);
+    cable.linkState = readCableLinkStateText(mf, cable);
 }
 
 bool CableFwManager::readCableIdentity(mfile* mf, CableInfo& cable)
 {
-    u_int8_t identifier = 0;
+    u_int8_t lower[CABLE_EEPROM_MODULE_STATE_OFFSET + 1];
     u_int8_t page0[CABLE_EEPROM_PAGE0_UPPER_SIZE];
 
-    if (readCableEeprom(mf, cable.localIndex, 0, 0, sizeof(identifier), &identifier) != ME_OK)
+    // Page 0 lower carries the identifier, the flat-memory bit and the module state, and every
+    // cable implements it.
+    if (readCableEeprom(mf, cable.localIndex, 0, 0, sizeof(lower), lower) != ME_OK)
     {
         return false;
     }
+    u_int8_t identifier = lower[0];
     bool isCmis = isCmisIdentifier(identifier);
+    bool isFlatMem = EXTRACT(lower[CABLE_EEPROM_FLAT_MEM_OFFSET], CABLE_EEPROM_FLAT_MEM_BIT, 1) != 0;
+
+    cable.identifier = cableIdentifierName(identifier);
+    // The CMIS module state is what mlxlink shows as "Module State". SFF-8636 has no equivalent.
+    if (isCmis)
+    {
+        u_int8_t moduleState = (u_int8_t)EXTRACT(lower[CABLE_EEPROM_MODULE_STATE_OFFSET], CABLE_EEPROM_MODULE_STATE_BIT,
+                                                 CABLE_EEPROM_MODULE_STATE_WIDTH);
+        cable.state = cableModuleStateName(moduleState);
+    }
+    else
+    {
+        cable.state = CABLE_REPORT_NOT_AVAILABLE;
+    }
     const CableEepromLayout& layout = isCmis ? CMIS_LAYOUT : SFF8636_LAYOUT;
 
     if (readCableEeprom(mf, cable.localIndex, 0, CABLE_EEPROM_PAGE0_UPPER_OFFSET, sizeof(page0), page0) != ME_OK)
@@ -1036,16 +1712,30 @@ bool CableFwManager::readCableIdentity(mfile* mf, CableInfo& cable)
     cable.serialNumber = trimmedEepromText(&page0[serial], CABLE_EEPROM_ID_LEN);
     cable.vendorRev = trimmedEepromText(&page0[rev], CABLE_EEPROM_REV_LEN);
     cable.vendorOui = ((u_int32_t)page0[oui] << 16) | ((u_int32_t)page0[oui + 1] << 8) | (u_int32_t)page0[oui + 2];
-
-    if (isCmis)
+    // Six ASCII digits, year first. Rendered the way mlxlink does, which puts the day first.
+    string date = trimmedEepromText(&page0[layout.dateCode - CABLE_EEPROM_PAGE0_UPPER_OFFSET], CABLE_EEPROM_DATE_LEN);
+    if (date.size() == CABLE_EEPROM_DATE_LEN)
     {
-        u_int8_t hwRevMajor = 0;
-        if (readCableEeprom(mf, cable.localIndex, CABLE_EEPROM_CMIS_HW_REV_PAGE, CABLE_EEPROM_CMIS_HW_REV_MAJOR_OFFSET,
-                            sizeof(hwRevMajor), &hwRevMajor) == ME_OK)
+        cable.manufacturingDate = date.substr(4, 2) + "_" + date.substr(2, 2) + "_" + date.substr(0, 2);
+    }
+
+    // The hardware revision lives on page 1, which a flat-memory cable does not implement. MCIA
+    // answers such a read with page 0 and a status of 0, so only the flat-memory bit catches it -
+    // and the firmware has no revision to report either, so there is nothing to fall back on.
+    if (isCmis && !isFlatMem)
+    {
+        u_int8_t hwRev[2] = {0, 0};
+        if (readCableEeprom(mf, cable.localIndex, CABLE_EEPROM_CMIS_HW_REV_PAGE, CABLE_EEPROM_CMIS_HW_REV_OFFSET,
+                            sizeof(hwRev), hwRev) == ME_OK)
         {
-            cable.hwRevMajor = hwRevMajor;
+            cable.hwRevMajor = hwRev[0];
+            cable.hwRevMinor = hwRev[1];
         }
     }
+    FWMANAGER_LOG_DEBUG("Cable %u: %s %s pn %s sn %s rev %s oui 0x%06x hw %d.%d date %s flat_mem %d", cable.globalPort,
+                        cable.identifier.c_str(), cable.state.c_str(), cable.partNumber.c_str(),
+                        cable.serialNumber.c_str(), cable.vendorRev.c_str(), cable.vendorOui, (int)cable.hwRevMajor,
+                        (int)cable.hwRevMinor, cable.manufacturingDate.c_str(), (int)isFlatMem);
     return true;
 }
 
@@ -1076,10 +1766,23 @@ bool CableFwManager::readCableFwProperties(mfile* mf, CableInfo& cable)
     cable.fwImageB.major = properties.image_b_major;
     cable.fwImageB.minor = properties.image_b_minor;
     cable.fwImageB.subminor = properties.image_b_subminor;
-    // Bit 0 of the status bitmap says image A is running, bit 4 says image B is.
-    cable.runningSlot = (properties.fw_image_status_bitmap & 0x10) ? CABLE_IMAGE_SLOT_B : CABLE_IMAGE_SLOT_A;
+    // Bit 0 of the status bitmap says image A is running, bit 4 says image B is, and flint reads
+    // it the same way. Neither set means no image is running, which is not the same as A.
+    bool runsA = EXTRACT(properties.fw_image_status_bitmap, CABLE_FW_STATUS_BIT_A_RUNNING, 1) != 0;
+    bool runsB = EXTRACT(properties.fw_image_status_bitmap, CABLE_FW_STATUS_BIT_B_RUNNING, 1) != 0;
+
+    cable.runningSlot = runsB ? CABLE_IMAGE_SLOT_B : CABLE_IMAGE_SLOT_A;
+    cable.isRunningImage = runsA || runsB;
     cable.managementInterfaceProtocol = properties.management_interface_protocol;
     cable.activationType = properties.activation_type;
+    cable.fwRead = true;
+    FWMANAGER_LOG_DEBUG("MCQI cable %u: wire index %u, A %d.%d.%d, B %d.%d.%d, status bitmap 0x%x, info bitmap 0x%x, "
+                        "protocol %d, activation %d",
+                        cable.globalPort, cableMccIndex(cable.localIndex), (int)cable.fwImageA.major,
+                        (int)cable.fwImageA.minor, (int)cable.fwImageA.subminor, (int)cable.fwImageB.major,
+                        (int)cable.fwImageB.minor, (int)cable.fwImageB.subminor,
+                        (unsigned)properties.fw_image_status_bitmap, (unsigned)properties.fw_image_info_bitmap,
+                        (int)cable.managementInterfaceProtocol, (int)cable.activationType);
     return true;
 }
 
@@ -1096,6 +1799,9 @@ int CableFwManager::buildUpdatePlan()
         if (rc == MLX_FWM_SUCCESS)
         {
             rc = decideCableActions();
+            // Every cable carries an action from here on. Before it they all carry the default, and
+            // a table of them reads as a decision the tool never made.
+            _planned = (rc == MLX_FWM_SUCCESS);
         }
         if (rc == MLX_FWM_SUCCESS)
         {
@@ -1113,13 +1819,13 @@ int CableFwManager::buildUpdatePlan()
 int CableFwManager::loadPackage(map<string, vector<u_int8_t> >& contents)
 {
 #ifdef NO_OPEN_SSL
-    _log += "-W- This tool was built without OpenSSL, so the package checksums are not verified\n";
+    emitProgress("-W- This tool was built without OpenSSL, so the package checksums are not verified\n");
 #endif
     u_int32_t rejected = 0;
 
     if (mft_utils::IsDirectory(_cmdParams.cable_package))
     {
-        readPackageDirectory(_cmdParams.cable_package, "", contents);
+        readPackageDirectory(_cmdParams.cable_package, "", contents, 0);
     }
     else
     {
@@ -1166,7 +1872,12 @@ int CableFwManager::loadPackage(map<string, vector<u_int8_t> >& contents)
             }
             if (document.contains(CABLE_YAML_KEY_VENDOR_OUI))
             {
-                entry.vendorOui = (u_int32_t)document.at(CABLE_YAML_KEY_VENDOR_OUI).get_value<int>();
+                int oui = document.at(CABLE_YAML_KEY_VENDOR_OUI).get_value<int>();
+                if (oui < 0 || oui > 0xffffff)
+                {
+                    throw std::runtime_error("states a vendor OUI outside 0..0xffffff");
+                }
+                entry.vendorOui = (u_int32_t)oui;
                 entry.hasVendorOui = true;
             }
             if (document.contains(CABLE_YAML_KEY_VENDOR_REV))
@@ -1176,8 +1887,52 @@ int CableFwManager::loadPackage(map<string, vector<u_int8_t> >& contents)
             }
             if (document.contains(CABLE_YAML_KEY_HW_REV_MAJOR))
             {
-                entry.hwRevMajor = (u_int8_t)document.at(CABLE_YAML_KEY_HW_REV_MAJOR).get_value<int>();
+                int hwRevMajor = document.at(CABLE_YAML_KEY_HW_REV_MAJOR).get_value<int>();
+                if (hwRevMajor < 0 || hwRevMajor > 0xff)
+                {
+                    throw std::runtime_error("states a hardware major outside 0..0xff");
+                }
+                entry.hwRevMajor = (u_int8_t)hwRevMajor;
                 entry.hasHwRevMajor = true;
+            }
+            // A metadata file is either a CM/JDM entry, keyed on part number and firmware major
+            // alone, or an ODM entry that also pins vendor name, OUI, revision and hardware
+            // major. Anything between the two states a key it does not narrow on, so it cannot
+            // be told apart from a broader entry for the same cable.
+            if (entry.hasVendorName || entry.hasVendorOui || entry.hasVendorRev || entry.hasHwRevMajor)
+            {
+                if (!entry.hasVendorName || !entry.hasVendorOui || !entry.hasVendorRev || !entry.hasHwRevMajor)
+                {
+                    throw std::runtime_error("carries some but not all of " CABLE_YAML_KEY_VENDOR_NAME
+                                             ", " CABLE_YAML_KEY_VENDOR_OUI ", " CABLE_YAML_KEY_VENDOR_REV
+                                             " and " CABLE_YAML_KEY_HW_REV_MAJOR);
+                }
+            }
+
+            // A package keeps each part number in a folder of its own. The tool matches on what a
+            // metadata file declares rather than on where it sits, so a file in the wrong folder
+            // would still be used - and the folder it names is where its image is looked up, so a
+            // mismatch means the package was assembled wrongly and the pairing cannot be trusted.
+            string folder = archiveDirectory(entry.metadataPath);
+            if (!folder.empty())
+            {
+                folder.resize(folder.size() - 1); // archiveDirectory keeps the separator
+                size_t parent = folder.find_last_of('/');
+
+                if (parent != string::npos)
+                {
+                    folder = folder.substr(parent + 1);
+                }
+                if (!equalsIgnoringCase(folder, entry.vendorPartNumber))
+                {
+                    throw std::runtime_error("declares " CABLE_YAML_KEY_PART_NUMBER " " + entry.vendorPartNumber +
+                                             " but sits in folder " + folder + "; the package needs fixing");
+                }
+            }
+
+            if (document.contains(CABLE_YAML_KEY_BUILD_DATE))
+            {
+                entry.buildDate = document.at(CABLE_YAML_KEY_BUILD_DATE).get_value<std::string>();
             }
 
             map<string, vector<u_int8_t> >::const_iterator image = contents.find(entry.imagePath);
@@ -1192,10 +1947,6 @@ int CableFwManager::loadPackage(map<string, vector<u_int8_t> >& contents)
             {
                 expected = document.at(CABLE_YAML_KEY_SHA256).get_value<std::string>();
             }
-            else if (document.contains(CABLE_YAML_KEY_SHA_ALT))
-            {
-                expected = document.at(CABLE_YAML_KEY_SHA_ALT).get_value<std::string>();
-            }
             else
             {
                 throw std::runtime_error("carries no " CABLE_YAML_KEY_SHA256 " for its image");
@@ -1208,8 +1959,12 @@ int CableFwManager::loadPackage(map<string, vector<u_int8_t> >& contents)
                                          ", the image hashes to " + actual);
             }
 #endif
-            entry.hasExtendedHeader = isCableExtendedHeaderMagic(
-              image->second.empty() ? NULL : &image->second[0], (u_int32_t)image->second.size());
+            // An extended header the package already carries goes to the device as supplied: the
+            // device matches the image against it where its fields match the cable. What the tool
+            // must not do is build a second header over an existing one.
+            entry.hasExtendedHeader =
+              hasCableExtendedHeader(image->second.empty() ? NULL : &image->second[0],
+                                                    (u_int32_t)image->second.size());
             entry.isValid = true;
         }
         catch (const std::exception& e)
@@ -1223,16 +1978,20 @@ int CableFwManager::loadPackage(map<string, vector<u_int8_t> >& contents)
 
     if (rejected > 0)
     {
-        _log += "Rejected " + int_to_string((int)rejected) + " unusable metadata file(s) in " +
-                _cmdParams.cable_package + "\n";
+        emitProgress("-W- Rejected " + int_to_string((int)rejected) + " unusable metadata file(s) in " +
+                     _cmdParams.cable_package + "\n");
+        // Which file and why is in the packages table of the report, a line per file.
         for (size_t i = 0; i < _packages.size(); i++)
         {
             if (!_packages[i].isValid)
             {
-                _log += "  " + _packages[i].metadataPath + ": " + _packages[i].parseError + "\n";
+                FWMANAGER_LOG_DEBUG("Rejected %s: %s", _packages[i].metadataPath.c_str(),
+                                    _packages[i].parseError.c_str());
             }
         }
     }
+
+    findPackageConflicts();
 
     u_int32_t usable = 0;
     for (size_t i = 0; i < _packages.size(); i++)
@@ -1247,8 +2006,29 @@ int CableFwManager::loadPackage(map<string, vector<u_int8_t> >& contents)
         _errMsg = "No usable firmware metadata was found in " + _cmdParams.cable_package;
         return ERR_CODE_IMG_NOT_FOUND;
     }
-    _log += "Read " + int_to_string((int)usable) + " firmware image(s) from " + _cmdParams.cable_package + "\n";
+    emitProgress("-I- Read " + int_to_string((int)usable) + " firmware image(s) from " + _cmdParams.cable_package +
+                 "\n");
     return MLX_FWM_SUCCESS;
+}
+
+void CableFwManager::findPackageConflicts()
+{
+    for (size_t i = 0; i < _packages.size(); i++)
+    {
+        for (size_t j = i + 1; j < _packages.size(); j++)
+        {
+            if (!_packages[i].isValid || !_packages[j].isValid || !metadataEntriesCollide(_packages[i], _packages[j]))
+            {
+                continue;
+            }
+            _packages[i].isValid = false;
+            _packages[j].isValid = false;
+            _packages[i].conflictsWith = _packages[j].metadataPath;
+            _packages[j].conflictsWith = _packages[i].metadataPath;
+            _packages[i].parseError = "cannot be told apart from " + _packages[j].metadataPath;
+            _packages[j].parseError = "cannot be told apart from " + _packages[i].metadataPath;
+        }
+    }
 }
 
 int CableFwManager::decideCableActions()
@@ -1265,11 +2045,35 @@ int CableFwManager::decideCableActions()
         }
         if (!cable.isPlugged)
         {
-            cable.action = CABLE_ACTION_SKIP_NOT_PRESENT;
+            cable.action = CABLE_ACTION_SKIP_NOT_PLUGGED;
             continue;
         }
+        // A cage that answered PMAOS but whose identity did not read is not a third party cable -
+        // nothing was learned about it either way.
+        //
+        // A verdict from MFCDR is checked first, because the firmware answers for the cage rather
+        // than from the EEPROM: a counterfeit that presents no identity at all is still a
+        // counterfeit, and reporting it as merely unreadable buries the one thing worth knowing.
+        if (cable.vendorStatus == CABLE_VENDOR_STATUS_FAKE || cable.vendorStatus == CABLE_VENDOR_STATUS_NON_NVIDIA)
+        {
+            // Both are one row in the report. Which of the two the firmware said is worth being
+            // able to look up afterwards, and this is the only place it is recorded.
+            FWMANAGER_LOG_DEBUG(
+              "Cable %u: MFCDR reports %s", cable.globalPort,
+              (cable.vendorStatus == CABLE_VENDOR_STATUS_FAKE) ? "a fake cable" : "a non-NVIDIA cable");
+            cable.action = CABLE_ACTION_SKIP_3RD_PARTY;
+            continue;
+        }
+        if (!cable.isReadable)
+        {
+            cable.action = CABLE_ACTION_SKIP_UNREADABLE;
+            continue;
+        }
+        // Left to the OUI list, which is all there is when the firmware gave no verdict.
         if (!cable.isNvidia)
         {
+            FWMANAGER_LOG_DEBUG("Cable %u: MFCDR gave no verdict and vendor OUI 0x%06x is not an NVIDIA block",
+                                cable.globalPort, cable.vendorOui);
             cable.action = CABLE_ACTION_SKIP_3RD_PARTY;
             continue;
         }
@@ -1321,9 +2125,32 @@ int CableFwManager::decideCableActions()
     return MLX_FWM_SUCCESS;
 }
 
+const FwPackageEntry* CableFwManager::packageEntryFor(const string& imagePath) const
+{
+    for (size_t i = 0; i < _packages.size(); i++)
+    {
+        if (_packages[i].isValid && _packages[i].imagePath == imagePath)
+        {
+            return &_packages[i];
+        }
+    }
+    return NULL;
+}
+
 int CableFwManager::groupUpdatePlan(const map<string, vector<u_int8_t> >& contents)
 {
     map<string, size_t> groupIndex;
+    // Whether every cable one image reaches on one ASIC can be given an extended header, keyed the
+    // way an unwrapped burn reaches them: by ASIC and image.
+    //
+    // An image carrying no header is matched on its product id alone, so the burn reaches every
+    // cable of that product id the ASIC owns - a cable the plan skipped was burned three times
+    // that way on a populated chassis. A header narrows it to the cables it was built from, but it
+    // needs the cable's hardware major and vendor revision, and a cable that supplies neither
+    // cannot be given one. Once such a cable is in the burn the unwrapped image reaches all the
+    // others regardless, so the whole set goes unwrapped rather than wrapping part of it for
+    // nothing.
+    map<string, bool> wrappable;
 
     for (size_t i = 0; i < _cables.size(); i++)
     {
@@ -1331,9 +2158,43 @@ int CableFwManager::groupUpdatePlan(const map<string, vector<u_int8_t> >& conten
         {
             continue;
         }
+        const FwPackageEntry* entry = packageEntryFor(_cables[i].packageImagePath);
+        // A package that ships its image already wrapped put that header there deliberately, and
+        // the image goes to the device as supplied.
+        bool canWrap = entry != NULL && !entry->hasExtendedHeader && cableExtHeaderKey(_cables[i]).isComplete();
+        string reach = _cables[i].asicDevName + '\n' + _cables[i].packageImagePath;
+        map<string, bool>::iterator known = wrappable.find(reach);
+
+        if (known == wrappable.end())
+        {
+            wrappable[reach] = canWrap;
+        }
+        else if (!canWrap)
+        {
+            known->second = false;
+        }
+    }
+
+    for (size_t i = 0; i < _cables.size(); i++)
+    {
+        if (_cables[i].action != CABLE_ACTION_UPDATE)
+        {
+            continue;
+        }
+        const FwPackageEntry* entry = packageEntryFor(_cables[i].packageImagePath);
+        string reach = _cables[i].asicDevName + '\n' + _cables[i].packageImagePath;
+        bool wrap = entry != NULL && wrappable[reach];
+        CableExtHeaderKey header;
+
+        if (wrap)
+        {
+            header = cableExtHeaderKey(_cables[i]);
+        }
         // One burn carries one image through one ASIC, and an ASIC cannot address another ASIC's
-        // cables, so the grouping is forced by the transport rather than chosen.
-        string key = _cables[i].asicDevName + '\n' + _cables[i].packageImagePath;
+        // cables, so that much of the grouping is forced by the transport rather than chosen. A
+        // wrapped image splits the set further, because the header only matches the cables whose
+        // own fields built it.
+        string key = reach + (wrap ? '\n' + header.groupKey() : "");
         map<string, size_t>::iterator existing = groupIndex.find(key);
         if (existing == groupIndex.end())
         {
@@ -1342,6 +2203,9 @@ int CableFwManager::groupUpdatePlan(const map<string, vector<u_int8_t> >& conten
             group.asicGa = _cables[i].asicGa;
             group.packageImagePath = _cables[i].packageImagePath;
             group.fwVersion = _cables[i].targetVersion;
+            group.isWrapped = wrap;
+            group.header = header;
+            group.imageHasOwnHeader = entry != NULL && entry->hasExtendedHeader;
             groupIndex[key] = _plan.size();
             _plan.push_back(group);
             existing = groupIndex.find(key);
@@ -1351,18 +2215,36 @@ int CableFwManager::groupUpdatePlan(const map<string, vector<u_int8_t> >& conten
 
     if (_plan.empty())
     {
-        _log += "No cable needs an update\n";
-        return MLX_FWM_SUCCESS;
-    }
+        // Name which of the two reasons emptied the plan, because "no update" reads as a clean
+        // bill of health and a package that matches nothing is not one.
+        u_int32_t current = 0;
+        u_int32_t unmatched = 0;
 
-    // The burn opens a file, and a ZIP entry has no path on disk, so every image is extracted -
-    // with the extended header prepended when the package binary had none. The package itself is
-    // never modified and the copies never reach the report.
-    string prefix = (string)TMP_DIR + PATH_SEPARATOR + "cable_fw_update_";
-    if (CreateTempDir(prefix, _tempDir) < 0)
-    {
-        _errMsg = "Failed to create a temporary directory for the firmware images";
-        return ERR_CODE_WRITE_FILE_FAIL;
+        for (size_t i = 0; i < _cables.size(); i++)
+        {
+            if (_cables[i].action == CABLE_ACTION_SKIP_CURRENT)
+            {
+                current++;
+            }
+            else if (_cables[i].action == CABLE_ACTION_SKIP_NO_FW_FILE)
+            {
+                unmatched++;
+            }
+        }
+        if (current > 0)
+        {
+            emitProgress("-I- " + int_to_string((int)current) + " cable(s) already run the version the package offers" +
+                         ((unmatched > 0) ? " and " + int_to_string((int)unmatched) + " match no image in it\n" : "\n"));
+        }
+        else if (unmatched > 0)
+        {
+            emitProgress("-W- No cable in the system matches any image in " + _cmdParams.cable_package + "\n");
+        }
+        else
+        {
+            emitProgress("-I- No cable in the system is eligible for a firmware update\n");
+        }
+        return MLX_FWM_SUCCESS;
     }
 
     for (size_t i = 0; i < _plan.size(); i++)
@@ -1373,25 +2255,24 @@ int CableFwManager::groupUpdatePlan(const map<string, vector<u_int8_t> >& conten
             _errMsg = "The package no longer holds " + _plan[i].packageImagePath;
             return ERR_CODE_IMG_NOT_FOUND;
         }
-        const FwPackageEntry* entry = NULL;
-        for (size_t j = 0; j < _packages.size(); j++)
-        {
-            if (_packages[j].isValid && _packages[j].imagePath == _plan[i].packageImagePath)
-            {
-                entry = &_packages[j];
-                break;
-            }
-        }
-        if (entry == NULL)
+        if (packageEntryFor(_plan[i].packageImagePath) == NULL)
         {
             _errMsg = "No metadata describes " + _plan[i].packageImagePath;
             return ERR_CODE_IMG_NOT_FOUND;
         }
+        vector<u_int8_t> wrapped;
 
-        vector<u_int8_t> payload = entry->hasExtendedHeader ? image->second : withExtendedHeader(*entry, image->second);
-        _plan[i].burnImagePath =
-          _tempDir + PATH_SEPARATOR + int_to_string((int)i) + "_" + archiveBaseName(_plan[i].packageImagePath);
-        mft_utils::WriteToBinFile(_plan[i].burnImagePath, payload);
+        if (_plan[i].isWrapped)
+        {
+            wrapped = withExtendedHeader(_plan[i].header, image->second);
+        }
+        const vector<u_int8_t>& payload = _plan[i].isWrapped ? wrapped : image->second;
+
+        _plan[i].burnImage.reserve(CABLE_BURN_IMAGE_PREFIX_SIZE + payload.size());
+        _plan[i].burnImage.assign(CABLE_BURN_IMAGE_PREFIX_SIZE, 0xff);
+        _plan[i].burnImage.insert(_plan[i].burnImage.end(), payload.begin(), payload.end());
+        FWMANAGER_LOG_DEBUG("Burn image for %s: %u byte(s), %s", _plan[i].packageImagePath.c_str(),
+                            (unsigned)_plan[i].burnImage.size(), planEntryHeaderText(_plan[i]).c_str());
     }
 
     u_int32_t cables = 0;
@@ -1399,19 +2280,80 @@ int CableFwManager::groupUpdatePlan(const map<string, vector<u_int8_t> >& conten
     {
         cables += (u_int32_t)_plan[i].cableIndices.size();
     }
-    _log += "Planned " + int_to_string((int)cables) + " cable update(s) in " + int_to_string((int)_plan.size()) +
-            " group(s)\n";
+    emitProgress("-I- Planned " + int_to_string((int)cables) + " cable update(s) in " +
+                 int_to_string((int)_plan.size()) + " group(s)\n");
     return MLX_FWM_SUCCESS;
+}
+
+void CableFwManager::emitProgress(const string& text)
+{
+    // Guarded rather than required: losing a progress line is a defect, but faulting in the middle
+    // of a burn costs a switch reboot.
+    if (_printer != NULL)
+    {
+        _printer(text.c_str());
+    }
+}
+
+/* What the user is told before the first byte reaches a cable.
+ *
+ * A fleet burn takes minutes and a stalled one costs a switch reboot, so the one thing that has to
+ * be on the terminal while there is still time to stop it is which cables are about to change and
+ * to what. Which file each change comes from goes to the debug trace instead: it is one file for a
+ * whole group, and the report names it either way.
+ */
+void CableFwManager::announceUpdatePlan()
+{
+    std::ostringstream text;
+    u_int32_t cables = 0;
+
+    for (size_t i = 0; i < _plan.size(); i++)
+    {
+        cables += (u_int32_t)_plan[i].cableIndices.size();
+    }
+    text << "-I- Updating " << cables << " cable(s):\n";
+    for (size_t i = 0; i < _plan.size(); i++)
+    {
+        for (size_t j = 0; j < _plan[i].cableIndices.size(); j++)
+        {
+            const CableInfo& cable = _cables[_plan[i].cableIndices[j]];
+            const CableFwVersion& running = (cable.runningSlot == CABLE_IMAGE_SLOT_B) ? cable.fwImageB : cable.fwImageA;
+            // A cable executing neither image has no version to change from, and runningSlot reads
+            // as A when nothing is running - so the slot would otherwise be reported as the one in
+            // use. Zeroes from an unread MCQI render as a real 00.00.0000 for the same reason.
+            bool showRunning = cable.fwRead && cable.isRunningImage;
+
+            text << "      Port " << std::left << std::setw(6) << cable.globalPort << std::setw(22)
+                 << clamped(orNotAvailable(cable.partNumber), 22) << std::setw(14)
+                 << (showRunning ? cableFwVersionText(running) : string(CABLE_REPORT_NOT_AVAILABLE)) << "-> "
+                 << cableFwVersionText(cable.targetVersion) << (cable.isDowngrade ? "  (downgrade)" : "") << "\n";
+        }
+        if (!_plan[i].isWrapped && !_plan[i].imageHasOwnHeader)
+        {
+            // Left in the trace rather than on the console: it is the first thing to check if a
+            // cable outside this plan turns out to have been burned.
+            FWMANAGER_LOG_DEBUG("%s carries no extended header, so the device matches it on the product id alone - a "
+                                "cable outside this plan being burned would be why",
+                                _plan[i].packageImagePath.c_str());
+        }
+    }
+    emitProgress(text.str());
 }
 
 int CableFwManager::downloadAndActivate()
 {
+    // The MCCE capability is a precondition of burning, not of running.
+    if (_plan.empty())
+    {
+        return MLX_FWM_SUCCESS;
+    }
     int rc = checkNoStopOnErrorSupport();
 
     if (rc != MLX_FWM_SUCCESS)
     {
         return rc;
     }
+    announceUpdatePlan();
 
     for (size_t i = 0; i < _plan.size(); i++)
     {
@@ -1422,22 +2364,41 @@ int CableFwManager::downloadAndActivate()
             CableUpdateResult result;
 
             result.globalIndex = cable.globalIndex;
+            result.globalPort = cable.globalPort;
             result.localIndex = cable.localIndex;
+            result.asicGa = cable.asicGa;
             result.asicDevName = cable.asicDevName;
+            result.stateBefore = cable.linkState;
             result.status = "not attempted";
             _results.push_back(result);
         }
+        string groupOfTotal = int_to_string((int)(i + 1)) + " of " + int_to_string((int)_plan.size());
+
+        // The device runs a whole group as one transaction and reports nothing while it does, so
+        // this is the only sign of life across a burn that takes minutes.
+        emitProgress("-I- Updating group " + groupOfTotal + " on " + _plan[i].asicDevName +
+                     ", this can take a while...\n");
+        FWMANAGER_LOG_DEBUG("Starting auto update on %s for group %s: %s, %u byte(s), expecting %u cable(s) to update, "
+                            "%s",
+                            _plan[i].asicDevName.c_str(), groupOfTotal.c_str(), _plan[i].packageImagePath.c_str(),
+                            (unsigned)_plan[i].burnImage.size(), (unsigned)_plan[i].cableIndices.size(),
+                            planEntryHeaderText(_plan[i]).c_str());
         burnPlanEntry(_plan[i], firstResult);
+
+        u_int32_t burned = 0;
+
+        for (size_t r = firstResult; r < _results.size(); r++)
+        {
+            burned += _results[r].burnAccepted ? 1 : 0;
+        }
+        // What the device accepted, not the verdict: phase 5 can still fail a cable that came back
+        // in a worse state than it started.
+        emitProgress("-I- Group " + groupOfTotal + " finished: " + int_to_string((int)burned) + " of " +
+                     int_to_string((int)_plan[i].cableIndices.size()) + " cable(s) burned\n");
     }
 
-    for (size_t i = 0; i < _results.size(); i++)
-    {
-        if (!_results[i].succeeded)
-        {
-            // The report is what names the cables that failed, so the run reaches it either way.
-            return ERR_CODE_CABLE_UPDATE_FAILED;
-        }
-    }
+    // The verdict is phase 5's: a cable can still be confirmed there, and a cable that came back
+    // in a worse state than it started fails the update even though its burn was accepted.
     return MLX_FWM_SUCCESS;
 }
 
@@ -1445,7 +2406,7 @@ int CableFwManager::checkNoStopOnErrorSupport()
 {
     for (AsicsByGa::const_iterator asic = _asics.begin(); asic != _asics.end(); ++asic)
     {
-        mfile* mf = mopen(asic->second.devName.c_str());
+        mfile* mf = deviceHandle(asic->second.devName);
         if (mf == NULL)
         {
             _errMsg = "Failed to open " + asic->second.devName + " to check its firmware update support";
@@ -1453,12 +2414,16 @@ int CableFwManager::checkNoStopOnErrorSupport()
         }
         bool supported = false;
         reg_access_status_t status = isRegisterValidAccordingToMcamReg(mf, REG_ID_MCCE, &supported);
-        mclose(mf);
-        if (status != ME_OK || !supported)
+        if (status != ME_OK)
+        {
+            _errMsg = "Failed to read MCAM from " + asic->second.devName + " to check its cable update support";
+            return ERR_CODE_CABLE_UPDATE_FAILED;
+        }
+        if (!supported)
         {
             _errMsg = "The firmware on " + asic->second.devName +
-                      " cannot report which cable failed a burn, so a failure would stop the update at the first bad "
-                      "cable; align the firmware across the system before updating cables";
+                      " cannot report which cable failed a burn, so one bad cable would strand the rest; align the "
+                      "firmware across the system before updating cables";
             return ERR_CODE_CABLE_NOT_SUPPORTED;
         }
     }
@@ -1467,57 +2432,50 @@ int CableFwManager::checkNoStopOnErrorSupport()
 
 void CableFwManager::burnPlanEntry(const CablePlanEntry& group, size_t firstResult)
 {
-    vector<u_int8_t> image(CABLE_BURN_IMAGE_PREFIX_SIZE, 0xff);
+    size_t lastResult = firstResult + group.cableIndices.size();
     string errMsg;
 
-    try
-    {
-        vector<u_int8_t> payload = mft_utils::ReadBinFile(group.burnImagePath);
-        image.insert(image.end(), payload.begin(), payload.end());
-    }
-    catch (const std::exception& e)
-    {
-        for (size_t i = firstResult; i < _results.size(); i++)
-        {
-            _results[i].status = string("download: ") + e.what();
-        }
-        return;
-    }
-
-    mfile* mf = mopen(group.asicDevName.c_str());
+    mfile* mf = deviceHandle(group.asicDevName);
     if (mf == NULL)
     {
-        for (size_t i = firstResult; i < _results.size(); i++)
+        for (size_t i = firstResult; i < lastResult; i++)
         {
+            _results[i].phase = "download";
             _results[i].status = "download: " + group.asicDevName + " could not be opened";
         }
         return;
     }
+    string stageName;
 
     // The wait belongs between the transfer and the activation, and it is only there for cables
     // that need it; with none asked for, the burn runs as one transaction, the way it is shipped.
     bool separateActivation = _cmdParams.cable_activation_wait > 0;
-    bool ok = runBurnStage(mf, image, true, !separateActivation, firstResult, errMsg);
+    bool ok = runBurnStage(mf, group.burnImage, true, !separateActivation, firstResult, lastResult, errMsg, stageName);
     if (ok && separateActivation)
     {
         msleep((unsigned int)_cmdParams.cable_activation_wait * 1000);
-        ok = runBurnStage(mf, image, false, true, firstResult, errMsg);
+        ok = runBurnStage(mf, group.burnImage, false, true, firstResult, lastResult, errMsg, stageName);
     }
-    mclose(mf);
 
-    for (size_t i = firstResult; i < _results.size(); i++)
+    for (size_t i = firstResult; i < lastResult; i++)
     {
         if (_results[i].status == "not attempted")
         {
             // The device picks the cables itself in this mode, so a group that came back clean
             // covered everything the plan expected of it.
             _results[i].succeeded = ok;
+            _results[i].burnAccepted = ok;
             _results[i].status = ok ? "burned" : errMsg;
+            if (!ok)
+            {
+                _results[i].phase = stageName;
+            }
         }
     }
     if (!ok)
     {
-        _log += "Cable update failed on " + group.asicDevName + " for " + group.packageImagePath + ": " + errMsg + "\n";
+        emitProgress("-E- Cable update failed on " + group.asicDevName + " for " + group.packageImagePath + ": " +
+                     errMsg + "\n");
     }
 }
 
@@ -1526,12 +2484,19 @@ bool CableFwManager::runBurnStage(mfile* mf,
                                   bool download,
                                   bool activate,
                                   size_t firstResult,
-                                  string& errMsg)
+                                  size_t lastResult,
+                                  string& errMsg,
+                                  string& stageName)
 {
     // A manager that has queried a cable keeps that cable's index and sends it on every command
     // afterwards, so the burn gets one of its own.
     FwCompsMgr fwComps(mf, FwCompsMgr::DEVICE_HCA_SWITCH, 0);
     FwComponent component;
+
+    // With both legs in one transaction the request cannot say which of them failed; only the
+    // device's own counters can, and they are read once the burn comes back.
+    stageName = download ? (activate ? "burn" : "download") : "activation";
+    string stage = stageName + ": ";
 
     fwComps.GenerateHandle();
     // No index and no range: with auto update set the device matches the image against its own
@@ -1540,20 +2505,29 @@ bool CableFwManager::runBurnStage(mfile* mf,
     fwComps.SetIndexAndSize(0, 0, true, activate, download, 0, true);
     if (!fwComps.RefreshComponentsStatus())
     {
-        errMsg = "download: " + string((const char*)fwComps.getLastErrMsg());
+        errMsg = stage + string((const char*)fwComps.getLastErrMsg());
         return false;
     }
     if (!component.init(image, (u_int32_t)image.size(), FwComponent::COMPID_LINKX))
     {
-        errMsg = "download: failed to prepare the firmware image";
+        errMsg = stage + "failed to prepare the firmware image";
         return false;
     }
 
-    // No progress callback: its only job is to print, and this class cannot.
+    // No progress callback: it reports one completion percentage for a transaction that covers a
+    // whole group, so the number names no cable, and it would print on its own rather than through
+    // the caller's printer.
     bool ok = fwComps.burnComponents(component, NULL);
     if (!ok)
     {
-        errMsg = string(download ? "download: " : "activation: ") + (const char*)fwComps.getLastErrMsg();
+        if (download && activate)
+        {
+            stageName = (fwComps.GetTransferErrorCount() > 0) ?
+                          "download" :
+                          ((fwComps.GetActivateErrorCount() > 0) ? "activation" : stageName);
+            stage = stageName + ": ";
+        }
+        errMsg = stage + (const char*)fwComps.getLastErrMsg();
         if (fwComps.isSpecificError)
         {
             errMsg += " " + fwComps.getLastSpecificError();
@@ -1564,37 +2538,131 @@ bool CableFwManager::runBurnStage(mfile* mf,
     // else calls SetIndexAndSize on it, which is what clears it.
     const std::vector<FwCompsMgr::burn_failure_t>& failures = fwComps.GetBurnFailures();
     u_int32_t transferFailures = fwComps.GetTransferErrorCount();
+    u_int32_t named = 0;
+
     for (size_t i = 0; i < failures.size(); i++)
     {
         // The device reports the cable in the number the user already sees, so it is matched
         // against the label port rather than shifted.
-        for (size_t j = firstResult; j < _results.size(); j++)
+        for (size_t j = firstResult; j < lastResult; j++)
         {
             if (cableLabelPort(_results[j].localIndex) != failures[i].module_id)
             {
                 continue;
             }
+            named++;
             _results[j].succeeded = false;
+            _results[j].burnAccepted = false;
+            _results[j].hasDeviceError = true;
+            _results[j].phase = (i < transferFailures) ? "download" : "activation";
             _results[j].mccErrorCode = failures[i].mcc_error_code;
             _results[j].cdbErrorCode = failures[i].cdb_error_code;
+            // Named here, while the manager that produced the code is still addressing the
+            // device, the way flint names both error codes together.
+            _results[j].mccErrorText = fwComps.GetMccErrorString(failures[i].mcc_error_code);
             _results[j].status =
               (i < transferFailures) ? "download: rejected by the device" : "activation: rejected by the device";
         }
+    }
+    // burnComponents() reports success whatever the error counts say, and the per-cable detail
+    // comes from a separate MCCE read that can come back empty or name a cable outside this
+    // group. Failures nobody could name leave the whole group indeterminate, never burned.
+    if (fwComps.GetBurnErrorCount() > named)
+    {
+        if (download && activate)
+        {
+            // One leg clean attributes the failure to the other; errors on both cannot be split.
+            if (fwComps.GetTransferErrorCount() == 0)
+            {
+                stageName = "activation";
+            }
+            else if (fwComps.GetActivateErrorCount() == 0)
+            {
+                stageName = "download";
+            }
+        }
+        errMsg = stageName + ": the device reported " + int_to_string((int)fwComps.GetBurnErrorCount()) +
+                 " failure(s) it could not identify";
+        return false;
     }
     return ok;
 }
 
 int CableFwManager::verifyAndReport()
 {
-    map<string, string> descriptions;
-    map<size_t, string> mccErrors;
-
     if (_cmdParams.cable_update)
     {
+        // A self-activating cable resets, so its link drops and re-trains. Verifying before that
+        // finishes reports a working cable as failed.
+        if (!_results.empty() && _cmdParams.cable_verify_wait > 0)
+        {
+            emitProgress("-I- Waiting " + int_to_string(_cmdParams.cable_verify_wait) +
+                         " second(s) for the cables to finish re-training\n");
+            msleep((unsigned int)_cmdParams.cable_verify_wait * 1000);
+        }
         verifyBurnedCables();
     }
-    collectReportDetails(descriptions, mccErrors);
-    return writeReport(buildReport(descriptions, mccErrors));
+    u_int32_t regressed = 0;
+    u_int32_t pending = 0;
+
+    for (size_t i = 0; i < _results.size(); i++)
+    {
+        if (_results[i].stateRegressed)
+        {
+            regressed++;
+        }
+        if (_results[i].pendingPowerCycle)
+        {
+            pending++;
+        }
+    }
+    if (regressed > 0)
+    {
+        emitProgress("-W- " + int_to_string((int)regressed) + " cable(s) had not come back up after " +
+                     int_to_string(_cmdParams.cable_verify_wait) +
+                     "s; check with 'mstlink -d <device> --port <label port> -m' before believing it\n");
+        emitProgress("-W- If the link is Active there, re-run with a larger --cable_verify_wait\n");
+    }
+    if (pending > 0)
+    {
+        // The cable runs its old image until the power cycle happens, and nothing else on the
+        // console says so.
+        emitProgress("-W- " + int_to_string((int)pending) +
+                     " cable(s) will run the new firmware only after a host power cycle\n");
+    }
+    collectReportDetails();
+
+    // The verdict is settled before the file is written, so a report that cannot be written still
+    // reports the update outcome instead of replacing it with a file error.
+    int verdict = MLX_FWM_SUCCESS;
+
+    for (size_t i = 0; i < _results.size(); i++)
+    {
+        if (!_results[i].succeeded)
+        {
+            _errMsg = "One or more cables did not complete the update; see the report";
+            verdict = ERR_CODE_CABLE_UPDATE_FAILED;
+            break;
+        }
+    }
+    string text = buildReport();
+    string verdictMsg = _errMsg;
+    int rc = writeReport(text);
+
+    if (rc != MLX_FWM_SUCCESS)
+    {
+        // The file is gone, the outcome is not, so the report goes to the console rather than
+        // nowhere. Announced first, or it reads as output the run meant to produce.
+        emitProgress("-W- The report file could not be written, so the report follows here\n");
+        emitProgress(text);
+        if (verdict == MLX_FWM_SUCCESS)
+        {
+            return rc;
+        }
+        _errMsg = verdictMsg;
+        return verdict;
+    }
+    return verdict;
 }
 
 void CableFwManager::verifyBurnedCables()
@@ -1617,23 +2685,65 @@ void CableFwManager::verifyBurnedCables()
             continue;
         }
 
-        mfile* mf = mopen(result.asicDevName.c_str());
+        mfile* mf = deviceHandle(result.asicDevName);
         if (mf == NULL)
         {
             result.succeeded = false;
-            result.status = "verification: " + result.asicDevName + " could not be reopened";
+            if (result.burnAccepted)
+            {
+                result.phase = "verification";
+                result.status = "verification: " + result.asicDevName + " could not be reopened";
+            }
             continue;
         }
         CableInfo current = *cable;
         bool read = readCableFwProperties(mf, current);
-        mclose(mf);
+
+        // A link that was carrying traffic before the update has to be carrying it after. This is
+        // the thing an operator actually loses. A
+        // state the register would not report is unknown rather than down.
+        result.stateAfter = readCableLinkStateText(mf, current);
+        result.stateRegressed = (result.stateBefore == CABLE_LINK_STATE_ACTIVE_NAME) &&
+                                (result.stateAfter != CABLE_LINK_STATE_ACTIVE_NAME) &&
+                                (result.stateAfter != CABLE_REPORT_NOT_AVAILABLE);
+        if (read)
+        {
+            result.readBack = true;
+            result.fwImageA = current.fwImageA;
+            result.fwImageB = current.fwImageB;
+            result.runningSlot = current.runningSlot;
+            result.isRunningImage = current.isRunningImage;
+        }
+        // Phase 5 can confirm a burn the device accepted; it can never overturn one it refused,
+        // and the reason it refused is the only thing that tells the operator what to do next.
+        if (!result.burnAccepted)
+        {
+            continue;
+        }
         if (!read)
         {
             result.succeeded = false;
+            result.phase = "verification";
             result.status = "verification: the cable did not answer";
             continue;
         }
-
+        if (result.stateRegressed)
+        {
+            result.succeeded = false;
+            result.phase = "verification";
+            result.status = "link was " + orNotAvailable(result.stateBefore) + " before the update and is " +
+                            orNotAvailable(result.stateAfter) + " now";
+            continue;
+        }
+        // runningSlot reads as A when nothing is running, so without this a cable left executing
+        // no image after the burn matches its own target slot and reports a successful update.
+        if (!current.isRunningImage)
+        {
+            result.succeeded = false;
+            result.phase = "verification";
+            result.status = "no image is running after the update";
+            continue;
+        }
         const CableFwVersion& running =
           (current.runningSlot == CABLE_IMAGE_SLOT_B) ? current.fwImageB : current.fwImageA;
         if (current.runningSlot == cable->targetSlot && compareCableFwVersions(running, cable->targetVersion) == 0)
@@ -1642,27 +2752,30 @@ void CableFwManager::verifyBurnedCables()
             result.status = "updated to " + cableFwVersionText(running);
             continue;
         }
-        // A cable that activates only on a host power cycle is still running its old image here,
-        // which is a pending power cycle rather than a burn that failed.
-        if (cable->activationType == 0)
+        // A cable that activates only on a host power cycle is still running its old image here.
+        // That is a pending power cycle only if the image actually reached the slot it was
+        // written to; otherwise the device took nothing and said nothing.
+        const CableFwVersion& target = (cable->targetSlot == CABLE_IMAGE_SLOT_B) ? current.fwImageB : current.fwImageA;
+        if (cable->activationType == 0 && compareCableFwVersions(target, cable->targetVersion) == 0)
         {
             result.succeeded = true;
+            result.pendingPowerCycle = true;
+            result.pendingVersion = cable->targetVersion;
             result.status = "burned, pending a host power cycle to run " + cableFwVersionText(cable->targetVersion);
             continue;
         }
         result.succeeded = false;
+        result.phase = "verification";
         result.status = "still running " + cableFwVersionText(running) + " after the update";
     }
 }
 
-void CableFwManager::collectReportDetails(map<string, string>& descriptions, map<size_t, string>& mccErrors)
+void CableFwManager::collectReportDetails()
 {
-    for (AsicsByGa::const_iterator asic = _asics.begin(); asic != _asics.end(); ++asic)
+    for (AsicsByGa::iterator asic = _asics.begin(); asic != _asics.end(); ++asic)
     {
-        const string& devName = asic->second.devName;
-        mfile* mf = mopen(devName.c_str());
+        mfile* mf = deviceHandle(asic->second.devName);
 
-        descriptions[devName] = "";
         if (mf == NULL)
         {
             continue;
@@ -1671,147 +2784,305 @@ void CableFwManager::collectReportDetails(map<string, string>& descriptions, map
         vector<u_int8_t> info;
         if (fwComps.getDeviceHWInfo(FwCompsMgr::MQIS_REGISTER_DEVICE_DESCRIPTION_INFO, info) && !info.empty())
         {
-            descriptions[devName] = deviceDescription(string((const char*)&info[0]));
+            asic->second.description = deviceDescription(string((const char*)&info[0]));
         }
-        // The device error codes are named by the same manager that would have returned them.
-        for (size_t j = 0; j < _results.size(); j++)
-        {
-            if (_results[j].asicDevName == devName && _results[j].mccErrorCode != 0)
-            {
-                mccErrors[j] = fwComps.GetMccErrorString(_results[j].mccErrorCode);
-            }
-        }
-        mclose(mf);
     }
 }
 
-string CableFwManager::buildReport(const map<string, string>& descriptions, const map<size_t, string>& mccErrors)
+string CableFwManager::buildReport()
 {
     std::ostringstream report;
-    u_int32_t updated = 0;
+    u_int32_t plugged = 0;
+    u_int32_t skipped = 0;
+    u_int32_t succeeded = 0;
     u_int32_t failed = 0;
+    u_int32_t pending = 0;
 
+    for (size_t i = 0; i < _cables.size(); i++)
+    {
+        if (_cables[i].isPlugged)
+        {
+            plugged++;
+        }
+        if (_cables[i].action != CABLE_ACTION_UPDATE && _cables[i].action != CABLE_ACTION_UNDECIDED)
+        {
+            skipped++;
+        }
+    }
     for (size_t i = 0; i < _results.size(); i++)
     {
         if (_results[i].succeeded)
         {
-            updated++;
+            succeeded++;
         }
         else
         {
             failed++;
         }
+        if (_results[i].pendingPowerCycle)
+        {
+            pending++;
+        }
     }
 
-    report << "Cable firmware update report\n";
-    report << "============================\n\n";
-    report << "Mode:     " << (_cmdParams.cable_update ? "update" : (_cmdParams.cable_dry_run ? "dry run" : "query"))
+    // One device line, from the first ASIC: every ASIC in a chassis carries the same description,
+    // and the per-ASIC detail is what --verbose is for.
+    string description = _asics.empty() ? string() : _asics.begin()->second.description;
+
+    report << CABLE_REPORT_RULE << "\n";
+    report << "PLUGGABLE MODULE FIRMWARE UPDATE REPORT\n";
+    report << "Date: " << reportTimestamp() << "\n";
+    report << "Device: " << orNotAvailable(description) << "\n";
+    report << "Mode: " << (_cmdParams.cable_update ? "update" : (_cmdParams.cable_dry_run ? "dry run" : "query"))
            << "\n";
-    report << "Package:  " << orNotAvailable(_cmdParams.cable_package) << "\n";
-    report << "Cables:   " << _cables.size() << " found, " << _plan.size() << " group(s) planned, " << updated
-           << " updated, " << failed << " failed\n\n";
+    report << CABLE_REPORT_RULE << "\n\n";
 
-    report << "Devices\n-------\n";
-    for (AsicsByGa::const_iterator asic = _asics.begin(); asic != _asics.end(); ++asic)
+    if (_cmdParams.verbose)
     {
-        map<string, string>::const_iterator description = descriptions.find(asic->second.devName);
-        report << asic->second.devName << "  "
-               << ((description == descriptions.end()) ? string(CABLE_REPORT_NOT_AVAILABLE) :
-                                                         orNotAvailable(description->second))
-               << "\n";
+        for (AsicsByGa::const_iterator asic = _asics.begin(); asic != _asics.end(); ++asic)
+        {
+            report << "ASIC " << (int)asic->first << "\n";
+            report << "  Device      : " << asic->second.devName << "\n";
+            report << "  FW Version  : " << orNotAvailable(asic->second.fwVersion) << "\n";
+        }
+        report << "\n";
     }
-    report << "\n";
 
-    report << "Packages\n--------\n";
+    report << "SUMMARY\n-------\n";
+    report << "Ports scanned:     " << _cables.size() << "\n";
+    report << "Modules found:     " << plugged << "\n";
+    report << "Updates attempted: "
+           << (_cmdParams.cable_update ? int_to_string((int)_results.size()) : string(CABLE_REPORT_NOT_AVAILABLE))
+           << "\n";
+    report << "Succeeded:         "
+           << (_cmdParams.cable_update ? int_to_string((int)succeeded) : string(CABLE_REPORT_NOT_AVAILABLE)) << "\n";
+    report << "Failed:            "
+           << (_cmdParams.cable_update ? int_to_string((int)failed) : string(CABLE_REPORT_NOT_AVAILABLE)) << "\n";
+    report << "Needs power cycle: "
+           << (_cmdParams.cable_update ? int_to_string((int)pending) : string(CABLE_REPORT_NOT_AVAILABLE)) << "\n";
+    report << "Skipped:           "
+           << ((_cmdParams.cable_query || !_planned) ? string(CABLE_REPORT_NOT_AVAILABLE) : int_to_string((int)skipped))
+           << "\n\n";
+
+    appendPackagesTable(report);
+    appendDiscoveryTable(report);
+    appendPlanTable(report);
+    appendVerificationTable(report);
+    appendErrorsTable(report);
+
+    report << CABLE_REPORT_RULE << "\n";
+    return report.str();
+}
+
+/* Every metadata file the package held, whether or not it was usable. */
+void CableFwManager::appendPackagesTable(std::ostringstream& report)
+{
+    report << "FW UPDATE PACKAGES\n------------------\n";
     if (_packages.empty())
     {
-        report << CABLE_REPORT_NOT_AVAILABLE << "\n";
+        report << CABLE_REPORT_NOT_AVAILABLE << "\n\n";
+        return;
     }
+    report << std::left << std::setw(50) << "File" << std::setw(20) << "Vendor (OUI)" << std::setw(20) << "Vendor PN"
+           << std::setw(12) << "Vendor Rev" << std::setw(14) << "HW Rev Major" << std::setw(14) << "Build Date"
+           << std::setw(14) << "FW Version"
+           << "Valid\n";
     for (size_t i = 0; i < _packages.size(); i++)
     {
-        report << _packages[i].metadataPath << "  ";
-        if (_packages[i].isValid)
+        const FwPackageEntry& entry = _packages[i];
+        string vendor = CABLE_REPORT_NOT_AVAILABLE;
+        char oui[16];
+
+        if (entry.hasVendorOui)
         {
-            report << _packages[i].imagePath << "  " << cableFwVersionText(_packages[i].fwVersion) << "\n";
+            snprintf(oui, sizeof(oui), "0x%06x", entry.vendorOui);
+            vendor = entry.hasVendorName ? entry.vendorName + " (" + oui + ")" : string(oui);
         }
-        else
+        else if (entry.hasVendorName)
         {
-            report << "unusable: " << _packages[i].parseError << "\n";
+            vendor = entry.vendorName;
         }
+        report << std::left << std::setw(50) << (entry.imagePath.empty() ? entry.metadataPath : entry.imagePath)
+               << std::setw(20) << vendor << std::setw(20) << orNotAvailable(entry.vendorPartNumber) << std::setw(12)
+               << (entry.hasVendorRev ? entry.vendorRev : string(CABLE_REPORT_NOT_AVAILABLE)) << std::setw(14)
+               << (entry.hasHwRevMajor ? int_to_string((int)entry.hwRevMajor) : string(CABLE_REPORT_NOT_AVAILABLE))
+               << std::setw(14) << orNotAvailable(entry.buildDate) << std::setw(14)
+               << cableFwVersionText(entry.fwVersion)
+               << (entry.isValid ? string("yes") : "no (" + entry.parseError + ")") << "\n";
     }
     report << "\n";
+}
 
-    // Every cage the module map named appears here, including the ones nothing was done to,
-    // because the report has to account for every port.
-    report << "Cables\n------\n";
-    report << "Port  Device                        State                      Part number       Serial            "
-              "Running       Action\n";
+/* The columns every per-cable table opens with. */
+void CableFwManager::appendCableColumns(std::ostringstream& report, bool withAsic)
+{
+    report << std::left << std::setw(6) << "Port";
+    if (withAsic)
+    {
+        report << std::setw(6) << "ASIC" << std::setw(11) << "Label Port";
+    }
+    report << std::setw(18) << "Vendor" << std::setw(20) << "Vendor PN" << std::setw(18) << "Vendor SN" << std::setw(17)
+           << "State" << std::setw(12) << "Vendor Rev" << std::setw(8) << "HW Rev" << std::setw(14) << "FW A"
+           << std::setw(14) << "FW B" << std::setw(12) << "FW Running";
+}
+
+void CableFwManager::appendCableRow(std::ostringstream& report, const CableInfo& cable, bool withAsic)
+{
+    // Zeroes are what an unread MCQI leaves behind, and they render as a real 00.00.0000.
+    bool showFirmware = cable.isPlugged && cable.fwRead;
+
+    report << std::left << std::setw(6) << cable.globalPort;
+    if (withAsic)
+    {
+        // MMAM leaves local_module Reserved for exactly the ports it leaves ga Reserved, so
+        // neither number means anything for those.
+        bool attributed = (cable.action != CABLE_ACTION_SKIP_ASIC_DETECTION_NOT_SUPPORTED);
+
+        report << std::setw(6) << (attributed ? int_to_string((int)cable.asicGa) : string(CABLE_REPORT_NOT_AVAILABLE))
+               << std::setw(11)
+               << (attributed ? int_to_string((int)cableLabelPort(cable.localIndex)) :
+                                string(CABLE_REPORT_NOT_AVAILABLE));
+    }
+    report << std::setw(18) << orNotAvailable(cable.vendorName) << std::setw(20) << orNotAvailable(cable.partNumber)
+           << std::setw(18) << orNotAvailable(cable.serialNumber) << std::setw(17) << orNotAvailable(cable.linkState)
+           << std::setw(12) << orNotAvailable(cable.vendorRev) << std::setw(8) << cableHwRevisionText(cable)
+           << std::setw(14) << (showFirmware ? cableFwVersionText(cable.fwImageA) : string(CABLE_REPORT_NOT_AVAILABLE))
+           << std::setw(14) << (showFirmware ? cableFwVersionText(cable.fwImageB) : string(CABLE_REPORT_NOT_AVAILABLE))
+           << std::setw(12)
+           << (cable.fwRead ? cableRunningSlotText(cable.isRunningImage, cable.runningSlot) :
+                              string(CABLE_REPORT_NOT_AVAILABLE));
+}
+
+/* What phase 2 found, before anything was decided or burned. */
+void CableFwManager::appendDiscoveryTable(std::ostringstream& report)
+{
+    report << "DISCOVERY (pre-update state)\n----------------------------\n";
+    if (_cables.empty())
+    {
+        report << CABLE_REPORT_NOT_AVAILABLE << "\n\n";
+        return;
+    }
+    appendCableColumns(report, _cmdParams.verbose);
+    report << "\n";
+    for (size_t i = 0; i < _cables.size(); i++)
+    {
+        appendCableRow(report, _cables[i], _cmdParams.verbose);
+        report << "\n";
+    }
+    report << "\n";
+}
+
+/* What phase 3 decided. Query mode never runs it, so there is nothing to show there. */
+void CableFwManager::appendPlanTable(std::ostringstream& report)
+{
+    report << "FW UPDATE PLAN\n--------------\n";
+    if (_cmdParams.cable_query || _cables.empty() || !_planned)
+    {
+        report << CABLE_REPORT_NOT_AVAILABLE << "\n\n";
+        return;
+    }
+    appendCableColumns(report, false);
+    report << std::setw(14) << "Target FW" << std::setw(50) << "FW File"
+           << "Action\n";
     for (size_t i = 0; i < _cables.size(); i++)
     {
         const CableInfo& cable = _cables[i];
-        const CableFwVersion& running = (cable.runningSlot == CABLE_IMAGE_SLOT_B) ? cable.fwImageB : cable.fwImageA;
 
-        report << std::left << std::setw(6) << cableLabelPort(cable.localIndex) << std::setw(30)
-               << orNotAvailable(cable.asicDevName) << std::setw(27) << orNotAvailable(cable.state) << std::setw(18)
-               << orNotAvailable(cable.partNumber) << std::setw(18) << orNotAvailable(cable.serialNumber)
-               << std::setw(14) << (cable.isPlugged ? cableFwVersionText(running) : string(CABLE_REPORT_NOT_AVAILABLE))
-               << cableActionName(cable.action) << (cable.isDowngrade ? " (downgrade)" : "") << "\n";
+        appendCableRow(report, cable, false);
+        report << std::setw(14)
+               << ((cable.action == CABLE_ACTION_UPDATE) ? cableFwVersionText(cable.targetVersion) :
+                                                           string(CABLE_REPORT_NOT_AVAILABLE))
+               << std::setw(50) << orNotAvailable(cable.packageImagePath) << cableActionName(cable.action)
+               << (cable.isDowngrade ? " (downgrade)" : "") << "\n";
     }
     report << "\n";
+}
 
-    report << "Update\n------\n";
-    if (_results.empty())
+/* What phase 5 read back. Only an update reaches it. */
+void CableFwManager::appendVerificationTable(std::ostringstream& report)
+{
+    report << "VERIFICATION (post-update state)\n--------------------------------\n";
+    if (!_cmdParams.cable_update || _results.empty())
     {
-        report << CABLE_REPORT_NOT_AVAILABLE << "\n";
+        report << CABLE_REPORT_NOT_AVAILABLE << "\n\n";
+        return;
     }
-    else
+    appendCableColumns(report, false);
+    report << "Status\n";
+    for (size_t i = 0; i < _results.size(); i++)
     {
-        report << "Port  Device                        Image                                   Outcome\n";
-        for (size_t i = 0; i < _results.size(); i++)
+        const CableUpdateResult& result = _results[i];
+        CableInfo after;
+
+        // The identity is the cable's; the firmware and the state are what phase 5 read back.
+        for (size_t j = 0; j < _cables.size(); j++)
         {
-            const CableUpdateResult& result = _results[i];
-            string image = CABLE_REPORT_NOT_AVAILABLE;
-
-            for (size_t j = 0; j < _cables.size(); j++)
+            if (_cables[j].globalIndex == result.globalIndex)
             {
-                if (_cables[j].globalIndex == result.globalIndex && !_cables[j].packageImagePath.empty())
-                {
-                    image = _cables[j].packageImagePath;
-                }
+                after = _cables[j];
+                break;
             }
-            report << std::left << std::setw(6) << cableLabelPort(result.localIndex) << std::setw(30)
-                   << result.asicDevName << std::setw(40) << image << orNotAvailable(result.status) << "\n";
         }
+        after.linkState = result.stateAfter;
+        after.fwImageA = result.fwImageA;
+        after.fwImageB = result.fwImageB;
+        after.runningSlot = result.runningSlot;
+        after.isRunningImage = result.isRunningImage;
+        after.fwRead = result.readBack;
+
+        appendCableRow(report, after, false);
+        report << orNotAvailable(result.status) << "\n";
     }
     report << "\n";
+}
 
-    report << "Errors\n------\n";
-    bool anyError = false;
+void CableFwManager::appendErrorsTable(std::ostringstream& report)
+{
+    bool any = false;
+
+    report << "ERRORS\n------\n";
     for (size_t i = 0; i < _results.size(); i++)
     {
         if (_results[i].succeeded)
         {
             continue;
         }
-        if (!anyError)
+        if (!any)
         {
-            report << "Port  Phase        ASIC Error Code                         Module Error Code\n";
-            anyError = true;
+            // The device answers in its own per-ASIC label port, so both numbers are always here:
+            // nothing else lets an MCCE report be lined up with a cable.
+            report << std::left << std::setw(6) << "Port" << std::setw(6) << "ASIC" << std::setw(11) << "Label Port"
+                   << std::setw(13) << "Phase" << std::setw(40) << "ASIC Error Code"
+                   << "Module Error Code\n";
+            any = true;
         }
-        map<size_t, string>::const_iterator mcc = mccErrors.find(i);
-        string phase = _results[i].status.substr(0, _results[i].status.find(':'));
-        char mccText[128];
+        string phase = orNotAvailable(_results[i].phase);
+        string asicError = CABLE_REPORT_NOT_AVAILABLE;
+        string moduleError = CABLE_REPORT_NOT_AVAILABLE;
 
-        snprintf(mccText, sizeof(mccText), "%s (0x%02x)",
-                 (mcc == mccErrors.end()) ? CABLE_REPORT_NOT_AVAILABLE : mcc->second.c_str(), _results[i].mccErrorCode);
-        report << std::left << std::setw(6) << cableLabelPort(_results[i].localIndex) << std::setw(13) << phase
-               << std::setw(40) << mccText << cdbErrorText(_results[i].cdbErrorCode) << "\n";
+        // Both codes come from one MCCE record. Without one there is nothing to name, and code 0
+        // reads as a clean status rather than as the absence of an answer.
+        if (_results[i].hasDeviceError)
+        {
+            char mccText[128];
+
+            snprintf(mccText, sizeof(mccText), "%s (0x%02x)",
+                     _results[i].mccErrorText.empty() ? CABLE_REPORT_NOT_AVAILABLE : _results[i].mccErrorText.c_str(),
+                     _results[i].mccErrorCode);
+            asicError = mccText;
+            moduleError = cdbErrorText(_results[i].cdbErrorCode);
+        }
+        report << std::left << std::setw(6) << _results[i].globalPort << std::setw(6) << (int)_results[i].asicGa
+               << std::setw(11) << cableLabelPort(_results[i].localIndex) << std::setw(13) << clamped(phase, 13)
+               << std::setw(40) << clamped(asicError, 40) << moduleError << "\n";
     }
-    if (!anyError)
+    if (!any)
     {
-        report << CABLE_REPORT_NOT_AVAILABLE << "\n";
+        // N/A is for a section the run never reached. An update that burned and found nothing to
+        // report is a different answer, and saying so is the point of the section.
+        report << (_cmdParams.cable_update ? "No errors were found" : CABLE_REPORT_NOT_AVAILABLE) << "\n";
     }
-    return report.str();
+    report << "\n";
 }
 
 int CableFwManager::writeReport(const string& text)
@@ -1820,13 +3091,11 @@ int CableFwManager::writeReport(const string& text)
     tm* localNow = localtime(&now);
     char stamp[32];
 
-    if (localNow == NULL)
+    if (localNow == NULL || strftime(stamp, sizeof(stamp), "%Y%m%d_%H%M%S", localNow) == 0)
     {
         _errMsg = "Failed to read the current time for the report file name";
         return ERR_CODE_WRITE_FILE_FAIL;
     }
-    snprintf(stamp, sizeof(stamp), "%d%02d%02d_%02d%02d%02d", localNow->tm_year + 1900, localNow->tm_mon + 1,
-             localNow->tm_mday, localNow->tm_hour, localNow->tm_min, localNow->tm_sec);
 
     string path = _cmdParams.cable_report_dir;
     if (!path.empty())
@@ -1849,6 +3118,6 @@ int CableFwManager::writeReport(const string& text)
         _errMsg = "Failed to write " + path;
         return ERR_CODE_WRITE_FILE_FAIL;
     }
-    _log += "Report file: " + path + "\n";
+    emitProgress("-I- Report file: " + path + "\n");
     return MLX_FWM_SUCCESS;
 }

@@ -54,6 +54,17 @@
 #include <fw_ops.h>
 #include <sys/types.h>
 #include "err_msgs.h"
+#include "nvtoolslogger/NvToolsLogger.h"
+
+/* Tool-wide tracing for mlxfwmanager. The layer is the tool, not any one flow inside it, so
+ * every part of mlxfwmanager logs here and one switch turns all of it on:
+ *
+ *     mstflintlogger --set-module mlxfwmanager:debug
+ */
+#define FWMANAGER_LOG_DEBUG(...) MFT_LOG_DEBUGF(nvtoolslogger::Layer::MLXFWMANAGER, __VA_ARGS__)
+#define FWMANAGER_LOG_INFO(...) MFT_LOG_INFOF(nvtoolslogger::Layer::MLXFWMANAGER, __VA_ARGS__)
+#define FWMANAGER_LOG_WARNING(...) MFT_LOG_WARNINGF(nvtoolslogger::Layer::MLXFWMANAGER, __VA_ARGS__)
+#define FWMANAGER_LOG_ERROR(...) MFT_LOG_ERRORF(nvtoolslogger::Layer::MLXFWMANAGER, __VA_ARGS__)
 
 #ifndef NO_ZLIB
 #include <zlib.h>

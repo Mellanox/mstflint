@@ -109,6 +109,8 @@ public:
     string cable_package;
     int cable_activation_wait;
     string cable_report_dir;
+    int cable_verify_wait;
+    bool verbose;
 };
 
 #endif

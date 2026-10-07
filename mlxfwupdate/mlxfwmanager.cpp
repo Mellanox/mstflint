@@ -325,6 +325,16 @@ int main(int argc, char* argv[])
         return ERR_CODE_INVALID_PLDM_COMPONENT;
     }
 }
+
+/* Lets the cable flow reach the terminal while its run is still going, which it cannot do itself:
+ * print_out lives in mlxfwmanager.h, which also defines FOut, FErr, FLog and formatted_output at
+ * file scope, so only this translation unit may include it.
+ */
+static void printCableProgress(const char* text)
+{
+    print_out("%s", text);
+}
+
 int mainEntry(int argc, char* argv[])
 {
     int res = 0;
@@ -578,12 +588,8 @@ int mainEntry(int argc, char* argv[])
     // runs its own discovery and image matching instead of joining the MlnxDev list.
     if (cmd_params.cable_query || cmd_params.cable_dry_run || cmd_params.cable_update)
     {
-        CableFwManager cableMgr(cmd_params);
+        CableFwManager cableMgr(cmd_params, printCableProgress);
         res = cableMgr.run();
-        if (!cableMgr.getLog().empty())
-        {
-            print_out("%s", cableMgr.getLog().c_str());
-        }
         if (res != MLX_FWM_SUCCESS)
         {
             print_err("-E- %s\n", cableMgr.getLastErrMsg().c_str());
@@ -1485,6 +1491,15 @@ bool checkCmdParams(CmdLineParams& cmd_params, config_t& config)
             }
         }
     }
+    // Nothing outside the cable flow reads it yet, so refuse it there rather than accept a flag
+    // that silently does nothing.
+    if (cmd_params.verbose && !cable_mode)
+    {
+        fprintf(stderr,
+                "-E- --verbose is currently only supported with --cable_query, --cable_dry_run or "
+                "--cable_update\n");
+        return false;
+    }
     if (cmd_params.cable_report_dir.length())
     {
         if (!cable_mode)
@@ -1549,11 +1564,21 @@ bool checkCmdParams(CmdLineParams& cmd_params, config_t& config)
         fprintf(stderr, "-E- XML output is not supported with --cable_query, --cable_dry_run and --cable_update\n");
         return false;
     }
+    if (cmd_params.cable_verify_wait >= 0 && !cable_mode)
+    {
+        fprintf(stderr,
+                "-E- --cable_verify_wait is only valid with --cable_query, --cable_dry_run or --cable_update\n");
+        return false;
+    }
     if (cmd_params.cable_activation_wait >= 0 && !cable_mode)
     {
         fprintf(stderr,
                 "-E- --cable_activation_wait is only valid with --cable_query, --cable_dry_run or --cable_update\n");
         return false;
+    }
+    if (cable_mode && cmd_params.cable_verify_wait < 0)
+    {
+        cmd_params.cable_verify_wait = CABLE_VERIFY_WAIT_DEFAULT;
     }
     if (cable_mode && cmd_params.cable_activation_wait < 0)
     {
