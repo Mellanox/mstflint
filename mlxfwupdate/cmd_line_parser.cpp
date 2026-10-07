@@ -60,6 +60,9 @@ using namespace mft_utils;
 #define VERSION_L "version"
 #define VERSION_S 'v'
 
+#define VERBOSE_L "verbose"
+#define VERBOSE_S ' ' // -v is already --version
+
 #define CURRENT_DIR_L "current-dir"
 #define CURRENT_DIR_S ' '
 
@@ -234,6 +237,9 @@ using namespace mft_utils;
 #define CABLE_ACTIVATION_WAIT_L "cable_activation_wait"
 #define CABLE_ACTIVATION_WAIT_S ' '
 
+#define CABLE_VERIFY_WAIT_L "cable_verify_wait"
+#define CABLE_VERIFY_WAIT_S ' '
+
 #define CABLE_REPORT_DIR_L "cable_report_dir"
 #define CABLE_REPORT_DIR_S ' '
 
@@ -345,6 +351,10 @@ void CmdLineParser::initOptions()
                      true); // Hidden
 
     this->AddOptions(VERSION_L, VERSION_S, "", "Show the executable version and exit");
+
+    this->AddOptions(VERBOSE_L, VERBOSE_S, "",
+                     "Print additional detail. Currently reaches the cable report only, where it adds "
+                     "the owning ASIC and the per-ASIC port number");
 
     this->AddOptions(QUERY_L, QUERY_S, "", "Query device(s) info");
 
@@ -501,6 +511,9 @@ void CmdLineParser::initOptions()
 
     this->AddOptions(CABLE_ACTIVATION_WAIT_L, CABLE_ACTIVATION_WAIT_S, "Seconds",
                      "Seconds to wait between downloading the cable firmware and activating it (default 0)");
+
+    this->AddOptions(CABLE_VERIFY_WAIT_L, CABLE_VERIFY_WAIT_S, "Seconds",
+                     "Seconds to let the cables finish re-training before the update is verified (default 5)");
 
     this->AddOptions(CABLE_REPORT_DIR_L, CABLE_REPORT_DIR_S, "DirectoryName",
                      "Directory to write the cable update report to (default current directory)");
@@ -915,9 +928,30 @@ ParseStatus CmdLineParser::HandleOption(string name, string value)
         }
         return PARSE_OK;
     }
+    else if (name == CABLE_VERIFY_WAIT_L)
+    {
+        std::istringstream iss(value);
+        iss >> _cmdLineParams->cable_verify_wait;
+        if (iss.fail() || !iss.eof())
+        {
+            cout << "-E- Invalid value for " CABLE_VERIFY_WAIT_L ": " << value << "\n";
+            return PARSE_ERROR_SHOW_USAGE;
+        }
+        if (_cmdLineParams->cable_verify_wait < 0)
+        {
+            cout << "-E- Negative value is not allowed " << value << "\n";
+            return PARSE_ERROR;
+        }
+        return PARSE_OK;
+    }
     else if (name == CABLE_REPORT_DIR_L)
     {
         _cmdLineParams->cable_report_dir = value;
+        return PARSE_OK;
+    }
+    else if (name == VERBOSE_L)
+    {
+        _cmdLineParams->verbose = true;
         return PARSE_OK;
     }
     else

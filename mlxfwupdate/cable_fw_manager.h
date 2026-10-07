@@ -35,6 +35,7 @@
 #define __CABLE_FW_MANAGER_H__
 
 #include <map>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -50,10 +51,21 @@ using namespace std;
  */
 #define CABLE_ACTIVATION_WAIT_DEFAULT 0
 
+/* Seconds phase 5 lets a burned cable re-train before it is verified. A self-activating cable
+ * resets, so its link drops and comes back; measured link-up times are around three seconds.
+ */
+#define CABLE_VERIFY_WAIT_DEFAULT 5
+
 /* A switch ASIC reachable from this host. */
 struct AsicInfo
 {
-    string devName; // MST device name or PCI address, in the form mopen() accepts
+    string devName;     // MST device name or PCI address, in the form mopen() accepts
+    string description; // model description, truncated at the first ';' the way flint prints it
+    string fwVersion;   // running firmware, from MGIR
+    // Local module index -> local port, swept out of PLLP once. PDDR is addressed by local port
+    // and nothing maps a cage to one, so the mapping has to be inverted from the register that
+    // carries both.
+    map<u_int32_t, u_int32_t> localPortByCage;
 };
 
 /* The switch ASICs of the system, keyed by the Geographical Address each reports in MGIR.
@@ -91,8 +103,11 @@ enum CableUpdateAction
     // Decided in phase 1 rather than phase 3: MMAM.ga is Reserved for some module types, and for
     // those the entry names no owner ASIC and nothing downstream can address it.
     CABLE_ACTION_SKIP_ASIC_DETECTION_NOT_SUPPORTED,
-    CABLE_ACTION_SKIP_NOT_PRESENT,
-    CABLE_ACTION_SKIP_3RD_PARTY,    // not an NVIDIA cable, or detected as fake
+    CABLE_ACTION_SKIP_NOT_PLUGGED,
+    CABLE_ACTION_SKIP_UNREADABLE, // the cage is populated but the cable did not answer
+                                  // Not an NVIDIA cable. A counterfeit is reported as one of these too;
+                                  // which of the two the firmware said is in the debug trace.
+    CABLE_ACTION_SKIP_3RD_PARTY,
     CABLE_ACTION_SKIP_NOT_BURNABLE, // MCQI reports neither firmware-update procedure
     CABLE_ACTION_SKIP_NO_FW_FILE,   // nothing in the package matched it
     CABLE_ACTION_SKIP_CURRENT       // already running the version the package offers
@@ -107,7 +122,9 @@ struct CableFwVersion
 };
 
 /* The faceplate number for a cable: what `mlxlink --port` and `flint --downstream_device_ids`
- * take, and the only cable number a report prints. Measured one above the local module index.
+ * take, and the number MCC and MCCE answer in. Measured one above the local module index. The
+ * report keys cables on the chassis-wide port instead, and carries this one only where a device
+ * error has to be matched back to a cable.
  *
  * A function rather than a stored field, because no register this tool reads supplies a label
  * port - MMAM has no label field and PLLP.label_port is indexed by local_port on a single ASIC -
@@ -174,10 +191,18 @@ struct CableInfo
     // The PRM documents ga as Reserved for the backplane and chip2chip types and for no others,
     // so asicGa is trustworthy for every other type and worthless for those.
     u_int8_t moduleType = 0;
-    bool isPlugged = false;  // a cable is plugged into the cage
-    bool isBurnable = false; // the cable speaks a firmware-update protocol this tool can drive
-    bool isNvidia = false;   // false for a third party or fake cable, which is reported and never updated
-    string state;            // cable state; reported, but no state disqualifies a cable from an update
+    bool isPlugged = false;     // a cable is plugged into the cage
+    bool isReadable = false;    // its identity was read; nothing below means anything without it
+    string linkState;           // PHY manager state, what mlxlink shows as "State"
+    u_int8_t operStatus = 0xff; // raw PMAOS.oper_status; 0xff means it was never read
+    bool isBurnable = false;    // the cable speaks a firmware-update protocol this tool can drive
+    bool isNvidia = false;      // false for a third party or fake cable, which is reported and never updated
+    // The raw MFCDR verdict, kept rather than folded into isNvidia alone. The report calls a
+    // counterfeit and a third party cable the same thing, so this is the only place the
+    // difference survives to reach the trace. It is also a statement about the cage that does not
+    // depend on the EEPROM having read, which is why it outranks an unreadable identity.
+    u_int8_t vendorStatus = 0; // CABLE_VENDOR_STATUS_UNKNOWN
+    string state;              // cable state; reported, but no state disqualifies a cable from an update
 
     // EEPROM identity, the key phase 3 matches package metadata against.
     string partNumber;
@@ -185,12 +210,19 @@ struct CableInfo
     string serialNumber;
     u_int32_t vendorOui = 0;
     string vendorRev; // two ASCII characters, for example "B1"
+    // Cage form factor. PDDR names it with a firmware enum; the EEPROM fallback names it from the
+    // SFF-8024 identifier byte, which is a different number space carrying the same meaning.
+    string identifier;
+    string manufacturingDate;
     u_int8_t hwRevMajor = 0;
+    u_int8_t hwRevMinor = 0;
 
     // Running firmware, from the MCQI LinkX properties.
     CableFwVersion fwImageA;
     CableFwVersion fwImageB;
     CableImageSlot runningSlot = CABLE_IMAGE_SLOT_A;
+    bool isRunningImage = false; // an image is actually running; runningSlot is meaningless without it
+    bool fwRead = false;         // MCQI answered; without it every version here is a default, not a reading
     // MCQI LinkX properties, 6 bits. 0 means the cable implements neither firmware-update
     // procedure; 1 is SFF-8636 with pseudo-CMIS, 2-7 are CMIS 4.0 through 5.5. isBurnable folds
     // several conditions into one bool, so this is the only one of them the report can still
@@ -228,6 +260,7 @@ struct FwPackageEntry
     string vendorRev;
     u_int8_t hwRevMajor = 0;
     CableFwVersion fwVersion;
+    string buildDate; // optional, straight from the metadata
     // Which of the optional keys the file carried. A field the metadata omits is not compared at
     // all, which is how the package decides how narrowly each binary matches; without these an
     // omitted vendor revision would be indistinguishable from one that is genuinely empty.
@@ -235,28 +268,67 @@ struct FwPackageEntry
     bool hasVendorOui = false;
     bool hasVendorRev = false;
     bool hasHwRevMajor = false;
-    bool hasExtendedHeader = false; // the binary already carries the 48-byte header, so no copy is needed
+    bool hasExtendedHeader = false;      // the binary carries the 48-byte header already
+    bool hasLinkXExtendedHeader = false; // and it is the LinkX wrap, which no cable can be matched against
     bool isValid = false;
     string parseError; // why isValid is false; reported rather than fatal
+    // Another entry this one cannot be told apart from: they agree on every key both constrain,
+    // so no cable could ever choose between them. Both are rejected.
+    string conflictsWith;
+};
+
+/* The four fields the device matches an image against before it will write it to a cable.
+ *
+ * Measured on a Quantum-3: all four have to be right. A header that matches no cable does not
+ * get refused - the firmware stops answering and the burn stalls at 0%, which costs a switch
+ * reboot - so zero is not a wildcard for any of them. Two of the four are properties of the
+ * cable rather than of the binary, so one wrapped image covers only the cables that agree on
+ * all four, and that is why this doubles as the grouping key.
+ */
+struct CableExtHeaderKey
+{
+    // From the cable rather than from the metadata: the two match case-insensitively, but the
+    // device compares the header against the EEPROM bytes.
+    string partNumber;
+    string vendorRev;        // two ASCII characters, from the cable
+    u_int8_t hwRevMajor = 0; // the raw EEPROM byte, 0x41 for a cable printing 'A1'
+    u_int8_t productId = 0;  // the LinkX product id, which is the metadata firmware major
+
+    /* An image can only be wrapped when every one of the four is known. */
+    bool isComplete() const;
+    /* The four fields as one string, so cables that can share a wrapped image group together. */
+    string groupKey() const;
+    /* The four fields as a sentence, for the debug trace that says how an image was wrapped. */
+    string text() const;
 };
 
 /* Cables that share an owning ASIC and a binary, burned in one transaction.
  *
  * Grouping is forced by the transport, not chosen for speed: one burn carries one image
- * through one ASIC, and an ASIC cannot address another ASIC's cables.
+ * through one ASIC, and an ASIC cannot address another ASIC's cables. Cables that get a
+ * synthesized extended header are grouped by its contents too, since the header only matches
+ * the cables it was built from.
  */
 struct CablePlanEntry
 {
     string asicDevName;
     u_int8_t asicGa = 0;
-    // Two paths, because the file the user is told about and the file the burn opens are never
-    // the same one. packageImagePath names the entry inside the user's ZIP and is the only one
-    // that reaches the report; burnImagePath is the copy phase 3 extracted to disk, carrying the
-    // synthesized extended header when the package binary had none. A ZIP entry cannot be opened
-    // by path, so phase 4 opens burnImagePath unconditionally.
+    // packageImagePath names the entry inside the user's package and is the only one the report
+    // shows; burnImage is the byte sequence actually sent - the eight 0xFF bytes every LinkX burn
+    // leads with, then the image, carrying the synthesized extended header when the package
+    // binary had none.
     string packageImagePath;
-    string burnImagePath;
+    vector<u_int8_t> burnImage;
     CableFwVersion fwVersion; // the version this binary installs
+    // Whether this group's burnImage carries a header this tool built, and the fields it was
+    // built from. Kept rather than recomputed so the trace written before the burn can say what
+    // the device is being asked to match.
+    bool isWrapped = false;
+    CableExtHeaderKey header;
+    // The package shipped this image with a header of its own, which is sent as it stands. Kept
+    // apart from isWrapped so the trace can tell it from an image that carries no header at all -
+    // the one case where the device matches on the product id alone.
+    bool imageHasOwnHeader = false;
     // Indices into the cable list. The device selects the cables itself, so this is
     // what the group is expected to cover, and it is what phase 5 checks it against.
     vector<u_int32_t> cableIndices;
@@ -266,12 +338,29 @@ struct CablePlanEntry
 struct CableUpdateResult
 {
     u_int32_t globalIndex = 0;
+    u_int32_t globalPort = 0; // globalIndex + 1, the number the report keys every cable on
     u_int32_t localIndex = 0;
+    u_int8_t asicGa = 0;
     string asicDevName;
     bool succeeded = false;
-    u_int8_t mccErrorCode = 0;  // failures only, from MCCE
-    u_int16_t cdbErrorCode = 0; // failures only, from MCCE
-    string status;              // human-readable outcome, shown in the report
+    bool burnAccepted = false;      // phase 4 sent the image and the device did not refuse this cable
+    bool hasDeviceError = false;    // MCCE named this cable, so its error codes carry a reading
+    bool readBack = false;          // phase 5 re-read this cable's firmware
+    string phase;                   // the stage that decided the outcome, for the errors table
+    u_int8_t mccErrorCode = 0;      // failures only, from MCCE
+    u_int16_t cdbErrorCode = 0;     // failures only, from MCCE
+    string mccErrorText;            // mccErrorCode named by the manager that returned it
+    bool pendingPowerCycle = false; // burned, but the new image runs only after a host power cycle
+    CableFwVersion pendingVersion;  // what it will run once power-cycled
+    string stateBefore;             // link state read in phase 2, before the burn
+    string stateAfter;              // link state re-read after the burn
+    bool stateRegressed = false;    // it was Active before and is not after, which fails the group
+    // What phase 5 read back, for the verification table.
+    CableFwVersion fwImageA;
+    CableFwVersion fwImageB;
+    CableImageSlot runningSlot = CABLE_IMAGE_SLOT_A;
+    bool isRunningImage = false;
+    string status; // human-readable outcome, shown in the report
 };
 
 /* Drives a fleet-wide cable firmware update for mlxfwmanager.
@@ -294,15 +383,25 @@ struct CableUpdateResult
  *  - the device firmware has to support no_stop_on_error, since a fleet burn that
  *    stops at the first bad cable defeats the purpose.
  *
- * Errors are reported as err_msgs.h codes. Progress text accumulates in `_log` and is
- * printed by the caller: the print_out/print_err macros live in mlxfwmanager.h, but that
- * header also defines FOut, FErr, FLog and formatted_output at file scope, so only one
- * translation unit can include it.
+ * Errors are reported as err_msgs.h codes. Progress text is printed as it happens,
+ * through a printer the caller supplies: a fleet update runs for minutes and the library
+ * under it writes to stdout during a burn, so text held back to the end both arrives too
+ * late to act on and interleaves wrongly with what the library already printed. The
+ * printer has to come from the caller because the print_out/print_err macros live in
+ * mlxfwmanager.h, which also defines FOut, FErr, FLog and formatted_output at file scope,
+ * so only one translation unit can include it.
+ *
+ * What goes to the terminal is what an operator acts on. Per-port and per-file detail
+ * goes to the nvtoolslogger trace instead, which the report tables account for in full:
+ *   nvtoolslogger --set-module mlxfwmanager:debug
  */
 class CableFwManager
 {
 public:
-    explicit CableFwManager(const CmdLineParams& cmdParams);
+    /* Puts one piece of text in front of the user straight away. */
+    typedef void (*ProgressPrinter)(const char* text);
+
+    CableFwManager(const CmdLineParams& cmdParams, ProgressPrinter printer);
     ~CableFwManager();
 
     /* Run the phases the requested mode needs and return an err_msgs.h code.
@@ -314,7 +413,6 @@ public:
     int run();
 
     string getLastErrMsg() const { return _errMsg; }
-    string getLog() const { return _log; }
 
 private:
     /* Phase 1 - ASIC discovery.
@@ -363,9 +461,12 @@ private:
      * update procedure - note this comes from MCQI, not MCIA, and MCQI is addressed by
      * the MCC device_index rather than by the local module index.
      *
+     * Whether a cage is populated comes from PMAOS.oper_status, the same test mlxlink makes.
+     *
      * Collect the identity phase 3 matches on - part number, vendor name and OUI,
-     * vendor revision, hardware major revision - along with the serial number, the
-     * cable state, and both firmware image versions with the slot that is running. Take
+     * vendor revision, hardware major revision - along with the serial number, the form
+     * factor, the manufacturing date, the CMIS module state, and both firmware image versions
+     * with the slot that is running. Take
      * activation_type from the same MCQI read: it is what tells phase 5 whether a cable
      * activates itself or is waiting on a host power cycle.
      *
@@ -376,19 +477,30 @@ private:
      */
     int discoverCables();
 
-    /* Fill one cable's presence, identity and firmware properties from its owning ASIC. A cable
+    /* Fill one cable's plugged state, identity and firmware properties from its owning ASIC. A cable
      * that cannot be read is recorded and skipped rather than ending the sweep, so one bad cage
      * cannot hide the rest of the chassis.
      */
+    /* Fill whatever PDDR left empty from the EEPROM, field by field. */
+    void fillIdentityGapsFromEeprom(mfile* mf, CableInfo& cable);
+
+    /* The local port serving a cage, from the swept map. PDDR is indexed by it. */
+    bool cableLocalPort(const CableInfo& cable, u_int32_t& localPort);
+
+    /* The link state for one cable, which PDDR indexes by local port rather than by cage. */
+    string readCableLinkStateText(mfile* mf, const CableInfo& cable);
+
     void queryCable(mfile* mf, CableInfo& cable);
 
-    /* Read the EEPROM identity - part number, vendor, revision, serial. The field offsets differ
-     * between CMIS and SFF-8636, and the identifier byte is what says which.
+    /* Read the EEPROM identity - part number, vendor, revision, serial, form factor, module
+     * state and manufacturing date. The field offsets differ between CMIS and SFF-8636, and the
+     * identifier byte is what says which. The hardware revision lives on page 1, which a
+     * flat-memory cable does not implement and MCIA does not refuse.
      */
     bool readCableIdentity(mfile* mf, CableInfo& cable);
 
-    /* Read the MCQI LinkX properties: both image versions, the running slot, the management
-     * interface protocol and the activation type.
+    /* Read the MCQI LinkX properties: both image versions, which image is running if any, the
+     * management interface protocol and the activation type.
      */
     bool readCableFwProperties(mfile* mf, CableInfo& cable);
 
@@ -401,32 +513,29 @@ private:
      * extracted directory is the way in where it is missing, and the two are read into the
      * same shape so nothing downstream can tell them apart.
      *
-     * For each candidate cable, take the folder matching its part number and find the
-     * one metadata file in it that matches. The metadata file is the authority: compare
-     * exactly the fields it carries, so the package decides how narrowly each binary
-     * matches. That gives the two shapes a file comes in - a CM or JDM entry carrying
-     * vendor part number and firmware major, and an ODM entry additionally carrying
-     * vendor revision, hardware major revision and vendor name/OUI. Vendor name/OUI
-     * matters because two suppliers can ship the same part number, revision and
-     * hardware major, and burning one vendor's image into the other's cable is the
-     * failure this whole flow exists to avoid.
+     * A metadata file comes in one of two shapes and is rejected if it is neither: a CM or JDM
+     * entry carrying vendor part number and firmware major, or an ODM entry additionally
+     * carrying vendor name, OUI, revision and hardware major revision. Vendor name/OUI matters
+     * because two suppliers can ship the same part number, revision and hardware major, and
+     * burning one vendor's image into the other's cable is the failure this whole flow exists
+     * to avoid.
      *
-     * Two cables of the same part number can legitimately need different binaries, so
-     * a cable matching more than one metadata file is a packaging error rather than a
-     * choice to make: fail the run and tell the user to fix the package.
+     * Part number and firmware major are matched on always; the ODM fields narrow it further.
+     * Two entries that agree on every key both constrain describe the same cable, so both are
+     * rejected at load time and named in the report - a cable cannot be asked to choose.
      *
      * Give every cable an outcome, not only the ones to burn, and leave none UNDECIDED -
-     * SKIP_NOT_PRESENT,
+     * SKIP_NOT_PLUGGED,
      * SKIP_3RD_PARTY, SKIP_NOT_BURNABLE, SKIP_NO_FW_FILE, SKIP_CURRENT or UPDATE - because the
      * report has to account for every port. An UPDATE whose target is older than the running
      * version still goes ahead but is flagged as a downgrade. The target slot is
      * whichever of A and B is not running; phase 5 checks that it became the running one.
      *
      * A metadata file carrying only part number and firmware major describes a LinkX
-     * image with no extended header. Write a temporary copy with the 48-byte extended
-     * header prepended and filled from the metadata, leaving vendor revision and
-     * hardware revision zeroed: the device treats zeroed keys as wildcards, so it ends
-     * up validating exactly the part number and firmware major the tool matched on.
+     * image with no extended header. The 48-byte extended header is synthesized in memory and
+     * prepended, filled from the metadata and leaving vendor revision and hardware revision
+     * zeroed: the device treats zeroed keys as wildcards, so it ends up validating exactly the
+     * part number and firmware major the tool matched on.
      * That is a second, independent check on the same decision - worth the copy,
      * because a wrong image reaching a cable is unrecoverable in the field. The
      * package on disk is never modified, and the plan entry keeps the package path beside the
@@ -502,12 +611,24 @@ private:
     /* One pass of the burn state machine. The download and the activation are separable, which is
      * what lets a wait sit between them.
      */
+    /* The cached handle for a switch, opened on first use. NULL if it cannot be opened, and a
+     * failure is not cached.
+     */
+    mfile* deviceHandle(const string& devName);
+
     bool runBurnStage(mfile* mf,
                       const vector<u_int8_t>& image,
                       bool download,
                       bool activate,
                       size_t firstResult,
-                      string& errMsg);
+                      size_t lastResult,
+                      string& errMsg,
+                      string& stageName);
+
+    /* Reject metadata files that no cable could choose between: two entries that agree on every
+     * key both constrain describe the same cable and would make any match ambiguous.
+     */
+    void findPackageConflicts();
 
     /* Phase 5 - Verification and report.
      *
@@ -547,27 +668,55 @@ private:
     /* Collect the per-device detail the report prints but the phases never needed: the device
      * description, and the text for the error codes the device returned.
      */
-    void collectReportDetails(map<string, string>& descriptions, map<size_t, string>& mccErrors);
+    void collectReportDetails();
 
     /* Render the whole report. The template is fixed, so a field that does not apply to the flow
      * that ran prints N/A rather than being left out.
      */
-    string buildReport(const map<string, string>& descriptions, const map<size_t, string>& mccErrors);
+    string buildReport();
+
+    /* The report's sections. Each prints N/A rather than nothing when the run did not reach the
+     * phase that fills it, so the shape of the report does not depend on the mode.
+     */
+    void appendPackagesTable(std::ostringstream& report);
+    /* withAsic adds the owning ASIC and its label port. Only DISCOVERY offers them, and only
+     * under --verbose: the plan and the verification tables already carry columns of their own.
+     * ERRORS builds its own header and carries both unconditionally.
+     */
+    void appendCableColumns(std::ostringstream& report, bool withAsic);
+    void appendCableRow(std::ostringstream& report, const CableInfo& cable, bool withAsic);
+    void appendDiscoveryTable(std::ostringstream& report);
+    void appendPlanTable(std::ostringstream& report);
+    void appendVerificationTable(std::ostringstream& report);
+    void appendErrorsTable(std::ostringstream& report);
 
     /* Write the report beside the others, named for the moment it was produced. */
     int writeReport(const string& text);
 
+    /* The metadata entry a planned image came from, or NULL when the package no longer holds it. */
+    const FwPackageEntry* packageEntryFor(const string& imagePath) const;
+
+    /* Say which cables are about to change and to what, before the first byte reaches one. */
+    void announceUpdatePlan();
+
+    /* Put text in front of the user now. Every progress line in this class goes through here. */
+    void emitProgress(const string& text);
+
     const CmdLineParams& _cmdParams;
     AsicsByGa _asics;
+    // One open handle per switch, so a run that touches an ASIC once per cable, once per burn
+    // group and again per result does not reopen it each time. FwCompsMgr does not take
+    // ownership of a handle it is constructed with, so sharing one is safe.
+    map<string, mfile*> _openDevices;
     vector<CableInfo> _cables;
     vector<FwPackageEntry> _packages;
     vector<CablePlanEntry> _plan;
     vector<CableUpdateResult> _results;
     string _errMsg;
-    string _log;
-    // Holds the header-prefixed copies phase 3 writes. Removed with the manager, because phase 4
-    // opens the copies and the report must never name them.
-    string _tempDir;
+    ProgressPrinter _printer;
+    // Phase 3 ruled on every cable. Until it has, every action is the default, and neither the plan
+    // table nor the skipped count can say anything true about them.
+    bool _planned;
 };
 
 #endif
