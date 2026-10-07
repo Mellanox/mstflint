@@ -44,6 +44,7 @@
 #include "common/bit_slice.h"
 #include "common/tools_time.h"
 #include "reg_access/mcam_capabilities.h"
+#include "reg_access/reg_ids.h"
 #include <signal.h>
 #include <iostream>
 #include <chrono>
@@ -1144,8 +1145,21 @@ void FwCompsMgr::SetIndexAndSize(int  deviceIndex,
     _downloadTransferNeeded = downloadTransferNeeded;
     _activation_delay_sec = activate_delay_sec;
     _noStopOnError = noStopOnError;
+    /* Without MCCE the per-cable errors cannot be read back, so the flag would skip cables the user never hears
+     * about. FW ties the MCAM bit for MCCE to the FR being supported. */
+    if (_noStopOnError)
+    {
+        bool isMcceSupported = false;
+        if (isRegisterValidAccordingToMcamReg(_mf, REG_ID_MCCE, &isMcceSupported) != ME_OK || !isMcceSupported)
+        {
+            FWCOMPS_PRINT("-W- Per-cable error reporting is not supported by the current FW, stopping on the first "
+                          "error instead.\n");
+            _noStopOnError = false;
+        }
+    }
     _transferErrorCount = 0;
     _activateErrorCount = 0;
+    _burnFailures.clear();
     _rejectedIndex = -1;
 }
 
@@ -1631,6 +1645,10 @@ bool FwCompsMgr::burnComponents(FwComponent& comp, ProgressCallBackAdvSt* progre
             }
             /* Read before the activation starts - the device clears the counter at the beginning of each stage. */
             _transferErrorCount = _lastFsmCtrl.error_count;
+            if (_transferErrorCount > 0)
+            {
+                collectBurnFailures();
+            }
         }
     }
     if (_activationNeeded == true)
@@ -1653,6 +1671,10 @@ bool FwCompsMgr::burnComponents(FwComponent& comp, ProgressCallBackAdvSt* progre
                     return false;
                 }
                 _activateErrorCount = _lastFsmCtrl.error_count;
+                if (_activateErrorCount > 0)
+                {
+                    collectBurnFailures();
+                }
             }
         }
         else
@@ -2138,10 +2160,15 @@ bool FwCompsMgr::queryFwInfo(fwInfoT* query, bool next_boot_fw_ver)
 }
 unsigned char* FwCompsMgr::getLastErrMsg()
 {
+    return getErrMsg(_lastError);
+}
+
+unsigned char* FwCompsMgr::getErrMsg(fw_comps_error_t err, bool withDeviceIndex)
+{
     static unsigned char bufferErr[512] = {0};
 
     memset(bufferErr, 0, sizeof(bufferErr));
-    switch (_lastError) {
+    switch (err) {
     case FWCOMPS_ABORTED:
         return (unsigned char*)"Aborting ... received interrupt signal";
 
@@ -2278,7 +2305,7 @@ unsigned char* FwCompsMgr::getLastErrMsg()
         return (unsigned char*)"Reburn running and retry";
 
     case FWCOMPS_MCC_REJECTED_LINKX_TYPE_NOT_SUPPORTED:
-        if (_rejectedIndex != -1) {
+        if (withDeviceIndex && _rejectedIndex != -1) {
             sprintf((char*)bufferErr, "LinkX type not supported for device index %d\n", _rejectedIndex);
             return bufferErr;
         } else {
@@ -2292,7 +2319,7 @@ unsigned char* FwCompsMgr::getLastErrMsg()
              return (unsigned char*)"The removal UUID does not match the device's UUID";
 
     case FWCOMPS_MCC_REJECTED_LINKX_TRANSFER:
-        if (_rejectedIndex != -1) {
+        if (withDeviceIndex && _rejectedIndex != -1) {
             sprintf((char*)bufferErr, "LinkX downstream transfer failed for device index %d\n", _rejectedIndex);
             return bufferErr;
         } else {
@@ -2300,7 +2327,7 @@ unsigned char* FwCompsMgr::getLastErrMsg()
         }
 
     case FWCOMPS_MCC_REJECTED_LINKX_ACTIVATE:
-        if (_rejectedIndex != -1) {
+        if (withDeviceIndex && _rejectedIndex != -1) {
             sprintf((char*)bufferErr, "LinkX activation failed for device index %d\n", _rejectedIndex);
             return bufferErr;
         } else {
@@ -2770,6 +2797,49 @@ fw_comps_error_t FwCompsMgr::regErrTrans(reg_access_status_t err)
 
     default:
         return FWCOMPS_GENERAL_ERR;
+    }
+}
+
+/*
+ * Names an MCC error code for a per-cable row. getErrMsg can fold the stage's rejected index into a message, but that
+ * index describes the stage rather than the row being named, and the row already carries its own cable, so the plain
+ * wording is asked for. The trim guards the table against a message that later gains trailing whitespace.
+ */
+string FwCompsMgr::GetMccErrorString(u_int8_t mccErrorCode)
+{
+    string message = (const char*)getErrMsg(mccErrTrans(mccErrorCode), false);
+
+    message.erase(message.find_last_not_of(" \t\r\n") + 1);
+    return message;
+}
+
+/*
+ * Appends the per-cable failures the device logged for the stage that just ended. FW clears MCCE at the start of
+ * every stage, so this has to run before the next one begins or the entries are lost.
+ *
+ * Entries land in stage order, transfer before activation, so the per-stage counts reported alongside the table
+ * partition it and no row has to name its own stage.
+ */
+void FwCompsMgr::collectBurnFailures()
+{
+    struct reg_access_switch_mcce_reg_ext mcce;
+    memset(&mcce, 0, sizeof(mcce));
+
+    reg_access_status_t rc = reg_access_mcce(_mf, REG_ACCESS_METHOD_GET, &mcce);
+    if (rc != ME_OK)
+    {
+        MLXFWOPS_LOG_DEBUG("collectBurnFailures : reading MCCE failed, rc = %d", rc);
+        return;
+    }
+    /* error_count is 4 bits, so it cannot exceed the 15 entries the register carries and needs no bounding. */
+    MLXFWOPS_LOG_DEBUG("collectBurnFailures : MCCE reports %d entries", mcce.error_count);
+    for (u_int8_t i = 0; i < mcce.error_count; i++)
+    {
+        burn_failure_t failure;
+        failure.module_id = mcce.entries[i].module_id;
+        failure.mcc_error_code = mcce.entries[i].mcc_error_code;
+        failure.cdb_error_code = mcce.entries[i].cdb_error_code;
+        _burnFailures.push_back(failure);
     }
 }
 
