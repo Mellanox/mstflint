@@ -624,13 +624,13 @@ bool FwCompsMgr::accessComponent(u_int32_t              offset,
 
         if (bRes) {
             if (!controlFsm(FSM_CMD_CANCEL, FSMST_LOCKED)) {
-                MLXFWOPS_LOG_DEBUG("Cancel instruction to FW component has failed!");
+                MLXFWOPS_LOG_WARNING("Cancel instruction to FW component has failed!");
                 return false;
             }
             if (!controlFsm(lastFsmCommandArgs->command, lastFsmCommandArgs->expectedState, lastFsmCommandArgs->size,
                             lastFsmCommandArgs->currentState, lastFsmCommandArgs->progressFuncAdv,
                             lastFsmCommandArgs->reg_access_timeout)) {
-                MLXFWOPS_LOG_DEBUG("FSM reinitialize for fallback has failed!");
+                MLXFWOPS_LOG_WARNING("FSM reinitialize for fallback has failed!");
                 return false;
             }
 
@@ -1011,7 +1011,7 @@ bool FwCompsMgr::queryPGUID(fw_info_t* fwInfo,
 
     if (!runPGUID(&guidsInfo, local_port, pnat, lp_msb))
     {
-        MLXFWOPS_LOG_DEBUG("Error in reading PGUID register.");
+        MLXFWOPS_LOG_ERROR("Error in reading PGUID register.");
         return false;
     }
     // FW writes the GUID info (64 bits) to indexes 2 and 3 of the uint32_t array.
@@ -1397,7 +1397,7 @@ bool FwCompsMgr::RefreshComponentsStatus(comp_status_st* ComponentStatus)
         }
         else
         {
-            MLXFWOPS_LOG_DEBUG("queryComponentStatus failed for component index %d !!", compIdx);
+            MLXFWOPS_LOG_ERROR("queryComponentStatus failed for component index %d !!", compIdx);
             return false;
         }
         compIdx++;
@@ -1593,7 +1593,7 @@ bool FwCompsMgr::burnComponents(FwComponent& comp, ProgressCallBackAdvSt* progre
         _componentIndex = _currCompQuery->comp_status.component_index;
         if (!controlFsm(FSM_CMD_UPDATE_COMPONENT, FSMST_DOWNLOAD, comp.getSize(), FSMST_INITIALIZE,
                         progressFuncAdv)) {
-            MLXFWOPS_LOG_DEBUG("Initializing downloading FW component has failed!");
+            MLXFWOPS_LOG_ERROR("Initializing downloading FW component has failed!");
             return false;
         }
         _currComponentStr = FwComponent::getCompIdStr(comp.getType());
@@ -1605,11 +1605,11 @@ bool FwCompsMgr::burnComponents(FwComponent& comp, ProgressCallBackAdvSt* progre
         fsmUpdateCommand.progressFuncAdv = progressFuncAdv;
         if (!accessComponent(0, comp.getSize(), (u_int32_t*)(comp.getData().data()), MCC_WRITE_COMP,
                                 progressFuncAdv, &fsmUpdateCommand)) {
-            MLXFWOPS_LOG_DEBUG("Downloading FW component has failed!");
+            MLXFWOPS_LOG_ERROR("Downloading FW component has failed!");
             return false;
         }
         if (!controlFsm(FSM_CMD_VERIFY_COMPONENT, FSMST_LOCKED, 0, FSMST_NA, progressFuncAdv)) {
-            MLXFWOPS_LOG_DEBUG("Verifying FW component has failed!");
+            MLXFWOPS_LOG_ERROR("Verifying FW component has failed!");
             return false;
         }
         if (comp.getType() == FwComponent::COMPID_LINKX || comp.getType() == FwComponent::COMPID_LINKX_ELS || 
@@ -1617,11 +1617,11 @@ bool FwCompsMgr::burnComponents(FwComponent& comp, ProgressCallBackAdvSt* progre
             {
                 if (!controlFsm(FSM_CMD_DOWNSTREAM_DEVICE_TRANSFER, FSMST_DOWNSTREAM_DEVICE_TRANSFER, 0, FSMST_LOCKED,
                                 progressFuncAdv)) {
-                MLXFWOPS_LOG_DEBUG("Downstream LinkX begin has failed!");
+                MLXFWOPS_LOG_ERROR("Downstream LinkX begin has failed!");
                 return false;
             }
             if (!controlFsm(FSM_QUERY, FSMST_LOCKED, 0, FSMST_DOWNSTREAM_DEVICE_TRANSFER, progressFuncAdv)) {
-                MLXFWOPS_LOG_DEBUG("Downstream LinkX ending has failed!");
+                MLXFWOPS_LOG_ERROR("Downstream LinkX ending has failed!");
                 return false;
             }
         }
@@ -1632,7 +1632,7 @@ bool FwCompsMgr::burnComponents(FwComponent& comp, ProgressCallBackAdvSt* progre
         {
             if (!controlFsm(FSM_CMD_ACTIVATE_ALL, FSMST_ACTIVATE, 0, FSMST_LOCKED, progressFuncAdv))
             {
-                MLXFWOPS_LOG_DEBUG("Moving to ACTIVATE state has failed!");
+                MLXFWOPS_LOG_ERROR("Moving to ACTIVATE state has failed!");
                 return false;
             }
 
@@ -1642,7 +1642,7 @@ bool FwCompsMgr::burnComponents(FwComponent& comp, ProgressCallBackAdvSt* progre
                 FWCOMPS_PRINT("Please wait while activating the transceiver(s) FW ...\n");
                 if (!controlFsm(FSM_QUERY, FSMST_LOCKED, 0, FSMST_ACTIVATE, progressFuncAdv))
                 {
-                    MLXFWOPS_LOG_DEBUG("Moving from activate state to locked state has failed!");
+                    MLXFWOPS_LOG_ERROR("Moving from activate state to locked state has failed!");
                     return false;
                 }
             }
@@ -1651,7 +1651,7 @@ bool FwCompsMgr::burnComponents(FwComponent& comp, ProgressCallBackAdvSt* progre
         {
             if (!controlFsm(FSM_CMD_ACTIVATE_ALL))
             {
-                MLXFWOPS_LOG_DEBUG("Activating FW component has failed!");
+                MLXFWOPS_LOG_ERROR("Activating FW component has failed!");
                 return false;
             }
         }
@@ -1660,7 +1660,7 @@ bool FwCompsMgr::burnComponents(FwComponent& comp, ProgressCallBackAdvSt* progre
     /* In case of activation delay, FW will release the update handle */
     if (!_isDelayedActivationCommandSent) {
         if (!controlFsm(FSM_CMD_RELEASE_UPDATE_HANDLE)) {
-            MLXFWOPS_LOG_DEBUG("Release FW handle has failed!");
+            MLXFWOPS_LOG_ERROR("Release FW handle has failed!");
             return false;
         }
     }
@@ -1811,7 +1811,7 @@ u_int32_t FwCompsMgr::getFwSupport()
     memset(&mcam, 0, sizeof(mcam));
     reg_access_status_t rc = reg_access_mcam(_mf, REG_ACCESS_METHOD_GET, &mcam);
     if (rc) {
-        MLXFWOPS_LOG_DEBUG("getFwSupport MCAM not supported! rc = %d", rc);
+        MLXFWOPS_LOG_WARNING("getFwSupport MCAM not supported! rc = %d", rc);
         _lastError = FWCOMPS_UNSUPPORTED_DEVICE;
         return 0;
     }
@@ -2630,7 +2630,7 @@ bool FwCompsMgr::fwReactivateImage()
     rc = reg_access_mirc(_mf, REG_ACCESS_METHOD_SET, &mirc); /* send trigger to FW */
     deal_with_signal();
     if (rc) {
-        MLXFWOPS_LOG_DEBUG("1 reg_access_mirc failed rc = %d", rc);
+        MLXFWOPS_LOG_ERROR("1 reg_access_mirc failed rc = %d", rc);
         _lastError = regErrTrans(rc);
         setLastRegisterAccessStatus(rc);
         return false;
@@ -2639,7 +2639,7 @@ bool FwCompsMgr::fwReactivateImage()
     msleep(sleepTimeMs);
     rc = reg_access_mirc(_mf, REG_ACCESS_METHOD_GET, &mirc);
     if (rc) {
-        MLXFWOPS_LOG_DEBUG("2 reg_access_mirc failed rc = %d", rc);
+        MLXFWOPS_LOG_ERROR("2 reg_access_mirc failed rc = %d", rc);
         _lastError = regErrTrans(rc);
         return false;
     }
@@ -2651,7 +2651,7 @@ bool FwCompsMgr::fwReactivateImage()
         if (rc) {
             _lastError = regErrTrans(rc);
             setLastRegisterAccessStatus(rc);
-            MLXFWOPS_LOG_DEBUG("3 reg_access_mirc failed rc = %d", rc);
+            MLXFWOPS_LOG_ERROR("3 reg_access_mirc failed rc = %d", rc);
             return false;
         }
         MLXFWOPS_LOG_DEBUG("2 iteration %d mirc.status_code = %d", currentIteration, mirc.status_code);
@@ -2975,7 +2975,7 @@ bool FwCompsMgr::queryMISOC(std::string& version, u_int32_t type, u_int32_t quer
 
     if (!runMISOC(&bfb_component, type, query_pending))
     {
-        MLXFWOPS_LOG_DEBUG("Error in reading MISOC register.");
+        MLXFWOPS_LOG_ERROR("Error in reading MISOC register.");
         return false;
     }
 
@@ -3005,7 +3005,7 @@ bool FwCompsMgr::IsCRDTDebugSessionActive()
     deal_with_signal();
     if (rc)
     {
-        MLXFWOPS_LOG_DEBUG("reg_access_mdsr failed with rc=%d", rc);
+        MLXFWOPS_LOG_ERROR("reg_access_mdsr failed with rc=%d", rc);
         _lastError = regErrTrans(rc);
         setLastRegisterAccessStatus(rc);
     }

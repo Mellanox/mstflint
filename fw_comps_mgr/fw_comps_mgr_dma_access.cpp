@@ -127,6 +127,7 @@ bool DMAComponentAccess::allocateMemory()
 #ifndef UEFI_BUILD
     if (get_dma_pages(_mf, &page_info, FMPT_ALLOCATED_LIST_LENGTH))
     {
+        MLXFWOPS_LOG_ERROR("failed to get %d DMA pages from the driver", (int)FMPT_ALLOCATED_LIST_LENGTH);
         return false;
     }
 #else
@@ -205,7 +206,7 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle,
             MLXFWOPS_LOG_DEBUG("allocating memory for DMA");
             if (!allocateMemory())
             {
-                MLXFWOPS_LOG_DEBUG("memory allocation for DMA failed");
+                MLXFWOPS_LOG_ERROR("memory allocation for DMA failed");
                 setLastError(FWCOMPS_MEM_ALLOC_FAILED);
                 return false; // this will trigger a fallback to direct_access instead of dma_access
             }
@@ -251,7 +252,7 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle,
             _manager->deal_with_signal();
             if (rc)
             {
-                MLXFWOPS_LOG_DEBUG("CRITICAL : DMAComponentAccess::AccessComponent reg_access_mcdd ERROR: %#x", rc);
+                MLXFWOPS_LOG_ERROR("CRITICAL : DMAComponentAccess::AccessComponent reg_access_mcdd ERROR: %#x", rc);
                 setLastError(_manager->regErrTrans(rc));
                 _lastRegisterAccessStatus = rc;
                 return false;
@@ -322,7 +323,7 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle,
                                                              FWCOMPS_MCC_ERR_CODES); // return error to high level app.
                                                                                      // Errors are defined as MCC errors
                 setLastError(fw_err);
-                MLXFWOPS_LOG_DEBUG("CRITICAL : DMAComponentAccess::AccessComponent status %d err %d FW ERROR: %#x",
+                MLXFWOPS_LOG_ERROR("CRITICAL : DMAComponentAccess::AccessComponent status %d err %d FW ERROR: %#x",
                                    mailboxVirtPtr_1.status, mailboxVirtPtr_1.error, fw_err);
                 return false;
             }
