@@ -44,12 +44,14 @@ AM_CPPFLAGS = \
     -I$(top_srcdir)/libmfa \
     -I$(top_srcdir)/mflash \
     -I$(top_srcdir)/mft_utils \
+    -I$(top_srcdir)/mft_core/mft_core_utils \
     -I$(top_srcdir)/mlxarchive \
     -I$(top_srcdir)/mlxfwops/lib \
     -I$(top_srcdir)/pldmlib \
     $(libxml2_CFLAGS) \
     $(libcurl_CFLAGS) \
-    $(openssl_CFLAGS)
+    $(openssl_CFLAGS) \
+    -isystem $(top_srcdir)/ext_libs/fkYAML
 
 bin_PROGRAMS = mstfwmanager
 
@@ -58,6 +60,8 @@ mstfwmanager_CXXFLAGS += -DUSE_XML -DLIBXML_STATIC
 mstfwmanager_CXXFLAGS += -DUSE_CURL -DCURL_STATICLIB
 
 mstfwmanager_SOURCES = \
+    cable_fw_manager.cpp \
+    cable_fw_manager.h \
     cmd_line_params.cpp \
     cmd_line_params.h \
     cmd_line_parser.cpp \
@@ -118,6 +122,8 @@ LDADD_mstfwmanager = $(libcurl_LIBS) $(libz_LIBS) $(liblzma_LIBS) $(libxml2_LIBS
 if ENABLE_OPENSSL
 mstfwmanager_DEPENDENCIES += $(top_builddir)/mlxsign_lib/libmlxsign.la
 LDADD_mstfwmanager += $(openssl_LIBS)
+else
+mstfwmanager_CXXFLAGS += -DNO_OPEN_SSL
 endif
 
 if ENABLE_CS

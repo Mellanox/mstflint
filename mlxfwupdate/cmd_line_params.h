@@ -103,6 +103,16 @@ public:
     bool no_fw_ctrl;
     bool update_all_fwctl;
     string component_type;
+    bool cable_query;
+    bool cable_dry_run;
+    bool cable_update;
+    string cable_package;
+    int cable_activation_wait;
+    string cable_report_dir;
+    bool cable_report_file_only;
+    bool cable_include_service_ports;
+    int cable_verify_wait;
+    bool verbose;
 };
 
 #endif

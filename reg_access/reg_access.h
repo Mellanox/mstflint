@@ -77,6 +77,19 @@ reg_access_status_t
 struct reg_access_switch_mtecr_ext;
 reg_access_status_t
   reg_access_mtecr_ext(mfile* mf, reg_access_method_t method, struct reg_access_switch_mtecr_ext* mtecr);
+struct reg_access_switch_mcce_reg_ext;
+reg_access_status_t
+  reg_access_mcce(mfile* mf, reg_access_method_t method, struct reg_access_switch_mcce_reg_ext* mcce);
+struct reg_access_switch_MMAM_ext;
+reg_access_status_t reg_access_mmam(mfile* mf, reg_access_method_t method, struct reg_access_switch_MMAM_ext* mmam);
+struct reg_access_hca_mcia_ext;
+reg_access_status_t reg_access_mcia(mfile* mf, reg_access_method_t method, struct reg_access_hca_mcia_ext* mcia);
+struct reg_access_switch_mfcdr_reg_ext;
+reg_access_status_t reg_access_mfcdr(mfile* mf, reg_access_method_t method, struct reg_access_switch_mfcdr_reg_ext* mfcdr);
+struct reg_access_switch_pddr_reg_ext;
+reg_access_status_t reg_access_pddr(mfile* mf, reg_access_method_t method, struct reg_access_switch_pddr_reg_ext* pddr);
+struct reg_access_switch_pllp_reg_ext;
+reg_access_status_t reg_access_pllp(mfile* mf, reg_access_method_t method, struct reg_access_switch_pllp_reg_ext* pllp);
 struct reg_access_switch_mgpir_ext;
 reg_access_status_t reg_access_mgpir_switch_ext(mfile* mf, reg_access_method_t method,
                                                 struct reg_access_switch_mgpir_ext* mgpir);

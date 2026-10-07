@@ -49,7 +49,9 @@ libreg_access_la_SOURCES = \
     mcam_capabilities.cpp \
     mcam_capabilities.h
 
-libreg_access_la_DEPENDENCIES = $(top_builddir)/tools_layouts/libtools_layouts.la
+# MCIA is laid out in cables_layouts, which is only part of libmtcr_ul with --enable-cables.
+libreg_access_la_DEPENDENCIES = $(top_builddir)/tools_layouts/libtools_layouts.la \
+    $(top_builddir)/tools_layouts/libcables_layouts.la
 
 libreg_access_la_LIBADD = $(libreg_access_la_DEPENDENCIES)
 
@@ -61,7 +63,8 @@ dist_reg_access_pylib_DATA = regaccess.py regaccess_hca_ext_structs.py regaccess
 
 ${RREG_ACCESS_SO}: libreg_access.la
 	$(CC) -g -Wall -pthread -shared ${CFLAGS} ${LDFLAGS} *.o -o ${RREG_ACCESS_SO} \
-	$(top_builddir)/tools_layouts/.libs/libtools_layouts.a $(top_builddir)/${MTCR_CONF_DIR}/.libs/libmtcr_ul.a \
+	$(top_builddir)/tools_layouts/.libs/libtools_layouts.a $(top_builddir)/tools_layouts/.libs/libcables_layouts.a \
+	$(top_builddir)/${MTCR_CONF_DIR}/.libs/libmtcr_ul.a \
 	$(MST_REMOTE_LINK_LIBS) -lstdc++
 
 CLEANFILES = ${RREG_ACCESS_SO}

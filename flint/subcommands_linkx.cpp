@@ -39,6 +39,7 @@
 #include <time.h>
 #include <iostream>
 #include <sstream>
+#include <iomanip>
 #include <string>
 
 #include "mtcr.h"
@@ -48,6 +49,8 @@
 #include "mlxfwops/lib/fw_version.h"
 #include "subcommands.h"
 #include "nvtoolslogger/NvToolsLogger.h"
+#include "mft_utils/mft_utils.h"
+#include "common/package_error_codes.h"
 #include "tools_layouts/cx4fw_layouts.h"
 
 using namespace std;
@@ -275,6 +278,145 @@ FlintStatus QuerySubCommand::QueryLinkX(string deviceName, string outputFile, st
     return FLINT_SUCCESS;
 }
 
+/* A stage can only count up to MCC_MAX_ERROR_COUNT, so one that reached it reports a lower bound, not a total. */
+static string formatCableCount(u_int32_t count, bool isCapped)
+{
+    std::stringstream text;
+
+    text << count << (isCapped ? " or more" : "");
+    return text.str();
+}
+
+/*
+ * The device counts the transfer and the activation separately, so both are always named - a stage that failed
+ * nothing reports 0 rather than being left out. The total is a lower bound only when one of the stages actually
+ * reached the cap - a large sum on its own is still exact.
+ */
+/* Cells are built first so the columns can be sized to what is actually in them - the error names vary widely in
+ * length and a fixed width would either waste space or push the last column out of line.
+ */
+string BurnSubCommand::FormatFailureTable(FwCompsMgr& fwCompsAccess,
+                                          const std::vector<FwCompsMgr::burn_failure_t>& details)
+{
+    std::stringstream table;
+    std::vector<string> cableCells, mccCells, cdbCells;
+    const string cableHeader = "Cable";
+    const string mccHeader = "MCC error";
+    size_t cableWidth = cableHeader.size();
+    size_t mccWidth = mccHeader.size();
+
+    for (std::vector<FwCompsMgr::burn_failure_t>::const_iterator it = details.begin(); it != details.end(); ++it)
+    {
+        std::stringstream cable;
+        /* Reported as the device gives it, matching the index MCC names in the rejection error, so the same cable
+         * carries one number in both. */
+        cable << (unsigned int)it->module_id;
+        std::stringstream mcc;
+        mcc << fwCompsAccess.GetMccErrorString(it->mcc_error_code) << " (0x" << std::hex
+            << (unsigned int)it->mcc_error_code << ")";
+        std::stringstream cdb;
+        if (it->cdb_error_code == MCCE_CDB_ERROR_NOT_RELEVANT)
+        {
+            cdb << "Not Relevant";
+        }
+        else
+        {
+            /* MCCE reports the CDB error as a bare 16-bit code - unlike the CDB FW-info reply it carries no
+             * component index, so like the MCC column this shows the code alone. */
+            cdb << PackageErrorCodeToString(it->cdb_error_code) << " (0x" << std::hex
+                << (unsigned int)it->cdb_error_code << ")";
+        }
+        cableCells.push_back(cable.str());
+        mccCells.push_back(mcc.str());
+        cdbCells.push_back(cdb.str());
+        cableWidth = cable.str().size() > cableWidth ? cable.str().size() : cableWidth;
+        mccWidth = mcc.str().size() > mccWidth ? mcc.str().size() : mccWidth;
+    }
+
+    const size_t columnGap = 2;
+    table << std::left << std::setw((int)(cableWidth + columnGap)) << cableHeader
+          << std::setw((int)(mccWidth + columnGap)) << mccHeader << "CDB error\n";
+    for (size_t row = 0; row < cableCells.size(); row++)
+    {
+        table << std::left << std::setw((int)(cableWidth + columnGap)) << cableCells[row]
+              << std::setw((int)(mccWidth + columnGap)) << mccCells[row] << cdbCells[row] << "\n";
+    }
+    return table.str();
+}
+
+/* A sibling temp file rather than a fixed name, so a second burn cannot overwrite the previous report. The helper
+ * hands back a path rather than an open handle, so the file is reopened here; the report carries nothing sensitive
+ * and this matches how the helper is used elsewhere. A report that cannot be saved is not worth failing the burn
+ * over, so this stays quiet and the caller has already printed the same text.
+ */
+static void saveFailureReport(const string& report)
+{
+    string reportFile = mft_utils::CreateSiblingTempFile("flint_cable_burn_failures");
+    if (reportFile.empty())
+    {
+        MLXFWOPS_LOG_DEBUG("saveFailureReport: no temp file could be created, the report was printed only");
+        return;
+    }
+    FILE* fh = fopen(reportFile.c_str(), "w");
+    if (!fh)
+    {
+        MLXFWOPS_LOG_DEBUG("saveFailureReport: cannot open %s for writing, errno %d", reportFile.c_str(), errno);
+        return;
+    }
+    bool written = fputs(report.c_str(), fh) != EOF;
+    /* fclose is where a full disk usually surfaces, since it flushes what fputs buffered. */
+    written = (fclose(fh) == 0) && written;
+    if (!written)
+    {
+        MLXFWOPS_LOG_DEBUG("saveFailureReport: writing %s failed, errno %d", reportFile.c_str(), errno);
+        return;
+    }
+    printf("-I- The above was also saved to %s.\n", reportFile.c_str());
+}
+
+/* Split from the check below so that this side never has to consider the case where nothing failed: by the time it
+ * runs there is something to say, and the only question left is whether the device gave per-cable detail.
+ */
+void BurnSubCommand::ReportBurnFailures(FwCompsMgr& fwCompsAccess, u_int32_t transfer, u_int32_t activate)
+{
+    /* The count is a 4-bit field, so reaching MCC_MAX_ERROR_COUNT is the most it can report. */
+    bool transferCapped = transfer == MCC_MAX_ERROR_COUNT;
+    bool activateCapped = activate == MCC_MAX_ERROR_COUNT;
+    /* Built up rather than printed as it goes, so the saved file holds the summary as well as the table. */
+    std::stringstream report;
+    report << "-W- " << formatCableCount(transfer + activate, transferCapped || activateCapped)
+           << " cable(s) failed to burn and were skipped (" << formatCableCount(transfer, transferCapped)
+           << " during the image transfer, " << formatCableCount(activate, activateCapped) << " during activation).\n";
+
+    const std::vector<FwCompsMgr::burn_failure_t>& details = fwCompsAccess.GetBurnFailures();
+    if (details.empty())
+    {
+        /* The counters say cables failed but the device logged none of them, so the summary is all there is to
+         * show. Either MCCE is unsupported here or the log came back empty, and both are worth knowing about. */
+        MLXFWOPS_LOG_DEBUG("ReportBurnFailures: %u transfer and %u activate failures, but the device logged no detail",
+                           transfer, activate);
+        printf("%s", report.str().c_str());
+        return;
+    }
+    report << FormatFailureTable(fwCompsAccess, details);
+    printf("%s", report.str().c_str());
+    saveFailureReport(report.str());
+}
+
+void BurnSubCommand::ReportSkippedCables(FwCompsMgr& fwCompsAccess)
+{
+    u_int32_t transfer = fwCompsAccess.GetTransferErrorCount();
+    u_int32_t activate = fwCompsAccess.GetActivateErrorCount();
+
+    if (transfer != 0 || activate != 0)
+    {
+        ReportBurnFailures(fwCompsAccess, transfer, activate);
+    }
+}
+
+/* Every LinkX burn leads with eight 0xFF bytes ahead of the image. */
+#define LINKX_BURN_IMAGE_PREFIX_SIZE 8
+
 FlintStatus BurnSubCommand::BurnLinkX(string deviceName,
                                       int deviceIndex,
                                       int deviceSize,
@@ -284,7 +426,8 @@ FlintStatus BurnSubCommand::BurnLinkX(string deviceName,
                                       bool downloadTransferNeeded,
                                       int activate_delay_sec,
                                       ProgressCallBackAdvSt* funcAdv,
-                                      FwComponent::comps_ids_t fwComponent)
+                                      FwComponent::comps_ids_t fwComponent,
+                                      bool noStopOnError)
 {
     if (preFwOps() == FLINT_FAILED)
     {
@@ -296,7 +439,7 @@ FlintStatus BurnSubCommand::BurnLinkX(string deviceName,
         reportErr(true, LINKX_BURN_DEVICE_NOT_SUPPORTED, deviceName.c_str());
         return FLINT_FAILED;
     }
-    vector<u_int8_t> binaryData(8, 0xff);
+    vector<u_int8_t> binaryData(LINKX_BURN_IMAGE_PREFIX_SIZE, 0xff);
     if (downloadTransferNeeded)
     {
         if (!readFromFile(binaryFileName, binaryData))
@@ -342,7 +485,16 @@ FlintStatus BurnSubCommand::BurnLinkX(string deviceName,
         }
     }
     fwCompsAccess.SetIndexAndSize(deviceIndex + 1, deviceSize, linkx_auto_update, activationNeeded,
-                                  downloadTransferNeeded, activate_delay_sec);
+                                  downloadTransferNeeded, activate_delay_sec, noStopOnError);
+    // With a delay the activate command is only handed to the FW, so its outcome is never read and the failure
+    // summary can name transfer errors only. Asked after the call above, which turns the flag off where the FW has no
+    // per-cable error reporting and says so itself.
+    if (fwCompsAccess.GetNoStopOnError() && activationNeeded && activate_delay_sec > 0)
+    {
+        printf("-W- With an activation delay, flint does not wait for the activation, so only transfer errors can be "
+               "reported.\n"
+               "    For activation errors, rerun with --activate_delay_sec 0.\n");
+    }
     if (!fwCompsAccess.RefreshComponentsStatus())
     {
         printf("-E- Refresh components failed, error is %s.\n", fwCompsAccess.getLastErrMsg());
@@ -385,6 +537,10 @@ FlintStatus BurnSubCommand::BurnLinkX(string deviceName,
     else
     {
         printf("-I- Cable burn finished successfully.\n");
+        if (noStopOnError)
+        {
+            ReportSkippedCables(fwCompsAccess);
+        }
     }
     return FLINT_SUCCESS;
 }

@@ -57,6 +57,7 @@ enum mft_layer
     MFT_LAYER_MFLASH_SPI,
     MFT_LAYER_CABLE_ACCESS,
     MFT_LAYER_CABLE_CDB,
+    MFT_LAYER_MLXFWMANAGER,
 
     MFT_LAYER_COUNT
 };
@@ -89,6 +90,7 @@ enum class Layer
     MFLASH_SPI = MFT_LAYER_MFLASH_SPI,
     CABLE_ACCESS = MFT_LAYER_CABLE_ACCESS,
     CABLE_CDB = MFT_LAYER_CABLE_CDB,
+    MLXFWMANAGER = MFT_LAYER_MLXFWMANAGER,
     ALL = MFT_LAYER_COUNT
 };
 
@@ -117,6 +119,7 @@ inline const std::vector<LayerEntry>& getLayerTable()
       {Layer::MFLASH_SPI, "mflash_spi"},
       {Layer::CABLE_ACCESS, "cable_access"},
       {Layer::CABLE_CDB, "cable_cdb"},
+      {Layer::MLXFWMANAGER, "mlxfwmanager"},
       {Layer::ALL, "all"},
     };
     return table;

@@ -59,6 +59,7 @@
 #include "output_fmts.h"
 #include "mlxfwmanager_common.h"
 #include "menu.h"
+#include "cable_fw_manager.h"
 
 #include "common/tools_filesystem.h"
 namespace Filesystem = mstflint::common::filesystem;
