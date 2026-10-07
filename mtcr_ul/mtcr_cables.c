@@ -119,14 +119,14 @@ int cable_access_reg_rw(mfile    * mf,
     reg_access_status_t rc = reg_access_mcia(mf, op, &cbl_reg_t);
 
     if (rc) {
-        MTCR_LOG_DEBUG("MCIA Failed with rc: %d", (int)rc);
+        CABLE_ACCESS_LOG_DEBUG("MCIA Failed with rc: %d", (int)rc);
         return MCABLES_REG_FAILED;
     }
     if (_rw == READ_OP) {
         copy_data((u_int8_t*)data, (u_int8_t*)cbl_reg_t.dword, size, 1);
-        MTCR_LOG_DEBUG("MCIA read: page: %#x, offset: %#x, size: %d", page_num, page_off, size);
+        CABLE_ACCESS_LOG_DEBUG("MCIA read: page: %#x, offset: %#x, size: %d", page_num, page_off, size);
         for (ii = 0; ii < size; ii++) {
-            MTCR_LOG_DEBUG("MCIA read: data[%d] = %#x", ii, cbl_reg_t.dword[ii]);
+            CABLE_ACCESS_LOG_DEBUG("MCIA read: data[%d] = %#x", ii, cbl_reg_t.dword[ii]);
         }
     }
 /* printf("-D- RW: %d offset: %#x, Len: %#x\n", _rw, page_off, size); */
@@ -173,7 +173,7 @@ int cable_access_rw(mfile* mf, u_int32_t addr, u_int32_t len, u_int32_t* data, r
         case MLXCABLES_REG_ACCESS:
             if (cable_access_reg_rw(mf, page_num + page_i, device_addr + addr_i, tmp_size, ctx->port, page_lock,
                                     data + i / 4, _rw)) {
-                MTCR_LOG_DEBUG("cable_access_reg_rw failed");
+                CABLE_ACCESS_LOG_DEBUG("cable_access_reg_rw failed");
                 ret = MCABLES_REG_FAILED;
                 goto cleanup;
             }
@@ -210,7 +210,7 @@ int mcables_open(mfile* mf, int port)
     /* int semaphore_num_of_resources = 1; */
 
     if (!mf || (port < 0) || (port > MAX_PORT_NUM)) {
-        MTCR_LOG_DEBUG("unable to open cable, invalid args");
+        CABLE_ACCESS_LOG_ERROR("unable to open cable, invalid args");
         return MCABLES_BAD_PARAMS;
     }
     cbl = (cable_ctx*)malloc(sizeof(cable_ctx));
@@ -259,7 +259,7 @@ int mcables_open(mfile* mf, int port)
     int       rw_result = cable_access_rw(mf, 0, 1, (u_int32_t*)&id, READ_OP);
 
     if (rw_result || (id == 0)) {
-        MTCR_LOG_DEBUG("Failed to read ID from device or id is not supported: id 0x%04x rc %d:", id, rw_result);
+        CABLE_ACCESS_LOG_ERROR("Failed to read ID from device or id is not supported: id 0x%04x rc %d:", id, rw_result);
         mcables_close(mf);
 
         return MCABLES_ACCESS_ERROR;
@@ -268,11 +268,11 @@ int mcables_open(mfile* mf, int port)
     u_int32_t devid = 0;
     int       rc = get_cable_id(mf, &devid, &(cbl->cable_type));
 
-    MTCR_LOG_DEBUG("cable type: %d", cbl->cable_type);
-    MTCR_LOG_DEBUG("devid: %d", devid);
+    CABLE_ACCESS_LOG_DEBUG("cable type: %d", cbl->cable_type);
+    CABLE_ACCESS_LOG_DEBUG("devid: %d", devid);
 
     if (rc) {
-        MTCR_LOG_DEBUG("Failed to get dev_mgt device id");
+        CABLE_ACCESS_LOG_ERROR("Failed to get dev_mgt device id");
         mcables_close(mf);
         return MCABLES_ACCESS_ERROR;
     }
@@ -294,7 +294,7 @@ int mcables_open(mfile* mf, int port)
     /*     return MCABLES_SEM_UNLOCK_FAILED; */
     /* } */
 
-    MTCR_LOG_DEBUG("mcables_open finished");
+    CABLE_ACCESS_LOG_DEBUG("mcables_open finished");
     return MCABLES_OK;
 }
 

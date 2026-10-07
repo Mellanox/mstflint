@@ -32,6 +32,7 @@
  */
 
 #include "cdb_cable_access.h"
+#include "nvtoolslogger/NvToolsLogger.h"
 #include <sstream>
 #include <iostream>
 #include <exception>
@@ -154,7 +155,7 @@ void CmisCdbAccess::InnerInit()
 
         vector<u_int8_t> ouiBytes = ReadData(CDB_OUI_ADDRESS, OUI::OUI_SIZE, OTHER);
         _oui = OUI(ouiBytes);
-        CDB_ACCESS_DPRINTF(("OUI: %02X %02X %02X\n", ouiBytes[0], ouiBytes[1], ouiBytes[2]));
+        CABLE_CDB_LOG_DEBUG("OUI: %02X %02X %02X", ouiBytes[0], ouiBytes[1], ouiBytes[2]);
 
         _isInitDone = true;
     }
@@ -173,14 +174,14 @@ void CmisCdbAccess::Init()
         {
             u_int32_t completionFlagByteMask = 0x000000C0;
             u_int32_t completionFlag = ReadDWord(CDB_CMD_COMPLETE_FLAG_ADDRESS) & completionFlagByteMask;
-            CDB_ACCESS_DPRINTF(("CmisCdbAccess::Init cleared completion flag, read value: 0x%x\n", completionFlag));
+            CABLE_CDB_LOG_DEBUG("cleared completion flag, read value: 0x%x", completionFlag);
         }
     }
 }
 
 void CmisCdbAccess::InitCommandHeader(u_int16_t code, PayloadMethod payloadMethod, const vector<u_int8_t>& payload)
 {
-    CDB_ACCESS_DPRINTF(("CmisCdbAccess::InitCommandHeader\n"));
+    CABLE_CDB_LOG_DEBUG("CmisCdbAccess::InitCommandHeader");
     u_int16_t payloadSize = payload.size();
     memset(&_header, 0, sizeof(_header));
 
@@ -210,10 +211,10 @@ void CmisCdbAccess::InitCommandHeader(u_int16_t code, PayloadMethod payloadMetho
 
     SetStatusWaitingTime(code);
 
-    CDB_ACCESS_DPRINTF(("_header.command %#x\n", _header.command));
-    CDB_ACCESS_DPRINTF(("_header.eplLength %#x\n", _header.eplLength));
-    CDB_ACCESS_DPRINTF(("_header.lplLength %#x\n", _header.lplLength));
-    CDB_ACCESS_DPRINTF(("_header.cdbChkCode %#x\n", _header.cdbChkCode));
+    CABLE_CDB_LOG_DEBUG("_header.command %#x", _header.command);
+    CABLE_CDB_LOG_DEBUG("_header.eplLength %#x", _header.eplLength);
+    CABLE_CDB_LOG_DEBUG("_header.lplLength %#x", _header.lplLength);
+    CABLE_CDB_LOG_DEBUG("_header.cdbChkCode %#x", _header.cdbChkCode);
 }
 
 void CmisCdbAccess::SendCommand(u_int16_t code)
@@ -237,8 +238,8 @@ vector<u_int8_t> CmisCdbAccess::SendCommand(u_int16_t code,
                                             const vector<u_int8_t>& payload,
                                             u_int32_t outputByteSize)
 {
-    CDB_ACCESS_DPRINTF(("CmisCdbAccess::SendCommand - command code %#x, payload size %#x, outputByteSize %#x\n", code,
-                        (u_int32_t)payload.size(), outputByteSize));
+    CABLE_CDB_LOG_DEBUG("command code %#x, payload size %#x, outputByteSize %#x", code, (u_int32_t)payload.size(),
+                        outputByteSize);
     vector<u_int8_t> output;
     u_int32_t payloadSize = payload.size();
     u_int16_t payloadAddress = (payloadMethod == EPL) ? CDB_DATA_EPL_ADDRESS : CDB_DATA_LPL_ADDRESS;
@@ -269,8 +270,8 @@ vector<u_int8_t> CmisCdbAccess::SendCommand(u_int16_t code,
 
 void CmisCdbAccess::SendCommand(u_int16_t code, const vector<u_int8_t>& lplPayload, const vector<u_int8_t>& eplPayload)
 {
-    CDB_ACCESS_DPRINTF(("CmisCdbAccess::SendCommand - command code %#x, lpl payload size %#x, epl payload size %#x\n",
-                        code, (u_int32_t)lplPayload.size(), (u_int32_t)eplPayload.size()));
+    CABLE_CDB_LOG_DEBUG("command code %#x, lpl payload size %#x, epl payload size %#x", code,
+                        (u_int32_t)lplPayload.size(), (u_int32_t)eplPayload.size());
     vector<u_int8_t> output;
     u_int32_t eplPayloadSize = eplPayload.size();
 
@@ -283,10 +284,10 @@ void CmisCdbAccess::SendCommand(u_int16_t code, const vector<u_int8_t>& lplPaylo
 
     SetStatusWaitingTime(code);
 
-    CDB_ACCESS_DPRINTF(("_header.command %#x\n", _header.command));
-    CDB_ACCESS_DPRINTF(("_header.eplLength %#x\n", _header.eplLength));
-    CDB_ACCESS_DPRINTF(("_header.lplLength %#x\n", _header.lplLength));
-    CDB_ACCESS_DPRINTF(("_header.cdbChkCode %#x\n", _header.cdbChkCode));
+    CABLE_CDB_LOG_DEBUG("_header.command %#x", _header.command);
+    CABLE_CDB_LOG_DEBUG("_header.eplLength %#x", _header.eplLength);
+    CABLE_CDB_LOG_DEBUG("_header.lplLength %#x", _header.lplLength);
+    CABLE_CDB_LOG_DEBUG("_header.cdbChkCode %#x", _header.cdbChkCode);
 
     WriteData(CDB_DATA_EPL_ADDRESS, eplPayload.data(), eplPayload.size());
     WriteData(CDB_DATA_LPL_ADDRESS, lplPayload.data(), lplPayload.size());
@@ -328,7 +329,7 @@ void CmisCdbAccess::CheckStatus()
 
     if (status != _cdbStatusMap.end())
     {
-        CDB_ACCESS_DPRINTF(("CheckStatus: code: %#x, msg: %s\n", cdbCommandStatusByte, status->second.second.c_str()));
+        CABLE_CDB_LOG_DEBUG("CheckStatus: code: %#x, msg: %s", cdbCommandStatusByte, status->second.second.c_str());
 
         if (status->first == 0x81 || status->first == 0x82 || status->first == 0x83)
         {
@@ -360,7 +361,7 @@ void CmisCdbAccess::CheckStatus()
 
 void CmisCdbAccess::WaitForStatusBusyBit()
 {
-    CDB_ACCESS_DPRINTF(("Polling CDB status busy bit.\n"));
+    CABLE_CDB_LOG_DEBUG("Polling CDB status busy bit.");
 
     const u_int32_t pollingIntervalMillisec = 10;
     const u_int32_t busyBitMask = 0x80;
@@ -376,11 +377,11 @@ void CmisCdbAccess::WaitForStatusBusyBit()
 
     if (timeoutTimerMillisec > 0)
     {
-        CDB_ACCESS_DPRINTF(("CDB status busy cleared!\n"));
+        CABLE_CDB_LOG_DEBUG("CDB status busy cleared!");
     }
     else
     {
-        CDB_ACCESS_DPRINTF(("Timeout while polling CDB status busy bit!\n"));
+        CABLE_CDB_LOG_WARNING("Timeout while polling CDB status busy bit!");
     }
 }
 
@@ -412,13 +413,13 @@ void CmisCdbAccess::WaitForCommandCompletion()
 
     if (completionFlag != 0)
     {
-        CDB_ACCESS_DPRINTF(("Completion flag was raised.\n"));
+        CABLE_CDB_LOG_DEBUG("Completion flag was raised.");
     }
     else
     {
         if (_isIgnoreCompletionTimeOut)
         {
-            CDB_ACCESS_DPRINTF(("Timeout ignored, polling status.\n"));
+            CABLE_CDB_LOG_WARNING("Timeout ignored, polling status.");
         }
         else
         {
@@ -437,7 +438,7 @@ void CmisCdbAccess::WriteData(u_int32_t address, const u_int8_t* payload, u_int3
         bytesToWrite = (payloadSize - bytesWritten) > CDB_WRITABLE_BYTES_PER_PAGE ? CDB_WRITABLE_BYTES_PER_PAGE :
                                                                                     (payloadSize - bytesWritten);
 
-        CDB_ACCESS_DPRINTF(("Writing to cable: address %#x, payloadSize %#x\n", address, bytesToWrite));
+        CABLE_CDB_LOG_DEBUG("Writing to cable: address %#x, payloadSize %#x", address, bytesToWrite);
         if (!_cableAccess.write(address, bytesToWrite, (u_int8_t*)payload + bytesWritten))
         {
             throw CmisCdbAccessException(_cableAccess.getLastErrMsg());
@@ -461,7 +462,7 @@ vector<u_int8_t> CmisCdbAccess::ReadData(u_int32_t address, u_int32_t outputByte
         {
             bytesToRead = (bytesLeftToRead > CDB_EPL_PAGE_SIZE) ? CDB_EPL_PAGE_SIZE : bytesLeftToRead;
 
-            CDB_ACCESS_DPRINTF(("Reading from cable: address %#x, outputByteSize %#x\n", address, bytesToRead));
+            CABLE_CDB_LOG_DEBUG("Reading from cable: address %#x, outputByteSize %#x", address, bytesToRead);
             if (!_cableAccess.read(address, bytesToRead, output.data() + bytesRead))
             {
                 throw CmisCdbAccessException(_cableAccess.getLastErrMsg());
@@ -474,7 +475,7 @@ vector<u_int8_t> CmisCdbAccess::ReadData(u_int32_t address, u_int32_t outputByte
     }
     else
     {
-        CDB_ACCESS_DPRINTF(("Reading from cable: address %#x, outputByteSize %#x\n", address, outputByteSize));
+        CABLE_CDB_LOG_DEBUG("Reading from cable: address %#x, outputByteSize %#x", address, outputByteSize);
         if (!_cableAccess.read(address, outputByteSize, output.data()))
         {
             throw CmisCdbAccessException(_cableAccess.getLastErrMsg());
@@ -488,7 +489,7 @@ u_int32_t CmisCdbAccess::ReadDWord(u_int32_t address)
 {
     vector<u_int8_t> output = ReadData(address, 4, OTHER);
     u_int32_t data = *((u_int32_t*)output.data());
-    CDB_ACCESS_DPRINTF(("Reading from cable dword: address %#x, data %#x, \n", address, data));
+    CABLE_CDB_LOG_DEBUG("Reading from cable dword: address %#x, data %#x, ", address, data);
     return data;
 }
 
@@ -607,13 +608,13 @@ void FWManagementCdbAccess::SetFWMngFeatures(FWMngFeatures fwMngfeatures)
 
     _FwMngFeaturesInitialized = true;
 
-    CDB_ACCESS_DPRINTF(("lplNumOfAdditionalBytes %#x\n", lplNumOfAdditionalBytes));
-    CDB_ACCESS_DPRINTF(("_lplPayloadMaxSizeBytes %#x\n", _lplPayloadMaxSizeBytes));
-    CDB_ACCESS_DPRINTF(("_eplPayloadMaxSizeBytes %#x\n", _eplPayloadMaxSizeBytes));
-    CDB_ACCESS_DPRINTF(("_fwUpdateMechanism %#x\n", _fwUpdateMechanism));
-    CDB_ACCESS_DPRINTF(("_startCmdPayloadSize %#x\n", _startCmdPayloadSize));
-    CDB_ACCESS_DPRINTF(("maxDurationCoding %x\n", ((fwMngfeatures.maxDurationCoding >> 3) & 0x1)));
-    CDB_ACCESS_DPRINTF(("maxDurationWrite %x\n", fwMngfeatures.maxDurationWrite));
+    CABLE_CDB_LOG_DEBUG("lplNumOfAdditionalBytes %#x", lplNumOfAdditionalBytes);
+    CABLE_CDB_LOG_DEBUG("_lplPayloadMaxSizeBytes %#x", _lplPayloadMaxSizeBytes);
+    CABLE_CDB_LOG_DEBUG("_eplPayloadMaxSizeBytes %#x", _eplPayloadMaxSizeBytes);
+    CABLE_CDB_LOG_DEBUG("_fwUpdateMechanism %#x", _fwUpdateMechanism);
+    CABLE_CDB_LOG_DEBUG("_startCmdPayloadSize %#x", _startCmdPayloadSize);
+    CABLE_CDB_LOG_DEBUG("maxDurationCoding %x", ((fwMngfeatures.maxDurationCoding >> 3) & 0x1));
+    CABLE_CDB_LOG_DEBUG("maxDurationWrite %x", fwMngfeatures.maxDurationWrite);
 
     _maxDurationWriteMilliSec = (fwMngfeatures.maxDurationStart > fwMngfeatures.maxDurationWrite) ?
                                   fwMngfeatures.maxDurationStart :
@@ -636,11 +637,11 @@ void FWManagementCdbAccess::SelectPayloadMechanism()
         case EPL_SUPPORTED:
         case BOTH_SUPPORTED:
             _selectedPayloadMechanism = CmisCdbAccess::PayloadMethod::EPL;
-            CDB_ACCESS_DPRINTF(("Using EPL Payload Mechanism\n"));
+            CABLE_CDB_LOG_DEBUG("Using EPL Payload Mechanism");
             break;
         case LPL_SUPPORTED:
             _selectedPayloadMechanism = CmisCdbAccess::PayloadMethod::LPL;
-            CDB_ACCESS_DPRINTF(("Using LPL Payload Mechanism\n"));
+            CABLE_CDB_LOG_DEBUG("Using LPL Payload Mechanism");
             break;
         case NONE_SUPPORTED:
             throw CmisCdbAccessException("FW update mechanism is not supported");
