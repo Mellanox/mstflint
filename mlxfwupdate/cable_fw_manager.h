@@ -537,6 +537,25 @@ private:
      */
     int verifyAndReport();
 
+    /* Re-read every cable that was burned and decide whether it took the image. A cable whose
+     * firmware only takes effect after the host power cycles it still reports the old version
+     * here, which is a pending power cycle rather than a failed burn.
+     */
+    void verifyBurnedCables();
+
+    /* Collect the per-device detail the report prints but the phases never needed: the device
+     * description, and the text for the error codes the device returned.
+     */
+    void collectReportDetails(map<string, string>& descriptions, map<size_t, string>& mccErrors);
+
+    /* Render the whole report. The template is fixed, so a field that does not apply to the flow
+     * that ran prints N/A rather than being left out.
+     */
+    string buildReport(const map<string, string>& descriptions, const map<size_t, string>& mccErrors);
+
+    /* Write the report beside the others, named for the moment it was produced. */
+    int writeReport(const string& text);
+
     const CmdLineParams& _cmdParams;
     AsicsByGa _asics;
     vector<CableInfo> _cables;

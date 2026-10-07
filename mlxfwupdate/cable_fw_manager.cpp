@@ -57,6 +57,8 @@
 #include "common/tools_time.h"
 #include "reg_access/mcam_capabilities.h"
 #include "reg_access/reg_ids.h"
+#include "common/package_error_codes.h"
+#include <time.h>
 
 /* The extended header a cable firmware image can carry: its magic and the layout the device
  * matches the image against. Only the pieces the cable flow uses are defined here. */
@@ -668,6 +670,68 @@ static bool metadataMatchesCable(const FwPackageEntry& entry, const CableInfo& c
  * the front of the image behind it, exactly where a package that already carries one puts it.
  */
 #define CABLE_BURN_IMAGE_PREFIX_SIZE 8
+
+#define CABLE_REPORT_NOT_AVAILABLE "N/A"
+
+static string cableFwVersionText(const CableFwVersion& version)
+{
+    char text[32];
+
+    snprintf(text, sizeof(text), "%02d.%02d.%04d", version.major, version.minor, version.subminor);
+    return string(text);
+}
+
+static string orNotAvailable(const string& value)
+{
+    return value.empty() ? CABLE_REPORT_NOT_AVAILABLE : value;
+}
+
+static const char* cableActionName(CableUpdateAction action)
+{
+    switch (action)
+    {
+        case CABLE_ACTION_UPDATE:
+            return "update";
+        case CABLE_ACTION_SKIP_ASIC_DETECTION_NOT_SUPPORTED:
+            return "skipped, owning ASIC cannot be identified";
+        case CABLE_ACTION_SKIP_NOT_PRESENT:
+            return "skipped, no cable in the cage";
+        case CABLE_ACTION_SKIP_3RD_PARTY:
+            return "skipped, not an NVIDIA cable";
+        case CABLE_ACTION_SKIP_NOT_BURNABLE:
+            return "skipped, no firmware update procedure";
+        case CABLE_ACTION_SKIP_NO_FW_FILE:
+            return "skipped, no matching image in the package";
+        case CABLE_ACTION_SKIP_CURRENT:
+            return "skipped, already running this version";
+        default:
+            return "undecided";
+    }
+}
+
+/* The device describes itself in one line of semicolon-separated clauses; the first is the part
+ * that names the product, and the rest are the mechanical details the report has no use for.
+ */
+static string deviceDescription(const string& full)
+{
+    size_t semicolon = full.find(';');
+    string text = (semicolon == string::npos) ? full : full.substr(0, semicolon);
+    size_t end = text.find_last_not_of(" \t");
+
+    return (end == string::npos) ? "" : text.substr(0, end + 1);
+}
+
+static string cdbErrorText(u_int16_t code)
+{
+    char text[128];
+
+    if (code == MCCE_CDB_ERROR_NOT_RELEVANT)
+    {
+        return "Not Relevant";
+    }
+    snprintf(text, sizeof(text), "%s (0x%04x)", PackageErrorCodeToString(code), code);
+    return string(text);
+}
 
 int CableFwManager::discoverSystem()
 {
@@ -1522,6 +1586,269 @@ bool CableFwManager::runBurnStage(mfile* mf,
 
 int CableFwManager::verifyAndReport()
 {
-    _errMsg = "Phase 5 (verification and report) is not implemented yet";
-    return ERR_CODE_CABLE_UPDATE_FAILED;
+    map<string, string> descriptions;
+    map<size_t, string> mccErrors;
+
+    if (_cmdParams.cable_update)
+    {
+        verifyBurnedCables();
+    }
+    collectReportDetails(descriptions, mccErrors);
+    return writeReport(buildReport(descriptions, mccErrors));
+}
+
+void CableFwManager::verifyBurnedCables()
+{
+    for (size_t i = 0; i < _results.size(); i++)
+    {
+        CableUpdateResult& result = _results[i];
+        const CableInfo* cable = NULL;
+
+        for (size_t j = 0; j < _cables.size(); j++)
+        {
+            if (_cables[j].globalIndex == result.globalIndex)
+            {
+                cable = &_cables[j];
+                break;
+            }
+        }
+        if (cable == NULL)
+        {
+            continue;
+        }
+
+        mfile* mf = mopen(result.asicDevName.c_str());
+        if (mf == NULL)
+        {
+            result.succeeded = false;
+            result.status = "verification: " + result.asicDevName + " could not be reopened";
+            continue;
+        }
+        CableInfo current = *cable;
+        bool read = readCableFwProperties(mf, current);
+        mclose(mf);
+        if (!read)
+        {
+            result.succeeded = false;
+            result.status = "verification: the cable did not answer";
+            continue;
+        }
+
+        const CableFwVersion& running =
+          (current.runningSlot == CABLE_IMAGE_SLOT_B) ? current.fwImageB : current.fwImageA;
+        if (current.runningSlot == cable->targetSlot && compareCableFwVersions(running, cable->targetVersion) == 0)
+        {
+            result.succeeded = true;
+            result.status = "updated to " + cableFwVersionText(running);
+            continue;
+        }
+        // A cable that activates only on a host power cycle is still running its old image here,
+        // which is a pending power cycle rather than a burn that failed.
+        if (cable->activationType == 0)
+        {
+            result.succeeded = true;
+            result.status = "burned, pending a host power cycle to run " + cableFwVersionText(cable->targetVersion);
+            continue;
+        }
+        result.succeeded = false;
+        result.status = "still running " + cableFwVersionText(running) + " after the update";
+    }
+}
+
+void CableFwManager::collectReportDetails(map<string, string>& descriptions, map<size_t, string>& mccErrors)
+{
+    for (AsicsByGa::const_iterator asic = _asics.begin(); asic != _asics.end(); ++asic)
+    {
+        const string& devName = asic->second.devName;
+        mfile* mf = mopen(devName.c_str());
+
+        descriptions[devName] = "";
+        if (mf == NULL)
+        {
+            continue;
+        }
+        FwCompsMgr fwComps(mf, FwCompsMgr::DEVICE_HCA_SWITCH, 0);
+        vector<u_int8_t> info;
+        if (fwComps.getDeviceHWInfo(FwCompsMgr::MQIS_REGISTER_DEVICE_DESCRIPTION_INFO, info) && !info.empty())
+        {
+            descriptions[devName] = deviceDescription(string((const char*)&info[0]));
+        }
+        // The device error codes are named by the same manager that would have returned them.
+        for (size_t j = 0; j < _results.size(); j++)
+        {
+            if (_results[j].asicDevName == devName && _results[j].mccErrorCode != 0)
+            {
+                mccErrors[j] = fwComps.GetMccErrorString(_results[j].mccErrorCode);
+            }
+        }
+        mclose(mf);
+    }
+}
+
+string CableFwManager::buildReport(const map<string, string>& descriptions, const map<size_t, string>& mccErrors)
+{
+    std::ostringstream report;
+    u_int32_t updated = 0;
+    u_int32_t failed = 0;
+
+    for (size_t i = 0; i < _results.size(); i++)
+    {
+        if (_results[i].succeeded)
+        {
+            updated++;
+        }
+        else
+        {
+            failed++;
+        }
+    }
+
+    report << "Cable firmware update report\n";
+    report << "============================\n\n";
+    report << "Mode:     " << (_cmdParams.cable_update ? "update" : (_cmdParams.cable_dry_run ? "dry run" : "query"))
+           << "\n";
+    report << "Package:  " << orNotAvailable(_cmdParams.cable_package) << "\n";
+    report << "Cables:   " << _cables.size() << " found, " << _plan.size() << " group(s) planned, " << updated
+           << " updated, " << failed << " failed\n\n";
+
+    report << "Devices\n-------\n";
+    for (AsicsByGa::const_iterator asic = _asics.begin(); asic != _asics.end(); ++asic)
+    {
+        map<string, string>::const_iterator description = descriptions.find(asic->second.devName);
+        report << asic->second.devName << "  "
+               << ((description == descriptions.end()) ? string(CABLE_REPORT_NOT_AVAILABLE) :
+                                                         orNotAvailable(description->second))
+               << "\n";
+    }
+    report << "\n";
+
+    report << "Packages\n--------\n";
+    if (_packages.empty())
+    {
+        report << CABLE_REPORT_NOT_AVAILABLE << "\n";
+    }
+    for (size_t i = 0; i < _packages.size(); i++)
+    {
+        report << _packages[i].metadataPath << "  ";
+        if (_packages[i].isValid)
+        {
+            report << _packages[i].imagePath << "  " << cableFwVersionText(_packages[i].fwVersion) << "\n";
+        }
+        else
+        {
+            report << "unusable: " << _packages[i].parseError << "\n";
+        }
+    }
+    report << "\n";
+
+    // Every cage the module map named appears here, including the ones nothing was done to,
+    // because the report has to account for every port.
+    report << "Cables\n------\n";
+    report << "Port  Device                        State                      Part number       Serial            "
+              "Running       Action\n";
+    for (size_t i = 0; i < _cables.size(); i++)
+    {
+        const CableInfo& cable = _cables[i];
+        const CableFwVersion& running = (cable.runningSlot == CABLE_IMAGE_SLOT_B) ? cable.fwImageB : cable.fwImageA;
+
+        report << std::left << std::setw(6) << cableLabelPort(cable.localIndex) << std::setw(30)
+               << orNotAvailable(cable.asicDevName) << std::setw(27) << orNotAvailable(cable.state) << std::setw(18)
+               << orNotAvailable(cable.partNumber) << std::setw(18) << orNotAvailable(cable.serialNumber)
+               << std::setw(14) << (cable.isPlugged ? cableFwVersionText(running) : string(CABLE_REPORT_NOT_AVAILABLE))
+               << cableActionName(cable.action) << (cable.isDowngrade ? " (downgrade)" : "") << "\n";
+    }
+    report << "\n";
+
+    report << "Update\n------\n";
+    if (_results.empty())
+    {
+        report << CABLE_REPORT_NOT_AVAILABLE << "\n";
+    }
+    else
+    {
+        report << "Port  Device                        Image                                   Outcome\n";
+        for (size_t i = 0; i < _results.size(); i++)
+        {
+            const CableUpdateResult& result = _results[i];
+            string image = CABLE_REPORT_NOT_AVAILABLE;
+
+            for (size_t j = 0; j < _cables.size(); j++)
+            {
+                if (_cables[j].globalIndex == result.globalIndex && !_cables[j].packageImagePath.empty())
+                {
+                    image = _cables[j].packageImagePath;
+                }
+            }
+            report << std::left << std::setw(6) << cableLabelPort(result.localIndex) << std::setw(30)
+                   << result.asicDevName << std::setw(40) << image << orNotAvailable(result.status) << "\n";
+        }
+    }
+    report << "\n";
+
+    report << "Errors\n------\n";
+    bool anyError = false;
+    for (size_t i = 0; i < _results.size(); i++)
+    {
+        if (_results[i].succeeded)
+        {
+            continue;
+        }
+        if (!anyError)
+        {
+            report << "Port  Phase        ASIC Error Code                         Module Error Code\n";
+            anyError = true;
+        }
+        map<size_t, string>::const_iterator mcc = mccErrors.find(i);
+        string phase = _results[i].status.substr(0, _results[i].status.find(':'));
+        char mccText[128];
+
+        snprintf(mccText, sizeof(mccText), "%s (0x%02x)",
+                 (mcc == mccErrors.end()) ? CABLE_REPORT_NOT_AVAILABLE : mcc->second.c_str(), _results[i].mccErrorCode);
+        report << std::left << std::setw(6) << cableLabelPort(_results[i].localIndex) << std::setw(13) << phase
+               << std::setw(40) << mccText << cdbErrorText(_results[i].cdbErrorCode) << "\n";
+    }
+    if (!anyError)
+    {
+        report << CABLE_REPORT_NOT_AVAILABLE << "\n";
+    }
+    return report.str();
+}
+
+int CableFwManager::writeReport(const string& text)
+{
+    time_t now = time(0);
+    tm* localNow = localtime(&now);
+    char stamp[32];
+
+    if (localNow == NULL)
+    {
+        _errMsg = "Failed to read the current time for the report file name";
+        return ERR_CODE_WRITE_FILE_FAIL;
+    }
+    snprintf(stamp, sizeof(stamp), "%d%02d%02d_%02d%02d%02d", localNow->tm_year + 1900, localNow->tm_mon + 1,
+             localNow->tm_mday, localNow->tm_hour, localNow->tm_min, localNow->tm_sec);
+
+    string path = _cmdParams.cable_report_dir;
+    if (!path.empty())
+    {
+        path += PATH_SEPARATOR;
+    }
+    path += "cable_fw_update_report_" + string(stamp) + ".txt";
+
+    FILE* file = fopen(path.c_str(), "w");
+    if (file == NULL)
+    {
+        _errMsg = "Failed to open " + path + " for writing";
+        return ERR_CODE_WRITE_FILE_FAIL;
+    }
+    bool written = fputs(text.c_str(), file) != EOF;
+    // Closing is where a full disk surfaces, since it flushes what was buffered.
+    written = (fclose(file) == 0) && written;
+    if (!written)
+    {
+        _errMsg = "Failed to write " + path;
+        return ERR_CODE_WRITE_FILE_FAIL;
+    }
+    _log += "Report file: " + path + "\n";
+    return MLX_FWM_SUCCESS;
 }
