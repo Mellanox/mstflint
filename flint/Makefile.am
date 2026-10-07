@@ -37,6 +37,7 @@ AM_CPPFLAGS = \
     -I$(top_srcdir)/common -I$(top_builddir)/common \
     -I$(top_srcdir)/include/mtcr_ul \
     -I$(top_srcdir)/mflash \
+    -I$(top_srcdir)/mft_core/mft_core_utils \
     -I$(top_srcdir)/mft_utils \
     -I$(top_srcdir)/tools_layouts \
     $(JSON_CFLAGS)
