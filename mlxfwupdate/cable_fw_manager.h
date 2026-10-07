@@ -718,6 +718,8 @@ private:
     // Why an update ended before its first burn, for the report: without it the ERRORS section of
     // an update that never started reads the same as one that burned cleanly.
     string _notStartedReason;
+    // Why phase 3 decided nothing, for the plan section, which would otherwise just read N/A.
+    string _notPlannedReason;
 };
 
 #endif

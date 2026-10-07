@@ -310,6 +310,10 @@ int CableFwManager::run()
         // Keep the plan's result and report anyway. A package the tool could not read is exactly
         // when its packages table is wanted: it names every metadata file it rejected and why.
         rc = buildUpdatePlan();
+        if (rc != MLX_FWM_SUCCESS && !_planned)
+        {
+            _notPlannedReason = _errMsg;
+        }
     }
 
     if (rc == MLX_FWM_SUCCESS && _cmdParams.cable_update)
@@ -318,7 +322,8 @@ int CableFwManager::run()
         // cables failed, and it is most needed exactly when phase 4 did not go cleanly.
         rc = downloadAndActivate();
     }
-    if (rc != MLX_FWM_SUCCESS && _cmdParams.cable_update && _results.empty())
+    // A plan that was never built is named in the plan section, which already explains the rest.
+    if (rc != MLX_FWM_SUCCESS && _cmdParams.cable_update && _results.empty() && _notPlannedReason.empty())
     {
         _notStartedReason = _errMsg;
     }
@@ -3667,6 +3672,11 @@ void CableFwManager::appendDiscoveryTable(std::ostringstream& report)
 void CableFwManager::appendPlanTable(std::ostringstream& report)
 {
     report << "FW UPDATE PLAN\n--------------\n";
+    if (!_notPlannedReason.empty())
+    {
+        report << "Not planned: " << _notPlannedReason << "\n\n";
+        return;
+    }
     if (_cmdParams.cable_query || _cables.empty() || !_planned)
     {
         report << CABLE_REPORT_NOT_AVAILABLE << "\n\n";
@@ -3783,7 +3793,8 @@ void CableFwManager::appendErrorsTable(std::ostringstream& report)
             report << "The update did not start: " << _notStartedReason << "\n\n";
             return;
         }
-        report << (_cmdParams.cable_update ? "No errors were found" : CABLE_REPORT_NOT_AVAILABLE) << "\n\n";
+        bool reached = _cmdParams.cable_update && _notPlannedReason.empty();
+        report << (reached ? "No errors were found" : CABLE_REPORT_NOT_AVAILABLE) << "\n\n";
         return;
     }
 
