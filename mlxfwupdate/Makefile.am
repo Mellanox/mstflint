@@ -58,6 +58,8 @@ mstfwmanager_CXXFLAGS += -DUSE_XML -DLIBXML_STATIC
 mstfwmanager_CXXFLAGS += -DUSE_CURL -DCURL_STATICLIB
 
 mstfwmanager_SOURCES = \
+    cable_fw_manager.cpp \
+    cable_fw_manager.h \
     cmd_line_params.cpp \
     cmd_line_params.h \
     cmd_line_parser.cpp \
