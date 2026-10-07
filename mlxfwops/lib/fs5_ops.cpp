@@ -30,6 +30,7 @@
  * SOFTWARE.
  */
 #include "fs5_ops.h"
+#include "nvtoolslogger/NvToolsLogger.h"
 #include "calc_hw_crc.h"
 #include "fs5_image_layout_layouts.h"
 #include <algorithm>
@@ -42,7 +43,7 @@ u_int8_t Fs5Operations::FwType()
 
 bool Fs5Operations::ParseHwPointers(VerifyCallBack verifyCallBackFunc)
 {
-    DPRINTF(("Fs5Operations::ParseHwPointers\n"));
+    MLXFWOPS_LOG_DEBUG("Fs5Operations::ParseHwPointers");
 
     u_int32_t buff[FS5_IMAGE_LAYOUT_HW_POINTERS_GILBOA_SIZE / 4] = {0};
     fs5_image_layout_hw_pointers_gilboa hwPointers;
@@ -104,7 +105,7 @@ bool Fs5Operations::InitHwPtrs(bool)
 {
     if (!_is_hw_ptrs_initialized)
     {
-        DPRINTF(("Fs5Operations::InitHwPtrs\n"));
+        MLXFWOPS_LOG_DEBUG("Fs5Operations::InitHwPtrs");
         if (!getImgStart())
         { // Set _fwImgInfo.imgStart with the image start address
             return false;
@@ -135,7 +136,7 @@ bool Fs5Operations::Init()
 
 bool Fs5Operations::GetImageInfo(u_int8_t* buff)
 {
-    DPRINTF(("Fs5Operations::GetImageInfo call Fs3Operations::GetImageInfo\n"));
+    MLXFWOPS_LOG_DEBUG("call Fs3Operations::GetImageInfo");
     return Fs3Operations::GetImageInfo(buff);
 }
 
@@ -198,7 +199,7 @@ bool Fs5Operations::GetHashesTableSize(u_int32_t& size)
 
 bool Fs5Operations::CheckBoot2(bool fullRead, const char* pref, VerifyCallBack verifyCallBackFunc)
 {
-    DPRINTF(("FwOperations::CheckBoot2\n"));
+    MLXFWOPS_LOG_DEBUG("FwOperations::CheckBoot2");
     char* pr = new char[strlen(pref) + 512];
     sprintf(pr, "%s /0x%08x/ (BOOT2)", pref, _boot2_ptr);
 
@@ -219,7 +220,7 @@ bool Fs5Operations::CheckBoot2(bool fullRead, const char* pref, VerifyCallBack v
     }
     _fwImgInfo.boot2Size = mft_be32_to_cpu(ncoreBCH.stage1_components[0].u32_binary_len) - hashes_table_size;
 
-    DPRINTF(("FwOperations::CheckBoot2 size = 0x%x\n", _fwImgInfo.boot2Size));
+    MLXFWOPS_LOG_DEBUG("size = 0x%x", _fwImgInfo.boot2Size);
     if (_fwImgInfo.boot2Size > 1048576 || _fwImgInfo.boot2Size < 4)
     {
         report_callback(verifyCallBackFunc, "%s - unexpected size (0x%x)\n", pr, _fwImgInfo.boot2Size);
@@ -257,12 +258,12 @@ bool Fs5Operations::CheckBoot2(u_int32_t, u_int32_t __attribute__((unused)) offs
 
 bool Fs5Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_itoc, struct QueryOptions queryOptions, bool ignoreDToc, bool verbose)
 {
-    DPRINTF(("Fs5Operations::FsVerifyAux\n"));
+    MLXFWOPS_LOG_DEBUG("Fs5Operations::FsVerifyAux");
     u_int8_t* buff;
     u_int32_t log2_chunk_size;
     bool is_image_in_odd_chunks;
 
-    DPRINTF(("Fs5Operations::FsVerifyAux call getImgStart()\n"));
+    MLXFWOPS_LOG_DEBUG("call getImgStart()");
     if (!getImgStart())
     { // Set _fwImgInfo.imgStart with the image start address
         return false;
@@ -271,7 +272,7 @@ bool Fs5Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
     report_callback(verifyCallBackFunc, "\nFS5 failsafe image\n\n");
 
     _ioAccess->set_address_convertor(0, 0);
-    DPRINTF(("Fs5Operations::FsVerifyAux call ParseHwPointers()\n"));
+    MLXFWOPS_LOG_DEBUG("call ParseHwPointers()");
     if (!ParseHwPointers(verifyCallBackFunc))
     {
         return false;
@@ -281,14 +282,14 @@ bool Fs5Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
     // everything else
     if (!nextBootFwVer)
     {
-        DPRINTF(("Fs5Operations::FsVerifyAux call verifyToolsArea()\n"));
+        MLXFWOPS_LOG_DEBUG("call verifyToolsArea()");
         if (!verifyToolsArea(verifyCallBackFunc))
         {
             return false;
         }
 
         // Update image cache till before boot2 header:
-        DPRINTF(("Fs5Operations::FsVerifyAux call Fs3UpdateImgCache() - All before boot2\n"));
+        MLXFWOPS_LOG_DEBUG("call Fs3UpdateImgCache() - All before boot2");
         READALLOCBUF((*_ioAccess), _fwImgInfo.imgStart, buff, _boot2_ptr, "All Before Boot2");
         Fs3UpdateImgCache(buff, 0, _boot2_ptr);
         free(buff);
@@ -296,13 +297,13 @@ bool Fs5Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
         _ioAccess->set_address_convertor(_fwImgInfo.cntxLog2ChunkSize, _fwImgInfo.imgStart != 0);
 
         // Get BOOT2 -Get Only boot2Size if quickQuery == true else read and check CRC of boot2 section as well
-        DPRINTF(("Fs5Operations::FsVerifyAux call FS3_CHECKB2()\n"));
+        MLXFWOPS_LOG_DEBUG("call FS3_CHECKB2()");
         FS3_CHECKB2(0, _boot2_ptr, !queryOptions.quickQuery, PRE_CRC_OUTPUT, verifyCallBackFunc);
 
         _fs4ImgInfo.firstItocArrayIsEmpty = false;
         _fs4ImgInfo.itocArr.tocArrayAddr = _itoc_ptr;
 
-        DPRINTF(("Fs5Operations::FsVerifyAux call isHashesTableHwPtrValid()\n"));
+        MLXFWOPS_LOG_DEBUG("call isHashesTableHwPtrValid()");
         if (isHashesTableHwPtrValid())
         {
             //* Check hashes_table header CRC
@@ -348,7 +349,7 @@ bool Fs5Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
             }
         }
 
-        DPRINTF(("Fs5Operations::FsVerifyAux call verifyTocHeader() ITOC\n"));
+        MLXFWOPS_LOG_DEBUG("call verifyTocHeader() ITOC");
         if (!verifyTocHeader(_itoc_ptr, false, verifyCallBackFunc))
         {
             _itoc_ptr += FS4_DEFAULT_SECTOR_SIZE;
@@ -360,7 +361,7 @@ bool Fs5Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
             }
         }
     }
-    DPRINTF(("Fs5Operations::FsVerifyAux call verifyTocEntries() ITOC\n"));
+    MLXFWOPS_LOG_DEBUG("call verifyTocEntries() ITOC");
     if (!verifyTocEntries(_itoc_ptr, show_itoc, false, queryOptions, verifyCallBackFunc, verbose))
     {
         return false;
@@ -383,14 +384,14 @@ bool Fs5Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
     {
         return false;
     }
-    DPRINTF(("Fs5Operations::FsVerifyAux call verifyTocHeader() DTOC\n"));
+    MLXFWOPS_LOG_DEBUG("call verifyTocHeader() DTOC");
     if (!verifyTocHeader(dtocPtr, true, verifyCallBackFunc))
     {
         return errmsg(MLXFW_NO_VALID_ITOC_ERR, "No valid DTOC Header was found.");
     }
     _fs4ImgInfo.dtocArr.tocArrayAddr = dtocPtr;
     //-Verify DToC Entries:
-    DPRINTF(("Fs5Operations::FsVerifyAux call verifyTocEntries() DTOC\n"));
+    MLXFWOPS_LOG_DEBUG("call verifyTocEntries() DTOC");
     if (!verifyTocEntries(dtocPtr, show_itoc, true, queryOptions, verifyCallBackFunc, verbose))
     {
         _ioAccess->set_address_convertor(log2_chunk_size, is_image_in_odd_chunks);
@@ -402,7 +403,7 @@ bool Fs5Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
 
 bool Fs5Operations::FwQuery(fw_info_t* fwInfo, bool, bool isStripedImage, bool quickQuery, bool ignoreDToc, bool verbose)
 {
-    DPRINTF(("Fs5Operations::FwQuery\n"));
+    MLXFWOPS_LOG_DEBUG("Fs5Operations::FwQuery");
     if (isStripedImage)
     {
         SetIsReducedImage(true);
@@ -452,7 +453,7 @@ bool Fs5Operations::NCoreQuery(fw_info_t* fwInfo)
     string magicPattern(reinterpret_cast<const char*>(ncoreBCH.u8_header_magic), 4);
     if (magicPattern == "ADVN") // magic pattern is reversed to fit FW array parsing
     {
-        DPRINTF(("Fs5Operations::NCoreQuery fetching debug and encryption indications\n"));
+        MLXFWOPS_LOG_DEBUG("fetching debug and encryption indications");
         fwInfo->fs3_info.security_mode &= ~SMM_DEBUG_FW;
         fwInfo->fs3_info.security_mode |= (ncoreBCH.stage1_components[0].flags.is_debug == 1) ? SMM_DEBUG_FW : 0;
         fwInfo->fw_info.encrypted_fw = ncoreBCH.stage1_components[0].flags.is_encrypted ? 2 : 0;
@@ -611,7 +612,7 @@ bool Fs5Operations::ClearLivefishfIndication(Flash* flashAccess)
     // Clear LF indication by writing zero to CR space address (4th gen: 0xf813c, 0xfc13c)
     // This tells the firmware that the device is no longer in LF
     // and enables broader support like mlxfwreset without requiring power cycle
-    DPRINTF(("Fs5Operations::ClearLivefishfIndication\n"));
+    MLXFWOPS_LOG_DEBUG("Fs5Operations::ClearLivefishfIndication");
 
     if (flashAccess->is_flash()) // we only support clearing LF indication for device, not image
     {
@@ -621,7 +622,7 @@ bool Fs5Operations::ClearLivefishfIndication(Flash* flashAccess)
             return true; // LF indication is not supported for this device
         }
 
-        DPRINTF(("Fs5Operations::ClearLivefishfIndication - Clearing LF indication at 0x%x\n", lfIndicationAddr));
+        MLXFWOPS_LOG_DEBUG("Clearing LF indication at 0x%x", lfIndicationAddr);
         const u_int32_t zeroValue = 0;
 
         int rc = mwrite4(flashAccess->getMfileObj(), lfIndicationAddr, zeroValue);
@@ -630,7 +631,7 @@ bool Fs5Operations::ClearLivefishfIndication(Flash* flashAccess)
             return errmsg("Failed to clear LF indication at CR space address 0x%x", lfIndicationAddr);
         }
 
-        DPRINTF(("Fs5Operations::ClearLivefishfIndication - Successfully cleared LF indication at 0x%x\n", lfIndicationAddr));
+        MLXFWOPS_LOG_DEBUG("Successfully cleared LF indication at 0x%x", lfIndicationAddr);
     }
 
     return true;

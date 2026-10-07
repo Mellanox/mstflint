@@ -71,6 +71,7 @@
 #endif
 
 #include "fs3_ops.h"
+#include "nvtoolslogger/NvToolsLogger.h"
 
 #define FS3_LOG_CHUNK_SIZE 21
 
@@ -175,7 +176,7 @@ const Fs3Operations::SectionInfo Fs3Operations::_fs3SectionsInfoArr[] = {
 
 bool Fs3Operations::Fs3UpdateImgCache(u_int8_t* buff, u_int32_t addr, u_int32_t size)
 {
-    DPRINTF(("Fs3Operations::Fs3UpdateImgCache\n"));
+    MLXFWOPS_LOG_DEBUG("Fs3Operations::Fs3UpdateImgCache");
     if (size == 0)
     {
         return true;
@@ -304,7 +305,7 @@ bool Fs3Operations::GetMfgInfo(u_int8_t* buff)
 
 bool Fs3Operations::GetImageInfo(u_int8_t* buff)
 {
-    DPRINTF(("Fs3Operations::GetImageInfo\n"));
+    MLXFWOPS_LOG_DEBUG("Fs3Operations::GetImageInfo");
     struct image_layout_image_info image_info;
 
     image_layout_image_info_unpack(&image_info, buff);
@@ -379,7 +380,7 @@ bool Fs3Operations::GetImageInfo(u_int8_t* buff)
     _fs3ImgInfo.logStep = image_info.image_size.log_step;
 
     const u_int32_t* swId = (u_int32_t*)NULL;
-    DPRINTF(("Fs3Operations::GetImageInfo _fwImgInfo.supportedHwId[0]=0x%x\n", _fwImgInfo.supportedHwId[0]));
+    MLXFWOPS_LOG_DEBUG("_fwImgInfo.supportedHwId[0]=0x%x", _fwImgInfo.supportedHwId[0]);
     if (!getInfoFromHwDevid(_fwImgInfo.supportedHwId[0], _fwImgInfo.ext_info.chip_type, &swId))
     {
         return false;
@@ -478,8 +479,7 @@ bool Fs3Operations::GetImageInfoFromSection(u_int8_t* buff,
                                             u_int32_t sect_size,
                                             u_int8_t check_support_only)
 {
-    DPRINTF(
-      ("Fs3Operations::GetImageInfoFromSection sect_type (%s:0x%x)\n", GetSectionNameByType(sect_type), sect_type));
+    MLXFWOPS_LOG_DEBUG("sect_type (%s:0x%x)", GetSectionNameByType(sect_type), sect_type);
 #define EXEC_GET_INFO_OR_GET_SUPPORT(get_info_func, buff, check_support_only) \
     (check_support_only) ? true : get_info_func(buff);
 
@@ -565,7 +565,7 @@ bool Fs3Operations::VerifyTOC(u_int32_t dtoc_addr,
                               bool ignoreDToc,
                               bool verbose)
 {
-    DPRINTF(("Fs3Operations::VerifyTOC\n"));
+    MLXFWOPS_LOG_DEBUG("Fs3Operations::VerifyTOC");
     u_int8_t buffer[TOC_HEADER_SIZE], entry_buffer[TOC_ENTRY_SIZE];
     struct cibfw_itoc_header itoc_header;
     bool ret_val = true, mfg_exists = false;
@@ -769,7 +769,7 @@ bool Fs3Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
                                 bool ignoreDToc,
                                 bool verbose)
 {
-    DPRINTF(("Fs3Operations::FsVerifyAux\n"));
+    MLXFWOPS_LOG_DEBUG("Fs3Operations::FsVerifyAux");
     u_int32_t cntx_image_start[CNTX_START_POS_SIZE] = {0};
     u_int32_t cntx_image_num;
     u_int32_t buff[FS3_BOOT_START_IN_DW];
@@ -865,7 +865,7 @@ bool Fs3Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
 
 bool Fs3Operations::FsIntQueryAux(bool readRom, bool quickQuery, bool ignoreDToc, bool verbose)
 {
-    DPRINTF(("Fs3Operations::FsIntQueryAux\n"));
+    MLXFWOPS_LOG_DEBUG("Fs3Operations::FsIntQueryAux");
     struct QueryOptions queryOptions;
 
     queryOptions.readRom = readRom;
@@ -1015,7 +1015,7 @@ bool Fs3Operations::FwQuery(fw_info_t* fwInfo,
                             bool verbose)
 {
     /* isStripedImage flag is not needed in FS3 image format */
-    DPRINTF(("Fs3Operations::FwQuery\n"));
+    MLXFWOPS_LOG_DEBUG("Fs3Operations::FwQuery");
     if (isStripedImage)
     {
         ignoreDToc = true;
@@ -4372,7 +4372,7 @@ bool Fs3Operations::invalidateOldFWImages(const u_int32_t magic_pattern[],
     u_int32_t image_start_addrs[CNTX_START_POS_SIZE] = {0};
     u_int32_t num_of_images_found;
 
-    DPRINTF(("Fs3Operations::invalidateOldFWImages new_image_start=0x%08x\n", new_image_start));
+    MLXFWOPS_LOG_DEBUG("new_image_start=0x%08x", new_image_start);
 
     FindAllImageStart(flash_access, image_start_addrs, &num_of_images_found, magic_pattern);
     /* Address convertor is disabled after FindAllImageStart() - use phys addresses */
@@ -4380,8 +4380,7 @@ bool Fs3Operations::invalidateOldFWImages(const u_int32_t magic_pattern[],
     {
         if (image_start_addrs[i] != new_image_start)
         {
-            DPRINTF(("Fs3Operations::invalidateOldFWImages - Invalidating old fw signature at addr 0x%x\n",
-                     image_start_addrs[i]));
+            MLXFWOPS_LOG_DEBUG("Invalidating old fw signature at addr 0x%x", image_start_addrs[i]);
             if (!flash_access->write(image_start_addrs[i], &zeroes, sizeof(zeroes), true))
             {
                 return errmsg(MLXFW_FLASH_WRITE_ERR, "Failed to invalidate old fw signature: %s", flash_access->err());
@@ -4449,7 +4448,7 @@ bool Fs3Operations::DoAfterBurnJobs(const u_int32_t magic_pattern[],
             {
                 flash_access->set_address_convertor(imageOps._fwImgInfo.cntxLog2ChunkSize, is_curr_image_in_odd_chunks);
             }
-            DPRINTF(("Fs3Operations::DoAfterBurnJobs - Invalidating old fw signature\n"));
+            MLXFWOPS_LOG_DEBUG("Invalidating old fw signature");
             if (!flash_access->write(0, &zeroes, sizeof(zeroes), true))
             {
                 return errmsg(MLXFW_FLASH_WRITE_ERR, "Failed to invalidate old fw signature: %s", flash_access->err());
@@ -4471,7 +4470,7 @@ bool Fs3Operations::DoAfterBurnJobs(const u_int32_t magic_pattern[],
 
 bool Fs3Operations::ClearLivefishfIndication(Flash*)
 {
-    DPRINTF(("Fs3Operations::ClearLivefishfIndication\n"));
+    MLXFWOPS_LOG_DEBUG("Fs3Operations::ClearLivefishfIndication");
     return true;
 }
 
