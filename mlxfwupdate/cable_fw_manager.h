@@ -241,7 +241,8 @@ struct CableInfo
     // The file inside the user's package this cable matched. The report names this and only
     // this: a path the tool invented is not an answer to which image went onto the cable.
     string packageImagePath;
-    bool isDowngrade = false; // the target version is older than the running one
+    int packageEntryIndex = -1; // the metadata entry it matched, which the extended header is built from
+    bool isDowngrade = false;   // the target version is older than the running one
 };
 
 /* One metadata file from the update package and the binary it names.
@@ -277,26 +278,22 @@ struct FwPackageEntry
     string conflictsWith;
 };
 
-/* The four fields the device matches an image against before it will write it to a cable.
- *
- * Measured on a Quantum-3: all four have to be right. A header that matches no cable does not
- * get refused - the firmware stops answering and the burn stalls at 0%, which costs a switch
- * reboot - so zero is not a wildcard for any of them. Two of the four are properties of the
- * cable rather than of the binary, so one wrapped image covers only the cables that agree on
- * all four, and that is why this doubles as the grouping key.
+/* The fields the device matches an image against before it will write it to a cable, all taken
+ * from the metadata entry. A zero field is a wildcard, so a CM/JDM (contract or joint-design
+ * manufacturer) entry yields a header that names only the part number and the product id; an ODM
+ * (original design manufacturer) entry adds its vendor revision and hardware major. The key
+ * doubles as the grouping key, since cables matched by different entries need different headers.
  */
 struct CableExtHeaderKey
 {
-    // From the cable rather than from the metadata: the two match case-insensitively, but the
-    // device compares the header against the EEPROM bytes.
-    string partNumber;
-    string vendorRev;        // two ASCII characters, from the cable
-    u_int8_t hwRevMajor = 0; // the raw EEPROM byte, 0x41 for a cable printing 'A1'
+    string partNumber;       // vendor_pn, as the metadata spells it
+    string vendorRev;        // vendor_rev when the metadata states it, empty (zero bytes) otherwise
+    u_int8_t hwRevMajor = 0; // hw_rev_major when the metadata states it, zero otherwise
     u_int8_t productId = 0;  // the LinkX product id, which is the metadata firmware major
 
-    /* An image can only be wrapped when every one of the four is known. */
+    /* An image can only be wrapped when the part number and product id are known and fit. */
     bool isComplete() const;
-    /* The four fields as one string, so cables that can share a wrapped image group together. */
+    /* The fields as one string, so cables that can share a wrapped image group together. */
     string groupKey() const;
     /* The four fields as a sentence, for the debug trace that says how an image was wrapped. */
     string text() const;
@@ -306,8 +303,8 @@ struct CableExtHeaderKey
  *
  * Grouping is forced by the transport, not chosen for speed: one burn carries one image
  * through one ASIC, and an ASIC cannot address another ASIC's cables. Cables that get a
- * synthesized extended header are grouped by its contents too, since the header only matches
- * the cables it was built from.
+ * synthesized extended header are grouped by its contents too, since cables matched by different
+ * metadata entries get different headers.
  */
 struct CablePlanEntry
 {
@@ -695,6 +692,7 @@ private:
 
     /* The metadata entry a planned image came from, or NULL when the package no longer holds it. */
     const FwPackageEntry* packageEntryFor(const string& imagePath) const;
+    const FwPackageEntry* matchedEntryFor(const CableInfo& cable) const;
 
     /* Say which cables are about to change and to what, before the first byte reaches one. */
     void announceUpdatePlan();
