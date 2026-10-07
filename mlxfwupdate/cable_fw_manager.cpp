@@ -55,6 +55,7 @@
 #include <openssl/sha.h>
 #endif
 #include <iomanip>
+#include <fstream>
 
 #include "common/bit_slice.h"
 #include "common/tools_time.h"
@@ -62,6 +63,26 @@
 #include "reg_access/reg_ids.h"
 #include "common/package_error_codes.h"
 #include <time.h>
+
+/* The head of a LinkX FW package (MFT's mlxfwops/lib/fw_linkx_package.h): its magic and the
+ * package version behind the build date. Only what the cable flow reads is named here. */
+#define MAGIC_NUMBER_LENGTH (8)
+#define MAGIC_PATTERN                                  \
+    {                                                  \
+        0x4e, 0x76, 0x58, 0x63, 0x76, 0x72, 0x46, 0x57 \
+    } /* "NvXcvrFW" */
+typedef struct /* 32 bytes long, big endian */
+{
+    u_int8_t magic_num[MAGIC_NUMBER_LENGTH];
+    u_int8_t build_date[6];
+    u_int8_t header_version;
+    u_int8_t fw_product_id; /* Package Major */
+    u_int8_t package_minor; /* Package Minor */
+    u_int8_t package_subminor_msb;
+    u_int8_t package_subminor_lsb;
+    u_int8_t reserved[9];
+    u_int32_t package_size;
+} fw_pkg_file_header_t;
 
 /* The extended header a cable firmware image can carry: its magic and the layout the device
  * matches the image against. Only the pieces the cable flow uses are defined here. */
@@ -812,6 +833,7 @@ static bool metadataMatchesCable(const FwPackageEntry& entry, const CableInfo& c
 #define CABLE_EXT_HEADER_PN_LENGTH 16
 #define CABLE_EXT_HEADER_REV_LENGTH 2
 #define CABLE_EXT_HEADER_RESERVED 12
+#define CABLE_EXT_HEADER_SIZE 48
 
 bool CableExtHeaderKey::isComplete() const
 {
@@ -829,8 +851,12 @@ string CableExtHeaderKey::groupKey() const
 
 string CableExtHeaderKey::text() const
 {
-    return "part number '" + partNumber + "', vendor revision '" + vendorRev + "', hardware major " +
-           int_to_string((int)hwRevMajor) + ", product id " + int_to_string((int)productId);
+    // A zero field is a wildcard, and saying so is clearer than printing the zero.
+    string rev = vendorRev.empty() ? string("any") : "'" + vendorRev + "'";
+    string hw = (hwRevMajor == 0) ? string("any") : int_to_string((int)hwRevMajor);
+
+    return "part number '" + partNumber + "', vendor revision " + rev + ", hardware major " + hw + ", product id " +
+           int_to_string((int)productId);
 }
 
 /* How the device will decide whether this group's image belongs on a cable. */
@@ -838,7 +864,7 @@ static string planEntryHeaderText(const CablePlanEntry& group)
 {
     if (group.isWrapped)
     {
-        return "extended header built here from " + group.header.text();
+        return "extended header built from the metadata: " + group.header.text();
     }
     if (group.imageHasOwnHeader)
     {
@@ -897,6 +923,21 @@ static vector<u_int8_t> withExtendedHeader(const CableExtHeaderKey& key, const v
     wrapped.insert(wrapped.end(), CABLE_EXT_HEADER_RESERVED, 0);
     wrapped.insert(wrapped.end(), image.begin(), image.end());
     return wrapped;
+}
+
+/* The extended header at the front of a wrapped image, as hex, for the debug trace: the bytes are
+ * what the device matches a cable against, so they are the thing to look at when a burn stalls.
+ */
+static string extendedHeaderHex(const vector<u_int8_t>& wrapped)
+{
+    std::ostringstream text;
+    size_t size = (wrapped.size() < CABLE_EXT_HEADER_SIZE) ? wrapped.size() : CABLE_EXT_HEADER_SIZE;
+
+    for (size_t i = 0; i < size; i++)
+    {
+        text << (i ? " " : "") << std::hex << std::setw(2) << std::setfill('0') << (unsigned)wrapped[i];
+    }
+    return text.str();
 }
 
 /* Every LinkX burn in this tree hands the device eight 0xFF bytes ahead of the image. The device
@@ -1813,6 +1854,175 @@ int CableFwManager::buildUpdatePlan()
     return rc;
 }
 
+/* One metadata file, validated against the files next to it. A file that does not parse comes back
+ * invalid with the reason, rather than as an exception.
+ */
+FwPackageEntry CableFwManager::parseMetadataEntry(const string& name,
+                                                  const vector<u_int8_t>& bytes,
+                                                  const map<string, vector<u_int8_t> >& contents) const
+{
+    FwPackageEntry entry;
+    entry.metadataPath = name;
+    // A file that does not parse is recorded against itself and the rest of the package is
+    // still usable: one bad metadata file must not cost the user the whole maintenance window.
+    try
+    {
+        string text(bytes.begin(), bytes.end());
+        fkyaml::node document = fkyaml::node::deserialize(text);
+
+        if (!document.contains(CABLE_YAML_KEY_PART_NUMBER) || !document.contains(CABLE_YAML_KEY_FW_VERSION) ||
+            !document.contains(CABLE_YAML_KEY_IMAGE))
+        {
+            throw std::runtime_error("missing " CABLE_YAML_KEY_PART_NUMBER ", " CABLE_YAML_KEY_FW_VERSION
+                                     " or " CABLE_YAML_KEY_IMAGE);
+        }
+        entry.vendorPartNumber = document.at(CABLE_YAML_KEY_PART_NUMBER).get_value<std::string>();
+        string version = document.at(CABLE_YAML_KEY_FW_VERSION).get_value<std::string>();
+        if (!parseCableFwVersion(version, entry.fwVersion))
+        {
+            throw std::runtime_error("firmware version \"" + version + "\" is not major.minor.subminor");
+        }
+        // The major is the LinkX product id the extended header carries, and no product is zero.
+        if (entry.fwVersion.major == 0)
+        {
+            throw std::runtime_error("firmware version \"" + version + "\" has major 0, which names no cable product");
+        }
+        // The metadata names its binary relative to itself, so the folder it sits in is what
+        // resolves the name.
+        entry.imagePath = archiveDirectory(name) + document.at(CABLE_YAML_KEY_IMAGE).get_value<std::string>();
+
+        if (document.contains(CABLE_YAML_KEY_VENDOR_NAME))
+        {
+            entry.vendorName = document.at(CABLE_YAML_KEY_VENDOR_NAME).get_value<std::string>();
+            entry.hasVendorName = true;
+        }
+        if (document.contains(CABLE_YAML_KEY_VENDOR_OUI))
+        {
+            int oui = document.at(CABLE_YAML_KEY_VENDOR_OUI).get_value<int>();
+            if (oui < 0 || oui > 0xffffff)
+            {
+                throw std::runtime_error("states a vendor OUI outside 0..0xffffff");
+            }
+            entry.vendorOui = (u_int32_t)oui;
+            entry.hasVendorOui = true;
+        }
+        if (document.contains(CABLE_YAML_KEY_VENDOR_REV))
+        {
+            entry.vendorRev = document.at(CABLE_YAML_KEY_VENDOR_REV).get_value<std::string>();
+            entry.hasVendorRev = true;
+        }
+        if (document.contains(CABLE_YAML_KEY_HW_REV_MAJOR))
+        {
+            int hwRevMajor = document.at(CABLE_YAML_KEY_HW_REV_MAJOR).get_value<int>();
+            if (hwRevMajor < 0 || hwRevMajor > 0xff)
+            {
+                throw std::runtime_error("states a hardware major outside 0..0xff");
+            }
+            entry.hwRevMajor = (u_int8_t)hwRevMajor;
+            entry.hasHwRevMajor = true;
+        }
+        // A metadata file is either a CM/JDM entry, keyed on part number and firmware major
+        // alone, or an ODM entry that also pins vendor name, OUI, revision and hardware
+        // major. Anything between the two states a key it does not narrow on, so it cannot
+        // be told apart from a broader entry for the same cable.
+        if (entry.hasVendorName || entry.hasVendorOui || entry.hasVendorRev || entry.hasHwRevMajor)
+        {
+            if (!entry.hasVendorName || !entry.hasVendorOui || !entry.hasVendorRev || !entry.hasHwRevMajor)
+            {
+                throw std::runtime_error("carries some but not all of " CABLE_YAML_KEY_VENDOR_NAME
+                                         ", " CABLE_YAML_KEY_VENDOR_OUI ", " CABLE_YAML_KEY_VENDOR_REV
+                                         " and " CABLE_YAML_KEY_HW_REV_MAJOR);
+            }
+        }
+
+        // A package keeps each part number in a folder of its own. The tool matches on what a
+        // metadata file declares rather than on where it sits, so a file in the wrong folder
+        // would still be used - and the folder it names is where its image is looked up, so a
+        // mismatch means the package was assembled wrongly and the pairing cannot be trusted.
+        string folder = archiveDirectory(entry.metadataPath);
+        if (!folder.empty())
+        {
+            folder.resize(folder.size() - 1); // archiveDirectory keeps the separator
+            size_t parent = folder.find_last_of('/');
+
+            if (parent != string::npos)
+            {
+                folder = folder.substr(parent + 1);
+            }
+            if (!equalsIgnoringCase(folder, entry.vendorPartNumber))
+            {
+                throw std::runtime_error("declares " CABLE_YAML_KEY_PART_NUMBER " " + entry.vendorPartNumber +
+                                         " but sits in folder " + folder + "; the package needs fixing");
+            }
+        }
+
+        if (document.contains(CABLE_YAML_KEY_BUILD_DATE))
+        {
+            entry.buildDate = document.at(CABLE_YAML_KEY_BUILD_DATE).get_value<std::string>();
+        }
+
+        map<string, vector<u_int8_t> >::const_iterator image = contents.find(entry.imagePath);
+        if (image == contents.end())
+        {
+            throw std::runtime_error("names an image the package does not hold: " + entry.imagePath);
+        }
+        // The digest is the one check that the file the metadata describes is the file that
+        // will reach the cable, and a wrong image on a cable is unrecoverable in the field.
+        string expected;
+        if (document.contains(CABLE_YAML_KEY_SHA256))
+        {
+            expected = document.at(CABLE_YAML_KEY_SHA256).get_value<std::string>();
+        }
+        else
+        {
+            throw std::runtime_error("carries no " CABLE_YAML_KEY_SHA256 " for its image");
+        }
+#ifndef NO_OPEN_SSL
+        string actual = sha256Hex(image->second);
+        if (!equalsIgnoringCase(expected, actual))
+        {
+            throw std::runtime_error("digest mismatch for " + entry.imagePath + ": expected " + expected +
+                                     ", the image hashes to " + actual);
+        }
+#endif
+        // The declared version is what the extended header, the plan and the verification all go by,
+        // so for a raw LinkX image it has to be the image's own: a wrong major would offer the image
+        // to another cable generation under a header claiming it. An image that already carries an
+        // extended header is not checked; what it wraps is its vendor's format, not necessarily LinkX.
+        const vector<u_int8_t>& data = image->second;
+        static const u_int8_t linkxMagic[MAGIC_NUMBER_LENGTH] = MAGIC_PATTERN;
+        if (data.size() >= sizeof(fw_pkg_file_header_t) && memcmp(&data[0], linkxMagic, MAGIC_NUMBER_LENGTH) == 0)
+        {
+            fw_pkg_file_header_t linkx;
+            CableFwVersion own;
+
+            memcpy(&linkx, &data[0], sizeof(linkx));
+            own.major = linkx.fw_product_id;
+            own.minor = linkx.package_minor;
+            own.subminor = (u_int16_t)((linkx.package_subminor_msb << 8) | linkx.package_subminor_lsb);
+            if (compareCableFwVersions(own, entry.fwVersion) != 0)
+            {
+                throw std::runtime_error(CABLE_YAML_KEY_FW_VERSION " " + cableFwVersionText(entry.fwVersion) +
+                                         " does not match " + entry.imagePath + ", which is " +
+                                         cableFwVersionText(own));
+            }
+        }
+        // An extended header the package already carries goes to the device as supplied: the
+        // device matches the image against it where its fields match the cable. What the tool
+        // must not do is build a second header over an existing one.
+        entry.hasExtendedHeader =
+          hasCableExtendedHeader(image->second.empty() ? NULL : &image->second[0],
+                                                (u_int32_t)image->second.size());
+        entry.isValid = true;
+    }
+    catch (const std::exception& e)
+    {
+        entry.isValid = false;
+        entry.parseError = e.what();
+    }
+    return entry;
+}
+
 int CableFwManager::loadPackage(map<string, vector<u_int8_t> >& contents)
 {
 #ifdef NO_OPEN_SSL
@@ -1837,137 +2047,9 @@ int CableFwManager::loadPackage(map<string, vector<u_int8_t> >& contents)
             continue;
         }
 
-        FwPackageEntry entry;
-        entry.metadataPath = name;
-        // A file that does not parse is recorded against itself and the rest of the package is
-        // still usable: one bad metadata file must not cost the user the whole maintenance window.
-        try
+        FwPackageEntry entry = parseMetadataEntry(name, file->second, contents);
+        if (!entry.isValid)
         {
-            string text(file->second.begin(), file->second.end());
-            fkyaml::node document = fkyaml::node::deserialize(text);
-
-            if (!document.contains(CABLE_YAML_KEY_PART_NUMBER) || !document.contains(CABLE_YAML_KEY_FW_VERSION) ||
-                !document.contains(CABLE_YAML_KEY_IMAGE))
-            {
-                throw std::runtime_error("missing " CABLE_YAML_KEY_PART_NUMBER ", " CABLE_YAML_KEY_FW_VERSION
-                                         " or " CABLE_YAML_KEY_IMAGE);
-            }
-            entry.vendorPartNumber = document.at(CABLE_YAML_KEY_PART_NUMBER).get_value<std::string>();
-            string version = document.at(CABLE_YAML_KEY_FW_VERSION).get_value<std::string>();
-            if (!parseCableFwVersion(version, entry.fwVersion))
-            {
-                throw std::runtime_error("firmware version \"" + version + "\" is not major.minor.subminor");
-            }
-            // The metadata names its binary relative to itself, so the folder it sits in is what
-            // resolves the name.
-            entry.imagePath = archiveDirectory(name) + document.at(CABLE_YAML_KEY_IMAGE).get_value<std::string>();
-
-            if (document.contains(CABLE_YAML_KEY_VENDOR_NAME))
-            {
-                entry.vendorName = document.at(CABLE_YAML_KEY_VENDOR_NAME).get_value<std::string>();
-                entry.hasVendorName = true;
-            }
-            if (document.contains(CABLE_YAML_KEY_VENDOR_OUI))
-            {
-                int oui = document.at(CABLE_YAML_KEY_VENDOR_OUI).get_value<int>();
-                if (oui < 0 || oui > 0xffffff)
-                {
-                    throw std::runtime_error("states a vendor OUI outside 0..0xffffff");
-                }
-                entry.vendorOui = (u_int32_t)oui;
-                entry.hasVendorOui = true;
-            }
-            if (document.contains(CABLE_YAML_KEY_VENDOR_REV))
-            {
-                entry.vendorRev = document.at(CABLE_YAML_KEY_VENDOR_REV).get_value<std::string>();
-                entry.hasVendorRev = true;
-            }
-            if (document.contains(CABLE_YAML_KEY_HW_REV_MAJOR))
-            {
-                int hwRevMajor = document.at(CABLE_YAML_KEY_HW_REV_MAJOR).get_value<int>();
-                if (hwRevMajor < 0 || hwRevMajor > 0xff)
-                {
-                    throw std::runtime_error("states a hardware major outside 0..0xff");
-                }
-                entry.hwRevMajor = (u_int8_t)hwRevMajor;
-                entry.hasHwRevMajor = true;
-            }
-            // A metadata file is either a CM/JDM entry, keyed on part number and firmware major
-            // alone, or an ODM entry that also pins vendor name, OUI, revision and hardware
-            // major. Anything between the two states a key it does not narrow on, so it cannot
-            // be told apart from a broader entry for the same cable.
-            if (entry.hasVendorName || entry.hasVendorOui || entry.hasVendorRev || entry.hasHwRevMajor)
-            {
-                if (!entry.hasVendorName || !entry.hasVendorOui || !entry.hasVendorRev || !entry.hasHwRevMajor)
-                {
-                    throw std::runtime_error("carries some but not all of " CABLE_YAML_KEY_VENDOR_NAME
-                                             ", " CABLE_YAML_KEY_VENDOR_OUI ", " CABLE_YAML_KEY_VENDOR_REV
-                                             " and " CABLE_YAML_KEY_HW_REV_MAJOR);
-                }
-            }
-
-            // A package keeps each part number in a folder of its own. The tool matches on what a
-            // metadata file declares rather than on where it sits, so a file in the wrong folder
-            // would still be used - and the folder it names is where its image is looked up, so a
-            // mismatch means the package was assembled wrongly and the pairing cannot be trusted.
-            string folder = archiveDirectory(entry.metadataPath);
-            if (!folder.empty())
-            {
-                folder.resize(folder.size() - 1); // archiveDirectory keeps the separator
-                size_t parent = folder.find_last_of('/');
-
-                if (parent != string::npos)
-                {
-                    folder = folder.substr(parent + 1);
-                }
-                if (!equalsIgnoringCase(folder, entry.vendorPartNumber))
-                {
-                    throw std::runtime_error("declares " CABLE_YAML_KEY_PART_NUMBER " " + entry.vendorPartNumber +
-                                             " but sits in folder " + folder + "; the package needs fixing");
-                }
-            }
-
-            if (document.contains(CABLE_YAML_KEY_BUILD_DATE))
-            {
-                entry.buildDate = document.at(CABLE_YAML_KEY_BUILD_DATE).get_value<std::string>();
-            }
-
-            map<string, vector<u_int8_t> >::const_iterator image = contents.find(entry.imagePath);
-            if (image == contents.end())
-            {
-                throw std::runtime_error("names an image the package does not hold: " + entry.imagePath);
-            }
-            // The digest is the one check that the file the metadata describes is the file that
-            // will reach the cable, and a wrong image on a cable is unrecoverable in the field.
-            string expected;
-            if (document.contains(CABLE_YAML_KEY_SHA256))
-            {
-                expected = document.at(CABLE_YAML_KEY_SHA256).get_value<std::string>();
-            }
-            else
-            {
-                throw std::runtime_error("carries no " CABLE_YAML_KEY_SHA256 " for its image");
-            }
-#ifndef NO_OPEN_SSL
-            string actual = sha256Hex(image->second);
-            if (!equalsIgnoringCase(expected, actual))
-            {
-                throw std::runtime_error("digest mismatch for " + entry.imagePath + ": expected " + expected +
-                                         ", the image hashes to " + actual);
-            }
-#endif
-            // An extended header the package already carries goes to the device as supplied: the
-            // device matches the image against it where its fields match the cable. What the tool
-            // must not do is build a second header over an existing one.
-            entry.hasExtendedHeader =
-              hasCableExtendedHeader(image->second.empty() ? NULL : &image->second[0],
-                                                    (u_int32_t)image->second.size());
-            entry.isValid = true;
-        }
-        catch (const std::exception& e)
-        {
-            entry.isValid = false;
-            entry.parseError = e.what();
             rejected++;
         }
         _packages.push_back(entry);
@@ -2279,6 +2361,11 @@ int CableFwManager::groupUpdatePlan(const map<string, vector<u_int8_t> >& conten
         _plan[i].burnImage.insert(_plan[i].burnImage.end(), payload.begin(), payload.end());
         FWMANAGER_LOG_DEBUG("Burn image for %s: %u byte(s), %s", _plan[i].packageImagePath.c_str(),
                             (unsigned)_plan[i].burnImage.size(), planEntryHeaderText(_plan[i]).c_str());
+        if (_plan[i].isWrapped)
+        {
+            FWMANAGER_LOG_DEBUG("Extended header for %s: %s", _plan[i].packageImagePath.c_str(),
+                                extendedHeaderHex(wrapped).c_str());
+        }
     }
 
     u_int32_t cables = 0;

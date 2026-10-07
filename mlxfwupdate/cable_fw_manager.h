@@ -555,6 +555,10 @@ private:
      * the rest of the package is still used.
      */
     int loadPackage(map<string, vector<u_int8_t> >& contents);
+    /* One metadata file, validated against the package files around it. */
+    FwPackageEntry parseMetadataEntry(const string& name,
+                                      const vector<u_int8_t>& bytes,
+                                      const map<string, vector<u_int8_t> >& contents) const;
 
     /* Give every cable an outcome. A cable matching more than one metadata file is a packaging
      * error rather than a choice to make, so it ends the run.
