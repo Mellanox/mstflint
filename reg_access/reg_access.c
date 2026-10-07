@@ -36,6 +36,7 @@
 #include "common/compatibility.h"
 #include <tools_layouts/reg_access_hca_layouts.h>
 #include <tools_layouts/reg_access_switch_layouts.h>
+#include <tools_layouts/cables_layouts.h>
 #include <tools_layouts/tools_open_layouts.h>
 #include <tools_layouts/cibfw_layouts.h>
 
@@ -85,6 +86,8 @@
 #define REG_ID_MCQI      0x9061
 #define REG_ID_MCC       0x9062
 #define REG_ID_MCDA      0x9063
+#define REG_ID_MFCDR       0x9178
+#define REG_ID_MCIA        0x9014
 #define REG_ID_MMAM        0x9170
 #define REG_ID_MCCE      0x9108
 #define REG_ID_MQIS      0x9064
@@ -887,6 +890,22 @@ reg_access_status_t reg_access_mcce(mfile* mf, reg_access_method_t method, struc
 reg_access_status_t reg_access_mmam(mfile* mf, reg_access_method_t method, struct reg_access_switch_MMAM_ext* mmam)
 {
     REG_ACCCESS(mf, method, REG_ID_MMAM, mmam, MMAM_ext, reg_access_switch);
+}
+
+/************************************
+* Function: reg_access_mcia
+************************************/
+reg_access_status_t reg_access_mcia(mfile* mf, reg_access_method_t method, struct reg_access_hca_mcia_ext* mcia)
+{
+    REG_ACCCESS(mf, method, REG_ID_MCIA, mcia, mcia_ext, reg_access_hca);
+}
+
+/************************************
+* Function: reg_access_mfcdr
+************************************/
+reg_access_status_t reg_access_mfcdr(mfile* mf, reg_access_method_t method, struct reg_access_switch_mfcdr_reg_ext* mfcdr)
+{
+    REG_ACCCESS(mf, method, REG_ID_MFCDR, mfcdr, mfcdr_reg_ext, reg_access_switch);
 }
 
 /************************************
