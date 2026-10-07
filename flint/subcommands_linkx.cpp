@@ -47,6 +47,7 @@
 #include "fw_comps_mgr/fw_comps_mgr_dma_access.h"
 #include "mlxfwops/lib/fw_version.h"
 #include "subcommands.h"
+#include "nvtoolslogger/NvToolsLogger.h"
 #include "tools_layouts/cx4fw_layouts.h"
 
 using namespace std;
@@ -358,7 +359,7 @@ FlintStatus BurnSubCommand::BurnLinkX(string deviceName,
             bool isBmeSet = DMAComponentAccess::isBMESet(fwCompsAccess.getMfileObj());
             if (!isBmeSet)
             {
-                DPRINTF(("-W- DMA access is not supported due to BME is unset (Bus Master Enable).\n"));
+                MLXFWOPS_LOG_WARNING("DMA access is not supported due to BME is unset (Bus Master Enable).");
             }
         }
     }

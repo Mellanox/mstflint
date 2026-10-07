@@ -948,7 +948,7 @@ bool FsCtrlOperations::_Burn(std::vector<u_int8_t> imageOps4MData, ProgressCallB
         bool isBmeSet = DMAComponentAccess::isBMESet(_fwCompsAccess->getMfileObj());
         if (!isBmeSet)
         {
-            DPRINTF(("-W- DMA access is not supported due to BME is unset (Bus primary Enable).\n"));
+            MLXFWOPS_LOG_WARNING("DMA access is not supported due to BME is unset (Bus primary Enable).");
         }
     }
     if (!_fwCompsAccess->burnComponents(bootImageComponent, &progressCallBack))

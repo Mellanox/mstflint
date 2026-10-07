@@ -38,6 +38,7 @@
  *      Author: adham
  */
 #include "fw_comps_mgr.h"
+#include "nvtoolslogger/NvToolsLogger.h"
 #include "fw_comps_mgr_abstract_access.h"
 #include "fw_comps_mgr_dma_access.h"
 #include "common/bit_slice.h"
@@ -623,13 +624,13 @@ bool FwCompsMgr::accessComponent(u_int32_t              offset,
 
         if (bRes) {
             if (!controlFsm(FSM_CMD_CANCEL, FSMST_LOCKED)) {
-                DPRINTF(("Cancel instruction to FW component has failed!\n"));
+                MLXFWOPS_LOG_WARNING("Cancel instruction to FW component has failed!");
                 return false;
             }
             if (!controlFsm(lastFsmCommandArgs->command, lastFsmCommandArgs->expectedState, lastFsmCommandArgs->size,
                             lastFsmCommandArgs->currentState, lastFsmCommandArgs->progressFuncAdv,
                             lastFsmCommandArgs->reg_access_timeout)) {
-                DPRINTF(("FSM reinitialize for fallback has failed!\n"));
+                MLXFWOPS_LOG_WARNING("FSM reinitialize for fallback has failed!");
                 return false;
             }
 
@@ -721,8 +722,8 @@ bool FwCompsMgr::controlFsm(fsm_command_t          command,
     if (!reg_access_timeout) {
         reg_access_timeout = MAX_TOUT;
     }
-    DPRINTF(("controlFsm : command %s current state %s expected state %s\n", CommandsName[command],
-             StateNames[currentState], StateNames[expectedState]));
+    MLXFWOPS_LOG_DEBUG("controlFsm : command %s current state %s expected state %s", CommandsName[command],
+                       StateNames[currentState], StateNames[expectedState]);
     unsigned int count = 0;
     std::chrono::steady_clock::time_point busyWaitStart = std::chrono::steady_clock::now();
     bool busyMsgShown = false;
@@ -795,7 +796,7 @@ bool FwCompsMgr::controlFsm(fsm_command_t          command,
             if (((currentState == FSMST_LOCKED) && (expectedState == FSMST_DOWNSTREAM_DEVICE_TRANSFER)) ||
                 (_linkXFlow && (currentState == FSMST_LOCKED) && (expectedState == FSMST_ACTIVATE))) {
                 _rejectedIndex = _lastFsmCtrl.rejected_device_index;
-                DPRINTF(("\nGot _rejectedIndex = %d\n", _rejectedIndex));
+                MLXFWOPS_LOG_DEBUG("Got _rejectedIndex = %d", _rejectedIndex);
             }
         } else {
             _lastError = regErrTrans(rc);
@@ -846,12 +847,12 @@ bool FwCompsMgr::controlFsm(fsm_command_t          command,
                 (expectedState == FSMST_LOCKED)) {
                 /* we are in the middle of downstream, but failed */
                 _rejectedIndex = _lastFsmCtrl.rejected_device_index;
-                DPRINTF(("\nGot _rejectedIndex = %d\n", _rejectedIndex));
+                MLXFWOPS_LOG_DEBUG("Got _rejectedIndex = %d", _rejectedIndex);
             } else if (_linkXFlow && (command == FSM_QUERY) && (currentState == FSMST_ACTIVATE) &&
                        (expectedState == FSMST_LOCKED)) {
                 /* we are in the middle of activaation, but failed */
                 _rejectedIndex = _lastFsmCtrl.rejected_device_index;
-                DPRINTF(("\nGot _rejectedIndex = %d\n", _rejectedIndex));
+                MLXFWOPS_LOG_DEBUG("Got _rejectedIndex = %d", _rejectedIndex);
             }
             return false;
         }
@@ -862,8 +863,8 @@ bool FwCompsMgr::controlFsm(fsm_command_t          command,
         return false;
     }
     if ((expectedState != FSMST_NA) && (_lastFsmCtrl.control_state != expectedState)) {
-        DPRINTF(("controlFsm : control_state FW %s expected %s\n", StateNames[_lastFsmCtrl.control_state],
-                 StateNames[expectedState]));
+        MLXFWOPS_LOG_DEBUG("controlFsm : control_state FW %s expected %s", StateNames[_lastFsmCtrl.control_state],
+                           StateNames[expectedState]);
         if (_lastFsmCtrl.error_code) {
             _lastError = mccErrTrans(_lastFsmCtrl.error_code);
         } else {
@@ -899,10 +900,9 @@ bool FwCompsMgr::runMCQI(u_int32_t componentIndex,
     _currCompInfo.component_index = componentIndex;
     _currCompInfo.device_index = deviceIndex;
     _currCompInfo.device_type = _deviceType;
-    DPRINTF((
-                "-D- MCQI: read_pending_component %u infoType %u offset %u dataSize %u, componentIndex %u deviceIndex %u "
-                "\n",
-                readPending, infoType, offset, dataSize, componentIndex, deviceIndex));
+    MLXFWOPS_LOG_DEBUG(
+      "MCQI: read_pending_component %u infoType %u offset %u dataSize %u, componentIndex %u deviceIndex %u ",
+      readPending, infoType, offset, dataSize, componentIndex, deviceIndex);
     reg_access_status_t rc = reg_access_mcqi(_mf, REG_ACCESS_METHOD_GET, &_currCompInfo);
 
     deal_with_signal();
@@ -931,7 +931,7 @@ bool FwCompsMgr::runPGUID(reg_access_hca_pguid_reg_ext* guidsInfo,
     guidsInfo->pnat = pnat;
     guidsInfo->lp_msb = lp_msb;
 
-    DPRINTF(("-D- PGUID: local_port %u pnat %u lp_msb %u""\n", local_port, pnat, lp_msb));
+    MLXFWOPS_LOG_DEBUG("PGUID: local_port %u pnat %u lp_msb %u", local_port, pnat, lp_msb);
     reg_access_status_t rc = reg_access_pguid(_mf, REG_ACCESS_METHOD_GET, guidsInfo);
     deal_with_signal();
     if (rc)
@@ -1011,7 +1011,7 @@ bool FwCompsMgr::queryPGUID(fw_info_t* fwInfo,
 
     if (!runPGUID(&guidsInfo, local_port, pnat, lp_msb))
     {
-        DPRINTF(("Error in reading PGUID register.\n"));
+        MLXFWOPS_LOG_ERROR("Error in reading PGUID register.");
         return false;
     }
     // FW writes the GUID info (64 bits) to indexes 2 and 3 of the uint32_t array.
@@ -1356,8 +1356,8 @@ bool FwCompsMgr::RefreshComponentsStatus(comp_status_st* ComponentStatus)
             if (compStatus.comp_status.identifier > FwComponent::COMPID_LAST_IDX ||
                 compStatus.comp_status.identifier < FwComponent::COMPID_FIRST_IDX)
             {
-                DPRINTF(("-D- queryComponentStatus, unknown component identifier %d !!\n",
-                         compStatus.comp_status.identifier));
+                MLXFWOPS_LOG_DEBUG("queryComponentStatus, unknown component identifier %d !!",
+                                   compStatus.comp_status.identifier);
             }
             else
             {
@@ -1368,8 +1368,9 @@ bool FwCompsMgr::RefreshComponentsStatus(comp_status_st* ComponentStatus)
                         false)
                     {
                         //_lastError = FWCOMPS_REG_FAILED;
-                        DPRINTF(("-D- Found component: %#x name %s MCQI failed \n", compStatus.comp_status.identifier,
-                                 CompNames[compStatus.comp_status.identifier]));
+                        MLXFWOPS_LOG_DEBUG("Found component: %#x name %s MCQI failed ",
+                                           compStatus.comp_status.identifier,
+                                           CompNames[compStatus.comp_status.identifier]);
                         return false;
                     }
                 }
@@ -1387,15 +1388,16 @@ bool FwCompsMgr::RefreshComponentsStatus(comp_status_st* ComponentStatus)
                 compStatus.comp_cap.rd_en = _currCompInfo.data.mcqi_cap_ext.rd_en;
                 memcpy(&(_compsQueryMap[compStatus.comp_status.identifier]), &compStatus, sizeof(compStatus));
                 // reg_access_hca_mcqi_cap_ext_ext_print(&(compStatus.comp_cap), stdout, 3);
-                DPRINTF(("-D- Found component with identifier=%#x index=%u name=%s supported_info_bitmask=0x%x \n",
-                         compStatus.comp_status.identifier, compIdx, CompNames[compStatus.comp_status.identifier],
-                         compStatus.comp_cap.supported_info_bitmask));
+                MLXFWOPS_LOG_DEBUG("Found component with identifier=%#x index=%u name=%s supported_info_bitmask=0x%x ",
+                                   compStatus.comp_status.identifier, compIdx,
+                                   CompNames[compStatus.comp_status.identifier],
+                                   compStatus.comp_cap.supported_info_bitmask);
             }
             last_index_flag = compStatus.comp_status.last_index_flag;
         }
         else
         {
-            DPRINTF(("-D- queryComponentStatus failed for component index %d !!\n", compIdx));
+            MLXFWOPS_LOG_ERROR("queryComponentStatus failed for component index %d !!", compIdx);
             return false;
         }
         compIdx++;
@@ -1457,8 +1459,8 @@ bool FwCompsMgr::readComponent(FwComponent::comps_ids_t compType,
             return false;
         }
     } else {
-        DPRINTF(("readComponent : RD EN is 0 for component index %u compId %s \n", _componentIndex,
-                 FwComponent::getCompIdStr(compType)));
+        MLXFWOPS_LOG_DEBUG("readComponent : RD EN is 0 for component index %u compId %s ", _componentIndex,
+                           FwComponent::getCompIdStr(compType));
         _lastError = FWCOMPS_READ_COMP_NOT_SUPPORTED;
         return false;
     }
@@ -1549,13 +1551,13 @@ bool FwCompsMgr::burnComponents(FwComponent& comp, ProgressCallBackAdvSt* progre
     if (_secureHostState == LOCK_FW_UPDATE && component == FwComponent::COMPID_BOOT_IMG)
     {
         _lastError = FWCOMPS_COMP_BLOCKED;
-        DPRINTF(("MCC flow for component %d is blocked!\n", component));
+        MLXFWOPS_LOG_DEBUG("MCC flow for component %d is blocked!", component);
         return false;
     }
     if (_secureHostState == LOCK_HOST_CFG && IsCfgComponentType(component))
     {
         _lastError = FWCOMPS_COMP_BLOCKED;
-        DPRINTF(("MCC flow for component %d is blocked!\n", component));
+        MLXFWOPS_LOG_DEBUG("MCC flow for component %d is blocked!", component);
         return false;
     }
     if (!RefreshComponentsStatus()) {
@@ -1564,9 +1566,8 @@ bool FwCompsMgr::burnComponents(FwComponent& comp, ProgressCallBackAdvSt* progre
     _currCompQuery = &(_compsQueryMap[component]);
     if (component == FwComponent::DPA_COMPONENT)
     {
-        DPRINTF(
-            ("FwCompsMgr::burnComponents() - max_component_size = %d\n", _currCompQuery->comp_cap.max_component_size));
-        DPRINTF(("FwCompsMgr::burnComponents() - comp.getSize() = %d\n", comp.getSize()));
+        MLXFWOPS_LOG_DEBUG("max_component_size = %d", _currCompQuery->comp_cap.max_component_size);
+        MLXFWOPS_LOG_DEBUG("comp.getSize() = %d", comp.getSize());
         if (_currCompQuery->comp_cap.max_component_size < comp.getSize())
         {
             FWCOMPS_PRINT("-E- The dpa app container size is too large! max_component_size is %d bytes.\n",
@@ -1576,7 +1577,7 @@ bool FwCompsMgr::burnComponents(FwComponent& comp, ProgressCallBackAdvSt* progre
     }
     GenerateHandle();
     if (!controlFsm(FSM_CMD_LOCK_UPDATE_HANDLE, FSMST_LOCKED)) {
-        DPRINTF(("Cannot lock the handle!\n"));
+        MLXFWOPS_LOG_DEBUG("Cannot lock the handle!");
         if (forceRelease() == false) {
             FWCOMPS_PRINT("FSM is locked.\n");
         }
@@ -1586,13 +1587,13 @@ bool FwCompsMgr::burnComponents(FwComponent& comp, ProgressCallBackAdvSt* progre
     {
         if (!_currCompQuery->valid) {
             _lastError = FWCOMPS_COMP_NOT_SUPPORTED;
-            DPRINTF(("MCC flow for component %d is not supported!\n", component));
+            MLXFWOPS_LOG_DEBUG("MCC flow for component %d is not supported!", component);
             return false;
         }
         _componentIndex = _currCompQuery->comp_status.component_index;
         if (!controlFsm(FSM_CMD_UPDATE_COMPONENT, FSMST_DOWNLOAD, comp.getSize(), FSMST_INITIALIZE,
                         progressFuncAdv)) {
-            DPRINTF(("Initializing downloading FW component has failed!\n"));
+            MLXFWOPS_LOG_ERROR("Initializing downloading FW component has failed!");
             return false;
         }
         _currComponentStr = FwComponent::getCompIdStr(comp.getType());
@@ -1604,11 +1605,11 @@ bool FwCompsMgr::burnComponents(FwComponent& comp, ProgressCallBackAdvSt* progre
         fsmUpdateCommand.progressFuncAdv = progressFuncAdv;
         if (!accessComponent(0, comp.getSize(), (u_int32_t*)(comp.getData().data()), MCC_WRITE_COMP,
                                 progressFuncAdv, &fsmUpdateCommand)) {
-            DPRINTF(("Downloading FW component has failed!\n"));
+            MLXFWOPS_LOG_ERROR("Downloading FW component has failed!");
             return false;
         }
         if (!controlFsm(FSM_CMD_VERIFY_COMPONENT, FSMST_LOCKED, 0, FSMST_NA, progressFuncAdv)) {
-            DPRINTF(("Verifying FW component has failed!\n"));
+            MLXFWOPS_LOG_ERROR("Verifying FW component has failed!");
             return false;
         }
         if (comp.getType() == FwComponent::COMPID_LINKX || comp.getType() == FwComponent::COMPID_LINKX_ELS || 
@@ -1616,11 +1617,11 @@ bool FwCompsMgr::burnComponents(FwComponent& comp, ProgressCallBackAdvSt* progre
             {
                 if (!controlFsm(FSM_CMD_DOWNSTREAM_DEVICE_TRANSFER, FSMST_DOWNSTREAM_DEVICE_TRANSFER, 0, FSMST_LOCKED,
                                 progressFuncAdv)) {
-                DPRINTF(("Downstream LinkX begin has failed!\n"));
+                MLXFWOPS_LOG_ERROR("Downstream LinkX begin has failed!");
                 return false;
             }
             if (!controlFsm(FSM_QUERY, FSMST_LOCKED, 0, FSMST_DOWNSTREAM_DEVICE_TRANSFER, progressFuncAdv)) {
-                DPRINTF(("Downstream LinkX ending has failed!\n"));
+                MLXFWOPS_LOG_ERROR("Downstream LinkX ending has failed!");
                 return false;
             }
         }
@@ -1631,7 +1632,7 @@ bool FwCompsMgr::burnComponents(FwComponent& comp, ProgressCallBackAdvSt* progre
         {
             if (!controlFsm(FSM_CMD_ACTIVATE_ALL, FSMST_ACTIVATE, 0, FSMST_LOCKED, progressFuncAdv))
             {
-                DPRINTF(("Moving to ACTIVATE state has failed!\n"));
+                MLXFWOPS_LOG_ERROR("Moving to ACTIVATE state has failed!");
                 return false;
             }
 
@@ -1641,7 +1642,7 @@ bool FwCompsMgr::burnComponents(FwComponent& comp, ProgressCallBackAdvSt* progre
                 FWCOMPS_PRINT("Please wait while activating the transceiver(s) FW ...\n");
                 if (!controlFsm(FSM_QUERY, FSMST_LOCKED, 0, FSMST_ACTIVATE, progressFuncAdv))
                 {
-                    DPRINTF(("Moving from activate state to locked state has failed!\n"));
+                    MLXFWOPS_LOG_ERROR("Moving from activate state to locked state has failed!");
                     return false;
                 }
             }
@@ -1650,7 +1651,7 @@ bool FwCompsMgr::burnComponents(FwComponent& comp, ProgressCallBackAdvSt* progre
         {
             if (!controlFsm(FSM_CMD_ACTIVATE_ALL))
             {
-                DPRINTF(("Activating FW component has failed!\n"));
+                MLXFWOPS_LOG_ERROR("Activating FW component has failed!");
                 return false;
             }
         }
@@ -1659,7 +1660,7 @@ bool FwCompsMgr::burnComponents(FwComponent& comp, ProgressCallBackAdvSt* progre
     /* In case of activation delay, FW will release the update handle */
     if (!_isDelayedActivationCommandSent) {
         if (!controlFsm(FSM_CMD_RELEASE_UPDATE_HANDLE)) {
-            DPRINTF(("Release FW handle has failed!\n"));
+            MLXFWOPS_LOG_ERROR("Release FW handle has failed!");
             return false;
         }
     }
@@ -1810,7 +1811,7 @@ u_int32_t FwCompsMgr::getFwSupport()
     memset(&mcam, 0, sizeof(mcam));
     reg_access_status_t rc = reg_access_mcam(_mf, REG_ACCESS_METHOD_GET, &mcam);
     if (rc) {
-        DPRINTF(("getFwSupport MCAM not supported! rc = %d\n", rc));
+        MLXFWOPS_LOG_WARNING("getFwSupport MCAM not supported! rc = %d", rc);
         _lastError = FWCOMPS_UNSUPPORTED_DEVICE;
         return 0;
     }
@@ -1850,9 +1851,9 @@ u_int32_t FwCompsMgr::getFwSupport()
         _secureHostState = mlock.operation;
     }
 
-    DPRINTF((
-      "getFwSupport _mircCaps = %d mcqsCap = %d mcqiCap = %d mccCap = %d mcdaCap = %d mqisCap = %d mcddCap = %d mgirCap = %d secure_host = %d\n",
-      _mircCaps, mcqsCap, mcqiCap, mccCap, mcdaCap, mqisCap, mcddCap, mgirCap, _secureHostState));
+    MLXFWOPS_LOG_DEBUG(
+      "getFwSupport _mircCaps = %d mcqsCap = %d mcqiCap = %d mccCap = %d mcdaCap = %d mqisCap = %d mcddCap = %d mgirCap = %d secure_host = %d",
+      _mircCaps, mcqsCap, mcqiCap, mccCap, mcdaCap, mqisCap, mcddCap, mgirCap, _secureHostState);
     const int LOCKED = 0x1;
     if (mcqsCap && mcqiCap && mccCap && mcdaCap && mqisCap && mgirCap && _secureHostState != LOCKED)
     {
@@ -2600,8 +2601,8 @@ bool FwCompsMgr::readBlockFromComponent(FwComponent::comps_ids_t  compId,
         }
     } else {
         _lastError = FWCOMPS_READ_COMP_NOT_SUPPORTED;
-        DPRINTF(("readBlockFromComponent : RD EN is 0 for component index %u compId %s \n", _componentIndex,
-                 FwComponent::getCompIdStr(compId)));
+        MLXFWOPS_LOG_DEBUG("readBlockFromComponent : RD EN is 0 for component index %u compId %s ", _componentIndex,
+                           FwComponent::getCompIdStr(compId));
         return false;
     }
     return true;
@@ -2629,7 +2630,7 @@ bool FwCompsMgr::fwReactivateImage()
     rc = reg_access_mirc(_mf, REG_ACCESS_METHOD_SET, &mirc); /* send trigger to FW */
     deal_with_signal();
     if (rc) {
-        DPRINTF(("1 reg_access_mirc failed rc = %d\n", rc));
+        MLXFWOPS_LOG_ERROR("1 reg_access_mirc failed rc = %d", rc);
         _lastError = regErrTrans(rc);
         setLastRegisterAccessStatus(rc);
         return false;
@@ -2638,11 +2639,11 @@ bool FwCompsMgr::fwReactivateImage()
     msleep(sleepTimeMs);
     rc = reg_access_mirc(_mf, REG_ACCESS_METHOD_GET, &mirc);
     if (rc) {
-        DPRINTF(("2 reg_access_mirc failed rc = %d\n", rc));
+        MLXFWOPS_LOG_ERROR("2 reg_access_mirc failed rc = %d", rc);
         _lastError = regErrTrans(rc);
         return false;
     }
-    DPRINTF(("1 mirc.status_code = %d\n", mirc.status_code));
+    MLXFWOPS_LOG_DEBUG("1 mirc.status_code = %d", mirc.status_code);
     while (mirc.status_code == IMAGE_REACTIVATION_BUSY) {
         msleep(sleepTimeMs);
         rc = reg_access_mirc(_mf, REG_ACCESS_METHOD_GET, &mirc);
@@ -2650,10 +2651,11 @@ bool FwCompsMgr::fwReactivateImage()
         if (rc) {
             _lastError = regErrTrans(rc);
             setLastRegisterAccessStatus(rc);
-            DPRINTF(("3 reg_access_mirc failed rc = %d\n", rc));
+            MLXFWOPS_LOG_ERROR("3 reg_access_mirc failed rc = %d", rc);
             return false;
         }
-        DPRINTF(("2 iteration %d mirc.status_code = %d\n", currentIteration++, mirc.status_code));
+        MLXFWOPS_LOG_DEBUG("2 iteration %d mirc.status_code = %d", currentIteration, mirc.status_code);
+        currentIteration++;
         if (currentIteration >= maxNumOfIterations) {
             _lastError = FWCOMPS_IMAGE_REACTIVATION_WAITING_TIME_EXPIRED;
             return false;
@@ -2695,7 +2697,7 @@ void FwCompsMgr::setLastRegisterAccessStatus(reg_access_status_t err)
 fw_comps_error_t FwCompsMgr::regErrTrans(reg_access_status_t err)
 {
     if (err != ME_REG_ACCESS_OK) {
-        DPRINTF(("%s error - %d\n", __FUNCTION__, err));
+        MLXFWOPS_LOG_DEBUG("error - %d", err);
     }
     switch (err) {
     case ME_REG_ACCESS_OK:
@@ -2766,7 +2768,7 @@ fw_comps_error_t FwCompsMgr::regErrTrans(reg_access_status_t err)
 fw_comps_error_t FwCompsMgr::mccErrTrans(u_int8_t err)
 {
     if (err != MccErrorCodes::MCC_ERRCODE_OK) {
-        DPRINTF(("\nMCC ERROR: %x\n", err));
+        MLXFWOPS_LOG_DEBUG("MCC ERROR: %x", err);
     }
 
     switch (err) {
@@ -2941,7 +2943,7 @@ bool FwCompsMgr::runMISOC(reg_access_hca_misoc_reg_ext* bfb_component, u_int32_t
         // bit select logic: 38 % 32
         misoc_reg_supported = EXTRACT(mcam.mng_access_reg_cap_mask[3 - 1], 6, 1);
     }
-    DPRINTF(("misoc_reg_supported = %d\n", misoc_reg_supported));
+    MLXFWOPS_LOG_DEBUG("misoc_reg_supported = %d", misoc_reg_supported);
     if (!misoc_reg_supported)
     {
         _lastError = FWCOMPS_REG_ACCESS_REG_NOT_SUPP;
@@ -2953,9 +2955,7 @@ bool FwCompsMgr::runMISOC(reg_access_hca_misoc_reg_ext* bfb_component, u_int32_t
     bfb_component->type = EXTRACT(type, 0, 4);
     bfb_component->query_pending = EXTRACT(query_pending, 0, 1);
 
-    DPRINTF(("-D- MISOC: type %u query_pending %u"
-             "\n",
-             type, query_pending));
+    MLXFWOPS_LOG_DEBUG("MISOC: type %u query_pending %u", type, query_pending);
     rc = reg_access_misoc(_mf, REG_ACCESS_METHOD_GET, bfb_component);
     deal_with_signal();
     if (rc)
@@ -2975,7 +2975,7 @@ bool FwCompsMgr::queryMISOC(std::string& version, u_int32_t type, u_int32_t quer
 
     if (!runMISOC(&bfb_component, type, query_pending))
     {
-        DPRINTF(("Error in reading MISOC register.\n"));
+        MLXFWOPS_LOG_ERROR("Error in reading MISOC register.");
         return false;
     }
 
@@ -3005,7 +3005,7 @@ bool FwCompsMgr::IsCRDTDebugSessionActive()
     deal_with_signal();
     if (rc)
     {
-        DPRINTF(("reg_access_mdsr failed with rc=%d\n", rc));
+        MLXFWOPS_LOG_ERROR("reg_access_mdsr failed with rc=%d", rc);
         _lastError = regErrTrans(rc);
         setLastRegisterAccessStatus(rc);
     }
