@@ -201,7 +201,7 @@ struct CableInfo
     // counterfeit and a third party cable the same thing, so this is the only place the
     // difference survives to reach the trace. It is also a statement about the cage that does not
     // depend on the EEPROM having read, which is why it outranks an unreadable identity.
-    u_int8_t vendorStatus = 0; // CABLE_VENDOR_STATUS_UNKNOWN
+    u_int8_t vendorStatus = 0; // CABLE_VENDOR_STATUS_UNKNOWN; 0xff when MFCDR could have answered and did not
     string state;              // cable state; reported, but no state disqualifies a cable from an update
 
     // EEPROM identity, the key phase 3 matches package metadata against.
@@ -458,7 +458,9 @@ private:
      * update procedure - note this comes from MCQI, not MCIA, and MCQI is addressed by
      * the MCC device_index rather than by the local module index.
      *
-     * Whether a cage is populated comes from PMAOS.oper_status, the same test mlxlink makes.
+     * Whether a cage is populated comes from PDDR's cable type, the same source mlxlink -m uses;
+     * PMAOS.oper_status decides only for a cage PDDR cannot answer for. Every read is attempted
+     * whatever the others returned, so a cable shows all that could be read about it.
      *
      * Collect the identity phase 3 matches on - part number, vendor name and OUI,
      * vendor revision, hardware major revision - along with the serial number, the form
@@ -654,7 +656,7 @@ private:
      * inventory, the plan, the post-update state, and an errors table of port, phase
      * and the two error codes. Every path the report prints is a package path; a copy the tool
      * wrote is never named, because the user has to be able to open, diff and re-ship the file
-     * the report cites.
+     * the report cites. It is printed to the screen first unless `--cable_report_file_only`.
      *
      * Fills _results and emits the report.
      */

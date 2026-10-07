@@ -355,6 +355,8 @@ int CableFwManager::run()
 #define CABLE_VENDOR_STATUS_FAKE 1
 #define CABLE_VENDOR_STATUS_NVIDIA 2
 #define CABLE_VENDOR_STATUS_NON_NVIDIA 3
+// Not an MFCDR value: the firmware carries MFCDR but gave no answer for this cage.
+#define CABLE_VENDOR_STATUS_READ_FAILED 0xff
 
 /* PMAOS.oper_status: the cage is empty only on this one value. Every other state - including
  * initializing and plugged_with_error - is a cable that is there and may still be updated. This
@@ -561,29 +563,40 @@ static bool isMcamDwordSwapNeeded(mfile* mf)
  *
  * Both MCAM gates are required. Without the capability, query_type reads as reserved and the
  * answer comes back for local port 0 on every cable.
+ *
+ * Asked by local port, which carries 10 bits; the module field carries 8, and a cage above 255
+ * would get another cage's verdict.
  */
-static u_int8_t readCableVendorStatus(mfile* mf, u_int32_t localIndex)
+static u_int8_t readCableVendorStatus(mfile* mf, bool mapped, u_int32_t localPort)
 {
     struct reg_access_switch_mfcdr_reg_ext mfcdr;
     bool supported = false;
 
     if (isRegisterValidAccordingToMcamReg(mf, REG_ID_MFCDR, &supported) != ME_OK || !supported)
     {
+        FWMANAGER_LOG_DEBUG("MFCDR: not supported according to MCAM, so only the vendor OUI is checked");
         return CABLE_VENDOR_STATUS_UNKNOWN;
     }
     if (isCapabilitySupportedAccordingToMcamReg(mf, MCAM_CAP_MFCDR_MODULE_AND_QUERY_TYPE, isMcamDwordSwapNeeded(mf), &supported) != ME_OK ||
         !supported)
     {
+        FWMANAGER_LOG_DEBUG("MFCDR: query type not supported according to MCAM, so only the vendor OUI is checked");
         return CABLE_VENDOR_STATUS_UNKNOWN;
     }
+    if (!mapped)
+    {
+        FWMANAGER_LOG_DEBUG("MFCDR: no local port maps to this cage to ask with");
+        return CABLE_VENDOR_STATUS_READ_FAILED;
+    }
     memset(&mfcdr, 0, sizeof(mfcdr));
-    mfcdr.query_type = 1; // module based query; local_port is ignored
-    mfcdr.module = (u_int8_t)localIndex;
+    mfcdr.query_type = 0; // local port based query; module is ignored
+    mfcdr.local_port = (u_int8_t)(localPort & 0xff);
+    mfcdr.lp_msb = (u_int8_t)((localPort >> 8) & 0x3);
     reg_access_status_t status = reg_access_mfcdr(mf, REG_ACCESS_METHOD_GET, &mfcdr);
-    FWMANAGER_LOG_DEBUG("MFCDR: module %u, status %d, vendor status %d", localIndex, (int)status, (int)mfcdr.status);
+    FWMANAGER_LOG_DEBUG("MFCDR: local_port %u, status %d, vendor status %d", localPort, (int)status, (int)mfcdr.status);
     if (status != ME_OK)
     {
-        return CABLE_VENDOR_STATUS_UNKNOWN;
+        return CABLE_VENDOR_STATUS_READ_FAILED;
     }
     return mfcdr.status;
 }
@@ -1536,13 +1549,21 @@ int CableFwManager::discoverCables()
         {
             plugged++;
         }
-        if (_cables[i].isBurnable)
-        {
-            burnable++;
-        }
-        if (_cables[i].isPlugged && !_cables[i].isReadable)
+        // Counted the way the plan skips them: an NVIDIA cable whose firmware did not read is as
+        // unreadable as one whose identity did not, and neither is updatable. An MFCDR verdict of
+        // fake or non-NVIDIA outranks both, as it does in the plan.
+        bool isThirdParty = _cables[i].vendorStatus == CABLE_VENDOR_STATUS_FAKE ||
+                            _cables[i].vendorStatus == CABLE_VENDOR_STATUS_NON_NVIDIA;
+        bool isUnreadable = _cables[i].isPlugged && !isThirdParty &&
+                            (!_cables[i].isReadable || _cables[i].vendorStatus == CABLE_VENDOR_STATUS_READ_FAILED ||
+                             (_cables[i].isNvidia && !_cables[i].fwRead));
+        if (isUnreadable)
         {
             unreadable++;
+        }
+        else if (_cables[i].isBurnable)
+        {
+            burnable++;
         }
     }
     // Counted as found, since the cage is populated, but said apart: they are the cables no action can reach.
@@ -1580,6 +1601,7 @@ string CableFwManager::readCableLinkStateText(mfile* mf, const CableInfo& cable)
 
     if (!cableLocalPort(cable, localPort) || readCableLinkState(mf, localPort, state) != ME_OK)
     {
+        FWMANAGER_LOG_DEBUG("Cable %u: link state read failed or no local port maps to this cage", cable.globalPort);
         return CABLE_REPORT_NOT_AVAILABLE;
     }
     return cableLinkStateName(state);
@@ -1611,6 +1633,7 @@ void CableFwManager::fillIdentityGapsFromEeprom(mfile* mf, CableInfo& cable)
     eeprom.globalPort = cable.globalPort;
     if (!readCableIdentity(mf, eeprom))
     {
+        FWMANAGER_LOG_DEBUG("Cable %u: EEPROM read failed, the fields PDDR left empty stay N/A", cable.globalPort);
         return;
     }
     if (cable.vendorName.empty())
@@ -1669,50 +1692,74 @@ static bool cableIdentityRead(const CableInfo& cable)
 
 void CableFwManager::queryCable(mfile* mf, CableInfo& cable)
 {
+    // Every read below is attempted whatever the ones before it returned, so a cable shows all
+    // that could be read about it, and each one that failed says so in the trace.
     u_int8_t operStatus = 0;
+    bool pmaosRead = readCableOperStatus(mf, cable.localIndex, operStatus) == ME_OK;
 
-    if (readCableOperStatus(mf, cable.localIndex, operStatus) != ME_OK)
+    if (pmaosRead)
     {
-        cable.state = "unreadable";
-        return;
+        cable.operStatus = operStatus;
     }
-    cable.operStatus = operStatus;
-    cable.isPlugged = (operStatus != CABLE_OPER_STATUS_UNPLUGGED);
-    if (!cable.isPlugged)
+    else
     {
-        return;
+        FWMANAGER_LOG_DEBUG("Cable %u: PMAOS read failed", cable.globalPort);
     }
 
     // PDDR is where the firmware republishes the EEPROM, and it is the source every field mlxlink
-    // prints comes from, so the two tools agree. It is addressed by local port; a cage the PLLP
-    // sweep could not map falls back to reading the EEPROM directly.
+    // prints comes from, whether a cable is plugged included, so the two tools agree. It is
+    // addressed by local port; a cage the PLLP sweep could not map has no PDDR, and PMAOS decides
+    // for it instead.
     u_int32_t localPort = 0;
+    bool mapped = cableLocalPort(cable, localPort);
+    bool pddrRead = mapped && readCableModuleInfo(mf, localPort, cable);
 
-    if (cableLocalPort(cable, localPort))
+    if (pddrRead)
     {
-        cable.isReadable = readCableModuleInfo(mf, localPort, cable);
-        if (cable.isReadable && !cable.isPlugged)
+        if (!cable.isPlugged)
+        {
+            if (pmaosRead && operStatus != CABLE_OPER_STATUS_UNPLUGGED)
+            {
+                FWMANAGER_LOG_DEBUG("Cable %u: PDDR reports no cable while PMAOS oper_status is %d; PDDR decides",
+                                    cable.globalPort, (int)operStatus);
+            }
+            return;
+        }
+    }
+    else
+    {
+        FWMANAGER_LOG_DEBUG("Cable %u: %s, so PMAOS decides whether it is plugged", cable.globalPort,
+                            mapped ? "PDDR read failed" : "no local port maps to this cage");
+        // A cage nothing answered for is unreadable, not empty.
+        cable.isPlugged = !pmaosRead || operStatus != CABLE_OPER_STATUS_UNPLUGGED;
+        if (!cable.isPlugged)
         {
             return;
         }
     }
-    if (!cable.isReadable && !readCableIdentity(mf, cable))
+
+    if (pddrRead)
     {
-        // Switch FW reports a cage it cannot read the module in as plugged_with_error, which is
-        // what mlxlink warns about; any other unreadable cable is named for what the tool saw.
-        cable.linkState = (operStatus == CABLE_OPER_STATUS_PLUGGED_WITH_ERROR) ? CABLE_STATE_PLUGGED_WITH_ERROR :
-                                                                                 CABLE_STATE_UNREADABLE;
-        return;
+        // The firmware does not fill every field of the page - the hardware revision reads zero
+        // on every cable measured - so anything it left empty is read off the EEPROM itself.
+        fillIdentityGapsFromEeprom(mf, cable);
     }
-    // The firmware does not fill every field of the page - the hardware revision reads zero on
-    // every cable measured - so anything it left empty is read off the EEPROM itself.
-    fillIdentityGapsFromEeprom(mf, cable);
+    else if (!readCableIdentity(mf, cable))
+    {
+        FWMANAGER_LOG_DEBUG("Cable %u: EEPROM read failed, its identity is unknown", cable.globalPort);
+    }
     cable.isReadable = cableIdentityRead(cable);
+
     // MFCDR answers this directly where the firmware carries it; the OUI list is what is left
-    // when it does not, and a fake cable can copy an OUI.
-    u_int8_t vendorStatus = readCableVendorStatus(mf, cable.localIndex);
+    // when it does not. A fake cable can copy an NVIDIA OUI, so where the firmware could have
+    // answered and did not, the cable is unreadable rather than judged by its OUI.
+    u_int8_t vendorStatus = readCableVendorStatus(mf, mapped, localPort);
     cable.vendorStatus = vendorStatus;
-    if (vendorStatus != CABLE_VENDOR_STATUS_UNKNOWN)
+    if (vendorStatus == CABLE_VENDOR_STATUS_READ_FAILED)
+    {
+        cable.isNvidia = false;
+    }
+    else if (vendorStatus != CABLE_VENDOR_STATUS_UNKNOWN)
     {
         cable.isNvidia = (vendorStatus == CABLE_VENDOR_STATUS_NVIDIA);
     }
@@ -1720,12 +1767,23 @@ void CableFwManager::queryCable(mfile* mf, CableInfo& cable)
     {
         cable.isNvidia = (cable.vendorOui == CABLE_NVIDIA_OUI) || (cable.vendorOui == CABLE_NVIDIA_OUI_MELLANOX);
     }
-    if (!readCableFwProperties(mf, cable))
+
+    if (readCableFwProperties(mf, cable))
     {
+        // A cable that implements neither firmware-update procedure reports protocol 0.
+        cable.isBurnable = (cable.managementInterfaceProtocol != 0);
+    }
+
+    if (!cable.isReadable)
+    {
+        // Switch FW reports a cage it cannot read the module in as plugged_with_error, which is
+        // what mlxlink warns about; any other unreadable cable is named for what the tool saw. A
+        // link state would read as N/A here and look like an empty cage.
+        cable.linkState = (pmaosRead && operStatus == CABLE_OPER_STATUS_PLUGGED_WITH_ERROR) ?
+                            CABLE_STATE_PLUGGED_WITH_ERROR :
+                            CABLE_STATE_UNREADABLE;
         return;
     }
-    // A cable that implements neither firmware-update procedure reports protocol 0.
-    cable.isBurnable = (cable.managementInterfaceProtocol != 0);
     cable.linkState = readCableLinkStateText(mf, cable);
 }
 
@@ -1814,11 +1872,15 @@ bool CableFwManager::readCableFwProperties(mfile* mf, CableInfo& cable)
     // index it was constructed with means.
     if (!fwComps.RefreshComponentsStatus())
     {
+        FWMANAGER_LOG_DEBUG("MCQI cable %u: component discovery failed, %s; its firmware versions are unknown",
+                            cable.globalPort, (const char*)fwComps.getLastErrMsg());
         return false;
     }
     memset(&properties, 0, sizeof(properties));
     if (!fwComps.GetComponentLinkxProperties(FwComponent::COMPID_LINKX, &properties))
     {
+        FWMANAGER_LOG_DEBUG("MCQI cable %u: LinkX properties read failed, %s; its firmware versions are unknown",
+                            cable.globalPort, (const char*)fwComps.getLastErrMsg());
         return false;
     }
 
@@ -2172,12 +2234,26 @@ int CableFwManager::decideCableActions()
             cable.action = CABLE_ACTION_SKIP_UNREADABLE;
             continue;
         }
+        if (cable.vendorStatus == CABLE_VENDOR_STATUS_READ_FAILED)
+        {
+            FWMANAGER_LOG_DEBUG("Cable %u: MFCDR did not answer, so whether it is genuine is unknown",
+                                cable.globalPort);
+            cable.action = CABLE_ACTION_SKIP_UNREADABLE;
+            continue;
+        }
         // Left to the OUI list, which is all there is when the firmware gave no verdict.
         if (!cable.isNvidia)
         {
             FWMANAGER_LOG_DEBUG("Cable %u: MFCDR gave no verdict and vendor OUI 0x%06x is not an NVIDIA block",
                                 cable.globalPort, cable.vendorOui);
             cable.action = CABLE_ACTION_SKIP_3RD_PARTY;
+            continue;
+        }
+        // Without MCQI nothing is known about its firmware, which is not the same as a cable that
+        // cannot be updated.
+        if (!cable.fwRead)
+        {
+            cable.action = CABLE_ACTION_SKIP_UNREADABLE;
             continue;
         }
         if (!cable.isBurnable)
@@ -2764,14 +2840,26 @@ int CableFwManager::verifyAndReport()
     }
     string text = buildReport();
     string verdictMsg = _errMsg;
+
+    if (!_cmdParams.cable_report_file_only)
+    {
+        emitProgress(text);
+    }
     int rc = writeReport(text);
 
     if (rc != MLX_FWM_SUCCESS)
     {
-        // The file is gone, the outcome is not, so the report goes to the console rather than
-        // nowhere. Announced first, or it reads as output the run meant to produce.
-        emitProgress("-W- The report file could not be written, so the report follows here\n");
-        emitProgress(text);
+        if (_cmdParams.cable_report_file_only)
+        {
+            // The file is gone, the outcome is not, so a report kept off the screen goes there
+            // rather than nowhere. Announced first, or it reads as output the run meant to produce.
+            emitProgress("-W- The report file could not be written, so the report follows here\n");
+            emitProgress(text);
+        }
+        else
+        {
+            emitProgress("-W- The report file could not be written\n");
+        }
         if (verdict == MLX_FWM_SUCCESS)
         {
             return rc;
@@ -3329,6 +3417,6 @@ int CableFwManager::writeReport(const string& text)
         _errMsg = "Failed to write " + path;
         return ERR_CODE_WRITE_FILE_FAIL;
     }
-    emitProgress("-I- Report file: " + path + "\n");
+    emitProgress("-I- Report saved to " + path + "\n");
     return MLX_FWM_SUCCESS;
 }

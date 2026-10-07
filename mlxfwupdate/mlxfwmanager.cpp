@@ -1515,6 +1515,12 @@ bool checkCmdParams(CmdLineParams& cmd_params, config_t& config)
             return false;
         }
     }
+    if (cmd_params.cable_report_file_only && !cable_mode)
+    {
+        fprintf(stderr,
+                "-E- --cable_report_file_only is only valid with --cable_query, --cable_dry_run or --cable_update\n");
+        return false;
+    }
     if (cable_mode && (cmd_params.use_mfa_file || cmd_params.use_mfa_dir))
     {
         fprintf(stderr, "-E- --cable_query, --cable_dry_run and --cable_update cannot be combined with -i or -D\n");
