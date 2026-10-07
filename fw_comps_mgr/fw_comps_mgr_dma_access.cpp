@@ -167,7 +167,7 @@ bool DMAComponentAccess::isBMESet(mfile* mf)
         }
     }
 #endif
-    DPRINTF(("DMAComponentAccess::isBMESet res = %s\n", res ? "TRUE" : "FALSE"));
+    MLXFWOPS_LOG_DEBUG("res = %s", res ? "TRUE" : "FALSE");
     return res;
 }
 
