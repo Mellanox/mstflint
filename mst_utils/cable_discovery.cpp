@@ -15,8 +15,17 @@
 #include "dev_mgt/tools_dev_types.h"
 #include "reg_access/reg_access.h"
 #include "tools_layouts/reg_access_hca_layouts.h"
+#include "tools_layouts/reg_access_switch_layouts.h"
 #include "mft_utils/mft_sig_handler.h"
 #include "tools_layouts/reg_access_switch_layouts.h"
+
+#ifdef ENABLE_MST_DEV_I2C
+#define VMDL_PORT_OFFSET 0xb4
+#define VMDL_PORT_TENS_MASK 0x0000000F
+#define VMDL_PORT_ONES_MASK 0x00000F00
+#define VMDL_PORT_ONES_SHIFT 8
+#endif
+#define VMDL_DEV_ID 0x80
 
 
 const std::string TOOL_NAME = "mstcable_discovery";
@@ -109,6 +118,59 @@ void CreateCableDeviceFile(const std::string& cable_name)
     mstDeviceFile.close();
 }
 
+#ifdef ENABLE_MST_DEV_I2C
+int discoverVmdlOnI2c(unsigned int& cable_count) {
+    dev_info   * devs = NULL;
+    int          device_count = 0;
+    int          port = 0;
+    u_int32_t    port_dword = 0;
+    mfile      * cable_mf = NULL;
+
+    // Read directory directly since raw i2c devices are not shown in m_devices_ul
+    DIR        * d = opendir("/dev");
+    struct dirent* dir;
+    while ((dir = readdir(d)) != NULL)
+    {
+        if (dir->d_name[0] == '.')
+        {
+            continue;
+        }
+        if (!strstr(dir->d_name, "i2c-"))
+        {
+            continue;
+        }
+    
+        port = 0;
+        port_dword = 0;
+        std::string base_cable_name = std::string(dir->d_name) + "_" + VMDL_DEVICE_STR + std::to_string(port);
+        cable_mf = mopen_adv(base_cable_name.c_str(), (MType)(MST_DEFAULT | MST_CABLE));
+        if (!cable_mf)
+        {
+            continue;
+        }
+        u_int32_t hw_dev_id = 0;
+        dm_dev_id_t dm_dev_id = DeviceUnknown;
+        get_cable_id(cable_mf, &hw_dev_id, &dm_dev_id);
+        if (hw_dev_id != VMDL_DEV_ID)
+        {
+            mclose(cable_mf);
+            continue;
+        }
+        if (mcables_read4(cable_mf, VMDL_PORT_OFFSET, &port_dword) != 4)
+        {
+            mclose(cable_mf);
+            continue;
+        }
+        port = ((port_dword & VMDL_PORT_TENS_MASK) * 10) + ((port_dword & VMDL_PORT_ONES_MASK) >> VMDL_PORT_ONES_SHIFT);
+        mclose(cable_mf);
+        std::string cable_name = std::string(dir->d_name) + "_" + VMDL_DEVICE_STR + std::to_string(port);
+        CreateCableDeviceFile(cable_name);
+        cable_count++;
+    }
+    return 0;
+}
+#endif
+
 int main(int argc, char* argv[])
 {
     dev_info   * devs = NULL;
@@ -120,6 +182,9 @@ int main(int argc, char* argv[])
     unsigned int cable_count = 0;
 
     bool filterSecondary = false;
+#ifdef ENABLE_MST_DEV_I2C
+    bool discoverVmdlOverI2c = false;
+#endif
 
     for (int argIdx = 1; argIdx < argc; argIdx++)
     {
@@ -128,10 +193,20 @@ int main(int argc, char* argv[])
         {
             filterSecondary = true;
         }
+#ifdef ENABLE_MST_DEV_I2C
+        else if (arg == "--discover_vmdl_on_i2c")
+        {
+            discoverVmdlOverI2c = 1;
+        }
+#endif
         else
         {
             std::cout << "Invalid argument: " << arg << std::endl;
-            std::cout << "Usage: " << TOOL_NAME << " [--filter_secondary]" << std::endl;
+            std::cout << "Usage: " << TOOL_NAME << " [--filter_secondary]";
+#ifdef ENABLE_MST_DEV_I2C
+            std::cout << " [--discover_vmdl_on_i2c]";
+#endif
+            std::cout << std::endl;
             return 1;
         }
     }
@@ -213,6 +288,22 @@ int main(int argc, char* argv[])
         else if (dm_dev_is_switch(devid_type) && !dm_is_gpu(devid_type))
         {
             num_ports = dm_get_hw_ports_num(devid_type);
+
+            u_int8_t is_vmdl_device = 0;
+            const char *device_str = CABLE_DEVICE_STR;
+            dm_dev_is_vmdl(mf, devid_type, &is_vmdl_device);  // On failure assume not vmdl device
+            if (is_vmdl_device)
+            {
+                device_str = VMDL_DEVICE_STR;
+
+                struct reg_access_switch_mgpir_ext mgpir;
+                memset(&mgpir, 0, sizeof(mgpir));
+                reg_access_status_t mgpir_rc = reg_access_mgpir_switch_ext(mf, REG_ACCESS_METHOD_GET, &mgpir);
+                if (!mgpir_rc)
+                {
+                    num_ports = mgpir.hw_info.num_of_modules;
+                }
+            }
             for (int port = 0; port < num_ports && !mft_signal_is_fired(); port++)
             {
                 if (filterSecondary)
@@ -223,17 +314,25 @@ int main(int argc, char* argv[])
                         continue;
                     }
                 }
-                std::string cable_name = std::string(devs[i].dev_name) + "_" + CABLE_DEVICE_STR + std::to_string(port);
+                std::string cable_name = std::string(devs[i].dev_name) + "_" + device_str + std::to_string(port);
                 mfile     * cable_mf = mopen_adv(cable_name.c_str(), (MType)(MST_DEFAULT | MST_CABLE));
                 if (!cable_mf)
                 {
                     continue;
                 }
-                else
+                if (is_vmdl_device)
                 {
-                    CreateCableDeviceFile(cable_name);
-                    cable_count++;
+                    u_int32_t hw_dev_id = 0;
+                    dm_dev_id_t dm_dev_id = DeviceUnknown;
+                    get_cable_id(cable_mf, &hw_dev_id, &dm_dev_id);
+                    if (hw_dev_id != VMDL_DEV_ID)
+                    {
+                        cable_name = std::string(devs[i].dev_name) + "_" + CABLE_DEVICE_STR + std::to_string(port);
+                    }
                 }
+
+                CreateCableDeviceFile(cable_name);
+                cable_count++;
     
                 mclose(cable_mf);
             }
@@ -242,6 +341,12 @@ int main(int argc, char* argv[])
     }
 
     free(devs);
+#ifdef ENABLE_MST_DEV_I2C
+    if (discoverVmdlOverI2c)
+    {
+        discoverVmdlOnI2c(cable_count);
+    }
+#endif
 
     if (mft_signal_is_fired())
     {
