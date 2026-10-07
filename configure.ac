@@ -141,6 +141,8 @@ XZ_UTILS_DIR=""
 ADABE_TOOLS=""
 ADABE_DBS=""
 ADABE_DBS_EXTRA_DIST=""
+MLXPARSEBIN_DIR=""
+NVLTSSM_DIR=""
 DPA=""
 PLDM_PKG_GEN=""
 
@@ -1146,9 +1148,13 @@ AS_IF([test "x$enable_adb_generic_tools" = "xyes"], [
         AC_CONFIG_FILES(mlxlink/Makefile)
         AC_CONFIG_FILES(mlxlink/modules/Makefile)
         AC_CONFIG_FILES(mlxlink/modules/printutil/Makefile)
+        AC_CONFIG_FILES(mlxparsebin/Makefile)
+        AC_CONFIG_FILES(nvltssm/Makefile)
         ADABE_TOOLS="adb_parser mlxreg mlxlink"
         ADABE_DBS="adb"
-        ADABE_DBS_EXTRA_DIST="adb/prm/hca/ext/*.adb adb/prm/switch/ext/*.adb adb/prm/gpu/ext/*.adb"])
+        ADABE_DBS_EXTRA_DIST="adb/prm/hca/ext/*.adb adb/prm/switch/ext/*.adb adb/prm/gpu/ext/*.adb"
+        MLXPARSEBIN_DIR="mlxparsebin"
+        NVLTSSM_DIR="nvltssm"])
 
 AM_CONDITIONAL([ADB_GENERIC_TOOLS_ENABLED], [test "x$enable_adb_generic_tools" = "xyes"])
 
@@ -1169,6 +1175,8 @@ AS_IF([test "x$enable_nvml" = "xyes"],
 AC_SUBST(ADABE_TOOLS)
 AC_SUBST(ADABE_DBS)
 AC_SUBST(ADABE_DBS_EXTRA_DIST)
+AC_SUBST(MLXPARSEBIN_DIR)
+AC_SUBST(NVLTSSM_DIR)
 AC_SUBST(XZ_UTILS_DIR)
 AC_SUBST(NVML_DIR)
 AC_SUBST(CABLE_ACCESS_DIR)
@@ -1249,13 +1257,11 @@ AC_CONFIG_FILES([\
     mstdump/mstdump_dbs/Makefile \
     efuse/Makefile \
     efuse/efuse_dbs/Makefile \
-    mlxparsebin/Makefile \
     mtcr_py/Makefile \
     mvpd/Makefile \
     pldm_utils/Makefile \
     pldmlib/Makefile \
     reg_access/Makefile \
-    nvltssm/Makefile \
     nvpcie/Makefile \
     resourcetools/Makefile \
     resourcetools/resourcedump_lib/Makefile \
