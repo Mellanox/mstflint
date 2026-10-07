@@ -275,6 +275,38 @@ FlintStatus QuerySubCommand::QueryLinkX(string deviceName, string outputFile, st
     return FLINT_SUCCESS;
 }
 
+/* A stage can only count up to MCC_MAX_ERROR_COUNT, so one that reached it reports a lower bound, not a total. */
+static string formatCableCount(u_int32_t count, bool isCapped)
+{
+    std::stringstream text;
+
+    text << count << (isCapped ? " or more" : "");
+    return text.str();
+}
+
+/*
+ * The device counts the transfer and the activation separately, so both are always named - a stage that failed
+ * nothing reports 0 rather than being left out. The total is a lower bound only when one of the stages actually
+ * reached the cap - a large sum on its own is still exact.
+ */
+void BurnSubCommand::ReportSkippedCables(FwCompsMgr& fwCompsAccess)
+{
+    u_int32_t transfer = fwCompsAccess.GetTransferErrorCount();
+    u_int32_t activate = fwCompsAccess.GetActivateErrorCount();
+    /* The count is a 4-bit field, so reaching MCC_MAX_ERROR_COUNT is the most it can report. */
+    bool transferCapped = transfer == MCC_MAX_ERROR_COUNT;
+    bool activateCapped = activate == MCC_MAX_ERROR_COUNT;
+
+    if (transfer != 0 || activate != 0)
+    {
+        printf("-W- %s cable(s) failed to burn and were skipped (%s during the image transfer, %s during "
+               "activation).\n",
+               formatCableCount(transfer + activate, transferCapped || activateCapped).c_str(),
+               formatCableCount(transfer, transferCapped).c_str(),
+               formatCableCount(activate, activateCapped).c_str());
+    }
+}
+
 FlintStatus BurnSubCommand::BurnLinkX(string deviceName,
                                       int deviceIndex,
                                       int deviceSize,
@@ -284,7 +316,8 @@ FlintStatus BurnSubCommand::BurnLinkX(string deviceName,
                                       bool downloadTransferNeeded,
                                       int activate_delay_sec,
                                       ProgressCallBackAdvSt* funcAdv,
-                                      FwComponent::comps_ids_t fwComponent)
+                                      FwComponent::comps_ids_t fwComponent,
+                                      bool noStopOnError)
 {
     if (preFwOps() == FLINT_FAILED)
     {
@@ -342,7 +375,7 @@ FlintStatus BurnSubCommand::BurnLinkX(string deviceName,
         }
     }
     fwCompsAccess.SetIndexAndSize(deviceIndex + 1, deviceSize, linkx_auto_update, activationNeeded,
-                                  downloadTransferNeeded, activate_delay_sec);
+                                  downloadTransferNeeded, activate_delay_sec, noStopOnError);
     if (!fwCompsAccess.RefreshComponentsStatus())
     {
         printf("-E- Refresh components failed, error is %s.\n", fwCompsAccess.getLastErrMsg());
@@ -385,6 +418,10 @@ FlintStatus BurnSubCommand::BurnLinkX(string deviceName,
     else
     {
         printf("-I- Cable burn finished successfully.\n");
+        if (noStopOnError)
+        {
+            ReportSkippedCables(fwCompsAccess);
+        }
     }
     return FLINT_SUCCESS;
 }

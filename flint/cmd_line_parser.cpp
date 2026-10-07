@@ -232,6 +232,7 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("", "downstream_device_id_start_index", 1));
     _flags.push_back(new Flag("", "num_of_downstream_devices", 1));
     _flags.push_back(new Flag("", "linkx_auto_update", 0));
+    _flags.push_back(new Flag("", "no_stop_on_error", 0));
     _flags.push_back(new Flag("", "activate", 0));
     _flags.push_back(new Flag("", "activate_delay_sec", 1));
     _flags.push_back(new Flag("", "run_module_image", 0));
@@ -844,6 +845,11 @@ void Flint::initCmdParser()
     AddOptions("linkx_auto_update", ' ', "", "Use this flag while burning all cable devices connected to host.", false,
                false, 1);
 
+    AddOptions("no_stop_on_error", ' ', "",
+               "Use this flag to keep burning the remaining cables when one of them fails. Failed cables are skipped "
+               "and reported at the end of the burn. Valid for auto-update and range burn.",
+               false, false, 1);
+
     AddOptions("activate",
                ' ',
                "",
@@ -1372,6 +1378,10 @@ ParseStatus Flint::HandleOption(string name, string value)
     else if (name == "linkx_auto_update")
     {
         _flintParams.linkx_auto_update = true;
+    }
+    else if (name == "no_stop_on_error")
+    {
+        _flintParams.no_stop_on_error = true;
     }
 
     else if (name == "download_transfer")
