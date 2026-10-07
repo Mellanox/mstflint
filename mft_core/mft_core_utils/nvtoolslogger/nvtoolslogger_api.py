@@ -67,6 +67,8 @@ class Layer(IntEnum):
     MFLASH = 15
     MFLASH_ACCESS = 16
     MFLASH_SPI = 17
+    CABLE_ACCESS = 18
+    CABLE_CDB = 19
 
 
 _LIB_NAME = "libnvtoolslogger.so"

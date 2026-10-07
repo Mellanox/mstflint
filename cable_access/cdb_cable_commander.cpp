@@ -32,6 +32,7 @@
  */
 
 #include <iostream>
+#include "nvtoolslogger/NvToolsLogger.h"
 #include <sstream>
 #include <fstream>
 #include <iomanip>
@@ -181,7 +182,7 @@ void FwManagementCdbCommander::SendFwChunk(CmisCdbAccess::PayloadMethod payloadM
             {
                 throw e;
             }
-            CDB_ACCESS_DPRINTF(("Got timeout, moving on to next chunk"));
+            CABLE_CDB_LOG_WARNING("Got timeout, moving on to next chunk");
         }
         else
         {
@@ -395,15 +396,15 @@ void FwManagementCdbCommander::QueryStatus()
 
     if (status.unlockLevelAndPrivileges == 0)
     {
-        CDB_ACCESS_DPRINTF(("Module Boot Up.\n"));
+        CABLE_CDB_LOG_DEBUG("Module Boot Up.");
     }
     if (status.unlockLevelAndPrivileges == 1)
     {
-        CDB_ACCESS_DPRINTF(("Password Accepted.\n"));
+        CABLE_CDB_LOG_DEBUG("Password Accepted.");
     }
     if ((status.unlockLevelAndPrivileges & 0x80) != 0)
     {
-        CDB_ACCESS_DPRINTF(("Vendor password accepted.\n"));
+        CABLE_CDB_LOG_DEBUG("Vendor password accepted.");
     }
 }
 
