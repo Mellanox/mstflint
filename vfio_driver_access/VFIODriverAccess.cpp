@@ -50,59 +50,51 @@ namespace fs_path = mstflint::common::filesystem;
 
 void VFIODriverAccess::OpenVFIODevices(const std::string& dbdf, int& deviceFD, uint64_t& vsecOffset, uint64_t& addressRegionOffset)
 {
-    try
-    {
-        if (VFIODeviceRegistry::GetInstance().Contains(dbdf)) {
-            deviceFD = VFIODeviceRegistry::GetInstance().GetDeviceInfo(dbdf).deviceFD;
-            vsecOffset = VFIODeviceRegistry::GetInstance().GetDeviceInfo(dbdf).vsecOffset;
-            addressRegionOffset = VFIODeviceRegistry::GetInstance().GetDeviceInfo(dbdf).addressRegionOffset;
-            DBG_PRINTF("Device %s already opened, returning existing FD: %d, VSEC offset: %lx, Address region offset: %lx\n",
-                       dbdf.c_str(),
-                       deviceFD,
-                       vsecOffset,
-                       addressRegionOffset);
-            return;
-        }
-
-        /* Bind the device to the vfio-pci driver. */
-        VFIODriverAccess::bindDeviceToVfioPciDriver(dbdf);
-
-        /* Open the main VFIO control device (/dev/vfio/vfio). */
-        /* This is needed to access the VFIO API and manage containers. */
-        int vfioFD = OpenVFIODevice();
-
-        /* Find the IOMMU group number that this PCI device belongs to. */
-        std::string iommuGroup = FindIOMMUGroupByDBDF(dbdf);
-
-        /* Open the VFIO group device (/dev/vfio/<group>) for this IOMMU group. */
-        int groupFD = OpenVFIOGroup(iommuGroup);
-
-        /* Check if the VFIO group is viable (not bound to other drivers, ready for use). */
-        CheckVFIOGroupViability(groupFD);
-
-        /* Attach the VFIO group to the main VFIO control device. */
-        AttachGroupToContainer(groupFD, vfioFD);
-
-        /* Enable IOMMU for the main VFIO control device. */
-        EnableIOMMU(vfioFD);
-
-        /* Get the device file descriptor for the PCI device. */
-        /* This allows direct interaction, W/R PCI config space. */
-        deviceFD = GetDeviceFD(groupFD, dbdf);
-
-        /* Get the VSEC start offset. */
-        GetStartOffsets(deviceFD, vsecOffset, addressRegionOffset);
-
-        /* Insert the device info into the registry. */
-        VFIODeviceRegistry::GetInstance().InsertDeviceInfo(dbdf, deviceFD, vsecOffset, addressRegionOffset);
-
-        close(groupFD);
-    }
-    catch(const std::exception& e)
-    {
-        std::cerr << "Error: " << e.what() << std::endl;
+    if (VFIODeviceRegistry::GetInstance().Contains(dbdf)) {
+        deviceFD = VFIODeviceRegistry::GetInstance().GetDeviceInfo(dbdf).deviceFD;
+        vsecOffset = VFIODeviceRegistry::GetInstance().GetDeviceInfo(dbdf).vsecOffset;
+        addressRegionOffset = VFIODeviceRegistry::GetInstance().GetDeviceInfo(dbdf).addressRegionOffset;
+        DBG_PRINTF("Device %s already opened, returning existing FD: %d, VSEC offset: %lx, Address region offset: %lx\n",
+                   dbdf.c_str(),
+                   deviceFD,
+                   vsecOffset,
+                   addressRegionOffset);
         return;
     }
+
+    /* Bind the device to the vfio-pci driver. */
+    VFIODriverAccess::bindDeviceToVfioPciDriver(dbdf);
+
+    /* Open the main VFIO control device (/dev/vfio/vfio). */
+    /* This is needed to access the VFIO API and manage containers. */
+    int vfioFD = OpenVFIODevice();
+
+    /* Find the IOMMU group number that this PCI device belongs to. */
+    std::string iommuGroup = FindIOMMUGroupByDBDF(dbdf);
+
+    /* Open the VFIO group device (/dev/vfio/<group>) for this IOMMU group. */
+    int groupFD = OpenVFIOGroup(iommuGroup);
+
+    /* Check if the VFIO group is viable (not bound to other drivers, ready for use). */
+    CheckVFIOGroupViability(groupFD);
+
+    /* Attach the VFIO group to the main VFIO control device. */
+    AttachGroupToContainer(groupFD, vfioFD);
+
+    /* Enable IOMMU for the main VFIO control device. */
+    EnableIOMMU(vfioFD);
+
+    /* Get the device file descriptor for the PCI device. */
+    /* This allows direct interaction, W/R PCI config space. */
+    deviceFD = GetDeviceFD(groupFD, dbdf);
+
+    /* Get the VSEC start offset. */
+    GetStartOffsets(deviceFD, vsecOffset, addressRegionOffset);
+
+    /* Insert the device info into the registry. */
+    VFIODeviceRegistry::GetInstance().InsertDeviceInfo(dbdf, deviceFD, vsecOffset, addressRegionOffset);
+
+    close(groupFD);
 }
 
 void VFIODriverAccess::CloseVFIODevices(int deviceFD)
@@ -203,9 +195,18 @@ void VFIODriverAccess::bindDeviceToVfioPciDriver(const std::string& dbdf)
         throw std::runtime_error(std::string("Failed to open new_id file: ") + VFIO_PCI_DRIVER_NEW_ID_PATH);
     }
 
+    errno = 0;
     new_id_file << "15b3 " + deviceId << std::endl;
     if (!new_id_file) {
-        throw std::runtime_error(std::string("Failed to write to ") + VFIO_PCI_DRIVER_NEW_ID_PATH);
+        int writeErrno = errno ? errno : EIO;
+        if (writeErrno != EEXIST) {
+            throw std::runtime_error(std::string("Failed to write to ") + VFIO_PCI_DRIVER_NEW_ID_PATH + ": " +
+                                     strerror(writeErrno));
+        }
+        if (!isDeviceBoundToVfioPci(dbdf)) {
+            throw std::runtime_error("PCI ID is registered with vfio-pci, but device " + dbdf +
+                                     " is not bound to vfio-pci");
+        }
     }
 
     DBG_PRINTF("Device bound to vfio-pci successfully: %s\n", VFIO_PCI_DRIVER_NEW_ID_PATH);

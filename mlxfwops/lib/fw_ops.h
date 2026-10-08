@@ -762,13 +762,11 @@ private:
     static bool CntxEthOnly(u_int32_t devid);
 
     /* Name:        WriteToErrBuff
-     * Description: Write a string into buffer.
-     *              if buffer is null or smaller than string size,
-     *              write "..." as at the end of the string.
+     * Description: Write a string into buffer, truncating it to fit.
      * @param[in] errBuff - pointer to dist error buffer
      * @param[in] errStr - pointer to source string
      * @param[in] bufSize - size of error buffer */
-    static void WriteToErrBuff(char* errBuff, char* errStr, int bufSize);
+    static void WriteToErrBuff(char* errBuff, const char* errStr, int bufSize);
 
     // Methods
     void BackUpFwParams(fw_ops_params_t& fwParams);
