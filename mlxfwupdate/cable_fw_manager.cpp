@@ -1360,6 +1360,82 @@ static string cableFwVersionText(const CableFwVersion& version)
     return string(text);
 }
 
+/* An ASCII field of the extended header without the spaces or zeros that pad it. */
+static string extendedHeaderText(const u_int8_t* field, size_t length)
+{
+    string text((const char*)field, length);
+    size_t end = text.find_last_not_of(string(" \0", 2));
+
+    return (end == string::npos) ? string() : text.substr(0, end + 1);
+}
+
+/* Where the extended header an image already carries disagrees with its metadata entry, empty when
+ * it does not. The header is what the device matches, so a header naming other cables than the
+ * metadata does means the package was assembled wrongly. A zero field is a wildcard on both sides
+ * and is not compared; the metadata says what it states through cableExtHeaderKey, as for a header
+ * this tool builds.
+ */
+static string extendedHeaderMismatch(const vector<u_int8_t>& data, const FwPackageEntry& entry)
+{
+    if (data.size() < CABLE_EXT_HEADER_SIZE)
+    {
+        return "is shorter than the extended header it starts with";
+    }
+    const u_int8_t* header = &data[0];
+    CableExtHeaderKey key = cableExtHeaderKey(entry);
+    string partNumber = extendedHeaderText(header + 8, CABLE_EXT_HEADER_PN_LENGTH);
+    string vendorRev = extendedHeaderText(header + 26, CABLE_EXT_HEADER_REV_LENGTH);
+    u_int8_t hwRevMajor = header[25];
+    u_int8_t productId = header[28];
+    u_int8_t minor = header[29];
+    // Least significant byte first, as the device and withExtendedHeader lay it out.
+    u_int16_t build = (u_int16_t)(header[30] | (header[31] << 8));
+    u_int32_t imageSize = header[32] | (header[33] << 8) | (header[34] << 16) | ((u_int32_t)header[35] << 24);
+
+    // flint reads only these two versions, and only version 1 states the image size.
+    if (header[4] > 1)
+    {
+        return "has an extended header of version " + int_to_string((int)header[4]) + ", which flint cannot read";
+    }
+    // Compared exactly, as the device compares the header against the EEPROM and the plan matches
+    // the metadata against the cable: a header differing only in case would match no cable chosen.
+    if (!partNumber.empty() && !key.partNumber.empty() && partNumber != key.partNumber)
+    {
+        return "has an extended header for part number " + partNumber + ", the metadata states " + key.partNumber;
+    }
+    if (!vendorRev.empty() && !key.vendorRev.empty() && vendorRev != key.vendorRev)
+    {
+        return "has an extended header for vendor revision " + vendorRev + ", the metadata states " + key.vendorRev;
+    }
+    if (hwRevMajor != 0 && key.hwRevMajor != 0 && hwRevMajor != key.hwRevMajor)
+    {
+        return "has an extended header for hardware major " + int_to_string((int)hwRevMajor) +
+               ", the metadata states " + int_to_string((int)key.hwRevMajor);
+    }
+    if (productId != 0 && productId != entry.fwVersion.major)
+    {
+        return "has an extended header for product id " + int_to_string((int)productId) + ", the load version " +
+               cableFwVersionText(entry.fwVersion) + " states " + int_to_string((int)entry.fwVersion.major);
+    }
+    if ((minor != 0 || build != 0) && (minor != entry.fwVersion.minor || build != entry.fwVersion.subminor))
+    {
+        CableFwVersion stated;
+        stated.major = productId;
+        stated.minor = minor;
+        stated.subminor = build;
+        return "has an extended header for firmware " + cableFwVersionText(stated) + ", the load version is " +
+               cableFwVersionText(entry.fwVersion);
+    }
+    // Header version 0 has no size field; version 1 states the size of the image behind it.
+    if (header[4] == 1 && imageSize != data.size() - CABLE_EXT_HEADER_SIZE)
+    {
+        return "has an extended header for an image of " + int_to_string((int)imageSize) +
+               " bytes, but the image behind it is " + int_to_string((int)(data.size() - CABLE_EXT_HEADER_SIZE)) +
+               " bytes";
+    }
+    return string();
+}
+
 static string orNotAvailable(const string& value)
 {
     return value.empty() ? CABLE_REPORT_NOT_AVAILABLE : value;
@@ -2562,8 +2638,8 @@ static FwPackageEntry
       CABLE_YAML_KEY_SHA512_NVIDIA};
     FwPackageEntry entry;
     entry.metadataPath = name;
-    // An entry that does not parse is recorded against itself and the rest of the package is
-    // still usable: one bad metadata file must not cost the user the whole maintenance window.
+    // An entry that does not parse is recorded against itself with the reason, so every bad entry
+    // in the package is reported at once rather than only the first.
     try
     {
         if (!node.is_mapping())
@@ -2671,13 +2747,17 @@ static FwPackageEntry
         {
             throw std::runtime_error(CABLE_YAML_KEY_LOAD_VERSION " \"" + version + "\" is not major.minor.build");
         }
+        // A wrapped image keeps its LinkX header behind the extended one, where it is checked the same way.
+        bool wrapped = hasCableExtendedHeader(data.empty() ? NULL : &data[0], (u_int32_t)data.size());
+        size_t linkxOffset = wrapped ? CABLE_EXT_HEADER_SIZE : 0;
         static const u_int8_t linkxMagic[MAGIC_NUMBER_LENGTH] = MAGIC_PATTERN;
-        if (data.size() >= sizeof(fw_pkg_file_header_t) && memcmp(&data[0], linkxMagic, MAGIC_NUMBER_LENGTH) == 0)
+        if (data.size() >= linkxOffset + sizeof(fw_pkg_file_header_t) &&
+            memcmp(&data[linkxOffset], linkxMagic, MAGIC_NUMBER_LENGTH) == 0)
         {
             fw_pkg_file_header_t linkx;
             CableFwVersion own;
 
-            memcpy(&linkx, &data[0], sizeof(linkx));
+            memcpy(&linkx, &data[linkxOffset], sizeof(linkx));
             own.major = linkx.fw_product_id;
             own.minor = linkx.package_minor;
             own.subminor = (u_int16_t)((linkx.package_subminor_msb << 8) | linkx.package_subminor_lsb);
@@ -2705,8 +2785,15 @@ static FwPackageEntry
         // An extended header the package already carries goes to the device as supplied: the
         // device matches the image against it where its fields match the cable. What the tool
         // must not do is build a second header over an existing one.
-        entry.hasExtendedHeader =
-          hasCableExtendedHeader(data.empty() ? NULL : &data[0], (u_int32_t)data.size());
+        if (wrapped)
+        {
+            string mismatch = extendedHeaderMismatch(data, entry);
+            if (!mismatch.empty())
+            {
+                throw std::runtime_error(entry.imagePath + " " + mismatch + "; the package needs fixing");
+            }
+        }
+        entry.hasExtendedHeader = wrapped;
         entry.isValid = true;
     }
     catch (const std::exception& e)
@@ -2792,34 +2879,32 @@ int CableFwManager::loadPackage(map<string, vector<u_int8_t> >& contents)
         }
     }
 
+    if (_packages.empty())
+    {
+        _errMsg = "No firmware metadata was found in " + _cmdParams.cable_package;
+        return ERR_CODE_IMG_NOT_FOUND;
+    }
+    // One bad entry means the package was not assembled as intended, so nothing in it is trusted,
+    // and why each entry was rejected is the whole answer.
     if (rejected > 0)
     {
-        emitProgress("-W- Rejected " + int_to_string((int)rejected) + " unusable metadata entr(ies) in " +
-                     _cmdParams.cable_package + "\n");
-        // Which file and why is in the packages table of the report, a line per file.
+        _errMsg = "Found " + int_to_string((int)rejected) + " invalid firmware metadata entr" +
+                  (rejected == 1 ? "y" : "ies") + " in " + _cmdParams.cable_package + ":";
+        u_int32_t listed = 0;
         for (size_t i = 0; i < _packages.size(); i++)
         {
             if (!_packages[i].isValid)
             {
                 FWMANAGER_LOG_DEBUG("Rejected %s: %s", _packages[i].metadataPath.c_str(),
                                     _packages[i].parseError.c_str());
+                listed++;
+                _errMsg += "\n  " + int_to_string((int)listed) + ". " + _packages[i].metadataPath + ":\n     " +
+                           _packages[i].parseError;
             }
         }
-    }
-
-    u_int32_t usable = 0;
-    for (size_t i = 0; i < _packages.size(); i++)
-    {
-        if (_packages[i].isValid)
-        {
-            usable++;
-        }
-    }
-    if (usable == 0)
-    {
-        _errMsg = "No usable firmware metadata was found in " + _cmdParams.cable_package;
         return ERR_CODE_IMG_NOT_FOUND;
     }
+    u_int32_t usable = (u_int32_t)_packages.size();
     emitProgress("-I- Read " + int_to_string((int)usable) + " firmware image(s) from " + _cmdParams.cable_package +
                  "\n");
     return MLX_FWM_SUCCESS;
@@ -3594,6 +3679,11 @@ int CableFwManager::verifyAndReport()
     {
         emitProgress(text);
     }
+    // The run was already warned that no file could be written, so it is not attempted.
+    if (_cmdParams.cable_report_screen_only)
+    {
+        return verdict;
+    }
     int rc = writeReport(text);
 
     if (rc != MLX_FWM_SUCCESS)
@@ -3928,7 +4018,8 @@ void CableFwManager::appendPackagesTable(std::ostringstream& report)
         row.push_back(entry.hasHwRevMajor ? entry.hwRevMajor : string(CABLE_REPORT_NOT_AVAILABLE));
         row.push_back(entry.hasActiveFwVersion ? entry.activeFwVersion : string(CABLE_REPORT_NOT_AVAILABLE));
         row.push_back(cableFwVersionText(entry.fwVersion));
-        row.push_back(entry.isValid ? string("yes") : "no (" + entry.parseError + ")");
+        // Why an entry is invalid is listed once, in the plan, rather than in this table.
+        row.push_back(entry.isValid ? "yes" : "no");
         rows.push_back(row);
     }
     vector<string> headers;

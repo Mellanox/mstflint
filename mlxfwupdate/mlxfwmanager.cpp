@@ -49,6 +49,7 @@
 #include <cstdio>
 #include <cstring>
 #include <fstream>
+#include <fcntl.h>
 
 #include "pldm_utils/pldm_utils.h"
 #include "mft_utils/mft_utils.h"
@@ -1407,6 +1408,63 @@ static ZipCheckResult checkZipFile(const string& path)
     return res;
 }
 
+/* Whether a file can be created in a directory, and the system's reason when it cannot. Tried
+ * rather than read off the permission bits, which miss read-only mounts and ACLs and mean little on
+ * Windows. The probe is always a new file of this process: O_EXCL neither follows a symlink nor
+ * reuses a file already there, so nothing of the user's is overwritten or removed.
+ */
+static bool isDirectoryWritable(const string& dir, string& reason)
+{
+#if defined(__WIN__)
+    unsigned pid = (unsigned)GetCurrentProcessId();
+#define PROBE_OPEN(path) _open(path, _O_WRONLY | _O_CREAT | _O_EXCL, _S_IREAD | _S_IWRITE)
+#define PROBE_CLOSE(fd) _close(fd)
+#else
+    unsigned pid = (unsigned)getpid();
+#define PROBE_OPEN(path) open(path, O_WRONLY | O_CREAT | O_EXCL, 0600)
+#define PROBE_CLOSE(fd) close(fd)
+#endif
+
+    for (int attempt = 0; attempt < 100; attempt++)
+    {
+        string probe =
+          dir + PATH_SEPARATOR + ".mlxfwmanager_write_check_" + int_to_string((int)pid) + "_" + int_to_string(attempt);
+        int fd = PROBE_OPEN(probe.c_str());
+
+        if (fd < 0)
+        {
+            if (errno == EEXIST)
+            {
+                continue;
+            }
+            reason = strerror(errno);
+            FWMANAGER_LOG_DEBUG("Can't create %s: %s", probe.c_str(), reason.c_str());
+            return false;
+        }
+        // Closing is where a full disk or a failed network write surfaces.
+        bool closed = PROBE_CLOSE(fd) == 0;
+        int closeErrno = errno;
+        if (remove(probe.c_str()) != 0)
+        {
+            // Left behind, the file would be in the user's directory for good, so it is reported.
+            reason = "can't remove the test file " + probe + ": " + strerror(errno);
+            FWMANAGER_LOG_DEBUG("%s", reason.c_str());
+            return false;
+        }
+        if (!closed)
+        {
+            reason = strerror(closeErrno);
+            FWMANAGER_LOG_DEBUG("Can't close %s: %s", probe.c_str(), reason.c_str());
+            return false;
+        }
+        return true;
+    }
+    reason = "every test file name is taken";
+    return false;
+#undef PROBE_OPEN
+#undef PROBE_CLOSE
+}
+
 bool checkCmdParams(CmdLineParams& cmd_params, config_t& config)
 {
     if (cmd_params.use_mfa_dir)
@@ -1461,6 +1519,17 @@ bool checkCmdParams(CmdLineParams& cmd_params, config_t& config)
             return false;
         }
     }
+    bool cable_mode = cmd_params.cable_query || cmd_params.cable_dry_run || cmd_params.cable_update;
+    bool plans_update = cmd_params.cable_dry_run || cmd_params.cable_update;
+
+    // In module mode -i names the module package, which may be a directory, so it leaves the MFA
+    // path here rather than being checked as an image file below.
+    if (cable_mode && cmd_params.use_mfa_file)
+    {
+        cmd_params.cable_package = cmd_params.mfa_file;
+        cmd_params.use_mfa_file = 0;
+        cmd_params.mfa_file = "";
+    }
     if (cmd_params.use_mfa_file)
     {
         Filesystem::path p(adjustRelPath(cmd_params.mfa_file, config.adjuster_path));
@@ -1470,9 +1539,6 @@ bool checkCmdParams(CmdLineParams& cmd_params, config_t& config)
             return false;
         }
     }
-    bool cable_mode = cmd_params.cable_query || cmd_params.cable_dry_run || cmd_params.cable_update;
-    bool plans_update = cmd_params.cable_dry_run || cmd_params.cable_update;
-
     if ((int)cmd_params.cable_query + (int)cmd_params.cable_dry_run + (int)cmd_params.cable_update > 1)
     {
         fprintf(stderr, "-E- Please specify only one of --module_query, --module_dry_run and --module_update\n");
@@ -1480,12 +1546,14 @@ bool checkCmdParams(CmdLineParams& cmd_params, config_t& config)
     }
     if (plans_update && cmd_params.cable_package.empty())
     {
-        fprintf(stderr, "-E- Please specify a firmware package with --fw_update_package\n");
+        fprintf(stderr, "-E- Please specify a firmware package with -i\n");
         return false;
     }
     if (cmd_params.cable_package.length() && !plans_update)
     {
-        fprintf(stderr, "-E- Please use --module_dry_run or --module_update along with --fw_update_package\n");
+        fprintf(
+          stderr,
+          "-E- -i is not used by --module_query; it takes the package with --module_dry_run or --module_update\n");
         return false;
     }
     if (cmd_params.cable_package.length())
@@ -1536,6 +1604,29 @@ bool checkCmdParams(CmdLineParams& cmd_params, config_t& config)
             fprintf(stderr, "-E- Can't find directory %s\n", cmd_params.cable_report_dir.c_str());
             return false;
         }
+        // Checked before any cable is touched, so an update is not run only to lose its report.
+        string reason;
+        if (!isDirectoryWritable(cmd_params.cable_report_dir, reason))
+        {
+            fprintf(stderr, "-E- Can't write the module report to %s: %s\n", cmd_params.cable_report_dir.c_str(),
+                    reason.c_str());
+            return false;
+        }
+    }
+    else if (cable_mode)
+    {
+        string reason;
+        if (!isDirectoryWritable(".", reason))
+        {
+            // No directory was asked for, so the run goes on, and the screen is the only place left
+            // for the report, even when --module_report_silent asked to keep it off the screen.
+            fprintf(stderr,
+                    "-W- Can't write to the current directory (%s), so the module report is printed to the screen "
+                    "only; use --module_report_dir to save it\n",
+                    reason.c_str());
+            cmd_params.cable_report_screen_only = true;
+            cmd_params.cable_report_file_only = false;
+        }
     }
     if (cmd_params.cable_report_file_only && !cable_mode)
     {
@@ -1551,7 +1642,7 @@ bool checkCmdParams(CmdLineParams& cmd_params, config_t& config)
     }
     if (cable_mode && (cmd_params.use_mfa_file || cmd_params.use_mfa_dir))
     {
-        fprintf(stderr, "-E- --module_query, --module_dry_run and --module_update cannot be combined with -i or -D\n");
+        fprintf(stderr, "-E- --module_query, --module_dry_run and --module_update cannot be combined with -D\n");
         return false;
     }
     if (cable_mode && cmd_params.device_names.size() != 0)
