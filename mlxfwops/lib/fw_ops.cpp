@@ -927,6 +927,7 @@ bool FwOperations::IsDeviceSupported(fw_ops_params_t& fwParams)
     mfile* mf = mopen_adv(fwParams.mstHndl, (MType)(MST_DEFAULT | MST_LINKX_CHIP));
     if (!mf)
     {
+        WriteToErrBuff(fwParams.errBuff, mtcr_get_last_err(), fwParams.errBuffSize);
         return false;
     }
 
@@ -1723,21 +1724,12 @@ bool FwOperations::FwSwReset()
     return true;
 }
 
-void FwOperations::WriteToErrBuff(char* errBuff, char* errStr, int bufSize)
+void FwOperations::WriteToErrBuff(char* errBuff, const char* errStr, int bufSize)
 {
-    if (bufSize > 0)
+    if (errBuff && bufSize > 0)
     {
-        if (bufSize > (int)strlen(errStr))
-        {
-            strncpy(errBuff, errStr, bufSize);
-        }
-        else
-        {
-            strncpy(errBuff, errStr, bufSize - 4);
-            strcpy(&errBuff[bufSize - 4], "...");
-        }
+        snprintf(errBuff, bufSize, "%s", errStr);
     }
-    return;
 }
 
 bool FwOperations::UpdateImgCache(u_int8_t* buff, u_int32_t addr, u_int32_t size)

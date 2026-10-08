@@ -32,7 +32,7 @@
 
 PYTHON_WRAPPER_SCRIPT = ../common/python_wrapper
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common -I$(top_builddir)/common -I$(top_srcdir)/mvpd -I$(top_srcdir)/dev_mgt $(COMPILER_FPIC)
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common -I$(top_builddir)/common -I$(top_srcdir)/mvpd -I$(top_srcdir)/dev_mgt -I$(top_srcdir)/mft_core/mft_core_utils $(COMPILER_FPIC)
 
 bin_PROGRAMS = \
     mstmread \

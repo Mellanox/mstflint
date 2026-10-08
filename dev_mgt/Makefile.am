@@ -34,7 +34,8 @@ AM_CPPFLAGS = \
     -I$(srcdir) \
     -I$(top_srcdir) \
     -I$(top_srcdir)/common -I$(top_builddir)/common\
-    -I$(top_srcdir)/include/mtcr_ul
+    -I$(top_srcdir)/include/mtcr_ul \
+    -I$(top_srcdir)/mft_core/mft_core_utils
 
 AM_CFLAGS = -W -Wall  -g -MP -MD -Wswitch-enum $(COMPILER_FPIC) -DMTCR_EXPORT
 
