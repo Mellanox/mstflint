@@ -729,6 +729,56 @@ def parse_mlxlink_error(output):
     return _find_first_match(_MLXLINK_ERROR_RE, output)
 
 
+# The per-case result line carries the duration; gtest's closing list repeats
+# the name without it, so matching the duration reports each case once.
+_GTEST_FAILED_CASE_RE = re.compile(r'^\[  FAILED  \] (\S+) \(\d+ ms\)', re.M)
+_GTEST_FAILURE_AT_RE = re.compile(r'([^/\s]+:\d+): Failure$')
+# Lines of gtest's own value dump between "Failure" and the streamed message.
+_GTEST_VALUE_DUMP_RE = re.compile(r'^(\s|Expected|Value of|Actual|Which is)')
+
+
+def gtest_failures(output):
+    """Return "Case (file:line: message)" for every gtest case that failed."""
+    output = output or ""
+    failures = []
+    for m in _GTEST_FAILED_CASE_RE.finditer(output):
+        case = m.group(1)
+        start = output.rfind("[ RUN      ] " + case, 0, m.start())
+        lines = output[max(start, 0):m.start()].split('\n')
+        where, message = "", ""
+        for i, line in enumerate(lines):
+            at = _GTEST_FAILURE_AT_RE.search(line.strip())
+            if not at:
+                continue
+            where = at.group(1)
+            for follow in lines[i + 1:]:
+                if follow.strip() and not _GTEST_VALUE_DUMP_RE.match(follow):
+                    message = follow.strip()
+                    break
+            break
+        detail = ": ".join(p for p in (where, message) if p)
+        failures.append(case + (" (" + detail + ")" if detail else ""))
+    return failures
+
+
+def gtest_verdict_ok(runner):
+    """Report a C++ gtest run's own verdict; False when any case failed.
+
+    The comparison table only checks the printed values, while the fixture can
+    also assert things the table never shows (the field mask, port binding).
+    A runner that never ran (no binary) has no verdict and does not fail here.
+    """
+    if not runner.output:
+        return True
+    failures = gtest_failures(runner.output)
+    if not failures and not runner.success and "[  PASSED  ]" not in runner.output:
+        failures = ["exited non-zero without a gtest result line"]
+    if failures:
+        print("C++ gtest FAILED: {} case(s): {}".format(
+            len(failures), "; ".join(failures)))
+    return not failures
+
+
 # =============================================================================
 # Device Reachability
 # =============================================================================
