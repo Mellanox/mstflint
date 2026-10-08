@@ -305,8 +305,9 @@ class TestSuite(BaseTestSuite):
             return self.RESULT_PASS if all_match else self.RESULT_FAIL
 
         # No data from any runner — defer to error comparison so that runners
-        # agreeing on a failure count as PASS (no SDK divergence).
-        return self._compare_errors()
+        # agreeing on a failure count as PASS (no SDK divergence), unless the
+        # device answered nothing at all (positive: data was expected).
+        return self._compare_errors(positive=True)
 
 
 # =============================================================================

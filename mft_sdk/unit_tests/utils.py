@@ -46,6 +46,7 @@ import subprocess
 import sys
 import os
 import re
+import time
 
 # =============================================================================
 # ANSI Colors
@@ -287,7 +288,13 @@ def _get_pci_devices_lspci():
                                 pci_class, re.IGNORECASE):
                     continue
                 dev_type = re.sub(r'^[^:]*:\s*', '', desc).strip()
-                cx = re.search(r'(ConnectX[^\s,]*|BlueField[^\s,]*)',
+                # ']' is excluded: pci.ids names most parts "... Family
+                # [ConnectX-7]", and taking the bracket along made every
+                # report header end in "ConnectX-7]]" (apps-127, -132, -180,
+                # -124-003 on 2026-10-07). SDK-Verify's device-block pattern
+                # needs the header to end in ONE ']', so on those hosts no
+                # mlxlink block was ever attributed to its device.
+                cx = re.search(r'(ConnectX[^\s,\]]*|BlueField[^\s,\]]*)',
                                dev_type, re.IGNORECASE)
                 if cx:
                     dev_type = cx.group(1)
@@ -723,6 +730,230 @@ def parse_mlxlink_error(output):
 
 
 # =============================================================================
+# Device Reachability
+# =============================================================================
+#
+# "Every runner failed the same way" is agreement only while the device is
+# answering. The CLI oracle (mstreg/mstlink, or MFT's mlxreg_ext/mlxlink_ext)
+# is built on the same mtcr access layer as the SDK, so a device that does not
+# answer register access at all fails BOTH identically -- and the agreement
+# exonerates nothing. On 2026-10-07 apps-127 and apps-132 (ConnectX-9, FW not
+# answering) PASSed op_info, counters, cable_ddm, module_info and five
+# register GETs that way without a single register ever being read.
+
+# The phrase every such FAIL carries in its result detail. SDK-Verify
+# classifies /device not answering/i as device/firmware state, not an SDK
+# defect -- keep the wording in step with the extension.
+DEVICE_NOT_ANSWERING = "device not answering"
+
+# Error text only a device that is not answering register access produces:
+# the ICMD transport failing, the device ID unreadable, or FW refusing the
+# capability query EVERY access register depends on (mlxreg_lib's
+# isAccessRegisterSupported throws "FW burnt on device does not support
+# generic access register" for any query-cap failure). Measured over every
+# SDK-Verify log of 2026-09-22..2026-10-07 (9 dead host-runs: apps-127 x7,
+# apps-132 and apps-180 once): "generic access register" 101 hits and
+# "Failed to read device ID" 62, all in dead runs; "ICMD interface busy" 13
+# in dead runs plus 1 in resourcedump at the end of apps-180's 13:52 run,
+# whose MGIR had answered -- the next run was dead. Hence the probe is asked
+# again rather than the text trusted. Deliberately NOT here:
+#   "Please verify that driver is up" -- mlxlink's PAOS probe failing: 848
+#       hits, all on answering devices (apps-174 BlueField-3, apps-132 before
+#       2026-10-06), where MGIR, MCAM and MTMP read fine.
+#   bare SDK status 11/12/18 -- generic "operation failed" codes: "got status
+#       12" appears 139 times on answering devices (link-down FEC histogram,
+#       the driver-is-up case above).
+#   flint's "Cannot open Device ... MFE_NO_FLASH_DETECTED" -- a flash-tool
+#       message (flint/err_msgs.h, mflash) that neither the SDK nor
+#       mstreg/mstlink prints: 0 hits in the same logs.
+# The MGIR probe below is the primary signal; this text decides alone only
+# when there is no CLI to ask (--sdk-only, oracle not installed), and
+# otherwise just makes a device that answered earlier be asked again.
+_DEVICE_DEAD_RE = re.compile(
+    r"ICMD interface busy"
+    r"|Timed out polling on the ICMD busy-bit"
+    r"|Timed out trying to take the ICMD semaphore"
+    r"|ICMD interface not ready"
+    r"|ICMD failed due to CRSpace access failure"
+    r"|does not support generic access register"
+    r"|Failed to read device ID",
+    re.I)
+
+# Seconds before the one re-ask of an oracle that said "no"; see
+# probe_device().
+_PROBE_RETRY_DELAY_S = 2
+
+_probe_cache = {}   # device -> (state, first error line); see probe_device()
+_announced = set()  # devices whose DEVICE NOT ANSWERING line was printed
+
+
+def _tool_available(tool):
+    """True when `tool` (absolute path or bare name) is an executable file.
+
+    Bare names are looked up on PATH plus the sbin dirs root's shell adds:
+    the oracle itself runs under `sudo su`."""
+    if not tool:
+        return False
+    if os.path.isabs(tool):
+        return os.path.isfile(tool) and os.access(tool, os.X_OK)
+    dirs = os.environ.get("PATH", "").split(os.pathsep) + [
+        "/usr/local/sbin", "/usr/local/bin", "/usr/sbin", "/usr/bin",
+        "/sbin", "/bin"]
+    return any(os.path.isfile(os.path.join(d, tool)) and
+               os.access(os.path.join(d, tool), os.X_OK) for d in dirs if d)
+
+
+def _run_capture(cmd):
+    """(rc, merged output) of a shell command. Never raises: rc is None when
+    the command could not be started at all."""
+    try:
+        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT)
+        out = p.communicate()[0]
+        return p.returncode, out.decode("utf-8", errors="replace")
+    except Exception as e:  # noqa: BLE001 - a probe must never break a run
+        return None, str(e)
+
+
+def _first_error_line(output):
+    """The line of a failed CLI run worth quoting: its first -E- line, else
+    the first device-unreachable line, else the first non-empty one."""
+    lines = [l.strip() for l in strip_ansi(output or "").split("\n")
+             if l.strip()]
+    for line in lines:
+        if line.startswith("-E-"):
+            return line
+    for line in lines:
+        if _DEVICE_DEAD_RE.search(line):
+            return line
+    return lines[0] if lines else None
+
+
+def _probe_answer(tool, rc, out):
+    """(state, error) of one oracle MGIR run; see probe_device()."""
+    first = _first_error_line(out)
+    # Killed by signal N (1..64): the shell reports 128+N (139 = SIGSEGV,
+    # 134 = SIGABRT); a negative rc is our own shell killed. An error the
+    # tool reported is an exit code below that range -- mstreg's main()
+    # exits 1 on every one -- or 255 from a tool that returns -1.
+    crashed = rc is not None and (rc < 0 or 128 < rc <= 128 + 64)
+    if rc is None or crashed or rc in (126, 127) or \
+            (first or "").startswith("sudo:"):
+        # Could not run the oracle at all, or it crashed: that says nothing
+        # about the device, so fall back to the error text like a missing
+        # CLI.
+        return None, first or "{} could not be run".format(tool)
+    if rc == 0:
+        return True, None
+    return False, first or "MGIR read via {} failed (rc={})".format(
+        tool_label(tool), rc)
+
+
+def probe_device(device, refresh=False):
+    """Does `device` answer register access right now?
+
+    Asks the CLI oracle (MFT_SDK_REG_TOOL) for MGIR, which every device this
+    harness supports implements -- it is the first register every suite reads.
+    Returns (state, error): True = it answered; False = it did not (error =
+    the oracle's first error line); None = there is nothing to ask
+    (--sdk-only, no device, oracle not installed, oracle crashed) and the
+    caller has only the error text to go on.
+
+    Lazy and cached per process: only a comparison that actually ended with
+    no data and a runner error asks, so a healthy run pays nothing, and each
+    device is asked once per script but for the re-asks below. refresh=True
+    re-asks a device that answered earlier, because devices die mid-run
+    (apps-180, 2026-09-23: answering at 13:52, "ICMD interface busy" on
+    everything at 14:38). A device that did not answer is never asked again
+    -- so a "no" is asked once more, _PROBE_RETRY_DELAY_S later, before it is
+    believed: ICMD can be busy with another tool's request for a moment
+    (apps-180's 13:52 run had one such "ICMD interface busy" on a device that
+    answered), and a dead device says no twice.
+    """
+    if not device or BaseConfig.SDK_ONLY:
+        return None, None
+    cached = _probe_cache.get(device)
+    if cached is not None and (not refresh or cached[0] is not True):
+        return cached
+    tool = MFT_SDK_REG_TOOL
+    cmd = "{} -d {} --reg_name MGIR --get".format(tool, device)
+    if not _tool_available(tool):
+        result = (None, "{} is not installed".format(tool))
+    else:
+        run = "echo '{}' | sudo su".format(cmd)
+        result = _probe_answer(tool, *_run_capture(run))
+        if result[0] is False:
+            time.sleep(_PROBE_RETRY_DELAY_S)
+            result = _probe_answer(tool, *_run_capture(run))
+    _probe_cache[device] = result
+    # No oracle text on the "did NOT answer" line: it prints before this
+    # device's own header, i.e. inside the PREVIOUS device's block of the
+    # log, where SDK-Verify reads e.g. "not supported" as that device's SKIP.
+    # The FAIL that follows carries the oracle's error in its detail.
+    verdict = {True: "device answered",
+               False: "device did NOT answer (see the FAIL that follows)",
+               None: "cannot ask ({}) - judging by error text".format(
+                   result[1])}[result[0]]
+    print("[PROBE] {}: {}".format(cmd, verdict))
+    return result
+
+
+def device_not_answering(device, error_texts=()):
+    """Did an all-runners-failed outcome happen because `device` did not
+    answer register access? Returns (True, why) or (False, None).
+
+    `error_texts` are the runners' own errors. When the CLI oracle can be
+    asked, its MGIR answer decides: an answering device makes the failure a
+    consistent device reply (today's PASS), a silent one makes it device
+    state. Without an oracle the error text alone decides (_DEVICE_DEAD_RE).
+    `why` is the first error line worth quoting: the oracle's, else the
+    runners'.
+
+    That includes runners that all failed with dead-device text (say "ICMD
+    interface busy") on a device whose MGIR then answers: the caller keeps
+    its agreement verdict although nothing was compared. A transient busy
+    hitting every runner at once is not seen in the 2026-09-22..10-07 logs
+    (0 such blocks on an answering device), and register_access has no SKIP
+    row to put it in.
+    """
+    texts = [" ".join(t.split()) for t in error_texts if t and t.strip()]
+    dead_text = next((t for t in texts if _DEVICE_DEAD_RE.search(t)), None)
+    state, probe_error = probe_device(device, refresh=dead_text is not None)
+    if state is None:
+        return (True, dead_text) if dead_text else (False, None)
+    if state:
+        return False, None
+    return True, (probe_error or dead_text or
+                  (texts[0] if texts else "MGIR read failed"))
+
+
+def device_not_answering_detail(why):
+    """Result detail for a FAIL caused by a device that did not answer.
+
+    Carries the canonical lowercase phrase SDK-Verify classifies on, and no
+    '|' (the detail becomes a markdown table cell)."""
+    why = " ".join((why or "").split()).replace("|", "/")
+    if len(why) > 160:
+        why = why[:157] + "..."
+    return "{}: {}".format(DEVICE_NOT_ANSWERING, why) if why \
+        else DEVICE_NOT_ANSWERING
+
+
+def announce_device_not_answering(device, why):
+    """Print the marker line, once per device per script:
+
+        DEVICE NOT ANSWERING: <device>: <first CLI/SDK error line>
+
+    Uncoloured on purpose, so a line-anchored match on the raw log works.
+    """
+    if device in _announced:
+        return
+    _announced.add(device)
+    print("DEVICE NOT ANSWERING: {}: {}".format(
+        device or "<unknown device>", " ".join((why or "").split())))
+
+
+# =============================================================================
 # Test Runner Bases
 # =============================================================================
 
@@ -954,7 +1185,10 @@ class BaseTestSuite(object):
 
         So: print the condition as an advisory and return None to let the
         comparison run. It costs three tool invocations per device and
-        strictly increases detection power.
+        strictly increases detection power. (One refinement since: when the
+        device answers no register access at all, _compare_errors(
+        positive=True) reports a FAIL whose detail says "device not
+        answering" -- device state, never an SDK result, either way.)
         """
         is_operational, reason = self.device_info.is_operational()
         if is_operational:
@@ -969,12 +1203,51 @@ class BaseTestSuite(object):
                   YELLOW, reason, RESET))
         return None
 
-    def _compare_errors(self):
+    def _fail_device_not_answering(self, errors, why):
+        """Report a positive comparison every runner failed because the
+        device did not answer register access: RESULT_FAIL, as a "FAIL [dev]"
+        block whose Reason carries the canonical detail, plus the per-device
+        DEVICE NOT ANSWERING marker line.
+
+        `errors` maps runner name -> its error (or None)."""
+        detail = device_not_answering_detail(why)
+        self._print_header("FAIL")
+        print("{}Reason: {}{}".format(RED, detail, RESET))
+        if errors:
+            nw = max(len(k) for k in errors) + 2
+            for name, err in errors.items():
+                print("  {:<{}} : {}{}{}".format(
+                    name, nw, RED, err or "(no error extracted)", RESET))
+        announce_device_not_answering(self.device, why)
+        print("\n{}Every runner failed because the device did not answer "
+              "register access - nothing was compared. Device/firmware "
+              "state, not an SDK result: the CLI oracle uses the same access "
+              "layer and fails the same way.{}".format(RED, RESET))
+        return self.RESULT_FAIL
+
+    def _compare_errors(self, positive=False):
         """Compare error messages from all runners when no data was produced.
 
         Extracts the error from each runner that produced output,
         prints them, and returns RESULT_PASS if all runners reported an error,
         RESULT_FAIL if any runner failed to produce an error message.
+
+        positive=True marks a comparison that EXPECTED data, i.e. every
+        caller today (the mlxlink and resource dump suites; the two
+        error-handling suites never call this). For those, "all runners
+        returned an error" is agreement only while the device answers: when
+        device_not_answering() says it did not, nothing was compared and the
+        outcome is RESULT_FAIL with the canonical "device not answering"
+        detail (2026-10-07: apps-127 and apps-132 PASSed four mlxlink suites
+        this way with no register read). A device that answers keeps today's
+        verdict. Any one runner's error is enough to ask: no runner produced
+        data by the time this runs, so on a device that did not answer, a
+        runner whose error was not extracted is the same non-answer, not an
+        SDK finding of its own (apps-127, 2026-09-23 op_info: C++ "(no error
+        extracted)" next to C's "does not support generic access register"
+        read as an unclassified "Some runners failed" FAIL). Leave it False
+        for a NEGATIVE test, whose pass condition IS every runner failing --
+        that outcome must never change.
         """
         errors = {}
         if self.c_runner.output:
@@ -984,6 +1257,12 @@ class BaseTestSuite(object):
         if self.mlxlink_runner.output:
             errors["mlxlink"] = self.mlxlink_runner.get_error()
 
+        all_have_errors = bool(errors) and all(v for v in errors.values())
+        if positive and any(v for v in errors.values()):
+            dead, why = device_not_answering(self.device, errors.values())
+            if dead:
+                return self._fail_device_not_answering(errors, why)
+
         self._print_header("ERROR COMPARISON")
 
         if not errors:
@@ -991,7 +1270,6 @@ class BaseTestSuite(object):
             return self.RESULT_FAIL
 
         nw = max(len(k) for k in errors) + 2
-        all_have_errors = all(v for v in errors.values())
         unique = set(v for v in errors.values() if v)
         all_same = all_have_errors and len(unique) == 1
 
