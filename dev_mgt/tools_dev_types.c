@@ -50,6 +50,8 @@
 #include "mflash/mflash_types.h"
 #include "mtcr_ul/mtcr_ul_com.h"
 #include "mtcr_ul/mtcr_common.h"
+#include "mtcr_ul/mtcr_int_defs.h"
+#include "nvtoolslogger/nvtoolslogger_c.h"
 #include "mft_core/device/device_info/device_properties_api.h"
 #ifdef CABLES_SUPPORT
 #include "mtcr_ul/mtcr_cables.h"
@@ -641,7 +643,8 @@ int dm_get_device_id(mfile* mf, dm_dev_id_t* ptr_dm_dev_id, u_int32_t* ptr_hw_de
     return_value = dm_get_device_id_inner(mf, ptr_dm_dev_id, ptr_hw_dev_id, ptr_hw_rev);
     if (return_value == CRSPACE_READ_ERROR)
     {
-        printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno));
+        int err = errno;
+        MTCR_LOG_ERROR("Failed to read the device ID from CR-space%s%s", err ? ": " : "", err ? strerror(err) : "");
         return GET_DEV_ID_ERROR;
     }
 
