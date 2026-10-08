@@ -1254,6 +1254,7 @@ static int fwctrl_driver_open(mfile* mf, const char* name)
     mf->fd = open(full_path_name, O_RDWR | O_SYNC);
     if (mf->fd < 0)
     {
+            MTCR_LOG_AND_SET_ERROR("Failed to open the fwctl device %s: %s", full_path_name, strerror(errno));
         return mf->fd;
     }
     mf->tp = MST_FWCTL_CONTROL_DRIVER;
@@ -1326,6 +1327,8 @@ end:
         mf->res_fd = open(driver_conf_name, O_RDWR | O_SYNC);
         if (mf->res_fd < 0)
         {
+                MTCR_LOG_AND_SET_ERROR("Failed to open the conf node %s of an already opened CR device: %s",
+                                       driver_conf_name, strerror(errno));
             return -1;
         }
         mf->res_tp = MST_PCICONF;
@@ -1341,13 +1344,15 @@ end:
         mf->fd = open(driver_conf_name, O_RDWR | O_SYNC);
         if (mf->fd < 0)
         {
+                MTCR_LOG_AND_SET_ERROR("Failed to open the mst driver conf node %s: %s", driver_conf_name,
+                                       strerror(errno));
             return -1;
         }
         struct mst_params dev_params;
         memset(&dev_params, 0, sizeof(dev_params));
         if (ioctl(mf->fd, MST_PARAMS, &dev_params) < 0)
         {
-            fprintf(stderr, "-E- Failed to get Device PARAMS!\n");
+                MTCR_LOG_AND_SET_ERROR("MST_PARAMS ioctl failed on %s: %s", driver_conf_name, strerror(errno));
             return -1;
         }
         mf->functional_vsec_supp = (int)dev_params.functional_vsc_offset;
@@ -2225,6 +2230,9 @@ static int mtcr_vfio_device_open(mfile* mf, const char* name, unsigned domain, u
 
     if (GetStartOffsets(domain, bus, dev, func, &mf->fd, &mf->vsec_addr, &mf->address_region_addr) != 0)
     {
+            mtcr_set_last_err("%s", GetVFIOLastError());
+            MTCR_LOG_AND_SET_ERROR("Failed to open %s over VFIO: could not resolve the VSEC offsets of %04x:%02x:%02x.%x",
+                                   name, domain, bus, dev, func);
         return -1;
     }
 
@@ -2273,6 +2281,8 @@ static int mtcr_vfio_device_open(mfile* mf, const char* name, unsigned domain, u
 
     if (init_dev_info_ul(mf, name, domain, bus, dev, func))
     {
+            MTCR_LOG_AND_SET_ERROR("Failed to initialize the device info of %s (%04x:%02x:%02x.%x) opened over VFIO",
+                                   name, domain, bus, dev, func);
         return -1;
     }
 
@@ -2355,6 +2365,7 @@ static int mtcr_pciconf_open(mfile* mf, const char* name, u_int32_t adv_opt)
             }
             if (mtcr_pciconf_cap9_sem(mf, 1))
             {
+                    MTCR_LOG_AND_SET_ERROR("Failed to take the VSC semaphore while opening %s", name);
                 close(mf->fd);
                 errno = EBUSY;
                 return -1;
@@ -4086,6 +4097,7 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
 
     if (geteuid() != 0)
     {
+            MTCR_LOG_AND_SET_ERROR("Cannot open %s: direct device access requires root privileges", name);
         errno = EACCES;
         return NULL;
     }
@@ -4211,6 +4223,7 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
         sprintf(pcidev, "%4.4x:%2.2x:%2.2x.%1.1x", domain, bus, dev, func);
         if (!is_supported_device(pcidev, mf))
         {
+                MTCR_LOG_AND_SET_ERROR("PCI device %s is not a supported NVIDIA/Mellanox device", pcidev);
             errno = ENOTSUP;
             goto open_failed;
         }
@@ -4219,6 +4232,7 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
 
         if (init_dev_info_ul(mf, name, domain, bus, dev, func))
         {
+                MTCR_LOG_AND_SET_ERROR("Failed to initialize the device info of %s (%s)", name, pcidev);
             goto open_failed;
         }
 
@@ -4351,6 +4365,7 @@ access_config_forced:
 
 open_failed:
     err = errno;
+        MTCR_LOG_AND_SET_ERROR("Failed to open device %s (access type 0x%x): %s", name, dev_type, strerror(err));
     mclose_ul(mf);
     errno = err;
     return NULL;
@@ -4461,7 +4476,18 @@ cleanup:
 
 mfile* mopen_ul(const char* name)
 {
+    mtcr_clear_last_err();
     mfile* mf = mopen_ul_int(name, 0);
+
+    if (mf)
+    {
+        DBG_PRINTF("Opened device %s: access type 0x%x, PCI device id 0x%x, functional VSC %s\n", name, mf->tp,
+                   mf->pci_device_id, mf->functional_vsec_supp ? "supported" : "not supported");
+    }
+    else
+    {
+        mtcr_set_open_failed_err(name);
+    }
 
     return mf;
 }

@@ -36,6 +36,7 @@
 
 #include <mtcr_ul_com.h>
 #include <mtcr_ib.h>
+#include "mtcr_common.h"
 #include <errno.h>
 #include <common/tools_utils.h>
 #include <stdlib.h>
@@ -170,6 +171,8 @@ mfile* mopen(const char* name)
 mfile* mopend(const char* name, DType dtype)
 {
     if (dtype != MST_TAVOR) {
+        mtcr_clear_last_err();
+        MTCR_LOG_AND_SET_ERROR("Cannot open %s: device type %d is not supported in user-level mode", name, dtype);
         return NULL;
     }
     return mopen(name);
@@ -188,8 +191,10 @@ mfile* mopen_adv(const char* name, MType mtype)
         if (mf->tp & mtype) {
             return mf;
         } else {
-            errno = EPERM;
+            MTCR_LOG_AND_SET_ERROR("Device %s has access type 0x%x, not one of the requested types 0x%x", name, mf->tp,
+                                   mtype);
             mclose(mf);
+            errno = EPERM;
             return NULL;
         }
     }
