@@ -529,7 +529,7 @@ private:
 
     /* Phase 3 - Analysis and planning.
      *
-     * Open the package named by `--fw_update_package`: a folder per part number, each folder
+     * Open the package named by `-i`: a folder per part number, each folder
      * holding metadata files and the binaries they describe, each metadata entry naming its
      * binary by FwLoadName, relative to the file. It comes as one tgz (the IA's format), tar or
      * ZIP, or as a directory already holding that layout - the ZIP reader is not built on every
@@ -574,8 +574,8 @@ private:
     int buildUpdatePlan();
 
     /* Read every metadata file in the package into _packages, resolving each one's binary and
-     * checking the digest it carries. A file that does not parse is recorded against itself and
-     * the rest of the package is still used.
+     * checking the digest it carries. Any entry that does not parse fails the whole package, with
+     * the reason for each one.
      */
     int loadPackage(map<string, vector<u_int8_t> >& contents);
     /* One metadata file, its entries each validated against the package files around it. */

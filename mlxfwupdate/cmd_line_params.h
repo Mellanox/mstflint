@@ -110,6 +110,8 @@ public:
     int cable_activation_wait;
     string cable_report_dir;
     bool cable_report_file_only;
+    // No report directory was given and the current one cannot be written, so the report is only printed.
+    bool cable_report_screen_only;
     bool cable_include_service_ports;
     int cable_verify_wait;
     bool verbose;

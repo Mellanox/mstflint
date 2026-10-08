@@ -228,12 +228,6 @@ using namespace mft_utils;
 #define MODULE_UPDATE_L "module_update"
 #define MODULE_UPDATE_S ' '
 
-#define FW_UPDATE_PACKAGE_L "fw_update_package"
-#define FW_UPDATE_PACKAGE_S ' '
-
-#define FW_UPD_PKG_L "fw_upd_pkg"
-#define FW_UPD_PKG_S ' '
-
 #define MODULE_ACTIVATION_WAIT_L "module_activation_wait"
 #define MODULE_ACTIVATION_WAIT_S ' '
 
@@ -370,7 +364,10 @@ void CmdLineParser::initOptions()
 
     this->AddOptions(UPDATE_L, UPDATE_S, "", "Update firmware image(s) on the device(s)");
 
-    this->AddOptions(USE_IMG_FILE_L, USE_IMG_FILE_S, "FileName", "Specified image file to use");
+    this->AddOptions(USE_IMG_FILE_L, USE_IMG_FILE_S, "FileName",
+                     "Specified image file to use: an MFA or PLDM file, or with --" MODULE_DRY_RUN_L
+                     " and --" MODULE_UPDATE_L " a module firmware update package to update from: a tgz file, "
+                     "or a directory holding its contents");
 
     this->AddOptions(USE_IMG_DIR_L, USE_IMG_DIR_S, "DirectoryName",
                      "Specified directory instead of default to locate image files");
@@ -509,12 +506,7 @@ void CmdLineParser::initOptions()
     this->AddOptions(MODULE_DRY_RUN_L, MODULE_DRY_RUN_S, "", "Show the module update plan without updating anything");
 
     this->AddOptions(MODULE_UPDATE_L, MODULE_UPDATE_S, "",
-                     "Update module firmware from the package given by --fw_update_package");
-
-    this->AddOptions(FW_UPDATE_PACKAGE_L, FW_UPDATE_PACKAGE_S, "PackageFile",
-                     "Module firmware update package to update from: a tgz file, or a directory holding its contents");
-
-    this->AddOptions(FW_UPD_PKG_L, FW_UPD_PKG_S, "PackageFile", "Short for --fw_update_package");
+                     "Update module firmware from the package given by -i");
 
     this->AddOptions(MODULE_ACTIVATION_WAIT_L, MODULE_ACTIVATION_WAIT_S, "Seconds",
                      "Seconds to wait between downloading the module firmware and activating it (default 0)");
@@ -919,11 +911,6 @@ ParseStatus CmdLineParser::HandleOption(string name, string value)
     else if (name == MODULE_UPDATE_L)
     {
         _cmdLineParams->cable_update = true;
-        return PARSE_OK;
-    }
-    else if (name == FW_UPDATE_PACKAGE_L || name == FW_UPD_PKG_L)
-    {
-        _cmdLineParams->cable_package = value;
         return PARSE_OK;
     }
     else if (name == MODULE_ACTIVATION_WAIT_L)
