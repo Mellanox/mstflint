@@ -861,6 +861,13 @@ void MlxlinkCommander::validateCpoParams()
         MlxlinkRecord::printWar("Warning: --linkx_els has no effect on Virtual Module devices, regular flow will be used.", _jsonRoot);
         _userInput._isEls = false;
     }
+
+    if (_userInput._page > EEPROM_PAGE_LENGTH || _userInput._page < -1)
+    {
+        throw MlxRegException(
+          "The -p/--write-page/--page option requires a value between 0 and 0x%X (or -1 for default page)",
+          EEPROM_PAGE_LENGTH);
+    }
 }
 
 void MlxlinkCommander::updateNvlinkModeBStatus()
