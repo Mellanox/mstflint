@@ -1597,6 +1597,7 @@ MstStatus MftSdk::runTelemetryViews(uint32_t views,
         {
             return _lastError.status;
         }
+        _mstMlxLinkSdkInstance->_userInput._showRxRecoveryCounters = true;
         _mstMlxLinkSdkInstance->showRxRecoveryCounters();
         _mstMlxLinkSdkInstance->_rxRecoveryCountersCmd.toJsonFormat(root);
     }
