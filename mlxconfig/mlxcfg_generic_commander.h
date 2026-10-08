@@ -80,6 +80,8 @@ private:
     void ValidateAndGetTlvsAndCompIdLegacy(const vector<u_int8_t>& buff,
                                            vector<std::shared_ptr<TLVConf>>& tlvs,
                                            FwComponent::comps_ids_t& compsId);
+    void setRawCfg(std::vector<u_int32_t> rawTlvVec, bool hostIdValid);
+    std::vector<u_int32_t> getRawCfg(std::vector<u_int32_t> rawTlvVec);
 
 public:
     GenericCommander(mfile* mf, string& dbName, Device_Type deviceType = Device_Type::HCA, bool useMaxPort = false);
@@ -103,8 +105,7 @@ public:
     bool shouldSkipPrepareReset();
     const char* loadConfigurationGetStr() override;
     bool checkPCIResetRequired() override;
-    void setRawCfg(std::vector<u_int32_t> rawTlvVec) override;
-    std::vector<u_int32_t> getRawCfg(std::vector<u_int32_t> rawTlvVec) override;
+    void handleRawCfg(const std::vector<std::vector<u_int32_t>>& rawTlvs, RawTlvMode mode) override;
     void dumpRawCfg(std::vector<u_int32_t> rawTlvVec, std::string& tlvDump) override;
     void backupCfgs(vector<BackupView>& view) override;
     void updateParamViewValue(ParamView& p, std::string v, QueryType qt) override;
@@ -149,10 +150,11 @@ class RawCfgParams5thGen : public ErrMsg
 public:
     RawCfgParams5thGen();
     ~RawCfgParams5thGen() {}
-    int setRawData(const std::vector<u_int32_t>& tlvBuff);
+    int setRawData(const std::vector<u_int32_t>& tlvBuff, RawTlvMode mode = GET_RAW, bool hostIdValid = false);
     std::vector<u_int32_t> getRawData();
     int setOnDev(mfile* mf, RawTlvMode mode);
     std::string dumpTlv();
+    static bool isHostTargetClass(const std::vector<u_int32_t>& tlvBuff);
 
 private:
     int verifyTlv();
