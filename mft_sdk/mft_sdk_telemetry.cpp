@@ -1539,6 +1539,12 @@ MstStatus MftSdk::runTelemetryViews(uint32_t views,
         }
         _mstMlxLinkSdkInstance->showFEC();
         _mstMlxLinkSdkInstance->_fecCapInfoCmd.toJsonFormat(root);
+
+        // Return an empty output instead of null when FEC has nothing to report.
+        if (!root[JSON_RESULT_SECTION].isMember(JSON_OUTPUT_SECTION))
+        {
+            root[JSON_RESULT_SECTION][JSON_OUTPUT_SECTION] = Json::Value(Json::objectValue);
+        }
     }
 
     if (views & MST_TELEMETRY_VIEW_SERDES_TX)
