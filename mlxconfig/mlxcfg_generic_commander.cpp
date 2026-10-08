@@ -1129,10 +1129,38 @@ bool GenericCommander::checkPCIResetRequired()
     return false;
 }
 
-void GenericCommander::setRawCfg(std::vector<u_int32_t> rawTlvVec)
+void GenericCommander::handleRawCfg(const std::vector<std::vector<u_int32_t>>& rawTlvs, RawTlvMode mode)
+{
+    bool isPrivNvOtherHost = false;
+    if (mode == SET_RAW && std::any_of(rawTlvs.begin(), rawTlvs.end(), RawCfgParams5thGen::isHostTargetClass))
+    {
+        bool isDefaultSupported = false;
+        bool isCurrentSupported = false;
+        // A failed query must not fall back to false. For Host-PF TLVs, FW would then write the caller's own host.
+        getGlobalCapabilities(isDefaultSupported, isCurrentSupported, isPrivNvOtherHost);
+    }
+    std::string dumpStr;
+    int tlvIdx = 1;
+    std::vector<u_int32_t> queryData;
+    for (std::vector<std::vector<u_int32_t>>::const_iterator it = rawTlvs.begin(); it != rawTlvs.end(); it++, tlvIdx++)
+    {
+        if (mode == SET_RAW)
+        {
+            setRawCfg(*it, isPrivNvOtherHost);
+        }
+        else
+        {
+            queryData = getRawCfg(*it);
+            dumpRawCfg(queryData, dumpStr);
+            printf("Raw TLV #%d Info:\n%s\n", tlvIdx, dumpStr.c_str());
+        }
+    }
+}
+
+void GenericCommander::setRawCfg(std::vector<u_int32_t> rawTlvVec, bool hostIdValid)
 {
     RawCfgParams5thGen rawTlv;
-    if (rawTlv.setRawData(rawTlvVec))
+    if (rawTlv.setRawData(rawTlvVec, SET_RAW, hostIdValid))
     {
         throw MlxcfgException(rawTlv.err());
     }
@@ -2320,7 +2348,7 @@ RawCfgParams5thGen::RawCfgParams5thGen()
     memset(&_nvdaTlv, 0, sizeof(tools_open_mnvda));
 }
 
-int RawCfgParams5thGen::setRawData(const std::vector<u_int32_t>& tlvBuff)
+int RawCfgParams5thGen::setRawData(const std::vector<u_int32_t>& tlvBuff, RawTlvMode mode, bool hostIdValid)
 {
     if (tlvBuff.size() * 4 > TOOLS_OPEN_MNVDA_SIZE)
     {
@@ -2341,6 +2369,13 @@ int RawCfgParams5thGen::setRawData(const std::vector<u_int32_t>& tlvBuff)
     }
     tools_open_mnvda_unpack(&_nvdaTlv, ((u_int8_t*)(&tlvBuffBe[0])));
     _nvdaTlv.nv_hdr.writer_id = WRITER_ID_ICMD_MLXCONFIG_SET_RAW;
+    if (mode == SET_RAW && isHostTargetClass(_tlvBuff))
+    {
+        // Without host_id_valid, FW ignores the host field of the type and targets the caller's own host.
+        // writer_host_id spans header bits 9..11. Backup files fill it with the MNVGN writer host,
+        // while MNVDA reads bit 9 as host_id_valid and reserves bits 10..11.
+        _nvdaTlv.nv_hdr.writer_host_id = hostIdValid ? 1 : 0;
+    }
     return verifyTlv();
 }
 
@@ -2389,6 +2424,16 @@ std::string RawCfgParams5thGen::dumpTlv()
     }
     strcat(str, "\n");
     return str;
+}
+
+bool RawCfgParams5thGen::isHostTargetClass(const std::vector<u_int32_t>& tlvBuff)
+{
+    if (tlvBuff.size() < 2)
+    {
+        return false;
+    }
+    TLVClass tlvClass = (TLVClass)EXTRACT(tlvBuff[1], TLVCLASS_OFFSET, TLVCLASS_SIZE);
+    return tlvClass == Per_Host_Per_Function || tlvClass == Per_Host;
 }
 
 int RawCfgParams5thGen::verifyTlv()
