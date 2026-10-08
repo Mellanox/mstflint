@@ -1416,23 +1416,7 @@ mlxCfgStatus MlxCfg::devRawCfg(RawTlvMode mode)
             }
             printf("Applying... ");
         }
-        tlvIdx = 1;
-        // set each of the raw TLVs
-        std::vector<u_int32_t> queryData;
-        for (std::vector<std::vector<u_int32_t>>::iterator it = rawTlvsAsDw.begin(); it != rawTlvsAsDw.end();
-             it++, tlvIdx++)
-        {
-            if (mode == SET_RAW)
-            {
-                commander->setRawCfg(*it);
-            }
-            else
-            {
-                queryData = commander->getRawCfg(*it);
-                commander->dumpRawCfg(queryData, dumpStr);
-                printf("Raw TLV #%d Info:\n%s\n", tlvIdx, dumpStr.c_str());
-            }
-        }
+        commander->handleRawCfg(rawTlvsAsDw, mode);
         // send mfrl command to fw
         // this command indicate to the fw that next time perst signal go down
         //[reboot] fw need to perform reset )

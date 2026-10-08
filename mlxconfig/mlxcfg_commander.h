@@ -92,8 +92,7 @@ public:
     virtual void invalidateCfg(const std::vector<ParamView>& params) = 0;
     virtual const char* loadConfigurationGetStr() = 0;
     virtual bool checkPCIResetRequired() = 0;
-    virtual void setRawCfg(std::vector<u_int32_t> rawTlvVec) = 0;
-    virtual std::vector<u_int32_t> getRawCfg(std::vector<u_int32_t> rawTlvVec) = 0;
+    virtual void handleRawCfg(const std::vector<std::vector<u_int32_t>>& rawTlvs, RawTlvMode mode) = 0;
     virtual void dumpRawCfg(std::vector<u_int32_t> rawTlvVec, std::string& tlvDump) = 0;
     virtual void backupCfgs(vector<BackupView>& views) = 0;
     virtual void updateParamViewValue(ParamView&, std::string val, QueryType qt) = 0;
