@@ -25,7 +25,9 @@
 
 bool is_cable_burn_flow = false;
 
-reg_access_status_t reg_access_mcia(mfile* mf, reg_access_method_t method, struct reg_access_hca_mcia_ext* mcia)
+/* libmtcr_ul sits below reg_access and cannot link it, so it carries its own MCIA access; static, so it does not
+ * clash with the reg_access_mcia() that libreg_access exports. */
+static reg_access_status_t mtcr_cables_mcia(mfile* mf, reg_access_method_t method, struct reg_access_hca_mcia_ext* mcia)
 {
     int       data_size = reg_access_hca_mcia_ext_size();
     int       status = 0;
@@ -116,7 +118,7 @@ int cable_access_reg_rw(mfile    * mf,
 /*     printf("MCIA write: data[%d] = %#x \n",ii, cbl_reg_t.dword[ii]); */
 /* } */
     }
-    reg_access_status_t rc = reg_access_mcia(mf, op, &cbl_reg_t);
+    reg_access_status_t rc = mtcr_cables_mcia(mf, op, &cbl_reg_t);
 
     if (rc) {
         CABLE_ACCESS_LOG_DEBUG("MCIA Failed with rc: %d", (int)rc);
