@@ -167,6 +167,11 @@ string getStringFromVector(vector<float> values)
 
 string bitsToPerLaneStr(u_int32_t bitmask, u_int32_t numOfLanes)
 {
+    if (numOfLanes == 0)
+    {
+        return "N/A";
+    }
+
     vector<string> perLane;
     for (u_int32_t i = 0; i < numOfLanes; i++)
     {
