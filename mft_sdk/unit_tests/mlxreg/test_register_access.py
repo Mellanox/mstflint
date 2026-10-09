@@ -63,6 +63,8 @@ from utils import (
     BaseCTestRunner, BaseCppTestRunner,
     BaseTestSuite,
     print_sdk_only_empty_agreement,
+    device_not_answering, device_not_answering_detail,
+    announce_device_not_answering,
     print_usage as _print_usage_base, run_main,
 )
 
@@ -417,20 +419,76 @@ class TestSuite(BaseTestSuite):
         self.cpp_runner = CppTestRunner(self.device)
         self.mlxreg_runner = MlxregCliRunner(self.device)
         self.mlxlink_runner = self.mlxreg_runner
+        # result name -> detail printed after its PASS/FAIL in the summary
+        # (SDK-Verify reads it as the row's detail).
+        self.details = {}
 
     def _get_mlxlink_cmd(self):
         # mlxreg suite: the oracle is the mlxreg CLI runner, so derive the
         # header from it and it follows MFT_SDK_REG_TOOL automatically.
         return self.mlxreg_runner._base_cmd()
 
+    def _sdk_error(self, what):
+        """The SDK's own error for one GET: both C and C++ tests print
+        'Failed to send <what> GET: <msg>' / 'Failed to init <what> map: <msg>'
+        (what = 'MGIR', 'raw MGIR', ...), or fail to get a device handle."""
+        pat = re.compile(r'Failed to (?:send {0} GET|init {0} map):\s*(.+)'.format(
+            re.escape(what)))
+        outputs = (self.c_runner.output or "", self.cpp_runner.output or "")
+        for out in outputs:
+            m = pat.search(out)
+            if m:
+                return m.group(1).strip()
+        for out in outputs:
+            m = re.search(r'Failed to get device handle[^\r\n]*', out)
+            if m:
+                return m.group(0).strip()
+        return None
+
+    def _not_answering(self, label, why):
+        """Every source failed `label` because the device did not answer:
+        FAIL, with the canonical detail on its summary row."""
+        self.details[label] = device_not_answering_detail(why)
+        announce_device_not_answering(self.device, why)
+        print("\n{}{}: {} - SDK and {} both failed because the device did not "
+              "answer register access; nothing was compared{}".format(
+                  RED, label, self.details[label],
+                  tool_label(MFT_SDK_REG_TOOL), RESET))
+        return False
+
     def _handle_all_empty(self, reg_name, mlxreg_cmd):
+        """No source produced fields for a register GET.
+
+        A positive comparison (every GET here expects data), so agreement on
+        failure is only agreement while the device answers. When it does not
+        (device_not_answering: one cached MGIR read through the CLI oracle,
+        or the error text without one), it is a FAIL carrying "device not
+        answering". 2026-10-07: apps-127 and apps-132 PASSed all five GETs
+        this way without reading a single register. A device that answers
+        keeps today's PASS: PAOS on apps-174's BlueField-3 and PTYS on
+        several hosts both-fail legitimately while MGIR reads fine.
+        """
+        label = "Register GET ({})".format(reg_name)
+        sdk_error = self._sdk_error(reg_name)
         if BaseConfig.SDK_ONLY:
+            dead, why = device_not_answering(self.device, [sdk_error])
+            if dead:
+                return self._not_answering(label, why)
             print_sdk_only_empty_agreement("Register GET {}".format(reg_name))
             return True
         cli_error = self.mlxreg_runner.get_error()
         if not self.mlxreg_runner.success and cli_error:
+            dead, why = device_not_answering(self.device, [cli_error, sdk_error])
+            if dead:
+                return self._not_answering(label, why)
+            oracle = tool_label(MFT_SDK_REG_TOOL)
             print("\n{}Both SDK and {} failed consistently — not an SDK bug{}".format(
-                GREEN, tool_label(MFT_SDK_REG_TOOL), RESET))
+                GREEN, oracle, RESET))
+            # The errors themselves: without them a legitimately unsupported
+            # register and a broken one read the same in the log.
+            print("  {}: {}".format(oracle, cli_error))
+            if sdk_error:
+                print("  SDK: {}".format(sdk_error))
             return True
         print("\n{}Register GET {}: all sources returned empty{}".format(RED, reg_name, RESET))
         return False
@@ -502,16 +560,31 @@ class TestSuite(BaseTestSuite):
             print("C++ bytes: {}".format(len(cpp_raw)))
 
             has_volatile = bool(Config.VOLATILE_FIELDS.get(reg_name, set()))
+            label = "Raw Register GET ({})".format(reg_name)
+            # Nothing read from any source: a device that did not answer is
+            # named as such (same gate as _handle_all_empty), anything else
+            # keeps its old verdict. A failed CLI read nothing, whatever
+            # parse_raw_get() salvaged from its error text.
+            nothing_read = not c_raw and not cpp_raw and (
+                not mlxreg_raw or not self.mlxreg_runner.success)
+            dead, why = False, None
+            if nothing_read:
+                errs = [self._sdk_error("raw " + reg_name)]
+                if not BaseConfig.SDK_ONLY:
+                    errs.insert(0, self.mlxreg_runner.get_error())
+                dead, why = device_not_answering(self.device, errs)
             if min_len > 0 and (diff_bytes == 0 or has_volatile):
                 match = True
             elif min_len > 0:
                 match = (diff_bytes == 0)
+            elif dead:
+                match = self._not_answering(label, why)
             elif BaseConfig.SDK_ONLY and len(c_raw) == len(cpp_raw) == 0:
                 print_sdk_only_empty_agreement("Raw Register GET {}".format(reg_name))
                 match = True
             else:
                 match = False
-            results["Raw Register GET ({})".format(reg_name)] = match
+            results[label] = match
 
         self._print_test_summary(results)
         return self.RESULT_PASS if all(results.values()) else self.RESULT_FAIL
@@ -525,7 +598,9 @@ class TestSuite(BaseTestSuite):
         print("=" * 70)
         for name, passed in results.items():
             status = GREEN + "PASS" + RESET if passed else RED + "FAIL" + RESET
-            print("  {:<35}: {}".format(name, status))
+            detail = self.details.get(name)
+            print("  {:<35}: {}{}".format(
+                name, status, "  ({})".format(detail) if detail else ""))
         overall = all(results.values())
         print("=" * 70)
         if overall:

@@ -48,16 +48,16 @@ thread_local std::string g_stringBuffer;
 
 /* Operational-info enum -> mlxlink display name.
  *
- * Deliberately NOT MlxlinkMaps::getInstance(). That singleton lives inside
- * the SDK shared object and is reached through a C++ class layout and a
- * std::string ABI that only agree when the harness and the .so were produced
- * by the same toolchain from the same headers. They are not: this harness is
- * built by MFT (pre-C++11 COW std::string, MFT's mlxlink_maps.h member
- * order) and is also run against libmstflint_sdk.so (SSO std::string,
- * mstflint's member order, MlxlinkMaps declared with a different member
- * index). Both mismatches are silent - the read lands in-bounds on garbage -
- * and every enum-decoded op-info field came out "Unknown(N)" even though the
- * numeric value underneath was correct.
+ * Deliberately NOT MlxlinkMaps::getInstance(). The decisive reason is the
+ * member index: _operationalInfoState is data member #190 in MFT's
+ * mlxlink_maps.h and #17 in mstflint's, whose object holds 187 in total, so
+ * a reader built against the wrong layout indexes past the end. getInstance()
+ * passes no std::string, so nothing in its mangled name catches that - it
+ * links cleanly, the read lands on garbage, and every enum-decoded op-info
+ * field came out "Unknown(N)" over a correct numeric value. The map is also
+ * the wrong way round (std::map<std::string, OperationalInfoState>), and
+ * decoding the SDK's output with the SDK's own map would prove only that the
+ * map is self-consistent, not that it agrees with mlxlink.
  *
  * The display STRINGS below are the same mlxlink_enums.h constants
  * MlxlinkMaps::initSdkOperationalInfo*Mapping() uses, so an mlxlink rename

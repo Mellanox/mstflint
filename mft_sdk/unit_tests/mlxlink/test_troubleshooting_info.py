@@ -57,6 +57,7 @@ from mlxlink_fields import (
 from utils import (
     RED, GREEN, YELLOW, BLUE, RESET,
     BaseConfig, clean_value, format_sdk_command, is_known_missing,
+    MFT_SDK_LINK_TOOL,
     CommandRunner,
     BaseCTestRunner, BaseCppTestRunner, BaseMlxlinkRunner,
     BaseTestSuite,
@@ -174,7 +175,8 @@ class ComparisonTable(object):
         sdk_cmd = format_sdk_command(
             binary_path=[Config.C_TEST_BIN, Config.CPP_TEST_BIN],
             keywords=["TroubleShootingInfo"])
-        mlxlink_cmd = "mlxlink_ext -d " + self.device if self.device else "mlxlink_ext"
+        mlxlink_cmd = (MFT_SDK_LINK_TOOL + " -d " + self.device
+                       if self.device else MFT_SDK_LINK_TOOL)
         print("{}SDK command:    {}{}".format(BLUE, sdk_cmd, RESET))
         print("{}mlxlink command: {}{}".format(BLUE, mlxlink_cmd, RESET))
         print("")
@@ -296,8 +298,9 @@ class TestSuite(BaseTestSuite):
             return self.RESULT_PASS if all_match else self.RESULT_FAIL
 
         # No data from any runner — defer to error comparison so that runners
-        # agreeing on a failure count as PASS (no SDK divergence).
-        return self._compare_errors()
+        # agreeing on a failure count as PASS (no SDK divergence), unless the
+        # device answered nothing at all (positive: data was expected).
+        return self._compare_errors(positive=True)
 
 
 # =============================================================================

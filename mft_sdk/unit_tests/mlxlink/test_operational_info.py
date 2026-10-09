@@ -58,6 +58,7 @@ from mlxlink_fields import (
 from utils import (
     RED, GREEN, YELLOW, BLUE, RESET,
     BaseConfig, clean_value, format_sdk_command, is_known_missing,
+    gtest_verdict_ok,
     MFT_SDK_LINK_TOOL,
     CommandRunner,
     BaseCTestRunner, BaseCppTestRunner, BaseMlxlinkRunner,
@@ -302,11 +303,15 @@ class TestSuite(BaseTestSuite):
             all_match = ComparisonTable(
                 c_fields, cpp_fields, mlxlink_fields,
                 self.device, self.device_type).print_table()
-            return self.RESULT_PASS if all_match else self.RESULT_FAIL
+            # GTEST_FILTER runs the whole fixture: its field-mask and
+            # port-binding asserts never reach the table, so they count here.
+            gtest_ok = gtest_verdict_ok(self.cpp_runner)
+            return self.RESULT_PASS if all_match and gtest_ok else self.RESULT_FAIL
 
         # No data from any runner — defer to error comparison so that runners
-        # agreeing on a failure count as PASS (no SDK divergence).
-        return self._compare_errors()
+        # agreeing on a failure count as PASS (no SDK divergence), unless the
+        # device answered nothing at all (positive: data was expected).
+        return self._compare_errors(positive=True)
 
 
 # =============================================================================
