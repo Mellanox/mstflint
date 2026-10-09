@@ -203,7 +203,7 @@ class MlnxDriverLinux(MlnxDriver):
                         logger.info("skip on vfio/uio driver (rshim user-space driver will stop it)")
                         continue
                     if driver_name not in MlnxDriverLinux.mlnx_drivers and driver_name not in MlnxDriverLinux.white_list_drivers:
-                        raise RuntimeError("mlxfwreset doesn't support 3rd party driver ({0})!\nPlease, stop the driver manually and resume operation with --skip_driver".format(driver_name))
+                        raise RuntimeError("mstfwreset doesn't support 3rd party driver ({0})!\nPlease, stop the driver manually and resume operation with --skip_driver".format(driver_name))
                     self.drivers_dbdf.append((dbdf, driver_name))
 
             self.drivers_dbdf.sort()
