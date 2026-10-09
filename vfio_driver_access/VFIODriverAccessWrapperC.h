@@ -49,6 +49,7 @@ int GetStartOffsets(unsigned domain, unsigned bus,
 bool CheckifKernelLockdownIsEnabled();
 bool CheckifVfioPciDriverIsLoaded();
 int CloseVFIODevices(int deviceFD);
+const char* GetVFIOLastError(void);
 #ifdef __cplusplus
 }
 #endif

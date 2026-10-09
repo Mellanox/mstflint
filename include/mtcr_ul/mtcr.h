@@ -107,7 +107,7 @@ int mget_mdevs_type(mfile* mf, u_int32_t* mtype);
 
 /*
  * Open Mellanox Software tools (mst) driver. Device type==INFINIHOST
- * Return valid mfile ptr or 0 on failure
+ * Return valid mfile ptr or 0 on failure, see mtcr_get_last_err() for the reason
  */
 mfile* mopen(const char* name);
 
@@ -116,6 +116,12 @@ mfile* mopend(const char* name, DType dtype);
 /* mfile* mopen_fw_ctx(void *fw_cmd_context, void *fw_cmd_func, void *extra_data); */
 
 mfile* mopen_adv(const char* name, MType mtype);
+
+/*
+ * Reason the last mopen/mopend/mopen_adv on this thread failed, to display to the user.
+ * Never NULL. Only meaningful right after an open returned 0.
+ */
+const char* mtcr_get_last_err(void);
 
 /*
  * Close Mellanox driver
