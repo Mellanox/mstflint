@@ -142,7 +142,7 @@ def getDevDBDF(device, logger=None):
             device = "/dev/fwctl/" + device
         if device.startswith("vfio-"):
             device = device[5:]
-        cmd = "mdevices_info -vv"
+        cmd = "mstdevices_info -vv"
         (rc, out, _) = cmdExec(cmd)
         if rc != 0:
             raise RuntimeError("Failed to get device PCI address")

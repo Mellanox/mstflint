@@ -384,7 +384,7 @@ if REG_ACCESS:
             c_method = c_uint(REG_ACCESS_METHOD_GET)
             rc = self._reg_access_mroq(self._mstDev.mf, c_method, mroqRegisterP)
             if rc:
-                raise RegAccException("Failed to send Register MROQ:  %s (%d)" % (self._err2str(rc), rc))
+                raise RegAccException("Failed to send Register MROQ: %s (%d)" % (self._err2str(rc), rc))
 
             return mroqRegisterP.contents.pci_sync_for_fw_update_start, mroqRegisterP.contents.pci_reset_req_method
         ##########################
