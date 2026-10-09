@@ -76,8 +76,10 @@ from __future__ import print_function
 import json
 import os
 import platform
+import re
 import subprocess
 import sys
+import time
 from collections import OrderedDict
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -86,6 +88,8 @@ from utils import (  # noqa: E402
     RED, GREEN, BLUE, RESET,
     CommandRunner, MFT_SDK_REG_TOOL,
     _get_pci_devices_lspci, _normalize_bdf,
+    strip_ansi, device_not_answering, device_not_answering_detail,
+    announce_device_not_answering,
 )
 
 YELLOW = "\033[93m"
@@ -172,6 +176,202 @@ def _ldconfig():
     _run("sudo ldconfig 2>/dev/null || sudo /sbin/ldconfig 2>/dev/null || true")
 
 
+# =============================================================================
+# dpkg lock
+# =============================================================================
+#
+# Every `sudo dpkg` below mutates the package database, which dpkg refuses to
+# do while anyone else holds its lock. On 2026-10-07 Ubuntu's apt-daily.service
+# (unattended-upgrade --download-only) held /var/lib/dpkg/lock-frontend on
+# apps-102-bf from 07:55:19 to 08:02:17 UTC, and SDK-Verify's purge/install at
+# 08:01:29-31 failed with "dpkg frontend lock was locked by another process".
+# So every mutation first waits the lock out -- within a budget.
+
+DPKG_LOCKS = ("/var/lib/dpkg/lock-frontend", "/var/lib/dpkg/lock")
+PKG_LOCK_POLL_S = 5
+PKG_LOCK_BUDGET_S = 420
+
+# dpkg's/apt's own words for "someone else has the lock".
+_LOCK_ERROR_RE = re.compile(
+    r"locked by another process|unable to (?:acquire|lock)|could not get lock",
+    re.I)
+
+
+def _pkg_lock_budget():
+    """Seconds ONE script may spend waiting for the dpkg lock, all waits
+    together: SDKV_PKG_LOCK_WAIT, default 420. The apt-daily hold above
+    lasted 418 s. SDK-Verify sets the same 420 and gives each pkg_flags
+    script TIMEOUTS.pythonSuite (900 s) PLUS this budget
+    (config.TIMEOUTS.pkgFlagsScript, 1320 s), so a full wait does not eat
+    into the 900 s the variant's own steps had before the wait existed."""
+    try:
+        return max(0, int(os.environ.get("SDKV_PKG_LOCK_WAIT",
+                                         str(PKG_LOCK_BUDGET_S))))
+    except ValueError:
+        return PKG_LOCK_BUDGET_S
+
+
+def _proc_comm(pid):
+    try:
+        with open("/proc/{}/comm".format(pid)) as fh:
+            return fh.read().strip() or "?"
+    except (IOError, OSError):
+        return "?"
+
+
+class PkgLockWaiter(object):
+    """Waits while a dpkg lock is held, against a cumulative budget.
+
+    Holders come from the kernel's own lock table, /proc/locks: it lists each
+    lock as "<n>: POSIX ADVISORY WRITE <pid> <maj>:<min>:<inode> ...", so the
+    lock file's key from os.stat names the holder -- no tool, no sudo. lslocks
+    was blind on the very host this wait was written for: util-linux 2.37.x
+    (Ubuntu 22.04) prints an EMPTY path for every lock on a device whose major
+    needs three hex digits, and apps-102-bf keeps /var/lib/dpkg on NVMe 259:2
+    ("103:02"). Fixed upstream in 2.38. SDK-Verify's own wait
+    (install.js pkgLockHolderSh) reads /proc/locks the same way.
+    Not matched: a lock file on a btrfs subvolume, whose st_dev is not the
+    device /proc/locks prints -- every DEB host measured is ext4.
+
+    Only where /proc/locks cannot be read: `lslocks`, else `fuser` (missing on
+    apps-119-001), both through `sudo -n`, since a normal user cannot resolve
+    the fds of root's apt. With none of them it cannot tell, says so once and
+    does not wait. It never touches the lock itself -- even a probing fcntl()
+    on dpkg's lock could fail a real apt run.
+    """
+
+    def __init__(self, budget=None, paths=DPKG_LOCKS, poll=PKG_LOCK_POLL_S,
+                 sudo="sudo -n ", run=None, sleep=None, clock=None,
+                 proc_locks="/proc/locks", stat=None):
+        self.budget = _pkg_lock_budget() if budget is None else budget
+        self.waited = 0.0
+        # Canonical, because that is what lslocks prints in its PATH column:
+        # a symlinked alias of the lock would never match it.
+        self.paths = tuple(os.path.realpath(p) for p in paths)
+        self.poll = poll
+        self.sudo = sudo
+        self._run = run or _run
+        self._sleep = sleep or time.sleep
+        self._clock = clock or getattr(time, "monotonic", time.time)
+        self.proc_locks = proc_locks
+        self._stat = stat or os.stat
+        # "proc" / "lslocks" / "fuser" / "" (none) -- resolved once
+        self.method = None
+
+    def _resolve(self):
+        if self.method is None:
+            if self.proc_locks and os.access(self.proc_locks, os.R_OK):
+                self.method = "proc"
+            elif self._run("command -v lslocks >/dev/null 2>&1")[0] == 0:
+                self.method = "lslocks"
+            elif self._run("command -v fuser >/dev/null 2>&1 || "
+                           "test -x /usr/sbin/fuser || test -x /sbin/fuser")[0] == 0:
+                self.method = "fuser"
+            else:
+                self.method = ""
+                print("PKG_LOCK_WAIT: /proc/locks is not readable and neither "
+                      "lslocks nor fuser is installed - cannot tell whether "
+                      "the dpkg lock is held, not waiting")
+        return self.method
+
+    def _proc_holders(self):
+        """[(path, pid, command)] from /proc/locks. The kernel prints the
+        device as %02x:%02x of its major:minor, and lists a blocked waiter
+        right after the lock's holder on a "->" line, which is skipped. A
+        lock file that does not exist cannot be held."""
+        keys = {}
+        for path in self.paths:
+            try:
+                st = self._stat(path)
+            except OSError:
+                continue
+            keys["{:02x}:{:02x}:{}".format(os.major(st.st_dev),
+                                           os.minor(st.st_dev),
+                                           st.st_ino)] = path
+        found = []
+        if not keys:
+            return found
+        try:
+            with open(self.proc_locks) as fh:
+                lines = fh.read().splitlines()
+        except (IOError, OSError):
+            return found
+        for line in lines:
+            parts = line.split()
+            if len(parts) < 3 or parts[1] == "->":
+                continue
+            for i in range(2, len(parts)):
+                path = keys.get(parts[i])
+                if path is not None:
+                    found.append((path, parts[i - 1], _proc_comm(parts[i - 1])))
+                    break
+        return found
+
+    def holders(self):
+        """[(path, pid, command)] holding one of the watched locks now."""
+        method = self._resolve()
+        found = []
+        if method == "proc":
+            found = self._proc_holders()
+        elif method == "lslocks":
+            _, out = self._run("{}lslocks -n -o PID,COMMAND,PATH 2>/dev/null"
+                               .format(self.sudo))
+            for line in out.splitlines():
+                parts = line.split()
+                if len(parts) >= 3 and parts[-1] in self.paths:
+                    found.append((parts[-1], parts[0], " ".join(parts[1:-1])))
+        elif method == "fuser":
+            for path in self.paths:
+                # PIDs on stdout; the name and access letters go to stderr.
+                _, out = self._run("{}fuser {} 2>/dev/null".format(self.sudo, path))
+                for tok in out.split():
+                    pid = tok.rstrip("cefFrm")
+                    if pid.isdigit():
+                        found.append((path, pid, _proc_comm(pid)))
+        return found
+
+    @staticmethod
+    def describe(held):
+        return "; ".join("{} held by pid {} ({})".format(path, pid, comm)
+                         for path, pid, comm in held)
+
+    def wait(self):
+        """Block while a watched lock is held, within what is left of the
+        budget. Returns "" once free (or when it cannot tell), else the
+        holder(s) when the budget ran out -- the caller then runs dpkg anyway
+        and lets it fail with its own message.
+
+        The budget is wall-clock time spent waiting, the holder queries
+        included: lslocks alone measured 0.8-0.9 s per call on a dev host,
+        which counting only the sleeps would have left off the books."""
+        seen = set()
+        start = self.waited
+        last = self._clock()
+        while True:
+            held = self.holders()
+            now = self._clock()
+            if seen:  # everything since the previous check was waiting
+                self.waited += now - last
+            last = now
+            if not held:
+                if seen:
+                    print("PKG_LOCK_WAIT: dpkg lock free after {:.0f}s".format(
+                        self.waited - start))
+                return ""
+            for path, pid, comm in held:
+                if (path, pid) not in seen:
+                    seen.add((path, pid))
+                    print("PKG_LOCK_WAIT: {} held by pid {} ({})".format(
+                        path, pid, comm))
+            left = self.budget - self.waited
+            if left <= 0:
+                print("PKG_LOCK_WAIT: budget exhausted ({:.0f}s of {}s "
+                      "SDKV_PKG_LOCK_WAIT spent in this script) - running dpkg "
+                      "anyway".format(self.waited, self.budget))
+                return self.describe(held)
+            self._sleep(min(self.poll, left))
+
+
 class VariantContext(object):
     """Resolved paths/expectations for one variant on this machine."""
 
@@ -212,8 +412,16 @@ class PackagingSuite(object):
         self.sdk_only = sdk_only
         self.verbose = verbose
         self.results = OrderedDict()
+        # step -> "not run: <root cause> failed", for the steps gating skipped
+        self.not_run = OrderedDict()
+        # runtime_smoke FAILED and the MGIR probe pinned it on the device
+        # (the "device not answering" detail): the one smoke FAIL that also
+        # holds cli_compare back -- see STEPS.
+        self.smoke_device_dead = False
         self.harness = os.environ.get("MFT_SDK_SO_TEST_BIN", DEFAULT_HARNESS)
         self.smoke_bin = "/tmp/packaging_smoke_{}".format(os.getpid())
+        # One waiter per script: SDKV_PKG_LOCK_WAIT is a budget for the run.
+        self.lock = PkgLockWaiter()
 
     # -- result helpers -----------------------------------------------------
     def _record(self, name, status, detail=""):
@@ -224,6 +432,38 @@ class PackagingSuite(object):
             line += "  ({})".format(detail)
         print(line)
         return status != "FAIL"
+
+    def _pkg_cmd(self, cmd):
+        """Run one package-database mutation (`sudo rpm`/`sudo dpkg`); on DEB
+        first wait out a held dpkg lock, and retry once a lock refusal that
+        came right after a free wait. Returns (rc, output, lock_note):
+        lock_note names the holder when dpkg ran against a held lock (budget
+        spent) or failed on one, so the step's FAIL detail says who had it."""
+        note = ""
+        deb = self.ctx.pkg == "deb"
+        if deb:
+            note = self.lock.wait()
+        rc, out = _run(cmd)
+        if rc != 0 and deb and not note and _LOCK_ERROR_RE.search(out):
+            # Taken between the wait and dpkg's own start -- apt-daily's
+            # timer fires at a random time. dpkg refuses the lock before it
+            # changes anything, so wait it out again and retry, once.
+            note = self.lock.wait()
+            rc, out = _run(cmd)
+        if rc != 0 and deb and not note and _LOCK_ERROR_RE.search(out):
+            # Refused again, and the waiter saw no holder: name it anyway --
+            # from the waiter's probe, else from dpkg's own "... with pid N".
+            note = PkgLockWaiter.describe(self.lock.holders())
+            if not note:
+                m = re.search(r"locked by another process with pid (\d+)", out)
+                note = ("held by pid {} ({}), per dpkg".format(
+                    m.group(1), _proc_comm(m.group(1))) if m
+                    else "dpkg reported its lock busy, holder not identified")
+        return rc, out, note
+
+    @staticmethod
+    def _with_lock(detail, note):
+        return "{}; dpkg lock: {}".format(detail, note) if note else detail
 
     # -- steps ---------------------------------------------------------------
     def _pkg_installed(self, p):
@@ -255,13 +495,12 @@ class PackagingSuite(object):
         for p in SDK_PKGS:
             if not self._pkg_installed(p):
                 continue
-            if c.pkg == "rpm":
-                rc, out = _run("sudo rpm -e {}".format(p))
-            else:
-                rc, out = _run("sudo dpkg --purge {}".format(p))
+            rc, out, note = self._pkg_cmd(
+                ("sudo rpm -e {}" if c.pkg == "rpm" else "sudo dpkg --purge {}")
+                .format(p))
             if rc != 0 or self._pkg_installed(p):
-                erase_errors.append("{}: rc={} {}".format(
-                    p, rc, " ".join(out.split())[:200] or "(no output)"))
+                erase_errors.append(self._with_lock("{}: rc={} {}".format(
+                    p, rc, " ".join(out.split())[:200] or "(no output)"), note))
 
         # A refused erase must NOT be followed by rm -rf. Deleting the files
         # while the package database still registers them leaves the host
@@ -314,12 +553,18 @@ class PackagingSuite(object):
         if not c.pkg_file:
             return self._record("install", "FAIL",
                                 "variant package not in cache — run Build & Run once")
-        if c.pkg == "rpm":
-            rc, out = _run("sudo rpm -Uvh --nodeps {}".format(c.pkg_file))
-        else:
-            rc, out = _run("sudo dpkg -i {}".format(c.pkg_file))
+        rc, out, note = self._pkg_cmd(
+            ("sudo rpm -Uvh --nodeps {}" if c.pkg == "rpm" else "sudo dpkg -i {}")
+            .format(c.pkg_file))
         if rc != 0:
-            return self._record("install", "FAIL", out.strip().splitlines()[-1][:120])
+            # The last line, except for a lock refusal: dpkg ends that with
+            # two lines of boilerplate ("... See <https://wiki.debian.org/
+            # Teams/Dpkg/FAQ>.", apps-102-bf 2026-10-07); the error is the
+            # line naming the lock.
+            lines = out.strip().splitlines() or ["(no output)"]
+            last = next((l for l in lines if _LOCK_ERROR_RE.search(l)),
+                        lines[-1])[:120]
+            return self._record("install", "FAIL", self._with_lock(last, note))
         _ldconfig()
         return self._record("install", "PASS", os.path.basename(c.pkg_file))
 
@@ -415,6 +660,20 @@ class PackagingSuite(object):
         rc, out = _run("sudo {} {}".format(self.smoke_bin, self.device),
                        timeout=120)
         detail = out.strip().splitlines()[-1][:120] if out.strip() else ""
+        if rc != 0:
+            # The variant SDK, or a device that answers nothing? Ask the
+            # device for MGIR through the CLI oracle, a package this suite
+            # never wipes. If it cannot read MGIR either, this FAIL is device
+            # state and says so: on 2026-10-07 apps-127 failed all three
+            # variants with "mstSendPRMRegister(MGIR, GET) failed, status=11",
+            # each reported as an unclassified SDK failure.
+            dead, why = device_not_answering(
+                None if self.sdk_only else self.device, [detail])
+            if dead:
+                self.smoke_device_dead = True
+                announce_device_not_answering(self.device, why)
+                detail = "{} - smoke: {}".format(
+                    device_not_answering_detail(why), detail)
         return self._record("runtime_smoke", "PASS" if rc == 0 else "FAIL", detail)
 
     def harness_gtest(self):
@@ -488,10 +747,20 @@ class PackagingSuite(object):
         except Exception as e:  # noqa: BLE001
             rc, out = 1, str(e)
         if self.verbose:
-            print(out)
+            # Minus the child's DEVICE NOT ANSWERING line: it is announced
+            # again below as this script's own, and the contract is one such
+            # line per device per script.
+            print(re.sub(r"(?m)^DEVICE NOT ANSWERING: [^\n]*\n?", "", out))
         ok = rc == 0 and "ALL TESTS PASSED" in out
-        return self._record("cli_compare", "PASS" if ok else "FAIL",
-                            "register_access vs {}, rc={}".format(reg_tool, rc))
+        detail = "register_access vs {}, rc={}".format(reg_tool, rc)
+        # The child's own verdict on a device that did not answer -- its
+        # output is not printed here, so carry the marker up.
+        m = re.search(r"^DEVICE NOT ANSWERING: \S+: (.*)$", strip_ansi(out), re.M)
+        if not ok and m:
+            announce_device_not_answering(self.device, m.group(1).strip())
+            detail = "{} - {}".format(
+                device_not_answering_detail(m.group(1).strip()), detail)
+        return self._record("cli_compare", "PASS" if ok else "FAIL", detail)
 
     def coexist_or_conflict(self):
         """Rename semantics vs the default package.
@@ -507,30 +776,27 @@ class PackagingSuite(object):
         if not c.default_pkg_file:
             return self._record("coexist_or_conflict", "SKIP",
                                 "default package not in cache")
-        if c.pkg == "rpm":
-            rc, out = _run("sudo rpm -Uvh --nodeps {}".format(c.default_pkg_file))
-        else:
-            rc, out = _run("sudo dpkg -i {}".format(c.default_pkg_file))
+        erase_default = ("sudo rpm -e mstflint-sdk 2>/dev/null" if c.pkg == "rpm"
+                         else "sudo dpkg --purge mstflint-sdk 2>/dev/null")
+        rc, out, note = self._pkg_cmd(
+            ("sudo rpm -Uvh --nodeps {}" if c.pkg == "rpm" else "sudo dpkg -i {}")
+            .format(c.default_pkg_file))
         if c.relocated:
             both = (_run("rpm -q mstflint-sdk")[0] == 0 if c.pkg == "rpm"
                     else _run("dpkg -s mstflint-sdk 2>/dev/null | grep -q installed")[0] == 0)
             ok = rc == 0 and both
-            if c.pkg == "rpm":
-                _run("sudo rpm -e mstflint-sdk 2>/dev/null")
-            else:
-                _run("sudo dpkg --purge mstflint-sdk 2>/dev/null")
+            self._pkg_cmd(erase_default)
             return self._record("coexist_or_conflict", "PASS" if ok else "FAIL",
-                                "renamed+relocated coexists with default")
+                                self._with_lock("renamed+relocated coexists with default",
+                                                "" if ok else note))
         # renamed at default paths: the install MUST be refused on file conflicts
         conflicted = rc != 0 and ("conflicts" in out or "trying to overwrite" in out)
         if rc == 0:  # unexpectedly installed — undo to keep the variant state
-            if c.pkg == "rpm":
-                _run("sudo rpm -e mstflint-sdk 2>/dev/null")
-            else:
-                _run("sudo dpkg --purge mstflint-sdk 2>/dev/null")
+            self._pkg_cmd(erase_default)
         return self._record("coexist_or_conflict", "PASS" if conflicted else "FAIL",
                             "default-package install correctly refused (file conflict)"
-                            if conflicted else "expected a file conflict, rc={}".format(rc))
+                            if conflicted else self._with_lock(
+                                "expected a file conflict, rc={}".format(rc), note))
 
     def restore_default(self):
         """Leave the machine as the rest of the flow expects: default package
@@ -544,11 +810,9 @@ class PackagingSuite(object):
         # package database claims the package is present while its files are
         # gone; without it rpm refuses with "already installed" and the machine
         # stays broken for every later suite.
-        if c.pkg == "rpm":
-            rc, out = _run("sudo rpm -Uvh --replacepkgs --nodeps {}".format(
-                c.default_pkg_file))
-        else:
-            rc, out = _run("sudo dpkg -i --force-confnew {}".format(c.default_pkg_file))
+        rc, out, note = self._pkg_cmd(
+            ("sudo rpm -Uvh --replacepkgs --nodeps {}" if c.pkg == "rpm"
+             else "sudo dpkg -i --force-confnew {}").format(c.default_pkg_file))
         d = os.path.join(_default_dirs(c.pkg)["libdir"], "mstflint", "sdk")
         _ldconfig()
         so = os.path.join(d, "libmstflint_sdk.so")
@@ -558,11 +822,70 @@ class PackagingSuite(object):
         return self._record(
             "restore_default", "PASS" if ok else "FAIL",
             "{} reinstalled at {}".format(os.path.basename(c.default_pkg_file), d) if ok
-            else "reinstall rc={}, {} {} - host may need manual repair: {}".format(
-                rc, so, "missing" if not os.path.exists(so) else "present",
-                " ".join(out.split())[:200] or "(no output)"))
+            else self._with_lock(
+                "reinstall rc={}, {} {} - host may need manual repair: {}".format(
+                    rc, so, "missing" if not os.path.exists(so) else "present",
+                    " ".join(out.split())[:200] or "(no output)"), note))
 
     # -- driver ---------------------------------------------------------------
+    # (row, method, prerequisites). A step runs only when every prerequisite
+    # ran and did not FAIL; otherwise it still gets its row -- "SKIP (not run:
+    # <root cause> failed)" in the step lines AND the summary block. This was
+    # a bare `break` on the first FAIL: when runtime_smoke failed on apps-127
+    # (2026-10-07), harness_discovery, cli_compare and coexist_or_conflict
+    # left no row at all (30 rows instead of 39 over the three variants),
+    # though two of them need no register access. A trailing '?' marks the one
+    # SOFT edge: cli_compare -> runtime_smoke stands for "the device answers
+    # register access", which only a smoke FAIL that the MGIR probe pinned on
+    # the device disproves (smoke_device_dead). A smoke that never ran
+    # (compile_smoke failed) proved nothing, and cli_compare brings its own
+    # harness; a smoke that failed on a device that answers points at the
+    # variant SDK, which is exactly when cli_compare's own evidence counts.
+    # cleanup_wipe and restore_default are not steps: restore_default always
+    # runs.
+    STEPS = (
+        ("clean_slate", "wipe", ()),
+        ("install", "install_variant", ("clean_slate",)),
+        ("package_identity", "check_identity", ("install",)),
+        ("install_layout", "check_layout", ("install",)),
+        ("no_default_paths", "check_no_default_paths", ("install",)),
+        ("data_path_consistency", "check_data_path", ("install",)),
+        ("compile_smoke", "compile_smoke", ("install",)),
+        ("runtime_smoke", "runtime_smoke", ("compile_smoke",)),
+        ("harness_discovery", "harness_gtest", ("install",)),
+        ("cli_compare", "cli_compare", ("install", "runtime_smoke?")),
+        ("coexist_or_conflict", "coexist_or_conflict", ("install",)),
+    )
+    # What a prerequisite stands for, named in the not-run reason.
+    PREREQ_MEANS = {"runtime_smoke": "device register access"}
+
+    def _blocker(self, needs):
+        """The not-run reason for a step with these prerequisites, or None.
+        A prerequisite that did not run passes on ITS root cause."""
+        for need in needs:
+            soft = need.endswith("?")
+            need = need.rstrip("?")
+            if need in self.not_run:
+                if soft:
+                    continue
+                return self.not_run[need]
+            if self.results.get(need) == "FAIL":
+                if soft and not self.smoke_device_dead:
+                    continue
+                means = self.PREREQ_MEANS.get(need)
+                return "not run: {} failed{}".format(
+                    need, " ({})".format(means) if means else "")
+        return None
+
+    def _guarded(self, name, step):
+        """Run one step; an exception is that step's FAIL, not the end of
+        the variant and of every row after it."""
+        try:
+            step()
+        except Exception as e:  # noqa: BLE001
+            self._record(name, "FAIL", "raised {}: {}".format(
+                type(e).__name__, " ".join(str(e).split())[:160]))
+
     def run(self):
         c = self.ctx
         print("\n" + "=" * 70)
@@ -576,16 +899,15 @@ class PackagingSuite(object):
             self._summary()
             return 0
         try:
-            steps = [self.wipe, self.install_variant, self.check_identity,
-                     self.check_layout, self.check_no_default_paths,
-                     self.check_data_path, self.compile_smoke,
-                     self.runtime_smoke, self.harness_gtest,
-                     self.cli_compare, self.coexist_or_conflict]
-            for step in steps:
-                if not step():
-                    break  # a FAIL aborts the variant; restore still runs
+            for name, method, needs in self.STEPS:
+                reason = self._blocker(needs)
+                if reason:
+                    self.not_run[name] = reason
+                    self._record(name, "SKIP", reason)
+                    continue
+                self._guarded(name, getattr(self, method))
         finally:
-            self.restore_default()
+            self._guarded("restore_default", self.restore_default)
             _run("rm -f {}".format(self.smoke_bin))
         self._summary()
         return 0 if all(s != "FAIL" for s in self.results.values()) else 1
@@ -594,7 +916,9 @@ class PackagingSuite(object):
         title = "PACKAGING TEST SUMMARY ({})".format(self.ctx.variant)
         print("\n" + "=" * 60 + "\n" + title + "\n" + "=" * 60)
         for name, status in self.results.items():
-            print("  {}: {}".format(name, status))
+            reason = self.not_run.get(name)
+            print("  {}: {}{}".format(
+                name, status, " ({})".format(reason) if reason else ""))
         failed = [n for n, s in self.results.items() if s == "FAIL"]
         print("=" * 60 + "\nOverall: " + (
             "ALL TESTS PASSED" if not failed else "SOME TESTS FAILED") +

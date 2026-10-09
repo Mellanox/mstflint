@@ -412,7 +412,7 @@ class TestSuite(BaseTestSuite):
             return self.RESULT_PASS if passed else self.RESULT_FAIL
 
         print("\n{}No resource menu data from any source{}".format(RED, RESET))
-        return self._compare_errors()
+        return self._compare_errors(positive=True)
 
 
 # =============================================================================

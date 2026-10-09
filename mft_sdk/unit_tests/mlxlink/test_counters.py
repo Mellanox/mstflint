@@ -518,7 +518,7 @@ class TestSuite(BaseTestSuite):
                 return self.RESULT_SKIP
             return self.RESULT_PASS
 
-        return self._compare_errors()
+        return self._compare_errors(positive=True)
 
 
 # =============================================================================

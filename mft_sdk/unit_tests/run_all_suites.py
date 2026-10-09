@@ -79,10 +79,12 @@ ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
 #   op_info                         "Summary: 7 fields match, 0 fields differ"
 #   counters, module_info           "Match summary: 54 compared, 54 match, 0 differ"
 #   register_list                   "Summary: 207 total, 207 common, 0 SDK-only, ..."
+#   register_access, per register   "Summary: 40 compared, 39 match, 1 differ"
 #   metadata/register_access/...    "Overall: ALL TESTS PASSED"
 FIELDS_RE = re.compile(r"Summary:\s*(\d+)\s+fields?\s+match(?:es)?,\s*(\d+)\s+fields?\s+differ", re.I)
 MATCH_RE = re.compile(r"Match summary:\s*(\d+)\s+compared,\s*(\d+)\s+match,\s*(\d+)\s+differ", re.I)
 REGLIST_RE = re.compile(r"Summary:\s*(\d+)\s+total,\s*(\d+)\s+common,\s*(\d+)\s+SDK-only,\s*(\d+)\s+\S+-only", re.I)
+REGTABLE_RE = re.compile(r"^Summary:\s*(\d+)\s+compared,\s*(\d+)\s+match,\s*(\d+)\s+differ", re.M | re.I)
 OVERALL_PASS_RE = re.compile(r"^Overall:\s*ALL TESTS PASSED", re.M | re.I)
 OVERALL_FAIL_RE = re.compile(r"^Overall:.*(FAIL|FAILED)", re.M | re.I)
 # utils.py's per-device FINAL SUMMARY block, which several drivers print INSTEAD
@@ -102,6 +104,11 @@ UNAVAILABLE_RE = re.compile(
     r"|No module (?:plugged|detected)"
     r"|link is down",
     re.I)
+
+# The marker utils.announce_device_not_answering() prints when a suite FAILED
+# because the device answered no register access at all -- device state, so
+# name it rather than a bare "driver exited 1".
+NOT_ANSWERING_RE = re.compile(r"^DEVICE NOT ANSWERING: \S+: (.*)$", re.M)
 
 
 def required_env():
@@ -163,6 +170,17 @@ def classify(rc, out):
         if sdk_only or cli_only:
             return "fail", "%d SDK-only, %d CLI-only of %d" % (sdk_only, cli_only, total)
         return "pass", "%d registers, all common" % total
+
+    # register_access prints one table summary per register: a register that
+    # differs is a real difference even when a later one found the device
+    # not answering.
+    differ = sum(int(m.group(3)) for m in REGTABLE_RE.finditer(out))
+    if differ:
+        return "fail", "%d register field(s) DIFFER" % differ
+
+    # After the real-difference checks above, before the generic verdicts.
+    if NOT_ANSWERING_RE.search(out) and (rc != 0 or OVERALL_FAIL_RE.search(out)):
+        return "fail", "device not answering"
 
     if OVERALL_FAIL_RE.search(out):
         return "fail", "driver reported FAILED"

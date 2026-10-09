@@ -456,7 +456,7 @@ class TestSuite(BaseTestSuite):
                 device_type=self.device_type).print_table()
             return self.RESULT_PASS if all_match else self.RESULT_FAIL
 
-        return self._compare_errors()
+        return self._compare_errors(positive=True)
 
 
 # =============================================================================

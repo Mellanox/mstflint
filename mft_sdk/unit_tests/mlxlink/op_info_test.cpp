@@ -44,6 +44,24 @@
 #include <utility>
 #include <vector>
 
+// PHY Local and the near-end analog/digital modes loop the signal inside the port.
+static bool isNearEndPhyLoopback(const MstTelemetryOperationalInfo& info)
+{
+    if (!MST_QUERY_HAS(&info, TELEMETRY_OP_INFO_LOOPBACK_MODE))
+    {
+        return false;
+    }
+    switch (info.loopbackMode)
+    {
+        case OPERATIONAL_INFO_LOOPBACK_MODE_PHY_LOCAL:
+        case OPERATIONAL_INFO_LOOPBACK_MODE_NEAR_END_ANALOG:
+        case OPERATIONAL_INFO_LOOPBACK_MODE_NEAR_END_DIGITAL:
+            return true;
+        default:
+            return false;
+    }
+}
+
 // Test fixture for SDK telemetry tests
 class MftSdkTelemetryTest : public ::testing::Test
 {
@@ -120,7 +138,16 @@ TEST_F(MftSdkTelemetryTest, GetTelemetryOperationalInfo)
     EXPECT_EQ(mask & ~definedBits, 0ULL) << "valid_fields_mask sets a bit outside the defined fields";
     if (stateValue == "Active")
     {
-        EXPECT_EQ(mask, definedBits) << "on an Active link all operational-info fields must be reported";
+        // A near-end PHY loopback runs the port without the link-training FSM, so it has
+        // no physical state: mlxlink prints "Physical state : N/A" and the SDK leaves the
+        // bit clear. Every other field is still required.
+        uint64_t required = definedBits;
+        if (isNearEndPhyLoopback(operationalInfo))
+        {
+            required &= ~(1ULL << TELEMETRY_OP_INFO_PHYSICAL_STATE);
+            printf("\n[ INFO ] near-end PHY loopback: physical state is not required\n");
+        }
+        EXPECT_EQ(mask & required, required) << "on an Active link all operational-info fields must be reported";
     }
     else
     {
