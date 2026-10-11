@@ -46,6 +46,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cerrno>
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>
@@ -66,6 +67,20 @@ static const char* const LOG_PATTERN_STANDARD = "[%Y-%m-%d %H:%M:%S.%e] [%^%l%$]
 // Startup banner pattern: no severity tag or source location - the banner
 // describes the session, not an event, and bypasses level filtering.
 static const char* const LOG_PATTERN_BANNER = "[%Y-%m-%d %H:%M:%S.%e] [%n] %v";
+
+// Callers often log a failure and then read errno, so logging and logger init must leave it untouched.
+class ErrnoGuard
+{
+public:
+    ErrnoGuard() : _saved(errno) {}
+    ~ErrnoGuard() { errno = _saved; }
+
+private:
+    ErrnoGuard(const ErrnoGuard&) = delete;
+    ErrnoGuard& operator=(const ErrnoGuard&) = delete;
+
+    int _saved;
+};
 
 struct LogFileInfo
 {
@@ -430,6 +445,7 @@ NvToolsLogger& NvToolsLogger::getInstance()
 
 NvToolsLogger::NvToolsLogger() : _impl(new Impl())
 {
+    ErrnoGuard errnoGuard;
     initialize();
 }
 
@@ -451,6 +467,7 @@ void NvToolsLogger::destroy()
 
 void NvToolsLogger::log(Layer layer, Severity severity, const char* message, const char* file, int line, const char* func)
 {
+    ErrnoGuard errnoGuard;
     _impl->log(static_cast<int>(layer), static_cast<int>(severity), file, line, func, message);
 }
 
@@ -481,6 +498,7 @@ void NvToolsLogger::fatal(Layer layer, const char* message, const char* file, in
 
 void NvToolsLogger::logf(Layer layer, Severity severity, const char* file, int line, const char* func, const char* fmt, ...)
 {
+    ErrnoGuard errnoGuard;
     if (fmt == nullptr)
     {
         return;
@@ -513,6 +531,7 @@ extern "C" void mft_log(int layer, int severity, const char* file, int line, con
 
 extern "C" void mft_log_fmt(int layer, int severity, const char* file, int line, const char* func, const char* fmt, ...)
 {
+    ErrnoGuard errnoGuard;
     if (fmt == nullptr)
     {
         return;
