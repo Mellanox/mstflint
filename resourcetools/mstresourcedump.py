@@ -107,6 +107,14 @@ class MlxResDump:
                 msg = "depth accepts the following values: ['inf', number]"
                 raise argparse.ArgumentTypeError(msg)
 
+    @staticmethod
+    def _device_check(inp):
+        """This method rejects a blank device name before any device access.
+        """
+        if not inp.strip():
+            raise argparse.ArgumentTypeError("device name cannot be empty")
+        return inp
+
     def parse_resourcedump_args(self):
         # main parser
         arg_parser = argparse.ArgumentParser(prog=self.tool_name,
@@ -128,7 +136,7 @@ Dump Arguments:
         dump_arg_parser.set_defaults(command=cs.RESOURCE_DUMP_COMMAND_TYPE_DUMP)
 
         dump_required_args = dump_arg_parser.add_argument_group('required arguments')
-        dump_required_args.add_argument("-d", "--device", help='The device name', required=True)
+        dump_required_args.add_argument("-d", "--device", help='The device name', required=True, type=self._device_check)
         dump_required_args.add_argument("-s", "--segment", help='The segment to dump', required=True, type=self._decimal_hex_to_str_hex)
 
         dump_optional_args = dump_arg_parser.add_argument_group('optional arguments')
@@ -175,7 +183,7 @@ Dump Arguments:
 
         # required arguments by query sub parser
         query_required_args = query_parser.add_argument_group('required arguments')
-        query_required_args.add_argument("-d", "--device", help='The device name', required=True)
+        query_required_args.add_argument("-d", "--device", help='The device name', required=True, type=self._device_check)
 
         arguments, resourceparse_argv = arg_parser.parse_known_args()
 
