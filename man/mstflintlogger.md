@@ -85,8 +85,12 @@ OPTIONS
 > A layer is the unit of on/off control: one name in the log record, one key in
 > the configuration file, one argument to -\-set-module. The layers are:
 >
-> mtcr, reg_access, flint, mlxconfig, mlxlink, mlxreg, mft_core, mlxfwops,
-> mst_tool, efuse, common, hca_caps
+> logger, mtcr, mlxreg, mft_core, mlxfwops, mst_tool, efuse, common, hca_caps, mlxdpa,
+> mlxtokengenerator, mflash, mflash_access, mflash_spi, cable_access, cable_cdb,
+> mlxfwmanager
+>
+> logger is a meta layer that is always enabled; it carries the logger's own output
+> (e.g. the per-session startup banner).
 >
 > all is not a layer, it is a keyword accepted by -\-set-module and
 > -\-clear-module that expands to every layer.
@@ -102,8 +106,8 @@ OPTIONS
 # NOTES
 
 > Clears are applied before sets, so -\-clear-module all -\-set-module
-> flint:debug in a single command means "drop every override, then enable
-> just flint".
+> mtcr:debug in a single command means "drop every override, then enable
+> just mtcr".
 >
 > -\-show combined with a modification flag does not print; run -\-show on its
 > own to inspect.
