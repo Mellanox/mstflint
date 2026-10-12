@@ -186,8 +186,11 @@ private:
     void mlxlinkClearStaleUnhandledErrors();
     void mlxlinkThrowOnUnhandledErrors();
     void applyPcieDpn(const PcieDpn& dpn, bool isPcie);
-    MstStatus
-      runTelemetryViews(uint32_t views, const std::string& port, MstTelemetryPortType portType, Json::Value& root);
+    MstStatus runTelemetryViews(uint32_t views,
+                                const std::string& port,
+                                MstTelemetryPortType portType,
+                                const PcieDpn& dpn,
+                                Json::Value& root);
     void applyAmberSheetSelection(const std::vector<unsigned int>& sheets);
     MstStatus extractOperationalInfoFromJson(MstTelemetryOperationalInfo* operationalInfo);
     MstStatus extractCountersInfoFromJson(MstCountersInfo* countersInfo);
