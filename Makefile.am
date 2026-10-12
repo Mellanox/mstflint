@@ -107,6 +107,8 @@ EXTRA_DIST = \
 # a no-op: libtool's disable-static tag only applies when shared libs are built.
 COMPILE_ONCE = --tag=disable-static
 ########### nvml_lib ###########
+EXTRA_DIST += nvml_lib/nvml_c_wrapper.h nvml_lib/nvml_device.h nvml_lib/nvml_exception.h nvml_lib/nvml_lib_wrapper.h
+
 if ENABLE_NVML
 NVML_LIB_CPPFLAGS = \
     -I$(top_builddir)/nvml_lib \
