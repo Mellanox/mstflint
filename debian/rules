@@ -23,7 +23,7 @@ override_dh_auto_configure:
 	dh_auto_configure -- $(DEB_CONFIGURE_EXTRA_FLAGS) "MSTFLINT_VERSION_STR=$(pversion_string)" --enable-adb-generic-tools
 
 override_dh_auto_build:
-	make
+	dh_auto_build --parallel
 
 override_dh_auto_install:
 	sed -e 's:@PKGVER@:$(pversion_number):' < debian/$(pdkms).dkms.in > debian/$(pdkms).dkms
