@@ -203,8 +203,7 @@ build_deb() {
     mkdir -p "$src"
 
     echo ">> staging isolated source tree as $name-$upstream"
-    # ibdump/ stays: automake traces AC_CONFIG_FILES(ibdump/Makefile) statically,
-    # so excluding it silently breaks autogen.sh.
+    # ibdump/ stays: the top-level Makefile.am lists its sources.
     tar -c \
         --exclude=.git --exclude='*.o' --exclude='*.lo' --exclude='*.la' \
         --exclude='*.a' --exclude=.libs --exclude=.deps \
@@ -267,8 +266,10 @@ build_deb() {
         flags=(-F)
     fi
 
-    echo ">> dpkg-buildpackage ${flags[*]} -uc -us"
-    ( cd "$src" && dpkg-buildpackage "${flags[@]}" -uc -us )
+    # Pass --jobs on. Without -j, dpkg-buildpackage (>= 1.18.11) defaults to
+    # -J auto: DEB_BUILD_OPTIONS=parallel=<nproc>.
+    echo ">> dpkg-buildpackage ${flags[*]} -uc -us -j${JOBS}"
+    ( cd "$src" && dpkg-buildpackage "${flags[@]}" -uc -us -j"$JOBS" )
 
     echo ">> collecting .deb into $out"
     mv "$work"/*.deb "$out"/

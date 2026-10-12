@@ -16,7 +16,7 @@
 # ldconfig never looks.
 %define mstflint_sdk_ldsoconf /etc/ld.so.conf.d/%{name}.conf
 
-# The .so is stripped at install time (see mft_sdk/Makefile.am), so there is no
+# The .so is stripped at install time (see the SDK section of Makefile.am), so there is no
 # separate debug package to build.
 %define debug_package %{nil}
 
@@ -89,7 +89,7 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root)
 %{mstflint_sdk_libdir}/libmstflint_sdk.so
-# Python bindings (mft_sdk/Makefile.am sdkpythonlibdir); the whole directory, so
+# Python bindings (the SDK section of Makefile.am, sdkpythonlibdir); the whole directory, so
 # whatever byte-compiled files the build root's brp scripts add are owned too.
 %{mstflint_sdk_libdir}/mft_sdk_py
 %config(noreplace) %{mstflint_sdk_ldsoconf}
