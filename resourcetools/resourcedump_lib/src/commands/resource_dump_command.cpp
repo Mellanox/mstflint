@@ -45,19 +45,33 @@ namespace resource_dump
 {
 using namespace std;
 
+namespace
+{
+mfile_t* open_device(const char* device_name)
+{
+    mfile_t* mf = mopen(device_name);
+    if (mf == nullptr)
+    {
+        throw ResourceDumpException(ResourceDumpException::Reason::OPEN_DEVICE_FAILED);
+    }
+    return mf;
+}
+} // namespace
+
+void ResourceDumpCommand::MfileCloser::operator()(mfile_t* mf) const
+{
+    mclose(mf);
+}
+
 ResourceDumpCommand::ResourceDumpCommand(device_attributes device_attrs,
                                          dump_request dump_request,
                                          uint32_t depth,
                                          bool is_textual) :
-    _mf{mopen(device_attrs.device_name)},
+    _owned_mf{open_device(device_attrs.device_name)},
+    _mf{_owned_mf.get()},
     _fetcher{fetchers::create_fetcher(_mf, device_attrs, dump_request, depth)},
     _is_textual{is_textual}
 {
-    if (_mf == nullptr)
-    {
-        throw ResourceDumpException(ResourceDumpException::Reason::OPEN_DEVICE_FAILED);
-    }
-    _mf_opened = true;
 }
 
 ResourceDumpCommand::ResourceDumpCommand(mfile_t* mf,
@@ -71,15 +85,8 @@ ResourceDumpCommand::ResourceDumpCommand(mfile_t* mf,
     {
         throw ResourceDumpException(ResourceDumpException::Reason::OPEN_DEVICE_FAILED);
     }
-    _mf_opened = false;
 }
-ResourceDumpCommand::~ResourceDumpCommand()
-{
-    if (_mf && _mf_opened)
-    {
-        mclose(_mf);
-    }
-}
+ResourceDumpCommand::~ResourceDumpCommand() = default;
 
 void ResourceDumpCommand::execute()
 {
