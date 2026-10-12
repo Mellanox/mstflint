@@ -1027,6 +1027,9 @@ class BaseCTestRunner(TestRunner):
         super(BaseCTestRunner, self).__init__(name)
         self.device = device
         self.config = config
+        # Verdict of C_SO_EXTRA_SUITES; vacuously true when a config declares none.
+        self.extra_ok = True
+        self.extra_output = ""
 
     def _device_arg(self):
         return _normalize_bdf(self.device) if self.device else ""
@@ -1058,8 +1061,9 @@ class BaseCTestRunner(TestRunner):
         # (suite selected by argv[1], BDF positional); only when it falls
         # back to the gtest harness does the invocation need a filter.
         c_suite = getattr(self.config, "C_SO_SUITE", None)
-        if BaseConfig.MFT_SDK_SO and c_suite and \
-                self.config.C_TEST_BIN != BaseConfig.MFT_SDK_SO_TEST_BIN:
+        unified = bool(BaseConfig.MFT_SDK_SO and c_suite and
+                       self.config.C_TEST_BIN != BaseConfig.MFT_SDK_SO_TEST_BIN)
+        if unified:
             cmd += " " + c_suite
             if self.device:
                 cmd += " " + self._device_arg()
@@ -1076,7 +1080,47 @@ class BaseCTestRunner(TestRunner):
                   "(output still captured)".format(self.device))
         if verbose:
             print("\n[OUTPUT]\n" + "-" * 60 + "\n" + self.output + "-" * 60)
-        return self.success
+        if unified:
+            self._run_extra_suites(verbose)
+        # results['c_run'] is this return value, so the sibling suites have to
+        # fold in here; comparison mode reads extra_ok directly instead, because
+        # it must tell an unsupported device from a failing one.
+        return self.success and self.extra_ok
+
+    def _run_extra_suites(self, verbose):
+        """Run the sibling suites the unified C driver hosts for this config.
+
+        C_SO_EXTRA_SUITES entries are (suite, argv-tail): same binary and device,
+        their own argv. A scenario that needs no Config of its own -- nothing to
+        compare against -- rides along here instead of being reachable only by
+        hand. Their output is kept out of self.output so this suite's record
+        parser only ever sees its own run; callers read the result from
+        extra_ok / extra_output.
+        """
+        self.extra_ok = True
+        self.extra_output = ""
+        for suite, extra_args in getattr(self.config, "C_SO_EXTRA_SUITES", ()):
+            args = " ".join("'{}'".format(a)
+                            for a in (self._device_arg(),) + tuple(extra_args))
+            success, output = CommandRunner.run(
+                self._sudo_prefix() + self.config.C_TEST_BIN + " " + suite + " " + args,
+                "Running {} C test, {} suite, on {}".format(
+                    self.config.SUITE_NAME, suite, self.device), verbose)
+            if not success and "Unknown suite" in (output or ""):
+                # --so runs this checkout's harness against an already-installed
+                # driver, so the driver can predate the suite. Not exercised is
+                # not failed -- the same tolerance _c_so_test_bin() gives a
+                # driver that is not installed at all.
+                print("[INFO] {}: installed C driver has no suite; skipped".format(suite))
+                continue
+            # One line even when the run is quiet: a verification run has to be able
+            # to show this suite executed, and comparison mode passes verbose=False.
+            print("[INFO] {} suite on {}: {}".format(
+                suite, self.device, "PASS" if success else "FAIL"))
+            self.extra_ok = self.extra_ok and success
+            self.extra_output += output or ""
+            if verbose:
+                print("\n[OUTPUT]\n" + "-" * 60 + "\n" + (output or "") + "-" * 60)
 
     def get_error(self):
         if BaseConfig.MFT_SDK_SO and \

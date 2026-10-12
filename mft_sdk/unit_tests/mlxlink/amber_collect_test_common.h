@@ -220,4 +220,94 @@ static int amberTestRun(const char* deviceName, const char* portName, int report
     return AMBER_TEST_OK;
 }
 
+/* Open device, run one sheet-filtered collect (JSON + report), print results, return 0 on
+ * success. Only reachable through the unified C dispatcher (amber_sheet_select_test_main in
+ * amber_collect_test.c) -- there is no standalone binary for this scenario, so this must stay
+ * out of a plain (non-unified) C build or it is an unused function there. The C++ gtest suite
+ * drives mstGetAmberJson/Report directly instead. */
+#if defined(MFT_SDK_C_UNIFIED) && !defined(__cplusplus)
+static int amberSheetSelectTestRun(const char* deviceName, const char* portName, unsigned int sheetId)
+{
+    MstDevice device = NULL;
+    MstAmberContext context;
+    unsigned int sheets[1];
+    char* json = NULL;
+    MstAmberReport report;
+    MstStatus openStatus;
+    MstStatus jsonStatus;
+    MstStatus reportStatus;
+    unsigned int portIndex;
+    unsigned int fieldIndex;
+
+    openStatus = mstGetDeviceHandle(&device, deviceName);
+    printf("SHEET_SELECT_OPEN_STATUS %d\n", (int)openStatus);
+    if (openStatus != MST_SUCCESS)
+    {
+        return 1;
+    }
+
+    sheets[0] = sheetId;
+    MST_AMBER_CONTEXT_INIT(&context);
+    if (portName != NULL && portName[0] != '\0')
+    {
+        snprintf(context.label_port, sizeof(context.label_port), "%s", portName);
+    }
+    context.sheet_count = 1;
+    context.sheet_ids = sheets;
+
+    printf("SHEET_SELECT_REQUESTED_SHEET %u\n", sheetId);
+
+    json = NULL;
+    jsonStatus = mstGetAmberJson(device, &context, &json);
+    printf("SHEET_SELECT_JSON_STATUS %d\n", (int)jsonStatus);
+    if (jsonStatus == MST_SUCCESS && json != NULL)
+    {
+        printf("SHEET_SELECT_JSON_BEGIN\n%s", json);
+        if (json[0] != '\0' && json[strlen(json) - 1] != '\n')
+        {
+            printf("\n");
+        }
+        printf("SHEET_SELECT_JSON_END\n");
+        mstFreeJsonString(json);
+    }
+    else
+    {
+        printf("SHEET_SELECT_JSON_ERROR: %s\n", mstGetLastErrorString(device));
+    }
+
+    memset(&report, 0, sizeof(report));
+    reportStatus = mstGetAmberReport(device, &context, &report);
+    printf("SHEET_SELECT_REPORT_STATUS %d\n", (int)reportStatus);
+    if (reportStatus == MST_SUCCESS)
+    {
+        printf("SHEET_SELECT_REPORT_VERSION %s\n", report.amber_version);
+        printf("SHEET_SELECT_REPORT_PORT_COUNT %u\n", report.port_count);
+        for (portIndex = 0; portIndex < report.port_count; ++portIndex)
+        {
+            const MstAmberPort* port = &report.ports[portIndex];
+            printf("SHEET_SELECT_PORT %s FIELD_COUNT %u\n", port->label_port, port->field_count);
+            for (fieldIndex = 0; fieldIndex < port->field_count; ++fieldIndex)
+            {
+                const MstAmberField* field = &port->fields[fieldIndex];
+                /* All fields must belong to the requested sheet. */
+                printf("SHEET_SELECT_FIELD sheet_id=%u %s=%s\n", field->sheet_id, field->field_name, field->value);
+                if (field->sheet_id != sheetId)
+                {
+                    printf("SHEET_SELECT_UNEXPECTED_SHEET_ID: expected %u got %u for field %s\n", sheetId,
+                           field->sheet_id, field->field_name);
+                }
+            }
+        }
+        mstFreeAmberReport(&report);
+    }
+    else
+    {
+        printf("SHEET_SELECT_REPORT_ERROR: %s\n", mstGetLastErrorString(device));
+    }
+
+    mstReleaseDeviceHandle(device);
+    return (jsonStatus == MST_SUCCESS && reportStatus == MST_SUCCESS) ? 0 : 1;
+}
+#endif /* MFT_SDK_C_UNIFIED && !__cplusplus */
+
 #endif /* MFT_SDK_AMBER_COLLECT_TEST_COMMON_H */

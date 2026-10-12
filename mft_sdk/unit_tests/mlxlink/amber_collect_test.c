@@ -36,6 +36,8 @@
 
 #include "amber_collect_test_common.h"
 
+#include <stdlib.h>
+
 /*
  * Unified C binary invocation:
  *   mft_sdk_c_so_test amber_collect <BDF> [PORT]
@@ -51,3 +53,20 @@ int main(int argc, char** argv)
 
     return amberTestRun(deviceName, portName, 0);
 }
+
+/*
+ * Unified C binary invocation:
+ *   mft_sdk_c_so_test amber_sheet_select <BDF> [PORT] [SHEET_ID]
+ * SHEET_ID defaults to 1 (GENERAL). Only reachable through the unified dispatcher -- there is
+ * no standalone binary for this scenario, unlike amber_collect above.
+ */
+#ifdef MFT_SDK_C_UNIFIED
+int amber_sheet_select_test_main(int argc, char** argv)
+{
+    const char* deviceName = argc > 1 ? argv[1] : "";
+    const char* portName = argc > 2 ? argv[2] : "";
+    unsigned int sheetId = argc > 3 ? (unsigned int)atoi(argv[3]) : 1u;
+
+    return amberSheetSelectTestRun(deviceName, portName, sheetId);
+}
+#endif
