@@ -864,6 +864,7 @@ MstStatus MftSdk::getCableDDMInfo(MstCableDDMInfo* cableDDMInfo, const MstTeleme
     {
         return MST_ERROR_INVALID_ARGUMENT;
     }
+    mlxlinkClearStaleUnhandledErrors();
     if (initMlxLinkSdk(MlxLinkInitMode::CABLE_DDM, TelemetryContextView(context).getPort()) != MST_SUCCESS)
     {
         return _lastError.status;
@@ -874,6 +875,7 @@ MstStatus MftSdk::getCableDDMInfo(MstCableDDMInfo* cableDDMInfo, const MstTeleme
     try
     {
         _mstMlxLinkSdkInstance->showCableDDM();
+        mlxlinkThrowOnUnhandledErrors();
         extractCableDDMInfoFrom(cableDDMInfo);
     }
     catch (const std::exception& e)
@@ -1401,14 +1403,46 @@ static void appendJsonOutput(const Json::Value& from, Json::Value& into)
     }
 }
 
+// mlxlink's show*() calls catch their own register errors and only append them to the commander's
+// error text (the CLI prints it at the end). The SDK has no such end step, so a failed view would
+// otherwise come back as a success with an empty report.
+// Errors left over from an earlier call must not fail the current one. A commander that does not
+// exist yet has nothing stale, and creating it here could throw outside the callers' error handling.
+void MftSdk::mlxlinkClearStaleUnhandledErrors()
+{
+    if (_mstMlxLinkSdkInstance)
+    {
+        _mstMlxLinkSdkInstance->clearUnhandledErrors();
+    }
+}
+
+void MftSdk::mlxlinkThrowOnUnhandledErrors()
+{
+    if (_mstMlxLinkSdkInstance->errorObserved())
+    {
+        const std::string errors = _mstMlxLinkSdkInstance->getAllUnhandledErrors();
+        _mstMlxLinkSdkInstance->clearUnhandledErrors();
+        throw MftGeneralException(errors);
+    }
+}
+
 // The views that have a PCIe meaning. Every other view reads a network-only page, so asking
 // for it against a PCIe port is a caller mistake rather than an empty answer.
 static const uint32_t PCIE_SUPPORTED_VIEWS = MST_TELEMETRY_VIEW_OPERATIONAL | MST_TELEMETRY_VIEW_COUNTERS;
+
+// Every defined view bit. A bit outside it matches no view, so it would silently produce an empty
+// report; it is rejected up front instead. Add a new view here too (see MstTelemetryView).
+static const uint32_t ALL_TELEMETRY_VIEWS =
+  MST_TELEMETRY_VIEW_OPERATIONAL | MST_TELEMETRY_VIEW_COUNTERS | MST_TELEMETRY_VIEW_CABLE_DDM |
+  MST_TELEMETRY_VIEW_MODULE | MST_TELEMETRY_VIEW_GENERAL | MST_TELEMETRY_VIEW_EYE | MST_TELEMETRY_VIEW_FEC |
+  MST_TELEMETRY_VIEW_SERDES_TX | MST_TELEMETRY_VIEW_BER_MONITOR | MST_TELEMETRY_VIEW_EXTERNAL_PHY |
+  MST_TELEMETRY_VIEW_PLR | MST_TELEMETRY_VIEW_KR | MST_TELEMETRY_VIEW_RX_RECOVERY | MST_TELEMETRY_VIEW_FEC_HISTOGRAM;
 
 MstStatus
   MftSdk::runTelemetryViews(uint32_t views, const std::string& port, MstTelemetryPortType portType, Json::Value& root)
 {
     const bool isPcie = (portType == MST_TELEMETRY_PORT_TYPE_PCIE);
+    mlxlinkClearStaleUnhandledErrors();
     if (isPcie && (views & ~PCIE_SUPPORTED_VIEWS))
     {
         setLastError(MST_ERROR_NOT_SUPPORTED, "Only the operational and counters views are available for a PCIe port");
@@ -1578,6 +1612,7 @@ MstStatus
         _mstMlxLinkSdkInstance->_portInfo->showHistogram().toJsonFormat(root);
     }
 
+    mlxlinkThrowOnUnhandledErrors();
     return MST_SUCCESS;
 }
 
@@ -1588,6 +1623,11 @@ MstStatus MftSdk::getTelemetryJson(uint32_t views, const MstTelemetryContext& co
         return MST_ERROR_INVALID_ARGUMENT;
     }
     *jsonOut = nullptr;
+    if (views & ~ALL_TELEMETRY_VIEWS)
+    {
+        setLastError(MST_ERROR_INVALID_ARGUMENT, "The view mask contains an unknown view");
+        return _lastError.status;
+    }
     const TelemetryContextView contextView(context);
 
     try
@@ -1625,6 +1665,11 @@ MstStatus MftSdk::getTelemetryText(uint32_t views, const MstTelemetryContext& co
         return MST_ERROR_INVALID_ARGUMENT;
     }
     *textOut = nullptr;
+    if (views & ~ALL_TELEMETRY_VIEWS)
+    {
+        setLastError(MST_ERROR_INVALID_ARGUMENT, "The view mask contains an unknown view");
+        return _lastError.status;
+    }
     const TelemetryContextView contextView(context);
     const MstTelemetryPortType portType = contextView.getPortType();
 

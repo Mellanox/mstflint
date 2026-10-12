@@ -183,6 +183,8 @@ private:
                              MstTelemetryPortType portType = MST_TELEMETRY_PORT_TYPE_NETWORK,
                              const PcieDpn& dpn = PcieDpn());
     void initMlxLinkSdkUserInput(MlxLinkInitMode initMode);
+    void mlxlinkClearStaleUnhandledErrors();
+    void mlxlinkThrowOnUnhandledErrors();
     void applyPcieDpn(const PcieDpn& dpn, bool isPcie);
     MstStatus
       runTelemetryViews(uint32_t views, const std::string& port, MstTelemetryPortType portType, Json::Value& root);
