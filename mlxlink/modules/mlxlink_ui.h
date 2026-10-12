@@ -79,6 +79,7 @@ protected:
     virtual void validateBkvParams();
     virtual void validatePrrParams();
     virtual void validatePlrParams();
+    virtual void validateApsuParams();
     virtual void paramValidate();
     virtual void createMlxlinkCommander();
     virtual void initPortInfo();

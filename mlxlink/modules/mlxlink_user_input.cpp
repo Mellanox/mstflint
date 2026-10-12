@@ -109,6 +109,8 @@ UserInput::UserInput()
     _showMultiPortCpoInfo = false;
     _showPlr = false;
     _setPlr = false;
+    _showApsu = false;
+    _setApsu = false;
     _showKr = false;
     _showLtx = false;
     _showRxRecoveryCounters = false;
