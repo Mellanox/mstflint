@@ -1438,8 +1438,11 @@ static const uint32_t ALL_TELEMETRY_VIEWS =
   MST_TELEMETRY_VIEW_SERDES_TX | MST_TELEMETRY_VIEW_BER_MONITOR | MST_TELEMETRY_VIEW_EXTERNAL_PHY |
   MST_TELEMETRY_VIEW_PLR | MST_TELEMETRY_VIEW_KR | MST_TELEMETRY_VIEW_RX_RECOVERY | MST_TELEMETRY_VIEW_FEC_HISTOGRAM;
 
-MstStatus
-  MftSdk::runTelemetryViews(uint32_t views, const std::string& port, MstTelemetryPortType portType, Json::Value& root)
+MstStatus MftSdk::runTelemetryViews(uint32_t views,
+                                    const std::string& port,
+                                    MstTelemetryPortType portType,
+                                    const PcieDpn& dpn,
+                                    Json::Value& root)
 {
     const bool isPcie = (portType == MST_TELEMETRY_PORT_TYPE_PCIE);
     mlxlinkClearStaleUnhandledErrors();
@@ -1470,7 +1473,7 @@ MstStatus
     }
     else if (views & MST_TELEMETRY_VIEW_OPERATIONAL)
     {
-        if (initMlxLinkSdk(MlxLinkInitMode::OPERATIONAL_INFO, port, portType) != MST_SUCCESS)
+        if (initMlxLinkSdk(MlxLinkInitMode::OPERATIONAL_INFO, port, portType, dpn) != MST_SUCCESS)
         {
             return _lastError.status;
         }
@@ -1493,7 +1496,7 @@ MstStatus
 
     if (views & MST_TELEMETRY_VIEW_COUNTERS)
     {
-        if (initMlxLinkSdk(MlxLinkInitMode::NONE, port, portType) != MST_SUCCESS)
+        if (initMlxLinkSdk(MlxLinkInitMode::NONE, port, portType, dpn) != MST_SUCCESS)
         {
             return _lastError.status;
         }
@@ -1633,7 +1636,8 @@ MstStatus MftSdk::getTelemetryJson(uint32_t views, const MstTelemetryContext& co
     try
     {
         Json::Value root;
-        const MstStatus status = runTelemetryViews(views, contextView.getPort(), contextView.getPortType(), root);
+        const MstStatus status =
+          runTelemetryViews(views, contextView.getPort(), contextView.getPortType(), contextView.getDpn(), root);
         if (status != MST_SUCCESS)
         {
             return status;
@@ -1694,7 +1698,7 @@ MstStatus MftSdk::getTelemetryText(uint32_t views, const MstTelemetryContext& co
         MstStatus status = MST_SUCCESS;
         {
             MlxlinkReportCapture capture(*getMlxlinkCommanderInstance(), sink);
-            status = runTelemetryViews(views, contextView.getPort(), portType, discardedRoot);
+            status = runTelemetryViews(views, contextView.getPort(), portType, contextView.getDpn(), discardedRoot);
         }
         if (status != MST_SUCCESS)
         {
@@ -1824,8 +1828,14 @@ extern "C"
             return MST_ERROR_INVALID_ARGUMENT;
         }
 
+        const MstTelemetryContext& selection = resolveTelemetryContext(context);
+        if (TelemetryContextView(selection).hasConflictingPortSelection())
+        {
+            return MST_ERROR_INVALID_ARGUMENT;
+        }
+
         MftSdk* instance = reinterpret_cast<MftSdk*>(mstDevice);
-        return instance->getTelemetryJson(views, resolveTelemetryContext(context), jsonOut);
+        return instance->getTelemetryJson(views, selection, jsonOut);
     }
 
     MstStatus
@@ -1836,8 +1846,14 @@ extern "C"
             return MST_ERROR_INVALID_ARGUMENT;
         }
 
+        const MstTelemetryContext& selection = resolveTelemetryContext(context);
+        if (TelemetryContextView(selection).hasConflictingPortSelection())
+        {
+            return MST_ERROR_INVALID_ARGUMENT;
+        }
+
         MftSdk* instance = reinterpret_cast<MftSdk*>(mstDevice);
-        return instance->getTelemetryText(views, resolveTelemetryContext(context), textOut);
+        return instance->getTelemetryText(views, selection, textOut);
     }
 
     MstStatus mstFreeJsonString(char* json)

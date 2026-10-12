@@ -37,7 +37,8 @@ class LinkCommand(MlxLinkCommand):
 
     The report is the "PCIe Operational (Enabled) Info" section mlxlink reads out
     of MPEIN - the speed and width each link negotiated against the ones it was
-    enabled for - one section per link the device reports.
+    enabled for - one section per link the device reports, or for the one link
+    --port or --dpn names.
     """
 
     COMMAND_NAME = "link"

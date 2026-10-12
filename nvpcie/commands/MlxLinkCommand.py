@@ -29,6 +29,7 @@
 # SOFTWARE.
 
 from abc import abstractmethod
+from argparse import ArgumentTypeError
 
 from commands.PcieSwCommand import PcieSwCommand
 
@@ -46,9 +47,32 @@ class MlxLinkCommand(PcieSwCommand):
     output is the same one mlxlink produces for "--port_type PCIE" and there is
     no tool side layout to keep in step with it.
 
-    The link is chosen by the firmware, not here: the SDK asks for the device's
-    PCIe port and mlxlink resolves it to the links the device reports.
+    A link may be named by its local port or by its depth/pcie_index/node, the two
+    ways "mlxlink --port_type PCIE --show_links" lists it. When neither is given,
+    mlxlink resolves the device's PCIe port to the links the device reports.
     """
+
+    @classmethod
+    def set_argument_parser(cls, parser):
+        super().set_argument_parser(parser)
+        # the two name the same link, so they are alternatives rather than a pair
+        link_args = parser.add_mutually_exclusive_group()
+        link_args.add_argument("--port", type=int,
+                               help='Local port of the PCIe link, as "mlxlink --show_links" lists it')
+        link_args.add_argument("--dpn", metavar="D/P/N", type=cls._dpn_arg_type,
+                               help='Depth, pcie index and node of the PCIe link, e.g. 0/0/0')
+
+    @staticmethod
+    def _dpn_arg_type(dpn_str):
+        """This method parse a DPN written as "depth/pcie_index/node" into its three numbers."""
+        parts = dpn_str.split("/")
+        if len(parts) != 3 or not all(part.isdigit() for part in parts):
+            raise ArgumentTypeError("invalid DPN: {0}, expected depth/pcie_index/node".format(dpn_str))
+        dpn = tuple(int(part) for part in parts)
+        # the SDK carries each number in a C unsigned int, which a larger value would wrap around in
+        if any(number > 0xFFFFFFFF for number in dpn):
+            raise ArgumentTypeError("invalid DPN: {0}, each number must be at most 4294967295".format(dpn_str))
+        return dpn
 
     @classmethod
     def validate_arguments(cls, arguments):
@@ -66,8 +90,10 @@ class MlxLinkCommand(PcieSwCommand):
         """
         pass
 
-    def __init__(self, device):
+    def __init__(self, device, port=None, dpn=None):
         self._device = device
+        self._port = port
+        self._dpn = dpn
 
     def run(self):
         print(self._get_report(), end="")
@@ -77,6 +103,10 @@ class MlxLinkCommand(PcieSwCommand):
         """Returns the report mlxlink would have printed for the view."""
         from mft_sdk import MftSdk, TelemetryPortType
 
+        # local port 0 names a link, so only None means no port
+        depth, pcie_index, node = self._dpn or (None, None, None)
         with MftSdk(self._device) as sdk:
             return sdk.get_telemetry_text(views=self._telemetry_view(),
-                                          port_type=TelemetryPortType.PCIE)
+                                          port="" if self._port is None else str(self._port),
+                                          port_type=TelemetryPortType.PCIE,
+                                          depth=depth, pcie_index=pcie_index, node=node)
