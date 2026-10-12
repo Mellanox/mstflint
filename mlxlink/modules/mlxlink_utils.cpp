@@ -188,7 +188,13 @@ string getFullString(u_int64_t intVal)
     {
         for (int i = 56; i > -1; i -= 8)
         {
-            strVal.push_back((char)(intVal >> i));
+            char ch = (char)(intVal >> i);
+            // Names shorter than 8 characters are NUL padded; keep the padding out of the string.
+            if (ch == '\0')
+            {
+                break;
+            }
+            strVal.push_back(ch);
         }
     }
     else

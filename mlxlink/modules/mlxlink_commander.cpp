@@ -243,6 +243,7 @@ void MlxlinkCommander::openDevice(const std::string& mstDeviceName)
 
 MlxlinkCommander::MlxlinkCommander(const std::string& mstDeviceName) : MlxlinkCommander()
 {
+    _userInput._device = mstDeviceName;
     openDevice(mstDeviceName);
     init(false);
 }
@@ -294,6 +295,7 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _isSwControledStandAlone = false;
     _pcieMgmtSupported = false;
     _isBonusPort = false;
+    _selectedPortValid = false;
     _ignoreIbFECCheck = true;
     _devID = DeviceUnknown;
     _isNVLINK = false;
@@ -1230,6 +1232,7 @@ void MlxlinkCommander::findFirstValidPort()
 void MlxlinkCommander::labelToLocalPort()
 {
     _pnat = _userInput._pcie ? PNAT_PCIE : PNAT_LOCAL;
+    _selectedPortValid = false;
 
     if (_userInput._pcie && _pcieMgmtSupported)
     {
@@ -1524,9 +1527,21 @@ void MlxlinkCommander::labelToLocalPortGenericMapping()
                 throw MlxRegException("Invalid split/inter-port number!");
             }
 
-            if ((ipilStat == 0 || ipilIn == getFieldValue("ipil_num")) &&
-                (splitStat == 0 || (splitIn - 1) == getFieldValue("split_num")))
+            u_int32_t ipilNum = getFieldValue("ipil_num");
+            u_int32_t splitNum = getFieldValue("split_num");
+            if ((ipilStat == 0 || ipilIn == ipilNum) && (splitStat == 0 || (splitIn - 1) == splitNum))
             {
+                bool isFnmPort = false;
+                try
+                {
+                    isFnmPort = getFieldValue("is_fnm");
+                }
+                catch (...)
+                {
+                }
+                u_int32_t secondSplit = splitStat != 0 ? splitNum + 1 : 0;
+                _selectedPort = PortGroup(localPort, cageIn, _userInput._setGroup, ipilNum, secondSplit, isFnmPort);
+                _selectedPortValid = true;
                 foundedLocalPort = localPort;
                 break;
             }
@@ -1570,6 +1585,17 @@ void MlxlinkCommander::labelToIBLocalPort()
         if (getFieldValue("ib_port") == labelPort)
         {
             _localPort = localPort;
+            if (_devID == DeviceQuantum2)
+            {
+                u_int32_t secondSplit = 0;
+                if (ibSplitReady)
+                {
+                    secondSplit = _userInput._secondSplitProvided ? _userInput._secondSplitPort : 1;
+                }
+                _selectedPort = PortGroup(localPort, _userInput._labelPort, _userInput._setGroup,
+                                          _userInput._splitPort, secondSplit, false);
+                _selectedPortValid = true;
+            }
             return;
         }
     }
@@ -5475,10 +5501,18 @@ void MlxlinkCommander::collectAMBER(AmberOutput output)
                 // If port provided, collect one port only
                 if (_userInput._portSpecified)
                 {
-                    PortGroup pg{_localPort, _userInput._labelPort, 0, _userInput._splitPort};
+                    // Paths that don't record the selected port keep the port exactly as it was requested.
+                    PortGroup pg{_localPort, _userInput._labelPort, 0,
+                                 _userInput._splitProvided ? _userInput._splitPort : 0};
                     if (_devID == DeviceQuantum2 || _devID == DeviceQuantum3 || _devID == DeviceNVLink6_Switch || dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
                     {
                         pg.secondSplit = _userInput._secondSplitProvided ? _userInput._secondSplitPort : 0;
+                    }
+                    if (_selectedPortValid)
+                    {
+                        pg.split = _selectedPort.split;
+                        pg.secondSplit = _selectedPort.secondSplit;
+                        pg.isFnm = _selectedPort.isFnm;
                     }
                     _amberCollector->_localPorts.push_back(pg);
                 }

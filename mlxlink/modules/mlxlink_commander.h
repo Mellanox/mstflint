@@ -1033,6 +1033,8 @@ public:
     bool _isSwControledStandAlone;
     bool _pcieMgmtSupported;
     bool _isBonusPort;
+    PortGroup _selectedPort;
+    bool _selectedPortValid;
     std::vector<OPTION_TYPE> _requestedCommands;
     bool _ignoreIbFECCheck;
     bool _isNVLINK;
