@@ -279,6 +279,58 @@
 #define ELS_OPERATION_FLAG_SHORT ' '
 #define SAVE_LASER_SETPOINT_FLAG "save_laser_setpoint"
 #define SAVE_LASER_SETPOINT_FLAG_SHORT ' '
+//------------------------------------------------------------
+//        Mlxlink APSU (ILT/RTS) Flags
+#define APSU_INFO_FLAG "show_apsu"
+#define APSU_INFO_FLAG_SHORT ' '
+#define SET_APSU_FLAG "set_apsu"
+#define SET_APSU_FLAG_SHORT ' '
+#define APSU_CTL_FLAG "apsu_ctl"
+#define APSU_CTL_FLAG_SHORT ' '
+#define APSU_TRAINING_EN_FLAG "apsu_training_en"
+#define APSU_TRAINING_EN_FLAG_SHORT ' '
+#define APSU_PEER_DET_FLAG "apsu_peer_det"
+#define APSU_PEER_DET_FLAG_SHORT ' '
+#define APSU_HOP_COUNT_CTL_FLAG "apsu_hop_count_ctl"
+#define APSU_HOP_COUNT_CTL_FLAG_SHORT ' '
+#define APSU_NLUT_FLAG "apsu_nlut"
+#define APSU_NLUT_FLAG_SHORT ' '
+#define APSU_VALIDATION_EN_FLAG "apsu_validation_en"
+#define APSU_VALIDATION_EN_FLAG_SHORT ' '
+#define APSU_RESTART_FLAG "apsu_restart"
+#define APSU_RESTART_FLAG_SHORT ' '
+#define APSU_RECOVERY_TIMER_FLAG "apsu_recovery_timer"
+#define APSU_RECOVERY_TIMER_FLAG_SHORT ' '
+#define APSU_MAX_RECOVERY_EVENTS_FLAG "apsu_max_recovery_events"
+#define APSU_MAX_RECOVERY_EVENTS_FLAG_SHORT ' '
+#define APSU_MAX_WAIT_TIMER_FLAG "apsu_max_wait_timer"
+#define APSU_MAX_WAIT_TIMER_FLAG_SHORT ' '
+#define APSU_PROPAGATION_TIMER_FLAG "apsu_propagation_timer"
+#define APSU_PROPAGATION_TIMER_FLAG_SHORT ' '
+#define APSU_QUIET_TIMER_FLAG "apsu_quiet_timer"
+#define APSU_QUIET_TIMER_FLAG_SHORT ' '
+#define APSU_INVERT_TO_FLAG "apsu_invert_to"
+#define APSU_INVERT_TO_FLAG_SHORT ' '
+#define APSU_TF_DETECT_TIMER_FLAG "apsu_tf_detect_timer"
+#define APSU_TF_DETECT_TIMER_FLAG_SHORT ' '
+#define APSU_PEER_DET_TIMER_FLAG "apsu_peer_det_timer"
+#define APSU_PEER_DET_TIMER_FLAG_SHORT ' '
+#define APSU_FAIL_TIMER_FLAG "apsu_fail_timer"
+#define APSU_FAIL_TIMER_FLAG_SHORT ' '
+#define APSU_VALIDATION_TIMER_FLAG "apsu_validation_timer"
+#define APSU_VALIDATION_TIMER_FLAG_SHORT ' '
+#define APSU_RESTART_ON_LOS_FLAG "apsu_restart_on_los"
+#define APSU_RESTART_ON_LOS_FLAG_SHORT ' '
+#define APSU_LOCAL_PATTERN_TX_FLAG "apsu_local_pattern_tx"
+#define APSU_LOCAL_PATTERN_TX_FLAG_SHORT ' '
+#define APSU_MAX_HOP_COUNT_FLAG "apsu_max_hop_count"
+#define APSU_MAX_HOP_COUNT_FLAG_SHORT ' '
+#define APSU_HOP_DECREMENT_FLAG "apsu_hop_decrement"
+#define APSU_HOP_DECREMENT_FLAG_SHORT ' '
+#define APSU_HOP_COUNT_FLAG "apsu_hop_count"
+#define APSU_HOP_COUNT_FLAG_SHORT ' '
+#define APSU_BCNL_PAGES_RETRANSMISSIONS_FLAG "apsu_bcnl_pages_retransmissions"
+#define APSU_BCNL_PAGES_RETRANSMISSIONS_FLAG_SHORT ' '
 #define SET_TX_PRECODING_FLAG "set_tx_precoding"
 #define SET_TX_PRECODING_FLAG_SHORT ' '
 #define SET_RX_PRECODING_FLAG "set_rx_precoding"
@@ -465,6 +517,8 @@ enum OPTION_TYPE
     SHOW_MULTI_PORT_CPO_INFO,
     SHOW_PLR,
     SET_PLR,
+    SHOW_APSU,
+    SET_APSU,
     SHOW_KR,
     SHOW_LTX,
     SHOW_HOST_CLASS,
@@ -633,6 +687,8 @@ public:
     void showTxGroupMapping();
     void showPlr();
     void setPlr();
+    void showApsu();
+    void handleApsu();
     void showKr();
     void showLtx();
     void showHostClass();
@@ -658,6 +714,12 @@ public:
     virtual void prepareSltpNdrGen(vector<vector<string>>& sltpLanes, u_int32_t laneNumber);
     virtual void prepareSltp5nmGen(vector<vector<string>>& sltpLanes, u_int32_t laneNumber);
     virtual string getSltpHeader();
+    string getApsuLaneHeader();
+    string getApsuLaneRow(u_int32_t lane);
+    void showApsuConfig();
+    string getApsuConfigValue(const APSU_CONFIG_PARAM& param);
+    bool isApsuCtrlPageSupported();
+    u_int32_t getApsuParamValue(const APSU_CONFIG_PARAM& param, const string& userValue);
     void startSlrgPciScan(u_int32_t numOfLanesToUse);
     void initValidDPNList();
     void updateDPNDomain();
@@ -818,6 +880,9 @@ public:
     MlxlinkCmdPrint _portGroupMapping;
     MlxlinkCmdPrint _prrInfoCmd;
     MlxlinkCmdPrint _plrInfoCmd;
+    MlxlinkCmdPrint _apsuInfoCmd;
+    MlxlinkCmdPrint _apsuLanesCmd;
+    MlxlinkCmdPrint _apsuConfigCmd;
     MlxlinkCmdPrint _krInfoCmd;
     MlxlinkCmdPrint _hostClassCmd;
     MlxlinkCmdPrint _rxRecoveryCountersCmd;

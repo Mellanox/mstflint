@@ -110,6 +110,8 @@ public:
     bool _showMultiPortCpoInfo;
     bool _showPlr;
     bool _setPlr;
+    bool _showApsu;
+    bool _setApsu;
     bool _showKr;
     bool _showLtx;
     bool _showRxRecoveryCounters;
@@ -146,6 +148,7 @@ public:
     bool _plrRejectModeProvided;
     bool _plrMarginThresholdProvided;
     bool _plrTxCrcProvided;
+    vector<pair<string, string>> _apsuParamsToSet;
     bool _setPrimary;
     bool _primarySecondarySpecified;
     string _constantRole;
