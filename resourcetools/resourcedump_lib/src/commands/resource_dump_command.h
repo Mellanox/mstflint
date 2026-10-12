@@ -74,7 +74,14 @@ protected:
     friend std::ostream& operator<<(std::ostream& out, const ResourceDumpCommand& command);
     virtual const std::string to_string() const;
 
-    mfile_t* _mf;
+    struct MfileCloser
+    {
+        void operator()(mfile_t* mf) const;
+    };
+
+    // Declared before _fetcher so the device is closed even if building the fetcher throws.
+    std::unique_ptr<mfile_t, MfileCloser> _owned_mf;
+    mfile_t* _mf{nullptr};
     std::unique_ptr<fetchers::Fetcher> _fetcher;
     std::shared_ptr<std::ostream> _ostream;
     std::shared_ptr<std::istream> _istream;
@@ -85,7 +92,6 @@ protected:
     size_t _dumped_size{0};
 
     std::vector<size_t> _segment_offsets;
-    bool _mf_opened{false};
 };
 } // namespace resource_dump
 } // namespace mft
