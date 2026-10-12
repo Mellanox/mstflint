@@ -81,6 +81,7 @@ libmstflint_sdk_la_SOURCES = \
     mft_sdk_resource_dump.cpp \
     mft_sdk_temperature.cpp \
     mft_sdk_telemetry.cpp \
+    mft_sdk_telemetry_common.cpp \
     mft_sdk.h \
     mft_sdk_amber.h \
     mft_sdk_class.hpp \
@@ -94,6 +95,7 @@ libmstflint_sdk_la_SOURCES = \
     mft_sdk_reg_access.h \
     mft_sdk_resource_dump.h \
     mft_sdk_telemetry.h \
+    mft_sdk_telemetry_common.hpp \
     mft_sdk_temperature.h \
     mft_sdk_telemetry_types.h \
     mft_sdk_types.h

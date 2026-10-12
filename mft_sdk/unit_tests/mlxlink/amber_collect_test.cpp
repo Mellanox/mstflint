@@ -51,7 +51,7 @@ MstAmberContext makeSheetContext(const char* port, const unsigned int* sheets, u
     MST_AMBER_CONTEXT_INIT(&ctx);
     if (port && port[0] != '\0')
     {
-        snprintf(ctx.label_port, sizeof(ctx.label_port), "%s", port);
+        snprintf(ctx.base.label_port, sizeof(ctx.base.label_port), "%s", port);
     }
     ctx.sheet_count = count;
     ctx.sheet_ids = sheets;
@@ -77,7 +77,7 @@ class MftSdkAmberCollectTest : public ::testing::Test
 TEST_F(MftSdkAmberCollectTest, GetAmberCollect)
 {
     ASSERT_FALSE(g_devicePci.empty()) << "A device is required (-d <BDF>)";
-    int result = amberTestRun(g_devicePci.c_str(), g_port.c_str(), 1);
+    int result = amberTestRun(g_devicePci.c_str(), g_port.c_str(), 0, 1);
     if (result == AMBER_TEST_UNSUPPORTED)
     {
         // gtest 1.8.1 has no GTEST_SKIP(); print the standard skip line and return.
@@ -86,6 +86,40 @@ TEST_F(MftSdkAmberCollectTest, GetAmberCollect)
     }
     EXPECT_EQ(result, AMBER_TEST_OK)
       << "amBER collect failed; see AMBER_JSON_STATUS / AMBER_REPORT_STATUS and the hex error records above";
+}
+
+TEST_F(MftSdkAmberCollectTest, GetAmberCollectPcieDefaultLink)
+{
+    ASSERT_FALSE(g_devicePci.empty()) << "A device is required (-d <BDF>)";
+    int result = amberTestRun(g_devicePci.c_str(), "", 1, 1);
+    if (result == AMBER_TEST_UNSUPPORTED)
+    {
+        // gtest 1.8.1 has no GTEST_SKIP(); print the standard skip line and return.
+        std::cout << "[  SKIPPED ] amBER PCIe collect not supported on this device (no PCIe management)" << std::endl;
+        return;
+    }
+    EXPECT_EQ(result, AMBER_TEST_OK)
+      << "amBER PCIe collect failed; see AMBER_JSON_STATUS / AMBER_REPORT_STATUS and the hex error records above";
+}
+
+/* Under PCIe the -p value is a PCIe local port, not a label. Which local ports exist is
+ * device-specific, so this only runs when one is given. */
+TEST_F(MftSdkAmberCollectTest, GetAmberCollectPcieLocalPort)
+{
+    ASSERT_FALSE(g_devicePci.empty()) << "A device is required (-d <BDF>)";
+    if (g_port.empty())
+    {
+        std::cout << "[  SKIPPED ] Needs a PCIe local port (-p <PORT>)" << std::endl;
+        return;
+    }
+    int result = amberTestRun(g_devicePci.c_str(), g_port.c_str(), 1, 1);
+    if (result == AMBER_TEST_UNSUPPORTED)
+    {
+        std::cout << "[  SKIPPED ] amBER PCIe collect not supported on this device (no PCIe management)" << std::endl;
+        return;
+    }
+    EXPECT_EQ(result, AMBER_TEST_OK)
+      << "amBER PCIe collect by local port failed; see AMBER_JSON_STATUS / AMBER_REPORT_STATUS above";
 }
 
 TEST_F(MftSdkAmberCollectTest, NullArguments)
