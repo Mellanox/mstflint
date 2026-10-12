@@ -28,7 +28,7 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from ctypes import c_char, c_uint
+from ctypes import c_bool, c_char, c_uint
 
 from .mft_sdk_types import MftSdkStruct
 
@@ -41,9 +41,16 @@ class MstTelemetryContext(MftSdkStruct):
 
     size must come first: the SDK reads it to tell which version of this struct the
     caller was built against, and never reads past it. An empty label_port selects
-    the device default port. port_type comes last, behind the size guard, so a caller
-    built against the older struct stays valid and reads as NETWORK.
+    the device default port. port_type and the PCIe DPN come last, behind the size guard,
+    so a caller built against the older struct stays valid and reads as NETWORK.
+
+    port_type selects a PCIe link instead of a network port. Under PCIe, label_port is a
+    PCIe local port; has_dpn addresses the link by depth / pcie_index / node instead.
     """
     size: int = c_uint
     label_port: str = c_char * MST_TELEMETRY_PORT_MAX_LENGTH
     port_type: int = c_uint
+    has_dpn: bool = c_bool
+    depth: int = c_uint
+    pcie_index: int = c_uint
+    node: int = c_uint

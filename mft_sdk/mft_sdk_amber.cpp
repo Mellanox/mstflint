@@ -49,16 +49,7 @@ namespace
 
 bool amberContextHas(const MstAmberContext* context, size_t memberEnd)
 {
-    return context && context->size >= memberEnd;
-}
-
-std::string amberContextPort(const MstAmberContext* context)
-{
-    if (!amberContextHas(context, offsetof(MstAmberContext_t, label_port) + sizeof(context->label_port)))
-    {
-        return std::string();
-    }
-    return std::string(context->label_port, strnlen(context->label_port, MST_AMBER_PORT_MAX_LENGTH));
+    return context && context->base.size >= memberEnd;
 }
 
 // Bounds sheet_count against AMBER_SHEET_ALL so a mismatched count can't read past sheet_ids.
@@ -115,14 +106,18 @@ void MftSdk::applyAmberSheetSelection(const std::vector<unsigned int>& sheets)
     }
 }
 
-MstStatus MftSdk::getAmberJson(const std::string& port, const std::vector<unsigned int>& sheets, char** jsonOut)
+MstStatus MftSdk::getAmberJson(const std::string& port,
+                               MstTelemetryPortType portType,
+                               const PcieDpn& dpn,
+                               const std::vector<unsigned int>& sheets,
+                               char** jsonOut)
 {
     if (!jsonOut)
     {
         return MST_ERROR_INVALID_ARGUMENT;
     }
     *jsonOut = nullptr;
-    if (initMlxLinkSdk(MlxLinkInitMode::NONE, port) != MST_SUCCESS)
+    if (initMlxLinkSdk(MlxLinkInitMode::NONE, port, portType, dpn) != MST_SUCCESS)
     {
         return _lastError.status;
     }
@@ -149,8 +144,11 @@ MstStatus MftSdk::getAmberJson(const std::string& port, const std::vector<unsign
     return _lastError.status;
 }
 
-MstStatus
-  MftSdk::getAmberReport(const std::string& port, const std::vector<unsigned int>& sheets, MstAmberReport* report)
+MstStatus MftSdk::getAmberReport(const std::string& port,
+                                 MstTelemetryPortType portType,
+                                 const PcieDpn& dpn,
+                                 const std::vector<unsigned int>& sheets,
+                                 MstAmberReport* report)
 {
     if (!report)
     {
@@ -159,7 +157,7 @@ MstStatus
     report->ports = nullptr;
     report->port_count = 0;
     amberCopyString(report->amber_version, AMBER_VERSION, MST_AMBER_VERSION_MAX);
-    if (initMlxLinkSdk(MlxLinkInitMode::NONE, port) != MST_SUCCESS)
+    if (initMlxLinkSdk(MlxLinkInitMode::NONE, port, portType, dpn) != MST_SUCCESS)
     {
         return _lastError.status;
     }
@@ -243,13 +241,21 @@ extern "C"
         {
             return MST_ERROR_INVALID_ARGUMENT;
         }
+        *jsonOut = nullptr;
         if (!amberContextSheetCountValid(context))
         {
             return MST_ERROR_INVALID_ARGUMENT;
         }
 
+        const TelemetryContextView selection(context ? context->base : defaultTelemetryContext());
+        if (selection.hasConflictingPortSelection())
+        {
+            return MST_ERROR_INVALID_ARGUMENT;
+        }
+
         MftSdk* instance = reinterpret_cast<MftSdk*>(mstDevice);
-        return instance->getAmberJson(amberContextPort(context), amberContextSheets(context), jsonOut);
+        return instance->getAmberJson(selection.getPort(), selection.getPortType(), selection.getDpn(),
+                                      amberContextSheets(context), jsonOut);
     }
 
     MstStatus mstGetAmberReport(MstDevice mstDevice, const MstAmberContext* context, MstAmberReport* report)
@@ -258,13 +264,22 @@ extern "C"
         {
             return MST_ERROR_INVALID_ARGUMENT;
         }
+        report->ports = nullptr;
+        report->port_count = 0;
         if (!amberContextSheetCountValid(context))
         {
             return MST_ERROR_INVALID_ARGUMENT;
         }
 
+        const TelemetryContextView selection(context ? context->base : defaultTelemetryContext());
+        if (selection.hasConflictingPortSelection())
+        {
+            return MST_ERROR_INVALID_ARGUMENT;
+        }
+
         MftSdk* instance = reinterpret_cast<MftSdk*>(mstDevice);
-        return instance->getAmberReport(amberContextPort(context), amberContextSheets(context), report);
+        return instance->getAmberReport(selection.getPort(), selection.getPortType(), selection.getDpn(),
+                                        amberContextSheets(context), report);
     }
 
     void mstFreeAmberReport(MstAmberReport* report)

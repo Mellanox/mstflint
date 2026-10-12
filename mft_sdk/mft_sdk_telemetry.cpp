@@ -68,38 +68,6 @@ using mft_core::MftGeneralException;
 namespace
 {
 
-class TelemetryContextView
-{
-public:
-    explicit TelemetryContextView(const MstTelemetryContext& context) : _context(context) {}
-
-    std::string getPort() const
-    {
-        // Only read 'port' if the caller's struct is large enough to contain it
-        // (a smaller/older caller falls back to the device default port).
-        if (_context.size < offsetof(MstTelemetryContext_t, label_port) + sizeof(_context.label_port))
-        {
-            return std::string();
-        }
-        return std::string(_context.label_port, strnlen(_context.label_port, MST_TELEMETRY_PORT_MAX_LENGTH));
-    }
-
-    MstTelemetryPortType getPortType() const
-    {
-        // Same size guard as getPort(): a caller whose struct predates the field
-        // asked for a network port, which is what a zeroed field would say anyway.
-        if (_context.size < offsetof(MstTelemetryContext_t, port_type) + sizeof(_context.port_type))
-        {
-            return MST_TELEMETRY_PORT_TYPE_NETWORK;
-        }
-        return _context.port_type == MST_TELEMETRY_PORT_TYPE_PCIE ? MST_TELEMETRY_PORT_TYPE_PCIE :
-                                                                    MST_TELEMETRY_PORT_TYPE_NETWORK;
-    }
-
-private:
-    const MstTelemetryContext& _context;
-};
-
 // Validate a caller-supplied telemetry context. NULL means "use device defaults".
 // A non-NULL context must carry a plausible size header, which guards against
 // callers that forgot MST_TELEMETRY_CONTEXT_INIT and against future ABI drift.
@@ -114,18 +82,6 @@ MstStatus validateTelemetryContext(const MstTelemetryContext* context)
         return MST_ERROR_INVALID_ARGUMENT;
     }
     return MST_SUCCESS;
-}
-
-// The device-defaults context, initialized once and shared.
-const MstTelemetryContext& defaultTelemetryContext()
-{
-    static const MstTelemetryContext defaults = []
-    {
-        MstTelemetryContext c;
-        MST_TELEMETRY_CONTEXT_INIT(&c);
-        return c;
-    }();
-    return defaults;
 }
 
 // NULL context => the shared default context (device defaults).
@@ -248,6 +204,17 @@ void MftSdk::initMlxLinkSdkUserInput(MlxLinkInitMode initMode)
     }
 }
 
+// initForPort() has no notion of DPN, so it must be set on _userInput before it runs -- it only
+// resets label-port state, not _sendDpn/_depth/_pcieIndex/_node.
+void MftSdk::applyPcieDpn(const PcieDpn& dpn, bool isPcie)
+{
+    UserInput& userInput = _mstMlxLinkSdkInstance->_userInput;
+    userInput._sendDpn = isPcie && dpn.hasDpn;
+    userInput._depth = userInput._sendDpn ? dpn.depth : 0;
+    userInput._pcieIndex = userInput._sendDpn ? dpn.pcieIndex : 0;
+    userInput._node = userInput._sendDpn ? dpn.node : 0;
+}
+
 MlxlinkCommander* MftSdk::getMlxlinkCommanderInstance()
 {
     if (_mstMlxLinkSdkInstance == nullptr)
@@ -259,7 +226,10 @@ MlxlinkCommander* MftSdk::getMlxlinkCommanderInstance()
     return _mstMlxLinkSdkInstance.get();
 }
 
-MstStatus MftSdk::initMlxLinkSdk(MlxLinkInitMode initMode, const std::string& port, MstTelemetryPortType portType)
+MstStatus MftSdk::initMlxLinkSdk(MlxLinkInitMode initMode,
+                                 const std::string& port,
+                                 MstTelemetryPortType portType,
+                                 const PcieDpn& dpn)
 {
     clearError();
     try
@@ -273,19 +243,21 @@ MstStatus MftSdk::initMlxLinkSdk(MlxLinkInitMode initMode, const std::string& po
             mlxlinkSdkInitialized[initMode] = true;
         }
 
-        // MstTelemetryPortType documents label_port as unused for a PCIe port, while mlxlink reads
-        // a non-empty port string as a request for one specific local port.
         const bool isPcie = (portType == MST_TELEMETRY_PORT_TYPE_PCIE);
-        const std::string effectivePort = isPcie ? "" : port;
 
-        const auto key = std::make_tuple(effectivePort, initMode, portType);
-        const bool boundToThisView = _mlxLinkPortBound && effectivePort == _currentMlxLinkPort &&
-                                     portType == _currentMlxLinkPortType && _portModeInitialized[key];
+        const auto key = std::make_tuple(port, initMode, portType);
+        const bool boundToThisView = _mlxLinkPortBound && port == _currentMlxLinkPort &&
+                                     portType == _currentMlxLinkPortType && dpn == _currentPcieDpn &&
+                                     _portModeInitialized[key];
         if (!boundToThisView)
         {
-            _mstMlxLinkSdkInstance->initForPort(effectivePort, isPcie);
-            _currentMlxLinkPort = effectivePort;
+            // Stays false if the rebind throws, so the previous binding is not reused.
+            _mlxLinkPortBound = false;
+            applyPcieDpn(dpn, isPcie);
+            _mstMlxLinkSdkInstance->initForPort(port, isPcie);
+            _currentMlxLinkPort = port;
             _currentMlxLinkPortType = portType;
+            _currentPcieDpn = dpn;
             _portModeInitialized[key] = true;
             _mlxLinkPortBound = true;
         }

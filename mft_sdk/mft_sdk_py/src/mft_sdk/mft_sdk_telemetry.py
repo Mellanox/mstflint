@@ -31,6 +31,7 @@
 import json
 from ctypes import POINTER, byref, c_char_p, c_uint32, c_void_p
 from enum import IntEnum, IntFlag
+from typing import Optional
 
 from .mft_sdk_core import LIB
 from .mft_sdk_errors import MstStatus, check_status
@@ -45,7 +46,23 @@ class TelemetryPortType(IntEnum):
     """Mirrors MstTelemetryPortType in mft_sdk_telemetry_types.h."""
 
     NETWORK = 0
-    PCIE = 1  # label_port is not used; mlxlink resolves the device's PCIe links
+    PCIE = 1  # label_port is the PCIe local port; mlxlink resolves the device's PCIe links
+
+
+def _port_selection(port: str, port_type: TelemetryPortType, depth: Optional[int] = None,
+                    pcie_index: Optional[int] = None, node: Optional[int] = None) -> dict:
+    """The port-selection fields of an MstTelemetryContext, validated like the SDK does.
+
+    Shared by every context that extends MstTelemetryContext; label_port is left to the caller.
+    """
+    dpn_given = (depth is not None, pcie_index is not None, node is not None)
+    if any(dpn_given) and not all(dpn_given):
+        raise ValueError("depth, pcie_index and node must be given together")
+    if port and port_type == TelemetryPortType.PCIE and all(dpn_given):
+        raise ValueError("port and depth/pcie_index/node are alternative ways of selecting the "
+                         "same link and cannot both be given")
+    return dict(port_type=int(port_type), has_dpn=all(dpn_given), depth=depth or 0,
+                pcie_index=pcie_index or 0, node=node or 0)
 
 
 # Enum (IntFlag bitmask): telemetry view flags that can be OR-combined.
@@ -83,7 +100,7 @@ def mstGetTelemetryJson(
     port_type: TelemetryPortType = TelemetryPortType.NETWORK,
 ) -> dict:
     """Get one or more telemetry views aggregated into a single JSON dict."""
-    context = _build_context(MstTelemetryContext, port, port_type=int(port_type))
+    context = _build_context(MstTelemetryContext, port, **_port_selection(port, port_type))
     json_ptr = c_char_p()
     status = LIB.mstGetTelemetryJson(device_handle, byref(context), c_uint32(int(views)), byref(json_ptr))
     check_status(MstStatus(status), device_handle)
@@ -107,7 +124,7 @@ def mstGetTelemetryText(
     MODULE, CABLE_DDM, FEC_HISTOGRAM and OPERATIONAL on a network port raise
     MstException(MST_ERROR_NOT_SUPPORTED). Use mstGetTelemetryJson for those.
     """
-    context = _build_context(MstTelemetryContext, port, port_type=int(port_type))
+    context = _build_context(MstTelemetryContext, port, **_port_selection(port, port_type))
     text_ptr = c_char_p()
     status = LIB.mstGetTelemetryText(device_handle, byref(context), c_uint32(int(views)), byref(text_ptr))
     check_status(MstStatus(status), device_handle)
