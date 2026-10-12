@@ -49,6 +49,11 @@ class TelemetryPortType(IntEnum):
     PCIE = 1  # label_port is the PCIe local port; mlxlink resolves the device's PCIe links
 
 
+# depth / pcie_index / node are C unsigned int fields; ctypes silently wraps a value outside
+# that range, which would address a different link
+_DPN_COORDINATE_MAX = 0xFFFFFFFF
+
+
 def _port_selection(port: str, port_type: TelemetryPortType, depth: Optional[int] = None,
                     pcie_index: Optional[int] = None, node: Optional[int] = None) -> dict:
     """The port-selection fields of an MstTelemetryContext, validated like the SDK does.
@@ -58,6 +63,8 @@ def _port_selection(port: str, port_type: TelemetryPortType, depth: Optional[int
     dpn_given = (depth is not None, pcie_index is not None, node is not None)
     if any(dpn_given) and not all(dpn_given):
         raise ValueError("depth, pcie_index and node must be given together")
+    if all(dpn_given) and not all(0 <= value <= _DPN_COORDINATE_MAX for value in (depth, pcie_index, node)):
+        raise ValueError("depth, pcie_index and node must each be between 0 and {}".format(_DPN_COORDINATE_MAX))
     if port and port_type == TelemetryPortType.PCIE and all(dpn_given):
         raise ValueError("port and depth/pcie_index/node are alternative ways of selecting the "
                          "same link and cannot both be given")
@@ -98,9 +105,17 @@ def mstGetTelemetryJson(
     views: TelemetryView = TelemetryView.OPERATIONAL,
     port: str = "",
     port_type: TelemetryPortType = TelemetryPortType.NETWORK,
+    *,
+    depth: Optional[int] = None,
+    pcie_index: Optional[int] = None,
+    node: Optional[int] = None,
 ) -> dict:
-    """Get one or more telemetry views aggregated into a single JSON dict."""
-    context = _build_context(MstTelemetryContext, port, **_port_selection(port, port_type))
+    """Get one or more telemetry views aggregated into a single JSON dict.
+
+    Under PCIe, depth/pcie_index/node address one link instead of port.
+    """
+    context = _build_context(MstTelemetryContext, port,
+                             **_port_selection(port, port_type, depth, pcie_index, node))
     json_ptr = c_char_p()
     status = LIB.mstGetTelemetryJson(device_handle, byref(context), c_uint32(int(views)), byref(json_ptr))
     check_status(MstStatus(status), device_handle)
@@ -117,14 +132,20 @@ def mstGetTelemetryText(
     views: TelemetryView = TelemetryView.COUNTERS,
     port: str = "",
     port_type: TelemetryPortType = TelemetryPortType.NETWORK,
+    *,
+    depth: Optional[int] = None,
+    pcie_index: Optional[int] = None,
+    node: Optional[int] = None,
 ) -> str:
     """Get one or more telemetry views as the report mlxlink itself would print.
 
     Only the views mlxlink reports through a "show" command can be returned; GENERAL,
     MODULE, CABLE_DDM, FEC_HISTOGRAM and OPERATIONAL on a network port raise
     MstException(MST_ERROR_NOT_SUPPORTED). Use mstGetTelemetryJson for those.
+    Under PCIe, depth/pcie_index/node address one link instead of port.
     """
-    context = _build_context(MstTelemetryContext, port, **_port_selection(port, port_type))
+    context = _build_context(MstTelemetryContext, port,
+                             **_port_selection(port, port_type, depth, pcie_index, node))
     text_ptr = c_char_p()
     status = LIB.mstGetTelemetryText(device_handle, byref(context), c_uint32(int(views)), byref(text_ptr))
     check_status(MstStatus(status), device_handle)

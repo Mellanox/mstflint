@@ -148,18 +148,28 @@ class MftSdk():
         views: TelemetryView = TelemetryView.OPERATIONAL,
         port: str = "",
         port_type: TelemetryPortType = TelemetryPortType.NETWORK,
+        *,
+        depth: Optional[int] = None,
+        pcie_index: Optional[int] = None,
+        node: Optional[int] = None,
     ) -> dict:
         """Aggregate one or more telemetry views into a single JSON dict."""
-        return mstGetTelemetryJson(self._device_handle, views, port, port_type)
+        return mstGetTelemetryJson(self._device_handle, views, port, port_type, depth=depth,
+                                   pcie_index=pcie_index, node=node)
 
     def get_telemetry_text(
         self,
         views: TelemetryView = TelemetryView.COUNTERS,
         port: str = "",
         port_type: TelemetryPortType = TelemetryPortType.NETWORK,
+        *,
+        depth: Optional[int] = None,
+        pcie_index: Optional[int] = None,
+        node: Optional[int] = None,
     ) -> str:
         """Get one or more telemetry views as the report mlxlink itself would print."""
-        return mstGetTelemetryText(self._device_handle, views, port, port_type)
+        return mstGetTelemetryText(self._device_handle, views, port, port_type, depth=depth,
+                                   pcie_index=pcie_index, node=node)
 
     def get_amber_json(
         self,
