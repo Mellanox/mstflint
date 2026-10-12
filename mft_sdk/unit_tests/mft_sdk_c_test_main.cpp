@@ -59,6 +59,7 @@ __attribute__((weak)) std::string g_port = "";
 extern "C"
 {
     int amber_collect_test_main(int argc, char** argv);
+    int amber_sheet_select_test_main(int argc, char** argv); // both defined in amber_collect_test.c
     int cable_ddm_test_main(int argc, char** argv);
     int counters_test_main(int argc, char** argv);
     int fec_histogram_test_main(int argc, char** argv);
@@ -83,6 +84,7 @@ struct CSuite
 
 static const CSuite SUITES[] = {
     {"amber_collect", amber_collect_test_main},
+    {"amber_sheet_select", amber_sheet_select_test_main},
     {"cable_ddm", cable_ddm_test_main},
     {"counters", counters_test_main},
     {"fec_histogram", fec_histogram_test_main},

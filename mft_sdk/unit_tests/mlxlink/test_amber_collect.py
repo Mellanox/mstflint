@@ -89,6 +89,18 @@ class Config(BaseConfig):
     GTEST_FILTER = "MftSdkAmberCollectTest.*"
     SUITE_NAME = "amBER Collect"
 
+    # The unified C driver also hosts amber_sheet_select (sheet-filtered
+    # collect; argv is <BDF> <PORT> <SHEET_ID>). It has no Config of its own --
+    # without this line nothing invokes it and it is reachable only by hand.
+    # GENERAL is the sheet every amBER-capable device populates, so the filter
+    # is never vacuously satisfied by an empty sheet.
+    C_SO_EXTRA_SUITES = (("amber_sheet_select", ("", "1")),)
+
+    # amberSheetSelectTestRun() prints this for every field whose sheet_id is
+    # not the requested one, but still exits 0 -- so the filter contract is
+    # enforced here rather than by the C suite's return code.
+    SHEET_SELECT_VIOLATION = "SHEET_SELECT_UNEXPECTED_SHEET_ID"
+
     # mft_sdk_amber.h: MST_AMBER_VALUE_MAX is the BUFFER size, NUL included, so
     # mstGetAmberReport() can only ever return 63 characters. The header says so
     # ("truncated to their buffer sizes ... Prefer mstGetAmberJson"), and this
@@ -414,6 +426,16 @@ class TestSuite(BaseTestSuite):
         if os.path.exists(Config.C_TEST_BIN):
             self.c_runner.run(verbose=v)
             c_amber = self.c_runner.get_amber()
+            # Unsupported parts are settled further down by the SKIP path, which
+            # needs both sides to agree; only a real failure is fatal here.
+            extra_out = self.c_runner.extra_output
+            if not self.c_runner.extra_ok and Config.SDK_UNSUPPORTED_MARKER not in extra_out:
+                print("{}amber_sheet_select failed on {}{}".format(RED, self.device, RESET))
+                return self.RESULT_FAIL
+            if Config.SHEET_SELECT_VIOLATION in extra_out:
+                print("{}sheet-filtered collect returned fields from other sheets "
+                      "on {}{}".format(RED, self.device, RESET))
+                return self.RESULT_FAIL
 
         cpp_gtest_ok = True
         if os.path.exists(Config.CPP_TEST_BIN):

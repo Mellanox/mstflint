@@ -42,6 +42,34 @@
 #include <cstring>
 #include <iostream>
 
+namespace
+{
+
+MstAmberContext makeSheetContext(const char* port, const unsigned int* sheets, unsigned int count)
+{
+    MstAmberContext ctx;
+    MST_AMBER_CONTEXT_INIT(&ctx);
+    if (port && port[0] != '\0')
+    {
+        snprintf(ctx.label_port, sizeof(ctx.label_port), "%s", port);
+    }
+    ctx.sheet_count = count;
+    ctx.sheet_ids = sheets;
+    return ctx;
+}
+
+unsigned int totalFieldCount(const MstAmberReport& report)
+{
+    unsigned int total = 0;
+    for (unsigned int p = 0; p < report.port_count; ++p)
+    {
+        total += report.ports[p].field_count;
+    }
+    return total;
+}
+
+} // namespace
+
 class MftSdkAmberCollectTest : public ::testing::Test
 {
 };
@@ -103,8 +131,7 @@ TEST_F(MftSdkAmberCollectTest, InvalidPortFailsCleanly)
     ASSERT_FALSE(g_devicePci.empty()) << "A device is required (-d <BDF>)";
     ASSERT_EQ(mstGetDeviceHandle(&device, g_devicePci.c_str()), MST_SUCCESS);
 
-    MST_AMBER_CONTEXT_INIT(&context);
-    snprintf(context.label_port, sizeof(context.label_port), "%s", "cov_no_such_port");
+    context = makeSheetContext("cov_no_such_port", nullptr, 0);
     memset(&report, 0xab, sizeof(report));
 
     jsonStatus = mstGetAmberJson(device, &context, &json);
@@ -134,7 +161,7 @@ TEST_F(MftSdkAmberCollectTest, NullContextUsesDefaultPort)
     ASSERT_FALSE(g_devicePci.empty()) << "A device is required (-d <BDF>)";
     ASSERT_EQ(mstGetDeviceHandle(&device, g_devicePci.c_str()), MST_SUCCESS);
 
-    MST_AMBER_CONTEXT_INIT(&emptyContext);
+    emptyContext = makeSheetContext("", nullptr, 0);
     nullContextStatus = mstGetAmberJson(device, nullptr, &nullContextJson);
     emptyContextStatus = mstGetAmberJson(device, &emptyContext, &emptyContextJson);
     EXPECT_EQ(nullContextStatus, emptyContextStatus);
@@ -167,6 +194,147 @@ TEST_F(MftSdkAmberCollectTest, NullContextUsesDefaultPort)
         }
     }
 
+    mstReleaseDeviceHandle(device);
+}
+
+TEST_F(MftSdkAmberCollectTest, NullDevice_WithSheets_ReturnsInvalidArgument)
+{
+    unsigned int sheets[] = {MST_AMBER_SHEET_GENERAL};
+    MstAmberContext ctx = makeSheetContext("", sheets, 1);
+    char* json = nullptr;
+    MstAmberReport report;
+    memset(&report, 0, sizeof(report));
+
+    EXPECT_EQ(mstGetAmberJson(nullptr, &ctx, &json), MST_ERROR_INVALID_ARGUMENT);
+    EXPECT_EQ(json, nullptr);
+    EXPECT_EQ(mstGetAmberReport(nullptr, &ctx, &report), MST_ERROR_INVALID_ARGUMENT);
+    EXPECT_EQ(report.port_count, 0u);
+    EXPECT_EQ(report.ports, nullptr);
+}
+
+TEST_F(MftSdkAmberCollectTest, UnknownSheetId_ReturnsFailedToCollect)
+{
+    MstDevice device = nullptr;
+    unsigned int badSheets[] = {100};
+
+    ASSERT_FALSE(g_devicePci.empty()) << "A device is required (-d <BDF>)";
+    ASSERT_EQ(mstGetDeviceHandle(&device, g_devicePci.c_str()), MST_SUCCESS);
+
+    MstAmberContext ctx = makeSheetContext(g_port.c_str(), badSheets, 1);
+    char* json = nullptr;
+    MstAmberReport report;
+    memset(&report, 0, sizeof(report));
+
+    EXPECT_EQ(mstGetAmberJson(device, &ctx, &json), MST_ERROR_FAILED_TO_COLLECT_AMBER);
+    EXPECT_EQ(json, nullptr);
+    EXPECT_EQ(mstGetAmberReport(device, &ctx, &report), MST_ERROR_FAILED_TO_COLLECT_AMBER);
+    EXPECT_EQ(report.port_count, 0u);
+    EXPECT_STRNE(mstGetLastErrorString(device), "");
+
+    mstFreeJsonString(json);
+    mstFreeAmberReport(&report);
+    mstReleaseDeviceHandle(device);
+}
+
+TEST_F(MftSdkAmberCollectTest, InternalOnlySheet15_Rejected)
+{
+    MstDevice device = nullptr;
+    /* Sheet 15 (PHY_DEBUG_INFO) is internal-only; the ext SDK must reject it. */
+    unsigned int internalSheet[] = {15};
+
+    ASSERT_FALSE(g_devicePci.empty()) << "A device is required (-d <BDF>)";
+    ASSERT_EQ(mstGetDeviceHandle(&device, g_devicePci.c_str()), MST_SUCCESS);
+
+    MstAmberContext ctx = makeSheetContext(g_port.c_str(), internalSheet, 1);
+    char* json = nullptr;
+
+    EXPECT_EQ(mstGetAmberJson(device, &ctx, &json), MST_ERROR_FAILED_TO_COLLECT_AMBER);
+    EXPECT_EQ(json, nullptr);
+    EXPECT_STRNE(mstGetLastErrorString(device), "");
+
+    mstFreeJsonString(json);
+    mstReleaseDeviceHandle(device);
+}
+
+TEST_F(MftSdkAmberCollectTest, DuplicateSheet_ReturnsFailedToCollect)
+{
+    MstDevice device = nullptr;
+    unsigned int dupSheets[] = {MST_AMBER_SHEET_GENERAL, MST_AMBER_SHEET_GENERAL};
+
+    ASSERT_FALSE(g_devicePci.empty()) << "A device is required (-d <BDF>)";
+    ASSERT_EQ(mstGetDeviceHandle(&device, g_devicePci.c_str()), MST_SUCCESS);
+
+    MstAmberContext ctx = makeSheetContext(g_port.c_str(), dupSheets, 2);
+    char* json = nullptr;
+
+    EXPECT_EQ(mstGetAmberJson(device, &ctx, &json), MST_ERROR_FAILED_TO_COLLECT_AMBER);
+    EXPECT_EQ(json, nullptr);
+    EXPECT_STRNE(mstGetLastErrorString(device), "");
+
+    mstFreeJsonString(json);
+    mstReleaseDeviceHandle(device);
+}
+
+TEST_F(MftSdkAmberCollectTest, SingleSheet_AllFieldsHaveExpectedSheetId)
+{
+    MstDevice device = nullptr;
+    unsigned int sheets[] = {MST_AMBER_SHEET_GENERAL};
+
+    ASSERT_FALSE(g_devicePci.empty()) << "A device is required (-d <BDF>)";
+    ASSERT_EQ(mstGetDeviceHandle(&device, g_devicePci.c_str()), MST_SUCCESS);
+
+    MstAmberContext ctx = makeSheetContext(g_port.c_str(), sheets, 1);
+    MstAmberReport report;
+    memset(&report, 0, sizeof(report));
+
+    MstStatus status = mstGetAmberReport(device, &ctx, &report);
+    if (status == MST_SUCCESS && report.port_count > 0)
+    {
+        for (unsigned int p = 0; p < report.port_count; ++p)
+        {
+            for (unsigned int f = 0; f < report.ports[p].field_count; ++f)
+            {
+                EXPECT_EQ(report.ports[p].fields[f].sheet_id, static_cast<unsigned int>(MST_AMBER_SHEET_GENERAL))
+                  << "Unexpected sheet_id on field: " << report.ports[p].fields[f].field_name;
+            }
+        }
+    }
+    /* else: device returned no ports — nothing to assert, not a failure */
+
+    mstFreeAmberReport(&report);
+    mstReleaseDeviceHandle(device);
+}
+
+TEST_F(MftSdkAmberCollectTest, TwoSheets_FewerFieldsThanFullCollect)
+{
+    MstDevice device = nullptr;
+
+    ASSERT_FALSE(g_devicePci.empty()) << "A device is required (-d <BDF>)";
+    ASSERT_EQ(mstGetDeviceHandle(&device, g_devicePci.c_str()), MST_SUCCESS);
+
+    /* Full collect: no sheet filter */
+    MstAmberContext fullCtx = makeSheetContext(g_port.c_str(), nullptr, 0);
+    MstAmberReport fullReport;
+    memset(&fullReport, 0, sizeof(fullReport));
+    MstStatus fullStatus = mstGetAmberReport(device, &fullCtx, &fullReport);
+
+    /* Partial: just GENERAL + SYSTEM */
+    unsigned int partialSheets[] = {MST_AMBER_SHEET_GENERAL, MST_AMBER_SHEET_SYSTEM};
+    MstAmberContext partialCtx = makeSheetContext(g_port.c_str(), partialSheets, 2);
+    MstAmberReport partialReport;
+    memset(&partialReport, 0, sizeof(partialReport));
+    MstStatus partialStatus = mstGetAmberReport(device, &partialCtx, &partialReport);
+
+    if (fullStatus == MST_SUCCESS && partialStatus == MST_SUCCESS && fullReport.port_count > 0 &&
+        partialReport.port_count > 0)
+    {
+        EXPECT_LT(totalFieldCount(partialReport), totalFieldCount(fullReport))
+          << "Sheet-filtered collect should return fewer fields than a full collect";
+    }
+    /* else: amBER unsupported (pre-16nm), no ports, or the collect failed — nothing to assert */
+
+    mstFreeAmberReport(&fullReport);
+    mstFreeAmberReport(&partialReport);
     mstReleaseDeviceHandle(device);
 }
 
