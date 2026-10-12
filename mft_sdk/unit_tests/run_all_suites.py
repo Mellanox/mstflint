@@ -69,6 +69,7 @@ SUITES = [
     ("mlxlink", "mlxlink/test_fec_histogram.py"),
     ("mlxlink", "mlxlink/test_module_info.py"),
     ("mlxlink", "mlxlink/test_cable_ddm.py"),
+    ("mlxlink", "mlxlink/test_amber_collect.py"),
 ]
 
 ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")

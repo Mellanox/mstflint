@@ -662,6 +662,12 @@ TEST_F(MftSdkSegfaultTest, NullDeviceToAllApis)
     MST_QUERY_INIT(&modInfo);
     EXPECT_EQ(mstGetModuleInfo(nullDev, nullptr, &modInfo), MST_ERROR_INVALID_ARGUMENT);
 
+    char* amberJson = nullptr;
+    MstAmberReport amberReport;
+    memset(&amberReport, 0, sizeof(amberReport));
+    EXPECT_EQ(mstGetAmberJson(nullDev, nullptr, &amberJson), MST_ERROR_INVALID_ARGUMENT);
+    EXPECT_EQ(mstGetAmberReport(nullDev, nullptr, &amberReport), MST_ERROR_INVALID_ARGUMENT);
+
     uint32_t crData[4] = {0};
     EXPECT_EQ(mstReadCRSpace(nullDev, 0, crData, sizeof(crData)), MST_ERROR_INVALID_ARGUMENT);
     EXPECT_EQ(mstWriteCRSpace(nullDev, 0, crData, sizeof(crData)), MST_ERROR_INVALID_ARGUMENT);
@@ -717,6 +723,13 @@ TEST_F(MftSdkSegfaultTest, FreeNullPointersSafe)
     EXPECT_EQ(mstFreeHcaCapabilityMap(NULL), MST_ERROR_INVALID_ARGUMENT);
     EXPECT_EQ(mstFreeHcaCapabilitiesArray(NULL, 0), MST_ERROR_INVALID_ARGUMENT);
     EXPECT_EQ(mstReleaseDeviceHandle(NULL), MST_ERROR_INVALID_ARGUMENT);
+    EXPECT_EQ(mstFreeJsonString(NULL), MST_ERROR_INVALID_ARGUMENT);
+    mstFreeAmberReport(NULL);
+
+    MstAmberReport amberReport;
+    memset(&amberReport, 0, sizeof(amberReport));
+    mstFreeAmberReport(&amberReport);
+    mstFreeAmberReport(&amberReport);
 }
 
 // C6. mstGetAvailablePCIeSubinterfaces — NULL deviceInfo
