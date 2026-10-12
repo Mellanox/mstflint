@@ -47,6 +47,8 @@ extern "C"
 #endif
     /**
      * @brief Telemetry views selectable by mstGetTelemetryJson(). Combine with bitwise OR.
+     * A mask with a bit outside these values is rejected with MST_ERROR_INVALID_ARGUMENT. When adding a view, also
+     * add it to ALL_TELEMETRY_VIEWS in mft_sdk_telemetry.cpp.
      */
     typedef enum MstTelemetryView
     {

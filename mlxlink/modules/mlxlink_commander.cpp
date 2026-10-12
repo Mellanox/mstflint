@@ -416,6 +416,11 @@ std::string MlxlinkCommander::getAllUnhandledErrors()
     return _allUnhandledErrors;
 }
 
+void MlxlinkCommander::clearUnhandledErrors()
+{
+    _allUnhandledErrors.clear();
+}
+
 void MlxlinkCommander::queryPddrModuleInfoPage(const string flags)
 {
     try
