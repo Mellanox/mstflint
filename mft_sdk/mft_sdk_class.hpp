@@ -51,6 +51,7 @@
 #include "mlxlink/modules/mlxlink_commander.h"
 #include "mtcr.h"
 #include "hca_capabilities/hca_capabilities.h"
+#include "mft_sdk/mft_sdk_telemetry_common.hpp"
 
 namespace mft
 {
@@ -68,6 +69,7 @@ enum class MlxLinkInitMode
     CABLE_DDM,
     MODULE_INFO
 };
+
 class MftSdk
 {
 public:
@@ -103,8 +105,16 @@ public:
                                      const MstTelemetryContext& context = MstTelemetryContext{0, ""});
     MstStatus getTelemetryJson(uint32_t views, const MstTelemetryContext& context, char** jsonOut);
     MstStatus getTelemetryText(uint32_t views, const MstTelemetryContext& context, char** textOut);
-    MstStatus getAmberJson(const std::string& port, const std::vector<unsigned int>& sheets, char** jsonOut);
-    MstStatus getAmberReport(const std::string& port, const std::vector<unsigned int>& sheets, MstAmberReport* report);
+    MstStatus getAmberJson(const std::string& port,
+                           MstTelemetryPortType portType,
+                           const PcieDpn& dpn,
+                           const std::vector<unsigned int>& sheets,
+                           char** jsonOut);
+    MstStatus getAmberReport(const std::string& port,
+                             MstTelemetryPortType portType,
+                             const PcieDpn& dpn,
+                             const std::vector<unsigned int>& sheets,
+                             MstAmberReport* report);
 
     // HCA capabilities SDK functions
     MstStatus getCapabilityTypesList(std::vector<std::string>& capabilityTypes);
@@ -170,8 +180,10 @@ private:
     MlxlinkCommander* getMlxlinkCommanderInstance();
     MstStatus initMlxLinkSdk(MlxLinkInitMode initMode = MlxLinkInitMode::NONE,
                              const std::string& port = "",
-                             MstTelemetryPortType portType = MST_TELEMETRY_PORT_TYPE_NETWORK);
+                             MstTelemetryPortType portType = MST_TELEMETRY_PORT_TYPE_NETWORK,
+                             const PcieDpn& dpn = PcieDpn());
     void initMlxLinkSdkUserInput(MlxLinkInitMode initMode);
+    void applyPcieDpn(const PcieDpn& dpn, bool isPcie);
     MstStatus
       runTelemetryViews(uint32_t views, const std::string& port, MstTelemetryPortType portType, Json::Value& root);
     void applyAmberSheetSelection(const std::vector<unsigned int>& sheets);
@@ -273,6 +285,7 @@ private:
     std::map<MlxLinkInitMode, bool> mlxlinkSdkInitialized;
     std::string _currentMlxLinkPort;
     MstTelemetryPortType _currentMlxLinkPortType = MST_TELEMETRY_PORT_TYPE_NETWORK;
+    PcieDpn _currentPcieDpn;
     bool _mlxLinkPortBound = false;
     std::map<std::tuple<std::string, MlxLinkInitMode, MstTelemetryPortType>, bool> _portModeInitialized;
 };

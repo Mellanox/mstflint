@@ -51,7 +51,7 @@ int main(int argc, char** argv)
     const char* deviceName = argc > 1 ? argv[1] : "";
     const char* portName = argc > 2 ? argv[2] : "";
 
-    return amberTestRun(deviceName, portName, 0);
+    return amberTestRun(deviceName, portName, 0, 0);
 }
 
 /*

@@ -84,9 +84,10 @@ class Config(BaseConfig):
     CPP_TEST_BIN = BaseConfig.PROJECT_PATH + \
         "/bazel-bin/user/mft_sdk/unit_tests/mlxlink/amber-collect-cpp-test"
     # The whole fixture, not one named case: new cases must run here
-    # automatically. Only GetAmberCollect emits AMBER_* records, so the extra
-    # cases cost a few ms and add their assertions to this suite's verdict.
-    GTEST_FILTER = "MftSdkAmberCollectTest.*"
+    # automatically. The PCIe collect cases are left out: their AMBER_* records
+    # would mix into the network collect that is diffed against mlxlink.
+    GTEST_FILTER = ("MftSdkAmberCollectTest.*-"
+                    "MftSdkAmberCollectTest.GetAmberCollectPcie*")
     SUITE_NAME = "amBER Collect"
 
     # The unified C driver also hosts amber_sheet_select (sheet-filtered

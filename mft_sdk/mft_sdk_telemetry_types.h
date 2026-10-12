@@ -36,6 +36,7 @@
 
 #pragma once
 
+#include <stdbool.h>
 #include <mft_sdk/mft_sdk_query.h>
 #include <mft_sdk/mft_sdk_types.h>
 
@@ -47,16 +48,17 @@
 #define MST_TELEMETRY_PORT_MAX_LENGTH 32
 
 /**
- * @brief The kind of port a telemetry request addresses.
+ * @brief The kind of port an SDK request addresses.
  *
  * A network port is named by MstTelemetryContext_t::label_port. A PCIe port is
- * not: the firmware identifies a PCIe link by a depth/pcie_index/node triple,
- * which the SDK lets mlxlink resolve to the links the device actually reports.
+ * named by its local port in label_port, or by a depth/pcie_index/node triple
+ * (MstTelemetryContext_t::has_dpn); the SDK lets mlxlink resolve either to the
+ * links the device actually reports.
  */
 typedef enum MstTelemetryPortType
 {
     MST_TELEMETRY_PORT_TYPE_NETWORK = 0, /**< Network port, selected by label_port. */
-    MST_TELEMETRY_PORT_TYPE_PCIE = 1     /**< PCIe port; label_port is not used. */
+    MST_TELEMETRY_PORT_TYPE_PCIE = 1     /**< PCIe port; label_port is its local port. */
 } MstTelemetryPortType;
 
 /**
@@ -72,7 +74,9 @@ typedef enum MstTelemetryPortType
  *
  * @ref port_type selects between a network port and a PCIe one; it defaults to
  * MST_TELEMETRY_PORT_TYPE_NETWORK, which is what a caller compiled against an
- * older struct is taken to mean. Only MST_TELEMETRY_VIEW_OPERATIONAL and
+ * older struct is taken to mean. Under PCIe, @ref label_port is a PCIe local port;
+ * @ref has_dpn addresses the link by @ref depth / @ref pcie_index / @ref node
+ * instead, and giving both is rejected. Only MST_TELEMETRY_VIEW_OPERATIONAL and
  * MST_TELEMETRY_VIEW_COUNTERS have a PCIe meaning - every other view returns
  * MST_ERROR_NOT_SUPPORTED under MST_TELEMETRY_PORT_TYPE_PCIE.
  *
@@ -87,7 +91,11 @@ typedef struct MstTelemetryContext_t
 {
     unsigned int size; /**< Must be first; set to sizeof(MstTelemetryContext) before use. */
     char label_port[MST_TELEMETRY_PORT_MAX_LENGTH]; /**< Port label (e.g. "1/1/1"); empty string => device default. */
-    unsigned int port_type; /**< An MstTelemetryPortType; 0 (network) when the caller predates this field. */
+    unsigned int port_type;  /**< An MstTelemetryPortType; 0 (network) when the caller predates this field. */
+    bool has_dpn;            /**< @ref depth / @ref pcie_index / @ref node address a specific PCIe link. */
+    unsigned int depth;      /**< PCIe hierarchy depth. Meaningful only when @ref has_dpn is set. */
+    unsigned int pcie_index; /**< PCIe domain index. Meaningful only when @ref has_dpn is set. */
+    unsigned int node;       /**< Node within @ref depth. Meaningful only when @ref has_dpn is set. */
 } MstTelemetryContext;
 
 /**

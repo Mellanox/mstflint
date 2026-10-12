@@ -31,10 +31,12 @@
 import json
 from ctypes import POINTER, byref, c_char, c_char_p, c_uint, c_void_p, sizeof
 from enum import IntEnum
-from typing import List, Sequence
+from typing import List, Optional, Sequence
 
 from .mft_sdk_core import LIB
 from .mft_sdk_errors import MstStatus, check_status
+from .mft_sdk_telemetry import TelemetryPortType, _port_selection
+from .mft_sdk_telemetry_types import MstTelemetryContext
 from .mft_sdk_types import CountedArray, MstDevice, MftSdkStruct
 
 MST_AMBER_PORT_MAX_LENGTH = 32
@@ -66,15 +68,13 @@ class AmberSheet(IntEnum):
     SERDES_5NM_GEN8 = 21
 
 
-class MstAmberContext(MftSdkStruct):
+class MstAmberContext(MstTelemetryContext):
     """Context an amber call takes.
 
-    size must come first: the SDK reads it to tell which version of this struct the
-    caller was built against. An empty label_port collects every port of a switch
-    device, a single port on an HCA. An empty sheet_ids collects every sheet.
+    Extends MstTelemetryContext, which carries the port selection (label_port, port_type and
+    the PCIe DPN) with the same meaning as for telemetry. An empty label_port collects every
+    port of a switch device, a single port on an HCA. An empty sheet_ids collects every sheet.
     """
-    size: int = c_uint
-    label_port: str = c_char * MST_AMBER_PORT_MAX_LENGTH
     sheet_ids: List[int] = CountedArray(count="sheet_count", count_c_type=c_uint, element_c_type=c_uint)
 
 
@@ -104,14 +104,17 @@ LIB.mstGetAmberReport.argtypes = [
 LIB.mstFreeAmberReport.argtypes = [POINTER(MstAmberReport.c_type)]
 
 
-def _build_amber_context(port: str, sheets: Sequence[int]):
-    return MstAmberContext(size=sizeof(MstAmberContext.c_type), label_port=port,
-                           sheet_ids=list(sheets)).to_c()
+def _build_amber_context(port: str, sheets: Sequence[int], *, port_type: TelemetryPortType = TelemetryPortType.NETWORK,
+                         depth: Optional[int] = None, pcie_index: Optional[int] = None, node: Optional[int] = None):
+    return MstAmberContext(size=sizeof(MstAmberContext.c_type), label_port=port, sheet_ids=list(sheets),
+                           **_port_selection(port, port_type, depth, pcie_index, node)).to_c()
 
 
-def mstGetAmberJson(device_handle: MstDevice, port: str = "", sheets: Sequence[int] = ()) -> dict:
+def mstGetAmberJson(device_handle: MstDevice, port: str = "", sheets: Sequence[int] = (), *,
+                    port_type: TelemetryPortType = TelemetryPortType.NETWORK, depth: Optional[int] = None,
+                    pcie_index: Optional[int] = None, node: Optional[int] = None) -> dict:
     """Collect amBER as a JSON dict keyed by port; empty port/sheets collect all ports/sheets."""
-    context = _build_amber_context(port, sheets)
+    context = _build_amber_context(port, sheets, port_type=port_type, depth=depth, pcie_index=pcie_index, node=node)
     json_ptr = c_char_p()
     status = LIB.mstGetAmberJson(device_handle, byref(context), byref(json_ptr))
     check_status(MstStatus(status), device_handle)
@@ -124,13 +127,15 @@ def mstGetAmberJson(device_handle: MstDevice, port: str = "", sheets: Sequence[i
             LIB.mstFreeJsonString(json_ptr)
 
 
-def mstGetAmberReport(device_handle: MstDevice, port: str = "", sheets: Sequence[int] = ()) -> dict:
+def mstGetAmberReport(device_handle: MstDevice, port: str = "", sheets: Sequence[int] = (), *,
+                      port_type: TelemetryPortType = TelemetryPortType.NETWORK, depth: Optional[int] = None,
+                      pcie_index: Optional[int] = None, node: Optional[int] = None) -> dict:
     """Collect amBER as {"amber_version": str, "ports": [...]}; empty port/sheets collect all.
 
     Each entry in "ports" is {"label_port": str, "fields": [{"sheet_id": int, "field_name": str,
     "value": str}, ...]}, mirroring one MstAmberPort.
     """
-    context = _build_amber_context(port, sheets)
+    context = _build_amber_context(port, sheets, port_type=port_type, depth=depth, pcie_index=pcie_index, node=node)
     report = MstAmberReport.c_type()
     status = LIB.mstGetAmberReport(device_handle, byref(context), byref(report))
     check_status(MstStatus(status), device_handle)

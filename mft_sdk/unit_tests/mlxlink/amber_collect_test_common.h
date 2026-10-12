@@ -159,15 +159,23 @@ static MstStatus amberTestCollectReport(MstDevice device, const MstAmberContext*
 #define AMBER_TEST_FAILED 1
 #define AMBER_TEST_UNSUPPORTED 2
 #define AMBER_UNSUPPORTED_MARKER "supported on 16nm devices and above"
+#define AMBER_PCIE_UNSUPPORTED_MARKER "No PCIE in this device!"
 
 static int amberTestUnsupported(const char* error)
 {
     return error != NULL && strstr(error, AMBER_UNSUPPORTED_MARKER) != NULL;
 }
 
+static int amberTestPcieUnsupported(const char* error)
+{
+    return error != NULL && strstr(error, AMBER_PCIE_UNSUPPORTED_MARKER) != NULL;
+}
+
 /* AMBER_TEST_OK only when both entry points succeeded: a collect failure on a device
- * that DOES support amBER must fail the test. */
-static int amberTestRun(const char* deviceName, const char* portName, int reportFirst)
+ * that DOES support amBER must fail the test. isPcie collects a PCIe link instead of a
+ * network port: portName is then a PCIe local port; UNSUPPORTED then also covers devices
+ * without PCIe management, per AMBER_PCIE_UNSUPPORTED_MARKER. */
+static int amberTestRun(const char* deviceName, const char* portName, int isPcie, int reportFirst)
 {
     int jsonValid = 0;
     int reportValid = 0;
@@ -185,11 +193,15 @@ static int amberTestRun(const char* deviceName, const char* portName, int report
     }
 
     MST_AMBER_CONTEXT_INIT(&context);
+    if (isPcie)
+    {
+        context.base.port_type = MST_TELEMETRY_PORT_TYPE_PCIE;
+    }
     if (portName != NULL && portName[0] != '\0')
     {
-        snprintf(context.label_port, sizeof(context.label_port), "%s", portName);
+        snprintf(context.base.label_port, sizeof(context.base.label_port), "%s", portName);
     }
-    amberTestPrintHex("AMBER_REQUEST_PORT_HEX", context.label_port, sizeof(context.label_port));
+    amberTestPrintHex("AMBER_REQUEST_PORT_HEX", context.base.label_port, sizeof(context.base.label_port));
     printf("AMBER_CALL_ORDER %s\n", reportFirst ? "REPORT_JSON" : "JSON_REPORT");
 
     if (reportFirst)
@@ -206,7 +218,8 @@ static int amberTestRun(const char* deviceName, const char* portName, int report
     if (jsonStatus != MST_SUCCESS || reportStatus != MST_SUCCESS)
     {
         /* Read the error BEFORE the handle goes away. */
-        int unsupported = amberTestUnsupported(mstGetLastErrorString(device));
+        const char* error = mstGetLastErrorString(device);
+        int unsupported = isPcie ? amberTestPcieUnsupported(error) : amberTestUnsupported(error);
         printf("AMBER_UNSUPPORTED %u\n", unsupported ? 1u : 0u);
         mstReleaseDeviceHandle(device);
         return unsupported ? AMBER_TEST_UNSUPPORTED : AMBER_TEST_FAILED;
@@ -250,7 +263,7 @@ static int amberSheetSelectTestRun(const char* deviceName, const char* portName,
     MST_AMBER_CONTEXT_INIT(&context);
     if (portName != NULL && portName[0] != '\0')
     {
-        snprintf(context.label_port, sizeof(context.label_port), "%s", portName);
+        snprintf(context.base.label_port, sizeof(context.base.label_port), "%s", portName);
     }
     context.sheet_count = 1;
     context.sheet_ids = sheets;

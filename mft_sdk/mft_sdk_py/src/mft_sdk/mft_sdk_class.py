@@ -161,13 +161,33 @@ class MftSdk():
         """Get one or more telemetry views as the report mlxlink itself would print."""
         return mstGetTelemetryText(self._device_handle, views, port, port_type)
 
-    def get_amber_json(self, port: str = "", sheets: Sequence[int] = ()) -> dict:
+    def get_amber_json(
+        self,
+        port: str = "",
+        sheets: Sequence[int] = (),
+        *,
+        port_type: TelemetryPortType = TelemetryPortType.NETWORK,
+        depth: Optional[int] = None,
+        pcie_index: Optional[int] = None,
+        node: Optional[int] = None,
+    ) -> dict:
         """Collect amBER as a JSON dict keyed by port; empty port/sheets collect all ports/sheets."""
-        return mstGetAmberJson(self._device_handle, port, sheets)
+        return mstGetAmberJson(self._device_handle, port, sheets, port_type=port_type, depth=depth,
+                               pcie_index=pcie_index, node=node)
 
-    def get_amber_report(self, port: str = "", sheets: Sequence[int] = ()) -> dict:
+    def get_amber_report(
+        self,
+        port: str = "",
+        sheets: Sequence[int] = (),
+        *,
+        port_type: TelemetryPortType = TelemetryPortType.NETWORK,
+        depth: Optional[int] = None,
+        pcie_index: Optional[int] = None,
+        node: Optional[int] = None,
+    ) -> dict:
         """Collect amBER as an amber_version envelope over per-port field dicts."""
-        return mstGetAmberReport(self._device_handle, port, sheets)
+        return mstGetAmberReport(self._device_handle, port, sheets, port_type=port_type, depth=depth,
+                                 pcie_index=pcie_index, node=node)
 
     def set_i2c_secondary_address(self, i2c_secondary_address: int) -> None:
         """Set the I2C secondary address for the device.

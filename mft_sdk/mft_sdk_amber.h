@@ -37,10 +37,12 @@
 #ifndef MFT_SDK_AMBER_H
 #define MFT_SDK_AMBER_H
 
+#include <stdbool.h>
 #include <string.h>
 #include <mft_sdk/mft_sdk_types.h>
 #include <mft_sdk/mft_sdk_errors.h>
-#include <mft_sdk/mft_sdk_telemetry.h> /* mstFreeJsonString() */
+#include <mft_sdk/mft_sdk_telemetry.h>
+#include <mft_sdk/mft_sdk_telemetry_types.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -81,10 +83,11 @@ extern "C"
     /**
      * @brief amBER collect context, passed by pointer to the SDK.
      *
-     * @ref size MUST be the first member and MUST equal sizeof(MstAmberContext); it lets the SDK
-     * detect the ABI version the caller compiled against when the struct is extended. Initialize with
-     * MST_AMBER_CONTEXT_INIT(). An empty @ref label_port collects every port of a switch device (a
-     * single port on an HCA); pass NULL for the same behavior.
+     * Extends MstTelemetryContext, which carries the port selection (label_port, port_type and the PCIe
+     * DPN) with the same meaning as for telemetry. @ref base.size MUST be the first member and MUST equal
+     * sizeof(MstAmberContext); it lets the SDK detect the ABI version the caller compiled against when
+     * the struct is extended. Initialize with MST_AMBER_CONTEXT_INIT(). An empty label_port collects every
+     * port of a switch device (a single port on an HCA); pass NULL for the same behavior.
      *
      * @ref sheet_ids narrows the collection itself, so it is what makes a collect cheaper rather
      * than just trimming the output. The array is borrowed for the duration of the call and is
@@ -92,17 +95,16 @@ extern "C"
      */
     typedef struct MstAmberContext_t
     {
-        unsigned int size;                          /**< Must be first; set to sizeof(MstAmberContext). */
-        char label_port[MST_AMBER_PORT_MAX_LENGTH]; /**< Port label; empty => all ports. */
-        unsigned int sheet_count;                   /**< Number of entries in @ref sheet_ids. */
-        const unsigned int* sheet_ids;              /**< MstAmberSheet values; NULL => every sheet. */
+        MstTelemetryContext base;      /**< Port selection; base.size is sizeof(MstAmberContext). */
+        unsigned int sheet_count;      /**< Number of entries in @ref sheet_ids. */
+        const unsigned int* sheet_ids; /**< MstAmberSheet values; NULL => every sheet. */
     } MstAmberContext;
 
-#define MST_AMBER_CONTEXT_INIT(a)     \
-    do                                \
-    {                                 \
-        memset((a), 0, sizeof(*(a))); \
-        (a)->size = sizeof(*(a));     \
+#define MST_AMBER_CONTEXT_INIT(a)      \
+    do                                 \
+    {                                  \
+        memset((a), 0, sizeof(*(a)));  \
+        (a)->base.size = sizeof(*(a)); \
     } while (0)
 
     /**
