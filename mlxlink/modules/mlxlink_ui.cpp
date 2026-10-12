@@ -35,6 +35,7 @@
 #include "mlxlink_ui.h"
 #include <mlxreg/mlxreg_lib/mlxreg_parser.h>
 #include <algorithm>
+#include <set>
 MlxlinkUi::MlxlinkUi() : CommandLineRequester(MLXLINK_EXEC " OPTIONS"), _cmdParser(MLXLINK_EXEC)
 {
     _mlxlinkCommander = nullptr;
@@ -139,6 +140,7 @@ void MlxlinkUi::printSynopsisQueries()
     MlxlinkRecord::printFlagLine(PCIE_LINKS_FLAG_SHORT, PCIE_LINKS_FLAG, "",
                                  "Show valid PCIe links (with --" PORT_TYPE_FLAG " PCIE)");
     MlxlinkRecord::printFlagLine(PLR_INFO_FLAG_SHORT, PLR_INFO_FLAG, "", "Show PLR Info");
+    MlxlinkRecord::printFlagLine(APSU_INFO_FLAG_SHORT, APSU_INFO_FLAG, "", "Show APSU (ILT/RTS) Info");
     MlxlinkRecord::printFlagLine(KR_INFO_FLAG_SHORT, KR_INFO_FLAG, "", "Show KR Info");
     MlxlinkRecord::printFlagLine(LTX_INFO_FLAG_SHORT, LTX_INFO_FLAG, "", "Show LTX status and logger history");
     MlxlinkRecord::printFlagLine(HOST_CLASS_FLAG_SHORT, HOST_CLASS_FLAG, "", "Show Host Class Info");
@@ -305,6 +307,76 @@ void MlxlinkUi::printSynopsisCommands()
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PLR_TX_CRC_FLAG_SHORT, PLR_TX_CRC_FLAG, "tx_crc",
                                  "TX CRC over PLR: 0/DS(disable), 1/EN(enable) (Optional)");
+    MlxlinkRecord::printFlagLine(SET_APSU_FLAG_SHORT, SET_APSU_FLAG, "",
+                                 "Set APSU (ILT/RTS) Configuration. Takes one or more of the parameters below; "
+                                 "they are applied in a single write");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_CTL_FLAG_SHORT, APSU_CTL_FLAG, "ctl", "APSU [EN(enable)/DS(disable)] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_TRAINING_EN_FLAG_SHORT, APSU_TRAINING_EN_FLAG, "training_en",
+                                 "Training Enable [EN(enable)/DS(disable)] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_PEER_DET_FLAG_SHORT, APSU_PEER_DET_FLAG, "peer_det",
+                                 "LT Peer Detection [EN(enable)/DS(disable)] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_HOP_COUNT_CTL_FLAG_SHORT, APSU_HOP_COUNT_CTL_FLAG, "hop_count_ctl",
+                                 "Hop Count Control [EN(enable)/DS(disable)] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_NLUT_FLAG_SHORT, APSU_NLUT_FLAG, "nlut",
+                                 "nLUT Control [EN(enable)/DS(disable)] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_VALIDATION_EN_FLAG_SHORT, APSU_VALIDATION_EN_FLAG, "validation_en",
+                                 "ILT Frame Validation [EN(enable)/DS(disable)] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_RESTART_FLAG_SHORT, APSU_RESTART_FLAG, "", "Restart Training (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_RECOVERY_TIMER_FLAG_SHORT, APSU_RECOVERY_TIMER_FLAG, "recovery_timer",
+                                 "Recovery Timer in ms [0-255] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_MAX_RECOVERY_EVENTS_FLAG_SHORT, APSU_MAX_RECOVERY_EVENTS_FLAG,
+                                 "max_recovery_events", "Max Recovery Events [0-255] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_MAX_WAIT_TIMER_FLAG_SHORT, APSU_MAX_WAIT_TIMER_FLAG, "max_wait_timer",
+                                 "Max Wait Timer in seconds [0-65535] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_PROPAGATION_TIMER_FLAG_SHORT, APSU_PROPAGATION_TIMER_FLAG, "propagation_timer",
+                                 "Propagation Timer in 10ms units [0-31] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_QUIET_TIMER_FLAG_SHORT, APSU_QUIET_TIMER_FLAG, "quiet_timer",
+                                 "Quiet Timer in 10ms units [0-15] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_INVERT_TO_FLAG_SHORT, APSU_INVERT_TO_FLAG, "invert_to",
+                                 "Invert Timeout in ms [0-15] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_TF_DETECT_TIMER_FLAG_SHORT, APSU_TF_DETECT_TIMER_FLAG, "tf_detect_timer",
+                                 "TF Detect Timer in ms [0-15] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_PEER_DET_TIMER_FLAG_SHORT, APSU_PEER_DET_TIMER_FLAG, "peer_det_timer",
+                                 "Peer Detection Timer in 100ms units [0-15] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_FAIL_TIMER_FLAG_SHORT, APSU_FAIL_TIMER_FLAG, "fail_timer",
+                                 "Fail Timer in 10ms units [0-255] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_VALIDATION_TIMER_FLAG_SHORT, APSU_VALIDATION_TIMER_FLAG, "validation_timer",
+                                 "Validation Timer in 10ms units [0-15] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_RESTART_ON_LOS_FLAG_SHORT, APSU_RESTART_ON_LOS_FLAG, "restart_on_los",
+                                 "Restart On LoS: 0(no restart), 1(restart), 2(restart on long LoS only) (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_LOCAL_PATTERN_TX_FLAG_SHORT, APSU_LOCAL_PATTERN_TX_FLAG, "local_pattern_tx",
+                                 "Local Pattern TX: 0(PRBS31), 1(PCS data) (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_MAX_HOP_COUNT_FLAG_SHORT, APSU_MAX_HOP_COUNT_FLAG, "max_hop_count",
+                                 "Max Hop Count [0-3] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_HOP_DECREMENT_FLAG_SHORT, APSU_HOP_DECREMENT_FLAG, "hop_decrement",
+                                 "Hop Decrement [0-3] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_HOP_COUNT_FLAG_SHORT, APSU_HOP_COUNT_FLAG, "hop_count",
+                                 "Hop Count [0-3] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_BCNL_PAGES_RETRANSMISSIONS_FLAG_SHORT, APSU_BCNL_PAGES_RETRANSMISSIONS_FLAG,
+                                 "bcnl_pages_retransmissions", "BCNL Pages Retransmissions [1-255] (Optional)");
     MlxlinkRecord::printFlagLine(SET_TX_PRECODING_FLAG_SHORT, SET_TX_PRECODING_FLAG, "tx_precoding",
                                  "Set TX Precoding [EN(enable)/DS(disable)]; with --" CABLE_FLAG
                                  " operates at module level and requires --" PMLR_SIDE_FLAG " [host|line]");
@@ -1407,6 +1479,35 @@ void MlxlinkUi::validatePlrParams()
     }
 }
 
+void MlxlinkUi::validateApsuParams()
+{
+    if (!_userInput._apsuParamsToSet.empty() && !_userInput._setApsu)
+    {
+        throw MlxRegException("APSU parameters are valid with --" SET_APSU_FLAG " only");
+    }
+
+    if (_userInput._setApsu && _userInput._apsuParamsToSet.empty())
+    {
+        vector<string> flagNames;
+        for (const auto& param : MlxlinkMaps::getInstance()->_apsuConfigParams)
+        {
+            flagNames.push_back("--" + param.flagName);
+        }
+
+        throw MlxRegException("At least one of the following parameters must be provided with --" SET_APSU_FLAG ": " +
+                              getStringFromVector(flagNames));
+    }
+
+    set<string> providedFlags;
+    for (const auto& param : _userInput._apsuParamsToSet)
+    {
+        if (!providedFlags.insert(param.first).second)
+        {
+            throw MlxRegException("The --" + param.first + " flag was provided more than once");
+        }
+    }
+}
+
 void MlxlinkUi::strToInt32(char* str, u_int32_t& value)
 {
     char* endp;
@@ -1531,6 +1632,7 @@ void MlxlinkUi::paramValidate()
     validatePrrParams();
     validatePlrParams();
     validatePRBSParams();
+    validateApsuParams();
     validatePhyRecoveryParams();
     validateLinkTrainingParams();
     validatePeriodicEqParams();
@@ -1596,6 +1698,49 @@ void MlxlinkUi::initCmdParser()
                "PLR margin threshold (0-7)");
     AddOptions(PLR_TX_CRC_FLAG, PLR_TX_CRC_FLAG_SHORT, "PLR_TX_CRC",
                "TX CRC over PLR: 0/DS(disable), 1/EN(enable) (Optional)");
+    AddOptions(APSU_INFO_FLAG, APSU_INFO_FLAG_SHORT, "", "Show APSU (ILT/RTS) Info");
+    AddOptions(SET_APSU_FLAG, SET_APSU_FLAG_SHORT, "", "Set APSU (ILT/RTS) configuration");
+    AddOptions(APSU_CTL_FLAG, APSU_CTL_FLAG_SHORT, "ctl", "APSU: EN(enable)/DS(disable) (Optional)");
+    AddOptions(APSU_TRAINING_EN_FLAG, APSU_TRAINING_EN_FLAG_SHORT, "training_en",
+               "Training Enable: EN(enable)/DS(disable) (Optional)");
+    AddOptions(APSU_PEER_DET_FLAG, APSU_PEER_DET_FLAG_SHORT, "peer_det",
+               "LT Peer Detection: EN(enable)/DS(disable) (Optional)");
+    AddOptions(APSU_HOP_COUNT_CTL_FLAG, APSU_HOP_COUNT_CTL_FLAG_SHORT, "hop_count_ctl",
+               "Hop Count Control: EN(enable)/DS(disable) (Optional)");
+    AddOptions(APSU_NLUT_FLAG, APSU_NLUT_FLAG_SHORT, "nlut", "nLUT Control: EN(enable)/DS(disable) (Optional)");
+    AddOptions(APSU_VALIDATION_EN_FLAG, APSU_VALIDATION_EN_FLAG_SHORT, "validation_en",
+               "ILT Frame Validation: EN(enable)/DS(disable) (Optional)");
+    AddOptions(APSU_RESTART_FLAG, APSU_RESTART_FLAG_SHORT, "", "Restart Training (Optional)");
+    AddOptions(APSU_RECOVERY_TIMER_FLAG, APSU_RECOVERY_TIMER_FLAG_SHORT, "recovery_timer",
+               "Recovery Timer in ms [0-255] (Optional)");
+    AddOptions(APSU_MAX_RECOVERY_EVENTS_FLAG, APSU_MAX_RECOVERY_EVENTS_FLAG_SHORT, "max_recovery_events",
+               "Max Recovery Events [0-255] (Optional)");
+    AddOptions(APSU_MAX_WAIT_TIMER_FLAG, APSU_MAX_WAIT_TIMER_FLAG_SHORT, "max_wait_timer",
+               "Max Wait Timer in seconds [0-65535] (Optional)");
+    AddOptions(APSU_PROPAGATION_TIMER_FLAG, APSU_PROPAGATION_TIMER_FLAG_SHORT, "propagation_timer",
+               "Propagation Timer in 10ms units [0-31] (Optional)");
+    AddOptions(APSU_QUIET_TIMER_FLAG, APSU_QUIET_TIMER_FLAG_SHORT, "quiet_timer",
+               "Quiet Timer in 10ms units [0-15] (Optional)");
+    AddOptions(APSU_INVERT_TO_FLAG, APSU_INVERT_TO_FLAG_SHORT, "invert_to", "Invert Timeout in ms [0-15] (Optional)");
+    AddOptions(APSU_TF_DETECT_TIMER_FLAG, APSU_TF_DETECT_TIMER_FLAG_SHORT, "tf_detect_timer",
+               "TF Detect Timer in ms [0-15] (Optional)");
+    AddOptions(APSU_PEER_DET_TIMER_FLAG, APSU_PEER_DET_TIMER_FLAG_SHORT, "peer_det_timer",
+               "Peer Detection Timer in 100ms units [0-15] (Optional)");
+    AddOptions(APSU_FAIL_TIMER_FLAG, APSU_FAIL_TIMER_FLAG_SHORT, "fail_timer",
+               "Fail Timer in 10ms units [0-255] (Optional)");
+    AddOptions(APSU_VALIDATION_TIMER_FLAG, APSU_VALIDATION_TIMER_FLAG_SHORT, "validation_timer",
+               "Validation Timer in 10ms units [0-15] (Optional)");
+    AddOptions(APSU_RESTART_ON_LOS_FLAG, APSU_RESTART_ON_LOS_FLAG_SHORT, "restart_on_los",
+               "Restart On LoS: 0(no restart), 1(restart), 2(restart on long LoS only) (Optional)");
+    AddOptions(APSU_LOCAL_PATTERN_TX_FLAG, APSU_LOCAL_PATTERN_TX_FLAG_SHORT, "local_pattern_tx",
+               "Local Pattern TX: 0(PRBS31), 1(PCS data) (Optional)");
+    AddOptions(APSU_MAX_HOP_COUNT_FLAG, APSU_MAX_HOP_COUNT_FLAG_SHORT, "max_hop_count",
+               "Max Hop Count [0-3] (Optional)");
+    AddOptions(APSU_HOP_DECREMENT_FLAG, APSU_HOP_DECREMENT_FLAG_SHORT, "hop_decrement",
+               "Hop Decrement [0-3] (Optional)");
+    AddOptions(APSU_HOP_COUNT_FLAG, APSU_HOP_COUNT_FLAG_SHORT, "hop_count", "Hop Count [0-3] (Optional)");
+    AddOptions(APSU_BCNL_PAGES_RETRANSMISSIONS_FLAG, APSU_BCNL_PAGES_RETRANSMISSIONS_FLAG_SHORT,
+               "bcnl_pages_retransmissions", "BCNL Pages Retransmissions [1-255] (Optional)");
     AddOptions(KR_INFO_FLAG, KR_INFO_FLAG_SHORT, "", "Show KR Info");
     AddOptions(LTX_INFO_FLAG, LTX_INFO_FLAG_SHORT, "", "Show LTX status and logger history");
     AddOptions(HOST_CLASS_FLAG, HOST_CLASS_FLAG_SHORT, "", "Show Host Class Info");
@@ -1901,6 +2046,12 @@ void MlxlinkUi::commandsCaller()
             case SET_PLR:
                 _mlxlinkCommander->setPlr();
                 break;
+            case SHOW_APSU:
+                _mlxlinkCommander->showApsu();
+                break;
+            case SET_APSU:
+                _mlxlinkCommander->handleApsu();
+                break;
             case SHOW_KR:
                 _mlxlinkCommander->showKr();
                 break;
@@ -2098,6 +2249,28 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         validateNonEmptyValue(value, "--" PLR_TX_CRC_FLAG);
         _userInput._plrTxCrc = toUpperCase(value);
         _userInput._plrTxCrcProvided = true;
+        return PARSE_OK;
+    }
+    else if (name == APSU_INFO_FLAG)
+    {
+        addCmd(SHOW_APSU);
+        _userInput._showApsu = true;
+        return PARSE_OK;
+    }
+    else if (name == SET_APSU_FLAG)
+    {
+        addCmd(SET_APSU);
+        _userInput._setApsu = true;
+        _userInput._uniqueCmds++;
+        return PARSE_OK;
+    }
+    else if (getApsuConfigParam(name) != nullptr)
+    {
+        if (name != APSU_RESTART_FLAG)
+        {
+            validateNonEmptyValue(value, "--" + name);
+        }
+        _userInput._apsuParamsToSet.push_back(make_pair(name, toUpperCase(value)));
         return PARSE_OK;
     }
     else if (name == KR_INFO_FLAG)

@@ -69,6 +69,19 @@ const std::vector<u_int32_t>& getElsModuleSupportedFunctions()
     return elsModuleSupportedFunctions;
 }
 
+const APSU_CONFIG_PARAM* getApsuConfigParam(const string& flagName)
+{
+    for (const auto& param : MlxlinkMaps::getInstance()->_apsuConfigParams)
+    {
+        if (param.flagName == flagName)
+        {
+            return &param;
+        }
+    }
+
+    return nullptr;
+}
+
 MlxlinkMaps* MlxlinkMaps::instance = NULL;
 
 MlxlinkMaps* MlxlinkMaps::getInstance()
@@ -2179,6 +2192,132 @@ void MlxlinkMaps::initPlrRejectModeMapping()
     _plrMarginThMaskToStr[PLR_MARGIN_TH_SUPPORT_MASK_7] = "7";
 }
 
+void MlxlinkMaps::initApsuMapping()
+{
+    _apsuRtsUpdateState[APSU_RTS_UPDATE_STATE_START] = "START";
+    _apsuRtsUpdateState[APSU_RTS_UPDATE_STATE_WAIT_ADJACENT] = "WAIT_ADJACENT";
+    _apsuRtsUpdateState[APSU_RTS_UPDATE_STATE_SWITCH_CLOCK] = "SWITCH_CLOCK";
+    _apsuRtsUpdateState[APSU_RTS_UPDATE_STATE_TX_CLOCK_READY] = "TX_CLOCK_READY";
+    _apsuRtsUpdateState[APSU_RTS_UPDATE_STATE_FORWARD_RTS] = "FORWARD_RTS";
+
+    _apsuTrainingStatus[APSU_TRAINING_STATUS_FAIL] = "FAIL";
+    _apsuTrainingStatus[APSU_TRAINING_STATUS_OK] = "OK";
+    _apsuTrainingStatus[APSU_TRAINING_STATUS_READY] = "READY";
+    _apsuTrainingStatus[APSU_TRAINING_STATUS_IN_PROGRESS] = "IN_PROGRESS";
+
+    _apsuRtsStatus[APSU_RTS_STATUS_FAIL] = "FAIL";
+    _apsuRtsStatus[APSU_RTS_STATUS_TRAINED] = "TRAINED";
+    _apsuRtsStatus[APSU_RTS_STATUS_READY] = "READY";
+    _apsuRtsStatus[APSU_RTS_STATUS_OK] = "OK";
+
+    _apsuRemoteType[APSU_REMOTE_TYPE_CPO] = "CPO detected";
+    _apsuRemoteType[APSU_REMOTE_TYPE_LPO] = "LPO detected";
+    _apsuRemoteType[APSU_REMOTE_TYPE_FRO] = "FRO detected";
+    _apsuRemoteType[APSU_REMOTE_TYPE_NOT_DETECTED] = "Not detected";
+    _apsuRemoteType[APSU_REMOTE_TYPE_TRO] = "TRO detected";
+    _apsuRemoteType[APSU_REMOTE_TYPE_NOT_SUPPORTED] = "Not supported";
+
+    _apsuRemoteHostIud[APSU_REMOTE_HOST_IUD_SPECTRUM] = "Spectrum";
+    _apsuRemoteHostIud[APSU_REMOTE_HOST_IUD_CONNECTX] = "ConnectX";
+
+    _apsuOperToStr[APSU_OPER_ENABLED] = "Enabled";
+    _apsuOperToStr[APSU_OPER_DISABLED] = "Disabled";
+
+    _apsuCtlToStr[APSU_CTL_DEFAULT] = "FW default";
+    _apsuCtlToStr[APSU_CTL_ENABLE] = "Enable";
+    _apsuCtlToStr[APSU_CTL_DISABLE] = "Disable";
+
+    _apsuCtlStrToValue["EN"] = APSU_CTL_ENABLE;
+    _apsuCtlStrToValue["DS"] = APSU_CTL_DISABLE;
+
+    _apsuLaneFields.push_back(PRM_FIELD("train_ctl_state", "TrainCtlState", FIELD_ACCESS_R, false));
+    _apsuLaneFields.push_back(PRM_FIELD("lane_training_status", "TrainStatus", FIELD_ACCESS_R, false));
+    _apsuLaneFields.push_back(PRM_FIELD("remote_rts", "RemoteRTS", FIELD_ACCESS_R, false));
+    _apsuLaneFields.push_back(PRM_FIELD("local_rts", "LocalRTS", FIELD_ACCESS_R, false));
+    _apsuLaneFields.push_back(PRM_FIELD("remote_rx_ready", "RemoteRxRdy", FIELD_ACCESS_R, false));
+    _apsuLaneFields.push_back(PRM_FIELD("local_rx_ready", "LocalRxRdy", FIELD_ACCESS_R, false));
+    _apsuLaneFields.push_back(PRM_FIELD("remote_tf_lock", "RemoteTFLock", FIELD_ACCESS_R, false));
+    _apsuLaneFields.push_back(PRM_FIELD("local_tf_lock", "LocalTFLock", FIELD_ACCESS_R, false));
+    _apsuLaneFields.push_back(PRM_FIELD("rx_ok", "RxOK", FIELD_ACCESS_R, false));
+    _apsuLaneFields.push_back(PRM_FIELD("training_failure", "Failure", FIELD_ACCESS_R, false));
+
+    _apsuLaneValueMaps["train_ctl_state"][APSU_TRAIN_CTL_STATE_QUIET] = "QUIET";
+    _apsuLaneValueMaps["train_ctl_state"][APSU_TRAIN_CTL_STATE_SEND_TRAINING] = "SEND_TRAINING";
+    _apsuLaneValueMaps["train_ctl_state"][APSU_TRAIN_CTL_STATE_TRAIN_START] = "TRAIN_START";
+    _apsuLaneValueMaps["train_ctl_state"][APSU_TRAIN_CTL_STATE_TRAIN_LOCAL] = "TRAIN_LOCAL";
+    _apsuLaneValueMaps["train_ctl_state"][APSU_TRAIN_CTL_STATE_TRAIN_REMOTE] = "TRAIN_REMOTE";
+    _apsuLaneValueMaps["train_ctl_state"][APSU_TRAIN_CTL_STATE_ISL_READY] = "ISL_READY";
+    _apsuLaneValueMaps["train_ctl_state"][APSU_TRAIN_CTL_STATE_PATH_READY] = "PATH_READY";
+    _apsuLaneValueMaps["train_ctl_state"][APSU_TRAIN_CTL_STATE_PATH_UP] = "PATH_UP";
+    _apsuLaneValueMaps["train_ctl_state"][APSU_TRAIN_CTL_STATE_RECOVERY] = "RECOVERY";
+    _apsuLaneValueMaps["train_ctl_state"][APSU_TRAIN_CTL_STATE_FAIL] = "FAIL";
+    _apsuLaneValueMaps["train_ctl_state"][APSU_TRAIN_CTL_STATE_SEND_LOCAL] = "SEND_LOCAL";
+    _apsuLaneValueMaps["train_ctl_state"][APSU_TRAIN_CTL_STATE_RX_READY] = "RX_READY";
+
+    _apsuLaneValueMaps["lane_training_status"][APSU_LANE_TRAINING_STATUS_FAIL] = "FAIL";
+    _apsuLaneValueMaps["lane_training_status"][APSU_LANE_TRAINING_STATUS_OK] = "OK";
+    _apsuLaneValueMaps["lane_training_status"][APSU_LANE_TRAINING_STATUS_RESERVED] = "Reserved";
+    _apsuLaneValueMaps["lane_training_status"][APSU_LANE_TRAINING_STATUS_IN_PROGRESS] = "IN_PROGRESS";
+
+    map<u_int32_t, string> restartOnLos;
+    restartOnLos[APSU_RESTART_ON_LOS_NO_RESTART] = "No restart";
+    restartOnLos[APSU_RESTART_ON_LOS_RESTART] = "Restart on LoS";
+    restartOnLos[APSU_RESTART_ON_LOS_RESTART_LONG_LOS_ONLY] = "Restart on long LoS only";
+
+    map<u_int32_t, string> localPatternTx;
+    localPatternTx[APSU_LOCAL_PATTERN_TX_PRBS31] = "PRBS31";
+    localPatternTx[APSU_LOCAL_PATTERN_TX_PCS_DATA] = "PCS data";
+
+    _apsuConfigParams.push_back(
+      APSU_CONFIG_PARAM(APSU_CTL_FLAG, "APSU", "apsu_ctl", "apsu_cap", "apsu_oper", APSU_PARAM_CTL, 0));
+    _apsuConfigParams.push_back(APSU_CONFIG_PARAM(APSU_TRAINING_EN_FLAG, "Training Enable", "training_en_ctl",
+                                                  "mr_training_enable_cap", "training_en_oper", APSU_PARAM_CTL, 0));
+    _apsuConfigParams.push_back(APSU_CONFIG_PARAM(APSU_PEER_DET_FLAG, "LT Peer Detection", "lt_peer_det_ctl",
+                                                  "peer_det_cap", "lt_peer_det_oper", APSU_PARAM_CTL, 0));
+    _apsuConfigParams.push_back(APSU_CONFIG_PARAM(APSU_HOP_COUNT_CTL_FLAG, "Hop Count Control", "hop_count_ctl",
+                                                  "hop_count_cap", "hop_count_oper", APSU_PARAM_CTL, 0));
+    _apsuConfigParams.push_back(
+      APSU_CONFIG_PARAM(APSU_NLUT_FLAG, "nLUT Control", "nlut_ctl", "nlut_cap", "nlut_oper", APSU_PARAM_CTL, 0));
+    _apsuConfigParams.push_back(APSU_CONFIG_PARAM(APSU_VALIDATION_EN_FLAG, "ILT Frame Validation", "validation_en", "",
+                                                  "", APSU_PARAM_EN_BOOL, 0));
+    _apsuConfigParams.push_back(
+      APSU_CONFIG_PARAM(APSU_RESTART_FLAG, "Restart Training", "restart_training", "", "", APSU_PARAM_TRIGGER, 0));
+    _apsuConfigParams.push_back(APSU_CONFIG_PARAM(APSU_RECOVERY_TIMER_FLAG, "Recovery Timer [ms]", "recovery_timer", "",
+                                                  "", APSU_PARAM_NUMERIC, 255));
+    _apsuConfigParams.push_back(APSU_CONFIG_PARAM(APSU_MAX_RECOVERY_EVENTS_FLAG, "Max Recovery Events",
+                                                  "max_recovery_events", "", "", APSU_PARAM_NUMERIC, 255));
+    _apsuConfigParams.push_back(APSU_CONFIG_PARAM(APSU_MAX_WAIT_TIMER_FLAG, "Max Wait Timer [s]", "max_wait_timer", "",
+                                                  "", APSU_PARAM_NUMERIC, 65535));
+    _apsuConfigParams.push_back(APSU_CONFIG_PARAM(APSU_PROPAGATION_TIMER_FLAG, "Propagation Timer [10ms]",
+                                                  "propagation_timer", "", "", APSU_PARAM_NUMERIC, 31));
+    _apsuConfigParams.push_back(
+      APSU_CONFIG_PARAM(APSU_QUIET_TIMER_FLAG, "Quiet Timer [10ms]", "quiet_timer", "", "", APSU_PARAM_NUMERIC, 15));
+    _apsuConfigParams.push_back(
+      APSU_CONFIG_PARAM(APSU_INVERT_TO_FLAG, "Invert TO [ms]", "invert_to", "", "", APSU_PARAM_NUMERIC, 15));
+    _apsuConfigParams.push_back(APSU_CONFIG_PARAM(APSU_TF_DETECT_TIMER_FLAG, "TF Detect Timer [ms]", "tf_detect_timer",
+                                                  "", "", APSU_PARAM_NUMERIC, 15));
+    _apsuConfigParams.push_back(APSU_CONFIG_PARAM(APSU_PEER_DET_TIMER_FLAG, "Peer Detection Timer [100ms]",
+                                                  "peer_det_timer", "", "", APSU_PARAM_NUMERIC, 15));
+    _apsuConfigParams.push_back(
+      APSU_CONFIG_PARAM(APSU_FAIL_TIMER_FLAG, "Fail Timer [10ms]", "fail_timer", "", "", APSU_PARAM_NUMERIC, 255));
+    _apsuConfigParams.push_back(APSU_CONFIG_PARAM(APSU_VALIDATION_TIMER_FLAG, "Validation Timer [10ms]",
+                                                  "validation_timer", "", "", APSU_PARAM_NUMERIC, 15));
+    _apsuConfigParams.push_back(APSU_CONFIG_PARAM(APSU_RESTART_ON_LOS_FLAG, "Restart On LoS", "restart_on_los", "", "",
+                                                  APSU_PARAM_NUMERIC, 2, restartOnLos));
+    _apsuConfigParams.push_back(APSU_CONFIG_PARAM(APSU_LOCAL_PATTERN_TX_FLAG, "Local Pattern TX", "local_pattern_tx",
+                                                  "", "", APSU_PARAM_NUMERIC, 1, localPatternTx));
+    _apsuConfigParams.push_back(
+      APSU_CONFIG_PARAM(APSU_MAX_HOP_COUNT_FLAG, "Max Hop Count", "max_hop_count", "", "", APSU_PARAM_NUMERIC, 3));
+    _apsuConfigParams.push_back(
+      APSU_CONFIG_PARAM(APSU_HOP_DECREMENT_FLAG, "Hop Decrement", "hop_decrement", "", "", APSU_PARAM_NUMERIC, 3));
+    _apsuConfigParams.push_back(
+      APSU_CONFIG_PARAM(APSU_HOP_COUNT_FLAG, "Hop Count", "hop_count", "", "", APSU_PARAM_NUMERIC, 3));
+    _apsuConfigParams.push_back(APSU_CONFIG_PARAM(APSU_BCNL_PAGES_RETRANSMISSIONS_FLAG, "BCNL Pages Retransmissions",
+                                                  "bcnl_pages_retransmissions", "", "", APSU_PARAM_NUMERIC, 255));
+    // PRM defines bcnl_pages_retransmissions as 1-255 (0 is undefined), unlike the timers where 0 disables.
+    _apsuConfigParams.back().minValue = 1;
+}
+
 void MlxlinkMaps::initKrMapping()
 {
     // According to arch - the enums here are based on "xdr_lt_cap" instead of kr_ext_cap.
@@ -2262,6 +2401,7 @@ MlxlinkMaps::MlxlinkMaps()
     initPpcntGroupsMapping();
     initTableHeaders();
     initPlrRejectModeMapping();
+    initApsuMapping();
     initKrMapping();
     initLtxMapping();
     initHostClassMapping();

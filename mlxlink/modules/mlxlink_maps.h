@@ -209,6 +209,59 @@ struct PRM_FIELD
     u_int32_t validationMask;
 };
 
+enum APSU_PARAM_KIND
+{
+    APSU_PARAM_CTL,
+    APSU_PARAM_EN_BOOL,
+    APSU_PARAM_NUMERIC,
+    APSU_PARAM_TRIGGER,
+};
+
+struct APSU_CONFIG_PARAM
+{
+    APSU_CONFIG_PARAM()
+    {
+        flagName = "";
+        uiField = "";
+        prmField = "";
+        capField = "";
+        operField = "";
+        kind = APSU_PARAM_NUMERIC;
+        maxValue = 0;
+        minValue = 0;
+    }
+
+    APSU_CONFIG_PARAM(string _flagName,
+                      string _uiField,
+                      string _prmField,
+                      string _capField,
+                      string _operField,
+                      APSU_PARAM_KIND _kind,
+                      u_int32_t _maxValue,
+                      std::map<u_int32_t, std::string> _valueMap = std::map<u_int32_t, std::string>())
+    {
+        flagName = _flagName;
+        uiField = _uiField;
+        prmField = _prmField;
+        capField = _capField;
+        operField = _operField;
+        kind = _kind;
+        maxValue = _maxValue;
+        minValue = 0;
+        valueMap = _valueMap;
+    }
+
+    string flagName;
+    string uiField;
+    string prmField;
+    string capField;
+    string operField;
+    APSU_PARAM_KIND kind;
+    u_int32_t maxValue;
+    u_int32_t minValue; // Smallest accepted value; stays 0 unless the PRM defines a 1-based field.
+    std::map<u_int32_t, std::string> valueMap;
+};
+
 struct BonusPortTableFields
 {
     std::string labelPortStr;
@@ -224,6 +277,7 @@ extern const std::vector<u_int32_t> bonusPortCounterGroups;
 
 const std::vector<u_int32_t>& getElsModuleSupportedFunctions();
 const std::vector<u_int32_t>& getCpuSupportedFunctions();
+const APSU_CONFIG_PARAM* getApsuConfigParam(const std::string& flagName);
 
 class MlxlinkMaps
 {
@@ -287,6 +341,7 @@ private:
     void initCableTypeForTableView();
     void initTableHeaders();
     void initPlrRejectModeMapping();
+    void initApsuMapping();
     void initKrMapping();
     void initLtxMapping();
     void initPmpeModuleStatusMapping();
@@ -397,6 +452,17 @@ public:
     std::map<std::string, u_int32_t> _plrRejectModeStrToValue;
     std::map<u_int32_t, std::string> _plrRejectModeMaskToStr;
     std::map<u_int32_t, std::string> _plrMarginThMaskToStr;
+    std::map<u_int32_t, std::string> _apsuRtsUpdateState;
+    std::map<u_int32_t, std::string> _apsuTrainingStatus;
+    std::map<u_int32_t, std::string> _apsuRtsStatus;
+    std::map<u_int32_t, std::string> _apsuRemoteType;
+    std::map<u_int32_t, std::string> _apsuRemoteHostIud;
+    std::map<u_int32_t, std::string> _apsuOperToStr;
+    std::map<u_int32_t, std::string> _apsuCtlToStr;
+    std::map<std::string, u_int32_t> _apsuCtlStrToValue;
+    std::vector<PRM_FIELD> _apsuLaneFields;
+    std::map<std::string, std::map<u_int32_t, std::string>> _apsuLaneValueMaps;
+    std::vector<APSU_CONFIG_PARAM> _apsuConfigParams;
     std::map<u_int32_t, std::string> _krExtOper;
     std::map<u_int32_t, std::string> _krPrbsType;
     std::map<u_int32_t, std::string> _ltxStatus;

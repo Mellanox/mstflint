@@ -8945,6 +8945,9 @@ void MlxlinkCommander::prepareJsonOut()
     _validPcieLinks.toJsonFormat(_jsonRoot);
     _portGroupMapping.toJsonFormat(_jsonRoot);
     _plrInfoCmd.toJsonFormat(_jsonRoot);
+    _apsuInfoCmd.toJsonFormat(_jsonRoot);
+    _apsuLanesCmd.toJsonFormat(_jsonRoot);
+    _apsuConfigCmd.toJsonFormat(_jsonRoot);
     _krInfoCmd.toJsonFormat(_jsonRoot);
     if (_ltx)
     {
@@ -9221,6 +9224,238 @@ void MlxlinkCommander::setPlr()
     catch (MlxRegException& exc)
     {
         throw MlxRegException("Failed to set PLR configuration: " + string(exc.what()));
+    }
+}
+
+bool MlxlinkCommander::isApsuCtrlPageSupported()
+{
+    sendPrmReg(ACCESS_REG_PTASv2, REG_GET, "page_select=%d", PTASV2_PHY_TUNING_ALGORITHM_SETTINGS_PAGE);
+
+    return getFieldValue("page_cap") & PTASV2_APSU_CONTROL_SETTINGS_CAP;
+}
+
+string MlxlinkCommander::getApsuLaneHeader()
+{
+    vector<string> apsuHeader;
+
+    for (const auto& field : _mlxlinkMaps->_apsuLaneFields)
+    {
+        apsuHeader.push_back(MlxlinkRecord::addSpace(field.uiField, field.uiField.size() + 1, false));
+    }
+
+    return getStringFromVector(apsuHeader);
+}
+
+string MlxlinkCommander::getApsuLaneRow(u_int32_t lane)
+{
+    vector<string> apsuLane;
+
+    for (const auto& field : _mlxlinkMaps->_apsuLaneFields)
+    {
+        u_int32_t fieldValue = getFieldValue(field.prmField + "_" + to_string(lane));
+        auto valueMap = _mlxlinkMaps->_apsuLaneValueMaps.find(field.prmField);
+        string valueStr = (valueMap != _mlxlinkMaps->_apsuLaneValueMaps.end()) ?
+                            getStrByValue(fieldValue, valueMap->second) :
+                            to_string(fieldValue);
+
+        apsuLane.push_back(MlxlinkRecord::addSpace(valueStr, field.uiField.size() + 1, false));
+    }
+
+    return getStringFromVector(apsuLane);
+}
+
+void MlxlinkCommander::showApsu()
+{
+    u_int32_t numOfLanesToShow =
+      _numOfLanes ? min(_numOfLanes, (u_int32_t)APSU_LANE_DATA_ARRAY_SIZE) : (u_int32_t)APSU_LANE_DATA_ARRAY_SIZE;
+
+    try
+    {
+        sendPrmReg(ACCESS_REG_PDDR, REG_GET, "page_select=%d", PDDR_APSU_INFO_PAGE);
+
+        setPrintTitle(_apsuInfoCmd, HEADER_APSU_INFO, APSU_INFO_LAST);
+        setPrintVal(_apsuInfoCmd, "RTS Update State",
+                    getStrByValue(getFieldValue("rts_update_state"), _mlxlinkMaps->_apsuRtsUpdateState));
+        setPrintVal(_apsuInfoCmd, "Training Status",
+                    getStrByValue(getFieldValue("training_status"), _mlxlinkMaps->_apsuTrainingStatus));
+        setPrintVal(_apsuInfoCmd, "RTS Status",
+                    getStrByValue(getFieldValue("rts_status"), _mlxlinkMaps->_apsuRtsStatus));
+        setPrintVal(_apsuInfoCmd, "ISL Ready", to_string(getFieldValue("isl_ready")));
+        setPrintVal(_apsuInfoCmd, "RTS Rx All Lanes", to_string(getFieldValue("rts_rx_all")));
+        setPrintVal(_apsuInfoCmd, "RTS Tx All Lanes", to_string(getFieldValue("rts_tx_all")));
+        setPrintVal(_apsuInfoCmd, "Remote Type",
+                    getStrByValue(getFieldValue("remote_type"), _mlxlinkMaps->_apsuRemoteType));
+        setPrintVal(_apsuInfoCmd, "Peer Detected", to_string(getFieldValue("peer_detected")));
+        setPrintVal(_apsuInfoCmd, "Remote Host IUD",
+                    getStrByValue(getFieldValue("remote_host_iud"), _mlxlinkMaps->_apsuRemoteHostIud));
+        setPrintVal(_apsuInfoCmd, "Uses Recovered Clock", to_string(getFieldValue("uses_recovered_clock")));
+
+        setPrintTitle(_apsuLanesCmd, HEADER_APSU_LANES_INFO, numOfLanesToShow + 1);
+        setPrintVal(_apsuLanesCmd, "APSU lane parameters", getApsuLaneHeader(), ANSI_COLOR_RESET, true, true, true);
+
+        for (u_int32_t lane = 0; lane < numOfLanesToShow; lane++)
+        {
+            setPrintVal(_apsuLanesCmd, "Lane " + to_string(lane), getApsuLaneRow(lane), ANSI_COLOR_RESET, true, true,
+                        true);
+        }
+
+        showApsuConfig();
+    }
+    catch (MlxRegException& exc)
+    {
+        throw MlxRegException("Failed to show APSU info: " + string(exc.what()));
+    }
+
+    printOutput(_apsuInfoCmd);
+    printOutput(_apsuLanesCmd);
+    printOutput(_apsuConfigCmd);
+}
+
+void MlxlinkCommander::showApsuConfig()
+{
+    bool pageSupported = false;
+
+    setPrintTitle(_apsuConfigCmd, HEADER_APSU_CONFIG_INFO, APSU_CONFIG_INFO_LAST);
+
+    try
+    {
+        pageSupported = isApsuCtrlPageSupported();
+    }
+    catch (MlxRegException&)
+    {
+        pageSupported = false;
+    }
+
+    if (pageSupported)
+    {
+        sendPrmReg(ACCESS_REG_PTASv2, REG_GET, "page_select=%d", PTASV2_APSU_CONTROL_SETTINGS_PAGE);
+        pageSupported = getFieldValue("apsu_cap");
+    }
+
+    for (const auto& param : _mlxlinkMaps->_apsuConfigParams)
+    {
+        if (param.kind == APSU_PARAM_TRIGGER)
+        {
+            continue;
+        }
+
+        string value = NA_FIELD_VALUE;
+        if (pageSupported && (param.capField.empty() || getFieldValue(param.capField)))
+        {
+            value = getApsuConfigValue(param);
+        }
+
+        setPrintVal(_apsuConfigCmd, param.uiField, value);
+    }
+}
+
+string MlxlinkCommander::getApsuConfigValue(const APSU_CONFIG_PARAM& param)
+{
+    u_int32_t fieldValue = getFieldValue(param.prmField);
+    string value;
+
+    switch (param.kind)
+    {
+        case APSU_PARAM_CTL:
+            value = getStrByValue(fieldValue, _mlxlinkMaps->_apsuCtlToStr);
+            break;
+        case APSU_PARAM_EN_BOOL:
+            value = fieldValue ? FIELD_ENABLED : FIELD_DISABLED;
+            break;
+        default:
+            value = param.valueMap.empty() ? to_string(fieldValue) : getStrByValue(fieldValue, param.valueMap);
+    }
+
+    if (!param.operField.empty())
+    {
+        value += " (Oper: " + getStrByValue(getFieldValue(param.operField), _mlxlinkMaps->_apsuOperToStr) + ")";
+    }
+
+    return value;
+}
+
+u_int32_t MlxlinkCommander::getApsuParamValue(const APSU_CONFIG_PARAM& param, const string& userValue)
+{
+    bool isCtl = (param.kind == APSU_PARAM_CTL);
+    u_int32_t maxValue = (param.kind == APSU_PARAM_NUMERIC) ? param.maxValue : (isCtl ? APSU_CTL_DISABLE : 1);
+    string range = to_string(param.minValue) + "-" + to_string(maxValue);
+    u_int32_t value = 0;
+
+    auto ctlValue = _mlxlinkMaps->_apsuCtlStrToValue.find(userValue);
+    if (ctlValue != _mlxlinkMaps->_apsuCtlStrToValue.end())
+    {
+        if (param.kind == APSU_PARAM_NUMERIC)
+        {
+            throw MlxRegException("The --" + param.flagName + " flag accepts values in the range " + range);
+        }
+
+        value = isCtl ? ctlValue->second : (ctlValue->second == APSU_CTL_ENABLE ? 1 : 0);
+    }
+    else
+    {
+        RegAccessParser::strToUint32((char*)userValue.c_str(), value);
+
+        if (value < param.minValue || value > maxValue)
+        {
+            throw MlxRegException("The --" + param.flagName + " flag accepts values in the range " + range +
+                                  (param.kind == APSU_PARAM_NUMERIC ? "" : ", EN or DS"));
+        }
+    }
+
+    return value;
+}
+
+void MlxlinkCommander::handleApsu()
+{
+    try
+    {
+        if (!isApsuCtrlPageSupported())
+        {
+            throw MlxRegException("the PTASv2 APSU control page is not supported");
+        }
+
+        sendPrmReg(ACCESS_REG_PTASv2, REG_GET, "page_select=%d", PTASV2_APSU_CONTROL_SETTINGS_PAGE);
+
+        if (!getFieldValue("apsu_cap"))
+        {
+            throw MlxRegException("APSU is not supported");
+        }
+
+        string fields = "";
+        bool restartRequested = false;
+
+        for (const auto& requestedParam : _userInput._apsuParamsToSet)
+        {
+            const APSU_CONFIG_PARAM* param = getApsuConfigParam(requestedParam.first);
+
+            if (!param)
+            {
+                throw MlxRegException("--" + requestedParam.first + " is not an APSU parameter");
+            }
+
+            if (!param->capField.empty() && !getFieldValue(param->capField))
+            {
+                throw MlxRegException("--" + param->flagName + " is not supported by the device");
+            }
+
+            if (param->kind == APSU_PARAM_TRIGGER)
+            {
+                restartRequested = true;
+                continue;
+            }
+
+            fields += (fields.empty() ? "" : ",") + param->prmField + "=" +
+                      to_string(getApsuParamValue(*param, requestedParam.second));
+        }
+
+        fields += (fields.empty() ? "" : ",") + string("restart_training=") + (restartRequested ? "1" : "0");
+
+        sendPrmRegWithoutReset(ACCESS_REG_PTASv2, REG_SET, fields.c_str());
+        MlxlinkRecord::printCmdLine("Configuring APSU parameters: " + fields + "\n", _jsonRoot);
+    }
+    catch (MlxRegException& exc)
+    {
+        throw MlxRegException("Failed to set APSU configuration: " + string(exc.what()));
     }
 }
 
