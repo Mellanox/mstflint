@@ -601,6 +601,7 @@ public:
     bool isC2C();
     bool errorObserved();
     std::string getAllUnhandledErrors();
+    void clearUnhandledErrors();
     void validatePortToLC();
     virtual void validatePortType(const string& portTypeStr);
     void updatePortType();
