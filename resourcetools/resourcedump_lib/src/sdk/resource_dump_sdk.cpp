@@ -40,6 +40,7 @@
 #include <common/compatibility.h>
 
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <cstring>
@@ -181,17 +182,20 @@ enum result_t create_resource_dump(device_attributes_t device_attrs,
 {
     try
     {
-        auto dump_command = new mft::resource_dump::DumpCommand{device_attrs, segment_params, depth};
+        std::unique_ptr<mft::resource_dump::DumpCommand> dump_command{
+          new mft::resource_dump::DumpCommand{device_attrs, segment_params, depth}};
         dump_command->execute();
 
         const size_t parsed_size = dump_command->get_dumped_size();
 
-        dump_data->dump_obj = static_cast<void*>(dump_command);
-        dump_data->data = new unsigned char[parsed_size];
+        std::unique_ptr<unsigned char[]> parsed_data{new unsigned char[parsed_size]};
 
         auto data = mft::resource_dump::get_dump_data(*dump_command, false, dump_data->endianess);
-        memcpy(dump_data->data, data.c_str(), data.size());
+        memcpy(parsed_data.get(), data.c_str(), data.size());
 
+        // Ownership passes to the caller only once nothing can throw anymore, see destroy_resource_dump.
+        dump_data->dump_obj = static_cast<void*>(dump_command.release());
+        dump_data->data = parsed_data.release();
         dump_data->size = parsed_size;
         return RD_OK;
     }
