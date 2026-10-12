@@ -46,31 +46,48 @@ AM_CXXFLAGS = -Wall -W -DMST_UL -g -MP -MD -pipe $(COMPILER_FPIC) \
 # The decode is reached from python over ctypes, so it is delivered as a module
 # loaded by its own path next to the entry point rather than off the loader path.
 cltssmdir = $(libdir)/mstflint/python_tools/mstltssm
-cltssm_LTLIBRARIES = cltssm_trace.la
 
-cltssm_trace_la_SOURCES = \
+noinst_LTLIBRARIES = libcltssm_trace.la
+
+libcltssm_trace_la_SOURCES = \
     ltssm_reader.cpp ltssm_reader.h \
     ltssm_trace_exception.cpp ltssm_trace_exception.h \
     ltssm_trace_sdk.cpp ltssm_trace_sdk.h
 
-cltssm_trace_la_LDFLAGS = -module -shared -avoid-version \
-                          -Wl,--allow-multiple-definition -Wl,--no-undefined
+CLTSSM_SO = cltssm_trace.so
 
-cltssm_trace_la_LIBADD = \
-    $(top_builddir)/mlxparsebin/libmstparsebin.la \
-    $(top_builddir)/mft_core/device/device_info/libdevice_info.la \
-    $(top_builddir)/adb_parser/libadb_parser.la \
-    $(top_builddir)/dev_mgt/libdev_mgt.la \
-    $(top_builddir)/reg_access/libreg_access.la \
-    $(top_builddir)/tools_layouts/libtools_layouts.la \
-    $(top_builddir)/mft_utils/libmftutils.la \
-    $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
-    $(top_builddir)/xz_utils/libxz_utils.la \
-    $(top_builddir)/ext_libs/minixz/libminixz.la \
-    $(top_builddir)/common/libcommon.la \
-    $(liblzma_LIBS) \
-    $(expat_LIBS) \
-    $(LDL)
+if USE_LOCAL_SQLITE
+CLTSSM_SQLITE_LIB = $(top_builddir)/ext_libs/sqlite/.libs/libsqlite3.a
+else
+CLTSSM_SQLITE_LIB =
+endif
+
+CLTSSM_WHOLE_ARCHIVE_LIBS = \
+    .libs/libcltssm_trace.a \
+    $(top_builddir)/mlxparsebin/.libs/libmstparsebin.a \
+    $(top_builddir)/mft_core/device/device_info/.libs/libdevice_info.a \
+    $(top_builddir)/adb_parser/.libs/libadb_parser.a \
+    $(top_builddir)/dev_mgt/.libs/libdev_mgt.a \
+    $(top_builddir)/reg_access/.libs/libreg_access.a \
+    $(top_builddir)/tools_layouts/.libs/libtools_layouts.a \
+    $(top_builddir)/mft_utils/.libs/libmftutils.a \
+    $(top_builddir)/xz_utils/.libs/libxz_utils.a \
+    $(top_builddir)/ext_libs/minixz/.libs/libminixz.a \
+    $(top_builddir)/common/.libs/libcommon.a
+
+$(CLTSSM_SO): libcltssm_trace.la
+	$(CXX) -shared -pthread $(CXXFLAGS) $(LDFLAGS) $(COMPILER_FPIC) -o $@ \
+	  -Wl,--whole-archive $(CLTSSM_WHOLE_ARCHIVE_LIBS) -Wl,--no-whole-archive \
+	  $(top_builddir)/${MTCR_CONF_DIR}/.libs/libmtcr_ul.a \
+	  $(CLTSSM_SQLITE_LIB) $(liblzma_LIBS) $(expat_LIBS) $(LDL) $(LIBS) \
+	  -Wl,--allow-multiple-definition -Wl,--no-undefined
+
+all-local: $(CLTSSM_SO)
+
+cltssm_DATA = $(CLTSSM_SO)
+
+install-data-hook:
+	chmod +x $(DESTDIR)$(cltssmdir)/$(CLTSSM_SO)
 
 USER_DIR = $(top_builddir)
 
@@ -98,4 +115,4 @@ dist_formatterspythonlib_DATA = $(srcdir)/nvltssm_lib/formatters/*.py
 ltssmdbdir = $(pkgdatadir)/ltssm_dbs
 dist_ltssmdb_DATA = $(srcdir)/data/*.adb
 
-CLEANFILES = ${PYTHON_WRAPPER}
+CLEANFILES = ${PYTHON_WRAPPER} $(CLTSSM_SO)
