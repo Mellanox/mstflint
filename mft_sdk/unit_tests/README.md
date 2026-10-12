@@ -10,7 +10,7 @@ suites themselves.
 | Path | Content |
 |---|---|
 | `utils.py` | Shared infra: device discovery, command runner, runner bases, CLI, KNOWN_MISSING |
-| `mlxlink/` | 5 compare suites (operational info, counters, FEC histogram, cable DDM, module info) + gtest sources |
+| `mlxlink/` | 6 compare suites (operational info, counters, FEC histogram, cable DDM, module info, amBER collect) + gtest sources |
 | `mlxreg/` | 5 compare suites (register list/access/metadata/full path/error handling) + gtest sources |
 | `discovery/`, `hca_caps/`, `telemetry/`, `segfault/` | gtest-only suites (run via the installed harness with `--gtest_filter`) |
 | `doca_contract/` | The DOCA integration contract: pkg-config resolution, `<mft_sdk/…>` header nesting, the 23 consumed `mst*` symbols, ldconfig registration, and a no-rpath C probe. Run with `make check-doca` |
