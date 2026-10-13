@@ -32,5 +32,10 @@
 
 
 docdir = $(libdir)/mstflint/python_tools/mstfwreset/mlxfwresetlib
-dist_doc_DATA = __init__.py mlxfwreset_mlnxdriver.py mlxfwreset_status_checker.py mlxfwreset_utils.py logger.py mcra.py mlnx_peripheral_components.py pci_device.py cmd_reg_mfrl.py drivers_safety_check.py cmd_reg_mroq.py cmd_reg_mpcir.py cmd_reg_mcam.py cmd_reg_mrsi.py hot_reset.py rp_pio_dpc_block.py
+dist_doc_DATA = __init__.py mlxfwreset_mlnxdriver.py mlxfwreset_status_checker.py mlxfwreset_utils.py logger.py mcra.py mlnx_peripheral_components.py pci_device.py cmd_reg_mfrl.py drivers_safety_check.py cmd_reg_mroq.py cmd_reg_mpcir.py cmd_reg_mcam.py cmd_reg_mrsi.py hot_reset.py
+
+# Linux only until MlnxPciOpFreeBSD.getPciBridgeAddr() accepts the pciD:B:D:F address it returns
+if LINUX_BUILD
+dist_doc_DATA += rp_pio_dpc_block.py
+endif
 
