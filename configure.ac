@@ -80,6 +80,8 @@ KERNEL_VER=`uname -r | egrep -E -o '[[0-9]]+\.[[0-9]]+' | head -1`
 OFED_VER=`ofed_info -s | egrep -E -o '[[0-9]]+\.[[0-9]]+' | head -1`
 MIN_OFED_VER="5.6"
 MIN_RDMA_CORE_VER="2607"
+MIN_UPSTREAM_RDMA_CORE_VER="60"
+UPSTREAM_RDMA_CORE_VER_LIMIT="1000"
 RDMA_CORE_VER=`{ rpm -q rdma-core --queryformat '%{VERSION}\n' 2>/dev/null; dpkg-query -W -f='${Version}\n' rdma-core 2>/dev/null; apk info -e -v rdma-core 2>/dev/null | sed -e 's/^rdma-core-//'; } | egrep -E -o '^[[0-9]]+' | head -1`
 MTCR_CONF_DIR=""
 LDL=""
@@ -96,8 +98,14 @@ KERNEL_BUILD_CHK=0
 if test -n "$OFED_VER" && test $(echo $OFED_VER $MIN_OFED_VER | tr " " "\n" | sort -V | tail -n 1) == "$OFED_VER" ; then
     OFED_VERSION_CHK=1
 fi
-if test -n "$RDMA_CORE_VER" && test $(echo $RDMA_CORE_VER $MIN_RDMA_CORE_VER | tr " " "\n" | sort -V | tail -n 1) == "$RDMA_CORE_VER" ; then
-    OFED_VERSION_CHK=1
+if test -n "$RDMA_CORE_VER" ; then
+    if test ${RDMA_CORE_VER} -lt ${UPSTREAM_RDMA_CORE_VER_LIMIT} ; then
+        if test ${RDMA_CORE_VER} -ge ${MIN_UPSTREAM_RDMA_CORE_VER} ; then
+            OFED_VERSION_CHK=1
+        fi
+    elif test ${RDMA_CORE_VER} -ge ${MIN_RDMA_CORE_VER} ; then
+        OFED_VERSION_CHK=1
+    fi
 fi
 
 AM_CONDITIONAL(OFED_BUILD,[test ${OFED_VERSION_CHK} = 1])
