@@ -34,8 +34,12 @@ from resourceparse_lib.utils.Exceptions import ResourceParseException
 from resourceparse_lib.parsers.ResourceParser import ResourceParser, PARSER_CLASSES
 from resourceparse_lib.formatters.AdbBasicFormatter import AdbBasicFormatter
 
-import lzma
 import struct
+
+try:
+    import lzma
+except ImportError:
+    lzma = None
 
 
 class CompactMapParser(ResourceParser):
@@ -47,7 +51,18 @@ class CompactMapParser(ResourceParser):
     CSV_SUFFIX = ".csv"
     CSV_XZ_SUFFIX = ".csv.xz"
 
+    CSV_READ_ERRORS = (IOError, OSError, UnicodeDecodeError) + (() if lzma is None else (lzma.LZMAError,))
+
     value_struct = struct.Struct('I')
+
+    @classmethod
+    def _accepted_csv_description(cls):
+        """Compressed databases are only accepted where Python exposes lzma, which
+        some supported platforms build without.
+        """
+        if lzma is None:
+            return 'a "{0}" file'.format(cls.CSV_SUFFIX)
+        return 'either a "{0}" or a compressed "{1}" file'.format(cls.CSV_SUFFIX, cls.CSV_XZ_SUFFIX)
 
     @classmethod
     def get_arg_parser(cls, prog=None):
@@ -56,7 +71,7 @@ class CompactMapParser(ResourceParser):
         required_named = arg_parser.add_argument_group('required arguments')
         required_named.add_argument("-c", "--csv-file", type=valid_path_arg_type, required=True,
                                     help='Location of the mstdump-style CSV file describing the addresses, '
-                                         'either a "{0}" or a compressed "{1}" file'.format(cls.CSV_SUFFIX, cls.CSV_XZ_SUFFIX))
+                                         '{0}'.format(cls._accepted_csv_description()))
 
         return arg_parser
 
@@ -76,11 +91,16 @@ class CompactMapParser(ResourceParser):
         it when it is shipped compressed, the way the databases are installed.
         """
         if csv_file_path.endswith(cls.CSV_XZ_SUFFIX):
+            if lzma is None:
+                raise ResourceParseException(
+                    "Cannot read the compressed CSV file '{0}': this platform's Python has no lzma module. "
+                    "Decompress it elsewhere and pass the resulting '{1}' file instead.".format(
+                        csv_file_path, cls.CSV_SUFFIX))
             return lzma.open(csv_file_path, 'rt')
         if csv_file_path.endswith(cls.CSV_SUFFIX):
             return open(csv_file_path, 'r')
-        raise ResourceParseException("Unsupported CSV file '{0}', expected a '{1}' or a '{2}' file".format(
-            csv_file_path, cls.CSV_SUFFIX, cls.CSV_XZ_SUFFIX))
+        raise ResourceParseException("Unsupported CSV file '{0}', expected {1}".format(
+            csv_file_path, cls._accepted_csv_description()))
 
     def _load_addresses(self, csv_file_path):
         """This method reads an mstdump-style CSV file and builds a flat list of
@@ -103,7 +123,7 @@ class CompactMapParser(ResourceParser):
                     size_in_dwords = int(fields[1].strip(), 0)
                     for i in range(size_in_dwords):
                         self._addresses.append(base_address + i * cs.DWORD_SIZE)
-        except (IOError, OSError, lzma.LZMAError, UnicodeDecodeError) as e:
+        except self.CSV_READ_ERRORS as e:
             raise ResourceParseException("Failed to read CSV file '{0}': {1}".format(csv_file_path, e))
         except (ValueError, IndexError) as e:
             raise ResourceParseException("Failed to parse CSV file '{0}', invalid line '{1}': {2}".format(
