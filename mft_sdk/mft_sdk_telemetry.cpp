@@ -573,12 +573,13 @@ MstStatus MftSdk::getFecHistogram(MstFecHistogram* fecHistogram, const MstTeleme
     try
     {
         _mstMlxLinkSdkInstance->_userInput.enableFecHistogram = true;
-        _mstMlxLinkSdkInstance->_userInput.showFecHistogram = true;
+        _mstMlxLinkSdkInstance->_userInput.showFecHistogram = false;
         _mstMlxLinkSdkInstance->initPortInfo();
         if (_mstMlxLinkSdkInstance->errorObserved())
         {
             throw MftGeneralException(_mstMlxLinkSdkInstance->getAllUnhandledErrors());
         }
+        _mstMlxLinkSdkInstance->_portInfo->showHistogram();
         mlxlinkGetFecHistogram(fecHistogram);
     }
 
@@ -1607,6 +1608,7 @@ MstStatus MftSdk::runTelemetryViews(uint32_t views,
             return _lastError.status;
         }
         _mstMlxLinkSdkInstance->_userInput.enableFecHistogram = true;
+        _mstMlxLinkSdkInstance->_userInput.showFecHistogram = false;
         _mstMlxLinkSdkInstance->initPortInfo();
         if (_mstMlxLinkSdkInstance->errorObserved())
         {
