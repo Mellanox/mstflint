@@ -28,14 +28,6 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-#######################################################
-#
-# AdbParser.py
-# Python implementation of the Class AdbParser
-# Created on:      23-Mar-2020 8:00:00 AM
-# Original author: talve
-#
-#######################################################
 import xml.etree.ElementTree as ET
 import resourceparse_lib.utils.constants as CONST
 from resourceparse_lib.utils.common_functions import calculate_aligned_offset
