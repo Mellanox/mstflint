@@ -40,6 +40,7 @@
 #include <vector>
 #include <map>
 #include <cstring>
+#include <new>
 
 #include "pldm_buff.h"
 #include "pldm_dev_id_record.h"
@@ -48,7 +49,10 @@
 #include "pldm_utils/pldm_utils.h"
 #include "common/tools_endianness.h"
 
-PldmPkg::PldmPkg() : deviceIDRecordCount(0), componentImageCount(0), packageHeaderChecksum(0) {}
+PldmPkg::PldmPkg() :
+    deviceIDRecordCount(0), componentImageCount(0), downstreamDeviceRecordCount(0), packageHeaderChecksum(0)
+{
+}
 
 PldmPkg::~PldmPkg()
 {
@@ -62,6 +66,11 @@ void PldmPkg::reset()
         delete deviceIDRecords.back();
         deviceIDRecords.pop_back();
     }
+    while (!downstreamDeviceRecords.empty())
+    {
+        delete downstreamDeviceRecords.back();
+        downstreamDeviceRecords.pop_back();
+    }
     while (!componentImages.empty())
     {
         delete componentImages.back();
@@ -69,8 +78,37 @@ void PldmPkg::reset()
     }
     psidRecordMap.clear();
     deviceIDRecordCount = 0;
+    downstreamDeviceRecordCount = 0;
     componentImageCount = 0;
     packageHeader.reset();
+}
+
+bool PldmPkg::unpackRecords(PldmBuffer& buff,
+                            std::vector<PldmDevIdRecord*>& records,
+                            u_int8_t count,
+                            u_int16_t componentBitmapBitLength,
+                            bool isDownstream)
+{
+    for (u_int8_t i = 0; i < count; i++)
+    {
+        PldmDevIdRecord* record =
+          isDownstream ? static_cast<PldmDevIdRecord*>(new PldmDownstreamDeviceRecord(componentBitmapBitLength)) :
+                         new PldmDevIdRecord(componentBitmapBitLength);
+        if (!record->unpack(buff))
+        {
+            delete record;
+            reset();
+            return false;
+        }
+        // Downstream devices have no PSID descriptor
+        records.push_back(record);
+        std::string psid = record->GetVendorDefinedValue(PldmRecordDescriptor::VendorDefinedType::PSID);
+        if (!psid.empty())
+        {
+            psidRecordMap[psid] = record;
+        }
+    }
+    return true;
 }
 
 bool PldmPkg::unpack(PldmBuffer& buff)
@@ -80,31 +118,39 @@ bool PldmPkg::unpack(PldmBuffer& buff)
     {
         return false;
     }
+    u_int8_t pldmRevision = packageHeader.getPackageHeaderFormatRevision();
+
+    u_int16_t componentBitmapBitLength = packageHeader.getComponentBitmapBitLength();
     buff.read(deviceIDRecordCount);
-    u_int8_t componentBitmapBitLength = packageHeader.getComponentBitmapBitLength();
-    for (u_int8_t i = 0; i < deviceIDRecordCount; i++)
+
+    if (!unpackRecords(buff, deviceIDRecords, deviceIDRecordCount, componentBitmapBitLength, /*isDownstream=*/false))
     {
-        PldmDevIdRecord* deviceIDRecord = new PldmDevIdRecord(componentBitmapBitLength);
-        if (!deviceIDRecord->unpack(buff))
-        {
-            delete deviceIDRecord;
-            reset();
-            return false;
-        }
-        deviceIDRecords.push_back(deviceIDRecord);
-        std::string psid = deviceIDRecord->GetVendorDefinedValue(PldmRecordDescriptor::VendorDefinedType::PSID);
-        psidRecordMap[psid] = deviceIDRecord;
+        return false;
     }
     // downstream device record support is added in revision 3 and above
     if (packageHeader.getPackageHeaderFormatRevision() >= FIRST_REVISION_SUPPORTED_DOWNSTREAM_DEVICES)
     {
         buff.read(downstreamDeviceRecordCount);
+        if (!unpackRecords(buff,
+                           downstreamDeviceRecords,
+                           downstreamDeviceRecordCount,
+                           componentBitmapBitLength,
+                           /*isDownstream=*/true))
+        {
+            return false;
+        }
     }
+
     buff.read(componentImageCount);
     for (u_int8_t i = 0; i < componentImageCount; i++)
     {
         PldmComponenetImage* componentImage = new PldmComponenetImage();
-        componentImage->unpack(buff);
+        if (!componentImage->unpack(buff, pldmRevision))
+        {
+            delete componentImage;
+            reset();
+            return false;
+        }
         componentImages.push_back(componentImage);
     }
     buff.read(packageHeaderChecksum);
@@ -123,7 +169,7 @@ bool PldmPkg::isComponentInPackage(const std::string& psid, const std::string& c
     ComponentIdentifier componentIdentifier;
     StringToComponentIdentifier(componentName, componentIdentifier);
 
-    for (u_int8_t i = 0; i < componentsIndexes.size(); i++)
+    for (size_t i = 0; i < componentsIndexes.size(); i++)
     {
         if (componentsIndexes[i] == 0)
         {
@@ -161,34 +207,49 @@ const PldmComponenetImage* PldmPkg::getImageByPsid(const std::string& psid) cons
 
 bool PldmPkg::getPldmDescriptorByPsid(std::string psid, u_int16_t type, u_int16_t& descriptor) const
 {
-    bool found = false;
-    for (auto devIdRec : deviceIDRecords)
+    auto getDescriptorFromRecords = [&](const std::vector<PldmDevIdRecord*>& records)
     {
-        // if psid is empty, we will return the descriptor for the first device record
-        std::string devIdPsid = devIdRec->GetVendorDefinedValue(PldmRecordDescriptor::VendorDefinedType::PSID);
-        if (devIdPsid == psid || psid.empty())
+        for (auto devIdRec : records)
         {
-            found = devIdRec->getDescriptor(type, descriptor);
-            break;
+            // if psid is empty, we will return the descriptor for the first matching device record
+            std::string devIdPsid = devIdRec->GetVendorDefinedValue(PldmRecordDescriptor::VendorDefinedType::PSID);
+            if (devIdPsid == psid || psid.empty())
+            {
+                return devIdRec->getDescriptor(type, descriptor);
+            }
         }
+        return false;
+    };
+
+    if (getDescriptorFromRecords(deviceIDRecords))
+    {
+        return true;
     }
-    return found;
+    return getDescriptorFromRecords(downstreamDeviceRecords);
 }
 
 std::string PldmPkg::getPldmVendorDefinedDescriptorByPsid(std::string psid,
                                                         PldmRecordDescriptor::VendorDefinedType type) const
 {
-    std::string descriptor = "";
-    for (auto devIdRec : deviceIDRecords)
+    auto getVendorDefinedFromRecords = [&](const std::vector<PldmDevIdRecord*>& records) -> std::string
     {
-        std::string devIdPsid = devIdRec->GetVendorDefinedValue(PldmRecordDescriptor::VendorDefinedType::PSID);
-        if (devIdPsid == psid || psid.empty())
+        for (auto devIdRec : records)
         {
-            descriptor = devIdRec->GetVendorDefinedValue(type);
-            break;
+            std::string devIdPsid = devIdRec->GetVendorDefinedValue(PldmRecordDescriptor::VendorDefinedType::PSID);
+            if (devIdPsid == psid || psid.empty())
+            {
+                return devIdRec->GetVendorDefinedValue(type);
+            }
         }
+        return std::string();
+    };
+
+    std::string descriptor = getVendorDefinedFromRecords(deviceIDRecords);
+    if (!descriptor.empty())
+    {
+        return descriptor;
     }
-    return descriptor;
+    return getVendorDefinedFromRecords(downstreamDeviceRecords);
 }
 bool PldmPkg::isPsidInPldm(std::string psid) const
 {
@@ -196,24 +257,28 @@ bool PldmPkg::isPsidInPldm(std::string psid) const
     {
         return true;
     }
-    bool found = false;
-    for (auto devIdRec : deviceIDRecords)
+    auto psidExistsInRecords = [&](const std::vector<PldmDevIdRecord*>& records)
     {
-        if (devIdRec->GetVendorDefinedValue(PldmRecordDescriptor::VendorDefinedType::PSID) == psid)
+        for (auto devIdRec : records)
         {
-            return true;
+            if (devIdRec->GetVendorDefinedValue(PldmRecordDescriptor::VendorDefinedType::PSID) == psid)
+            {
+                return true;
+            }
         }
-    }
-    return found;
+        return false;
+    };
+    return psidExistsInRecords(deviceIDRecords) || psidExistsInRecords(downstreamDeviceRecords);
 }
 
-bool PldmPkg::getComponentDataByPsid(ComponentIdentifier compIdentifier,
-                                    std::string psid,
-                                    u_int8_t** buff,
-                                    u_int32_t& buffSize)
+bool PldmPkg::extractComponentDataFromRecords(const std::vector<PldmDevIdRecord*>& records,
+                                              ComponentIdentifier compIdentifier,
+                                              const std::string& psid,
+                                              u_int8_t** buff,
+                                              u_int32_t& buffSize)
 {
     bool found = false;
-    for (auto devIdRec : deviceIDRecords)
+    for (auto devIdRec : records)
     {
         std::string devIdPsid = devIdRec->GetVendorDefinedValue(PldmRecordDescriptor::VendorDefinedType::PSID);
         if (devIdPsid == psid || psid.empty())
@@ -222,6 +287,10 @@ bool PldmPkg::getComponentDataByPsid(ComponentIdentifier compIdentifier,
             std::vector<u_int8_t> appliedComponents = devIdRec->getComponentsIndexes();
             for (u_int16_t i = 0; i < comps_count; i++)
             {
+                if (i >= appliedComponents.size())
+                {
+                    break;
+                }
                 // the current DeviceRecord doesn't contain this component.
                 if (appliedComponents[i] == 0)
                 {
@@ -236,8 +305,8 @@ bool PldmPkg::getComponentDataByPsid(ComponentIdentifier compIdentifier,
                                                                                         // FW, NIC_FW
                 {
                     buffSize = ComponentImage->getComponentSize();
-                    *buff = new u_int8_t[buffSize];
-                    if (buff == nullptr)
+                    *buff = new (std::nothrow) u_int8_t[buffSize];
+                    if (*buff == nullptr)
                     {
                         return false;
                     }
@@ -257,13 +326,13 @@ bool PldmPkg::getComponentDataByPsid(ComponentIdentifier compIdentifier,
 
 PldmDevIdRecord* PldmPkg::findRecordByPsid(const std::string& psid) const
 {
-    if (deviceIDRecords.empty())
-    {
-        return NULL;
-    }
     if (psid.empty())
     {
-        return deviceIDRecords[0];
+        if (!deviceIDRecords.empty())
+        {
+            return deviceIDRecords[0];
+        }
+        return downstreamDeviceRecords.empty() ? NULL : downstreamDeviceRecords[0];
     }
     PsidRecordMap::const_iterator it = psidRecordMap.find(psid);
     return (it == psidRecordMap.end()) ? NULL : it->second;
@@ -290,4 +359,16 @@ bool PldmPkg::recomputeHeaderChecksum(PldmBuffer& buff) const
     u_int32_t newCrc = pldm_crc32(buff.data(), checksumOffset);
     u_int32_t le = mft_cpu_to_le32(newCrc);
     return buff.writeAt(checksumOffset, (const u_int8_t*)&le, sizeof(le));
+}
+
+bool PldmPkg::getComponentDataByPsid(ComponentIdentifier compIdentifier,
+                                     std::string psid,
+                                     u_int8_t** buff,
+                                     u_int32_t& buffSize)
+{
+    if (extractComponentDataFromRecords(deviceIDRecords, compIdentifier, psid, buff, buffSize))
+    {
+        return true;
+    }
+    return extractComponentDataFromRecords(downstreamDeviceRecords, compIdentifier, psid, buff, buffSize);
 }

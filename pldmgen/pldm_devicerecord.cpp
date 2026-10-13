@@ -64,38 +64,71 @@
      dumpUInt8(buff, _descriptors.size());
  
      // DeviceUpdateOptionFlags
-     u_int16_t updateOptionFlagsValue = DEVICE_UPDATE_OPTION_FLAGS_VALUE;
-     if (_updateOptionFlags != 0x0)
-     {
-         updateOptionFlagsValue = _updateOptionFlags;
-     }
+     u_int32_t updateOptionFlagsValue =
+       (_updateOptionFlags != 0x0) ? _updateOptionFlags : DEVICE_UPDATE_OPTION_FLAGS_VALUE;
      dumpUInt32(buff, updateOptionFlagsValue);
- 
-     // ComponentImageSetVersionStringType
-     dumpUInt8(buff, VERSION_STRING_TYPE_ASCII);
- 
-     // ComponentImageSetVersionStringLength
-     dumpUInt8(buff, _setVersion.length());
- 
-     // FirmwareDevicePackageDataLength
+
+     const bool includesVersionString = IncludesVersionString();
+
+     // VersionStringType
+     dumpUInt8(buff, includesVersionString ? VERSION_STRING_TYPE_ASCII : 0x0);
+
+     // VersionStringLength
+     if (includesVersionString && _setVersion.length() > 255)
+     {
+         throw PLDMException("Set Version string '%s' exceeds 255-byte limit (actual: %zu bytes).", _setVersion.c_str(),
+                             _setVersion.length());
+     }
+     dumpUInt8(buff, includesVersionString ? static_cast<u_int8_t>(_setVersion.length()) : 0x0);
+
+     // DevicePackageDataLength
      dumpUInt16(buff, 0x0);
  
      // ApplicableComponents
      dumpBytesArray(buff, _appliedComponentsBitMap.data(), _appliedComponentsBitMap.size());
  
-     // ComponentImageSetVersionString
-     dumpString(buff, _setVersion);
- 
+     // VersionString
+     if (includesVersionString)
+     {
+         dumpString(buff, _setVersion);
+     }
+
+     // Only downstream records include the MinVersionComparisonStamp
+     PackPostVersionString(buff);
+
      // Descriptors
      for (unsigned int i = 0; i < _descriptors.size(); i++)
      {
          _descriptors[i].Pack(buff);
      }
  
-     // FirmwareDevicePackageData
+     // DevicePackageData
      // No need as the length above is zero
  
      // RecordLength
      ((u_int16_t*)(buff.data() + recordLengthFieldOffset))[0] = mft_cpu_to_le16(buff.size() - buffSizeBeforePack);
  }
  
+
+PLDMDownstreamDeviceRecord::PLDMDownstreamDeviceRecord(const string& setVersion,
+                                                       const string& updateOptionFlags,
+                                                       const vector<u_int8_t>& appliedComponentsBitMap,
+                                                       const vector<PLDMDescriptor>& descriptors,
+                                                       u_int32_t minVersionComparisonStamp) :
+    PLDMDeviceRecord(setVersion, updateOptionFlags, appliedComponentsBitMap, descriptors),
+    _minVersionComparisonStamp(minVersionComparisonStamp)
+{
+}
+
+bool PLDMDownstreamDeviceRecord::IncludesVersionString() const
+{
+    return (_updateOptionFlags & DOWNSTREAM_SELF_CONTAINED_ACTIVATION_BIT) != 0;
+}
+
+void PLDMDownstreamDeviceRecord::PackPostVersionString(vector<u_int8_t>& buff)
+{
+    if (IncludesVersionString())
+    {
+        dumpUInt32(buff, _minVersionComparisonStamp);
+    }
+}
