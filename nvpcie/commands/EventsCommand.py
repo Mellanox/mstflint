@@ -31,6 +31,7 @@
 from argparse import Namespace
 import os
 
+from tools_arg_types import verify_output_file
 from commands.PcieSwCommand import PcieSwCommand
 from commands.CommandFactory import CommandFactory
 from resourceparse_lib.formatters.PcieEventFormatter import PcieEventFormatter
@@ -115,7 +116,7 @@ class EventsCommand(PcieSwCommand):
         parser.add_argument("--format", choices=cls._FORMATS.keys(), default=list(cls._FORMATS)[0], dest="output_format",
                             help='The output format: "text" for the human readable event log, '
                                  '"json" to serialize the events (default: {0})'.format(list(cls._FORMATS)[0]))
-        parser.add_argument("-o", "--out", metavar="FILENAME", dest="out_file",
+        parser.add_argument("-o", "--out", metavar="FILENAME", dest="out_file", type=verify_output_file,
                             help='Write the output to FILENAME instead of the screen')
         parser.add_argument("--clear", action="store_true",
                             help='Erase the event log of the selected view instead of presenting it')
