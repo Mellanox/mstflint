@@ -28,14 +28,6 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-#######################################################
-#
-# ResourceParser.py
-# Created on:      12-Jun-2023 11:13:33 AM
-# Original author: astrutsovsky
-#
-#######################################################
-
 from resourceparse_lib.utils import constants as cs
 from resourceparse_lib.utils.common_functions import calculate_aligned_offset, is_resource_segment, valid_path_arg_type
 from resourceparse_lib.utils.Exceptions import ResourceParseException

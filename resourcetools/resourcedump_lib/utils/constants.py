@@ -28,16 +28,6 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-#######################################################
-#
-# constants.py
-# Python implementation of resource dump constants
-# This file will supply all the constants needed
-# for the resource dump tool
-# Original author: romany
-#
-#######################################################
-
 TOOL_NAME = "ResourceDump"
 RESOURCE_DUMP_COMMAND_TYPE_QUERY = "query"
 RESOURCE_DUMP_COMMAND_TYPE_DUMP = "dump"
