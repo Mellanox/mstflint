@@ -62,8 +62,10 @@ public:
     const PldmComponenetImage* getImageByPsid(const std::string& psid) const;
 
     u_int8_t getDeviceIDRecordCount() const { return deviceIDRecordCount; }
+    u_int8_t getDownstreamDeviceRecordCount() const { return downstreamDeviceRecordCount; }
     u_int16_t getComponentImageCount() const { return componentImageCount; }
     PldmDevIdRecord* getDeviceIDRecord(u_int8_t index) const { return deviceIDRecords[index]; }
+    PldmDevIdRecord* getDownstreamDeviceRecord(u_int8_t index) const { return downstreamDeviceRecords[index]; }
     PldmComponenetImage* getComponentByIndex(u_int16_t index) const { return componentImages[index]; }
     void getDeviceComponentImages(u_int8_t dev_index, std::vector<PldmComponenetImage*> images_list) const;
     bool getComponentDataByPsid(ComponentIdentifier compIdentifier,
@@ -75,11 +77,26 @@ public:
                                                     PldmRecordDescriptor::VendorDefinedType type) const;
     bool isPsidInPldm(std::string psid) const;
     bool isComponentInPackage(const std::string& psid, const std::string& componentName) const;
+    bool isDownstreamDeviceRecordSupported() const
+    {
+        return packageHeader.getPackageHeaderFormatRevision() >= FIRST_REVISION_SUPPORTED_DOWNSTREAM_DEVICES;
+    }
 
     PldmDevIdRecord* findRecordByPsid(const std::string& psid) const;
     bool recomputeHeaderChecksum(PldmBuffer& buff) const;
 
 private:
+    bool unpackRecords(PldmBuffer& buff,
+                       std::vector<PldmDevIdRecord*>& records,
+                       u_int8_t count,
+                       u_int16_t componentBitmapBitLength,
+                       bool isDownstream);
+    bool extractComponentDataFromRecords(const std::vector<PldmDevIdRecord*>& records,
+                                         ComponentIdentifier compIdentifier,
+                                         const std::string& psid,
+                                         u_int8_t** buff,
+                                         u_int32_t& buffSize);
+
     typedef std::map<std::string, PldmDevIdRecord*> PsidRecordMap;
     PsidRecordMap psidRecordMap;
 
@@ -88,6 +105,7 @@ private:
     std::vector<PldmDevIdRecord*> deviceIDRecords;
     u_int16_t componentImageCount;
     u_int8_t downstreamDeviceRecordCount;
+    std::vector<PldmDevIdRecord*> downstreamDeviceRecords;
     std::vector<PldmComponenetImage*> componentImages;
     u_int32_t packageHeaderChecksum;
 };

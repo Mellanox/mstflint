@@ -59,7 +59,10 @@
  #define DESCRIPTORS_STR "Descriptors"
  #define SET_VERSION_STR "Set Version"
  #define DEVICERECORDS_STR "Device Records"
+ #define DOWNSTREAM_DEVICES_STR "Downstream Device Records"
+ #define DEVICERECORD_STR "Device Record"
  #define DEVICERECORD_OPTION_STR "Options"
+ #define MIN_VERSION_COMPARISON_STAMP_STR "Min Version Comparison Stamp"
  
  #define PACKAGE_VERSION_STR_MAX_SIZE 255
  
@@ -86,28 +89,39 @@
      return ~crc;
  }
  
- static u_int32_t parseComparisonStamp(const Json::Value& componentJSON, const string& name)
+ static u_int32_t
+   parseHexStamp(const Json::Value& json, const string& contextName, const char* keyName, u_int32_t defaultVal)
  {
-     const u_int8_t COMPARISON_STAMP_BYTES_LEN = 4;
-     string stampStr = GetStringFromJson(componentJSON, COMPONENT_COMPARISON_STAMP_STR, "");
-     // Empty or absent comparison stamp defaults to 0xffffffff ("always update" sentinel).
+     const u_int8_t STAMP_BYTES_LEN = 4;
+     string stampStr = GetStringFromJson(json, keyName, "");
      if (stampStr.empty())
      {
-         return 0xffffffff;
+         return defaultVal;
      }
-     if (!ValidSizeAndFormat(stampStr, COMPARISON_STAMP_BYTES_LEN))
+     if (!ValidSizeAndFormat(stampStr, STAMP_BYTES_LEN))
      {
          throw PLDMException(
-           "Invalid value for comparison stamp in %s component. It must be in hexadecimal format and no more than %d bytes in length.\n",
-           name.c_str(), COMPARISON_STAMP_BYTES_LEN);
+           "Invalid value for %s in %s. It must be in hexadecimal format and no more than %d bytes in length.\n",
+           keyName, contextName.c_str(), STAMP_BYTES_LEN);
      }
-     u_int32_t comparisonStamp;
-     if (!mft_utils::strToNum(stampStr, comparisonStamp))
+     // Normalize bare "0x"/"0X" (empty hex after stripping prefix) to "0x0" so strToNum succeeds.
+     string normalizedStamp = stampStr;
+     if (normalizedStamp.size() == 2 && normalizedStamp[0] == '0' && tolower(normalizedStamp[1]) == 'x')
      {
-         throw PLDMException("Comparison stamp string %s is not valid\n", stampStr.c_str());
+         normalizedStamp += "0";
      }
- 
-     return comparisonStamp;
+     u_int32_t stamp;
+     if (!mft_utils::strToNum(normalizedStamp, stamp))
+     {
+         throw PLDMException("%s string %s is not valid\n", keyName, stampStr.c_str());
+     }
+     return stamp;
+ }
+
+ static u_int32_t parseComparisonStamp(const Json::Value& componentJSON, const string& name)
+ {
+     // Empty or absent comparison stamp defaults to 0xffffffff ("always update" sentinel).
+     return parseHexStamp(componentJSON, name, COMPONENT_COMPARISON_STAMP_STR, 0xffffffff);
  }
  
  void PLDM::ParseCommonRecordFields(const Json::Value& deviceRecord,
@@ -170,9 +184,67 @@
                              descriptors);
  }
 
+ static void validateDownstreamStampConsistency(const Json::Value& deviceRecord)
+ {
+     const string optionsStr = GetStringFromJson(deviceRecord, DEVICERECORD_OPTION_STR, "");
+     u_int32_t updateOptionFlags = 0x0;
+     if (!optionsStr.empty() && !mft_utils::strToNum(optionsStr, updateOptionFlags))
+     {
+         throw PLDMException("Invalid downstream record Options value: %s", optionsStr.c_str());
+     }
+     // Stamp is only serialized when the downstream device supports self-contained activation (bit0 set in option).
+     const bool selfContainedActivation = (updateOptionFlags & DOWNSTREAM_SELF_CONTAINED_ACTIVATION_BIT) != 0;
+     const bool stampPresent = !GetStringFromJson(deviceRecord, MIN_VERSION_COMPARISON_STAMP_STR, "").empty();
+     if (stampPresent && !selfContainedActivation)
+     {
+         throw PLDMException("Downstream record has '%s' but DOWNSTREAM_SELF_CONTAINED_ACTIVATION_BIT (bit0) "
+                             "is not set in Options - stamp would be silently dropped.",
+                             MIN_VERSION_COMPARISON_STAMP_STR);
+     }
+ }
+
+ PLDMDownstreamDeviceRecord PLDM::ParseDownstreamDeviceRecord(const Json::Value& deviceRecord)
+ {
+     vector<u_int8_t> appliedComponents(_componentBitmapLength / 8);
+     vector<PLDMDescriptor> descriptors;
+     ParseCommonRecordFields(deviceRecord, appliedComponents, descriptors);
+
+     validateDownstreamStampConsistency(deviceRecord);
+
+     const u_int32_t minVersionComparisonStamp =
+       parseHexStamp(deviceRecord, "downstream device record", MIN_VERSION_COMPARISON_STAMP_STR, 0);
+
+     return PLDMDownstreamDeviceRecord(GetStringFromJson(deviceRecord, SET_VERSION_STR),
+                                       GetStringFromJson(deviceRecord, DEVICERECORD_OPTION_STR),
+                                       appliedComponents,
+                                       descriptors,
+                                       minVersionComparisonStamp);
+ }
+
+ bool PLDM::IsDownstreamComponent(const std::string& componentName, const Json::Value& root) const
+ {
+     Json::Value downstreamDevices = root[DOWNSTREAM_DEVICES_STR];
+     if (downstreamDevices.empty())
+     {
+         return false;
+     }
+     for (unsigned int i = 0; i < downstreamDevices.size(); i++)
+     {
+         const Json::Value& components = downstreamDevices[i][COMPONENTS_STR];
+         for (unsigned int j = 0; j < components.size(); j++)
+         {
+             if (components[j].asString() == componentName)
+             {
+                 return true;
+             }
+         }
+     }
+     return false;
+ }
+
  PLDM::PLDM(const string& cookBook, bool recovery)
  {
-     Json::Value root, componentsJSON, deviceRecordsJSON;
+     Json::Value root, componentsJSON, deviceRecordsJSON, downstreamDevicesJSON;
      nbu::mft::common::ReaderWrapper readerwrapper;
      Json::Reader* reader = readerwrapper.getReader();
      bool parsingSuccessful = reader->parse(cookBook, root);
@@ -243,7 +315,9 @@
                                              componentIdentifier,
                                              GetStringFromJson(componentJSON, COMPONENT_OPTIONS_STR),
                                              GetStringFromJson(componentJSON, COMPONENT_ACTIVATION_METHOD_STR),
-                                             comparisonStamp));
+                                             comparisonStamp,
+                                             // For Downstream Components, the classification is 0xFFFF
+                                             IsDownstreamComponent(name, root) ? "0xFFFF" : ""));
      }
      if (!_components.size())
      {
@@ -259,9 +333,23 @@
      {
          _deviceRecords.push_back(ParseDeviceRecord(deviceRecordsJSON[i]));
      }
-     if (!_deviceRecords.size())
+
+     // parse the downstream devices
+     downstreamDevicesJSON = root[DOWNSTREAM_DEVICES_STR];
+     if (!downstreamDevicesJSON.empty() && _packageHeaderFormatRevision < FIRST_REVISION_SUPPORTED_DOWNSTREAM_DEVICES)
      {
-         throw PLDMException("The cookbook must include at least one device record.");
+         throw PLDMException("Cookbook contains downstream device records but Package Header Format Revision "
+                             "is 0x%x; downstream records require revision >= 0x%x.",
+                             _packageHeaderFormatRevision, FIRST_REVISION_SUPPORTED_DOWNSTREAM_DEVICES);
+     }
+     for (unsigned int i = 0; i < downstreamDevicesJSON.size(); i++)
+     {
+         _downstreamDevices.push_back(ParseDownstreamDeviceRecord(downstreamDevicesJSON[i]));
+     }
+
+     if (!_deviceRecords.size() && !_downstreamDevices.size())
+     {
+         throw PLDMException("The cookbook must include at least one device record or downstream device.");
      }
  }
  
@@ -309,7 +397,12 @@
      if (_packageHeaderFormatRevision >= FIRST_REVISION_SUPPORTED_DOWNSTREAM_DEVICES)
      {
          // DownStream Device Record Count
-         dumpUInt8(buff, 0x0);
+         dumpUInt8(buff, static_cast<u_int8_t>(_downstreamDevices.size()));
+         // dump DownStream Device Records
+         for (unsigned int i = 0; i < _downstreamDevices.size(); i++)
+         {
+             _downstreamDevices[i].Pack(buff);
+         }
      }
  
      // ComponentImageCount
@@ -318,7 +411,7 @@
      // dump ComponentImageInformation
      for (unsigned int i = 0; i < _components.size(); i++)
      {
-         _components[i].ComponentInfoPack(buff);
+         _components[i].ComponentInfoPack(buff, _packageHeaderFormatRevision);
      }
  
      // save the checksum offset
@@ -429,6 +522,45 @@
      return orderedNames;
  }
  
+ Json::Value PLDM::BuildDeviceRecordFromJson(const Json::Value& deviceRecord,
+                                             int& componentCounter,
+                                             Json::Value& components,
+                                             bool reuseComponents,
+                                             bool keepDescriptorsOrder,
+                                             bool isDownstream)
+ {
+     Json::Value deviceRecordAttr;
+     deviceRecordAttr[SET_VERSION_STR] = "";
+     deviceRecordAttr[DEVICERECORD_OPTION_STR] = "";
+     if (isDownstream)
+     {
+         deviceRecordAttr[MIN_VERSION_COMPARISON_STAMP_STR] = "";
+     }
+     deviceRecordAttr[DESCRIPTORS_STR] = Json::Value(Json::arrayValue);
+     deviceRecordAttr[COMPONENTS_STR] = Json::Value(Json::arrayValue);
+
+     Json::Value componentsNames = deviceRecord[COMPONENTS_STR];
+     for (unsigned int i = 0; i < componentsNames.size(); i++)
+     {
+         string identifier = componentsNames[i].asString();
+         identifier = ValidAndNormalizeComponentIdentifier(identifier);
+         const string compName = AddComponent(identifier, componentCounter, components, reuseComponents);
+         deviceRecordAttr[COMPONENTS_STR].append(compName);
+     }
+
+     Json::Value descriptors = deviceRecord[DESCRIPTORS_STR];
+
+     // Append descriptors to device record
+     for (const auto& name : GetOrderedDescriptorNames(descriptors, keepDescriptorsOrder))
+     {
+         Json::Value descriptor;
+         descriptor[name] = PLDMDescriptor::IsDefaultValue(name) ? "DEFAULT_VALUE" : "";
+         deviceRecordAttr[DESCRIPTORS_STR].append(descriptor);
+     }
+
+     return deviceRecordAttr;
+ }
+
  void PLDM::GenerateEmptyCookBookFromJson(const string& json, bool reuseComponents, const string& fname, bool keepDescriptorsOrder)
  {
      Json::Value root;
@@ -454,32 +586,27 @@
      int componentCounter = 0;
      for (unsigned int i = 0; i < deviceRecords.size(); i++)
      {
-         Json::Value deviceRecordAttr;
-         deviceRecordAttr[SET_VERSION_STR] = "";
-         deviceRecordAttr[DEVICERECORD_OPTION_STR] = "";
-         deviceRecordAttr[DESCRIPTORS_STR] = Json::Value(Json::arrayValue);
-         deviceRecordAttr[COMPONENTS_STR] = Json::Value(Json::arrayValue);
- 
-         Json::Value componentsNames = deviceRecords[i]["Components"];
-         for (unsigned int j = 0; j < componentsNames.size(); j++)
+         pldmJSON[DEVICERECORDS_STR].append(BuildDeviceRecordFromJson(deviceRecords[i],
+                                                                      componentCounter,
+                                                                      pldmJSON[COMPONENTS_STR],
+                                                                      reuseComponents,
+                                                                      keepDescriptorsOrder,
+                                                                      /*isDownstream=*/false));
+     }
+
+     Json::Value downstreamDevices = root[DOWNSTREAM_DEVICES_STR];
+     if (!downstreamDevices.empty())
+     {
+         pldmJSON[DOWNSTREAM_DEVICES_STR] = Json::Value(Json::arrayValue);
+         for (unsigned int i = 0; i < downstreamDevices.size(); i++)
          {
-             string identifier = componentsNames[j].asString();
-             identifier = ValidAndNormalizeComponentIdentifier(identifier);
-             const string compName =
-               AddComponent(identifier, componentCounter, pldmJSON[COMPONENTS_STR], reuseComponents);
-             deviceRecordAttr[COMPONENTS_STR].append(compName);
+             pldmJSON[DOWNSTREAM_DEVICES_STR].append(BuildDeviceRecordFromJson(downstreamDevices[i],
+                                                                               componentCounter,
+                                                                               pldmJSON[COMPONENTS_STR],
+                                                                               reuseComponents,
+                                                                               keepDescriptorsOrder,
+                                                                               /*isDownstream=*/true));
          }
- 
-         Json::Value descriptors = deviceRecords[i]["Descriptors"];
- 
-         // Append descriptors to device record
-         for (const auto& name : GetOrderedDescriptorNames(descriptors, keepDescriptorsOrder))
-         {
-             Json::Value descriptor;
-             descriptor[name] = PLDMDescriptor::IsDefaultValue(name) ? "DEFAULT_VALUE" : "";
-             deviceRecordAttr[DESCRIPTORS_STR].append(descriptor);
-         }
-         pldmJSON[DEVICERECORDS_STR].append(deviceRecordAttr);
      }
      // pldmJSON[COMPONENTS_STR] =  components;
      Json::StyledWriter writer;

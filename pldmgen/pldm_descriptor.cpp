@@ -42,6 +42,7 @@
  
  #define UUID_BYTES_LEN 16
  #define APSKU_BYTES_LEN 4
+ #define IEEE_ASSIGNED_ID_BYTES_LEN 3
  
  void PLDMDescriptor::ParseType(const string& type)
  {
@@ -76,6 +77,10 @@
      else if (type == UUID_STR)
      {
          strToArry(value, "UUID", _value, UUID_BYTES_LEN);
+     }
+     else if (type == IEEE_ASSIGNED_ID_STR)
+     {
+         strToArry(value, IEEE_ASSIGNED_ID_STR, _value, IEEE_ASSIGNED_ID_BYTES_LEN, /*littleEndian=*/true);
      }
      else
      {

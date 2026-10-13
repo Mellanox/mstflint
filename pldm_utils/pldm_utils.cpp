@@ -85,7 +85,11 @@ const std::vector<ComponentInfo> components_list = {
    COMPONENT_OPTIONS_VALUE_DEFAULT},
   {"DPA_COMPONENT_REMOVAL", ComponentIdentifier::Identifier_DPA_COMPONENT_REMOVAL_Comp,
    ComponentClassification::Instrumentation, REQUESTED_COMPONENT_ACTIVATION_MODE_VALUE_DEFAULT,
-   COMPONENT_OPTIONS_VALUE_DEFAULT}};
+   COMPONENT_OPTIONS_VALUE_DEFAULT},
+  {"LinkX", ComponentIdentifier::Identifier_LinkX_Comp, ComponentClassification::DownstreamDevice,
+   REQUESTED_COMPONENT_ACTIVATION_MODE_VALUE_DEFAULT, COMPONENT_OPTIONS_VALUE_DEFAULT},
+  {"LinkX_ELS", ComponentIdentifier::Identifier_LinkX_ELS_Comp, ComponentClassification::DownstreamDevice,
+   REQUESTED_COMPONENT_ACTIVATION_MODE_VALUE_DEFAULT, COMPONENT_OPTIONS_VALUE_DEFAULT}};
 
 string NumToStr(u_int32_t num)
 { 
@@ -106,15 +110,21 @@ bool ValidSizeAndFormat(const string& number, const u_int8_t size)
     {
         hexNumber = hexNumber.substr(2);
     }
-    if (hexNumber.size() % 2 != 0 && hexNumber != "0")
+    if (hexNumber.empty())
     {
-        throw PLDMException("Invalid %s hexadecimal format.\n", hexNumber.c_str());
+        // the value will be zero, so it is valid
+        return true;
     }
-    return hexNumber.size() / 2 <= size &&
+    // Add 1 to the size to account for the odd digits in number
+    return (hexNumber.size() + 1) / 2 <= size &&
            std::all_of(hexNumber.begin(), hexNumber.end(), [](unsigned char cha) { return std::isxdigit(cha); });
 }
 
-void strToArry(const string& number, const string& fieldName, vector<u_int8_t>& value, u_int32_t maxSize)
+void strToArry(const string& number,
+               const string& fieldName,
+               vector<u_int8_t>& value,
+               u_int32_t maxSize,
+               bool littleEndian)
 {
     string hexNumber = number;
 
@@ -122,6 +132,13 @@ void strToArry(const string& number, const string& fieldName, vector<u_int8_t>& 
     if (hexNumber.size() >= 2 && (hexNumber[0] == '0') && (tolower(hexNumber[1]) == 'x'))
     {
         hexNumber = hexNumber.substr(2);
+    }
+
+    // Normalize odd-length hex by left-padding a single '0' so the first nibble
+    // becomes the high nibble of the first byte (e.g. "123" -> "0123" -> [0x01, 0x23]).
+    if (hexNumber.size() % 2 != 0)
+    {
+        hexNumber.insert(hexNumber.begin(), '0');
     }
 
     for (size_t i = 0; i < hexNumber.length(); i += 2)
@@ -142,8 +159,14 @@ void strToArry(const string& number, const string& fieldName, vector<u_int8_t>& 
     {
         throw PLDMException("%s must be %d bytes at most.", fieldName.c_str(), maxSize);
     }
+
     int paddingSize = maxSize - value.size();
     value.insert(value.begin(), paddingSize, 0x00);
+
+    if (littleEndian)
+    {
+        reverse(value.begin(), value.end());
+    }
 }
 
 bool WriteToFile(const string& fname, const string& content)

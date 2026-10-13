@@ -237,6 +237,15 @@ void PldmRecordDescriptor::printFormatted() const
         case ACPI_Product_ID:
             printf("%-*s0x%02x%02x\n", LABEL_WIDTH, "ACPI Product ID:", descriptorData[1], descriptorData[0]);
             break;
+        case IEEE_Assigned_ID:
+            if (descriptorLength < 3)
+            {
+                printf("%-*s<invalid length %u>\n", LABEL_WIDTH, "IEEE Assigned ID:", descriptorLength);
+                break;
+            }
+            printf("%-*s0x%02x%02x%02x\n", LABEL_WIDTH, "IEEE Assigned ID:", descriptorData[2], descriptorData[1],
+                   descriptorData[0]);
+            break;
         case Vendor_Defined:
             if (vendorDefinedType == VendorDefinedType::PSID)
             {
