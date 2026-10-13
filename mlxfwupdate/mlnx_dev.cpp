@@ -505,13 +505,36 @@ int MlnxDev::preBurn(string mfa_file,
     string selectorTag;
     int fileSig = ImageAccess::getFileSignature(mfa_file);
 
+    int mfaPldm = 0;
+    u_int32_t mfaPldmSize = 0;
+
     if (fileSig == IMG_SIG_TYPE_PLDM)
     {
         pldmFlow = true;
         isStripedImage = true;
     }
+    else if (fileSig == IMG_SIG_TYPE_MFA)
+    {
+        // an MFA entry may hold an MFT fwpkg (PLDM) instead of a binary image
+        mfaPldm = imgacc.getMfaPldmNicImage(mfa_file, _psid, &filebuf, mfaPldmSize, swDevId);
+        if (mfaPldm < 0)
+        {
+            _errMsg = imgacc.getLastErrMsg();
+            _log += imgacc.getLog();
+            return -1;
+        }
+        if (mfaPldm > 0)
+        {
+            pldmFlow = true;
+            isStripedImage = true;
+        }
+    }
 
-    if (pldmFlow)
+    if (mfaPldm > 0)
+    {
+        sza = static_cast<int>(mfaPldmSize);
+    }
+    else if (pldmFlow)
     {
         if (_psid.empty())
         {

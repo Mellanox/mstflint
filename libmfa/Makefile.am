@@ -35,7 +35,8 @@ AM_CPPFLAGS = \
     -I$(srcdir) \
     -I$(top_srcdir) \
     -I$(top_srcdir)/common -I$(top_builddir)/common \
-    -I$(top_srcdir)/ext_libs/minixz
+    -I$(top_srcdir)/ext_libs/minixz \
+    $(openssl_CFLAGS)
 
 AM_CFLAGS = -MD -pipe -Wall -W -g $(COMPILER_FPIC)
 
