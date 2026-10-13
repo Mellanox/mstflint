@@ -40,7 +40,7 @@ from .mft_sdk_types import (
     MstDevice, MstInterfaceType, MstPCIeSubInterfaceType,
     MstDeviceInfo, MstPcieSubInterfaceInfo, MstPciBDF
 )
-from .mft_sdk_errors import MstStatus, check_status
+from .mft_sdk_errors import MstStatus, check_status, check_function_available
 from .mft_sdk_core import LIB
 
 
@@ -78,8 +78,10 @@ def _setup_discovery_functions(lib: CDLL):
     lib.mstFreePCIeSubInterfaces.restype = c_uint32  # MstStatus
 
     # MstStatus mstGetDeviceHandleWithI2cSecondary(MstDevice* mstDevice, const char* deviceIdentifier, c_uint8 i2cSecondaryAddress);
-    lib.mstGetDeviceHandleWithI2cSecondary.argtypes = [POINTER(MstDevice), c_char_p, c_uint8]
-    lib.mstGetDeviceHandleWithI2cSecondary.restype = c_uint32  # MstStatus
+    # Exported only by an SDK built with --enable-i2c.
+    if hasattr(lib, "mstGetDeviceHandleWithI2cSecondary"):
+        lib.mstGetDeviceHandleWithI2cSecondary.argtypes = [POINTER(MstDevice), c_char_p, c_uint8]
+        lib.mstGetDeviceHandleWithI2cSecondary.restype = c_uint32  # MstStatus
 
     # MstStatus mstGetDeviceHandleByBDF(MstDevice* mstDevice, MstPciBDF pciBDF, MstPCIeSubInterfaceType subInterfaceType);
     lib.mstGetDeviceHandleByBDF.argtypes = [POINTER(MstDevice), MstPciBDF.c_type, c_uint32]
@@ -183,9 +185,13 @@ def get_device_handle(device_identifier: str, i2c_secondary_address: c_uint8 = N
         i2c_secondary_address (c_uint8): I2C secondary address. If None, the I2C secondary address will not be forced.
     Returns:
         MstDevice: Device handle for the specified device
+
+    Raises:
+        MftSdkNotSupportedException: If i2c_secondary_address is given and the SDK was built without --enable-i2c
     """
     device_handle = MstDevice()
     if i2c_secondary_address is not None:
+        check_function_available("mstGetDeviceHandleWithI2cSecondary", "--enable-i2c")
         status = LIB.mstGetDeviceHandleWithI2cSecondary(
             byref(device_handle),
             device_identifier.encode('utf-8'),
