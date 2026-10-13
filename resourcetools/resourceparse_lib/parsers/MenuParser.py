@@ -28,14 +28,6 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-#######################################################
-#
-# ResourceParser.py
-# Created on:      26-Sep-2023 05:51:33 PM
-# Original author: astrutsovsky
-#
-#######################################################
-
 from resourceparse_lib.utils import constants as cs
 from resourceparse_lib.parsers.ResourceParser import ResourceParser, PARSER_CLASSES
 from resourceparse_lib.formatters.AdbBasicFormatter import AdbBasicFormatter

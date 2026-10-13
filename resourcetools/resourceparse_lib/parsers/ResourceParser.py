@@ -28,14 +28,6 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-#######################################################
-#
-# ResourceParser.py
-# Created on:      12-Jun-2023 11:13:33 AM
-# Original author: astrutsovsky
-#
-#######################################################
-
 from abc import ABC, abstractmethod
 from argparse import ArgumentTypeError, ArgumentParser
 

@@ -28,16 +28,6 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-#######################################################
-#
-# constants.py
-# Python implementation of resource dump constants
-# This file will supply all the constants needed
-# for the resource parse tool
-# Original author: talve
-#
-#######################################################
-
 TOOL_NAME = "ResourceParse"
 
 RESOURCE_DUMP_SEGMENT_TYPE_INFO = 0xfffe

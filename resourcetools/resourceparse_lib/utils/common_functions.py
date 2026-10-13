@@ -28,16 +28,6 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-#######################################################
-#
-# constants.py
-# Python implementation of resource dump constants
-# This file will supply all the constants needed
-# for the resource parse tool
-# Original author: talve
-#
-#######################################################
-
 from resourcedump_lib.utils import constants as cs
 from argparse import ArgumentTypeError
 from pathlib import Path

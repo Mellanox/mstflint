@@ -28,15 +28,6 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-#######################################################
-#
-# types.py
-# ctypes connection to C SDK
-# Created on:      29-Aug-2023 5:15:00 PM
-# Original author: astrutsovsky
-#
-#######################################################
-
 import ctypes
 
 
