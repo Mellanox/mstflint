@@ -72,6 +72,7 @@ public:
     bool extract_all;
     string extract_dir;
     bool list_file_contents;
+    vector<string> psid_list;
     bool display_archive_names;
     bool show_progress;
     bool log_on_update;

@@ -141,6 +141,9 @@ using namespace mft_utils;
 #define PSID_L "psid"
 #define PSID_S ' '
 
+#define SHOW_PSIDS_L "show-psids"
+#define SHOW_PSIDS_S ' '
+
 #define CRC_L "crc"
 #define CRC_S ' '
 
@@ -344,6 +347,10 @@ void CmdLineParser::initOptions()
 
     this->AddOptions(NUM_OF_RETRIALS_L, NUM_OF_RETRIALS_S, "NumOfRetrials", "Number of download retrials default is 5",
                      true);
+    this->AddOptions(SHOW_PSIDS_L,
+                     SHOW_PSIDS_S,
+                     "<PSID1>,<PSID2>,...",
+                     "PSIDs must be separated by comma. Multiple PSIDs can be specified delimited by commas.");
 
     this->AddOptions(HELP_L, HELP_S, "", "Show this message and exit");
 
@@ -527,12 +534,12 @@ void CmdLineParser::initOptions()
                      "Include the switch's service (FNM) ports in the module scan, which skips them by default");
 }
 
-bool csvSplit(string str, vector<string>& strv)
+bool csvSplit(string str, vector<string>& strv, char delimiter = ';')
 {
     size_t pos;
     bool res = true;
 
-    while ((pos = str.find(';')) != string::npos)
+    while ((pos = str.find(delimiter)) != string::npos)
     {
         string tmp = str.substr(0, pos);
         strv.push_back(tmp);
@@ -826,6 +833,18 @@ ParseStatus CmdLineParser::HandleOption(string name, string value)
     else if (name == LIST_CONTENT_L)
     {
         _cmdLineParams->list_file_contents = true;
+        return PARSE_OK;
+    }
+    else if (name == SHOW_PSIDS_L)
+    {
+        if (value.empty())
+        {
+            return PARSE_OK;
+        }
+        if (!csvSplit(value, _cmdLineParams->psid_list, ','))
+        {
+            return PARSE_ERROR_SHOW_USAGE;
+        }
         return PARSE_OK;
     }
     else if (name == FFV_L)

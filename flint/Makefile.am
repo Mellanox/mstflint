@@ -117,6 +117,7 @@ AM_CPPFLAGS += $(liblzma_CFLAGS)
 LDADD_mstflint += $(liblzma_LIBS) -lm
 mstflint_DEPENDENCIES += \
     $(top_builddir)/libmfa/libmfa.la \
+    $(top_builddir)/mlxsign_lib/libmlxsign.la \
     $(top_builddir)/ext_libs/minixz/libminixz.la \
     $(top_builddir)/mlxarchive/libmstarchive.la \
     $(top_builddir)/tools_layouts/libmlxarchive_layouts.la \
