@@ -93,6 +93,7 @@ private:
         FD_UUID = 0x0002,
         PnP_Vendor_ID = 0x0003,
         ACPI_Vendor_ID = 0x0004,
+        IEEE_Assigned_ID = 0x0005,
         PCI_Device_ID = 0x0100,
         PCI_Subsystem_Vendor_ID = 0x0101,
         PCI_Subsystem_ID = 0x0102,

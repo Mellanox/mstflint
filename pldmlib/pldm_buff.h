@@ -63,6 +63,7 @@ public:
     bool saveFile(const std::string& fname) const;
     const u_int8_t* data() const { return m_buff; }
     size_t size() const { return (size_t)m_size; }
+    size_t remaining() const { return (m_pos >= 0 && m_pos < m_size) ? (size_t)(m_size - m_pos) : 0; }
 
 private:
     std::string m_fname;
