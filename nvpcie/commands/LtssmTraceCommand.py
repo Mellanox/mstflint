@@ -35,6 +35,7 @@ import tempfile
 from commands.PcieSwCommand import PcieSwCommand
 from commands.CommandFactory import CommandFactory
 from resourceparse_lib.utils.common_functions import valid_path_arg_type
+from tools_arg_types import verify_output_file
 
 # the nvltssm library is imported lazily inside the paths that use it: it is built
 # only with --enable-adb-generic-tools, so importing it at module scope would make
@@ -83,7 +84,7 @@ class LtssmTraceCommand(PcieSwCommand):
         packed_link_args.add_argument("--lport", type=int,
                                       help='Local port number of the link, taken instead of --pcore and --link')
 
-        parser.add_argument("-o", "--out", metavar="FILENAME", dest="out_file",
+        parser.add_argument("-o", "--out", metavar="FILENAME", dest="out_file", type=verify_output_file,
                             help='Write the output to FILENAME instead of the screen')
 
     @classmethod
