@@ -38,7 +38,7 @@ from ctypes import c_uint8
 from typing import List
 
 from .mft_sdk_types import MstDevice
-from .mft_sdk_errors import MstStatus, check_status
+from .mft_sdk_errors import MstStatus, check_status, check_function_available
 from .mft_sdk_core import LIB
 
 
@@ -52,7 +52,11 @@ def mstSetI2cSecondary(device_handle: MstDevice, newI2cSecondary: int) -> None:
 
     Returns:
         None
+
+    Raises:
+        MftSdkNotSupportedException: If the SDK was built without --enable-i2c
     """
+    check_function_available("mstSetI2cSecondary", "--enable-i2c")
     status = LIB.mstSetI2cSecondary(
         device_handle,
         newI2cSecondary
@@ -69,7 +73,11 @@ def mstGetI2cSecondary(device_handle: MstDevice) -> int:
 
     Returns:
         int: I2C secondary address
+
+    Raises:
+        MftSdkNotSupportedException: If the SDK was built without --enable-i2c
     """
+    check_function_available("mstGetI2cSecondary", "--enable-i2c")
     value = c_uint8()
     status = LIB.mstGetI2cSecondary(
         device_handle,

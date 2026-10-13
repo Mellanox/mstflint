@@ -39,7 +39,7 @@ from typing import Dict, List, Optional, Sequence
 
 from .mft_sdk_core import LIB
 from .mft_sdk_types import MstDevice
-from .mft_sdk_errors import MstStatus, check_status
+from .mft_sdk_errors import MstStatus, check_status, check_function_available
 from .mft_sdk_reg_access import get_all_prm_registers, get_register_metadata, send_prm_register, send_raw_prm_register, MstPrmRegisterMetadata, MstPrmRegAccessMethod
 from .mft_sdk_i2c_access import mstSetI2cSecondary, mstGetI2cSecondary
 from .mft_sdk_icmd import mstSendIcmd, MstIcmdAccessMethod
@@ -62,9 +62,13 @@ class MftSdk():
             device_identifier (str): Device identifier string to open.
             i2c_secondary_address (c_uint8): I2C secondary address to force.
                                             If None, the I2C secondary address will not be forced.
+
+        Raises:
+            MftSdkNotSupportedException: If i2c_secondary_address is given and the SDK was built without --enable-i2c
         """
         self._device_handle = c_void_p()
         if i2c_secondary_address is not None:
+            check_function_available("mstGetDeviceHandleWithI2cSecondary", "--enable-i2c")
             status = LIB.mstGetDeviceHandleWithI2cSecondary(
                 byref(self._device_handle),
                 device_identifier.encode('utf-8'),
