@@ -37,6 +37,7 @@ if sys.version_info[0] < 3:
     exit(1)
 
 import argparse
+from tools_arg_types import verify_output_dir, verify_output_file
 from resourceparse_lib.utils import constants as cs
 from resourceparse_lib.utils.common_functions import valid_path_arg_type
 from resourceparse_lib.ResourceParseManager import ResourceParseManager
@@ -73,8 +74,8 @@ class ResourceParse:
         optional_args.add_argument("-p", "--parser", dest="resource_parser", type=parser_type, nargs="?", const=PARSER_CLASSES["adb"], default=PARSER_CLASSES["adb"] if not prog else PARSER_CLASSES["raw"], help="Available options: {}. Default: 'adb'. see (Parsing methods) ".format(list(PARSER_CLASSES.keys())))
         optional_args.add_argument("-f", "--formatter", dest="formatter", type=formatter_type, nargs="?", const=FORMATTER_CLASSES["basic"], default=FORMATTER_CLASSES["basic"], help="Available options: {}. Default: 'basic'. Each parse method supports a subset, see (Formatters) ".format(list(FORMATTER_CLASSES.keys())))
         output_group = optional_args.add_mutually_exclusive_group(required=False)
-        output_group.add_argument("-o", "--out", help='Location of the output file')
-        output_group.add_argument("--out-dir", help='Location of the output directory, a separate file is created for each segment')
+        output_group.add_argument("-o", "--out", type=verify_output_file, help='Location of the output file')
+        output_group.add_argument("--out-dir", type=verify_output_dir, help='Location of the output directory, a separate file is created for each segment')
 
         # Only args that added up until here will be included in the resourcedump help menu
 
