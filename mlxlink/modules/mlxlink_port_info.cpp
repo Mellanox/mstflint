@@ -66,6 +66,7 @@ void MlxlinkPortInfo::updateBinsRange()
 {
     sendPrmReg(ACCESS_REG_PPHCR, REG_GET);
 
+    _binsList.clear();
     for (u_int32_t binIdx = 0; binIdx < _numOfBins; ++binIdx)
     {
         HISTOGRAM_BIN histBin = HISTOGRAM_BIN(binIdx, getFieldValue("low_val_" + to_string(binIdx)),
