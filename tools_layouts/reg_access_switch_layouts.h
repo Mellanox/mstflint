@@ -36,7 +36,7 @@
  
 
 /***
-         *** This file was generated at "2026-10-01 10:06:54"
+         *** This file was generated at "2026-10-12 17:11:49"
          *** by:
          ***    > [REDACTED]/adb2pack.py --input reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils -o user/tools_layouts
          ***/
@@ -1435,7 +1435,7 @@ reason (only if negotiation took place during linkup flow)0: Unknown1: intention
 	u_int8_t local_reason_opcode;
 	/* Description - Opcode of link down reason for local / remote side / last successful
 recovery entry reason:Recovery entry reason supported only if PCAM.feature_cap_mask bit 117 is
-set0: No_link_down_indication1: Unknown_reason2: Hi_BER3: Block_Lock_loss4: Alignment_loss5: FEC_sync_loss6: PLL_lock_loss7: FIFO_overflow8: false_SKIP_condition9: Minor_Error_threshold_exceeded10: Physical_layer_retransmission_timeout11: Heartbeat_errors12: Link_Layer_credit_monitoring_watchdog13: Link_Layer_integrity_threshold_exceeded14: Link_Layer_buffer_overrun15: Down_by_outband_command_with_healthy_link16: Down_by_outband_command_for_link_with_hi_ber17: Down_by_inband_command_with_healthy_link18: Down_by_inband_command_for_link_with_hi_ber19: Down_by_verification_GW20: Received_Remote_Fault21: Received_TS122: Down_by_management_command23: Cable_was_unplugged24: Cable_access_issue25: Cable_Thermal_shutdown26: Current_issue27: Power_budget28: Fast_recovery_raw_ber29: Fast_recovery_effective_ber30: Fast_recovery_symbol_ber31: Fast_recovery_credit_watchdog32: Peer_side_down_to_sleep_state33: Peer_side_down_to_disable_state34: Peer_side_down_to_disable_and_port_lock35: Peer_side_down_due_to_thermal_event36: Peer_side_down_due_to_force_event37: Peer_side_down_due_to_reset_event38: Reset_no_power_cycle39: Fast_recovery_tx_plr_trigger40: Down_due_to_HW_force_event42: L1_exit_failure43: too_many_link_error_recoveries44: Down_due_to_contain_mode45: BW_loss_threshold_exceeded46: ELS_laser_fault47: Hi_SER48: down_by_nmx_adminstate_cmd49: flua_ber_below_threshold_in_guard_time50: Received_Local_Fault51: Received_Link_Interruption52: Manual_debug_mode53: command_triggered_recovery58: Recovery_BW_loss_threshold_exceeded59: Peer_side_down_due_to_contain_mode60: module_unexpected_reset_or_low_power61: Down_due_to_contain_mode_rx62: Down_due_to_contain_mode_tx64: serdes uphy fatal indication65: serdes ophy fatal indication66: down_due_to_rs_fec_consec_bad_cw_threshold_exceeded */
+set0: No_link_down_indication1: Unknown_reason2: Hi_BER3: Block_Lock_loss4: Alignment_loss5: FEC_sync_loss6: PLL_lock_loss7: FIFO_overflow8: false_SKIP_condition9: Minor_Error_threshold_exceeded10: Physical_layer_retransmission_timeout11: Heartbeat_errors12: Link_Layer_credit_monitoring_watchdog13: Link_Layer_integrity_threshold_exceeded14: Link_Layer_buffer_overrun15: Down_by_outband_command_with_healthy_link16: Down_by_outband_command_for_link_with_hi_ber17: Down_by_inband_command_with_healthy_link18: Down_by_inband_command_for_link_with_hi_ber19: Down_by_verification_GW20: Received_Remote_Fault21: Received_TS122: Down_by_management_command23: Cable_was_unplugged24: Cable_access_issue25: Cable_Thermal_shutdown26: Current_issue27: Power_budget28: Fast_recovery_raw_ber29: Fast_recovery_effective_ber30: Fast_recovery_symbol_ber31: Fast_recovery_credit_watchdog32: Peer_side_down_to_sleep_state33: Peer_side_down_to_disable_state34: Peer_side_down_to_disable_and_port_lock35: Peer_side_down_due_to_thermal_event36: Peer_side_down_due_to_force_event37: Peer_side_down_due_to_reset_event38: Reset_no_power_cycle39: Fast_recovery_tx_plr_trigger40: Down_due_to_HW_force_event42: L1_exit_failure43: too_many_link_error_recoveries44: Down_due_to_contain_mode45: BW_loss_threshold_exceeded46: ELS_laser_fault47: Hi_SER48: down_by_nmx_adminstate_cmd49: flua_ber_below_threshold_in_guard_time50: Received_Local_Fault51: Received_Link_Interruption52: Manual_debug_mode53: command_triggered_recovery58: Recovery_BW_loss_threshold_exceeded59: Peer_side_down_due_to_contain_mode60: module_unexpected_reset_or_low_power61: Down_due_to_contain_mode_rx62: Down_due_to_contain_mode_tx64: serdes_uphy_fatal_indication65: serdes_ophy_fatal_indication66: down_due_to_rs_fec_consec_bad_cw_threshold_exceeded */
 	/* 0x4.16 - 0x4.23 */
 	/* access: RO */
 	u_int8_t recovery_entry_reason;
@@ -2513,25 +2513,32 @@ PDDR - HST Link Enabled NVLink Layout */
 	/* access: RO */
 	u_int32_t eth_an_link_enabled;
 /*---------------- DWORD[14] (Offset 0x38) ----------------*/
-	/* Description - 0: N/A - not supported or not enabled1: Attention2: Healthy */
+	/* Description - Aggregated sticky link health status for the port.0: disabled - not supported or no metric associated1: attention - one or more associated metrics crossed a threshold
+(sticky)2: healthy - at least one metric is active and none have crossed
+a threshold3: not_monitored - physical link is not up, FW is not evaluating
+metrics */
 	/* 0x38.0 - 0x38.3 */
 	/* access: RO */
 	u_int8_t link_health;
-	/* Description - The metric type that caused the transition to Attention. Valid only
-when link_health = 1 (Attention).0: N/A  no trigger active/supported or not enabled1: PLR_Tx_BW_Loss2: Recovery_BW_Loss3: Effective_BER4: symbol_error_count5: Raw_BER6: PLR_Rx_BW_Loss7: Port_total_BW_Loss8: Link_down_count9: Symbol_BER */
+	/* Description - The metric type that caused the link health status to transition to
+Attention. Valid only when link_health = 1 (Attention).0: N/A  no trigger active/supported or not enabled1: PLR_Tx_BW_Loss2: Recovery_BW_Loss3: Effective_BER4: symbol_error_count5: Raw_BER6: PLR_Rx_BW_Loss7: Port_total_BW_Loss8: Link_down_count9: Symbol_BERNote: The field will be cleared when a new link-up flow is
+initiated or on a link_health_clear command. */
 	/* 0x38.5 - 0x38.12 */
 	/* access: RO */
 	u_int8_t attention_trigger;
-	/* Description - The index of the metric that caused the transition to Attention.
-Valid only when link_health = 1 (Attention).0: N/A  no trigger active/supported or not enabled1: metric12: metric23: metric34: metric45: metric56: metric67: metric78: metric89: metric910: metric1011: metric1112: metric1213: metric1314: metric1415: metric15 */
+	/* Description - The index of the metric that caused the link health status to
+transition to Attention. Valid only when link_health = 1 (Attention).0: N/A  no trigger active/supported or not enabled1: metric12: metric23: metric34: metric45: metric56: metric67: metric78: metric89: metric910: metric1011: metric1112: metric1213: metric1314: metric1415: metric15Note: The field will be cleared when a new link-up flow is
+initiated or on a link_health_clear command. */
 	/* 0x38.13 - 0x38.19 */
 	/* access: RO */
 	u_int8_t attention_trigger_metric;
 	/* Description - Indicates whether the current Attention state reflects the current
-or a previously modified configuration.0: N/A  link health is not in Attention state1: Attention reflects a threshold crossing under the current
-link health metrics configuration2: Attention was triggered under a previous configuration; one
-or more associated metric parameters have since been modified */
-	/* 0x38.20 - 0x38.21 */
+or a previously modified link health metrics configuration. Valid
+only when link_health = 1 (Attention).0: Attention reflects a threshold crossing under the current
+configuration1: Attention was triggered under a previous configuration; one
+or more associated metric parameters have since been modifiedNote: The field will be cleared when a new link-up flow is
+initiated or on a link_health_clear command. */
+	/* 0x38.20 - 0x38.20 */
 	/* access: RO */
 	u_int8_t link_health_config_changed;
 	/* Description - Test mode FSM state exposure is supported only if PCAM.feature_cap_mask
@@ -2568,7 +2575,7 @@ struct reg_access_switch_pddr_phy_info_page_ext {
 	/* 0x0.8 - 0x0.15 */
 	/* access: RO */
 	u_int8_t negotiation_mask;
-	/* Description - Remote device type:0 - Unknown (3rd party, Force, legacy MLPN)1 - CX42 - CX4_LX3 - CX54 - CX5_LX5 - CX66 - CX6_LX7 - CX6_DX8 - CX79 - Bluefield-210 - CX811 - Bluefield-312 - CX913 - CX1014-99 Reserved100 - SwitchIB101 - Spectrum102 - SwitchIB-2103 - Quantum104 - Spectrum-2105 - Spectrum-3106 - Quantum-2107 - Spectrum-4108 -Quantum-3109 - Quantum-4110 - Spectrum-5111 - Spectrum-6112 - Quantum-5113 - Quantum-6114 - Spectrum-7115-199 -Reserved200 - GB100 (OR 102/200)201 - GR100202 - GR150203 - Feinmann204 - GB10 - fusion205 - Rubin - fusion206-255 - Reserved */
+	/* Description - Remote device type:0 - Unknown (3rd party, Force, legacy MLPN)1 - CX42 - CX4_LX3 - CX54 - CX5_LX5 - CX66 - CX6_LX7 - CX6_DX8 - CX79 - Bluefield-210 - CX811 - Bluefield-312 - CX913 - CX1014-99 Reserved100 - SwitchIB101 - Spectrum102 - SwitchIB-2103 - Quantum104 - Spectrum-2105 - Spectrum-3106 - Quantum-2107 - Spectrum-4108 -Quantum-3109 - NVLink6 Switch110 - Spectrum-5111 - Spectrum-6112 - NVLink7 Switch113 - NVLink8 Switch114 - Spectrum-7115-199 -Reserved200 - GB100 (OR 102/200)201 - GR100202 - GR150203 - Feinmann204 - GB10 - fusion205 - Rubin - fusion206-255 - Reserved */
 	/* 0x0.24 - 0x0.31 */
 	/* access: RO */
 	u_int8_t remote_device_type;
@@ -3653,10 +3660,10 @@ struct reg_access_switch_MMAM_ext {
 struct reg_access_switch_MRFV_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Fuse Index0: cvb - CVB Main Die, used for Retimer1: ULT2: vdd_main_die - (used in SPC-4, SPC-5)3: vdd_tile_0 - (used in SPC-4, SPC-5)4: vdd_tile_1 - (used in SPC-4, SPC-5)5: vdd_tile_2 - (used in SPC-4, SPC-5)6: vdd_tile_3 - (used in SPC-4, SPC-5)7: vdd_tile_4 - (used in SPC-4, SPC-5)8: vdd_tile_5 - (used in SPC-4, SPC-5)9: vdd_tile_6 - (used in SPC-4, SPC-5)10: vdd_tile_7 - (used in SPC-4, SPC-5)[Switch]:11: raw_and_value_vdd - Use instance_id for the specific instance. Valid on SPC6.12: raw_and_value_pl_avdd - Use instance_id for the specific instance. Valid on SPC6.13: raw_and_value_pl_dvdd - Use instance_id for the specific instance. Valid on SPC6.15: raw_and_value_opt_fuse_rev - Valid on SPC6 CPO.16: raw_and_value_dvdd_sg - Use instance_id for the specific instance. Valid on SPC6 CPO.17: raw_and_value_opt_lot_code_0 - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.18: raw_and_value_opt_lot_code_1 - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.19: raw_and_value_opt_ops_reserved - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.20: raw_and_value_opt_vendor_code - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.21: raw_and_value_opt_wafer_id - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.22: raw_and_value_opt_x_coordinate - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.23: raw_and_value_opt_y_coordinate - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.24: raw_and_value_opt_fab_code - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.[Retimer][Switch]25: raw_and_value_ws_tp_version_0_31 -
-Valid starting SPC6, QM5, ArcusE.26: raw_and_value_ft_tp_version_0_31 -
-Valid starting SPC6, QM5, ArcusE.27: raw_and_value_fuse_ver_0_3 - Use instance_id for the specific instance. Valid starting SPC6, QM5, ArcusE.28: raw_and_value_fuse_ver_4_7 -
-Use instance_id for the specific instance. Valid starting SPC6, QM5, ArcusE.
-[NIC_only][DWIP]:30: raw_and_value_dvdd[NIC_only][DWIP]:31: raw_and_value_vddpOther values reserved. */
+Valid starting SPC6, ArcusE.26: raw_and_value_ft_tp_version_0_31 -
+Valid starting SPC6, ArcusE.27: raw_and_value_fuse_ver_0_3 - Use instance_id for the specific instance. Valid starting SPC6, ArcusE.28: raw_and_value_fuse_ver_4_7 -
+Use instance_id for the specific instance. Valid starting SPC6, ArcusE.
+Other values reserved. */
 	/* 0x0.0 - 0x0.7 */
 	/* access: INDEX */
 	u_int8_t fuse_id;
@@ -4851,11 +4858,11 @@ strictly by the form factor.0: 1 inter port in label1: 2 inter port in label2: 4
 	/* 0xc.0 - 0xc.2 */
 	/* access: RO */
 	u_int8_t conn_type;
-	/* Description - [DWIP]Indicates whether cartridge_id field is valid. */
+	/* Description - Indicates whether cartridge_id field is valid. */
 	/* 0xc.3 - 0xc.3 */
 	/* access: RO */
 	u_int8_t cartridge_id_valid;
-	/* Description - [DWIP]Cartridge ID. Only valid if cartridge_id_valid = 1. */
+	/* Description - Cartridge ID. Only valid if cartridge_id_valid = 1. */
 	/* 0xc.4 - 0xc.7 */
 	/* access: RO */
 	u_int8_t cartridge_id;
@@ -4894,20 +4901,20 @@ valid if cartridge_id_valid = 1. */
 	/* 0x10.0 - 0x10.2 */
 	/* access: RO */
 	u_int8_t protocol;
-	/* Description - [DWIP]Sub Module ID.Indicates start offset of module lanes in 8x granularity */
+	/* Description - Sub Module ID.Indicates start offset of module lanes in 8x granularity */
 	/* 0x10.20 - 0x10.23 */
 	/* access: RO */
 	u_int8_t sub_module;
-	/* Description - [DWIP]Top-level module ID, bits [7:0]. */
+	/* Description - Top-level module ID, bits [7:0]. */
 	/* 0x10.24 - 0x10.31 */
 	/* access: RO */
 	u_int8_t module;
 /*---------------- DWORD[5] (Offset 0x14) ----------------*/
-	/* Description - [DWIP]Resource label portThe label port for the resource module.Value of 0xFFFF means field is not valid. */
+	/* Description - Resource label portThe label port for the resource module.Value of 0xFFFF means field is not valid. */
 	/* 0x14.0 - 0x14.15 */
 	/* access: RO */
 	u_int16_t resource_label_port;
-	/* Description - [DWIP]Optical engine identifier, which represents the OE index which the port
+	/* Description - Optical engine identifier, which represents the OE index which the port
 is connected to.Value of 0xFFFF means field is not valid. */
 	/* 0x14.16 - 0x14.31 */
 	/* access: RO */
@@ -4918,7 +4925,7 @@ is connected to.Value of 0xFFFF means field is not valid. */
 /* Size in bytes - 16 */
 struct reg_access_switch_pmaos_reg_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Module state (reserved while admin_status is disabled):0: initializing 1: plugged_enabled2: unplugged3: module_plugged_with_error - (details in error_type).5: unknown */
+	/* Description - Module state (reserved while admin_status is disabled):0: initializing 11: plugged_enabled2: unplugged3: module_plugged_with_error - (details in error_type).5: unknown */
 	/* 0x0.0 - 0x0.3 */
 	/* access: RO */
 	u_int8_t oper_status;
