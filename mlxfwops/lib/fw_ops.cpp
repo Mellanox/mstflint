@@ -113,7 +113,7 @@ int FwOperations::getFileSignature(const char* fname)
     {
         res = IMG_SIG_TYPE_BIN;
     }
-    if (!strncmp((char*)tmpb, "MFAR", 4))
+    if (!strncmp((char*)tmpb, "MFAR", 4) || !strncmp((char*)tmpb, "MFAE", 4)) // MFAE is the format for encrypted MFA files
     {
         res = IMG_SIG_TYPE_MFA;
     }
@@ -143,7 +143,7 @@ int FwOperations::getBufferSignature(u_int8_t* buf, u_int32_t size)
     {
         res = IMG_SIG_TYPE_BIN;
     }
-    if (!strncmp((char*)buf, "MFAR", 4))
+    if (!strncmp((char*)buf, "MFAR", 4) || !strncmp((char*)buf, "MFAE", 4))
     {
         res = IMG_SIG_TYPE_MFA;
     }

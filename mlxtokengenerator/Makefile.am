@@ -79,6 +79,7 @@ endif
 msttokengenerator_LDFLAGS = -static
 
 if ENABLE_OPENSSL
+msttokengenerator_DEPENDENCIES += $(top_builddir)/mlxsign_lib/libmlxsign.la
 else
 AM_CXXFLAGS += -DNO_OPEN_SSL
 endif
@@ -89,6 +90,10 @@ msttokengenerator_DEPENDENCIES += \
 endif
 
 msttokengenerator_LDADD = $(msttokengenerator_DEPENDENCIES) $(JSON_LIBS) ${LDL}
+
+if ENABLE_OPENSSL
+msttokengenerator_LDADD += $(openssl_LIBS)
+endif
 
 if DISABLE_XML2
 AM_CXXFLAGS += -DDISABLE_XML2

@@ -531,14 +531,23 @@ int mainEntry(int argc, char* argv[])
     // Listing of binary files content
     if (cmd_params.list_file_contents)
     {
-        res = list_files_content(config);
+        if (cmd_params.psid_list.empty() && config.path_is_file)
+        {
+            if (ImageAccess::isMfaEncrypted(config.mfa_path))
+            {
+                print_out("-W- No PSID specified. Use --show-psids to select which PSIDs to display.\n\n");
+                res = ERR_CODE_BAD_CMD_ARGS;
+                goto early_err_clean_up;
+            }
+        }
+        res = list_files_content(config, cmd_params.psid_list);
         goto clean_up;
     }
 
     if (cmd_params.extract_all)
     {
         IS_OKAY_To_INTERRUPT = true;
-        res = extract_all(cmd_params, config, srq);
+        res = extract_all(cmd_params, config, srq, cmd_params.psid_list);
         goto clean_up;
     }
 
@@ -1168,7 +1177,7 @@ early_err_clean_up:
     return mapRetValue(res, config.setupType);
 }
 
-int extract_all(CmdLineParams& cmd_params, config_t& config, ServerRequest* srq)
+int extract_all(CmdLineParams& cmd_params, config_t& config, ServerRequest* srq, const vector<string>& psid_list)
 {
     ImageAccess imgacc(CompareFFV);
     vector<PsidQueryItem> items;
@@ -1179,7 +1188,7 @@ int extract_all(CmdLineParams& cmd_params, config_t& config, ServerRequest* srq)
         return -1;
     }
     // TODO: list content by image type
-    int rc = imgacc.get_file_content(fpath, items);
+    int rc = imgacc.get_file_content(fpath, items, psid_list);
     if (rc)
     {
         print_err("-E- Error parsing file: %s\n", fpath.c_str());
@@ -2898,7 +2907,7 @@ bool initConfig(config_t& config, char* argv[], CmdLineParams& cmd_params)
     return true;
 }
 
-int list_files_content(config_t& config)
+int list_files_content(config_t& config, const vector<string>& psid_list)
 {
     string fname;
     DIR* d;
@@ -2914,7 +2923,7 @@ int list_files_content(config_t& config)
         vector<PsidQueryItem> items;
         string fpath = config.mfa_path;
         // TODO: list content by image type
-        rc = imgacc.get_file_content(fpath, items);
+        rc = imgacc.get_file_content(fpath, items, psid_list);
         if (rc)
         {
             print_err("-E- Error parsing file: %s\n", fpath.c_str());
@@ -2962,7 +2971,7 @@ int list_files_content(config_t& config)
                 continue;
             }
             vector<PsidQueryItem> items;
-            rc = imgacc.get_file_content(fpath, items);
+            rc = imgacc.get_file_content(fpath, items, psid_list);
             if (rc)
             {
                 print_err("-E- Error parsing file: %s\n", fpath.c_str());
