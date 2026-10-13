@@ -73,14 +73,15 @@ class LtssmTraceCommand(PcieSwCommand):
         # the ring is per link, and a link is named either by the pcore it sits in
         # or by one of the two numbers that pack the same pair
         link_args = parser.add_argument_group('link selection arguments')
-        link_args.add_argument("--pcore", type=int, default=0,
+        link_args.add_argument("--pcore", type=int,
                                help='Index of the pcore holding the link (default: 0)')
-        link_args.add_argument("--link", type=int, default=0,
+        link_args.add_argument("--link", type=int,
                                help='Index of the link within the pcore (default: 0)')
-        link_args.add_argument("--port", type=int,
-                               help='Port number of the link, taken instead of --pcore and --link')
-        link_args.add_argument("--lport", type=int,
-                               help='Local port number of the link, taken instead of --pcore and --link')
+        packed_link_args = link_args.add_mutually_exclusive_group()
+        packed_link_args.add_argument("--port", type=int,
+                                      help='Port number of the link, taken instead of --pcore and --link')
+        packed_link_args.add_argument("--lport", type=int,
+                                      help='Local port number of the link, taken instead of --pcore and --link')
 
         parser.add_argument("-o", "--out", metavar="FILENAME", dest="out_file",
                             help='Write the output to FILENAME instead of the screen')
@@ -90,7 +91,14 @@ class LtssmTraceCommand(PcieSwCommand):
         if not arguments.device and not arguments.dump_file:
             cls._arg_parser.error("one of the arguments -d/--device --dump-file is required")
 
-    def __init__(self, device, dump_file=None, pcore=0, link=0, port=None, lport=None, out_file=None):
+        from nvltssm_lib.LtssmTraceManager import LtssmTraceManager
+
+        mixed = LtssmTraceManager.mixed_selector_error(arguments.pcore, arguments.link,
+                                                       arguments.port, arguments.lport)
+        if mixed:
+            cls._arg_parser.error(mixed)
+
+    def __init__(self, device, dump_file=None, pcore=None, link=None, port=None, lport=None, out_file=None):
         self._device = device
         self._dump_file = dump_file
         self._pcore = pcore

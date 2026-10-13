@@ -72,12 +72,13 @@ class LtssmTrace:
         required_args.add_argument("--dump", dest="dump_file", type=cls._valid_path_arg_type, required=True,
                                    help='Location of the "mstdump" output to decode')
 
-        link_args.add_argument("--pcore", type=int, default=0, help='Index of the pcore holding the link. Default: 0')
-        link_args.add_argument("--link", type=int, default=0, help='Index of the link within the pcore. Default: 0')
-        link_args.add_argument("--port", type=int,
-                               help='Port number of the link, taken instead of --pcore and --link')
-        link_args.add_argument("--lport", type=int,
-                               help='Local port number of the link, taken instead of --pcore and --link')
+        link_args.add_argument("--pcore", type=int, help='Index of the pcore holding the link. Default: 0')
+        link_args.add_argument("--link", type=int, help='Index of the link within the pcore. Default: 0')
+        packed_link_args = link_args.add_mutually_exclusive_group()
+        packed_link_args.add_argument("--port", type=int,
+                                      help='Port number of the link, taken instead of --pcore and --link')
+        packed_link_args.add_argument("--lport", type=int,
+                                      help='Local port number of the link, taken instead of --pcore and --link')
 
         optional_args.add_argument("--device-type", dest="device_name", metavar="NAME",
                                    help='Device the dump was taken from, e.g. "ConnectX8", taken instead of reading '
@@ -103,6 +104,10 @@ class LtssmTrace:
     def run(cls):
         cls._init_arg_parser()
         args = cls._arg_parser.parse_args()
+
+        mixed = LtssmTraceManager.mixed_selector_error(args.pcore, args.link, args.port, args.lport)
+        if mixed:
+            cls._arg_parser.error(mixed)
 
         manager = LtssmTraceManager(args.dump_file, args.formatter(),
                                     args.pcore, args.link, args.port, args.lport, args.device_name)
