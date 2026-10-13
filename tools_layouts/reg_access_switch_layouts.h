@@ -36,7 +36,7 @@
  
 
 /***
-         *** This file was generated at "2026-09-01 12:11:52"
+         *** This file was generated at "2026-10-12 17:35:13"
          *** by:
          ***    > /usr/local/lib64/python3.9/site-packages/mft_adbtools/adabe_plugins/adb2c/adb2pack.py --input /home/jenkins/agent/workspace/automatic_prm_update/user/tools_layouts/adb/prm/switch/ext/reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils -o /home/jenkins/agent/workspace/automatic_prm_update/user/tools_layouts
          ***/
@@ -116,12 +116,12 @@ struct reg_access_switch_MRFV_PVS_TILE_ext {
 struct reg_access_switch_MRFV_RAW_AND_VALUE_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Raw Fuses Highest bit. Indicates the highest bit in raw_fuses field
-which is part of the fuse data.For example, if raw_fuses [15:0] contains the fuse data, this fields
+which is part of the fuse data.For example, if raw_fuses [15:0] contains the fuse data, this field's
 value is 15. */
 	/* 0x0.0 - 0x0.4 */
 	/* access: RO */
 	u_int8_t raw_fuses_highest_bit;
-	/* Description - Value valid.0: value_base and value_exponent are NOT valid.1: value_base and value_exponent are valid.[SwitchOnly]:For the following fuse_ids (assuming a valid instance_id is
+	/* Description - Value valid.0: value_base and value_exponent are NOT valid.1: value_base and value_exponent are valid.[Switch]:For the following fuse_ids (assuming a valid instance_id is
 provided), the value is valid:11: raw_and_value_vdd.12: raw_and_value_pl_avdd.13: raw_and_value_pl_dvdd.16: raw_and_value_dvdd_sg. */
 	/* 0x0.31 - 0x0.31 */
 	/* access: RO */
@@ -132,12 +132,12 @@ provided), the value is valid:11: raw_and_value_vdd.12: raw_and_value_pl_avdd.13
 	/* access: RO */
 	u_int32_t raw_fuses;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - The exponent part of the value.This field is signed, and negative values are represented using 2s
+	/* Description - The exponent part of the value.This field is signed, and negative values are represented using 2's
 complement. */
 	/* 0x8.0 - 0x8.5 */
 	/* access: RO */
 	u_int8_t value_exponent;
-	/* Description - The base part of the value.This field is signed, and negative values are represented using 2s
+	/* Description - The base part of the value.This field is signed, and negative values are represented using 2's
 complement.The value is:value_base x 10 ^ value_exponent.Units:Power: [W].Voltage: [V].Time: [Sec].Current: [A].Capacitance: [F]. */
 	/* 0x8.6 - 0x8.31 */
 	/* access: RO */
@@ -237,7 +237,7 @@ struct reg_access_switch_mddq_device_info_ext {
 	/* 0x0.16 - 0x0.23 */
 	/* access: RO */
 	u_int8_t flash_id;
-	/* Description - If set to 1, the fields related to the device are valid since the
+	/* Description - If set to 1', the fields related to the device are valid since the
 line-card is powered on and plugged and matching the INI version.Note: this bit is not an indication to validity of the fields related to
 the specific FW capabilities and version. */
 	/* 0x0.28 - 0x0.28 */
@@ -247,7 +247,7 @@ the specific FW capabilities and version. */
 	/* 0x0.29 - 0x0.29 */
 	/* access: RO */
 	u_int8_t thermal_sd;
-	/* Description - If set to 1, the device is the flash owner. Otherwise, a shared flash
+	/* Description - If set to 1', the device is the flash owner. Otherwise, a shared flash
 is used by this device (another device is the flash owner). */
 	/* 0x0.30 - 0x0.30 */
 	/* access: RO */
@@ -262,18 +262,18 @@ is used by this device (another device is the flash owner). */
 	/* access: RO */
 	u_int16_t device_type;
 	/* Description - Major FW version number. Valid only after the FW is burnt. Otherwise,
-the value should be 0. */
+the value should be 0'. */
 	/* 0x4.16 - 0x4.31 */
 	/* access: RO */
 	u_int16_t fw_major;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - Sub-minor FW version number. Valid only after the FW is burnt.
-Otherwise, the value should be 0. */
+Otherwise, the value should be 0'. */
 	/* 0x8.0 - 0x8.15 */
 	/* access: RO */
 	u_int16_t fw_sub_minor;
 	/* Description - Minor FW version number. Valid only after the FW is burnt. Otherwise,
-the value should be 0. */
+the value should be 0'. */
 	/* 0x8.16 - 0x8.31 */
 	/* access: RO */
 	u_int16_t fw_minor;
@@ -318,11 +318,11 @@ be sent from the switch ASIC to the line-card CPLD over Shift-Register. */
 	/* access: RO */
 	u_int8_t provisioned;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - User-configured version number of the current INI file.Valid only when active or lc_ready are 1. */
+	/* Description - User-configured version number of the current INI file.Valid only when active or lc_ready are 1'. */
 	/* 0x4.0 - 0x4.15 */
 	/* access: RO */
 	u_int16_t ini_file_version;
-	/* Description - HW revision of the line-card as it appears in the current INI file.Valid only when active or lc_ready are 1. */
+	/* Description - HW revision of the line-card as it appears in the current INI file.Valid only when active or lc_ready are 1'. */
 	/* 0x4.16 - 0x4.31 */
 	/* access: RO */
 	u_int16_t hw_revision;
@@ -337,7 +337,7 @@ be sent from the switch ASIC to the line-card CPLD over Shift-Register. */
 /* Size in bytes - 32 */
 struct reg_access_switch_mddq_slot_name_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Slots ASCII name. Up to 20 chars */
+	/* Description - Slot's ASCII name. Up to 20 chars */
 	/* 0x0.24 - 0x14.23 */
 	/* access: RO */
 	u_int8_t slot_ascii_name[20];
@@ -536,7 +536,7 @@ ELS modules. */
 	/* 0x4.0 - 0x4.7 */
 	/* access: RO */
 	u_int8_t num_of_modules;
-	/* Description - Number of slots in the system. To eliminate receiving bad param
+	/* Description - Number of slots in the system. To eliminate receiving bad param'
 status, the user should query that field with slot_index set to 0. */
 	/* 0x4.8 - 0x4.15 */
 	/* access: RO */
@@ -652,7 +652,7 @@ cool down the module). */
 	/* 0x0.0 - 0x0.15 */
 	/* access: RO */
 	u_int16_t cooling_level;
-	/* Description - Temperature measurement units0: units of 0.125 Celsius degrees1: units of 1/256 Celsius degreesFor negative values 2s complement is used */
+	/* Description - Temperature measurement units0: units of 0.125 Celsius degrees1: units of 1/256 Celsius degreesFor negative values 2's complement is used */
 	/* 0x0.29 - 0x0.29 */
 	/* access: INDEX */
 	u_int8_t temp_unit;
@@ -742,7 +742,7 @@ temperature of that component type. */
 	/* 0x0.25 - 0x0.25 */
 	/* access: RO */
 	u_int8_t ref_module_valid;
-	/* Description - Temperature measurement units0: units of 0.125 Celsius degrees1: units of 1/256 Celsius degreesFor negative values 2s complement is used */
+	/* Description - Temperature measurement units0: units of 0.125 Celsius degrees1: units of 1/256 Celsius degreesFor negative values 2's complement is used */
 	/* 0x0.26 - 0x0.26 */
 	/* access: INDEX */
 	u_int8_t temp_unit;
@@ -848,7 +848,7 @@ struct reg_access_switch_MMAM_ext {
 	/* access: RO */
 	u_int8_t local_module_msb;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
-	/* Description - module_type:0: Backplane_with_4_lanes1: QSFP2: SFP3: No_Cage4: Backplane_with_single_lane8: Backplane_with_two_lanes10: Chip2Chip4x11: Chip2Chip2x12: Chip2Chip1x14: QSFP_DD15: OSFP16: SFP_DD17: DSFP18: Chip2Chip8x19: Twisted_Pair20: Backplane_with_8_lanes21: Loopback 22: OE_16x23: OSFP_ELS24: QSFP_2x25: CPO_32x26: ELS_1627: CPO_64x28: QSFP_1x29: NPO_16x */
+	/* Description - module_type:0: Backplane_with_4_lanes1: QSFP2: SFP3: No_Cage4: Backplane_with_single_lane8: Backplane_with_two_lanes10: Chip2Chip4x11: Chip2Chip2x12: Chip2Chip1x14: QSFP_DD15: OSFP16: SFP_DD17: DSFP18: Chip2Chip8x19: Twisted_Pair20: Backplane_with_8_lanes21: Loopback 22: OE_16x23: OSFP_ELS24: QSFP_2x25: CPO_32x26: ELS_1627: CPO_64x28: QSFP_1x29: NPO_16x30: OSFP_4x */
 	/* 0xc.0 - 0xc.7 */
 	/* access: RO */
 	u_int8_t module_type;
@@ -858,17 +858,16 @@ struct reg_access_switch_MMAM_ext {
 /* Size in bytes - 64 */
 struct reg_access_switch_MRFV_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Fuse Index0: cvb - CVB Main Die, used for Retimer1: ULT2: vdd_main_die - (used in SPC-4, SPC-5)3: vdd_tile_0 - (used in SPC-4, SPC-5)4: vdd_tile_1 - (used in SPC-4, SPC-5)5: vdd_tile_2 - (used in SPC-4, SPC-5)6: vdd_tile_3 - (used in SPC-4, SPC-5)7: vdd_tile_4 - (used in SPC-4, SPC-5)8: vdd_tile_5 - (used in SPC-4, SPC-5)9: vdd_tile_6 - (used in SPC-4, SPC-5)10: vdd_tile_7 - (used in SPC-4, SPC-5)[SwitchOnly][DWIP]:11: raw_and_value_vdd - Use instance_id for the specific instance. Valid on SPC6.12: raw_and_value_pl_avdd - Use instance_id for the specific instance. Valid on SPC6.13: raw_and_value_pl_dvdd - Use instance_id for the specific instance. Valid on SPC6.15: raw_and_value_opt_fuse_rev - Valid on SPC6 CPO.16: raw_and_value_dvdd_sg - Use instance_id for the specific instance. Valid on SPC6 CPO.17: raw_and_value_opt_lot_code_0 - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.18: raw_and_value_opt_lot_code_1 - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.19: raw_and_value_opt_ops_reserved - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.20: raw_and_value_opt_vendor_code - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.21: raw_and_value_opt_wafer_id - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.22: raw_and_value_opt_x_coordinate - Use entity_index to specify the Optical Engine index - Valid on SPC6 CPO.23: raw_and_value_opt_y_coordinate - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.24: raw_and_value_opt_fab_code -
-Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO. -
- -
- -
-
-[NIC_only][DWIP]:30: raw_and_value_dvdd[NIC_only][DWIP]:31: raw_and_value_vddpOther values reserved. */
+	/* Description - Fuse Index0: cvb - CVB Main Die, used for Retimer1: ULT2: vdd_main_die - (used in SPC-4, SPC-5)3: vdd_tile_0 - (used in SPC-4, SPC-5)4: vdd_tile_1 - (used in SPC-4, SPC-5)5: vdd_tile_2 - (used in SPC-4, SPC-5)6: vdd_tile_3 - (used in SPC-4, SPC-5)7: vdd_tile_4 - (used in SPC-4, SPC-5)8: vdd_tile_5 - (used in SPC-4, SPC-5)9: vdd_tile_6 - (used in SPC-4, SPC-5)10: vdd_tile_7 - (used in SPC-4, SPC-5)[Switch]:11: raw_and_value_vdd - Use instance_id for the specific instance. Valid on SPC6.12: raw_and_value_pl_avdd - Use instance_id for the specific instance. Valid on SPC6.13: raw_and_value_pl_dvdd - Use instance_id for the specific instance. Valid on SPC6.15: raw_and_value_opt_fuse_rev - Valid on SPC6 CPO.16: raw_and_value_dvdd_sg - Use instance_id for the specific instance. Valid on SPC6 CPO.17: raw_and_value_opt_lot_code_0 - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.18: raw_and_value_opt_lot_code_1 - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.19: raw_and_value_opt_ops_reserved - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.20: raw_and_value_opt_vendor_code - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.21: raw_and_value_opt_wafer_id - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.22: raw_and_value_opt_x_coordinate - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.23: raw_and_value_opt_y_coordinate - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.24: raw_and_value_opt_fab_code - Use entity_index to specify the Optical Engine index. Valid on SPC6 CPO.[Retimer][Switch]25: raw_and_value_ws_tp_version_0_31 -
+Valid starting SPC6, ArcusE.26: raw_and_value_ft_tp_version_0_31 -
+Valid starting SPC6, ArcusE.27: raw_and_value_fuse_ver_0_3 - Use instance_id for the specific instance. Valid starting SPC6, ArcusE.28: raw_and_value_fuse_ver_4_7 -
+Use instance_id for the specific instance. Valid starting SPC6, ArcusE.
+Other values reserved. */
 	/* 0x0.0 - 0x0.7 */
 	/* access: INDEX */
 	u_int8_t fuse_id;
 	/* Description - [DWIP]:Instance ID. For a fuse that has multiple instances, this field provides
-the Instance ID.For the common case where its a single instance per asic, instance ID 0
+the Instance ID.For the common case where it's a single instance per asic, instance ID 0
 denotes the main/die [0] instance, and subsequent instance ID X denotes
 the instance of tile [X-1] / die [X].For a given fuse_id, if an invalid instance_id is provided, fm field
 will have a value of 1 (Fuse mismatch found). */
@@ -955,7 +954,7 @@ struct reg_access_switch_PPCR_ext {
 	/* Description - When planarized  the FW
 shall respond to Hierarchy Info.Split with the following split value.In this use case it represents the split of the APort.When split = 0, the FW shall send Hierarchy Info without the split
 field. (meaning it is NA)When Non planarized (num_of_planes = 0), Hierarchy Info.Split will
-reflect the actual split value, when 2X- itll hold the location within
+reflect the actual split value, when 2X- it'll hold the location within
 the 4x.0: NA1: Split 1.2: Split 2.3-7: ReservedReserved for HCA */
 	/* 0x8.24 - 0x8.26 */
 	/* access: RW */
@@ -980,8 +979,8 @@ struct reg_access_switch_icam_reg_ext {
 	/* access: INDEX */
 	u_int8_t access_reg_group;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - Supported infrastructures access register bitmask. Based on
-access_reg_group index.When bit is set to 1, The register is supported in the device.For example, when access_reg_group == 1:Bit 112: ICSRBit0 is at 08h.bit0Bit 127 is at 14h.bit31 */
+	/* Description - Supported infrastructure's access register bitmask. Based on
+access_reg_group index.When bit is set to 1', The register is supported in the device.For example, when access_reg_group == 1:Bit 112: ICSRBit0 is at 08h.bit0Bit 127 is at 14h.bit31 */
 	/* 0x8.0 - 0x14.31 */
 	/* access: RO */
 	u_int32_t infr_access_reg_cap_mask[4];
@@ -1016,11 +1015,11 @@ struct reg_access_switch_mddq_ext {
 	/* access: INDEX */
 	u_int8_t slot_index;
 	/* Description - 0: Reserved1: slot_info2: device_info - for a device on the slot. If there are no devices on
-the slot, data_valid will be 0.3: slot_name - Name of the slot (string) */
+the slot, data_valid will be 0'.3: slot_name - Name of the slot (string) */
 	/* 0x0.16 - 0x0.23 */
 	/* access: INDEX */
 	u_int8_t query_type;
-	/* Description - Slot info event enableWhen set to 1, each change in the MDDQ.slot_info.provisioned /
+	/* Description - Slot info event enableWhen set to 1', each change in the MDDQ.slot_info.provisioned /
 sr_valid / active / ready will generate an DSDSC event. */
 	/* 0x0.31 - 0x0.31 */
 	/* access: RW */
@@ -1098,7 +1097,7 @@ struct reg_access_switch_mdsr_reg_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - 0: The debug session ended successfully1: Failed to execute the operation. See additional_info for more
 details.2: Debug session active. See type_of_token for more details.3: No token applied4: Challenge provided, no token installed yet, see type_of_token for
-details.5: Timeout before token installed, see type_of_token for details6: Timeout of active token.7-15: ReservedNote: Status might be 0 even when debug query is not allowed and
+details.5: Timeout before token installed, see type_of_token for details6: Timeout of active token.7-15: ReservedNote: Status might be 0' even when debug query is not allowed and
 additional_info field will expose the reason. */
 	/* 0x0.0 - 0x0.3 */
 	/* access: RO */
@@ -1113,7 +1112,7 @@ additional_info field will expose the reason. */
 	/* access: INDEX */
 	u_int8_t type_of_token;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - Set to 1 to end debug session.Setting to 0 will not trigger any operation. */
+	/* Description - Set to 1' to end debug session.Setting to 0' will not trigger any operation. */
 	/* 0x4.30 - 0x4.30 */
 	/* access: WO */
 	u_int8_t revoke_version;
@@ -1327,8 +1326,8 @@ next call in case dump_more==1. */
 	u_int32_t index2;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - The amount of objects to dump starting for index 2.SW shall read this field upon command done and shall provide it on the
-next call in case dump_more==1.Range is 0..0xfff0. When the segments num_of_obj2_supports_all is set,
-the special value of 0xffff represents all. When the segments
+next call in case dump_more==1.Range is 0..0xfff0. When the segment's num_of_obj2_supports_all is set,
+the special value of 0xffff represents all. When the segment's
 num_of_objx_supports_active is set, the special value of 0xfffe
 represents active. The value of 0x0 and 0x1 are allowed even if the
 supported_num_of_obj2 is 0. */
@@ -1336,8 +1335,8 @@ supported_num_of_obj2 is 0. */
 	/* access: INDEX */
 	u_int16_t num_of_obj2;
 	/* Description - The amount of objects to dump starting for index 1SW shall read this field upon command done and shall provide it on the
-next call in case dump_more==1.Range is 0..0xfff0. When the segments num_of_obj1_supports_all is set,
-the special value of 0xffff represents all. When the segments
+next call in case dump_more==1.Range is 0..0xfff0. When the segment's num_of_obj1_supports_all is set,
+the special value of 0xffff represents all. When the segment's
 num_of_objx_supports_active is set, the special value of 0xfffe
 represents active. The value of 0x0 and 0x1 are allowed even if the
 supported_num_of_obj1 is 0. */
@@ -1494,7 +1493,7 @@ different types.0 - PCI Express Endpoint port4 - Root Port of PCI Express Root C
 /* Size in bytes - 16 */
 struct reg_access_switch_mpir_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Number of PCIe buses available for the host to connect ot the device.0 when operating in non-Socket-Direct mode. */
+	/* Description - Number of PCIe buses available for the host to connect ot the device.0' when operating in non-Socket-Direct mode. */
 	/* 0x0.0 - 0x0.3 */
 	/* access: RO */
 	u_int8_t host_buses;
@@ -1519,11 +1518,11 @@ struct reg_access_switch_mpir_ext {
 	/* access: RO */
 	u_int8_t sdm;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - sunbordinate bus - the highest bus number that subordinates to switch.Default value of 0 in case it is not a switch port. */
+	/* Description - sunbordinate bus - the highest bus number that subordinates to switch.Default value of 0' in case it is not a switch port. */
 	/* 0x4.0 - 0x4.7 */
 	/* access: RO */
 	u_int8_t subordinate_bus;
-	/* Description - secondary bus - the internal logic bus in the switch.Default value of 0 in case it is not a switch port. */
+	/* Description - secondary bus - the internal logic bus in the switch.Default value of 0' in case it is not a switch port. */
 	/* 0x4.8 - 0x4.15 */
 	/* access: RO */
 	u_int8_t secondary_bus;
@@ -1570,7 +1569,7 @@ hierarchy of the link.segment_cap = 1 : segment base that was captured in Flit m
 	/* 0xc.24 - 0xc.30 */
 	/* access: RO */
 	u_int8_t host_index;
-	/* Description - If set to 1, slot_number field is supported. */
+	/* Description - If set to 1', slot_number field is supported. */
 	/* 0xc.31 - 0xc.31 */
 	/* access: RO */
 	u_int8_t slot_cap;
@@ -1629,7 +1628,7 @@ struct reg_access_switch_mspmer_ext {
 	/* 0x4.0 - 0x4.3 */
 	/* access: RO */
 	u_int8_t status;
-	/* Description - Clear Counters0: dont clear counters1: clear counters */
+	/* Description - Clear Counters0: don't clear counters1: clear counters */
 	/* 0x4.16 - 0x4.16 */
 	/* access: OP */
 	u_int8_t clr;
@@ -1734,7 +1733,7 @@ InfinibandValid only for RMCS/RMDT. */
 	/* access: RO */
 	u_int32_t challenge[8];
 /*---------------- DWORD[26] (Offset 0x68) ----------------*/
-	/* Description - Current devices token rachet value. */
+	/* Description - Current device's token rachet value. */
 	/* 0x68.0 - 0x6c.31 */
 	/* access: RO */
 	u_int64_t token_ratchet;
@@ -1796,7 +1795,7 @@ DISABLED. */
 	/* access: INDEX */
 	u_int8_t local_port;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - Valid only for Ethernet Switches.Label split mapping for local_portValid values:For Spectrum 1 to 4: 1, 2, 4, 8For Spectrum 5, 6: 16, 8 */
+	/* Description - Valid only for Ethernet Switches.Label split mapping for local_portValid values:For Spectrum 1 to 4: 1, 2, 4, 8For Spectrum 5, 6: 1...6, 8 */
 	/* 0x4.0 - 0x4.3 */
 	/* access: RW */
 	u_int8_t split_num;
@@ -1863,11 +1862,11 @@ strictly by the form factor.0: 1 inter port in label1: 2 inter port in label2: 4
 	/* 0xc.0 - 0xc.2 */
 	/* access: RO */
 	u_int8_t conn_type;
-	/* Description - [DWIP]Indicates whether cartridge_id field is valid. */
+	/* Description - Indicates whether cartridge_id field is valid. */
 	/* 0xc.3 - 0xc.3 */
 	/* access: RO */
 	u_int8_t cartridge_id_valid;
-	/* Description - [DWIP]Cartridge ID. Only valid if cartridge_id_valid = 1. */
+	/* Description - Cartridge ID. Only valid if cartridge_id_valid = 1. */
 	/* 0xc.4 - 0xc.7 */
 	/* access: RO */
 	u_int8_t cartridge_id;
@@ -1892,6 +1891,11 @@ field.Quantum: Supported from Quantum-3 and above.Spectrum: Only relevant value 
 	/* 0xc.19 - 0xc.19 */
 	/* access: RO */
 	u_int8_t els_valid;
+	/* Description - [DWIP]Logical lane index of this port within the cartridge (0-based). Only
+valid if cartridge_id_valid = 1. */
+	/* 0xc.20 - 0xc.22 */
+	/* access: RO */
+	u_int8_t cartridge_lane_index;
 	/* Description - [DWIP]Top-level module ID, bits [15:8]. */
 	/* 0xc.24 - 0xc.31 */
 	/* access: RO */
@@ -1901,20 +1905,20 @@ field.Quantum: Supported from Quantum-3 and above.Spectrum: Only relevant value 
 	/* 0x10.0 - 0x10.2 */
 	/* access: RO */
 	u_int8_t protocol;
-	/* Description - [DWIP]Sub Module ID.Indicates start offset of module lanes in 8x granularity */
+	/* Description - Sub Module ID.Indicates start offset of module lanes in 8x granularity */
 	/* 0x10.20 - 0x10.23 */
 	/* access: RO */
 	u_int8_t sub_module;
-	/* Description - [DWIP]Top-level module ID, bits [7:0]. */
+	/* Description - Top-level module ID, bits [7:0]. */
 	/* 0x10.24 - 0x10.31 */
 	/* access: RO */
 	u_int8_t module;
 /*---------------- DWORD[5] (Offset 0x14) ----------------*/
-	/* Description - [DWIP]Resource label portThe label port for the resource module.Value of 0xFFFF means field is not valid. */
+	/* Description - Resource label portThe label port for the resource module.Value of 0xFFFF means field is not valid. */
 	/* 0x14.0 - 0x14.15 */
 	/* access: RO */
 	u_int16_t resource_label_port;
-	/* Description - [DWIP]Optical engine identifier, which represents the OE index which the port
+	/* Description - Optical engine identifier, which represents the OE index which the port
 is connected to.Value of 0xFFFF means field is not valid. */
 	/* 0x14.16 - 0x14.31 */
 	/* access: RO */
@@ -1925,7 +1929,7 @@ is connected to.Value of 0xFFFF means field is not valid. */
 /* Size in bytes - 16 */
 struct reg_access_switch_pmaos_reg_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Module state (reserved while admin_status is disabled):0: initializing 1: plugged_enabled2: unplugged3: module_plugged_with_error - (details in error_type).5: unknown */
+	/* Description - Module state (reserved while admin_status is disabled):0: initializing 11: plugged_enabled2: unplugged3: module_plugged_with_error - (details in error_type).5: unknown */
 	/* 0x0.0 - 0x0.3 */
 	/* access: RO */
 	u_int8_t oper_status;
@@ -1974,12 +1978,12 @@ of oper_status to initialization. */
 [DWIP] 0x11: Submodule_failure
 [DWIP] 0x12: serbi_check_failure
 [DWIP] 0x13: els_critical_indication
-Valid only when oper_status = 4b0011 */
+Valid only when oper_status = 4'b0011 */
 	/* 0x4.8 - 0x4.12 */
 	/* access: RO */
 	u_int8_t error_type;
 	/* Description - This notification can occur only if module passed initialization process0x0: No notifications.0x1: Speed degradation  the module is not enabled in its full speed due
-to incompatible transceiver/cableValid only when oper_status = 4b0001. */
+to incompatible transceiver/cableValid only when oper_status = 4'b0001. */
 	/* 0x4.16 - 0x4.19 */
 	/* access: RO */
 	u_int8_t operational_notification;
@@ -2056,7 +2060,10 @@ aggregated port only. */
 	/* access: RO */
 	u_int8_t status;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - [9:8] pport bits */
+	/* Description - PPORT number. The full 14-bit pport value is assembled from three fields:
+bits [7:0] from pport field,
+bits [9:8] from pport_msb field,
+bits [13:10] from pport_msb_ext field. */
 	/* 0x4.6 - 0x4.7 */
 	/* access: RO */
 	u_int8_t pport_msb;
@@ -2068,7 +2075,10 @@ aggregated port only. */
 	/* 0x4.16 - 0x4.23 */
 	/* access: RO */
 	u_int8_t module;
-	/* Description -  */
+	/* Description - PPORT number. The full 14-bit pport value is assembled from three fields:
+bits [7:0] from pport field,
+bits [9:8] from pport_msb field,
+bits [13:10] from pport_msb_ext field. */
 	/* 0x4.24 - 0x4.31 */
 	/* access: RO */
 	u_int8_t pport;
@@ -2094,8 +2104,11 @@ aggregated port only. */
 	/* access: RO */
 	u_int8_t gb_dp_num;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
-	/* Description - MSB Local port bits [9:8] index for the label port chosen (in case pnat
-field is 1). */
+	/* Description - Local port index for the label port chosen (valid when pnat=1). The full
+14-bit value is assembled from three fields:
+bits [7:0] from local_port_query field,
+bits [9:8] from lp_query_msb field,
+bits [13:10] from lp_query_msb_ext field. */
 	/* 0xc.0 - 0xc.1 */
 	/* access: RO */
 	u_int8_t lp_query_msb;
@@ -2112,12 +2125,15 @@ considered in lane<i>_physical_tx/rx0 - port is unmapped */
 	/* 0xc.6 - 0xc.9 */
 	/* access: RO */
 	u_int8_t port_width;
-	/* Description - LSB Local port bits [7:0] index for the label port chosen (in case pnat
-field is 1). */
+	/* Description - Local port index for the label port chosen (valid when pnat=1). The full
+14-bit value is assembled from three fields:
+bits [7:0] from local_port_query field,
+bits [9:8] from lp_query_msb field,
+bits [13:10] from lp_query_msb_ext field. */
 	/* 0xc.16 - 0xc.23 */
 	/* access: RO */
 	u_int8_t local_port_query;
-	/* Description - Label port index for the local port chosen (in case pnat field is 0). */
+	/* Description - Label port index for the local port chosen (in case pnat field is 0'). */
 	/* 0xc.24 - 0xc.31 */
 	/* access: RO */
 	u_int8_t label_port_query;
@@ -2220,8 +2236,8 @@ field is 1). */
 	/* 0x18.21 - 0x18.23 */
 	/* access: RO */
 	u_int8_t lane7_physical_tx;
-	/* Description - minimal index of pll group of pll that port uses for tx lanes.For all common plls that are mapped to the port: [pll_index, pll_index+
-1,  pll_index + pll_cnt] */
+	/* Description - minimal index of pll group of pll that port uses for tx lanes.For all common pll's that are mapped to the port: [pll_index, pll_index+
+1, ... pll_index + pll_cnt] */
 	/* 0x18.24 - 0x18.31 */
 	/* access: RO */
 	u_int8_t pll_index;
@@ -2358,6 +2374,21 @@ field is 1). */
 	/* access: RO */
 	u_int8_t VL31_lane_map;
 /*---------------- DWORD[15] (Offset 0x3c) ----------------*/
+	/* Description - Local port index for the label port chosen (valid when pnat=1). The full
+14-bit value is assembled from three fields:
+bits [7:0] from local_port_query field,
+bits [9:8] from lp_query_msb field,
+bits [13:10] from lp_query_msb_ext field. */
+	/* 0x3c.0 - 0x3c.3 */
+	/* access: RO */
+	u_int8_t lp_query_msb_ext;
+	/* Description - PPORT number. The full 14-bit pport value is assembled from three fields:
+bits [7:0] from pport field,
+bits [9:8] from pport_msb field,
+bits [13:10] from pport_msb_ext field. */
+	/* 0x3c.4 - 0x3c.7 */
+	/* access: RO */
+	u_int8_t pport_msb_ext;
 	/* Description - For SP5. Represent the fiber connector index on front panel */
 	/* 0x3c.16 - 0x3c.23 */
 	/* access: RO */
@@ -2450,7 +2481,7 @@ aggregated port only. */
 	/* 0x0.16 - 0x0.23 */
 	/* access: INDEX */
 	u_int8_t local_port;
-	/* Description - Module lane mapping:0 - Local to Module mapping include module lanes mapping1 - Local to Module mapping only, without lane mappingWhen this operational is set (1), the following fields are ignored in
+	/* Description - Module lane mapping:0 - Local to Module mapping include module lanes mapping1 - Local to Module mapping only, without lane mappingWhen this operational is set (1'), the following fields are ignored in
 SET command and should return the value 0 in GET commands:PMLP.rxtxPMLP.lane<i>_module_mapping.tx_lanePMLP.lane<i>_module_mapping.rx_lane */
 	/* 0x0.28 - 0x0.28 */
 	/* access: OP */
