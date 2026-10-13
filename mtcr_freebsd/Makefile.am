@@ -61,7 +61,8 @@ libmtcr_ul_la_SOURCES = \
     $(top_srcdir)/mtcr_ul/mtcr_gpu.h \
     mtcr_mf.h \
     mtcr_ul.c \
-    mtcr_ul_com_defs.h
+    mtcr_ul_com_defs.h \
+    mtcr_ul_com_stub.c
 
 libmtcr_ul_la_CFLAGS = -W -Wall -g -MP -MD -fPIC -DMTCR_API="" -DMST_UL
 
