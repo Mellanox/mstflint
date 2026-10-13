@@ -90,11 +90,11 @@ def parse_args(argv=None):
     arg_parser.add_argument("-v", "-version", "--version", action="version", version=tools_version.GetVersionString(PROG))
     arg_parser.add_argument("-full", "--full", action="store_true", help="Dump more expanded list of addresses")
     arg_parser.add_argument("--i2c_secondary", type=lambda s: int(s, 0), help="I2C secondary [0-127]")
-    arg_parser.add_argument("-fast", "--fast", action="store_true",
-                            help="Take the dump through the resource dump memory path on a device supporting it, "
-                                 "which is faster than reading the addresses one by one")
-    arg_parser.add_argument("-output_file", "--output_file", metavar="FILENAME",
-                            help="Write the dump to FILENAME instead of the screen")
+    # both are fully functional, and are to be exposed in the help menu in 4.39.0:
+    # --fast takes the dump through the resource dump memory path on a device
+    # supporting it, --output_file writes the dump to a file instead of the screen
+    arg_parser.add_argument("-fast", "--fast", action="store_true", help=argparse.SUPPRESS)
+    arg_parser.add_argument("-output_file", "--output_file", metavar="FILENAME", help=argparse.SUPPRESS)
 
     return arg_parser.parse_args(argv)
 
