@@ -795,6 +795,37 @@ TEST_F(MftTelemetryDeviceTest, GetTelemetryJsonGeneralView)
     EXPECT_EQ(mstFreeJsonString(json), MST_SUCCESS);
 }
 
+static std::string jsonStringField(const char* json, const char* field)
+{
+    const std::string document(json);
+    const size_t keyPos = document.find(std::string("\"") + field + "\"");
+    if (keyPos == std::string::npos)
+    {
+        return "";
+    }
+    const size_t colon = document.find(':', keyPos);
+    const size_t valueStart = colon == std::string::npos ? colon : document.find('"', colon);
+    const size_t valueEnd = valueStart == std::string::npos ? valueStart : document.find('"', valueStart + 1);
+    if (valueEnd == std::string::npos)
+    {
+        return "";
+    }
+    return document.substr(valueStart + 1, valueEnd - valueStart - 1);
+}
+
+TEST_F(MftTelemetryDeviceTest, GetTelemetryJsonGeneralViewDefaultPortReportsItsLabelPort)
+{
+    SKIP_IF_NO_DEVICE();
+    char* json = nullptr;
+    MstStatus status = mstGetTelemetryJson(mstDevice, nullptr, MST_TELEMETRY_VIEW_GENERAL, &json);
+    ASSERT_EQ(status, MST_SUCCESS) << mstGetLastErrorString(mstDevice);
+    ASSERT_NE(json, nullptr);
+    const std::string labelPort = jsonStringField(json, FIELD_LABEL_PORT);
+    EXPECT_FALSE(labelPort.empty());
+    EXPECT_NE(labelPort, "0");
+    EXPECT_EQ(mstFreeJsonString(json), MST_SUCCESS);
+}
+
 TEST_F(MftTelemetryDeviceTest, GetTelemetryJsonPerView)
 {
     SKIP_IF_NO_DEVICE();
