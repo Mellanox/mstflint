@@ -91,6 +91,17 @@ void MlxlinkCommander::initForPort(const string& portStr, bool pcie)
     }
 
     handlePortStr(portStr);
+
+    if (!_userInput._pcie && !_userInput._portSpecified && !_localPortsPerGroup.empty())
+    {
+        const PortGroup& target = _localPortsPerGroup.front();
+        _userInput._labelPort = target.labelPort;
+        _userInput._splitPort = target.split;
+        _userInput._splitProvided = target.split != 0;
+        _userInput._secondSplitPort = target.secondSplit;
+        _userInput._secondSplitProvided = target.secondSplit != 0;
+    }
+
     updatePortInfo();
 
     if (!pcie)
