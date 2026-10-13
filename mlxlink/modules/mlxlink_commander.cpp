@@ -8875,6 +8875,11 @@ void MlxlinkCommander::initPortInfo()
             throw MlxRegException("FEC Histogram is valid with active link operation only");
         }
 
+        if (_portInfo)
+        {
+            delete _portInfo;
+            _portInfo = NULL;
+        }
         _portInfo = new MlxlinkPortInfo(_jsonRoot);
         _portInfo->_regLib = _regLib;
         _portInfo->_localPort = _localPort;
