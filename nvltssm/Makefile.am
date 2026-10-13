@@ -78,7 +78,7 @@ CLTSSM_WHOLE_ARCHIVE_LIBS = \
 $(CLTSSM_SO): libcltssm_trace.la
 	$(CXX) -shared -pthread $(CXXFLAGS) $(LDFLAGS) $(COMPILER_FPIC) -o $@ \
 	  -Wl,--whole-archive $(CLTSSM_WHOLE_ARCHIVE_LIBS) -Wl,--no-whole-archive \
-	  $(top_builddir)/${MTCR_CONF_DIR}/.libs/libmtcr_ul.a \
+	  $(top_builddir)/${MTCR_CONF_DIR}/.libs/libmtcr_ul.a $(MST_REMOTE_LINK_LIBS) \
 	  $(CLTSSM_SQLITE_LIB) $(liblzma_LIBS) $(expat_LIBS) $(LDL) $(LIBS) \
 	  -Wl,--allow-multiple-definition -Wl,--no-undefined
 
