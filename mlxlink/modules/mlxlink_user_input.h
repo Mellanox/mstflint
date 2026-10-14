@@ -91,6 +91,7 @@ public:
     bool _showSlrp;
     bool _showCounters;
     bool _showEyeInfo;
+    std::vector<uint32_t> _eyeLanes;
     bool _cable;
     bool _dump;
     bool _ddm;

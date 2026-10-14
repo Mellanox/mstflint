@@ -33,6 +33,7 @@
  */
 
 #include "mlxlink_utils.h"
+#include <algorithm>
 
 void termHandler(int sig)
 {
@@ -51,6 +52,20 @@ u_int32_t findMaxKey(vector<string> keys)
         }
     }
     return maxKeySize;
+}
+
+std::vector<uint32_t> getIdxsFromParams(std::vector<string> params)
+{
+    std::vector<uint32_t> idxs;
+    uint32_t num = 0;
+
+    for (const auto& str : params)
+    {
+        mlxreg::RegAccessParser::strToUint32((char*)str.c_str(), num);
+        idxs.push_back(num);
+    }
+    std::sort(idxs.begin(), idxs.end());
+    return idxs;
 }
 
 string convertIntToHexString(int toConvert)

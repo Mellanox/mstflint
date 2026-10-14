@@ -95,6 +95,8 @@
 #define BER_FLAG_SHORT 'c'
 #define EYE_OPENING_FLAG "show_eye"
 #define EYE_OPENING_FLAG_SHORT 'e'
+#define EYE_LANES_FLAG "eye_lanes"
+#define EYE_LANES_FLAG_SHORT ' '
 #define FEC_DATA_FLAG "show_fec"
 #define FEC_DATA_FLAG_SHORT ' '
 #define SLTP_SHOW_FLAG "show_serdes_tx"
@@ -571,7 +573,7 @@ public:
     virtual void prepareSltpNdrGen(vector<vector<string>>& sltpLanes, u_int32_t laneNumber);
     virtual void prepareSltp5nmGen(vector<vector<string>>& sltpLanes, u_int32_t laneNumber);
     virtual string getSltpHeader();
-    void startSlrgPciScan(u_int32_t numOfLanesToUse);
+    void startSlrgPciScan(std::vector<uint32_t>& lanesToUse);
     void initValidDPNList();
     void updateDPNDomain();
     u_int32_t readBitFromField(const string& fieldName, u_int32_t bitIndex);
@@ -586,9 +588,10 @@ public:
     void prepareBerModuleInfo(bool valid, const vector<AmberField>& moduleInfoFields);
     void pushSnrModuleInfoFields(bool valid);
     void runningVersion();
-    void prepare40_28_16nmEyeInfo(u_int32_t numOfLanesToUse);
-    void prepare7nmEyeInfo(u_int32_t numOfLanesToUse);
-    void prepare5nmEyeInfo(u_int32_t numOfLanesToUse);
+    std::vector<uint32_t> initEyeLanesToUse(uint32_t numOfLanesToUse);
+    void prepare40_28_16nmEyeInfo(std::vector<uint32_t>& lanesToUse);
+    void prepare7nmEyeInfo(std::vector<uint32_t>& lanesToUse);
+    void prepare5nmEyeInfo(std::vector<uint32_t>& lanesToUse);
     void getPddrOperInfo();
     void getPrecodingStatus();
     void setPrecoding();

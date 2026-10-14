@@ -47,6 +47,8 @@ MlxlinkRegParser::MlxlinkRegParser() : RegAccessParser("", "", "", NULL, NULL, f
     _planeInd = -1;
 
     _isHCA = false;
+    _isCPU = false;
+    _isGPU = false;
     _isSwControled = false;
     _isDPNvSupported = false;
 }

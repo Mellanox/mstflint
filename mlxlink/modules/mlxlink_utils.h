@@ -68,6 +68,7 @@ bool isIn(const T& val, std::vector<T>& vect)
 }
 
 u_int32_t findMaxKey(std::vector<std::string> keys);
+std::vector<uint32_t> getIdxsFromParams(std::vector<std::string> params);
 string getCompliance(u_int32_t compliance, std::map<u_int32_t, std::string> complianceMap, bool bitMasked = false);
 string getComplianceIb(u_int32_t compliance, std::map<u_int32_t, std::string> complianceMap, bool bitMasked = false);
 void termHandler(int sig);

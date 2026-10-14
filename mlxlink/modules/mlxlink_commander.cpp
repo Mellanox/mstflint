@@ -541,7 +541,7 @@ void MlxlinkCommander::findFirstValidPort()
     u_int32_t ipilStat = 0;
 
     string regName = ACCESS_REG_PLLP, fieldToGet = "label_port";
-    if (dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
+    if (_isGPU)
     {
         regName = ACCESS_REG_PLIB;
         fieldToGet = "ib_port";
@@ -561,7 +561,7 @@ void MlxlinkCommander::findFirstValidPort()
         if (minLabelPort == 0 || currentLabelPort < minLabelPort)
         {
             minLabelPort = currentLabelPort;
-            if (!dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
+            if (!_isGPU)
             {
                 LabelIpil = getFieldValue("ipil_num");
                 LabelSplit = getFieldValue("split_num");
@@ -571,7 +571,7 @@ void MlxlinkCommander::findFirstValidPort()
         }
     }
 
-    if (!dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
+    if (!_isGPU)
     {
         _userInput._labelPort = minLabelPort;
         if (ipilStat != 0 && splitStat != 0)
@@ -598,7 +598,7 @@ void MlxlinkCommander::labelToLocalPort()
 {
     _pnat = _userInput._pcie ? PNAT_PCIE : PNAT_LOCAL;
 
-    if ((_isHCA || (_mf->tp == MST_PCICONF && dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))) && _userInput._pcie)
+    if ((_isHCA || (_mf->tp == MST_PCICONF && (_isGPU || _isCPU))) && _userInput._pcie)
     {
         _dpn.depth = _userInput._depth;
         _dpn.pcieIndex = _userInput._pcieIndex;
@@ -656,7 +656,7 @@ void MlxlinkCommander::labelToLocalPort()
     }
     else if (dm_dev_is_ib_switch(_devID))
     {
-        if (_devID == DeviceQuantum3 || _devID == DeviceNVLink6_Switch || dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
+        if (_devID == DeviceQuantum3 || _devID == DeviceNVLink6_Switch || _isGPU)
         {
             labelToLocalPortGenericMapping();
         }
@@ -809,7 +809,7 @@ void MlxlinkCommander::labelToLocalPortGenericMapping()
 {
     u_int32_t foundedLocalPort = 0;
 
-    if (dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
+    if (_isGPU)
     {
         if (_userInput._splitProvided || _userInput._secondSplitProvided)
         {
@@ -916,7 +916,7 @@ void MlxlinkCommander::labelToIBLocalPort()
         throw MlxRegException("No split in IB!");
     }
     u_int32_t maxLabelPort = _devID == DeviceQuantum2 ? maxLocalPort() / 4 : _devID == DeviceQuantum ? maxLocalPort() / 2 - 1 : maxLocalPort();
-    if ((labelPort > maxLabelPort) || (_userInput._secondSplitProvided && _devID != DeviceQuantum2 && !dm_is_gpu(static_cast<dm_dev_id_t>(_devID))) || (_userInput._splitPort > 2))
+    if ((labelPort > maxLabelPort) || (_userInput._secondSplitProvided && _devID != DeviceQuantum2 && !_isGPU) || (_userInput._splitPort > 2))
     {
         throw MlxRegException("Invalid port number!");
     }
@@ -1578,7 +1578,7 @@ void MlxlinkCommander::handleLabelPorts(std::vector<string> labelPortsStr, bool 
         {
             handleAllNewSwitchesLocalPorts(labelPortsStr, skipException);
         }
-        else if (dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
+        else if (_isGPU)
         {
             handleAllGPULocalPorts(labelPortsStr, skipException);
         }
@@ -2928,7 +2928,35 @@ void MlxlinkCommander::checkPCIeValidity()
     }
 }
 
-void MlxlinkCommander::prepare40_28_16nmEyeInfo(u_int32_t numOfLanes)
+std::vector<uint32_t> MlxlinkCommander::initEyeLanesToUse(uint32_t numOfLanesToUse)
+{
+    // If the user did not provide --eye_lanes, return all lanes
+    // [0 .. numOfLanesToUse - 1]. Otherwise, validate each index against
+    // numOfLanesToUse (taken from MPEIN for PCIe or the active link width
+    // otherwise) and return the user-supplied subset.
+    if (_userInput._eyeLanes.empty())
+    {
+        std::vector<uint32_t> lanesToUse;
+        for (uint32_t lane = 0; lane < numOfLanesToUse; lane++)
+        {
+            lanesToUse.push_back(lane);
+        }
+        return lanesToUse;
+    }
+
+    for (uint32_t laneIdx : _userInput._eyeLanes)
+    {
+        if (laneIdx >= numOfLanesToUse)
+        {
+            throw MlxRegException("Invalid lane index %u in --" EYE_LANES_FLAG
+                                  ". Valid range is [0..%u] for the current link",
+                                  laneIdx, numOfLanesToUse - 1);
+        }
+    }
+    return _userInput._eyeLanes;
+}
+
+void MlxlinkCommander::prepare40_28_16nmEyeInfo(std::vector<uint32_t>& lanesToUse)
 {
     std::vector<string> physicalGrades;
     std::vector<string> heightLengths;
@@ -2948,9 +2976,9 @@ void MlxlinkCommander::prepare40_28_16nmEyeInfo(u_int32_t numOfLanes)
         phase_eo_pos.append("_mid");
         phase_eo_neg.append("_mid");
     }
-    for (u_int32_t lane = 0; lane < numOfLanes; lane++)
+    for (uint32_t lane : lanesToUse)
     {
-        sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%d", lane);
+        sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%u", lane);
 
         physicalGrades.push_back(MlxlinkRecord::addSpaceForSlrg(to_string(getFieldValue("grade"))));
         if (validPhaseHeight)
@@ -2989,20 +3017,20 @@ void MlxlinkCommander::prepare40_28_16nmEyeInfo(u_int32_t numOfLanes)
     }
 }
 
-void MlxlinkCommander::startSlrgPciScan(u_int32_t numOfLanesToUse)
+void MlxlinkCommander::startSlrgPciScan(std::vector<uint32_t>& lanesToUse)
 {
     // Start EOM measurements per lane
-    for (u_int32_t lane = 0; lane < numOfLanesToUse; lane++)
+    for (uint32_t lane : lanesToUse)
     {
-        sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%d,fom_measurement=%d", lane, SLRG_EOM_COMPOSITE);
+        sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%u,fom_measurement=%d", lane, SLRG_EOM_COMPOSITE);
     }
     // For each lane, wait until process finish
-    for (u_int32_t lane = 0; lane < numOfLanesToUse; lane++)
+    for (uint32_t lane : lanesToUse)
     {
-        u_int32_t it = 0;
+        uint32_t it = 0;
         while (it < SLRG_PCIE_7NM_TIMEOUT)
         {
-            sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%d", lane);
+            sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%u", lane);
 
             if (getFieldValue("status"))
             {
@@ -3015,7 +3043,7 @@ void MlxlinkCommander::startSlrgPciScan(u_int32_t numOfLanesToUse)
     }
 }
 
-void MlxlinkCommander::prepare7nmEyeInfo(u_int32_t numOfLanesToUse)
+void MlxlinkCommander::prepare7nmEyeInfo(std::vector<uint32_t>& lanesToUse)
 {
     std::vector<string> legand, initialFom, lastFom, upperFom, midFom, lowerFom;
     u_int32_t status = 0;
@@ -3031,14 +3059,14 @@ void MlxlinkCommander::prepare7nmEyeInfo(u_int32_t numOfLanesToUse)
     }
     else
     {
-        startSlrgPciScan(numOfLanesToUse);
+        startSlrgPciScan(lanesToUse);
     }
 
-    for (u_int32_t lane = 0; lane < numOfLanesToUse; lane++)
+    for (uint32_t lane : lanesToUse)
     {
         status = 0;
 
-        sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%d,fom_measurement=%d", lane, fomMeasurement);
+        sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%u,fom_measurement=%u", lane, fomMeasurement);
 
         status = getFieldValue("status");
         std::string initialFomStr = status ? getFieldStr("initial_fom", (u_int32_t)8) : NA_FIELD_VALUE;
@@ -3066,7 +3094,7 @@ void MlxlinkCommander::prepare7nmEyeInfo(u_int32_t numOfLanesToUse)
     }
 }
 
-void MlxlinkCommander::prepare5nmEyeInfo(u_int32_t numOfLanesToUse)
+void MlxlinkCommander::prepare5nmEyeInfo(std::vector<uint32_t>& lanesToUse)
 {
     std::vector<string> legand, initialFom, lastFom, upperFom, midFom, lowerFom;
     u_int32_t status = 0;
@@ -3085,14 +3113,14 @@ void MlxlinkCommander::prepare5nmEyeInfo(u_int32_t numOfLanesToUse)
     }
     else
     {
-        startSlrgPciScan(numOfLanesToUse);
+        startSlrgPciScan(lanesToUse);
     }
 
-    for (u_int32_t lane = 0; lane < numOfLanesToUse; lane++)
+    for (uint32_t lane : lanesToUse)
     {
         status = 0;
 
-        sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%d,fom_measurement=%d", lane, fomMeasurement);
+        sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%u,fom_measurement=%u", lane, fomMeasurement);
 
         status = getFieldValue("status");
         std::string initialFomStr = status ? getFieldStr("initial_fom", (u_int32_t)16) : NA_FIELD_VALUE;
@@ -3146,6 +3174,7 @@ void MlxlinkCommander::showEye()
         }
 
         u_int32_t numOfLanesToUse = (_userInput._pcie) ? _numOfLanesPcie : _numOfLanes;
+        std::vector<uint32_t> lanesToUse = initEyeLanesToUse(numOfLanesToUse);
         string showEyeTitle = "EYE Opening Info";
         if (_userInput._pcie)
         {
@@ -3154,15 +3183,15 @@ void MlxlinkCommander::showEye()
         setPrintTitle(_eyeOpeningInfoCmd, showEyeTitle, EYE_OPENING_INFO_LAST);
         if (_productTechnology <= PRODUCT_16NM)
         {
-            prepare40_28_16nmEyeInfo(numOfLanesToUse);
+            prepare40_28_16nmEyeInfo(lanesToUse);
         }
         else if (_productTechnology == PRODUCT_7NM)
         {
-            prepare7nmEyeInfo(numOfLanesToUse);
+            prepare7nmEyeInfo(lanesToUse);
         }
         else if (_productTechnology >= PRODUCT_5NM)
         {
-            prepare5nmEyeInfo(numOfLanesToUse);
+            prepare5nmEyeInfo(lanesToUse);
         }
         cout << _eyeOpeningInfoCmd;
     }
@@ -4011,7 +4040,7 @@ void MlxlinkCommander::showExternalPhy()
         gearboxBlock(PEPC_SHOW_FLAG);
 
         if (_isHCA || _devID == DeviceSwitchIB || _devID == DeviceSwitchIB2 || _devID == DeviceQuantum || _devID == DeviceQuantum2 || _devID == DeviceQuantum3 || _devID == DeviceNVLink6_Switch ||
-            dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
+            _isGPU)
         {
             throw MlxRegException("\"--" PEPC_SHOW_FLAG "\" option is not supported for HCA and InfiniBand switches");
         }
@@ -4033,9 +4062,7 @@ void MlxlinkCommander::showExternalPhy()
 void MlxlinkCommander::initValidDPNList()
 {
     bool valid = false;
-    u_int32_t maxNumOfHost = 4;
-    u_int32_t maxNumOfDsPort = 16;
-    u_int32_t maxDepth = 4;
+    u_int32_t maxNumOfHost = _isCPU ? MAX_NUM_OF_HOST_CPU : MAX_NUM_OF_HOST_HCA;
     u_int32_t depth, pcieIndex, node;
     string bdf = "";
 
@@ -4045,14 +4072,15 @@ void MlxlinkCommander::initValidDPNList()
         {
             try
             {
-                sendPrmReg(ACCESS_REG_MPEIN, GET, "depth=%d,pcie_index=%d,node=%d", 0, pcieIndex, 0);
-                valid = getFieldValue("bdf0");
+                sendPrmReg(ACCESS_REG_MPEIN, GET, "depth=%d,pcie_index=%u,node=%d", 0, pcieIndex, 0);
+                valid =
+                  _isCPU ? true : getFieldValue("bdf0"); // In CPU bdf0 is valid, if the reg returns this is a valid DPN
             }
             catch (...)
             {
                 valid = false;
             }
-            if (valid && getFieldValue("port_type") == PORT_TYPE_EP)
+            if (valid && (getFieldValue("port_type") == PORT_TYPE_EP || getFieldValue("port_type") == PORT_TYPE_RP))
             {
                 _validDpns.push_back(DPN(0, pcieIndex, 0, getBDFStr(getFieldValue("bdf0"))));
             }
@@ -4062,19 +4090,19 @@ void MlxlinkCommander::initValidDPNList()
                 {
                     _validDpns.push_back(DPN(0, pcieIndex, 0, getBDFStr(getFieldValue("bdf0"))));
                 }
-                for (depth = 1; depth < maxDepth; depth++)
+                for (depth = 1; depth < MAX_DPN_DEPTH; depth++)
                 {
                     try
                     {
-                        sendPrmReg(ACCESS_REG_MPEIN, GET, "depth=%d,pcie_index=%d,node=%d", depth, pcieIndex, 0);
+                        sendPrmReg(ACCESS_REG_MPEIN, GET, "depth=%u,pcie_index=%u,node=%d", depth, pcieIndex, 0);
                         if (getFieldValue("port_type") == PORT_TYPE_DS)
                         {
                             _validDpns.push_back(DPN(depth, pcieIndex, 0, getBDFStr(getFieldValue("bdf0"))));
-                            for (node = 1; node < maxNumOfDsPort; node++)
+                            for (node = 1; node < MAX_NUM_OF_DS_PORTS; node++)
                             {
                                 try
                                 {
-                                    sendPrmReg(ACCESS_REG_MPEIN, GET, "depth=%d,pcie_index=%d,node=%d", depth, pcieIndex, node);
+                                    sendPrmReg(ACCESS_REG_MPEIN, GET, "depth=%u,pcie_index=%u,node=%u", depth, pcieIndex, node);
                                     _validDpns.push_back(DPN(depth, pcieIndex, node, getBDFStr(getFieldValue("bdf0"))));
                                 }
                                 catch (...)
@@ -4605,17 +4633,18 @@ void MlxlinkCommander::updatePortInfo(vector<string>& tableData, const PortGroup
     updatePortStatisticalInfo(tableData, posToUpdateWidthInVector);
 
     // Update eye info
+    std::vector<uint32_t> lanesToUse = initEyeLanesToUse(_numOfLanes);
     if (_productTechnology <= PRODUCT_16NM)
     {
-        prepare40_28_16nmEyeInfo(_numOfLanes);
+        prepare40_28_16nmEyeInfo(lanesToUse);
     }
     else if (_productTechnology == PRODUCT_7NM)
     {
-        prepare7nmEyeInfo(_numOfLanes);
+        prepare7nmEyeInfo(lanesToUse);
     }
     else if (_productTechnology == PRODUCT_5NM)
     {
-        prepare5nmEyeInfo(_numOfLanes);
+        prepare5nmEyeInfo(lanesToUse);
     }
 
     updateColumnWidthPopulateTable(_mlxlinkMaps->_multiPortInfoTableHeader, posToUpdateWidthInVector++, tableData, _fomStr, _fomStr.length());

@@ -83,6 +83,7 @@ UserInput::UserInput()
     _showSlrp = false;
     _showCounters = false;
     _showEyeInfo = false;
+    _eyeLanes = {};
     _sendDepth = false;
     _sendPcieIndex = false;
     _sendNode = false;

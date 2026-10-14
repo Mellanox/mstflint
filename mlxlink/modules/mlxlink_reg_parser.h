@@ -96,6 +96,8 @@ public:
     u_int32_t _portType;
     int _planeInd;
     bool _isHCA;
+    bool _isCPU;
+    bool _isGPU;
     bool _isSwControled;
     bool _isDPNvSupported;
 };
