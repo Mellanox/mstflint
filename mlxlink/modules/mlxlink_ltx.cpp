@@ -96,8 +96,8 @@ string formatLtxHistoryRow(const LtxLoggerEntry& entry)
     {
         ss << ", " << failReason;
     }
-    ss << ", Retry " << entry.ltxRetryCount << ", Eff Err " << entry.effectiveErrors << ", Hist "
-       << entry.highestNonZeroHist << ", Raw BER "
+    ss << ", Retry " << entry.ltxRetryCount << ", Retry Fail " << entry.ltxRetryFailCount << ", Eff Err "
+       << entry.effectiveErrors << ", Hist " << entry.highestNonZeroHist << ", Raw BER "
        << formatLtxRawBer(entry.rawBerMantissa, entry.rawBerMantissaFloat, entry.rawBerMagnitude) << ", PRBS BER mag "
        << entry.prbsBerMagnitude;
     return ss.str();
