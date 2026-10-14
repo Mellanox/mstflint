@@ -32,9 +32,36 @@
  *
  */
 
+#include <algorithm>
 #include "mlxlink_ui.h"
+#include "mlxlink_commander.h"
 #include <mlxreg/mlxreg_lib/mlxreg_parser.h>
 #include <pci_library/PCILibrary.h>
+#include <mlxreg/mlxreg_lib/mlxreg_lib.h>
+
+const std::vector<OPTION_TYPE> MlxlinkUi::_CpuSupportedFunctions = {SHOW_PCIE, SHOW_EYE, SHOW_BER, SHOW_PCIE_LINKS};
+
+void MlxlinkUi::validateDeviceParams()
+{
+    dm_dev_id_t devID = MlxRegLib::getDevId(_mf);
+    if (dm_is_cpu(devID))
+    {
+        if (!_userInput._pcie)
+        {
+            throw MlxRegException("On a CPU device, only --" PORT_TYPE_FLAG " PCIE is supported");
+        }
+
+        for (OPTION_TYPE opt : _sendRegFuncMap)
+        {
+            if (std::find(_CpuSupportedFunctions.begin(), _CpuSupportedFunctions.end(), opt) ==
+                _CpuSupportedFunctions.end())
+            {
+                throw MlxRegException("The requested operation is not supported on a CPU device");
+            }
+        }
+    }
+}
+
 MlxlinkUi::MlxlinkUi() : CommandLineRequester(MLXLINK_EXEC " OPTIONS"), _cmdParser(MLXLINK_EXEC)
 {
     _mlxlinkCommander = nullptr;
@@ -76,6 +103,8 @@ void MlxlinkUi::initRegAccessLib()
     _mlxlinkCommander->_gvmiAddress = _userInput._gvmiAddress;
     _mlxlinkCommander->_devID = _mlxlinkCommander->_regLib->getDevId();
     _mlxlinkCommander->_isHCA = dm_dev_is_hca(_mlxlinkCommander->_devID);
+    _mlxlinkCommander->_isGPU = dm_is_gpu(_mlxlinkCommander->_devID);
+    _mlxlinkCommander->_isCPU = dm_is_cpu(_mlxlinkCommander->_devID);
     if (_mlxlinkCommander->_isHCA)
     {
         _mlxlinkCommander->_isDPNvSupported = _mlxlinkCommander->checkDPNvSupport();
@@ -118,7 +147,7 @@ void MlxlinkUi::initPortInfo()
     {
         _mlxlinkCommander->checkValidFW();
     }
-    if (!(_mlxlinkCommander->_mf->tp == MST_PCICONF && (dm_is_gpu(static_cast<dm_dev_id_t>(_mlxlinkCommander->_devID)))))
+    if (!(_mlxlinkCommander->_mf->tp == MST_PCICONF && _mlxlinkCommander->_isGPU))
     {
         _mlxlinkCommander->getProductTechnology();
     }
@@ -187,6 +216,9 @@ void MlxlinkUi::printSynopsisQueries()
     MlxlinkRecord::printFlagLine(MODULE_INFO_FLAG_SHORT, MODULE_INFO_FLAG, "", "Show Module Info");
     MlxlinkRecord::printFlagLine(BER_FLAG_SHORT, BER_FLAG, "", "Show Physical Counters and BER Info");
     MlxlinkRecord::printFlagLine(EYE_OPENING_FLAG_SHORT, EYE_OPENING_FLAG, "", "Show Eye Opening Info");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(EYE_LANES_FLAG_SHORT, EYE_LANES_FLAG, "lanes",
+                                 "Show eye info for a subset of lanes (comma-separated) e.g. 0,2,3 (Optional)");
     MlxlinkRecord::printFlagLine(FEC_DATA_FLAG_SHORT, FEC_DATA_FLAG, "", "Show FEC Capabilities");
     MlxlinkRecord::printFlagLine(SLTP_SHOW_FLAG_SHORT, SLTP_SHOW_FLAG, "", "Show Transmitter Info");
     MlxlinkRecord::printFlagLine(RX_RECOVERY_COUNTERS_FLAG_SHORT, RX_RECOVERY_COUNTERS_FLAG, "",
@@ -1094,6 +1126,14 @@ void MlxlinkUi::validatePortInfoParams()
     }
 }
 
+void MlxlinkUi::validateEyeParams()
+{
+    if (!_userInput._eyeLanes.empty() && !_userInput._showEyeInfo)
+    {
+        throw MlxRegException("--" EYE_LANES_FLAG " can only be used with --" EYE_OPENING_FLAG);
+    }
+}
+
 void MlxlinkUi::validateMultiPortInfoParams()
 {
     if ((_userInput._showMultiPortInfo || _userInput._showMultiPortModuleInfo) && _userInput._portSpecified)
@@ -1283,6 +1323,7 @@ void MlxlinkUi::paramValidate()
     validateGradeScanParams();
     validateErrInjParams();
     validatePortInfoParams();
+    validateEyeParams();
 }
 
 void MlxlinkUi::initCmdParser()
@@ -1299,6 +1340,8 @@ void MlxlinkUi::initCmdParser()
     AddOptions(EXTENDED_PCIE_FLAG, EXTENDED_PCIE_FLAG_SHORT, "", "Show extended PCIe link info");
     AddOptions(BER_FLAG, BER_FLAG_SHORT, "", "Show BER Info");
     AddOptions(EYE_OPENING_FLAG, EYE_OPENING_FLAG_SHORT, "", "Show Eye Opening Info");
+    AddOptions(EYE_LANES_FLAG, EYE_LANES_FLAG_SHORT, "eye lanes",
+               "Lanes to show eye info for (comma-separated) e.g. 0,2,3");
     AddOptions(MODULE_INFO_FLAG, MODULE_INFO_FLAG_SHORT, "", "Show Module Info");
     AddOptions(PPCNT_CLEAR_FLAG, PPCNT_CLEAR_FLAG_SHORT, "", "Clear PPCNT Counters");
     AddOptions(DEVICE_DATA_FLAG, DEVICE_DATA_FLAG_SHORT, "", "Device Info");
@@ -1706,6 +1749,12 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     {
         addCmd(SHOW_EYE);
         _userInput._showEyeInfo = true;
+        return PARSE_OK;
+    }
+    else if (name == EYE_LANES_FLAG)
+    {
+        std::vector<string> eyeLanesParams = parseParamsFromLine(value);
+        _userInput._eyeLanes = getIdxsFromParams(eyeLanesParams);
         return PARSE_OK;
     }
     else if (name == PLR_INFO_FLAG)
@@ -2493,6 +2542,8 @@ int MlxlinkUi::run(int argc, char** argv)
         mclose(_mf);
         throw MlxRegException("Device is not supported");
     }
+
+    validateDeviceParams();
 
     initMlxlinkCommander();
 

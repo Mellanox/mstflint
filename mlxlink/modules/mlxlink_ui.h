@@ -68,6 +68,7 @@ protected:
     virtual void validateGradeScanParams();
     virtual void validateErrInjParams();
     virtual void validatePortInfoParams();
+    virtual void validateEyeParams();
     virtual void validatePhyRecoveryParams();
     virtual void validateLinkTrainingParams();
     virtual void validatePeriodicEqParams();
@@ -76,6 +77,7 @@ protected:
     virtual void validatePrrParams();
     virtual void validatePlrParams();
     virtual void paramValidate();
+    virtual void validateDeviceParams();
     virtual void createMlxlinkCommander();
     virtual void initRegAccessLib();
     virtual void initPortInfo();
@@ -95,5 +97,7 @@ protected:
     UserInput _userInput;
 
     mfile* _mf;
+
+    static const std::vector<OPTION_TYPE> _CpuSupportedFunctions;
 };
 #endif /* MLXLINK_UI_H */

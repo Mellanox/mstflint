@@ -642,6 +642,7 @@ enum PMAOS_OPER_STATUS
 enum PCIE_PORT_TYPE
 {
     PORT_TYPE_EP = 0,
+    PORT_TYPE_RP = 4,
     PORT_TYPE_US = 5,
     PORT_TYPE_DS = 6
 };
@@ -2423,6 +2424,14 @@ const char* const PLR_TX_CRC_ENABLED = "Enabled";
 const char* const PLR_TX_CRC_DISABLED = "Disabled";
 const char* const PLR_TX_CRC_SUPPORTED = "Supported";
 const char* const PLR_TX_CRC_UNSUPPORTED = "Unsupported";
+
+// Maximum number of hosts per device
+const uint32_t MAX_NUM_OF_HOST_HCA = 4;
+const uint32_t MAX_NUM_OF_HOST_CPU = 8;
+
+// DPN (depth/pcie_index/node) iteration limits for MPEIN scanning
+const uint32_t MAX_NUM_OF_DS_PORTS = 16;
+const uint32_t MAX_DPN_DEPTH = 4;
 
 } // namespace
 
