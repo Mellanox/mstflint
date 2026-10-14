@@ -35,6 +35,7 @@ from resourceparse_lib.utils.common_functions import is_resource_segment, valid_
 from resourceparse_lib.utils.Exceptions import ResourceParseException
 from resourceparse_lib.parsers.ResourceParser import ResourceParser, PARSER_CLASSES
 
+import lzma
 import struct
 
 
@@ -44,6 +45,9 @@ class CompactMapParser(ResourceParser):
     WARNING_COUNT_MISMATCH = " Number of data dwords ({0}) doesn't match the number of CSV addresses ({1})"
     WARNING_NON_DWORD_SIZE = " Segment size for compact-map parsing is not dword-aligned, {0} trailing byte(s) ignored"
 
+    CSV_SUFFIX = ".csv"
+    CSV_XZ_SUFFIX = ".csv.xz"
+
     value_struct = struct.Struct('I')
 
     @classmethod
@@ -52,12 +56,25 @@ class CompactMapParser(ResourceParser):
 
         required_named = arg_parser.add_argument_group('required arguments')
         required_named.add_argument("-c", "--csv-file", type=valid_path_arg_type, required=True,
-                                    help='Location of the mstdump-style CSV file describing the addresses')
+                                    help='Location of the mstdump-style CSV file describing the addresses, '
+                                         'either a "{0}" or a compressed "{1}" file'.format(cls.CSV_SUFFIX, cls.CSV_XZ_SUFFIX))
 
         return arg_parser
 
     def __init__(self, parser_args):
         self._load_addresses(parser_args.csv_file)
+
+    @classmethod
+    def _open_csv(cls, csv_file_path):
+        """This method opens an mstdump database for reading as text, decompressing
+        it when it is shipped compressed, the way the databases are installed.
+        """
+        if csv_file_path.endswith(cls.CSV_XZ_SUFFIX):
+            return lzma.open(csv_file_path, 'rt')
+        if csv_file_path.endswith(cls.CSV_SUFFIX):
+            return open(csv_file_path, 'r')
+        raise ResourceParseException("Unsupported CSV file '{0}', expected a '{1}' or a '{2}' file".format(
+            csv_file_path, cls.CSV_SUFFIX, cls.CSV_XZ_SUFFIX))
 
     def _load_addresses(self, csv_file_path):
         """This method reads an mstdump-style CSV file and builds a flat list of
@@ -68,8 +85,9 @@ class CompactMapParser(ResourceParser):
         range(size). The enable_addr column is ignored.
         """
         self._addresses = []
+        stripped_line = ""
         try:
-            with open(csv_file_path, 'r') as csv_file:
+            with self._open_csv(csv_file_path) as csv_file:
                 for line in csv_file:
                     stripped_line = line.strip()
                     if not stripped_line or stripped_line.startswith('#'):
@@ -79,7 +97,7 @@ class CompactMapParser(ResourceParser):
                     size_in_dwords = int(fields[1].strip(), 0)
                     for i in range(size_in_dwords):
                         self._addresses.append(base_address + i * cs.DWORD_SIZE)
-        except (IOError, OSError) as e:
+        except (IOError, OSError, lzma.LZMAError, UnicodeDecodeError) as e:
             raise ResourceParseException("Failed to read CSV file '{0}': {1}".format(csv_file_path, e))
         except (ValueError, IndexError) as e:
             raise ResourceParseException("Failed to parse CSV file '{0}', invalid line '{1}': {2}".format(
