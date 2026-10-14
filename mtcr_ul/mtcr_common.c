@@ -32,10 +32,44 @@
  */
 
 #include "mtcr_common.h"
+#include "tools_dev_types.h"
+
+static u_int16_t VERA_PCI_IDS[] = {0x2f95, 0x2f96, 0x2f97, 0x2f98, 0x2f99};
 
 int is_bluefield4_pci_device(u_int16_t pci_device_id)
 {
     return pci_device_id == BLUEFIELD4_PCI_DEVICE_ID_NETWORK_CONTROLLER;
+}
+
+int is_vera_pci_device(u_int16_t pci_device_id)
+{
+    for (unsigned int i = 0; i < sizeof(VERA_PCI_IDS) / sizeof(u_int16_t); i++)
+    {
+        if (VERA_PCI_IDS[i] == pci_device_id)
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int is_cpu_pci_device(u_int16_t pci_device_id)
+{
+    return is_vera_pci_device(pci_device_id);
+}
+
+u_int16_t get_hw_dev_cpu_id_by_pci_id(u_int16_t pci_device_id)
+{
+    if (is_cpu_pci_device(pci_device_id))
+    {
+        return DeviceVera_HwId;
+    }
+    return 0;
+}
+
+void config_cpu_pciconf(mfile* mf)
+{
+    mf->address_space = AS_PCI_CRSPACE;
 }
 
 void swap_pci_address_space(mfile* mf)

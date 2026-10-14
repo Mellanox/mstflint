@@ -3326,6 +3326,11 @@ static long supported_dev_ids[] = {0x1003, /* Connect-X3 */
                                    0x197d, /* Connect-X8 Bridge */
                                    0x197e, /* Connect-X9 Bridge */
                                    0x2900, /* GB100 */
+                                   0x2f95, /* Vera1 */
+                                   0x2f96, /* Vera2 */
+                                   0x2f97, /* Vera3 */
+                                   0x2f98, /* Vera4 */
+                                   0x2f99, /* Vera5 */
                                    0x3000, /* GR100 */
                                    0xd2f4, /* Sunbird */
                                    0xd2f8, /* NVLink6_Switch */
@@ -5514,6 +5519,13 @@ int read_device_id(mfile* mf, u_int32_t* device_id)
     {
         mf->rev_id = 0;
         *device_id = get_hw_dev_id_by_pci_id(mf->dinfo->pci.dev_id);
+        rc = 4;
+    }
+    else if (mf->dinfo && is_cpu_pci_device(mf->dinfo->pci.dev_id))
+    {
+        mf->rev_id = 0;
+        *device_id = get_hw_dev_cpu_id_by_pci_id(mf->dinfo->pci.dev_id);
+        config_cpu_pciconf(mf);
         rc = 4;
     }
 

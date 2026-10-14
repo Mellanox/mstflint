@@ -71,7 +71,8 @@ extern "C"
         DM_SFP_CABLE,
         DM_LINKX, /* linkx chip */
         DM_GEARBOX,
-        DM_RETIMER
+        DM_RETIMER,
+        DM_CPU
     };
 
     enum dm_dev_id
@@ -133,6 +134,7 @@ extern "C"
         DeviceArcusPTC, /* ArcusP Test Chip */
         DeviceArcusP,
         DeviceArcusE,
+        DeviceVera,
         DeviceEndMarker /* Dummy Device - Marker for indicating end of devices when iterating */
     };
 
@@ -188,6 +190,7 @@ extern "C"
         DeviceArcusPTC_HwId = 0x7f, /* ArcusP Test Chip */
         DeviceArcusP_HwId = 0x80,
         DeviceArcusE_HwId = 0x81,
+        DeviceVera_HwId = 0x2f95,
     };
     typedef enum dm_dev_id dm_dev_id_t;
 

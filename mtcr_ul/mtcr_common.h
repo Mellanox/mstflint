@@ -49,5 +49,9 @@
 
 void swap_pci_address_space(mfile* mf);
 int is_bluefield4_pci_device(u_int16_t pci_device_id);
+int is_vera_pci_device(u_int16_t pci_device_id);
+int is_cpu_pci_device(u_int16_t pci_device_id);
+u_int16_t get_hw_dev_cpu_id_by_pci_id(u_int16_t pci_device_id);
+void config_cpu_pciconf(mfile* mf);
 
 #endif
