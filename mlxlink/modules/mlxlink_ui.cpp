@@ -2283,7 +2283,6 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     {
         addCmd(SHOW_LTX);
         _userInput._showLtx = true;
-        _userInput._uniqueCmds++;
         return PARSE_OK;
     }
     else if (name == HOST_CLASS_FLAG)
