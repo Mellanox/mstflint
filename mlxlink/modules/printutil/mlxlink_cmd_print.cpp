@@ -36,6 +36,7 @@
 
 MlxlinkCmdPrint::MlxlinkCmdPrint()
 {
+    visible = false;
     lastInsertedRow = 0;
     lineLen = PDDR_LINE_LEN;
 }
