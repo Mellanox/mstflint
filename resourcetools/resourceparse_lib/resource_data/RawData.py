@@ -51,10 +51,15 @@ class RawData:
     readable) and generate a unified raw data divided to the specific segments and
     ready for parse.
     """
-    def __init__(self, dumped_file_path):
+
+    BYTE_ORDERS = {"be": "big", "le": "little"}
+    DEFAULT_BYTE_ORDER = "be"
+
+    def __init__(self, dumped_file_path, input_byte_order=DEFAULT_BYTE_ORDER):
         """initialize class members.
         """
         self._file_path = dumped_file_path
+        self._input_byte_order = self.BYTE_ORDERS[input_byte_order]
         self._segments_raw_data = None
 
     def _determine_dump_type(self):
@@ -116,17 +121,19 @@ class RawData:
 
     def _retrieve_raw_data_from_bin_file(self):
         """This method go over the bin file and collect the raw data.
+
+        The file holds its dwords in the byte order the caller selected; the
+        collected data holds them in host order, which is what every segment
+        and parser below reads.
         """
-        big_endian_raw_data = bytes()
         with open(self._file_path, "rb") as f:
-            big_endian_raw_data = f.read()
-        if sys.byteorder == "big":
-            self._segments_raw_data = big_endian_raw_data
+            file_raw_data = f.read()
+        if self._input_byte_order == sys.byteorder:
+            self._segments_raw_data = file_raw_data
         else:
             self._segments_raw_data = bytearray()
-            ints = [int.from_bytes(big_endian_raw_data[i:i + 4], "big") for i in range(0, len(big_endian_raw_data), 4)]
-            for number in ints:
-                self._segments_raw_data.extend(number.to_bytes(4, "little"))
+            for i in range(0, len(file_raw_data), cs.DWORD_SIZE):
+                self._segments_raw_data.extend(file_raw_data[i:i + cs.DWORD_SIZE][::-1])
 
     def _retrieve_raw_data_from_json_file(self):
         """This method go over the json file and collect the raw data.

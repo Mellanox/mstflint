@@ -66,7 +66,8 @@ class ResourceParseManager:
         self._notice_counter = 0
 
         try:
-            self._dumped_segment_db = segments if segments else self._retrieve_dumped_segment_db(manager_args.dump_file, manager_args.resource_parser)
+            self._dumped_segment_db = segments if segments else self._retrieve_dumped_segment_db(
+                manager_args.dump_file, manager_args.resource_parser, manager_args.input_byte_order)
         except ResourceParseException as rpe:
             raise ResourceParseException("{0}\nFail to generate segment db from raw data.".format(rpe))
 
@@ -130,8 +131,8 @@ class ResourceParseManager:
     def get_num_dumped_segments(self):
         return len(self._dumped_segment_db)
 
-    def _retrieve_dumped_segment_db(self, dumped_file_path, parser_type):
+    def _retrieve_dumped_segment_db(self, dumped_file_path, parser_type, input_byte_order):
         """This method get the segment list generated from the dumped input file by calling
         the RawData class.
         """
-        return RawData(dumped_file_path).to_segments(parser_type is not RawParser)
+        return RawData(dumped_file_path, input_byte_order).to_segments(parser_type is not RawParser)
