@@ -236,10 +236,10 @@ class PcieEventFormatter(SegmentFormatter):
         1: "all",                       # everything else
     }
 
-    NO_REQUEST_ERROR = "the dump states no request, so nothing in it establishes that its records " \
-                       "are the events of {0}"
+    NO_REQUEST_ERROR = "the dump states no request, so nothing in it establishes that it holds " \
+                       "the events of {0}"
     FOREIGN_RESOURCE_ERROR = "the dump answers a request for resource {0} rather than for {1}, " \
-                             "so its records are no PCIe events"
+                             "so it holds no PCIe events"
 
     EVENT_CLASS_ATTR = "event_class"
     DETAILS_FORMAT_ATTR = "format"
@@ -310,10 +310,10 @@ class PcieEventFormatter(SegmentFormatter):
         establish as an event.
 
         Firmware answers with its control segments first, so the request is known
-        by the time the first record is reached - which is where it is checked,
-        since a record is the only segment this formatter would present. An index
-        names a view of the events only in a request for them, so a response that
-        answers some other request is left with no view to state.
+        by the time the first record is reached, and in any case by the time the
+        response is terminated. An index names a view of the events only in a
+        request for them, so a response that answers some other request is left
+        with no view to state.
         """
         self._start_record(seg_type)
         if seg_type == cs.RESOURCE_DUMP_SEGMENT_TYPE_COMMAND:
@@ -324,18 +324,23 @@ class PcieEventFormatter(SegmentFormatter):
             self._report_header.fw_version = seg.get_display_fw_version() or cs.LABEL_NOT_AVAILABLE
         elif seg_type in self.MESSAGE_SEGMENT_TYPES:
             self._collect_segment_message(seg)
-        elif is_resource_segment(seg_type):
-            self._verify_event_record()
+        elif is_resource_segment(seg_type) or seg_type == cs.RESOURCE_DUMP_SEGMENT_TYPE_TERMINATE:
+            self._verify_event_request()
 
-    def _verify_event_record(self):
-        """This method refuse a resource segment the response did not state to be
-        an event record.
+    def _verify_event_request(self):
+        """This method refuse a response that did not state a request for the
+        events it is presented as.
 
         A block is built from every resource segment with no event id tested,
         which is correct only for a response to a PCIE_EVENTS request - the
         records of any other resource render as blocks holding nothing, and
         nothing further on would notice. A response that states no request at all
         establishes as little, so it is refused the same way.
+
+        The first record is where this is reached for a response that carries
+        records, and the terminate segment closing the response is where it is
+        reached for one that carries none - which would otherwise be presented as
+        an event log that is merely empty.
         """
         if self._request_resource_id is None:
             raise ResourceParseException(self.NO_REQUEST_ERROR.format(self.EVENT_RESOURCE_NAME))
