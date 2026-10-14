@@ -36,6 +36,7 @@ RESOURCE_DUMP_SEGMENT_TYPE_REFERENCE = 0xfffd
 RESOURCE_DUMP_SEGMENT_TYPE_NOTICE = 0xfff9
 RESOURCE_DUMP_SEGMENT_TYPE_ERROR = 0xfffc
 RESOURCE_DUMP_SEGMENT_TYPE_COMMAND = 0xfffa
+RESOURCE_DUMP_SEGMENT_TYPE_TERMINATE = 0xfffb
 
 # segment start/end specify where the 'type' attr starts and ends in the raw_data of each segment.
 # should be 0-16 bits
