@@ -461,8 +461,8 @@ void MlxlinkUi::printSynopsisCommands()
                                  "21(SERDES_5NM_GEN8)]");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(AMBER_REWRITE_FLAG_SHORT, AMBER_REWRITE_FLAG, "",
-                                 "Rewrite the amBER csv instead of appending to it, working with " AMBER_COLLECT_FLAG
-                                 " option");
+                                 "Rewrite the csv file instead of appending to it, working with " AMBER_COLLECT_FLAG
+                                 " option (required when the file columns do not match the selected amBER sheets)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(BER_LIMIT_FLAG_SHORT, BER_LIMIT_FLAG, "limit_criteria",
                                  "BER Limit Criteria [Nominal(Default)/Corner/Drift] (Optional - Default Nominal)");
