@@ -69,9 +69,8 @@ void RawDumpReader::load(const std::string& fname)
         throw MlxParseBinException("Can't open file (" + fname + ") for reading: " + strerror(errno));
     }
 
-    while (!feof(f))
+    while ((s = fread(data, 1, sizeof(data), f)) > 0)
     {
-        s = fread(data, 1, sizeof(data), f);
         for (size_t i = 0; i < s; i++)
         {
             if (data[i] == ' ' || data[i] == '\t' || data[i] == '\r' || data[i] == '\n')
@@ -88,6 +87,7 @@ void RawDumpReader::load(const std::string& fname)
                 _rawData[addr] = strtoul(dwordStr, &p, 16);
                 if (*p)
                 {
+                    fclose(f);
                     throw MlxParseBinException(string("Failed to parse integer: ") + dwordStr);
                 }
 
@@ -95,6 +95,13 @@ void RawDumpReader::load(const std::string& fname)
                 addr += 4;
             }
         }
+    }
+
+    if (ferror(f))
+    {
+        string error = strerror(errno);
+        fclose(f);
+        throw MlxParseBinException("Can't read file (" + fname + "): " + error);
     }
 
     fclose(f);
