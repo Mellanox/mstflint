@@ -2188,21 +2188,24 @@ static int get_space_support_status(mfile* mf, u_int16_t space)
 
 static void init_vsec_cap_mask(mfile* mf)
 {
-    get_space_support_status(mf, AS_ICMD);
-    get_space_support_status(mf, AS_NODNIC_INIT_SEG);
-    get_space_support_status(mf, AS_EXPANSION_ROM);
-    get_space_support_status(mf, AS_ND_CRSPACE);
-    get_space_support_status(mf, AS_SCAN_CRSPACE);
-    get_space_support_status(mf, AS_MAC);
-    get_space_support_status(mf, AS_ICMD_EXT);
-    get_space_support_status(mf, AS_SEMAPHORE);
-    get_space_support_status(mf, AS_CR_SPACE);
+    if (!(mf->dinfo && is_cpu_pci_device(mf->dinfo->pci.dev_id)))
+    {
+        get_space_support_status(mf, AS_ICMD);
+        get_space_support_status(mf, AS_NODNIC_INIT_SEG);
+        get_space_support_status(mf, AS_EXPANSION_ROM);
+        get_space_support_status(mf, AS_ND_CRSPACE);
+        get_space_support_status(mf, AS_SCAN_CRSPACE);
+        get_space_support_status(mf, AS_MAC);
+        get_space_support_status(mf, AS_ICMD_EXT);
+        get_space_support_status(mf, AS_SEMAPHORE);
+        get_space_support_status(mf, AS_CR_SPACE);
+        get_space_support_status(mf, AS_RECOVERY);
+    }
     get_space_support_status(mf, AS_PCI_ICMD);
     get_space_support_status(mf, AS_PCI_CRSPACE);
     get_space_support_status(mf, AS_PCI_ALL_ICMD);
     get_space_support_status(mf, AS_PCI_SCAN_CRSPACE);
     get_space_support_status(mf, AS_PCI_GLOBAL_SEMAPHORE);
-    get_space_support_status(mf, AS_RECOVERY);
     mf->vsec_cap_mask |= (1 << VCC_INITIALIZED);
 }
 
