@@ -53,9 +53,10 @@ class EventsCommand(PcieSwCommand):
     to its numeric type by the firmware menu, so no segment id is stored here.
 
     A dump saved earlier can be presented instead of a device, in which case the
-    dump step is skipped and the file is the input of the parse step. The report
-    is then only as good as what the file holds: the events of a response the
-    tool did not request itself.
+    dump step is skipped and the file is the input of the parse step. Nothing
+    about it is taken on trust: the formatter reads the request the file answers
+    off the response itself, so a capture of another resource is refused and the
+    view the report states is the one the capture was taken at.
 
     The log a view stands for can also be erased rather than presented, by the
     firmware invalidating the non volatile memory it is kept in. The erasure
@@ -65,13 +66,11 @@ class EventsCommand(PcieSwCommand):
     COMMAND_NAME = "events"
     DESCRIPTION = "fetch the PCIe event log"
 
-    # the only PCIe specific data this tool holds - the event resource and the
-    # user facing names of the event sets it indexes
-    _EVENT_RESOURCE = "PCIE_EVENTS"
-    _VIEW_TO_INDEX1 = {
-        "critical": 0,                  # crash related events
-        "all": 1,                       # everything else
-    }
+    # what to ask a device for. Both are the formatter's, which reads them back
+    # off a response to name the view it answers for - so the request this command
+    # builds and the report that presents it cannot disagree about either
+    _EVENT_RESOURCE = PcieEventFormatter.EVENT_RESOURCE_NAME
+    _VIEW_TO_INDEX1 = {view: index1 for index1, view in PcieEventFormatter.VIEW_BY_INDEX1.items()}
 
     # the output formats offered by the command, each backed by a formatter. Both
     # present the same event model, so both take the same arguments
@@ -220,19 +219,13 @@ class EventsCommand(PcieSwCommand):
 
     def _build_formatter_argv(self):
         """This method state on the formatter command line what the report header
-        can truthfully say about the request the events came from.
+        cannot be told by the events themselves.
 
-        Both formats present that header and default each of its arguments to N/A,
-        so an argument this command has nothing true to pass for is left out rather
-        than filled in: a saved dump was taken at a view this run did not choose,
-        and may have been taken with no device named at all.
+        That is the device alone, and only when one was named: a dump presented
+        with no device says where it came from nowhere else, while everything else
+        the header states - the view among it - the response restates itself.
         """
-        formatter_argv = []
-        if self._device:
-            formatter_argv += ["--device", self._device]
-        if not self._dump_file:
-            formatter_argv += ["--view", self._view]
-        return formatter_argv
+        return ["--device", self._device] if self._device else []
 
     def _fetch_event_segments(self):
         """This method dump the event resource at the index of the selected view.

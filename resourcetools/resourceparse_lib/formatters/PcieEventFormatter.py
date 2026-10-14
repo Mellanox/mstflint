@@ -35,6 +35,7 @@ from enum import IntEnum, auto
 from resourceparse_lib.formatters.SegmentFormatter import SegmentFormatter, FORMATTER_CLASSES
 from resourceparse_lib.utils import constants as cs
 from resourceparse_lib.utils.common_functions import is_resource_segment
+from resourceparse_lib.utils.Exceptions import ResourceParseException
 
 
 class PcieEventFormatter(SegmentFormatter):
@@ -56,10 +57,18 @@ class PcieEventFormatter(SegmentFormatter):
 
     A resource-dump request is answered with several response segments, of which
     every resource segment carries an event record and the control segments carry
-    none, so the control segments contribute no block. Two of them still have
-    something to say, and say it in the header rather than in a block: the info
-    segment states the firmware version of the device, and an error or notice
-    segment states why the events it was asked for are not there.
+    none, so the control segments contribute no block. Three of them still have
+    something to say, and say it in the header rather than in a block: the command
+    segment restates the request the response answers, the info segment states the
+    firmware version of the device, and an error or notice segment states why the
+    events it was asked for are not there.
+
+    The command segment is also what makes the records safe to read blindly. A
+    block is built from every resource segment, with no event id tested, which is
+    correct only for a response to a PCIE_EVENTS request - the records of any
+    other resource render as blocks holding nothing. Firmware states the request
+    before it states a record, so the first record is both where the answer is
+    known and the last point at which refusing it costs nothing.
     """
 
     class EventSection(IntEnum):
@@ -197,9 +206,9 @@ class PcieEventFormatter(SegmentFormatter):
         HEADER_VALUE_SEPARATOR = ": "
         HEADER_LINE_FORMAT = "{0:<{1}}{2}{3}"
 
-        def __init__(self, device, view, fw_version=None):
+        def __init__(self, device, view=None, fw_version=None):
             self.device = device
-            self.view = view
+            self.view = cs.LABEL_NOT_AVAILABLE if view is None else view
             self.fw_version = cs.LABEL_NOT_AVAILABLE if fw_version is None else fw_version
             self.events = 0
 
@@ -216,6 +225,21 @@ class PcieEventFormatter(SegmentFormatter):
     TITLE = "PCIe Event Log"
 
     DEFAULT_INDENT = "  "
+
+    # The request a response restates in its command segment: the resource whose
+    # records this formatter presents, and the event set each index of a request
+    # for it stands for - which is what the report calls the view
+    EVENT_RESOURCE_NAME = "PCIE_EVENTS"
+    EVENT_RESOURCE_ID = 0x1098
+    VIEW_BY_INDEX1 = {
+        0: "critical",                  # crash related events
+        1: "all",                       # everything else
+    }
+
+    NO_REQUEST_ERROR = "the dump states no request, so nothing in it establishes that its records " \
+                       "are the events of {0}"
+    FOREIGN_RESOURCE_ERROR = "the dump answers a request for resource {0} rather than for {1}, " \
+                             "so its records are no PCIe events"
 
     EVENT_CLASS_ATTR = "event_class"
     DETAILS_FORMAT_ATTR = "format"
@@ -251,9 +275,10 @@ class PcieEventFormatter(SegmentFormatter):
     def get_arg_parser(cls, prog=None):
         arg_parser = super().get_arg_parser(prog)
 
+        # the view the events were requested at is not among these: the response
+        # restates it, so an argument could only contradict the data it labels
         optional_named = arg_parser.add_argument_group('optional arguments')
         optional_named.add_argument("--device", default=cs.LABEL_NOT_AVAILABLE, help='The device the events were read from, for the log header')
-        optional_named.add_argument("--view", default=cs.LABEL_NOT_AVAILABLE, help='The event view that was requested, for the log header')
 
         return arg_parser
 
@@ -266,7 +291,8 @@ class PcieEventFormatter(SegmentFormatter):
 
     def __init__(self, formatter_args):
         super().__init__(formatter_args)
-        self._report_header = self.EventReportHeader(formatter_args.device, formatter_args.view)
+        self._report_header = self.EventReportHeader(formatter_args.device)
+        self._request_resource_id = None
         self._event_fields = []
         self._segment_messages = []
         self._lost_events_count = 0
@@ -279,11 +305,43 @@ class PcieEventFormatter(SegmentFormatter):
         self._current_section = None
 
     def format_segment_header(self, seg_type, seg_name, additional_info, seg):
+        """This method take what the header of the report states off the control
+        segments of the response, and refuse a record the response did not
+        establish as an event.
+
+        Firmware answers with its control segments first, so the request is known
+        by the time the first record is reached - which is where it is checked,
+        since a record is the only segment this formatter would present. An index
+        names a view of the events only in a request for them, so a response that
+        answers some other request is left with no view to state.
+        """
         self._start_record(seg_type)
-        if seg_type == cs.RESOURCE_DUMP_SEGMENT_TYPE_INFO:
+        if seg_type == cs.RESOURCE_DUMP_SEGMENT_TYPE_COMMAND:
+            self._request_resource_id = seg.unpack_command()[0]
+            if self._request_resource_id == self.EVENT_RESOURCE_ID:
+                self._report_header.view = self.VIEW_BY_INDEX1.get(seg.index1, cs.LABEL_NOT_AVAILABLE)
+        elif seg_type == cs.RESOURCE_DUMP_SEGMENT_TYPE_INFO:
             self._report_header.fw_version = seg.get_display_fw_version() or cs.LABEL_NOT_AVAILABLE
         elif seg_type in self.MESSAGE_SEGMENT_TYPES:
             self._collect_segment_message(seg)
+        elif is_resource_segment(seg_type):
+            self._verify_event_record()
+
+    def _verify_event_record(self):
+        """This method refuse a resource segment the response did not state to be
+        an event record.
+
+        A block is built from every resource segment with no event id tested,
+        which is correct only for a response to a PCIE_EVENTS request - the
+        records of any other resource render as blocks holding nothing, and
+        nothing further on would notice. A response that states no request at all
+        establishes as little, so it is refused the same way.
+        """
+        if self._request_resource_id is None:
+            raise ResourceParseException(self.NO_REQUEST_ERROR.format(self.EVENT_RESOURCE_NAME))
+        if self._request_resource_id != self.EVENT_RESOURCE_ID:
+            raise ResourceParseException(self.FOREIGN_RESOURCE_ERROR.format(hex(self._request_resource_id),
+                                                                            self.EVENT_RESOURCE_NAME))
 
     def _collect_segment_message(self, seg):
         """This method take the message of a segment that carries one instead of an
