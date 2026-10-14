@@ -598,7 +598,7 @@ void MlxlinkCommander::labelToLocalPort()
 {
     _pnat = _userInput._pcie ? PNAT_PCIE : PNAT_LOCAL;
 
-    if ((_isHCA || (_mf->tp == MST_PCICONF && (_isGPU || _isCPU))) && _userInput._pcie)
+    if ((_isHCA || _isCPU || (_mf->tp == MST_PCICONF && _isGPU)) && _userInput._pcie)
     {
         _dpn.depth = _userInput._depth;
         _dpn.pcieIndex = _userInput._pcieIndex;
