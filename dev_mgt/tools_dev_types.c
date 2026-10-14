@@ -998,7 +998,7 @@ int dm_is_livefish_mode(mfile* mf)
 
     /* printf("-D- swid: %#x, devid: %#x\n", swid, devid); */
 
-    if (dm_is_gpu(devid_t))
+    if (dm_is_gpu(devid_t) || dm_is_cpu(devid_t))
     {
         return 0;
     }
