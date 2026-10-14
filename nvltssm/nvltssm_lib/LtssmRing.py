@@ -240,11 +240,13 @@ class LtssmRing:
     """Walks the ring logger of one link, oldest slot first."""
 
     class Fields:
-        RING = "link0_dl_ltssm_dfd_logger_line"
-        CURRENT_INDEX = "link0_dl_ltssm_dfd_logger_ctrl2.current_index"
-        CURRENT_STATE = "link0_pl_ltssm_state.full"
-        CURRENT_SPEED = "link0_cr_link_status.current_link_speed"
-        CURRENT_WIDTH = "link0_cr_link_status.negotiated_link_width"
+        """Sub-field names of the LTSSM nodes, identical on every device unlike the node names."""
+
+        CURRENT_INDEX = "current_index"
+        CURRENT_LOGGED_SIZE = "current_logged_size"
+        FULL = "full"
+        CURRENT_LINK_SPEED = "current_link_speed"
+        NEGOTIATED_LINK_WIDTH = "negotiated_link_width"
         STATE = "state"
         REASON = "reason"
         SPEED = "speed"
@@ -257,12 +259,23 @@ class LtssmRing:
     EVENT_NUM_START_BIT = 8
     EVENT_NUM_MASK = 0x1f
 
-    def __init__(self, fields):
+    def __init__(self, fields, device_info):
         self._fields = fields
+        self._ring_node = device_info.ring_node
+        self._current_index_field = self._qualify(device_info.logger_ctrl_node, self.Fields.CURRENT_INDEX)
+        self._logged_size_field = self._qualify(device_info.logger_ctrl_node, self.Fields.CURRENT_LOGGED_SIZE)
+        self._current_state_field = self._qualify(device_info.state_node, self.Fields.FULL)
+        self._current_speed_field = self._qualify(device_info.link_status_node, self.Fields.CURRENT_LINK_SPEED)
+        self._current_width_field = self._qualify(device_info.link_status_node, self.Fields.NEGOTIATED_LINK_WIDTH)
         self._fields_by_address = {}
         for field in fields.values():
             self._fields_by_address.setdefault(field.address, []).append(field)
-        self.current_index = self._read(self.Fields.CURRENT_INDEX) % self.SIZE
+        self.current_index = self._read(self._current_index_field) % self.SIZE
+        self.logged_size = min(self._read(self._logged_size_field), self.SIZE)
+
+    @staticmethod
+    def _qualify(node, field):
+        return "{}.{}".format(node, field)
 
     def _read(self, name):
         field = self._fields.get(name)
@@ -272,7 +285,7 @@ class LtssmRing:
         return field.value
 
     def _slot_field_name(self, slot, field):
-        return "{}[{}].{}".format(self.Fields.RING, slot, field)
+        return "{}[{}].{}".format(self._ring_node, slot, field)
 
     def _slot_dword(self, slot):
         """Rebuild the raw ring dword out of the fields that cover it."""
@@ -298,17 +311,28 @@ class LtssmRing:
                           ticks=entry.timing.ticks)
 
     def current_state(self):
-        return LtssmCurrentState(state=self._read(self.Fields.CURRENT_STATE),
-                                 speed=self._read(self.Fields.CURRENT_SPEED),
-                                 width=self._read(self.Fields.CURRENT_WIDTH))
+        return LtssmCurrentState(state=self._read(self._current_state_field),
+                                 speed=self._read(self._current_speed_field),
+                                 width=self._read(self._current_width_field))
+
+    def _logged_slots(self):
+        """The slots holding logged data, oldest first.
+
+        The logger fills the ring from slot 0 upwards and only once it has wrapped
+        does the write cursor mark the oldest slot. Below that the slots past the
+        cursor were never written, and hold whatever the RAM powered up with.
+        """
+        if self.logged_size < self.SIZE:
+            return range(self.logged_size)
+
+        return ((self.current_index + offset) % self.SIZE for offset in range(self.SIZE))
 
     def walk(self):
         """Yield the ring records oldest first, annotations before their entry."""
         last_speed = None
         last_width = None
 
-        for offset in range(self.SIZE):
-            slot = (self.current_index + offset) % self.SIZE
+        for slot in self._logged_slots():
             entry = self._entry(slot)
 
             if entry.is_fw_event:

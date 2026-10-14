@@ -80,14 +80,14 @@ class CLtssmTrace:
         cls._sdk.ltssm_trace_open.restype = ctypes.c_int
         cls._sdk.ltssm_trace_open.argtypes = [
             ctypes.c_char_p,
+            ctypes.c_char_p,
             ctypes.POINTER(cnvltssm_types.c_ltssm_trace_handle),
         ]
 
-        cls._sdk.ltssm_trace_get_device.restype = ctypes.c_int
-        cls._sdk.ltssm_trace_get_device.argtypes = [
+        cls._sdk.ltssm_trace_get_device_info.restype = ctypes.c_int
+        cls._sdk.ltssm_trace_get_device_info.argtypes = [
             cnvltssm_types.c_ltssm_trace_handle,
-            ctypes.POINTER(ctypes.c_uint32),
-            ctypes.POINTER(ctypes.c_char_p),
+            ctypes.POINTER(cnvltssm_types.c_ltssm_trace_device_info),
         ]
 
         cls._sdk.ltssm_trace_read_link.restype = ctypes.c_int
@@ -111,9 +111,12 @@ class CLtssmTrace:
         cls._sdk.ltssm_trace_get_error.restype = ctypes.c_char_p
         cls._sdk.ltssm_trace_get_error.argtypes = [cnvltssm_types.c_ltssm_trace_handle]
 
-    def open(self, dump_file):
+    def open(self, dump_file, device_name=None):
+        """Open a dump, resolving its device from the dump unless device_name names it."""
         handle = cnvltssm_types.c_ltssm_trace_handle()
-        result = self._sdk.ltssm_trace_open(str(dump_file).encode(), ctypes.byref(handle))
+        result = self._sdk.ltssm_trace_open(str(dump_file).encode(),
+                                            device_name.encode() if device_name else None,
+                                            ctypes.byref(handle))
         if result != cnvltssm_types.c_ltssm_trace_result.OK:
             error = self.get_error(handle)
             self.close(handle)
@@ -121,15 +124,14 @@ class CLtssmTrace:
 
         return handle
 
-    def get_device(self, handle):
-        """Return the (hw device id, device name) the dump was taken from."""
-        hw_device_id = ctypes.c_uint32()
-        device_name = ctypes.c_char_p()
-        result = self._sdk.ltssm_trace_get_device(handle, ctypes.byref(hw_device_id), ctypes.byref(device_name))
+    def get_device_info(self, handle):
+        """Return the device the dump was taken from and its LTSSM node names."""
+        info = cnvltssm_types.c_ltssm_trace_device_info()
+        result = self._sdk.ltssm_trace_get_device_info(handle, ctypes.byref(info))
         if result != cnvltssm_types.c_ltssm_trace_result.OK:
             raise LtssmTraceSdkError(self.get_error(handle) or "Failed to query the device")
 
-        return hw_device_id.value, device_name.value.decode() if device_name.value else ""
+        return LtssmDeviceInfo(info)
 
     def read_link(self, handle, pcore, link):
         """Return the LTSSM fields of one link as {name: (value, address, start_bit, size)}."""
@@ -166,3 +168,19 @@ class LtssmTraceField:
         self.address = c_field.address
         self.start_bit = c_field.start_bit
         self.size = c_field.size
+
+
+class LtssmDeviceInfo:
+    """The device a dump was taken from and the node names its ADB addresses LTSSM with."""
+
+    NODE_ATTRIBUTES = ("pcore_node", "link_node", "link_status_node", "state_node", "ring_node", "logger_ctrl_node")
+
+    def __init__(self, c_info):
+        self.hw_device_id = c_info.hw_device_id
+        self.device_name = self._text(c_info.device_name)
+        for attribute in self.NODE_ATTRIBUTES:
+            setattr(self, attribute, self._text(getattr(c_info, attribute)))
+
+    @staticmethod
+    def _text(value):
+        return value.decode() if value else ""

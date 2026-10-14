@@ -43,12 +43,16 @@ class LtssmTraceManager:
     LPORT_LINK_BITS = 3
     LPORT_LINK_MASK = 0x7
 
-    def __init__(self, dump_file, formatter, pcore=0, link=0, port=None, lport=None):
+    def __init__(self, dump_file, formatter, pcore=0, link=0, port=None, lport=None, device_name=None):
         """A link is named either as a pcore plus a link, or as the port or the local
         port number that packs the same pair, which is taken instead of it.
+
+        device_name names the device the dump was taken from, for a dump that does
+        not carry its own device id; None reads it out of the dump.
         """
         self._dump_file = dump_file
         self._formatter = formatter
+        self._device_name = device_name
         self._pcore, self._link = self._resolve_link(pcore, link, port, lport)
 
     @classmethod
@@ -70,8 +74,8 @@ class LtssmTraceManager:
 
         handle = None
         try:
-            handle = sdk.open(self._dump_file)
-            _, device_name = sdk.get_device(handle)
+            handle = sdk.open(self._dump_file, self._device_name)
+            device_info = sdk.get_device_info(handle)
             fields = sdk.read_link(handle, self._pcore, self._link)
         except LtssmTraceSdkError as exp:
             raise LtssmTraceException(str(exp))
@@ -79,6 +83,6 @@ class LtssmTraceManager:
             if handle is not None:
                 sdk.close(handle)
 
-        ring = LtssmRing(fields)
+        ring = LtssmRing(fields, device_info)
 
-        return self._formatter.get_output(self._dump_file, device_name, self._pcore, self._link, ring)
+        return self._formatter.get_output(self._dump_file, device_info.device_name, self._pcore, self._link, ring)
