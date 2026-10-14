@@ -157,7 +157,7 @@ class CLtssmTrace:
     def get_error(self, handle):
         error = self._sdk.ltssm_trace_get_error(handle)
 
-        return error.decode() if error else ""
+        return error.decode(errors="replace") if error else ""
 
 
 class LtssmTraceField:
