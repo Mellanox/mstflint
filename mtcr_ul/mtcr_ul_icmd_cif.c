@@ -193,7 +193,13 @@
     {                                      \
         mset_addr_space(mf, AS_SEMAPHORE); \
     }
-#define RESTORE_SPACE(mf) mset_addr_space(mf, AS_CR_SPACE)
+bool is_pci_space_only(mfile* mf);
+#define RESTORE_SPACE(mf) mset_addr_space(mf, is_pci_space_only(mf) ? AS_PCI_CRSPACE : AS_CR_SPACE)
+
+bool is_pci_space_only(mfile* mf)
+{
+    return mf->hw_dev_id == DeviceVera_HwId;
+}
 
 static int MWRITE4_ICMD(mfile* mf, int offset, u_int32_t value)
 {
