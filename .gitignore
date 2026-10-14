@@ -28,6 +28,7 @@ libtool
 /mlxconfig/mstprivhost
 /mlxparsebin/mstparsebin
 /mstdump/crd_main/mstregdump
+/nvltssm/mstltssm
 /mstflint.spec
 /resourcetools/mstresourcedump
 /resourcetools/mstresourceparse

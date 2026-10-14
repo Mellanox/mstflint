@@ -934,6 +934,7 @@ AC_OUTPUT( \
     efuse/Makefile \
     efuse/efuse_dbs/Makefile \
     mlxparsebin/Makefile \
+    nvltssm/Makefile \
     mtcr_py/Makefile \
     mvpd/Makefile \
     pldm_utils/Makefile \
