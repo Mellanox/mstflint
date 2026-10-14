@@ -70,7 +70,7 @@ class EventsCommand(PcieSwCommand):
     _EVENT_RESOURCE = "PCIE_EVENTS"
     _VIEW_TO_INDEX1 = {
         "critical": 0,                  # crash related events
-        "non-critical": 1,              # everything else
+        "all": 1,                       # everything else
     }
 
     # the output formats offered by the command, each backed by a formatter. Both
@@ -110,7 +110,7 @@ class EventsCommand(PcieSwCommand):
         input_group = parser.add_mutually_exclusive_group()
         input_group.add_argument("--view", choices=sorted(cls._VIEW_TO_INDEX1), default="critical",
                                  help='The event view to fetch: "critical" for crash related events, '
-                                      '"non-critical" for all the other events (default: critical)')
+                                      '"all" for all the other events (default: critical)')
         input_group.add_argument("--dump-file", metavar="FILENAME", dest="dump_file", type=valid_path_arg_type,
                                  help='Present the events of a dump saved earlier instead of dumping the device')
         parser.add_argument("--format", choices=cls._FORMATS.keys(), default=list(cls._FORMATS)[0], dest="output_format",
