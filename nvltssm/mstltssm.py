@@ -38,6 +38,7 @@ import argparse  # noqa: E402
 import os  # noqa: E402
 
 import tools_version  # noqa: E402
+from tools_arg_types import verify_input_file, verify_output_file  # noqa: E402
 from nvltssm_lib.LtssmTraceException import LtssmTraceException  # noqa: E402
 from nvltssm_lib.LtssmTraceManager import LtssmTraceManager  # noqa: E402
 from nvltssm_lib.formatters.LtssmFormatter import FORMATTER_CLASSES, formatter_type  # noqa: E402
@@ -69,7 +70,7 @@ class LtssmTrace:
         link_args = cls._arg_parser.add_argument_group('link selection arguments')
         optional_args = cls._arg_parser.add_argument_group('optional arguments')
 
-        required_args.add_argument("--dump", dest="dump_file", type=cls._valid_path_arg_type, required=True,
+        required_args.add_argument("--dump", dest="dump_file", type=verify_input_file, required=True,
                                    help='Location of the "mstdump" output to decode')
 
         link_args.add_argument("--pcore", type=int, help='Index of the pcore holding the link. Default: 0')
@@ -88,17 +89,10 @@ class LtssmTrace:
                                    default=FORMATTER_CLASSES[cls.DEFAULT_FORMATTER],
                                    help="Available options: {}. Default: '{}'".format(list(FORMATTER_CLASSES.keys()),
                                                                                       cls.DEFAULT_FORMATTER))
-        optional_args.add_argument("-o", "--out", help='Location of the output file')
+        optional_args.add_argument("-o", "--out", type=verify_output_file, help='Location of the output file')
         optional_args.add_argument('--version', action='version', help="Shows the tool's version and exit",
                                    version=tools_version.GetVersionString(tool_name, None))
         optional_args.add_argument("-h", "--help", action="help", help="show this help message and exit")
-
-    @staticmethod
-    def _valid_path_arg_type(path):
-        if not os.path.exists(path):
-            raise argparse.ArgumentTypeError("no such file: '{}'".format(path))
-
-        return path
 
     @classmethod
     def run(cls):
