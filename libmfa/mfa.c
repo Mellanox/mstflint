@@ -41,8 +41,10 @@
 #include <string.h>
 #include <compatibility.h>
 #include "common/tools_endianness.h"
+#ifndef NO_OPEN_SSL
 #include "mlxsign_lib/mlxsign_aesctr_c.h"
 #include <openssl/sha.h>
+#endif
 
 //                                         0x(major)(minor)
 //                           0x00000001;  #0x(0000)(0001)
@@ -276,6 +278,12 @@ int mfa_verify_archive(u_int8_t* buf, long sz)
             return _ERR(MFA_ERR_ARCHV_SIGNATURE);
         }
     }
+#ifdef NO_OPEN_SSL
+    if (memcmp(buf, encrypted_signature, sizeof(encrypted_signature)) == 0)
+    {
+        return _ERR(MFA_ERR_NO_OPENSSL);
+    }
+#endif
 
     // Check version
     ver = *((u_int32_t*)&buf[4]);
@@ -668,10 +676,15 @@ map_entry_hdr* mfa_get_map_entry(mfa_desc* mfa_d, char* board_type_id)
         int encrypted = is_encrypted(map_entry_header);
         int n = map_entry_header->nimages;
         char img_board_type_id[PSID_SIZE + 1] = {0};
+#ifndef NO_OPEN_SSL
         u_int32_t img_board_type_id_len = PSID_SIZE;
+#endif
 
         if (encrypted)
         {
+#ifdef NO_OPEN_SSL
+            return NULL;
+#else
             char iv[AES_CTR_IV_SIZE] = {0};
             char key[KEY_SIZE] = {0};
 
@@ -690,6 +703,7 @@ map_entry_hdr* mfa_get_map_entry(mfa_desc* mfa_d, char* board_type_id)
                 return NULL;
             }
             mlxsign_aesctr_destroy(aesctr_ctx);
+#endif
         }
         else
         {

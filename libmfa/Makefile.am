@@ -40,6 +40,10 @@ AM_CPPFLAGS = \
 
 AM_CFLAGS = -MD -pipe -Wall -W -g $(COMPILER_FPIC)
 
+if !ENABLE_OPENSSL
+AM_CFLAGS += -DNO_OPEN_SSL
+endif
+
 noinst_LTLIBRARIES = libmfa.la
 
 libmfa_la_SOURCES = \
