@@ -42,6 +42,20 @@
 #include <dev_mgt/tools_dev_types.h>
 #include <mlxparsebin/mlxparsebin_lib.h>
 
+// The node names one device's reduced ADB spells the LTSSM hierarchy with, and
+// the file that ADB is installed as. Both differ per device because each
+// reduced ADB inherits the naming of the family ADB it was reduced from.
+struct LtssmLayout
+{
+    std::string adbFile;
+    std::string pcoreNode;
+    std::string linkNode;
+    std::string linkStatusNode;
+    std::string stateNode;
+    std::string ringNode;
+    std::string loggerCtrlNode;
+};
+
 // Reads the LTSSM registers of one PCIe link out of an mstdump or raw dump,
 // using the reduced ADB installed for the device the dump was taken from. The
 // reduced ADB carries the absolute addresses, so no per-device offset lives here.
@@ -50,7 +64,9 @@ class LtssmReader
 public:
     typedef MlxParseBinLib::FieldDataMap FieldMap;
 
-    explicit LtssmReader(const std::string& dumpFile);
+    // An empty deviceName reads the device id out of the dump. A dump whose
+    // address range carries no device id has to be told which device it is.
+    LtssmReader(const std::string& dumpFile, const std::string& deviceName);
 
     void load();
     void readLink(u_int32_t pcore, u_int32_t link, FieldMap& fields);
@@ -58,22 +74,24 @@ public:
     u_int32_t hwDeviceId() const;
     dm_dev_id_t deviceType() const;
     const char* deviceName() const;
+    const LtssmLayout& layout() const;
 
 private:
     static const u_int32_t HW_DEVICE_ID_START_BIT = 0;
     static const u_int32_t HW_DEVICE_ID_SIZE = 16;
     static const char* const ADB_ROOT_NODE;
-    static const char* const PCORE_LEVEL_FIELD;
-    static const char* const LINK_LEVEL_FIELD;
 
     void resolveDevice();
+    void loadLayout();
     void loadAdb();
     std::string adbPath() const;
     std::string linkPath(u_int32_t pcore, u_int32_t link) const;
 
     std::string _dumpFile;
+    std::string _requestedDeviceName;
     u_int32_t _hwDeviceId;
     dm_dev_id_t _deviceType;
+    LtssmLayout _layout;
     std::unique_ptr<MlxParseBinLib> _parser;
 };
 

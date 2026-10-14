@@ -48,7 +48,10 @@ namespace
 class LtssmTraceHandle
 {
 public:
-    LtssmTraceHandle(const char* dumpFile) : reader(dumpFile), lastError() {}
+    LtssmTraceHandle(const char* dumpFile, const char* deviceName) :
+        reader(dumpFile, deviceName ? deviceName : ""), lastError()
+    {
+    }
 
     LtssmReader reader;
     string lastError;
@@ -71,7 +74,7 @@ char* duplicate(const string& value)
 }
 } // namespace
 
-enum ltssm_trace_result_t ltssm_trace_open(const char* dump_file, ltssm_trace_handle_t* handle)
+enum ltssm_trace_result_t ltssm_trace_open(const char* dump_file, const char* device_name, ltssm_trace_handle_t* handle)
 {
     if (!handle)
     {
@@ -85,7 +88,7 @@ enum ltssm_trace_result_t ltssm_trace_open(const char* dump_file, ltssm_trace_ha
         return LTSSM_TRACE_BAD_PARAM;
     }
 
-    LtssmTraceHandle* traceHandle = new (std::nothrow) LtssmTraceHandle(dump_file);
+    LtssmTraceHandle* traceHandle = new (std::nothrow) LtssmTraceHandle(dump_file, device_name);
     *handle = traceHandle;
     if (!traceHandle)
     {
@@ -110,17 +113,24 @@ enum ltssm_trace_result_t ltssm_trace_open(const char* dump_file, ltssm_trace_ha
     return LTSSM_TRACE_OK;
 }
 
-enum ltssm_trace_result_t
-  ltssm_trace_get_device(ltssm_trace_handle_t handle, uint32_t* hw_device_id, const char** device_name)
+enum ltssm_trace_result_t ltssm_trace_get_device_info(ltssm_trace_handle_t handle, ltssm_trace_device_info_t* info)
 {
     LtssmTraceHandle* traceHandle = asHandle(handle);
-    if (!traceHandle || !hw_device_id || !device_name)
+    if (!traceHandle || !info)
     {
         return LTSSM_TRACE_BAD_PARAM;
     }
 
-    *hw_device_id = traceHandle->reader.hwDeviceId();
-    *device_name = traceHandle->reader.deviceName();
+    const LtssmLayout& layout = traceHandle->reader.layout();
+
+    info->hw_device_id = traceHandle->reader.hwDeviceId();
+    info->device_name = traceHandle->reader.deviceName();
+    info->pcore_node = layout.pcoreNode.c_str();
+    info->link_node = layout.linkNode.c_str();
+    info->link_status_node = layout.linkStatusNode.c_str();
+    info->state_node = layout.stateNode.c_str();
+    info->ring_node = layout.ringNode.c_str();
+    info->logger_ctrl_node = layout.loggerCtrlNode.c_str();
 
     return LTSSM_TRACE_OK;
 }

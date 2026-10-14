@@ -79,6 +79,10 @@ class LtssmTrace:
         link_args.add_argument("--lport", type=int,
                                help='Local port number of the link, taken instead of --pcore and --link')
 
+        optional_args.add_argument("--device-type", dest="device_name", metavar="NAME",
+                                   help='Device the dump was taken from, e.g. "Vera", taken instead of reading '
+                                        'the device id out of the dump. Needed for a device whose dump carries '
+                                        'no device id')
         optional_args.add_argument("-f", "--formatter", dest="formatter", type=formatter_type,
                                    default=FORMATTER_CLASSES[cls.DEFAULT_FORMATTER],
                                    help="Available options: {}. Default: '{}'".format(list(FORMATTER_CLASSES.keys()),
@@ -101,7 +105,7 @@ class LtssmTrace:
         args = cls._arg_parser.parse_args()
 
         manager = LtssmTraceManager(args.dump_file, args.formatter(),
-                                    args.pcore, args.link, args.port, args.lport)
+                                    args.pcore, args.link, args.port, args.lport, args.device_name)
         output = "\n".join(manager.get_output()) + "\n"
 
         if args.out:

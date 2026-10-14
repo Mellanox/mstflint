@@ -49,4 +49,18 @@ class c_ltssm_trace_field(ctypes.Structure):
     ]
 
 
+class c_ltssm_trace_device_info(ctypes.Structure):
+    """The ltssm_trace_device_info_t struct of the C SDK."""
+    _fields_ = [
+        ("hw_device_id", ctypes.c_uint32),
+        ("device_name", ctypes.c_char_p),
+        ("pcore_node", ctypes.c_char_p),
+        ("link_node", ctypes.c_char_p),
+        ("link_status_node", ctypes.c_char_p),
+        ("state_node", ctypes.c_char_p),
+        ("ring_node", ctypes.c_char_p),
+        ("logger_ctrl_node", ctypes.c_char_p),
+    ]
+
+
 c_ltssm_trace_handle = ctypes.c_void_p

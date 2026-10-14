@@ -45,21 +45,70 @@
 
 using namespace std;
 
-const char* const LtssmReader::ADB_ROOT_NODE = "ltssm_Nodes";
-const char* const LtssmReader::PCORE_LEVEL_FIELD = "pcore_top_pcore_pxdp_xpl_top";
-const char* const LtssmReader::LINK_LEVEL_FIELD = "xpl_nv_xpl";
+namespace
+{
+// Every ConnectX reduced ADB spells the LTSSM hierarchy the same way, as they
+// are all reduced from one family ADB, so one layout serves them all.
+LtssmLayout connectxLayout(const string& adbFile)
+{
+    LtssmLayout layout;
 
-LtssmReader::LtssmReader(const string& dumpFile) : _dumpFile(dumpFile), _hwDeviceId(0), _deviceType(DeviceUnknown) {}
+    layout.adbFile = adbFile;
+    layout.pcoreNode = "pcore_top_pcore_pxdp_xpl_top";
+    layout.linkNode = "xpl_nv_xpl";
+    layout.linkStatusNode = "link0_cr_link_status";
+    layout.stateNode = "link0_pl_ltssm_state";
+    layout.ringNode = "link0_dl_ltssm_dfd_logger_line";
+    layout.loggerCtrlNode = "link0_dl_ltssm_dfd_logger_ctrl2";
+
+    return layout;
+}
+
+LtssmLayout veraLayout(const string& adbFile)
+{
+    LtssmLayout layout;
+
+    layout.adbFile = adbFile;
+    layout.pcoreNode = "pcore_xpl_nv_xpl";
+    layout.linkNode = "link";
+    layout.linkStatusNode = "cr_link_status";
+    layout.stateNode = "pl_ltssm_state";
+    layout.ringNode = "dl_ltssm_dfd_logger_line";
+    layout.loggerCtrlNode = "dl_ltssm_dfd_logger_ctrl2";
+
+    return layout;
+}
+} // namespace
+
+const char* const LtssmReader::ADB_ROOT_NODE = "ltssm_Nodes";
+
+LtssmReader::LtssmReader(const string& dumpFile, const string& deviceName) :
+    _dumpFile(dumpFile), _requestedDeviceName(deviceName), _hwDeviceId(0), _deviceType(DeviceUnknown)
+{
+}
 
 void LtssmReader::load()
 {
     resolveDevice();
+    loadLayout();
     loadAdb();
 }
 
 void LtssmReader::resolveDevice()
 {
     u_int32_t value;
+
+    if (!_requestedDeviceName.empty())
+    {
+        _deviceType = dm_dev_str2type(_requestedDeviceName.c_str());
+        if (_deviceType == DeviceUnknown)
+        {
+            throw LtssmTraceException("Unknown device type: " + _requestedDeviceName);
+        }
+        _hwDeviceId = dm_get_hw_dev_id(_deviceType);
+
+        return;
+    }
 
     try
     {
@@ -79,34 +128,40 @@ void LtssmReader::resolveDevice()
     }
 }
 
-string LtssmReader::adbPath() const
+void LtssmReader::loadLayout()
 {
-    const string dbDirName = "ltssm_dbs";
-    string fileName;
-
     switch (_deviceType)
     {
         case DeviceConnectX8:
-            fileName = "connectx8_ltssm.adb";
+            _layout = connectxLayout("connectx8_ltssm.adb");
             break;
 
         case DeviceConnectX8_Pure_PCIe_Switch:
-            fileName = "connectx8_pure_pcie_switch_ltssm.adb";
+            _layout = connectxLayout("connectx8_pure_pcie_switch_ltssm.adb");
             break;
 
         case DeviceConnectX9:
-            fileName = "connectx9_ltssm.adb";
+            _layout = connectxLayout("connectx9_ltssm.adb");
             break;
 
         case DeviceConnectX9_Pure_PCIe_Switch:
-            fileName = "connectx9_pure_pcie_switch_ltssm.adb";
+            _layout = connectxLayout("connectx9_pure_pcie_switch_ltssm.adb");
+            break;
+
+        case DeviceVera:
+            _layout = veraLayout("vera_reduced_ltssm.adb");
             break;
 
         default:
             throw LtssmTraceException(string("No LTSSM layout for device: ") + deviceName());
     }
+}
 
-    return string(DATA_PATH) + "/" + dbDirName + "/" + fileName;
+string LtssmReader::adbPath() const
+{
+    const string dbDirName = "ltssm_dbs";
+
+    return string(DATA_PATH) + "/" + dbDirName + "/" + _layout.adbFile;
 }
 
 void LtssmReader::loadAdb()
@@ -171,9 +226,9 @@ void LtssmReader::readLink(u_int32_t pcore, u_int32_t link, FieldMap& fields)
 
 string LtssmReader::linkPath(u_int32_t pcore, u_int32_t link) const
 {
-    char path[128];
+    char path[256];
 
-    snprintf(path, sizeof(path), "%s[%u].%s[%u]", PCORE_LEVEL_FIELD, pcore, LINK_LEVEL_FIELD, link);
+    snprintf(path, sizeof(path), "%s[%u].%s[%u]", _layout.pcoreNode.c_str(), pcore, _layout.linkNode.c_str(), link);
 
     return string(path);
 }
@@ -191,4 +246,9 @@ dm_dev_id_t LtssmReader::deviceType() const
 const char* LtssmReader::deviceName() const
 {
     return dm_dev_type2str(_deviceType);
+}
+
+const LtssmLayout& LtssmReader::layout() const
+{
+    return _layout;
 }
