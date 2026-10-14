@@ -97,6 +97,8 @@ class ResourceParse:
         input_named.add_argument("-d", "--dump-file", type=valid_path_arg_type, help='Location of the dump file used for parsing')
         input_named.add_argument("--segments_provided", action="store_true", help=argparse.SUPPRESS)
 
+        optional_args.add_argument("--input_byte_order", choices=("be", "le"), default="be",
+                                   help="Byte order of the dwords in a binary dump file, ignored for a textual one. Default: 'be'")
         optional_args.add_argument('--version', action='version', help="Shows the tool's version and exit", version=tools_version.GetVersionString(tool_name, None))
         optional_args.add_argument("-v", help='Verbosity notice', dest="verbose", default=0, action='count')
         optional_args.add_argument("-h", "--help", action="help", help="show this help message and exit")
