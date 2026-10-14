@@ -192,6 +192,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/mstfwtrace
 %{_bindir}/mstresourcedump
 %{_bindir}/mstresourceparse
+%{_bindir}/mstparsebin
 %{_bindir}/mstdevices_info
 %if %{enablecables}
    %{_bindir}/mstcable_discovery
