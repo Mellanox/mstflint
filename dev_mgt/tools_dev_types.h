@@ -323,6 +323,16 @@ extern "C"
     int dm_is_gpu(dm_dev_id_t type);
 
     /**
+     * A predicate returning if the device is a vera device
+     */
+    int dm_is_vera(dm_dev_id_t type);
+
+    /**
+     * A predicate returning if the device is a cpu device
+     */
+    int dm_is_cpu(dm_dev_id_t type);
+
+    /**
      * A predicate returning if the device is a gr100
      */
     int dm_is_gr100(dm_dev_id_t type);

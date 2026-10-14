@@ -1046,6 +1046,16 @@ int dm_is_gpu(dm_dev_id_t type)
     return (dm_is_gb100(type) || dm_is_gr100(type));
 }
 
+int dm_is_vera(dm_dev_id_t type)
+{
+    return (type == DeviceVera);
+}
+
+int dm_is_cpu(dm_dev_id_t type)
+{
+    return dm_is_vera(type);
+}
+
 int dm_is_cx7(dm_dev_id_t type)
 {
     return (type == DeviceConnectX7);
