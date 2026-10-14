@@ -745,6 +745,18 @@ void MlxlinkCommander::validatePortToLC()
 
 void MlxlinkCommander::handlePortStr(const string& portStr)
 {
+    _userInput._portSpecified = false;
+    _userInput._splitProvided = false;
+    _userInput._secondSplitProvided = false;
+    _userInput._labelPort = 1;
+    _userInput._splitPort = 1;
+    _userInput._secondSplitPort = 1;
+
+    if (portStr.empty())
+    {
+        return; // empty selects the device default port
+    }
+
     auto portParts = MlxlinkRecord::split(portStr, "/");
     // validate arguments
     for (auto it = portParts.begin(); it != portParts.end(); it++)
