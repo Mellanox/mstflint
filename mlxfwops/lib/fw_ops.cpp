@@ -62,6 +62,7 @@ const char* file_handle_type_to_str(fw_hndl_type_t type);
 
 #ifndef NO_MFA_SUPPORT
 #include <mfa.h>
+#include <mfaerr.h>
 #endif
 
 #if !defined(UEFI_BUILD)
@@ -176,7 +177,14 @@ int FwOperations::getMfaImgInner(char* fileName, u_int8_t* mfa_buf, int size, ch
     {
         // mfa_open_* failed, return error.
         res = res < 0 ? res : -1 * res;
-        WriteToErrBuff(errBuf, (char*)"Failed to open mfa file", errBufSize);
+        if (res == -MFA_ERR_NO_OPENSSL)
+        {
+            WriteToErrBuff(errBuf, (char*)"Encrypted MFA requires OpenSSL. Rebuild with --enable-openssl", errBufSize);
+        }
+        else
+        {
+            WriteToErrBuff(errBuf, (char*)"Failed to open mfa file", errBufSize);
+        }
         return res;
     }
 
