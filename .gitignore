@@ -26,6 +26,7 @@ libtool
 /m4/*.m4
 /mlxconfig/mstconfig
 /mlxconfig/mstprivhost
+/mlxparsebin/mstparsebin
 /mstdump/crd_main/mstregdump
 /mstflint.spec
 /resourcetools/mstresourcedump
