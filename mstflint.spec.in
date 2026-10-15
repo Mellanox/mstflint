@@ -259,6 +259,7 @@ fi
 
 %{mstflint_python_tools}/tools_version.py
 %{mstflint_python_tools}/nvtoolslogger.py
+%{mstflint_python_tools}/tools_arg_types.py
 %{mstflint_python_tools}/nvtoolslogger_api.py
 %{mstflint_python_tools}/libnvtoolslogger.so
 %{mstflint_python_tools}/mlxpci/*.py
