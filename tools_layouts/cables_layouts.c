@@ -33,10 +33,10 @@
 *  Version: $Id$
 *
 */
-
+ 
 
 /***
-         *** This file was generated at "2026-08-27 16:50:01"
+         *** This file was generated at "2026-10-15 09:36:13"
          *** by:
          ***    > [REDACTED]/adb2pack.py --input adb/prm/hca/ext/reg_access_cables.adb --file-prefix cables --prefix reg_access_hca_ --no-adb-utils
          ***/
@@ -218,3 +218,4 @@ void reg_access_hca_cables_Nodes_dump(const union reg_access_hca_cables_Nodes *p
 {
 	reg_access_hca_cables_Nodes_print(ptr_struct, fd, 0);
 }
+

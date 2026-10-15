@@ -33,7 +33,7 @@
 
 
 ###############################################################################
-#    This file was generated at "2026-09-03 08:24:27"
+#    This file was generated at "2026-10-15 09:36:12"
 #    by:
 #      > prm_update.py --project Nic
 ###############################################################################
@@ -58,6 +58,8 @@ class MPQD_REG_EXT(ctypes.Structure):
         ("is_internal", ctypes.c_uint8),
         ("number_of_nodes", ctypes.c_uint8),
         ("node_phy", ctypes.c_uint8),
+        ("parallel_link_num", ctypes.c_uint8),
+        ("link_type_mask", ctypes.c_uint8),
         ("valid_index", ctypes.c_uint8),
         ("valid_node", ctypes.c_uint8),
         ("DSP_node", ctypes.c_uint8),

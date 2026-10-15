@@ -36,7 +36,7 @@
  
 
 /***
-         *** This file was generated at "2026-09-14 06:08:33"
+         *** This file was generated at "2026-10-15 09:36:13"
          *** by:
          ***    > [REDACTED]/adb2pack.py --input adb/prm/hca/ext/reg_access_cables.adb --file-prefix cables --prefix reg_access_hca_ --no-adb-utils
          ***/
