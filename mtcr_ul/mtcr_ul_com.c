@@ -2110,8 +2110,13 @@ static int mtcr_pciconf_mclose(mfile* mf)
 
     if (mf)
     {
-        /* Adrianc: set address in PCI configuration space to be non-semaphore. */
-        int rc = mread4_ul(mf, 0xf0014, &word);
+        int rc = 4;
+
+        if (mf->dinfo && !is_cpu_pci_device(mf->dinfo->pci.dev_id))
+        {
+            /* Adrianc: set address in PCI configuration space to be non-semaphore. */
+            rc = mread4_ul(mf, 0xf0014, &word);
+        }
         if (mf->fd > 0)
         {
             close(mf->fd);
@@ -2359,21 +2364,29 @@ static int mtcr_pciconf_open(mfile* mf, const char* name, u_int32_t adv_opt)
 
             mtcr_pciconf_cap9_sem(mf, 0);
 
-            if (VSEC_SUPPORTED_UL(mf))
-            {
-                mf->address_space = AS_CR_SPACE;
-                ctx->mread4 = mtcr_pciconf_mread4;
-                ctx->mwrite4 = mtcr_pciconf_mwrite4;
-                ctx->mread4_block = (f_mread4_block)mread4_block_pciconf;
-                ctx->mwrite4_block = (f_mwrite4_block)mwrite4_block_pciconf;
-            }
-
             mf->pxir_vsec_supp = 0;
             if ((mf->vsec_cap_mask & (1 << space_to_cap_offset(AS_PCI_CRSPACE))) && (mf->vsec_cap_mask & (1 << space_to_cap_offset(AS_PCI_ALL_ICMD))) &&
                 (mf->vsec_cap_mask & (1 << space_to_cap_offset(AS_PCI_GLOBAL_SEMAPHORE))))
             {
                 mf->pxir_vsec_supp = 1;
             }
+
+            if (VSEC_SUPPORTED_UL(mf))
+            {
+                if (mf->pxir_vsec_supp && !VSEC_MIN_SUPPORT_UL(mf))
+                {
+                    mf->address_space = AS_PCI_CRSPACE;
+                }
+                else
+                {
+                    mf->address_space = AS_CR_SPACE;
+                }
+                ctx->mread4 = mtcr_pciconf_mread4;
+                ctx->mwrite4 = mtcr_pciconf_mwrite4;
+                ctx->mread4_block = (f_mread4_block)mread4_block_pciconf;
+                ctx->mwrite4_block = (f_mwrite4_block)mwrite4_block_pciconf;
+            }
+
             DBG_PRINTF("MTCR_UL: mtcr_pciconf_open: mf->pxir_vsec_supp: %d\n", mf->pxir_vsec_supp);
         }
     }
@@ -5512,9 +5525,12 @@ int read_device_id(mfile* mf, u_int32_t* device_id)
     }
 #endif
 
-    rc = mread4(mf, hw_id_address, device_id);
-    mf->rev_id = EXTRACT(*device_id, 16, 4);
-    *device_id = (*device_id & 0xffff);
+    if (mf->dinfo && !is_cpu_pci_device(mf->dinfo->pci.dev_id))
+    {
+        rc = mread4(mf, hw_id_address, device_id);
+        mf->rev_id = EXTRACT(*device_id, 16, 4);
+        *device_id = (*device_id & 0xffff);
+    }
 
     // Accesing GPU Devices directly via PCIe is not always possible,
     // so we need to get the HW device ID from the PCI device ID in case of failure.
