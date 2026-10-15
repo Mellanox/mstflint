@@ -5525,7 +5525,14 @@ int read_device_id(mfile* mf, u_int32_t* device_id)
     }
 #endif
 
-    if (mf->dinfo && !is_cpu_pci_device(mf->dinfo->pci.dev_id))
+    if ((mf->tp == MST_PCICONF) && mf->dinfo && is_cpu_pci_device(mf->dinfo->pci.dev_id))
+    {
+        mf->rev_id = 0;
+        *device_id = get_hw_dev_cpu_id_by_pci_id(mf->dinfo->pci.dev_id);
+        config_cpu_pciconf(mf);
+        rc = 4;
+    }
+    else
     {
         rc = mread4(mf, hw_id_address, device_id);
         mf->rev_id = EXTRACT(*device_id, 16, 4);
@@ -5538,13 +5545,6 @@ int read_device_id(mfile* mf, u_int32_t* device_id)
     {
         mf->rev_id = 0;
         *device_id = get_hw_dev_id_by_pci_id(mf->dinfo->pci.dev_id);
-        rc = 4;
-    }
-    else if (mf->dinfo && is_cpu_pci_device(mf->dinfo->pci.dev_id))
-    {
-        mf->rev_id = 0;
-        *device_id = get_hw_dev_cpu_id_by_pci_id(mf->dinfo->pci.dev_id);
-        config_cpu_pciconf(mf);
         rc = 4;
     }
 
