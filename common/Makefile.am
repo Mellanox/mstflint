@@ -83,7 +83,7 @@ nvtoolslogger_pylib_DATA = nvtoolslogger.py
 tools_arg_types_pylibdir=$(libdir)/mstflint/python_tools/
 tools_arg_types_pylib_DATA = tools_arg_types.py
 
-EXTRA_DIST = tools_version.py.in python_wrapper.sh
+EXTRA_DIST = tools_version.py.in python_wrapper.sh tools_arg_types.py
 
 CLEANFILES = python_wrapper tools_version.py
 
