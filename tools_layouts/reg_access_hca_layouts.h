@@ -36,7 +36,7 @@
  
 
 /***
-         *** This file was generated at "2026-09-14 06:08:30"
+         *** This file was generated at "2026-10-15 09:36:11"
          *** by:
          ***    > [REDACTED]/adb2pack.py --input adb/prm/hca/ext/reg_access_hca.adb --file-prefix reg_access_hca --prefix reg_access_hca_ --no-adb-utils
          ***/
@@ -1234,8 +1234,8 @@ combination of both fields.0: Production1: GA Secured2: GA Non-Secured3: RMA4: P
 	/* Description - Number of MCTP ports exposed to host software through
 MMCTP. Valid MMCTP.mctp_port_id values are 0
 to num_mctp_ports - 1.Returns 0 when MMCTP is not supported.Supported when MCAM.mng_feature_cap_mask bit 97 is set. Supported on
-ConnectX-10 and above, Spectrum-7 and above, and Quantum-6 and above.
-ConnectX-10, Spectrum-7, and Quantum-6 report 1. */
+ConnectX-10 and above, Spectrum-7 and above, and NVLink8 Switch and above.
+ConnectX-10, Spectrum-7, and NVLink8 Switch report 1. */
 	/* 0x34.7 - 0x34.10 */
 	/* access: RO */
 	u_int8_t num_mctp_ports;
@@ -1631,7 +1631,7 @@ resource_dump_event */
 	/* Description - If set, Resource_dump register is supported.
 
 See
-table 2036 - RESOURCE_DUMP Register Layout */
+table 2070 - RESOURCE_DUMP Register Layout */
 	/* 0x0.22 - 0x0.22 */
 	/* access: RW */
 	u_int8_t resource_dump;
@@ -1640,7 +1640,7 @@ order to accommodate cr_dump.
 
 0 means feature is not supported.
 
-See table 2034 - CORE_DUMP Register Layout */
+See table 2068 - CORE_DUMP Register Layout */
 	/* 0x0.23 - 0x0.27 */
 	/* access: RW */
 	u_int8_t log_cr_dump_to_mem_size;
@@ -1797,7 +1797,7 @@ Bit 39: If set, MRCS and RMDT tokens are supported in MCQSBit 40: If set, encryp
 fieldsBit 45: If set, MFRL.pci_rescan_required is supportedBit 46: time_adjust_range_extended - if set, the MTUTC.time_adjustment
 range is extended to -200,000 to +200,000
 Bit 47: If set, MTUTC.freq_adj_units=1 is supportedBit 48: If set, MRSRFT/MRSR.command=6 is supportedBit 49: If set, MCQS.identifier support CRCS and CRDT tokensBit 51: If set, MTUTC.freq_adj_units=2 is supportedBit 53: If set, Mlx mlxfwreset with downstream port is supported by FW
-Bit 59: If set, MCC.component_specific_error_code is valid for LinkX
+[Internal]: NIC only, FW rejects reset till user committed that traffic is disabledBit 59: If set, MCC.component_specific_error_code is valid for LinkX
 devicesBit 60: If set, MGNLE.clr is supportedBit 61: If set, MGIR supports life_cycle_msb and pds fields in FW
 info and development field in HW info.
 
@@ -1816,7 +1816,10 @@ status, PEMI.optical_engine_telemetry_parameters, PEMI.cpo_module,
 PEMI.last_sub_module.Bit 89: If set, supports minimum temperatures, as well as alerts for low
 critical and high critical thresholds, in the following registers: MTMP,
 MTEWE, MTBR, MTBR_v2.Bit 90: If set, MQDIK.key_index=1 is supported.Bit 91: If set, CPO Combined Model is supported.Bit 93: If set, MGIR.hw_info.board_ga is supported; ignore otherwise.Bit 94: If set, MFKV is supported.Bit 95: If set, MRFV.fm2 and MRFV.fm_sel are supported.Bit 97: If set, MGIR.fw_info.num_mctp_ports and
-MMCTP are supported. */
+MMCTP are supported.Bit 98: If set, the Multi_register_access EMAD class
+(OPERATION_TLV.emad_class=2) is supported, together with the
+REG_TLV.status field that reports per-register status within it.
+[DWIP]Bit 99: If set, MGNLE.log_id is supported */
 	/* 0x28.0 - 0x34.31 */
 	/* access: RO */
 	u_int32_t mng_feature_cap_mask[4];
@@ -1926,11 +1929,6 @@ Index 0 indicates the host device. */
 	/* 0x14.16 - 0x14.27 */
 	/* access: INDEX */
 	u_int16_t device_index;
-	/* Description - [Switch][DWIP]Device number, bits [15:12].For gearboxes, the index represents the gearbox die.For cables, the index represents the module index starting at index 1.
-Index 0 indicates the host device. */
-	/* 0x14.28 - 0x14.31 */
-	/* access: INDEX */
-	u_int8_t device_index_msb;
 /*---------------- DWORD[6] (Offset 0x18) ----------------*/
 	/* Description - In multiple downstream devices action, the action will be executed
 starting on device_index and ending on <device_index_msb, device_index>
@@ -1938,18 +1936,12 @@ starting on device_index and ending on <device_index_msb, device_index>
 	/* 0x18.0 - 0x18.11 */
 	/* access: RW */
 	u_int16_t device_index_size;
-	/* Description - [Switch][DWIP]In multiple downstream devices action, the action will be executed
-starting on device_index and ending on <device_index_msb, device_index>
-+ <device_index_size_msb, device_index_size> - 1. */
-	/* 0x18.12 - 0x18.15 */
-	/* access: RW */
-	u_int8_t device_index_size_msb;
 	/* Description - The device index that the action has been rejected to. */
 	/* 0x18.16 - 0x18.27 */
 	/* access: RO */
 	u_int16_t rejected_device_index;
 /*---------------- DWORD[7] (Offset 0x1c) ----------------*/
-	/* Description - [DWIP]:Component Specific Error CodeRelevant only for Linkx failed updates */
+	/* Description - Component Specific Error CodeRelevant only for Linkx failed updates */
 	/* 0x1c.0 - 0x1c.31 */
 	/* access: RO */
 	u_int32_t component_specific_err_code;
@@ -1987,7 +1979,7 @@ MCQI CAPABILITIES Info Layout */
 struct reg_access_hca_mcqi_reg_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Component index gathered by
-section 31.24.1 - MCQS - Management Component Query Status */
+section 31.23.1 - MCQS - Management Component Query Status */
 	/* 0x0.0 - 0x0.15 */
 	/* access: INDEX */
 	u_int16_t component_index;
@@ -2582,12 +2574,7 @@ struct reg_access_hca_mpegc_reg_ext {
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - When overflow encountered for lossy packets, it will be dropped or
 marked and will be counted in "tx_overflow_buffer_dropped_pkt or
-tx_overflow_buffer_marked_pkt counter.00 - Disabled01 - drop - overflow traffic will be dropped. [Internal]: Drop can be
-set only if tx_lossless_overflow_oper is set to disable. backward
-enabled.10 - mark - overflow traffic will be marked in the CE field in the CqE.
-[Internal]: Mark can be set only if tx_lossless_overflow_oper is set to
-disable or mark. Supported only when MCAM.mark_tx_action_cqe or
-MCAM.mark_tx_action_cnp are 1'. */
+tx_overflow_buffer_marked_pkt counter.00 - Disabled01 - drop - overflow traffic will be dropped.10 - mark - overflow traffic will be marked in the CE field in the CqE. */
 	/* 0x8.0 - 0x8.1 */
 	/* access: RW */
 	u_int8_t tx_lossy_overflow_oper;
@@ -2610,9 +2597,8 @@ traffic. Supported only when MCAM.mark_tx_action_cqe is 1'. */
 	/* 0x8.30 - 0x8.30 */
 	/* access: RW */
 	u_int8_t mark_cqe;
-	/* Description - Set the sensibility level of the tx overflow mechanism.0 - Aggressive [Internal]: WRED is on.1 - Dynamic adjustment. When tx_lossy_overflow_oper is disabled,
-tx_overflow_sense must be disabled. [Internal]: Based on RX buffer
-fullness.Supported only when MCAM.dynamic_tx_oveflow is 1'. */
+	/* Description - Set the sensibility level of the tx overflow mechanism.0 - Aggressive1 - Dynamic adjustment. When tx_lossy_overflow_oper is disabled,
+tx_overflow_sense must be disabled.Supported only when MCAM.dynamic_tx_oveflow is 1'. */
 	/* 0x8.31 - 0x8.31 */
 	/* access: RW */
 	u_int8_t tx_overflow_sense;
@@ -2895,6 +2881,18 @@ struct reg_access_hca_mpqd_reg_ext {
 	/* 0x8.8 - 0x8.8 */
 	/* access: RO */
 	u_int8_t node_phy;
+	/* Description - The number of parallel links supported for this DPN, in addition to
+primary. */
+	/* 0x8.9 - 0x8.11 */
+	/* access: RO */
+	u_int8_t parallel_link_num;
+	/* Description - Bitmask indicating the link type per link. Bit 0 is primary, other
+bits up to parallel_link_num are parallel links. Rest of the bits
+are reserved. Set bit indicates an alternate protocol link; clear
+bit indicates a PCIe protocol link. */
+	/* 0x8.16 - 0x8.23 */
+	/* access: RO */
+	u_int8_t link_type_mask;
 	/* Description - Querying pcie_index valid0 : pcie_index is not a valid index1: pcie_index is a valid index */
 	/* 0x8.31 - 0x8.31 */
 	/* access: RO */
@@ -3771,7 +3769,7 @@ struct reg_access_hca_pguid_reg_ext {
 /* Size in bytes - 16 */
 struct reg_access_hca_pmaos_reg_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Module state (reserved while admin_status is disabled):0: initializing 1: plugged_enabled2: unplugged3: module_plugged_with_error - (details in error_type).5: unknown */
+	/* Description - Module state (reserved while admin_status is disabled):0: initializing 211: plugged_enabled2: unplugged3: module_plugged_with_error - (details in error_type).5: unknown */
 	/* 0x0.0 - 0x0.3 */
 	/* access: RO */
 	u_int8_t oper_status;
@@ -3801,10 +3799,6 @@ of oper_status to initialization. */
 	/* 0x4.0 - 0x4.1 */
 	/* access: RW */
 	u_int8_t e;
-	/* Description - [Switch][DWIP]1: ref_module field valid. */
-	/* 0x4.2 - 0x4.2 */
-	/* access: RO */
-	u_int8_t ref_module_valid;
 	/* Description - Module error details:0x0: Power_Budget_Exceeded0x1: Long_Range_for_non_MLNX_cable_or_module0x2: Bus_stuck - (I2C Data or clock shorted)0x3: bad_or_unsupported_EEPROM0x4: Enforce_part_number_list0x5: unsupported_cable0x6: High_Temperature0x7: bad_cable - (Module/Cable is shorted)0x8: PMD_type_is_not_enabled - (see PMTPS)
 
 
@@ -3825,10 +3819,6 @@ to incompatible transceiver/cableValid only when oper_status = 4'b0001. */
 	/* 0x4.16 - 0x4.19 */
 	/* access: RO */
 	u_int8_t operational_notification;
-	/* Description - [Switch][DWIP]Module number bits [15:8]. */
-	/* 0x4.20 - 0x4.27 */
-	/* access: INDEX */
-	u_int8_t module_msb;
 	/* Description - When in multi ASIC module sharing systems,This flag will be asserted in case primary and secondary FW versions are
 not compatible. */
 	/* 0x4.28 - 0x4.28 */
@@ -3849,11 +3839,6 @@ updated based on admin_state field. Only relevant on Set() operations. */
 	/* 0x4.31 - 0x4.31 */
 	/* access: WO */
 	u_int8_t ase;
-/*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - [Switch][DWIP]Reference module index. */
-	/* 0x8.0 - 0x8.15 */
-	/* access: RO */
-	u_int16_t ref_module;
 };
 
 /* Description -   */
@@ -3966,21 +3951,21 @@ operating with AN. */
 	u_int8_t an_status;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - For HCA: See also PCAM.feature_cap_mask bit 13 for Extended Ethernet
-protocol support.Extended Ethernet port speed/protocols supported (bitmask):Bit 0: SGMII_100MBit 1: 1000BASE-X / SGMIIBit 3: 5GBASE-RBit 4: XFI / XAUI-1 // 10GBit 5: XLAUI-4/XLPPI-4 // 40GBit 6: 25GAUI-1/ 25GBASE-CR / KRBit 7: 50GAUI-2 / LAUI-2/ 50GBASE-CR2/KR2Bit 8: 50GAUI-1 /50GBASE-CR / KRBit 9: CAUI-4 / 100GBASE-CR4 / KR4Bit 10: 100GAUI-2 / 100GBASE-CR2 / KR2Bit 11: 100GAUI-1 / 100GBASE-CR / KRBit 12: 200GAUI-4 / 200GBASE-CR4/KR4Bit 13: 200GAUI-2 / 200GBASE-CR2/KR2Bit 14: 200GAUI-1 / 200GBASE-CR1/KR1Bit 15: 400GAUI-8/ 400GBASE-CR8Bit 16: 400GAUI-4/ 400GBASE-CR4Bit 17: 400GAUI-2 / 400GBASE-CR2/KR2Bit 18: Reserved Bit 19: 800GAUI-8 / 800GBASE-CR8 / KR8 Bit 20: 800GAUI-4 / 800GBASE-CR4/KR4Bit 23: 1.6TAUI-8 /1.6TBASE-CR8/KR8Bit 31: SGMII_10MOther - Reserved */
+protocol support.Extended Ethernet port speed/protocols supported (bitmask):Bit 0: SGMII_100MBit 1: 1000BASE-X / SGMIIBit 3: 5GBASE-RBit 4: XFI / XAUI-1 // 10GBit 5: XLAUI-4/XLPPI-4 // 40GBit 6: 25GAUI-1/ 25GBASE-CR / KRBit 7: 50GAUI-2 / LAUI-2/ 50GBASE-CR2/KR2Bit 8: 50GAUI-1 /50GBASE-CR / KRBit 9: CAUI-4 / 100GBASE-CR4 / KR4Bit 10: 100GAUI-2 / 100GBASE-CR2 / KR2Bit 11: 100GAUI-1 / 100GBASE-CR / KRBit 12: 200GAUI-4 / 200GBASE-CR4/KR4Bit 13: 200GAUI-2 / 200GBASE-CR2/KR2Bit 14: 200GAUI-1 / 200GBASE-CR1/KR1Bit 15: 400GAUI-8/ 400GBASE-CR8Bit 16: 400GAUI-4/ 400GBASE-CR4Bit 17: 400GAUI-2 / 400GBASE-CR2/KR2Bit 18: Reserved Bit 19: 800GAUI-8 / 800GBASE-CR8 / KR8 2Bit 20: 800GAUI-4 / 800GBASE-CR4/KR4Bit 23: 1.6TAUI-8 /1.6TBASE-CR8/KR8Bit 31: SGMII_10MOther - Reserved */
 	/* 0x8.0 - 0x8.31 */
 	/* access: RO */
 	u_int32_t ext_eth_proto_capability;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
-	/* Description - Ethernet port speed/protocols supported (bitmask)Bit 31 - 50GBase-KR2Bit 30 - 50GBase-CR2Bit 29 - 25GBase-SRBit 28 - 25GBase-KRBit 27 - 25GBase-CRBit 26 - 10GBase-TBit 25 - 1000Base-TBit 24 - 100Base-TX Bit 23 - 100GBase LR4/ER4Bit 22 - 100GBase KR4Bit 21 - 100GBase SR4Bit 20 - 100GBase CR4Bit 18 - 50GBase-SR2Bit 16 - 40GBase LR4/ER4Bit 15 - 40GBase SR4Bit 14 - 10GBase ER/LRBit 13 - 10GBase SRBit 12 - 10GBase CRBit 10 - 10Base-TBit 9 - SGMII_100BaseBit 7 - 40GBase KR4Bit 6 - 40GBase CR4Bit 4 - 10GBase KRBit 3 - 10GBase KX4Bit 2 - 10GBase-CX4Bit 1 - 1000Base KXBit 0 - SGMII */
+	/* Description - Ethernet port speed/protocols supported (bitmask)Bit 31 - 50GBase-KR2Bit 30 - 50GBase-CR2Bit 29 - 25GBase-SRBit 28 - 25GBase-KRBit 27 - 25GBase-CRBit 26 - 10GBase-TBit 25 - 1000Base-TBit 24 - 100Base-TX 3Bit 23 - 100GBase LR4/ER4Bit 22 - 100GBase KR4Bit 21 - 100GBase SR4Bit 20 - 100GBase CR4Bit 18 - 50GBase-SR2Bit 16 - 40GBase LR4/ER4Bit 15 - 40GBase SR4Bit 14 - 10GBase ER/LRBit 13 - 10GBase SRBit 12 - 10GBase CRBit 10 - 10Base-TBit 9 - SGMII_100BaseBit 7 - 40GBase KR4Bit 6 - 40GBase CR4Bit 4 - 10GBase KRBit 3 - 10GBase KX4Bit 2 - 10GBase-CX4Bit 1 - 1000Base KXBit 0 - SGMII */
 	/* 0xc.0 - 0xc.31 */
 	/* access: RO */
 	u_int32_t eth_proto_capability;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
-	/* Description - InfiniBand port speed supported (bitmask)Bit 0: SDR Bit 1: DDRBit 2: QDRBit 3: FDR10Bit 4: FDRBit 5: EDRBit 6: HDRBit 7: NDRBit 8: XDR */
+	/* Description - InfiniBand port speed supported (bitmask)Bit 0: SDR 7Bit 1: DDRBit 2: QDRBit 3: FDR10Bit 4: FDRBit 5: EDRBit 6: HDRBit 7: NDRBit 8: XDR */
 	/* 0x10.0 - 0x10.15 */
 	/* access: RO */
 	u_int16_t ib_proto_capability;
-	/* Description - ib_link_width  ib_proto_capabilityBit 0 - 1x Bit 1 - 2xBit 2 - 4x */
+	/* Description - ib_link_width  ib_proto_capabilityBit 0 - 1x 6Bit 1 - 2xBit 2 - 4x */
 	/* 0x10.16 - 0x10.31 */
 	/* access: RO */
 	u_int16_t ib_link_width_capability;

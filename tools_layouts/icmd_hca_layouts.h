@@ -36,7 +36,7 @@
  
 
 /***
-         *** This file was generated at "2026-09-14 06:08:31"
+         *** This file was generated at "2026-10-15 09:36:12"
          *** by:
          ***    > [REDACTED]/adb2pack.py --input adb/tools/icmd_hca.adb --file-prefix icmd_hca --prefix icmd_hca_ --no-adb-utils
          ***/
@@ -164,7 +164,7 @@ resource_dump_event */
 	/* Description - If set, Resource_dump register is supported.
 
 See
-table 2036 - RESOURCE_DUMP Register Layout */
+table 2070 - RESOURCE_DUMP Register Layout */
 	/* 0x0.22 - 0x0.22 */
 	/* access: RW */
 	u_int8_t resource_dump;
@@ -173,7 +173,7 @@ order to accommodate cr_dump.
 
 0 means feature is not supported.
 
-See table 2034 - CORE_DUMP Register Layout */
+See table 2068 - CORE_DUMP Register Layout */
 	/* 0x0.23 - 0x0.27 */
 	/* access: RW */
 	u_int8_t log_cr_dump_to_mem_size;

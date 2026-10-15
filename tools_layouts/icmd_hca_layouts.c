@@ -36,7 +36,7 @@
  
 
 /***
-         *** This file was generated at "2026-08-27 16:50:00"
+         *** This file was generated at "2026-10-15 09:36:12"
          *** by:
          ***    > [REDACTED]/adb2pack.py --input adb/tools/icmd_hca.adb --file-prefix icmd_hca --prefix icmd_hca_ --no-adb-utils
          ***/

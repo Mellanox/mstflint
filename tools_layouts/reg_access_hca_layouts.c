@@ -36,7 +36,7 @@
  
 
 /***
-         *** This file was generated at "2026-09-03 08:24:25"
+         *** This file was generated at "2026-10-15 09:36:11"
          *** by:
          ***    > [REDACTED]/adb2pack.py --input adb/prm/hca/ext/reg_access_hca.adb --file-prefix reg_access_hca --prefix reg_access_hca_ --no-adb-utils
          ***/
@@ -3432,12 +3432,8 @@ void reg_access_hca_mcc_reg_ext_pack(const struct reg_access_hca_mcc_reg_ext *pt
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->warning_code);
 	offset = 164;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 12, (u_int32_t)ptr_struct->device_index);
-	offset = 160;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->device_index_msb);
 	offset = 212;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 12, (u_int32_t)ptr_struct->device_index_size);
-	offset = 208;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->device_index_size_msb);
 	offset = 196;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 12, (u_int32_t)ptr_struct->rejected_device_index);
 	offset = 224;
@@ -3484,12 +3480,8 @@ void reg_access_hca_mcc_reg_ext_unpack(struct reg_access_hca_mcc_reg_ext *ptr_st
 	ptr_struct->warning_code = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 	offset = 164;
 	ptr_struct->device_index = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 12);
-	offset = 160;
-	ptr_struct->device_index_msb = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
 	offset = 212;
 	ptr_struct->device_index_size = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 12);
-	offset = 208;
-	ptr_struct->device_index_size_msb = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
 	offset = 196;
 	ptr_struct->rejected_device_index = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 12);
 	offset = 224;
@@ -3538,11 +3530,7 @@ void reg_access_hca_mcc_reg_ext_print(const struct reg_access_hca_mcc_reg_ext *p
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "device_index         : " UH_FMT "\n", ptr_struct->device_index);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "device_index_msb     : " UH_FMT "\n", ptr_struct->device_index_msb);
-	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "device_index_size    : " UH_FMT "\n", ptr_struct->device_index_size);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "device_index_size_msb : " UH_FMT "\n", ptr_struct->device_index_size_msb);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "rejected_device_index : " UH_FMT "\n", ptr_struct->rejected_device_index);
 	adb2c_add_indentation(fd, indent_level);
@@ -5220,6 +5208,10 @@ void reg_access_hca_mpqd_reg_ext_pack(const struct reg_access_hca_mpqd_reg_ext *
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->number_of_nodes);
 	offset = 87;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->node_phy);
+	offset = 84;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 3, (u_int32_t)ptr_struct->parallel_link_num);
+	offset = 72;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->link_type_mask);
 	offset = 64;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->valid_index);
 	offset = 127;
@@ -5254,6 +5246,10 @@ void reg_access_hca_mpqd_reg_ext_unpack(struct reg_access_hca_mpqd_reg_ext *ptr_
 	ptr_struct->number_of_nodes = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 	offset = 87;
 	ptr_struct->node_phy = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 84;
+	ptr_struct->parallel_link_num = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 3);
+	offset = 72;
+	ptr_struct->link_type_mask = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 	offset = 64;
 	ptr_struct->valid_index = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 127;
@@ -5289,6 +5285,10 @@ void reg_access_hca_mpqd_reg_ext_print(const struct reg_access_hca_mpqd_reg_ext 
 	fprintf(fd, "number_of_nodes      : " UH_FMT "\n", ptr_struct->number_of_nodes);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "node_phy             : " UH_FMT "\n", ptr_struct->node_phy);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "parallel_link_num    : " UH_FMT "\n", ptr_struct->parallel_link_num);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "link_type_mask       : " UH_FMT "\n", ptr_struct->link_type_mask);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "valid_index          : " UH_FMT "\n", ptr_struct->valid_index);
 	adb2c_add_indentation(fd, indent_level);
@@ -6869,14 +6869,10 @@ void reg_access_hca_pmaos_reg_ext_pack(const struct reg_access_hca_pmaos_reg_ext
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->rst);
 	offset = 62;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 2, (u_int32_t)ptr_struct->e);
-	offset = 61;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->ref_module_valid);
 	offset = 51;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 5, (u_int32_t)ptr_struct->error_type);
 	offset = 44;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->operational_notification);
-	offset = 36;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->module_msb);
 	offset = 35;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->rev_incompatible);
 	offset = 34;
@@ -6885,8 +6881,6 @@ void reg_access_hca_pmaos_reg_ext_pack(const struct reg_access_hca_pmaos_reg_ext
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->ee);
 	offset = 32;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->ase);
-	offset = 80;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->ref_module);
 }
 
 void reg_access_hca_pmaos_reg_ext_unpack(struct reg_access_hca_pmaos_reg_ext *ptr_struct, const u_int8_t *ptr_buff)
@@ -6905,14 +6899,10 @@ void reg_access_hca_pmaos_reg_ext_unpack(struct reg_access_hca_pmaos_reg_ext *pt
 	ptr_struct->rst = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 62;
 	ptr_struct->e = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 2);
-	offset = 61;
-	ptr_struct->ref_module_valid = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 51;
 	ptr_struct->error_type = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 5);
 	offset = 44;
 	ptr_struct->operational_notification = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
-	offset = 36;
-	ptr_struct->module_msb = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 	offset = 35;
 	ptr_struct->rev_incompatible = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 34;
@@ -6921,8 +6911,6 @@ void reg_access_hca_pmaos_reg_ext_unpack(struct reg_access_hca_pmaos_reg_ext *pt
 	ptr_struct->ee = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 32;
 	ptr_struct->ase = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
-	offset = 80;
-	ptr_struct->ref_module = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
 }
 
 void reg_access_hca_pmaos_reg_ext_print(const struct reg_access_hca_pmaos_reg_ext *ptr_struct, FILE *fd, int indent_level)
@@ -6943,13 +6931,9 @@ void reg_access_hca_pmaos_reg_ext_print(const struct reg_access_hca_pmaos_reg_ex
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "e                    : %s (" UH_FMT ")\n", (ptr_struct->e == 0 ? ("Do_not_generate_event") : ((ptr_struct->e == 1 ? ("Generate_Event") : ((ptr_struct->e == 2 ? ("Generate_Single_Event") : ("unknown")))))), ptr_struct->e);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "ref_module_valid     : " UH_FMT "\n", ptr_struct->ref_module_valid);
-	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "error_type           : %s (" UH_FMT ")\n", (ptr_struct->error_type == 0 ? ("Power_Budget_Exceeded") : ((ptr_struct->error_type == 1 ? ("Long_Range_for_non_MLNX_cable_or_module") : ((ptr_struct->error_type == 2 ? ("Bus_stuck") : ((ptr_struct->error_type == 3 ? ("bad_or_unsupported_EEPROM") : ((ptr_struct->error_type == 4 ? ("Enforce_part_number_list") : ((ptr_struct->error_type == 5 ? ("unsupported_cable") : ((ptr_struct->error_type == 6 ? ("High_Temperature") : ((ptr_struct->error_type == 7 ? ("bad_cable") : ((ptr_struct->error_type == 8 ? ("PMD_type_is_not_enabled") : ((ptr_struct->error_type == 12 ? ("pcie_system_power_slot_Exceeded") : ("unknown")))))))))))))))))))), ptr_struct->error_type);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "operational_notification : " UH_FMT "\n", ptr_struct->operational_notification);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "module_msb           : " UH_FMT "\n", ptr_struct->module_msb);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "rev_incompatible     : " UH_FMT "\n", ptr_struct->rev_incompatible);
 	adb2c_add_indentation(fd, indent_level);
@@ -6958,8 +6942,6 @@ void reg_access_hca_pmaos_reg_ext_print(const struct reg_access_hca_pmaos_reg_ex
 	fprintf(fd, "ee                   : " UH_FMT "\n", ptr_struct->ee);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "ase                  : " UH_FMT "\n", ptr_struct->ase);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "ref_module           : " UH_FMT "\n", ptr_struct->ref_module);
 }
 
 unsigned int reg_access_hca_pmaos_reg_ext_size(void)
