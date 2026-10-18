@@ -5264,7 +5264,7 @@ FlintStatus QuerySubCommand::executeCommand()
 
         if (_flintParams.package_info)
         {
-            // // Query PLDM package
+            // Query PLDM package
             pldmOps->PrintInfo();
             return FLINT_SUCCESS;
         }

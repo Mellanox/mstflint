@@ -43,8 +43,9 @@
 #include "pldm_buff.h"
 #include "pldm_record_descriptor.h"
 #include "pldm_dev_id_record.h"
+#include "pldm_utils/pldm_utils.h"
 
-PldmDevIdRecord::PldmDevIdRecord(u_int8_t bitmapBitLength) :
+PldmDevIdRecord::PldmDevIdRecord(u_int16_t bitmapBitLength) :
     componentBitmapBitLength(bitmapBitLength),
     recordLength(0),
     descriptorCount(0),
@@ -79,11 +80,22 @@ bool PldmDevIdRecord::unpack(PldmBuffer& buff)
     buff.read(firmwareDevicePackageDataLength);
     if (componentBitmapBitLength)
     {
-        u_int8_t applicableComponentsLen = componentBitmapBitLength / 8;
+        u_int16_t applicableComponentsLen = componentBitmapBitLength / 8;
+        if (buff.remaining() < applicableComponentsLen)
+        {
+            reset();
+            return false;
+        }
         applicableComponents.resize(applicableComponentsLen);
         buff.read(applicableComponents.data(), applicableComponentsLen);
     }
     buff.read(componentImageSetVersionString, componentImageSetVersionStringLength);
+    // downstream records read the MinVersionComparisonStamp
+    if (!unpackPostVersionString(buff))
+    {
+        reset();
+        return false;
+    }
     for (u_int8_t i = 0; i < descriptorCount; i++)
     {
         PldmRecordDescriptor* descriptor = new PldmRecordDescriptor();
@@ -106,10 +118,10 @@ bool PldmDevIdRecord::unpack(PldmBuffer& buff)
 // return the first component in devRecord - using only for pldmlib_test.
 int PldmDevIdRecord::getComponentImageIndex() const
 {
-    u_int8_t applicableComponentsLen = componentBitmapBitLength / 8;
+    u_int16_t applicableComponentsLen = componentBitmapBitLength / 8;
     int index = -1;
     static const u_int8_t index_map[] = {0x1, 0x2, 0x4, 0x8, 0x10, 0x20, 0x40, 0x80};
-    for (u_int8_t i = 0; i < applicableComponentsLen; i++)
+    for (u_int16_t i = 0; i < applicableComponentsLen; i++)
     {
         u_int8_t flags = applicableComponents[i];
         for (u_int8_t j = 0; j < 8; j++)
@@ -128,10 +140,10 @@ int PldmDevIdRecord::getComponentImageIndex() const
 
 std::vector<u_int8_t> PldmDevIdRecord::getComponentsIndexes() const
 {
-    u_int8_t applicableComponentsLen = componentBitmapBitLength / 8;
+    u_int16_t applicableComponentsLen = componentBitmapBitLength / 8;
     std::vector<u_int8_t> indexes(componentBitmapBitLength, 0);
     static const u_int8_t indexes_map[] = {0x1, 0x2, 0x4, 0x8, 0x10, 0x20, 0x40, 0x80};
-    for (u_int8_t i = 0; i < applicableComponentsLen; i++)
+    for (u_int16_t i = 0; i < applicableComponentsLen; i++)
     {
         u_int8_t flags = applicableComponents[i];
         for (u_int8_t j = 0; j < 8; j++)
@@ -176,4 +188,22 @@ bool PldmDevIdRecord::getDescriptor(u_int16_t type, u_int16_t& descriptor) const
         }
     }
     return found;
+}
+
+PldmDownstreamDeviceRecord::PldmDownstreamDeviceRecord(u_int16_t bitmapBitLength) :
+    PldmDevIdRecord(bitmapBitLength), selfContainedActivationMinVersionComparisonStamp(0)
+{
+}
+
+bool PldmDownstreamDeviceRecord::unpackPostVersionString(PldmBuffer& buff)
+{
+    if (deviceUpdateOptionFlags & DOWNSTREAM_SELF_CONTAINED_ACTIVATION_BIT)
+    {
+        if (buff.remaining() < sizeof(selfContainedActivationMinVersionComparisonStamp))
+        {
+            return false;
+        }
+        buff.read(selfContainedActivationMinVersionComparisonStamp);
+    }
+    return true;
 }

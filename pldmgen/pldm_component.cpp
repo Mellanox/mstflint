@@ -43,6 +43,7 @@
  
  #define OPTIONS_BYTES_LEN 2
  #define ACTIVATION_METHOD_BYTES_LEN 2
+ #define COMPONENT_CLASSIFICATION_BYTES_LEN 2
  
  using namespace std;
  
@@ -74,7 +75,8 @@
                               ComponentIdentifier componentIdentifier,
                               const string& options,
                               const string& activationMethod,
-                              u_int32_t comparisonStamp) :
+                              u_int32_t comparisonStamp,
+                              const string& classification) :
      _name(name),
      _src(src),
      _version(version),
@@ -82,6 +84,11 @@
      _offsetOfComponentDataOffset(0),
      _comparisonStamp(comparisonStamp)
  {
+     ParseHexField(classification,
+                   ComponentField::Classification,
+                   COMPONENT_CLASSIFICATION_BYTES_LEN,
+                   "classification",
+                   _classification);
      ParseHexField(options, ComponentField::Options, OPTIONS_BYTES_LEN, "options", _options);
      ParseHexField(activationMethod,
                    ComponentField::ActivationMethod,
@@ -90,12 +97,10 @@
                    _activationMethod);
  }
  
- void PLDMComponent::ComponentInfoPack(vector<u_int8_t>& buff)
+ void PLDMComponent::ComponentInfoPack(vector<u_int8_t>& buff, u_int8_t pldmRevision)
  {
      // ComponentClassification
-     u_int16_t classificationValue = 0x0;
-     ComponentIdentifierToValue(_identifier, ComponentField::Classification, classificationValue);
-     dumpUInt16(buff, classificationValue);
+     dumpUInt16(buff, _classification);
  
      // ComponentIdentifier
      u_int16_t identifierValue = 0x0;
@@ -122,10 +127,19 @@
      dumpUInt8(buff, VERSION_STRING_TYPE_ASCII);
  
      // ComponentVersionStringLength
-     dumpUInt8(buff, _version.length());
+     dumpUInt8(buff, static_cast<u_int8_t>(_version.length()));
  
      // ComponentVersionString
      dumpString(buff, _version);
+
+     if (pldmRevision >= FIRST_REVISION_SUPPORTED_DOWNSTREAM_DEVICES)
+     {
+         // ComponentOpaqueDataLength
+         dumpUInt32(buff, 0x0);
+
+         // ComponentOpaqueData
+         // No need as the length above is zero
+     }
  }
  
  void PLDMComponent::ComponentDataPack(vector<u_int8_t>& buff)

@@ -36,6 +36,7 @@
 */
 
 #include <stdio.h>
+#include <new>
 #include <string>
 
 #include "pldm_buff.h"
@@ -52,6 +53,8 @@ PldmComponenetImage::PldmComponenetImage() :
     componentSize(0),
     componentVersionStringType(0),
     componentVersionStringLength(0),
+    componentOpaqueDataLength(0),
+    componentOpaqueData(NULL),
     componentData(NULL)
 {
 }
@@ -62,9 +65,13 @@ PldmComponenetImage::~PldmComponenetImage()
     {
         delete[] componentData;
     }
+    if (componentOpaqueData)
+    {
+        delete[] componentOpaqueData;
+    }
 }
 
-bool PldmComponenetImage::unpack(PldmBuffer& buff)
+bool PldmComponenetImage::unpack(PldmBuffer& buff, u_int8_t pldmRevision)
 {
     buff.read(componentClassification);
     buff.read(componentIdentifier);
@@ -76,6 +83,25 @@ bool PldmComponenetImage::unpack(PldmBuffer& buff)
     buff.read(componentVersionStringType);
     buff.read(componentVersionStringLength);
     buff.read(componentVersionString, componentVersionStringLength);
+
+    // check if the package header format revision is supported downstream device record support
+    if (pldmRevision >= FIRST_REVISION_SUPPORTED_DOWNSTREAM_DEVICES)
+    {
+        buff.read(componentOpaqueDataLength);
+        if (componentOpaqueDataLength > 0)
+        {
+            if (componentOpaqueDataLength > buff.remaining())
+            {
+                return false;
+            }
+            componentOpaqueData = new (std::nothrow) u_int8_t[componentOpaqueDataLength];
+            if (!componentOpaqueData)
+            {
+                return false;
+            }
+            buff.read(componentOpaqueData, componentOpaqueDataLength);
+        }
+    }
 
     return readComponentData(buff);
 }
