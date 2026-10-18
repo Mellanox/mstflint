@@ -208,6 +208,7 @@ private:
 
     bool _isQsfpCable;
     bool _isSfpCable;
+    bool _isPassiveCable;
     bool _cablePlugged;
     u_int32_t _labelPort;
     u_int32_t _splitPort;

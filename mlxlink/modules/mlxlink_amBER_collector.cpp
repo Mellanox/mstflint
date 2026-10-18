@@ -75,6 +75,7 @@ MlxlinkAmBerCollector::MlxlinkAmBerCollector(Json::Value& jsonRoot) : _jsonRoot(
     _isCmisCable = false;
     _isQsfpCable = false;
     _isSfpCable = false;
+    _isPassiveCable = false;
     _cablePlugged = false;
     _inPRBSMode = false;
     _isCpo = false;
@@ -2248,6 +2249,10 @@ void MlxlinkAmBerCollector::getModuleInfoPage(vector<AmberField>& fields)
 
     bool passive = cableMediaType == PASSIVE;
     bool optical = cableMediaType == OPTICAL_MODULE;
+
+    // cable_type is not readable from the latched flag page, cache it for getModuleLatchedFlagInfoPage()
+    _isPassiveCable = passive;
+
     string ethComplianceStr = NA_FIELD_VALUE;
     string extComplianceStr = NA_FIELD_VALUE;
     string ibComplianceCodeStr = NA_FIELD_VALUE;
@@ -2405,14 +2410,16 @@ void MlxlinkAmBerCollector::getModuleLatchedFlagInfoPage(vector<AmberField>& fie
     fields.push_back(AmberField("Vcc_flags", getStrByMask(getFieldValue("vcc_flags"), _mlxlinkMaps->_vccFlags)));
     fields.push_back(AmberField("Mod_fw_fault", modFwFault));
     fields.push_back(AmberField("Dp_fw_fault", dpFwFault));
-    fields.push_back(AmberField("tx_fault", getBitmaskPerLaneStr(getFieldValue("tx_fault"))));
-    if (!_isSfpCable)
+    fields.push_back(
+      AmberField("tx_fault", _isPassiveCable ? NA_FIELD_VALUE : getBitmaskPerLaneStr(getFieldValue("tx_fault"))));
+    if (!_isSfpCable && !_isPassiveCable)
     {
         txLoss = getBitmaskPerLaneStr(getFieldValue("tx_los"));
     }
     fields.push_back(AmberField("tx_los", txLoss));
-    fields.push_back(AmberField("tx_cdr_lol", getBitmaskPerLaneStr(getFieldValue("tx_cdr_lol"))));
-    if (!_isSfpCable)
+    fields.push_back(
+      AmberField("tx_cdr_lol", _isPassiveCable ? NA_FIELD_VALUE : getBitmaskPerLaneStr(getFieldValue("tx_cdr_lol"))));
+    if (!_isSfpCable && !_isPassiveCable)
     {
         txAdEqFault = getBitmaskPerLaneStr(getFieldValue("tx_ad_eq_fault"));
     }
@@ -2425,8 +2432,10 @@ void MlxlinkAmBerCollector::getModuleLatchedFlagInfoPage(vector<AmberField>& fie
     fields.push_back(AmberField("tx_bias_lo_al", getBitmaskPerLaneStr(getFieldValue("tx_bias_lo_al"))));
     fields.push_back(AmberField("tx_bias_hi_war", getBitmaskPerLaneStr(getFieldValue("tx_bias_hi_war"))));
     fields.push_back(AmberField("tx_bias_lo_war", getBitmaskPerLaneStr(getFieldValue("tx_bias_lo_war"))));
-    fields.push_back(AmberField("rx_los", getBitmaskPerLaneStr(getFieldValue("rx_los"))));
-    fields.push_back(AmberField("rx_cdr_lol", getBitmaskPerLaneStr(getFieldValue("rx_cdr_lol"))));
+    fields.push_back(
+      AmberField("rx_los", _isPassiveCable ? NA_FIELD_VALUE : getBitmaskPerLaneStr(getFieldValue("rx_los"))));
+    fields.push_back(
+      AmberField("rx_cdr_lol", _isPassiveCable ? NA_FIELD_VALUE : getBitmaskPerLaneStr(getFieldValue("rx_cdr_lol"))));
     fields.push_back(AmberField("rx_power_hi_al", getBitmaskPerLaneStr(getFieldValue("rx_power_hi_al"))));
     fields.push_back(AmberField("rx_power_lo_al", getBitmaskPerLaneStr(getFieldValue("rx_power_lo_al"))));
     fields.push_back(AmberField("rx_power_hi_war", getBitmaskPerLaneStr(getFieldValue("rx_power_hi_war"))));
