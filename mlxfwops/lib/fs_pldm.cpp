@@ -270,12 +270,22 @@ bool FsPldmOperations::FwOperationsCreate(const char* requestedPsid,
 void FsPldmOperations::PrintInfo()
 {
     printf("%-26s%s\n", "Image type:", "PLDM");
-
     u_int8_t deviceRecordCount = _pkg.getDeviceIDRecordCount();
     for (u_int8_t devIdx = 0; devIdx < deviceRecordCount; devIdx++)
     {
         PldmDevIdRecord* devIdRec = _pkg.getDeviceIDRecord(devIdx);
         PrintDeviceRecord(devIdRec, devIdx);
+    }
+
+    if (_pkg.isDownstreamDeviceRecordSupported())
+    {
+        printf("\nDownstream Device Records:");
+        u_int8_t downstreamDeviceRecordCount = _pkg.getDownstreamDeviceRecordCount();
+        for (u_int8_t devIdx = 0; devIdx < downstreamDeviceRecordCount; devIdx++)
+        {
+            PldmDevIdRecord* downstreamDevIdRec = _pkg.getDownstreamDeviceRecord(devIdx);
+            PrintDeviceRecord(downstreamDevIdRec, devIdx);
+        }
     }
 }
 

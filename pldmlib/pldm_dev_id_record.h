@@ -40,10 +40,15 @@
 #include <vector>
 #include "pldm_record_descriptor.h"
 
+// Base record — Firmware Device ID Record layout (DSP0267 Table 4).
+// unpack() is a template-method that defers the byte position between the
+// VersionString and the Descriptors to a virtual hook so the downstream variant
+// (Table 5) can plug in the MinVersionComparisonStamp without re-implementing
+// the skeleton.
 class PldmDevIdRecord
 {
 public:
-    PldmDevIdRecord(u_int8_t componentBitmapBitLength = 0);
+    PldmDevIdRecord(u_int16_t componentBitmapBitLength = 0);
     virtual ~PldmDevIdRecord();
     bool unpack(PldmBuffer& buff);
     int getComponentImageIndex() const;
@@ -52,12 +57,16 @@ public:
     std::string GetVendorDefinedValue(PldmRecordDescriptor::VendorDefinedType type) const;
     PldmRecordDescriptor* findVendorDefinedDescriptor(PldmRecordDescriptor::VendorDefinedType type) const;
     std::string getComponentImageSetVersionString() const { return componentImageSetVersionString; };
+    u_int32_t getDeviceUpdateOptionFlags() const { return deviceUpdateOptionFlags; };
     bool getDescriptor(u_int16_t type, u_int16_t& descriptor) const;
 
     void reset();
 
-private:
-    u_int8_t componentBitmapBitLength;
+protected:
+    // downstream records read the MinVersionComparisonStamp when UpdateOptionFlags bit 0 is set.
+    virtual bool unpackPostVersionString(PldmBuffer& /*buff*/) { return true; }
+
+    u_int16_t componentBitmapBitLength;
 
     u_int16_t recordLength;
     u_int8_t descriptorCount;
@@ -69,6 +78,22 @@ private:
     std::string componentImageSetVersionString;
     std::vector<PldmRecordDescriptor*> recordDescriptors;
     std::vector<u_int8_t> firmwareDevicePackageData;
+};
+
+class PldmDownstreamDeviceRecord : public PldmDevIdRecord
+{
+public:
+    PldmDownstreamDeviceRecord(u_int16_t componentBitmapBitLength = 0);
+    u_int32_t getSelfContainedActivationMinVersionComparisonStamp() const
+    {
+        return selfContainedActivationMinVersionComparisonStamp;
+    };
+
+protected:
+    bool unpackPostVersionString(PldmBuffer& buff) override;
+
+private:
+    u_int32_t selfContainedActivationMinVersionComparisonStamp;
 };
 
 #endif /* _PLDM_DEV_ID_RECORD_HDR_ */

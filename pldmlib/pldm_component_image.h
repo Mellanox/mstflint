@@ -43,7 +43,7 @@ class PldmComponenetImage
 public:
     PldmComponenetImage();
     virtual ~PldmComponenetImage();
-    bool unpack(PldmBuffer& buff);
+    bool unpack(PldmBuffer& buff, u_int8_t pldmRevision = 0x1);
     void printFormatted() const;
     u_int32_t getComponentSize() const { return componentSize; }
     const u_int8_t* getComponentData() const { return componentData; }
@@ -63,7 +63,8 @@ private:
     u_int8_t componentVersionStringType;
     u_int8_t componentVersionStringLength;
     std::string componentVersionString;
-
+    u_int32_t componentOpaqueDataLength;
+    u_int8_t* componentOpaqueData;
     u_int8_t* componentData;
 };
 
