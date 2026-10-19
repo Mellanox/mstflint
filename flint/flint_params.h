@@ -143,6 +143,7 @@ public:
     bool dual_image;
     bool striped_image;
     bool ignore_dev_data;
+    bool dev_data_only;
     bool banks_specified;
     int banks;
     bool log_specified;

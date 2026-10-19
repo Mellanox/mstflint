@@ -75,6 +75,7 @@ FlintParams::FlintParams()
     dual_image = false;
     striped_image = false;
     ignore_dev_data = false;
+    dev_data_only = false;
     banks_specified = false;
     banks = -1; // must be -1 for mflash to get default num of flash
     log_specified = false;

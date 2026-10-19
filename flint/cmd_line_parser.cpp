@@ -203,6 +203,7 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("", "use_image_guids", 0));
     _flags.push_back(new Flag("", "use_image_rom", 0));
     _flags.push_back(new Flag("", "ignore_dev_data", 0));
+    _flags.push_back(new Flag("", "dev_data_only", 0));
     _flags.push_back(new Flag("", "dual_image", 0));
     _flags.push_back(new Flag("", "striped_image", 0));
     _flags.push_back(new Flag("", "banks", 1));
@@ -743,6 +744,11 @@ void Flint::initCmdParser()
                "Do not attempt to take device data sections from device(sections will be taken from the image. FS3"
                " Only).\n"
                "Commands affected: burn");
+    AddOptions("dev_data_only",
+               ' ',
+               "",
+               "Burns only device data, skipping the image sections. FS4/FS5 only.\n"
+               "Commands affected: burn");
 
     AddOptions("no_fw_ctrl", ' ', "", "Do not attempt to work with the FW Ctrl update commands");
 
@@ -1194,6 +1200,10 @@ ParseStatus Flint::HandleOption(string name, string value)
     else if (name == "ignore_dev_data")
     {
         _flintParams.ignore_dev_data = true;
+    }
+    else if (name == "dev_data_only")
+    {
+        _flintParams.dev_data_only = true;
     }
     else if (name == "no_fw_ctrl")
     {
