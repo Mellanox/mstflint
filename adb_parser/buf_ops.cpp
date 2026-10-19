@@ -34,6 +34,20 @@
  */
 
 #include "buf_ops.h"
+#include "adb_exceptionHolder.h"
+
+/************************************
+ * Function: check_field_size
+ ************************************/
+// A field is moved through one u_int64_t, so a wider field would underflow
+// "8 - byte_size" into a wild pointer.
+static void check_field_size(u_int32_t field_size)
+{
+    if (field_size > 64)
+    {
+        throw AdbException("Field size of %u bits is not supported, expected at most 64", field_size);
+    }
+}
 
 /************************************
  * Function: calc_array_field_address
@@ -72,15 +86,15 @@ static u_int32_t calc_array_field_address(u_int32_t start_bit_offset,
     return TOOLS_MIN(32, parent_node_size) - (offs % 32) - arr_elemnt_size + ((offs >> 5) << 5);
 }
 
-static void push_integer_to_buff_le(u_int8_t* buff, u_int32_t bit_offset, u_int32_t byte_size, u_int64_t field_value)
+static void push_uint64_to_buff_le(u_int8_t* buff, u_int32_t bit_offset, u_int32_t byte_size, u_int64_t field_value)
 {
     memcpy(buff + bit_offset / 8, (u_int8_t*)&field_value, byte_size);
 }
 
 /************************************
- * Function: push_integer_to_buff
+ * Function: push_uint64_to_buff
  ************************************/
-static void push_integer_to_buff(u_int8_t* buff, u_int32_t bit_offset, u_int32_t byte_size, u_int64_t field_value)
+static void push_uint64_to_buff(u_int8_t* buff, u_int32_t bit_offset, u_int32_t byte_size, u_int64_t field_value)
 {
     field_value = CPU_TO_BE64(field_value);
     memcpy(buff + bit_offset / 8, (u_int8_t*)&field_value + (8 - byte_size), byte_size);
@@ -136,6 +150,7 @@ static void push_bits_to_buff_le(uint8_t* buff, uint32_t bit_offset, uint32_t fi
  ************************************/
 void push_to_buf(u_int8_t* buff, u_int32_t bit_offset, u_int32_t field_size, u_int64_t field_value)
 {
+    check_field_size(field_size);
     bit_offset = calc_array_field_address(bit_offset, field_size, 0, field_size + 32, 0);
     if (field_size <= 32)
     {
@@ -143,26 +158,27 @@ void push_to_buf(u_int8_t* buff, u_int32_t bit_offset, u_int32_t field_size, u_i
     }
     else
     {
-        push_integer_to_buff(buff, bit_offset, field_size / 8, field_value);
+        push_uint64_to_buff(buff, bit_offset, field_size / 8, field_value);
     }
 }
 
 void push_to_buf_le(u_int8_t* buff, u_int32_t bit_offset, u_int32_t field_size, u_int64_t field_value)
 {
+    check_field_size(field_size);
     if (field_size <= 32)
     {
         push_bits_to_buff_le(buff, bit_offset, field_size, field_value);
     }
     else
     {
-        push_integer_to_buff_le(buff, bit_offset, field_size / 8, field_value);
+        push_uint64_to_buff_le(buff, bit_offset, field_size / 8, field_value);
     }
 }
 
 /************************************
- * Function: pop_integer_from_buff
+ * Function: pop_uint64_from_buff
  ************************************/
-static u_int64_t pop_integer_from_buff(const u_int8_t* buff, u_int32_t bit_offset, u_int32_t byte_size)
+static u_int64_t pop_uint64_from_buff(const u_int8_t* buff, u_int32_t bit_offset, u_int32_t byte_size)
 {
     u_int64_t val = 0;
     memcpy((u_int8_t*)&val + (8 - byte_size), buff + bit_offset / 8, byte_size);
@@ -201,6 +217,11 @@ static u_int32_t pop_bits_from_buff(const u_int8_t* buff, u_int32_t bit_offset, 
 static uint32_t
   pop_bits_from_buff_le(const u_int8_t* buff, u_int32_t bit_offset, u_int32_t field_size, bool small_entry_array)
 {
+    // An empty field reads as 0. The shifts below would be by 32, which is undefined.
+    if (field_size == 0)
+    {
+        return 0;
+    }
     small_entry_array = small_entry_array && (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__);
     uint32_t dword_n = bit_offset / 32;
     uint32_t bit_in_dword = bit_offset % 32;
@@ -220,6 +241,7 @@ static uint32_t
  ************************************/
 u_int64_t pop_from_buf(const u_int8_t* buff, u_int32_t bit_offset, u_int32_t field_size)
 {
+    check_field_size(field_size);
     bit_offset = calc_array_field_address(bit_offset, field_size, 0, field_size + 32, 0);
 
     if (field_size <= 32)
@@ -228,7 +250,7 @@ u_int64_t pop_from_buf(const u_int8_t* buff, u_int32_t bit_offset, u_int32_t fie
     }
     else
     {
-        return pop_integer_from_buff(buff, bit_offset, field_size / 8);
+        return pop_uint64_from_buff(buff, bit_offset, field_size / 8);
     }
 }
 
@@ -237,6 +259,7 @@ u_int64_t pop_from_buf(const u_int8_t* buff, u_int32_t bit_offset, u_int32_t fie
  ************************************/
 u_int64_t pop_from_buf_le(const u_int8_t* buff, u_int32_t bit_offset, u_int32_t field_size, bool wa)
 {
+    check_field_size(field_size);
     if (field_size <= 32)
     {
         return pop_bits_from_buff_le(buff, bit_offset, field_size, wa);
