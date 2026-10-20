@@ -43,6 +43,7 @@
 #include "mtcr_icmd_cif.h"
 #include "packets_common.h"
 #include "mtcr_gpu.h"
+#include "mtcr_common.h"
 #ifndef __FreeBSD__
 #include "mtcr_ib_res_mgt.h"
 #endif
@@ -328,6 +329,7 @@ enum
 #define NVLINK6_SWITCH_HW_ID 632 /* 0x278 */
 #define GB100_HW_ID 0x2900
 #define GR100_HW_ID 0x3000
+#define VERA_HW_ID 0x2f95
 #define SPECTRUM4_HW_ID 596
 #define SPECTRUM5_HW_ID 624
 #define SPECTRUM6_HW_ID 628
@@ -601,6 +603,10 @@ static int set_opcode(mfile* mf, u_int16_t opcode)
  */
 static int icmd_is_cmd_ifc_ready(mfile* mf, int enhanced)
 {
+    if (mf->dinfo && is_cpu_pci_device(mf->dinfo->pci.dev_id))
+    {
+        return ME_OK;
+    }
     u_int32_t reg = 0x0;
 
     if (!enhanced || (mf->icmd.icmd_ready == MTCR_STATUS_UNKNOWN))
@@ -1322,6 +1328,11 @@ static int icmd_init_vcr_crspace_addr(mfile* mf)
         case (AMOS_GBOX_HW_ID):
             mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CX6;
             mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CX5; /* same bit offset as CX5 */
+            break;
+
+        case (VERA_HW_ID):
+            mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_GPU;
+            mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_SW_IB;
             break;
 
         default:
