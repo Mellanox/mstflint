@@ -190,6 +190,18 @@ public:
         return phys_addr;
     }
 
+    virtual u_int32_t get_cont_from_phys(u_int32_t phys_addr, u_int32_t log2_chunk_size, bool is_image_in_odd_chunks)
+    {
+        u_int32_t cont_addr;
+        u_int32_t log2_chunk_size_bak = _log2_chunk_size;
+        bool is_image_in_odd_chunks_bak = _is_image_in_odd_chunks;
+
+        set_address_convertor(log2_chunk_size, is_image_in_odd_chunks);
+        cont_addr = phys2cont(phys_addr);
+        set_address_convertor(log2_chunk_size_bak, is_image_in_odd_chunks_bak);
+        return cont_addr;
+    }
+
     u_int32_t get_log2_chunk_size() { return _log2_chunk_size; }
     bool get_is_image_in_odd_chunks() { return _is_image_in_odd_chunks; }
 

@@ -378,8 +378,9 @@ public:
         bool noDevidCheck;
         bool skipCiReq; // FS2 image only - skip sending cache image request to driver at the end of the burn
         bool ignoreVersionCheck;
-        bool useImgDevData; // FS3 image only - take device data sections from image (valid only if burnFailsafe==
-                            // false)
+        bool useImgDevData;   // FS3 image only - take device data sections from image (valid only if burnFailsafe==
+                              // false)
+        bool burnDevDataOnly; // FS4/FS5 image only - burn only DTOCs.
         bool useDevImgInfo; // FS3 image only - preserve select fields of image_info section on the device when burning.
         BurnRomOption burnRomOptions;
         bool shift8MBIfNeeded;
@@ -412,6 +413,7 @@ public:
             skipCiReq(false),
             ignoreVersionCheck(false),
             useImgDevData(false),
+            burnDevDataOnly(false),
             useDevImgInfo(false),
             burnRomOptions(BRO_DEFAULT),
             shift8MBIfNeeded(false),

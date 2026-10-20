@@ -1486,10 +1486,10 @@ bool Fs4Operations::FwInit()
     return true;
 }
 
-bool Fs4Operations::CheckFs4ImgSize(Fs4Operations& imageOps, bool useImageDevData)
+bool Fs4Operations::CheckFs4ImgSize(Fs4Operations& imageOps, bool useImageDevData, bool burnDevDataOnly)
 {
     // check if max itoc is not overwriting the chunk
-    if (imageOps._fwImgInfo.lastImageAddr >= (u_int32_t)(imageOps._fwImgInfo.imgStart + (1 << imageOps._maxImgLog2Size)))
+    if (!burnDevDataOnly && imageOps._fwImgInfo.lastImageAddr >= (u_int32_t)(imageOps._fwImgInfo.imgStart + (1 << imageOps._maxImgLog2Size)))
     {
         return errmsg(MLXFW_IMAGE_TOO_LARGE_ERR, "Last ITOC section ends at address (0x%x) which is greater than max size of image (0x%x)", imageOps._fwImgInfo.lastImageAddr,
                       imageOps._maxImgLog2Size);
@@ -1498,9 +1498,14 @@ bool Fs4Operations::CheckFs4ImgSize(Fs4Operations& imageOps, bool useImageDevDat
     // check if minimal dtoc section is not overwriting max itoc section
     if (useImageDevData)
     {
-        if (imageOps._fs4ImgInfo.smallestDTocAddr < imageOps._fwImgInfo.lastImageAddr)
+        u_int32_t lastImageAddr = imageOps._fwImgInfo.lastImageAddr;
+        if (burnDevDataOnly)
         {
-            return errmsg(MLXFW_DTOC_OVERWRITE_CHUNK, "First DTOC address (0x%x) is less than last ITOC address (0x%x)", imageOps._fs4ImgInfo.smallestDTocAddr, imageOps._fwImgInfo.lastImageAddr);
+            lastImageAddr = _ioAccess->get_cont_from_phys(_fwImgInfo.lastImageAddr, _fwImgInfo.cntxLog2ChunkSize, _fwImgInfo.imgStart != 0);
+        }
+        if (imageOps._fs4ImgInfo.smallestDTocAddr < lastImageAddr)
+        {
+            return errmsg(MLXFW_DTOC_OVERWRITE_CHUNK, "First DTOC address (0x%x) is less than last ITOC address (0x%x)", imageOps._fs4ImgInfo.smallestDTocAddr, lastImageAddr);
         }
     }
 
@@ -2479,6 +2484,18 @@ bool Fs4Operations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& bu
     {
         return errmsg("ioAccess doesn't exist\n");
     }
+
+    Fs4Operations* fs4Ops = dynamic_cast<Fs4Operations*>(imageOps);
+    if (!fs4Ops)
+    {
+        return errmsg("Incompatible image given.");
+    }
+
+    if (burnParams.burnDevDataOnly)
+    {
+        return BurnDevData(*fs4Ops, burnParams);
+    }
+
     if (_signatureMngr == NULL)
     {
         return errmsg("Signature manager doesn't exist\n");
@@ -2872,6 +2889,20 @@ bool Fs4Operations::FsBurnAux(FwOperations* imgops, ExtBurnParams& burnParams)
     bool rc;
     Fs4Operations& imageOps = *((Fs4Operations*)imgops);
 
+    if (burnParams.burnDevDataOnly)
+    {
+        bool devDataRc = BurnDevData(imageOps, burnParams);
+        if (devDataRc)
+        {
+            MLXFWOPS_LOG_INFO("FS4 device-data burn completed");
+        }
+        else
+        {
+            MLXFWOPS_LOG_ERROR("FS4 device-data burn failed: %s", err() ? err() : "no detail");
+        }
+        return devDataRc;
+    }
+
     if (imageOps.FwType() != FIT_FS4 && imageOps.FwType() != FIT_FS5)
     {
         return errmsg(MLXFW_IMAGE_FORMAT_ERR, "FW image type is not compatible with device (FS4)");
@@ -3039,6 +3070,123 @@ bool Fs4Operations::FsBurnAux(FwOperations* imgops, ExtBurnParams& burnParams)
     }
 
     return rc;
+}
+
+bool Fs4Operations::BurnDevData(Fs4Operations& imageOps, ExtBurnParams& burnParams)
+{
+    if (imageOps.FwType() != FIT_FS5 && imageOps.FwType() != FIT_FS4)
+    {
+        return errmsg(MLXFW_IMAGE_FORMAT_ERR, "FW image type is not compatible with device (FS5 / FS4)");
+    }
+
+    fw_info_t imageInfo;
+    if (!imageOps.FwQuery(&imageInfo, false, false, false))
+    {
+        return false;
+    }
+
+    bool is_write_protected;
+    if (!isWriteProtected(is_write_protected))
+    {
+        return errmsg("%s", err());
+    }
+    if (is_write_protected)
+    {
+        return errmsg("Cannot burn device data sections, Flash is write protected.");
+    }
+
+    if (!CheckFs4ImgSize(imageOps, true, true))
+    {
+        return false;
+    }
+
+    if (!imageOps.CheckDTocArray())
+    {
+        return errmsg(MLXFW_IMAGE_CORRUPTED_ERR, "%s", imageOps.err());
+    }
+
+    int alreadyWrittenSz = 0;
+    u_int32_t total_img_size = FS4_DEFAULT_SECTOR_SIZE + imageOps._fs4ImgInfo.dtocArr.getSectionsTotalSize(); // DTOC total size
+    u_int32_t dtoc_addr = 0;
+    if (!imageOps.GetDtocAddress(dtoc_addr))
+    {
+        return false;
+    }
+
+    struct fs4_toc_info* imageInfoToc = (struct fs4_toc_info*)NULL;
+    if (Fs4GetItocInfo(imageOps._fs4ImgInfo.dtocArr.tocArr, imageOps._fs4ImgInfo.dtocArr.numOfTocs, FS4_FW_DEBUG_DUMP, imageInfoToc) && getenv("BURN_EXCLUDED_DTOC") == NULL)
+    {
+        printf("-I- Skipping FW_DEBUG_DUMP dtoc...\n");
+        total_img_size -= imageInfoToc->toc_entry.size << 2;
+    }
+    if (Fs4GetItocInfo(imageOps._fs4ImgInfo.dtocArr.tocArr, imageOps._fs4ImgInfo.dtocArr.numOfTocs, FS3_FW_NV_LOG, imageInfoToc) && getenv("BURN_EXCLUDED_DTOC") == NULL)
+    {
+        printf("-I- Skipping FW_NV_LOG dtoc...\n");
+        total_img_size -= imageInfoToc->toc_entry.size << 2;
+    }
+    if (Fs4GetItocInfo(imageOps._fs4ImgInfo.dtocArr.tocArr, imageOps._fs4ImgInfo.dtocArr.numOfTocs, FS3_NV_DATA0, imageInfoToc) && getenv("BURN_EXCLUDED_DTOC") == NULL)
+    {
+        printf("-I- Skipping NV_DATA dtoc...\n");
+        total_img_size -= imageInfoToc->toc_entry.size << 2;
+    }
+    if (Fs4GetItocInfo(imageOps._fs4ImgInfo.dtocArr.tocArr, imageOps._fs4ImgInfo.dtocArr.numOfTocs, FS3_NV_DATA1, imageInfoToc) && getenv("BURN_EXCLUDED_DTOC") == NULL)
+    {
+        printf("-I- Skipping NV_DATA dtoc...\n");
+        total_img_size -= imageInfoToc->toc_entry.size << 2;
+    }
+    if (Fs4GetItocInfo(imageOps._fs4ImgInfo.dtocArr.tocArr, imageOps._fs4ImgInfo.dtocArr.numOfTocs, FS3_NV_DATA2, imageInfoToc) && getenv("BURN_EXCLUDED_DTOC") == NULL)
+    {
+        printf("-I- Skipping NV_DATA dtoc...\n");
+        total_img_size -= imageInfoToc->toc_entry.size << 2;
+    }
+
+    imageInfoToc = (struct fs4_toc_info*)NULL;
+    if (Fs4GetItocInfo(imageOps._fs4ImgInfo.dtocArr.tocArr, imageOps._fs4ImgInfo.dtocArr.numOfTocs, FS4_FW_DEBUG_DUMP_2, imageInfoToc) && getenv("BURN_EXCLUDED_DTOC") == NULL)
+    {
+        printf("-I- Skipping FW_DEBUG_DUMP_2 dtoc...\n");
+        total_img_size -= imageInfoToc->toc_entry.size << 2;
+    }
+
+    u_int8_t* dtoc_data = new u_int8_t[FS4_DEFAULT_SECTOR_SIZE];
+    MLXFWOPS_LOG_DEBUG("Burning DTOC at addr 0x%0x", dtoc_addr);
+    imageOps._imageCache.get(dtoc_data, dtoc_addr, FS4_DEFAULT_SECTOR_SIZE);
+    if (!writeImageEx(burnParams.progressFuncEx, burnParams.progressUserData, burnParams.progressFunc, dtoc_addr, dtoc_data, FS4_DEFAULT_SECTOR_SIZE, true, true, total_img_size, alreadyWrittenSz))
+    {
+        delete[] dtoc_data;
+        return false;
+    }
+    delete[] dtoc_data;
+    alreadyWrittenSz += FS4_DEFAULT_SECTOR_SIZE;
+
+    for (int i = 0; i < imageOps._fs4ImgInfo.dtocArr.numOfTocs; i++)
+    {
+        struct fs4_toc_info* dtoc_info_p = &imageOps._fs4ImgInfo.dtocArr.tocArr[i];
+        struct image_layout_itoc_entry* dtoc_entry = &dtoc_info_p->toc_entry;
+
+        if ((dtoc_entry->type == FS4_FW_DEBUG_DUMP || dtoc_entry->type == FS4_FW_DEBUG_DUMP_2 || dtoc_entry->type == FS3_NV_DATA0 || dtoc_entry->type == FS3_NV_DATA1 ||
+             dtoc_entry->type == FS3_NV_DATA2 || dtoc_entry->type == FS3_FW_NV_LOG) &&
+            getenv("BURN_EXCLUDED_DTOC") == NULL)
+        {
+            continue;
+        }
+
+        MLXFWOPS_LOG_DEBUG("Burning DTOC section addr=0x%08x size=0x%08x", dtoc_entry->flash_addr << 2, (u_int32_t)dtoc_info_p->section_data.size());
+        if (!writeImageEx(burnParams.progressFuncEx,
+                          burnParams.progressUserData,
+                          burnParams.progressFunc,
+                          dtoc_entry->flash_addr << 2,
+                          &(dtoc_info_p->section_data[0]),
+                          dtoc_info_p->section_data.size(),
+                          true,
+                          true,
+                          total_img_size,
+                          alreadyWrittenSz))
+        {
+            return false;
+        }
+        alreadyWrittenSz += dtoc_info_p->section_data.size();
+    }
+    return true;
 }
 
 bool Fs4Operations::Fs4GetItocInfo(struct fs4_toc_info* tocArr, int num_of_itocs, fs3_section_t sect_type, struct fs4_toc_info*& curr_toc)

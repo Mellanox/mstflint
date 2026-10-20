@@ -2579,6 +2579,11 @@ bool BurnSubCommand::verifyParams()
             reportErr(true, FLINT_INVALID_FLAG_WITHOUT_FLAG_ERROR, "-nofs", "-ignore_dev_data");
             return false;
         }
+        if (_flintParams.dev_data_only && !_flintParams.ignore_dev_data)
+        {
+            reportErr(true, FLINT_INVALID_FLAG_WITHOUT_FLAG_ERROR, "--ignore_dev_data", "--dev_data_only");
+            return false;
+        }
         if (_flintParams.use_dev_rom && _flintParams.use_image_rom)
         {
             reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "--use_dev_rom", "--use_image_rom");
@@ -2629,6 +2634,7 @@ void BurnSubCommand::updateBurnParams()
     _burnParams.noDevidCheck = _flintParams.no_devid_check;
     _burnParams.skipCiReq = _flintParams.skip_ci_req;
     _burnParams.useImgDevData = _flintParams.ignore_dev_data;
+    _burnParams.burnDevDataOnly = _flintParams.dev_data_only;
     if (_burnParams.userGuidsSpecified)
     {
         _burnParams.userUids = _flintParams.user_guids;
@@ -2815,6 +2821,11 @@ FlintStatus BurnSubCommand::burnFs3()
         reportErr(true, FLINT_FSX_BURN_ERROR, imgTypeStr, _fwOps->err());
         return FLINT_FAILED;
     }
+    if (_burnParams.burnDevDataOnly && (_fwType != FIT_FS5 && _fwType != FIT_FS4))
+    {
+        reportErr(true, "--dev_data_only flag can be provided with FS5 or FS4 device only.");
+        return FLINT_FAILED;
+    }
     // check FwVersion
     if (!checkFwVersion())
     {
@@ -2849,7 +2860,14 @@ FlintStatus BurnSubCommand::burnFs3()
         printf("Burn process will not be failsafe. No checks will be performed.\n");
         if (_burnParams.useImgDevData)
         {
-            printf("ALL flash, including the device data sections will be overwritten.\n");
+            if (_burnParams.burnDevDataOnly)
+            {
+                printf("All device data sections will be overwritten.\n");
+            }
+            else
+            {
+                printf("ALL flash, including the device data sections will be overwritten.\n");
+            }
         }
         printf("If this process fails, computer may remain in an inoperable state.\n");
         if (!askUser())
