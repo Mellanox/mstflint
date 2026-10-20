@@ -4117,7 +4117,7 @@ void MlxlinkCommander::initValidDPNList()
                     }
                 }
             }
-            if (!_isHCA)
+            if (!(_isHCA || _isCPU))
             {
                 break;
             }
