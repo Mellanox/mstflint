@@ -89,7 +89,6 @@ public:
     dm_dev_id_t getDevId();
     static dm_dev_id_t getDevId(mfile* mf);
     static bool isDeviceSupported(mfile* mf);
-    static void isAccessRegisterSupported(mfile* mf);
     static void handle_buffer_endianness(void* buffer, uint32_t size);
     bool isAccessRegisterGMPSupported(maccess_reg_method_t reg_method);
     bool isIBDevice();

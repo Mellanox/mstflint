@@ -83,8 +83,6 @@ void MlxlinkUi::createMlxlinkCommander()
 
 void MlxlinkUi::initRegAccessLib()
 {
-    MlxRegLib::isAccessRegisterSupported(_mf);
-
     _mlxlinkCommander->_mf = _mf;
 
     _mlxlinkCommander->_regLib =
