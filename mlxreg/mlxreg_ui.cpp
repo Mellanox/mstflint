@@ -171,7 +171,6 @@ MlxRegUi::MlxRegUi() : CommandLineRequester("mlxreg OPTIONS"), _cmdParser("mlxre
     _dataStr = "";
     _indexesStr = "";
     _dataLen = 0;
-    _ignoreCapCheck = false;
     _op = CMD_UNKNOWN;
     _force = false;
     _ignore_ro = false;
