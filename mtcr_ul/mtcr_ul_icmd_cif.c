@@ -1425,17 +1425,22 @@ int is_livefish_device(mfile* mf)
         return 0;
     }
 
-    unsigned int hwdevid = 0;
-
     if (mf->tp == MST_SOFTWARE)
     {
         return 1;
     }
+
+    if (is_gpu_pci_device(mf->dinfo->pci.dev_id) || is_cpu_pci_device(mf->dinfo->pci.dev_id))
+    {
+        return 0;
+    }
+
+    unsigned int hwdevid = 0;
     int rc = read_device_id(mf, &hwdevid);
 
     if (rc == 4)
     {
-        return ((!is_gpu_pci_device(mf->dinfo->pci.dev_id)) && (mf->dinfo->pci.dev_id == hwdevid));
+        return (mf->dinfo->pci.dev_id == hwdevid);
     }
     return 0;
 }
