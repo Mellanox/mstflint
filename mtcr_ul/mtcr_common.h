@@ -35,6 +35,7 @@
 #define _MTCR_COMMON_H_
 
 #include <mtcr.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -53,5 +54,23 @@ int is_vera_pci_device(u_int16_t pci_device_id);
 int is_cpu_pci_device(u_int16_t pci_device_id);
 u_int16_t get_hw_dev_cpu_id_by_pci_id(u_int16_t pci_device_id);
 void config_cpu_pciconf(mfile* mf);
+
+void mtcr_clear_last_err(void);
+void mtcr_set_last_err(const char* fmt, ...);
+/* Sets a generic reason from errno, for a failed open that did not record a more specific one. */
+void mtcr_set_open_failed_err(const char* name);
+
+/* Logs an open failure and keeps it as the reason returned by mtcr_get_last_err().
+ * errno is preserved so both expansions of the arguments, and the caller, see the original failure. */
+#define MTCR_LOG_AND_SET_ERROR(...)     \
+    do                                  \
+    {                                   \
+        int mtcr_saved_errno_ = errno;  \
+        mtcr_set_last_err(__VA_ARGS__); \
+        errno = mtcr_saved_errno_;      \
+        DBG_PRINTF(__VA_ARGS__);        \
+        DBG_PRINTF("\n");               \
+        errno = mtcr_saved_errno_;      \
+    } while (0)
 
 #endif
