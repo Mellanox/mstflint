@@ -33,6 +33,7 @@
 
 #include "test_utils.h"
 
+#include <algorithm>
 #include <string>
 #include <sys/types.h>
 
@@ -435,7 +436,8 @@ void parseDevicePciArg(int argc, char** argv)
         if (std::string(argv[i]) == "-d")
         {
             g_devicePci = argv[i + 1];
-            if (g_devicePci.find(':') != std::string::npos && g_devicePci.substr(0, 5) != "0000:")
+            // Same rule as mft_sdk_test_main.cpp: only a bare BB:DD.F gets the 0000: domain.
+            if (std::count(g_devicePci.begin(), g_devicePci.end(), ':') == 1)
             {
                 g_devicePci = "0000:" + g_devicePci;
             }

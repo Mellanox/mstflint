@@ -386,10 +386,14 @@ def mst_node_for(bdf):
     two halves drift onto different adapters produces a confident wrong answer,
     so this resolves rather than guesses -- and returns None instead of picking
     an arbitrary node when it cannot."""
-    short = bdf.split(":", 1)[1] if bdf.count(":") == 2 else bdf
+    full = bdf if bdf.count(":") == 2 else "0000:" + bdf
     rc, out = run("sudo mst status -v 2>/dev/null", timeout=120)
     for line in out.splitlines():
-        if short in line:
+        # Whole DDDD:BB:DD.F, never a BB:DD.F substring: mst prints a domain once any
+        # function has a non-zero one, and 0001:03:00.2 and 0009:03:00.2 both hold 03:00.2.
+        pcis = [t if t.count(":") == 2 else "0000:" + t for t in line.split()
+                if re.match(r"^(?:[0-9a-fA-F]{4}:)?[0-9a-fA-F]{2}:[0-9a-fA-F]{2}\.[0-9a-fA-F]$", t)]
+        if full in pcis:
             for tok in line.split():
                 if tok.startswith("/dev/mst/") and "cable" not in tok:
                     return tok
