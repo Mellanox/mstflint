@@ -184,16 +184,31 @@
 /*
  * Macros for accessing Icmd Space
  */
-#define SET_SPACE_FOR_ICMD_ACCESS(mf) \
-    if (mf->functional_vsec_supp)     \
-    {                                 \
-        mset_addr_space(mf, AS_ICMD); \
-    }
-#define SET_SPACE_FOR_SEMAPHORE_ACCESS(mf) \
-    if (mf->functional_vsec_supp)          \
-    {                                      \
-        mset_addr_space(mf, AS_SEMAPHORE); \
-    }
+#define SET_SPACE_FOR_ICMD_ACCESS(mf)             \
+    do                                            \
+    {                                             \
+        if (is_pci_space_only(mf))                \
+        {                                         \
+            mset_addr_space(mf, AS_PCI_ALL_ICMD); \
+        }                                         \
+        else if (mf->functional_vsec_supp)        \
+        {                                         \
+            mset_addr_space(mf, AS_ICMD);         \
+        }                                         \
+    } while (0)
+
+#define SET_SPACE_FOR_SEMAPHORE_ACCESS(mf)                \
+    do                                                    \
+    {                                                     \
+        if (is_pci_space_only(mf))                        \
+        {                                                 \
+            mset_addr_space(mf, AS_PCI_GLOBAL_SEMAPHORE); \
+        }                                                 \
+        else if (mf->functional_vsec_supp)                \
+        {                                                 \
+            mset_addr_space(mf, AS_SEMAPHORE);            \
+        }                                                 \
+    } while (0)
 bool is_pci_space_only(mfile* mf);
 #define RESTORE_SPACE(mf) mset_addr_space(mf, is_pci_space_only(mf) ? AS_PCI_CRSPACE : AS_CR_SPACE)
 
