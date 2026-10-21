@@ -158,6 +158,25 @@ def check_status(status: MstStatus, device_handle: MstDevice = None):
         raise status_to_exception(status, message)
 
 
+def check_function_available(function_name: str, build_option: str):
+    """Raise an exception if the SDK library does not export an optional function.
+
+    Some SDK functions are compiled in only when the SDK is configured with an
+    optional feature, so a library built without it does not export them.
+
+    Args:
+        function_name (str): Name of the SDK function
+        build_option (str): Configure option that compiles the function in
+
+    Raises:
+        MftSdkNotSupportedException: If the library does not export the function
+    """
+    if not hasattr(LIB, function_name):
+        raise status_to_exception(
+            MstStatus.MST_ERROR_NOT_SUPPORTED,
+            f"{function_name} is not available in this MFT SDK library; it requires an SDK built with {build_option}")
+
+
 def get_last_error_string(device_handle: MstDevice) -> str:
     """
     Get the last error string for a given device.
