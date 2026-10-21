@@ -36,7 +36,7 @@
  
 
 /***
-         *** This file was generated at "2026-10-12 17:11:49"
+         *** This file was generated at "2026-10-21 06:36:25"
          *** by:
          ***    > [REDACTED]/adb2pack.py --input reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils -o user/tools_layouts
          ***/
@@ -50,60 +50,8 @@ extern "C" {
 
 #include "adb_to_c_utils.h"
 /* Description -   */
-/* Size in bytes - 8 */
-struct reg_access_switch_ef_afe_snap_v1_ext {
-/*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description -  */
-	/* 0x0.0 - 0x0.2 */
-	/* access: RO */
-	u_int8_t term_attn_ctrl;
-	/* Description -  */
-	/* 0x0.3 - 0x0.5 */
-	/* access: RO */
-	u_int8_t dc_gain;
-	/* Description -  */
-	/* 0x0.6 - 0x0.13 */
-	/* access: RO */
-	u_int8_t hf_gain;
-	/* Description -  */
-	/* 0x0.14 - 0x0.15 */
-	/* access: RO */
-	u_int8_t lf_gain;
-	/* Description -  */
-	/* 0x0.16 - 0x0.17 */
-	/* access: RO */
-	u_int8_t lf_pole;
-	/* Description -  */
-	/* 0x0.18 - 0x0.19 */
-	/* access: RO */
-	u_int8_t mf_gain;
-	/* Description -  */
-	/* 0x0.20 - 0x0.21 */
-	/* access: RO */
-	u_int8_t mf_pole;
-	/* Description -  */
-	/* 0x0.22 - 0x0.25 */
-	/* access: RO */
-	u_int8_t tah_amp_gain;
-	/* Description -  */
-	/* 0x0.26 - 0x0.31 */
-	/* access: RO */
-	u_int8_t adc_vref_val;
-/*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description -  */
-	/* 0x4.0 - 0x4.7 */
-	/* access: RO */
-	u_int8_t cdr_offset;
-};
-
-/* Description -   */
 /* Size in bytes - 12 */
 struct reg_access_switch_ef_lt_x_feq_ber_entry_v1_ext {
-/*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - AFE (Analog Front End) configuration snapshot, 2 DWORDs. */
-	/* 0x0.0 - 0x4.31 */
-	/* access: RO */
-	struct reg_access_switch_ef_afe_snap_v1_ext afe_snap;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - BER exponent; BER = ber_coeff.ber_coeff_float  10^(ber_magnitude). */
 	/* 0x8.0 - 0x8.7 */
@@ -304,7 +252,7 @@ PTYS - Extended Protocol NVLink - cap/oper Layout */
 struct reg_access_switch_pddr_monitor_opcode_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Status opcode:PHY FW indication (0 - 1023):0 - No issue observed1 - Port is close by command (see PAOS).2,3,4,38,39,60,69 - AN failure5,6,7,8, 62,63,64,65,66 - Link training failure.9,10,11,12,13 - Logical mismatch between link partners14 - Remote fault received15,42,17,48,49,52, - Bad signal integrity16,24-32 - Cable compliance code mismatch (protocol mismatch between
-cable and port) 23,22,19,18,50,55- internal error34,35 - Speed degradation56 - module_lanes_frequency_not_synced57 - signal not detected60 - no partner detected for long time68 - reserved70- link not healthy, BER doesn't meet criteria71 - serdes uphy fatal indication72 - serdes ophy fatal indication71 - Invalid_Port_Speed_Configuration128 - Troubleshooting in process1023- Info not availableMNG FW issues (1024 - 2047):1024 - Cable is unplugged1025 - Long Range for non Mellanox cable/module1026 - Bus stuck (I2C Data or clock shorted)1027 - Bad/unsupported EEPROM1028 - Part number list1029 - Unsupported cable1030 - Module temperature shutdown1031 - Shorted cable1032 - Power budget exceeded1033 - Management forced down the port1034 - Module is disabled by command1035 - System Power is Exceeded therefore the module is powered off.1036 - Module's PMD type is not enabled (see PMTPS).1040 - pcie system power slot Exceeded1042 - Module state machine fault1043,1044,1045,1046 - Module's stamping speed degeneration1047, 1048 - Modules DataPath FSM fault1050, 1051, 1052, 1053- Module Boot Error1054 - Module Forced to Low Power by command1055 - ELS laser fiber is contaminated1056 - ELS laser power control failure1057 - ELS unplugged1058 - ELS laser rampling timeout failure1059 - ELS laser power exceeded allowed power range1060 - ELS laser power subceeded allowed power range1061 - ELS TEC control loop failure1062 - ELS laser power tuning failure1063 - ELS laser wavelength tuning failure1064 - ELS laser health indication - high path loss1065 - ELS laser high loss power drop */
+cable and port) 23,22,19,18,50,55- internal error34,35 - Speed degradation56 - module_lanes_frequency_not_synced57 - signal not detected60 - no partner detected for long time68 - reserved70- link not healthy, BER doesn't meet criteria71 - serdes uphy fatal indication72 - serdes ophy fatal indication71 - Invalid_Port_Speed_Configuration91 - linkup failed, local device BER passes criteria128 - Troubleshooting in process1023- Info not availableMNG FW issues (1024 - 2047):1024 - Cable is unplugged1025 - Long Range for non Mellanox cable/module1026 - Bus stuck (I2C Data or clock shorted)1027 - Bad/unsupported EEPROM1028 - Part number list1029 - Unsupported cable1030 - Module temperature shutdown1031 - Shorted cable1032 - Power budget exceeded1033 - Management forced down the port1034 - Module is disabled by command1035 - System Power is Exceeded therefore the module is powered off.1036 - Module's PMD type is not enabled (see PMTPS).1040 - pcie system power slot Exceeded1042 - Module state machine fault1043,1044,1045,1046 - Module's stamping speed degeneration1047, 1048 - Modules DataPath FSM fault1050, 1051, 1052, 1053- Module Boot Error1054 - Module Forced to Low Power by command1055 - ELS laser fiber is contaminated1056 - ELS laser power control failure1057 - ELS unplugged1058 - ELS laser rampling timeout failure1059 - ELS laser power exceeded allowed power range1060 - ELS laser power subceeded allowed power range1061 - ELS TEC control loop failure1062 - ELS laser power tuning failure1063 - ELS laser wavelength tuning failure1064 - ELS laser health indication - high path loss1065 - ELS laser high loss power drop */
 	/* 0x0.0 - 0x0.15 */
 	/* access: RW */
 	u_int16_t monitor_opcode;
@@ -554,6 +502,46 @@ itteration */
 	/* 0x4.21 - 0x4.24 */
 	/* access: RO */
 	u_int8_t raw_ber_mantissa_float;
+};
+
+/* Description -   */
+/* Size in bytes - 8 */
+struct reg_access_switch_pddr_link_health_fec_measure_mode_a_iter_entry_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Highest non-zero histogram bin index for this iteration. */
+	/* 0x0.0 - 0x0.4 */
+	/* access: RO */
+	u_int8_t highest_non_zero_hist_iter;
+	/* Description - Raw BER mantissa measured in this iteration. */
+	/* 0x0.5 - 0x0.8 */
+	/* access: RO */
+	u_int8_t raw_ber_mantissa_iter;
+	/* Description - Raw BER magnitude measured in this iteration. */
+	/* 0x0.9 - 0x0.16 */
+	/* access: RO */
+	u_int8_t raw_ber_magnitude_iter;
+	/* Description - Reason the algorithm moved to another attempt after this one:0: n_a - not applicable (attempt passed, or this is the final attempt)1: retrain_iteration 2: ber_mismatch 3: Reserved */
+	/* 0x0.17 - 0x0.18 */
+	/* access: RO */
+	u_int8_t ltx_next_iter_retry_reason;
+	/* Description - Outcome of this specific LT-X iteration:0: success - all configured thresholds met1: fail - at least one threshold not met */
+	/* 0x0.20 - 0x0.20 */
+	/* access: RO */
+	u_int8_t ltx_iter_result;
+	/* Description - Phase of the LT-X algorithm for this iteration0: baseline 1: retrain 2: apply_best 3: Reserved */
+	/* 0x0.23 - 0x0.24 */
+	/* access: RO */
+	u_int8_t ltx_iter_phase;
+	/* Description - Indicates the iteration number within the current LT-X Phase as
+presented in ltx_iter_phase */
+	/* 0x0.26 - 0x0.31 */
+	/* access: RO */
+	u_int8_t ltx_iter_num;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Indicates if effective errors were detected in this iteration.0: no_effective_errors1: effective_errors_detected */
+	/* 0x4.31 - 0x4.31 */
+	/* access: RO */
+	u_int8_t effective_errors_detected_iter;
 };
 
 /* Description -   */
@@ -1593,6 +1581,91 @@ return 0. */
 	/* 0x38.0 - 0x38.7 */
 	/* access: RO */
 	u_int8_t apsu_restart_reason_opcode;
+};
+
+/* Description -   */
+/* Size in bytes - 192 */
+struct reg_access_switch_pddr_link_health_fec_measure_mode_a_page_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Logger index of the entry with the best BER result. */
+	/* 0x0.0 - 0x0.4 */
+	/* access: RO */
+	u_int8_t ltx_best_entry_idx;
+	/* Description - Number of apply-best iterations performed.A value of '0' means no apply best iteration was conducted.A value of 'N' means there were 'N' apply-best iterations. */
+	/* 0x0.12 - 0x0.17 */
+	/* access: RO */
+	u_int8_t ltx_apply_best_retry_count;
+	/* Description - Number of link retrains performed.A value of '0' means we conducted only baseline training.A value of 'N' means there were 'N' retrain iterations. */
+	/* 0x0.18 - 0x0.23 */
+	/* access: RO */
+	u_int8_t ltx_retry_count;
+	/* Description - Reason for LT-X overall outcome:0: none 1: gave_up 2: bad_ber 3: gave_up_bad_ber */
+	/* 0x0.24 - 0x0.25 */
+	/* access: RO */
+	u_int8_t ltx_fail_reason;
+	/* Description - Indicates if LT-X is enabled after negotiation0: ltx_disabled1: ltx_enabled */
+	/* 0x0.29 - 0x0.29 */
+	/* access: RO */
+	u_int8_t ltx_en_oper;
+	/* Description - Overall LT-X result0: idle - flow not entered, feature disabled or not applicable1: running - LT-X flow is currently being conducted2: done - LT-X flow finished in current link toggle */
+	/* 0x0.30 - 0x0.31 */
+	/* access: RO */
+	u_int8_t ltx_status;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Best-so-far effective-error flag across all logger entries in
+current link toggle.0: no effective errors in the best entry.1: effective errors present in best entry. */
+	/* 0x4.9 - 0x4.9 */
+	/* access: RO */
+	u_int8_t ltx_best_effective_errors;
+	/* Description - Best-so-far highest non-zero histogram bin index across all logger
+entries in current link toggle. */
+	/* 0x4.10 - 0x4.14 */
+	/* access: RO */
+	u_int8_t ltx_best_highest_non_zero_hist;
+	/* Description - Best-so-far raw BER mantissa across all logger entries in current
+link toggle. */
+	/* 0x4.20 - 0x4.23 */
+	/* access: RO */
+	u_int8_t ltx_best_raw_ber_mantissa;
+	/* Description - Best-so-far raw BER magnitude across all logger entries in current
+link toggle. */
+	/* 0x4.24 - 0x4.31 */
+	/* access: RO */
+	u_int8_t ltx_best_raw_ber_magnitude;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - Agreed negotiation for maximum fec measure iterations for chosen
+link parameters before proceeding with linkup flow. */
+	/* 0x8.3 - 0x8.8 */
+	/* access: RO */
+	u_int8_t ltx_apply_best_retry_count_oper;
+	/* Description - Agreed negotiation for maximum number of times the link quality by
+fec measure can be re-checked before proceeding with current link
+parameters to apply best iterations. */
+	/* 0x8.9 - 0x8.14 */
+	/* access: RO */
+	u_int8_t ltx_retry_count_oper;
+	/* Description - Pass threshold to pass iteration - histogram bin index. */
+	/* 0x8.15 - 0x8.19 */
+	/* access: RO */
+	u_int8_t ltx_pass_hist_th;
+	/* Description - Pass threshold to pass iteration - raw BER mantissa. */
+	/* 0x8.20 - 0x8.23 */
+	/* access: RO */
+	u_int8_t ltx_pass_raw_ber_mantissa_th;
+	/* Description - Pass threshold to pass iteration - raw BER magnitude. */
+	/* 0x8.24 - 0x8.31 */
+	/* access: RO */
+	u_int8_t ltx_pass_raw_ber_magnitude_th;
+/*---------------- DWORD[3] (Offset 0xc) ----------------*/
+	/* Description - Agreed operational fec measurement time.0: not_supported1-1023 - Sets in 10ms granularity the FEC measure time */
+	/* 0xc.0 - 0xc.9 */
+	/* access: RO */
+	u_int16_t ltx_fec_measure_time_oper;
+/*---------------- DWORD[8] (Offset 0x20) ----------------*/
+	/* Description - Link Health FEC Measure Mode A Iteration Entry Layout */
+	/* 0x20.0 - 0xbc.31 */
+	/* access: RO */
+	struct reg_access_switch_pddr_link_health_fec_measure_mode_a_iter_entry_ext ltx_iter_entry[20];
 };
 
 /* Description -   */
@@ -3579,6 +3652,10 @@ union reg_access_switch_pddr_reg_page_data_auto_ext {
 	/* access: RW */
 	struct reg_access_switch_pddr_link_down_info_page_ext pddr_link_down_info_page_ext;
 	/* Description -  */
+	/* 0x0.0 - 0xbc.31 */
+	/* access: RW */
+	struct reg_access_switch_pddr_link_health_fec_measure_mode_a_page_ext pddr_link_health_fec_measure_mode_a_page_ext;
+	/* Description -  */
 	/* 0x0.0 - 0xac.31 */
 	/* access: RW */
 	struct reg_access_switch_pddr_link_health_page_ext pddr_link_health_page_ext;
@@ -3928,7 +4005,7 @@ additional_info field will expose the reason. */
 	/* 0x0.8 - 0x0.13 */
 	/* access: RO */
 	u_int8_t additional_info;
-	/* Description - 0: CS token 1: Debug FW token 2: FRC token3: RMCS token4: RMDT token5: CRCS token6: CRDT token8: MTFA token0xFF: All tokens. Relevant only when end=1 */
+	/* Description - 0: CS token 1: Debug FW token 2: FRC token3: RMCS token4: RMDT token5: CRCS token6: CRDT token7: MTDT8: MTFA9: EDDT0xFF: All tokens. Relevant only when end=1 */
 	/* 0x0.24 - 0x0.31 */
 	/* access: INDEX */
 	u_int8_t type_of_token;
@@ -3996,7 +4073,11 @@ next boot. */
 	/* Description - Firmware key version status.0: equal - EFUSEs value is equal to the currently running FW image
 maximal value. No change is possible.1: update_required - EFUSEs value is smaller than the currently
 running FW image maximal value. An update to the EFUSEs is
-required.2: pending_image - There is pending image, MFKV is rejected3: reserved - Reserved */
+required.2: pending_image - There is pending image, MFKV is rejected3: preparing - The pending EFUSE programming request is being
+prepared and is not yet ready to execute. SW should poll
+fw_key_ver_stat until the device finishes processing the
+request and the status is no longer preparing, before
+resetting the device to trigger the EFUSE programming. */
 	/* 0x0.1 - 0x0.2 */
 	/* access: RO */
 	u_int8_t fw_key_ver_stat;
@@ -4577,7 +4658,7 @@ interface, or remote token from local interface)0x5 - TOKEN_APPLY_TIMEOUT_EXPIRE
 	u_int8_t status;
 	/* Description - The token which a challenge is generated for.0: RMCS - (ReMote Customer Support)1: RMDT - (ReMote Debug Token)2: CRCS - (Challenge-Response Customer Support) - supported from
 Spectrum-4 and above3: CRDT - (Challenge-Response Debug Token) - supported from Spectrum-4
-and above5: MTDT6: FRC - (Factory ReCustomization)7: MTFAOther: Reserved */
+and above5: MTDT6: FRC - (Factory ReCustomization)7: MTFA8: EDDTOther: Reserved */
 	/* 0x0.24 - 0x0.31 */
 	/* access: INDEX */
 	u_int8_t token_opcode;
@@ -4719,7 +4800,7 @@ aggregated port only. */
 	/* access: INDEX */
 	u_int8_t module_ind_type;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - page select index:0: Operational_info_page1: Troubleshooting_info_page2: Phy_info_page3: Module_info_page6: link_down_info8: Link_up_info9: Module_latched_flag_info_page11: link_partner_info_page14: cpo_module_info_page15: link_health_fec_measure_info_page16: APSU_info_page17: link_health_fec_measure_nvl5_page */
+	/* Description - page select index:0: Operational_info_page1: Troubleshooting_info_page2: Phy_info_page3: Module_info_page6: link_down_info8: Link_up_info9: Module_latched_flag_info_page11: link_partner_info_page14: cpo_module_info_page15: link_health_fec_measure_info_page16: APSU_info_page17: link_health_fec_measure_nvl5_page18: link_health_fec_measure_mode_a_page */
 	/* 0x4.0 - 0x4.7 */
 	/* access: INDEX */
 	u_int8_t page_select;
@@ -4729,7 +4810,7 @@ tx_power_high_th, tx_power_low_th in module info page0: dbm1: uW */
 	/* access: OP */
 	u_int8_t module_info_ext;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - Operation Info Page LayoutTroubleshooting info Page layoutPhy Info Page LayoutModule Info Page LayoutLink Down Info Page LayoutLink Up Info Page LayoutModule Latched Flag Info Page LayoutLink Partner Info Page LayoutCPO Module Page LayoutLink Health FEC Measure Info Page LayoutAPSU Info Page LayoutLink Health FEC Measure NVL5 Page Layout */
+	/* Description - Operation Info Page LayoutTroubleshooting info Page layoutPhy Info Page LayoutModule Info Page LayoutLink Down Info Page LayoutLink Up Info Page LayoutModule Latched Flag Info Page LayoutLink Partner Info Page LayoutCPO Module Page LayoutLink Health FEC Measure Info Page LayoutAPSU Info Page LayoutLink Health FEC Measure NVL5 Page Layout Link Health FEC Measure Mode A Page Layout */
 	/* 0x8.0 - 0xfc.31 */
 	/* access: RO */
 	union reg_access_switch_pddr_reg_page_data_auto_ext page_data;
@@ -4973,11 +5054,15 @@ of oper_status to initialization. */
 [DWIP] 0x10: Recovery_error
 [DWIP] 0x11: Submodule_failure
 [DWIP] 0x12: serbi_check_failure
-[DWIP] 0x13: els_critical_indication
-Valid only when oper_status = 4'b0011 */
+[DWIP] 0x13: els_critical_indication[DWIP] 0x15: Submodule_unplugged_or_missing[DWIP] 0x16: module_stuck[DWIP] 0x17: els_laser_high_power[DWIP] 0x18: els_laser_low_power[DWIP] 0x19: els_laser_fiber_check_failure[DWIP] 0x1a: els_laser_tune_failure[DWIP] 0x1b: els_laser_automatic_power_control_failure[DWIP] 0x1c: els_laser_tec_control_loop_failure[DWIP] 0x1d: els_laser_high_power_drop[DWIP] 0x1e: els_laser_high_path_loss_detectedValid only when oper_status = 4'b0011 */
 	/* 0x4.8 - 0x4.12 */
 	/* access: RO */
 	u_int8_t error_type;
+	/* Description - [DWIP]Most significant bit of the module error type. The full error type is
+the concatenation of {error_type_msb, error_type}.Valid only when oper_status = 4'b0011 */
+	/* 0x4.13 - 0x4.13 */
+	/* access: RO */
+	u_int8_t error_type_msb;
 	/* Description - This notification can occur only if module passed initialization process0x0: No notifications.0x1: Speed degradation  the module is not enabled in its full speed due
 to incompatible transceiver/cableValid only when oper_status = 4'b0001. */
 	/* 0x4.16 - 0x4.19 */
@@ -5675,13 +5760,6 @@ union reg_access_switch_reg_access_switch_Nodes {
 
 
 /*================= PACK/UNPACK/PRINT FUNCTIONS ======================*/
-/* ef_afe_snap_v1_ext */
-void reg_access_switch_ef_afe_snap_v1_ext_pack(const struct reg_access_switch_ef_afe_snap_v1_ext *ptr_struct, u_int8_t *ptr_buff);
-void reg_access_switch_ef_afe_snap_v1_ext_unpack(struct reg_access_switch_ef_afe_snap_v1_ext *ptr_struct, const u_int8_t *ptr_buff);
-void reg_access_switch_ef_afe_snap_v1_ext_print(const struct reg_access_switch_ef_afe_snap_v1_ext *ptr_struct, FILE *fd, int indent_level);
-unsigned int reg_access_switch_ef_afe_snap_v1_ext_size(void);
-#define REG_ACCESS_SWITCH_EF_AFE_SNAP_V1_EXT_SIZE    (0x8)
-void reg_access_switch_ef_afe_snap_v1_ext_dump(const struct reg_access_switch_ef_afe_snap_v1_ext *ptr_struct, FILE *fd);
 /* ef_lt_x_feq_ber_entry_v1_ext */
 void reg_access_switch_ef_lt_x_feq_ber_entry_v1_ext_pack(const struct reg_access_switch_ef_lt_x_feq_ber_entry_v1_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_switch_ef_lt_x_feq_ber_entry_v1_ext_unpack(struct reg_access_switch_ef_lt_x_feq_ber_entry_v1_ext *ptr_struct, const u_int8_t *ptr_buff);
@@ -5843,6 +5921,13 @@ void reg_access_switch_ltx_logger_ext_print(const struct reg_access_switch_ltx_l
 unsigned int reg_access_switch_ltx_logger_ext_size(void);
 #define REG_ACCESS_SWITCH_LTX_LOGGER_EXT_SIZE    (0x8)
 void reg_access_switch_ltx_logger_ext_dump(const struct reg_access_switch_ltx_logger_ext *ptr_struct, FILE *fd);
+/* pddr_link_health_fec_measure_mode_a_iter_entry_ext */
+void reg_access_switch_pddr_link_health_fec_measure_mode_a_iter_entry_ext_pack(const struct reg_access_switch_pddr_link_health_fec_measure_mode_a_iter_entry_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_pddr_link_health_fec_measure_mode_a_iter_entry_ext_unpack(struct reg_access_switch_pddr_link_health_fec_measure_mode_a_iter_entry_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_pddr_link_health_fec_measure_mode_a_iter_entry_ext_print(const struct reg_access_switch_pddr_link_health_fec_measure_mode_a_iter_entry_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_pddr_link_health_fec_measure_mode_a_iter_entry_ext_size(void);
+#define REG_ACCESS_SWITCH_PDDR_LINK_HEALTH_FEC_MEASURE_MODE_A_ITER_ENTRY_EXT_SIZE    (0x8)
+void reg_access_switch_pddr_link_health_fec_measure_mode_a_iter_entry_ext_dump(const struct reg_access_switch_pddr_link_health_fec_measure_mode_a_iter_entry_ext *ptr_struct, FILE *fd);
 /* pddr_operation_info_page_cable_proto_cap_auto_ext */
 void reg_access_switch_pddr_operation_info_page_cable_proto_cap_auto_ext_pack(const union reg_access_switch_pddr_operation_info_page_cable_proto_cap_auto_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_switch_pddr_operation_info_page_cable_proto_cap_auto_ext_unpack(union reg_access_switch_pddr_operation_info_page_cable_proto_cap_auto_ext *ptr_struct, const u_int8_t *ptr_buff);
@@ -6004,6 +6089,13 @@ void reg_access_switch_pddr_link_down_info_page_ext_print(const struct reg_acces
 unsigned int reg_access_switch_pddr_link_down_info_page_ext_size(void);
 #define REG_ACCESS_SWITCH_PDDR_LINK_DOWN_INFO_PAGE_EXT_SIZE    (0xf4)
 void reg_access_switch_pddr_link_down_info_page_ext_dump(const struct reg_access_switch_pddr_link_down_info_page_ext *ptr_struct, FILE *fd);
+/* pddr_link_health_fec_measure_mode_a_page_ext */
+void reg_access_switch_pddr_link_health_fec_measure_mode_a_page_ext_pack(const struct reg_access_switch_pddr_link_health_fec_measure_mode_a_page_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_pddr_link_health_fec_measure_mode_a_page_ext_unpack(struct reg_access_switch_pddr_link_health_fec_measure_mode_a_page_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_pddr_link_health_fec_measure_mode_a_page_ext_print(const struct reg_access_switch_pddr_link_health_fec_measure_mode_a_page_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_pddr_link_health_fec_measure_mode_a_page_ext_size(void);
+#define REG_ACCESS_SWITCH_PDDR_LINK_HEALTH_FEC_MEASURE_MODE_A_PAGE_EXT_SIZE    (0xc0)
+void reg_access_switch_pddr_link_health_fec_measure_mode_a_page_ext_dump(const struct reg_access_switch_pddr_link_health_fec_measure_mode_a_page_ext *ptr_struct, FILE *fd);
 /* pddr_link_health_page_ext */
 void reg_access_switch_pddr_link_health_page_ext_pack(const struct reg_access_switch_pddr_link_health_page_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_switch_pddr_link_health_page_ext_unpack(struct reg_access_switch_pddr_link_health_page_ext *ptr_struct, const u_int8_t *ptr_buff);
