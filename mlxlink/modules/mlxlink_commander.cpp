@@ -5514,6 +5514,11 @@ void MlxlinkCommander::collectAMBER(AmberOutput output)
     {
         if (_productTechnology >= PRODUCT_16NM)
         {
+            if (_userInput._pcie && output == AmberOutput::Csv)
+            {
+                checkPCIeValidity();
+            }
+
             if (output == AmberOutput::Csv)
             {
                 MlxlinkRecord::printCmdLine("Collecting amBER and producing report to " + _userInput._csvBer,
