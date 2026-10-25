@@ -233,7 +233,7 @@ static void querySingleDevice(int i,
     MlnxDev* dev =
       use_device_names ? new MlnxDev((*device_names)[i].c_str(), compare_ffv) : new MlnxDev(&devsinfo[i], compare_ffv);
     dm_dev_id_t deviceType = dev->getDeviceType();
-    if (dm_is_gpu(deviceType))
+    if (dm_is_gpu(deviceType) || dm_is_cpu(deviceType))
     {
         delete dev;
         return;
@@ -689,9 +689,9 @@ int mainEntry(int argc, char* argv[])
                 }
                 dev = new MlnxDev(cmd_params.device_names[i].c_str(), cmd_params.compare_ffv);
                 dm_dev_id_t deviceType = dev->getDeviceType();
-                if (dm_is_gpu(deviceType))
+                if (dm_is_gpu(deviceType) || dm_is_cpu(deviceType))
                 {
-                    print_err("-E- GPU device is not supported\n");
+                    print_err("-E- GPU or CPU device is not supported\n");
                     delete dev;
                     continue;
                 }
@@ -716,7 +716,7 @@ int mainEntry(int argc, char* argv[])
             {
                 dev = new MlnxDev(&devsinfo[i], cmd_params.compare_ffv);
                 dm_dev_id_t deviceType = dev->getDeviceType();
-                if (dm_is_gpu(deviceType))
+                if (dm_is_gpu(deviceType) || dm_is_cpu(deviceType))
                 {
                     delete dev;
                     continue;
