@@ -1,0 +1,26 @@
+# @configure_input@
+#
+# mstflint builds from the one top-level Makefile. configure writes this file
+# into every directory that used to have a Makefile of its own, so that
+# `cd <dir> && make' still builds what it built before. This way of building is
+# deprecated and will be removed in two releases (April GA); use
+# `make <dir>/<target>' from the top of the build tree instead.
+
+top_builddir = @top_builddir@
+abs_top_builddir = @abs_top_builddir@
+abs_builddir = @abs_builddir@
+subdir = $(patsubst $(abs_top_builddir)/%,%,$(abs_builddir))
+
+all:
+	@$(MAKE) -C $(top_builddir) compat-subdir-all COMPAT_SUBDIR=$(subdir)
+
+# Only `make' is forwarded; any other goal is meant for the top.
+.DEFAULT:
+	@echo '*** "make $@" is not supported in a subdirectory; run it from the top of the build tree.' >&2; \
+	exit 2
+
+# This file is not remade by make (configure writes it); without these rules
+# .DEFAULT would claim it.
+Makefile GNUmakefile: ;
+
+.PHONY: all

@@ -72,3 +72,6 @@ build-tests/
 
 # Compressed mstdump device DBs, generated at build time from the .csv sources.
 /mstdump/mstdump_dbs/*.csv.xz
+
+# Written by configure for `cd ibdump && make` (ibdump/Makefile is hand-written).
+/ibdump/GNUmakefile

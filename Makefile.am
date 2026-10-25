@@ -75,6 +75,7 @@ BUILT_SOURCES =
 CLEANFILES =
 INSTALL_DATA_HOOKS =
 UNINSTALL_HOOKS =
+COMPAT_EXTRA =
 
 # The bundled jsoncpp as a prerequisite. Link lines use $(JSON_LIBS) from
 # configure, which automake cannot turn into a dependency.
@@ -721,6 +722,7 @@ DEVICE_PROPS_GEN_STAMP = $(DEVICE_PROPS_GEN_DIR)/.device_properties_data.stamp
 # (The .py is installed data, so `make all` builds it too.)
 $(mft_core_device_device_info_libdevice_info_la_OBJECTS): $(DEVICE_PROPS_GEN_H)
 CLEANFILES += $(DEVICE_PROPS_GEN_H) $(DEVICE_PROPS_GEN_PY) $(DEVICE_PROPS_GEN_STAMP)
+COMPAT_EXTRA += $(DEVICE_PROPS_GEN_H)
 
 # A single generator invocation produces both files. Drive it through one
 # stamp target so the recipe runs exactly once even under `make -j`, avoiding
@@ -2974,6 +2976,7 @@ CLEANFILES += $(MSTDUMP_DBS_XZ) $(MSTDUMP_DBS_XZ:%=%.tmp)
 
 if HAVE_XZ
 all-local: $(MSTDUMP_DBS_XZ)
+COMPAT_EXTRA += $(MSTDUMP_DBS_XZ)
 
 # Compress via a temp file so an interrupted or failing xz can never leave a
 # partial .csv.xz behind - that would be newer than its .csv, count as up to date
@@ -4048,3 +4051,175 @@ endif
 # (A conditional section's hook is declared here: automake warns about a .PHONY
 # inside a condition.)
 .PHONY: sdk install-sdk sdk-install-data-hook
+
+########### `cd <dir> && make' (deprecated) ###########
+# configure writes a small Makefile (from Makefile.subdir.in) into every
+# directory that used to have its own, so that `cd <dir> && make' still builds
+# what it built before: the directory's targets, and those of the directories
+# its old SUBDIRS reached. That Makefile runs compat-subdir-all below with
+# COMPAT_SUBDIR=<dir>. This way of building is deprecated and will be removed
+# in two releases (April GA); `make <dir>/<target>' from the top replaces it.
+COMPAT_DIRS = \
+    adb_parser \
+    cable_access \
+    cmdif \
+    cmdparser \
+    common \
+    dev_mgt \
+    efuse \
+    efuse/efuse_dbs \
+    ext_libs \
+    ext_libs/iniParser \
+    ext_libs/json \
+    ext_libs/mini-yaml \
+    ext_libs/minixz \
+    ext_libs/muparser \
+    ext_libs/sole \
+    ext_libs/sqlite \
+    flint \
+    fw_comps_mgr \
+    hca_capabilities \
+    ibdump \
+    libmfa \
+    mad_ifc \
+    mflash \
+    mft_core \
+    mft_core/device \
+    mft_core/device/device_info \
+    mft_core/device/nvml \
+    mft_core/mft_core_utils \
+    mft_core/mft_core_utils/load_shared_library \
+    mft_core/mft_core_utils/logger \
+    mft_core/mft_core_utils/mft_exceptions \
+    mft_core/mft_core_utils/nvtoolslogger \
+    mft_core/mft_core_utils/operating_system_api \
+    mft_sdk \
+    mft_utils \
+    mlxarchive \
+    mlxconfig \
+    mlxconfig/mlxconfig_dbs \
+    mlxdpa \
+    mlxfwops \
+    mlxfwops/lib \
+    mlxfwupdate \
+    mlxlink \
+    mlxlink/modules \
+    mlxlink/modules/printutil \
+    mlxreg \
+    mlxreg/mlxreg_lib \
+    mlxreg/mlxreg_sdk \
+    mlxreg/scripts \
+    mlxsign_lib \
+    mlxtokengenerator \
+    mst_server/client \
+    mst_server/service \
+    mst_utils \
+    mstdump \
+    mstdump/crd_lib \
+    mstdump/crd_main \
+    mstdump/mstdump_dbs \
+    mtcr_freebsd \
+    mtcr_py \
+    mtcr_ul \
+    mvpd \
+    nvfwreset \
+    nvml_lib \
+    nvpcie \
+    pci_library \
+    pldm_utils \
+    pldmgen \
+    pldmlib \
+    reg_access \
+    resourcetools \
+    resourcetools/resourcedump_lib \
+    resourcetools/resourcedump_lib/src \
+    resourcetools/resourcedump_lib/src/commands \
+    resourcetools/resourcedump_lib/src/common \
+    resourcetools/resourcedump_lib/src/fetchers \
+    resourcetools/resourcedump_lib/src/filters \
+    resourcetools/resourcedump_lib/src/sdk \
+    small_utils \
+    small_utils/mlxfwresetlib \
+    tools_crypto \
+    tools_layouts \
+    tools_layouts/adb \
+    tools_layouts/adb/prm \
+    tools_layouts/adb/prm/gpu \
+    tools_layouts/adb/prm/gpu/ext \
+    tools_layouts/adb/prm/hca \
+    tools_layouts/adb/prm/hca/ext \
+    tools_layouts/adb/prm/switch \
+    tools_layouts/adb/prm/switch/ext \
+    tools_res_mgmt \
+    tracers \
+    tracers/fwtrace \
+    vfio_driver_access \
+    xz_utils
+COMPAT_SUBDIRS_efuse = efuse/efuse_dbs
+COMPAT_SUBDIRS_ext_libs = ext_libs/minixz ext_libs/mini-yaml ext_libs/sole
+if ENABLE_FWMGR
+if USE_LOCAL_INIPARSER
+COMPAT_SUBDIRS_ext_libs += ext_libs/iniParser
+endif
+endif
+if USE_LOCAL_JSON
+COMPAT_SUBDIRS_ext_libs += ext_libs/json
+endif
+if USE_LOCAL_MUPARSER
+COMPAT_SUBDIRS_ext_libs += ext_libs/muparser
+endif
+if USE_LOCAL_SQLITE
+COMPAT_SUBDIRS_ext_libs += ext_libs/sqlite
+endif
+COMPAT_SUBDIRS_mft_core = mft_core/mft_core_utils mft_core/device
+COMPAT_mft_core_device_MAYBE_NVML =
+if ENABLE_MSTFLINT_SDK
+if ENABLE_NVML
+COMPAT_mft_core_device_MAYBE_NVML += nvml
+endif
+endif
+COMPAT_SUBDIRS_mft_core_device = mft_core/device/device_info $(addprefix mft_core/device/,$(COMPAT_mft_core_device_MAYBE_NVML))
+COMPAT_SUBDIRS_mft_core_mft_core_utils = mft_core/mft_core_utils/operating_system_api mft_core/mft_core_utils/nvtoolslogger mft_core/mft_core_utils/logger mft_core/mft_core_utils/mft_exceptions $(addprefix mft_core/mft_core_utils/,$(LOAD_SHARED_LIB_DIR))
+COMPAT_SUBDIRS_mlxconfig = mlxconfig/mlxconfig_dbs
+COMPAT_SUBDIRS_mlxfwops = mlxfwops/lib
+COMPAT_SUBDIRS_mlxlink = mlxlink/modules
+COMPAT_SUBDIRS_mlxlink_modules = mlxlink/modules/printutil
+COMPAT_SUBDIRS_mlxreg = mlxreg/mlxreg_lib mlxreg/scripts $(addprefix mlxreg/,$(MLXREG_SDK_DIR))
+COMPAT_SUBDIRS_mstdump = mstdump/crd_lib mstdump/crd_main mstdump/mstdump_dbs
+COMPAT_SUBDIRS_resourcetools = resourcetools/resourcedump_lib
+COMPAT_SUBDIRS_resourcetools_resourcedump_lib = resourcetools/resourcedump_lib/src
+COMPAT_SUBDIRS_resourcetools_resourcedump_lib_src = resourcetools/resourcedump_lib/src/common resourcetools/resourcedump_lib/src/fetchers resourcetools/resourcedump_lib/src/commands resourcetools/resourcedump_lib/src/filters resourcetools/resourcedump_lib/src/sdk
+COMPAT_SUBDIRS_small_utils = small_utils/mlxfwresetlib
+COMPAT_SUBDIRS_tools_layouts = $(addprefix tools_layouts/,$(ADABE_DBS))
+COMPAT_SUBDIRS_tools_layouts_adb = tools_layouts/adb/prm
+COMPAT_SUBDIRS_tools_layouts_adb_prm = tools_layouts/adb/prm/hca tools_layouts/adb/prm/switch tools_layouts/adb/prm/gpu
+COMPAT_SUBDIRS_tools_layouts_adb_prm_gpu = tools_layouts/adb/prm/gpu/ext
+COMPAT_SUBDIRS_tools_layouts_adb_prm_hca = tools_layouts/adb/prm/hca/ext
+COMPAT_SUBDIRS_tools_layouts_adb_prm_switch = tools_layouts/adb/prm/switch/ext
+COMPAT_SUBDIRS_tracers = tracers/fwtrace
+
+# A target belongs to the deepest old directory its path is in: a directory's
+# list is every target under it and under the directories its SUBDIRS reached,
+# except those inside another old directory nested there.
+COMPAT_TARGETS = $(PROGRAMS) $(LIBRARIES) $(LTLIBRARIES) $(SCRIPTS) $(DATA) $(HEADERS) $(COMPAT_EXTRA)
+compat_closure = $(1) $(foreach d,$(COMPAT_SUBDIRS_$(subst /,_,$(subst -,_,$(1)))),$(call compat_closure,$(d)))
+compat_under = $(filter $(addsuffix /%,$(1)),$(2))
+compat_targets = $(filter-out $(call compat_under,$(filter-out $(1),$(call compat_under,$(1),$(COMPAT_DIRS))),$(COMPAT_TARGETS)),$(call compat_under,$(1),$(COMPAT_TARGETS)))
+COMPAT_LIST = $(call compat_targets,$(call compat_closure,$(COMPAT_SUBDIR)))
+COMPAT_SHOW = $(filter $(PROGRAMS) $(LIBRARIES) $(LTLIBRARIES) $(SCRIPTS) $(COMPAT_EXTRA) %.so,$(COMPAT_LIST))
+
+# The generated headers first, as for `make sdk'; then the list, through one
+# goal so that an up-to-date directory prints a single "Nothing to be done".
+compat-subdir-all: $(BUILT_SOURCES)
+	@rc=0; $(MAKE) $(AM_MAKEFLAGS) compat-subdir-build || rc=$$?; \
+	echo '*** NOTE: "cd $(COMPAT_SUBDIR) && make" is deprecated and will be removed in two releases (April GA).' >&2; \
+	$(if $(COMPAT_SHOW),echo '*** Build from the top of the build tree instead: make $(COMPAT_SHOW)' >&2;,echo '*** This directory builds nothing in this configuration.' >&2;) \
+	exit $$rc
+
+compat-subdir-build: $(if $(COMPAT_SUBDIR),$(COMPAT_LIST))
+
+# What `cd $(COMPAT_SUBDIR) && make' builds, one per line.
+compat-subdir-list:
+	@$(foreach t,$(COMPAT_LIST),echo '$(t)';) :
+
+.PHONY: compat-subdir-all compat-subdir-build compat-subdir-list
