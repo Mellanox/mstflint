@@ -63,7 +63,8 @@ inline std::string public_key_fingerprint(X509* cert)
     {
         return "";
     }
-    X509_PUBKEY* pubkey = X509_get_X509_PUBKEY(cert);
+    // const since OpenSSL 4.0; i2d_X509_PUBKEY() has taken it const since 3.0.
+    const X509_PUBKEY* pubkey = X509_get_X509_PUBKEY(cert);
     if (pubkey == nullptr)
     {
         return "";
