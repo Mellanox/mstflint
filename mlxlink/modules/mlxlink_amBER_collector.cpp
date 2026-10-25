@@ -1448,6 +1448,9 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
             u_int64_t symErrors =
               add32BitTo64(getFieldValue("phy_symbol_errors_high", 0, 0, false, true), getFieldValue("phy_symbol_errors_low", 0, 0, false, true));
             fields.push_back(AmberField("Symbol_Errors", to_string(symErrors)));
+            u_int64_t receivedBits =
+              add32BitTo64(getFieldValue("phy_received_bits_high", 0, 0, false, true), getFieldValue("phy_received_bits_low", 0, 0, false, true));
+            fields.push_back(AmberField("Phy_Received_Bits", to_string(receivedBits)));
         }
         else
         {
