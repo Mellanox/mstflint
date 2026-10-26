@@ -89,6 +89,11 @@ bool PldmDevIdRecord::unpack(PldmBuffer& buff)
         applicableComponents.resize(applicableComponentsLen);
         buff.read(applicableComponents.data(), applicableComponentsLen);
     }
+    if (componentImageSetVersionStringLength > buff.remaining())
+    {
+        reset();
+        return false;
+    }
     buff.read(componentImageSetVersionString, componentImageSetVersionStringLength);
     // downstream records read the MinVersionComparisonStamp
     if (!unpackPostVersionString(buff))
@@ -109,6 +114,11 @@ bool PldmDevIdRecord::unpack(PldmBuffer& buff)
     }
     if (firmwareDevicePackageDataLength)
     {
+        if (firmwareDevicePackageDataLength > buff.remaining())
+        {
+            reset();
+            return false;
+        }
         firmwareDevicePackageData.resize(firmwareDevicePackageDataLength);
         buff.read(firmwareDevicePackageData.data(), firmwareDevicePackageDataLength);
     }

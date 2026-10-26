@@ -34,6 +34,10 @@ bool PldmRecordDescriptor::unpack(PldmBuffer& buff)
     buff.read(descriptorLength);
     if (descriptorLength)
     {
+        if (descriptorLength > buff.remaining())
+        {
+            return false;
+        }
         descriptorData = new u_int8_t[descriptorLength];
         buff.read(descriptorData, descriptorLength);
         if (!extractVendorDefined())
@@ -51,6 +55,12 @@ bool PldmRecordDescriptor::extractVendorDefined()
 {
     if (descriptorType == Vendor_Defined)
     {
+        // descriptorData[1] is the title string length N (layout is described in getValueOffset).
+        // It comes from the package, make sure the 2 header bytes + the title fit in descriptorLength
+        if (descriptorLength < 2 || descriptorData[1] > descriptorLength - 2)
+        {
+            return false;
+        }
         u_int8_t* vendoreDefinedPtr = descriptorData;
         vendoreDefinedPtr++;
         u_int8_t prefixlen = *vendoreDefinedPtr;
@@ -72,11 +82,19 @@ bool PldmRecordDescriptor::extractVendorDefined()
         }
         else if (descriptorName == "APSKU")
         {
+            if (dataLen < sizeof(u_int32_t))
+            {
+                return false;
+            }
             vendorDefinedNumericValue = mft_cpu_to_le32(*reinterpret_cast<u_int32_t*>(vendoreDefinedPtr));
             vendorDefinedType = VendorDefinedType::APSKU;
         }
         else if (descriptorName == "GLACIERDSD")
         {
+            if (dataLen < sizeof(u_int32_t))
+            {
+                return false;
+            }
             vendorDefinedNumericValue = mft_cpu_to_le32(*reinterpret_cast<u_int32_t*>(vendoreDefinedPtr));
             vendorDefinedType = VendorDefinedType::GLACIERDSD;
         }
