@@ -558,8 +558,11 @@ def get_pci_devices():
             "sudo mst status -v", shell=True, stderr=subprocess.STDOUT).decode()
         devices = []
         for line in output.split('\n'):
+            # The domain is optional: mst prints one once any function has a
+            # non-zero domain, and 0009:03:00.2 must not be read as 03:00.2.
             pci_match = re.search(
-                r'\b([0-9a-f]{2}:[0-9a-f]{2}\.[0-9])\b', line, re.IGNORECASE)
+                r'\b((?:[0-9a-f]{4}:)?[0-9a-f]{2}:[0-9a-f]{2}\.[0-9])\b',
+                line, re.IGNORECASE)
             if not pci_match:
                 continue
             pci = _normalize_bdf(pci_match.group(1))
