@@ -236,12 +236,19 @@ X509* self_sign(EVP_PKEY* key, std::string* error)
 
     // The subject is descriptive only: clients pin the public key and never
     // match a hostname against this name.
-    X509_NAME* name = X509_get_subject_name(cert);
-    const bool named = X509_NAME_add_entry_by_txt(name, "O", MBSTRING_ASC,
+    //
+    // Built on its own and copied in as subject and issuer: since OpenSSL 4.0
+    // X509_get_subject_name() returns const, so the certificate's own name can
+    // no longer be filled in place.
+    X509_NAME* name = X509_NAME_new();
+    const bool named = name != nullptr &&
+                       X509_NAME_add_entry_by_txt(name, "O", MBSTRING_ASC,
                                                   reinterpret_cast<const unsigned char*>("NVIDIA"), -1, -1, 0) == 1 &&
                        X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC,
-                                                  reinterpret_cast<const unsigned char*>("MST Server"), -1, -1, 0) == 1;
-    if (!named || X509_set_issuer_name(cert, name) != 1 || X509_set_pubkey(cert, key) != 1)
+                                                  reinterpret_cast<const unsigned char*>("MST Server"), -1, -1, 0) == 1 &&
+                       X509_set_subject_name(cert, name) == 1 && X509_set_issuer_name(cert, name) == 1;
+    X509_NAME_free(name);
+    if (!named || X509_set_pubkey(cert, key) != 1)
     {
         X509_free(cert);
         fail(error, "cannot fill in the certificate: " + openssl_error());
