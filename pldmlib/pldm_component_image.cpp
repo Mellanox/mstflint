@@ -82,6 +82,10 @@ bool PldmComponenetImage::unpack(PldmBuffer& buff, u_int8_t pldmRevision)
     buff.read(componentSize);
     buff.read(componentVersionStringType);
     buff.read(componentVersionStringLength);
+    if (componentVersionStringLength > buff.remaining())
+    {
+        return false;
+    }
     buff.read(componentVersionString, componentVersionStringLength);
 
     // check if the package header format revision is supported downstream device record support
@@ -108,6 +112,10 @@ bool PldmComponenetImage::unpack(PldmBuffer& buff, u_int8_t pldmRevision)
 
 bool PldmComponenetImage::readComponentData(PldmBuffer& buff)
 {
+    if ((u_int64_t)componentLocationOffset + componentSize > buff.size())
+    {
+        return false;
+    }
     componentData = new u_int8_t[componentSize];
     // restore previous position
     long pos = buff.tell();
