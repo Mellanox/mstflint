@@ -74,7 +74,7 @@ class BufferGenerator:
 
         Args:
             input_file: Path to input text file
-            device_type: Device type for --gen_cmd_buffer (gpu, hca, switch, retimer)
+            device_type: Device type for --gen_cmd_buffer (gpu, hca, switch)
             mode: Output mode ("bin" for binary files, "script" for shell script)
             output_prefix: Prefix for binary files (bin mode only)
             output_path: Output path - directory for bin mode, file path for script mode
@@ -544,8 +544,8 @@ Input file format (one command per line):
     parser.add_argument(
         '--device-type', '-d',
         type=str.lower,
-        choices=['gpu', 'hca', 'switch', 'retimer'],
-        metavar="{'GPU', 'HCA', 'Switch', 'Retimer'}",
+        choices=['gpu', 'hca', 'switch'],
+        metavar="{'GPU', 'HCA', 'Switch'}",
         default='GPU',
         help='Device type for --gen_cmd_buffer (default: gpu)'
     )
