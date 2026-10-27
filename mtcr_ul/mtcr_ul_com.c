@@ -3010,13 +3010,52 @@ int change_i2c_secondary_address(mfile* mf, DType dtype)
 }
 #endif /* ifdef ENABLE_MST_DEV_I2C */
 
+// RDMA device name to PCI address
+// Returns 0 on success with domain/bus/dev/func populated, -1 on failure.
+// RDMA name could be any name, user can set it using "rdma dev set <rdma_name> <new_name>"
+static int mtcr_resolve_rdma_device_pci(const char* name, unsigned* domain, unsigned* bus, unsigned* dev, unsigned* func)
+{
+    char mbuf[4048] = {0};
+    char pbuf[4048] = {0};
+    char* base;
+    int r, scnt;
+
+    r = snprintf(mbuf, sizeof(mbuf) - 1, "/sys/class/infiniband/%s/device", name);
+    if ((r <= 0) || (r >= (int)sizeof(mbuf)))
+    {
+        return -1;
+    }
+
+    r = readlink(mbuf, pbuf, sizeof(pbuf) - 1);
+    if (r < 0)
+    {
+        DBG_PRINTF("Unable to read link %s: %s\n", mbuf, strerror(errno));
+        return -1;
+    }
+    pbuf[r] = '\0';
+
+    base = basename(pbuf);
+    if (!base)
+    {
+        return -1;
+    }
+
+    scnt = sscanf(base, "%8x:%x:%x.%x", domain, bus, dev, func);
+    if (scnt != 4)
+    {
+        return -1;
+    }
+
+    return 0;
+}
+
 static MType mtcr_parse_name(const char* name, int* force, unsigned* domain_p, unsigned* bus_p, unsigned* dev_p, unsigned* func_p)
 {
     unsigned my_domain = 0;
     unsigned my_bus;
     unsigned my_dev;
     unsigned my_func;
-    int scnt, r;
+    int scnt;
     int force_config = 0;
     char config[] = "/config";
     char resource0[] = "/resource0";
@@ -3115,45 +3154,6 @@ static MType mtcr_parse_name(const char* name, int* force, unsigned* domain_p, u
         return MST_PCICONF;
     }
 
-    if ((sscanf(name, "mthca%x", &tmp) == 1) || (sscanf(name, "mlx4_%x", &tmp) == 1) || (sscanf(name, "mlx5_%x", &tmp) == 1))
-    {
-        char mbuf[4048] = {0};
-        char pbuf[4048] = {0};
-        char* base;
-
-        r = snprintf(mbuf, sizeof(mbuf) - 1, "/sys/class/infiniband/%s/device", name);
-        if ((r <= 0) || (r >= (int)sizeof mbuf))
-        {
-            fprintf(stderr, "Unable to print device name %s\n", name);
-            goto parse_error;
-        }
-
-        r = readlink(mbuf, pbuf, sizeof(pbuf) - 1);
-        if (r < 0)
-        {
-            perror("read link");
-            fprintf(stderr, "Unable to read link %s\n", mbuf);
-            return MST_ERROR;
-        }
-        pbuf[r] = '\0';
-
-        base = basename(pbuf);
-        if (!base)
-        {
-            goto parse_error;
-        }
-        scnt = sscanf(base, "%x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
-        if (scnt != 4)
-        {
-            goto parse_error;
-        }
-        if (sscanf(name, "mlx5_%x", &tmp) == 1)
-        {
-            force_config = 1;
-        }
-        goto name_parsed;
-    }
-
     scnt = sscanf(name, "%x:%x.%x", &my_bus, &my_dev, &my_func);
     if (scnt == 3)
     {
@@ -3182,7 +3182,12 @@ static MType mtcr_parse_name(const char* name, int* force, unsigned* domain_p, u
         goto name_parsed;
     }
 
-parse_error:
+    if (mtcr_resolve_rdma_device_pci(name, &my_domain, &my_bus, &my_dev, &my_func) == 0)
+    {
+        force_config = 1;
+        goto name_parsed;
+    }
+
     fprintf(stderr, "Unable to parse device name %s\n", name);
     errno = EINVAL;
     return MST_ERROR;
