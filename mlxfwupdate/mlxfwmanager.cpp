@@ -692,8 +692,9 @@ int mainEntry(int argc, char* argv[])
                 if (dm_is_gpu(deviceType) || dm_is_cpu(deviceType))
                 {
                     print_err("-E- GPU or CPU device is not supported\n");
+                    res = ERR_CODE_UNSUPPORTED_DEVICE;
                     delete dev;
-                    continue;
+                    goto early_err_clean_up;
                 }
 
                 if (cmd_params.clear_semaphore)
