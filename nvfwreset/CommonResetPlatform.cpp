@@ -38,6 +38,7 @@
 #include "tools_layouts/reg_access_hca_layouts.h"
 #include "mft_core/mft_core_utils/logger/Logger.h"
 #include "common/tools_string.h"
+#include "common/tools_time.h"
 
 CommonResetPlatform::CommonResetPlatform(mfile* mf,
                                          const ResetFlowParameters& resetParams,
@@ -82,7 +83,7 @@ void CommonResetPlatform::CheckUptimeAfterReset()
     if (mgir.hw_info.uptime > _uptimeBeforeReset)
     {
         throw mft_core::MftGeneralException(
-          nbu::mft::common::string_format("Uptime after reset is less than uptime before reset, reset not completed"));
+          nbu::mft::common::string_format("Uptime after reset is not less than uptime before reset, reset not completed"));
     }
     LOG.Debug("CommonResetPlatform::CheckUptimeAfterReset - MGIR.uptime=" + std::to_string(mgir.hw_info.uptime));
     PrintEndResetFlowMessage();
@@ -100,7 +101,8 @@ void CommonResetPlatform::SendMFRL()
     }
 
     mfrl.reset_trigger = static_cast<u_int8_t>(ResetLevelBitmask::PCI_RESET);
-    mfrl.pci_sync_for_fw_update_start = static_cast<u_int8_t>(ResetSyncBitmask::FW_FLOW);
+    // MFRL takes the sync as an enum (2: Synced_Tool_Flow); only MROQ reports the syncs as a bitmask.
+    mfrl.pci_sync_for_fw_update_start = static_cast<u_int8_t>(_resetParams.sync);
     mfrl.rst_type_sel = static_cast<u_int8_t>(_resetParams.type);
     mfrl.pci_reset_req_method = static_cast<u_int8_t>(_resetParams.method);
     LOG.Info("CommonResetPlatform::SendMFRL: reset_trigger: " + std::to_string(mfrl.reset_trigger) +
@@ -113,6 +115,70 @@ void CommonResetPlatform::SendMFRL()
         throw mft_core::MftGeneralException(
           nbu::mft::common::string_format("Failed to send %s: %s", "MFRL", reg_access_err2str(status)));
     }
+    WaitForResetTriggerState();
     PrintEndResetFlowMessage();
     LOG.Info("CommonResetPlatform::SendMFRL: MFRL sent successfully");
+}
+
+unsigned long long CommonResetPlatform::GetEmbeddedCpuOsShutdownTimeoutMs()
+{
+    struct reg_access_hca_dtor_reg_ext dtor;
+    memset(&dtor, 0, sizeof(dtor));
+    reg_access_status_t status = reg_access_dtor(_mf, REG_ACCESS_METHOD_GET, &dtor);
+    if (status != ME_REG_ACCESS_OK)
+    {
+        throw mft_core::MftGeneralException(
+          nbu::mft::common::string_format("Failed to send %s: %s", "DTOR", reg_access_err2str(status)));
+    }
+    const unsigned long long multipliersMs[] = {1, 1000, 60 * 1000, 60 * 60 * 1000};
+    if (dtor.EMBEDDED_CPU_OS_SHUTDOWN_TO.to_multiplier > 3)
+    {
+        throw mft_core::MftGeneralException("Unknown DTOR timeout multiplier");
+    }
+    return dtor.EMBEDDED_CPU_OS_SHUTDOWN_TO.to_value * multipliersMs[dtor.EMBEDDED_CPU_OS_SHUTDOWN_TO.to_multiplier];
+}
+
+// The FW arms the reset only once it reaches Waiting_For_Reset_Trigger. A BlueField first shuts its ARM OS down,
+// so a hot reset sent before that state is a plain PCIe reset and the chip keeps running.
+void CommonResetPlatform::WaitForResetTriggerState()
+{
+    const std::map<u_int8_t, std::string> errorStates = {
+      {MFRL_RESET_STATE_ERROR_NEGOTIATION_TIMEOUT, "negotiation timeout"},
+      {MFRL_RESET_STATE_ERROR_NEGOTIATION_DIS_ACK, "negotiation dis-acknowledgment"},
+      {MFRL_RESET_STATE_ERROR_DRIVER_UNLOAD_TIMEOUT, "driver unload timeout"},
+      {MFRL_RESET_STATE_ERROR_ARM_OS_IS_UP, "ARM OS is up and needs to be shut down"}};
+    const unsigned long long timeoutMs = GetEmbeddedCpuOsShutdownTimeoutMs();
+    LOG.Info("CommonResetPlatform::WaitForResetTriggerState: timeout(ms): " + std::to_string(timeoutMs));
+    unsigned long long elapsedMs = 0;
+    int lastState = -1;
+    while (true)
+    {
+        struct reg_access_hca_mfrl_reg_ext mfrl;
+        memset(&mfrl, 0, sizeof(mfrl));
+        if (reg_access_mfrl(_mf, REG_ACCESS_METHOD_GET, &mfrl) == ME_REG_ACCESS_OK)
+        {
+            if (mfrl.reset_state != lastState)
+            {
+                lastState = mfrl.reset_state;
+                LOG.Info("CommonResetPlatform::WaitForResetTriggerState: reset_state: " + std::to_string(lastState) +
+                         " after " + std::to_string(elapsedMs) + " ms");
+            }
+            if (mfrl.reset_state == MFRL_RESET_STATE_WAITING_FOR_RESET_TRIGGER)
+            {
+                return;
+            }
+            auto errorState = errorStates.find(mfrl.reset_state);
+            if (errorState != errorStates.end())
+            {
+                throw mft_core::MftGeneralException("The reset flow encountered a failure due to a reset state error of " +
+                                                    errorState->second);
+            }
+        }
+        if (elapsedMs >= timeoutMs)
+        {
+            throw mft_core::MftGeneralException("The reset state did not change to 'waiting for reset trigger' state");
+        }
+        nbu::mft::common::mft_msleep(MFRL_RESET_STATE_POLL_INTERVAL_MS);
+        elapsedMs += MFRL_RESET_STATE_POLL_INTERVAL_MS;
+    }
 }
