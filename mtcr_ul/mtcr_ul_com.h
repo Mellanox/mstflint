@@ -111,6 +111,44 @@ dev_info* mdevices_info_ul(int mask, int* len);
 dev_info* mdevices_info_v_ul(int mask, int* len, int verbosity);
 
 /*
+ * Display order for tools that index devices positionally (mst status -v, mlxfwmanager
+ * "Device #N"): device type, then PCIe address. Discovery returns readdir order, which can
+ * differ after a power cycle. Expects MDEVS_TAVOR_CR entries; the key is in the pci union member.
+ */
+static inline int mdevices_display_order_compare(const void* elem1, const void* elem2)
+{
+    const dev_info* a = (const dev_info*)elem1;
+    const dev_info* b = (const dev_info*)elem2;
+
+    if (a->pci.dev_id != b->pci.dev_id)
+    {
+        return a->pci.dev_id < b->pci.dev_id ? -1 : 1;
+    }
+    if (a->pci.domain != b->pci.domain)
+    {
+        return a->pci.domain < b->pci.domain ? -1 : 1;
+    }
+    if (a->pci.bus != b->pci.bus)
+    {
+        return a->pci.bus < b->pci.bus ? -1 : 1;
+    }
+    if (a->pci.dev != b->pci.dev)
+    {
+        return a->pci.dev < b->pci.dev ? -1 : 1;
+    }
+    if (a->pci.func != b->pci.func)
+    {
+        return a->pci.func < b->pci.func ? -1 : 1;
+    }
+    return 0;
+}
+
+static inline int mdevices_display_order_compare_ptr(const void* elem1, const void* elem2)
+{
+    return mdevices_display_order_compare(*(const dev_info* const*)elem1, *(const dev_info* const*)elem2);
+}
+
+/*
  * Open Mellanox Software tools_ul(mst) driver. Device type==INFINIHOST
  * Return valid void ptr or 0 on failure
  */
