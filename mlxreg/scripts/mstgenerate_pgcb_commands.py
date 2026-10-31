@@ -503,6 +503,29 @@ def validate_output_path(output_path, mode):
     return True
 
 
+def parse_args_unrecognized_first(parser):
+    # argparse checks required arguments while parsing and only reports unrecognized ones
+    # afterwards, so an invalid option is reported as a missing --input. Relax the required
+    # flags for a first pass to get the order right. --help is left to argparse, which
+    # renders the usage text from those same flags while parsing.
+    if "-h" in sys.argv[1:] or "--help" in sys.argv[1:]:
+        return parser.parse_args()
+
+    required = [action for action in parser._actions if action.required]
+    for action in required:
+        action.required = False
+    try:
+        unrecognized = parser.parse_known_args()[1]
+    finally:
+        for action in required:
+            action.required = True
+
+    if unrecognized:
+        parser.error("unrecognized arguments: {}".format(" ".join(unrecognized)))
+
+    return parser.parse_args()
+
+
 def main():
     tool_name = os.path.basename(__file__).split('.')[0]
     parser = argparse.ArgumentParser(
@@ -582,7 +605,7 @@ Input file format (one command per line):
         version=tools_version.GetVersionString(tool_name, None)
     )
 
-    args = parser.parse_args()
+    args = parse_args_unrecognized_first(parser)
 
     # Validate input file
     validate_input_path(args.input)
