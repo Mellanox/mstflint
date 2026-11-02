@@ -55,7 +55,7 @@ ServerRequest::ServerRequest(const char* url,
                              int compare_ffv,
                              bool show_progress,
                              string key,
-                             string certificate,
+                             string caBundlePath,
                              unsigned int numberOfRetrials) :
     _LastErrorNo(0)
 {
@@ -64,7 +64,7 @@ ServerRequest::ServerRequest(const char* url,
     _WebService = _Url + "/downloads/firmware/mlx_fw_online_query.php";
     _compare_ffv = compare_ffv;
     _show_progress = show_progress;
-    _ceritifcate = certificate;
+    _caBundlePath = caBundlePath;
     _numberOfRetrials = numberOfRetrials;
     _headers = NULL;
     if (proxy != NULL)
@@ -494,11 +494,11 @@ int ServerRequest::curl_request(const char* url, const char* data, const char* d
     curl_easy_setopt(_curl, CURLOPT_URL, url);
     curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, write_data);
     curl_easy_setopt(_curl, CURLOPT_WRITEDATA, fp);
-    if (!_ceritifcate.empty())
+    if (!_caBundlePath.empty())
     {
         // Use the CA bundle given via --ssl-certificate. Otherwise fall back
         // to libcurl's default CA bundle (the system trust store).
-        curl_easy_setopt(_curl, CURLOPT_CAINFO, _ceritifcate.c_str());
+        curl_easy_setopt(_curl, CURLOPT_CAINFO, _caBundlePath.c_str());
     }
     if (_show_progress)
     {
@@ -597,11 +597,11 @@ int ServerRequest::curl_request_str(const char* url, const char* data, string& r
     curl_easy_setopt(_curl, CURLOPT_URL, url);
     curl_easy_setopt(_curl, CURLOPT_WRITEDATA, &response);
     curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, writebuf_data);
-    if (!_ceritifcate.empty())
+    if (!_caBundlePath.empty())
     {
         // Use the CA bundle given via --ssl-certificate. Otherwise fall back
         // to libcurl's default CA bundle (the system trust store).
-        curl_easy_setopt(_curl, CURLOPT_CAINFO, _ceritifcate.c_str());
+        curl_easy_setopt(_curl, CURLOPT_CAINFO, _caBundlePath.c_str());
     }
 
     _headers = curl_slist_append(_headers, "Accept: application/json");
