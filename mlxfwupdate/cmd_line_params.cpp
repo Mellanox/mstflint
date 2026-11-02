@@ -105,7 +105,10 @@ CmdLineParams::CmdLineParams()
 
 #else
 #ifdef MSTFLINT
-    certificate = (string)ROOT_PATH + "etc/mstflint/ca-bundle.crt";
+    // An empty certificate makes libcurl use its default CA bundle, which
+    // is the system trust store maintained by the distribution (e.g. the
+    // ca-certificates package). It can be overridden with --ssl-certificate.
+    certificate = "";
 #else
     certificate = (string)ROOT_PATH + "etc/mft/ca-bundle.crt";
 #endif

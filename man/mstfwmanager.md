@@ -127,7 +127,7 @@ OPTIONS
     : MFA | self\_extractor - default All
 
   - **-\-ssl-certificate** Certificate  
-    : SSL certificate For secure connection
+    : CA bundle for TLS peer verification, overriding the default system trust store
 
 # EXAMPLES
 

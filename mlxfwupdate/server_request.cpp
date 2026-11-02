@@ -494,7 +494,12 @@ int ServerRequest::curl_request(const char* url, const char* data, const char* d
     curl_easy_setopt(_curl, CURLOPT_URL, url);
     curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, write_data);
     curl_easy_setopt(_curl, CURLOPT_WRITEDATA, fp);
-    curl_easy_setopt(_curl, CURLOPT_CAINFO, _ceritifcate.c_str());
+    if (!_ceritifcate.empty())
+    {
+        // Use the CA bundle given via --ssl-certificate. Otherwise fall back
+        // to libcurl's default CA bundle (the system trust store).
+        curl_easy_setopt(_curl, CURLOPT_CAINFO, _ceritifcate.c_str());
+    }
     if (_show_progress)
     {
         // Internal CURL progressmeter must be disabled if we provide our own callback
@@ -592,7 +597,12 @@ int ServerRequest::curl_request_str(const char* url, const char* data, string& r
     curl_easy_setopt(_curl, CURLOPT_URL, url);
     curl_easy_setopt(_curl, CURLOPT_WRITEDATA, &response);
     curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, writebuf_data);
-    curl_easy_setopt(_curl, CURLOPT_CAINFO, _ceritifcate.c_str());
+    if (!_ceritifcate.empty())
+    {
+        // Use the CA bundle given via --ssl-certificate. Otherwise fall back
+        // to libcurl's default CA bundle (the system trust store).
+        curl_easy_setopt(_curl, CURLOPT_CAINFO, _ceritifcate.c_str());
+    }
 
     _headers = curl_slist_append(_headers, "Accept: application/json");
     _headers = curl_slist_append(_headers, "Content-Type: application/json");
