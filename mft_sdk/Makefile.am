@@ -49,7 +49,7 @@ AM_CPPFLAGS += $(JSON_CFLAGS)
 
 AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC)
 
-EXTRA_DIST = README.md
+EXTRA_DIST = README.md libmstflint_sdk.map
 
 # Optional, flag-gated dependencies. The SDK source gates its use of these
 # subsystems on the same ENABLE_* macros, so the library is self-consistent
@@ -101,7 +101,12 @@ libmstflint_sdk_la_SOURCES = \
     mft_sdk_types.h
 
 libmstflint_sdk_la_CXXFLAGS = $(AM_CXXFLAGS) $(COMPILER_FPIC)
-libmstflint_sdk_la_LDFLAGS = -shared -avoid-version -Wl,-soname,libmstflint_sdk.so -Wl,--allow-multiple-definition -Wl,--no-undefined
+# Export only the SDK API listed in libmstflint_sdk.map. All other symbols
+# linked into the library (mtcr, layouts, jsoncpp, spdlog, std:: instances)
+# become local, so applications cannot see or override them.
+libmstflint_sdk_la_LDFLAGS = -shared -avoid-version -Wl,-soname,libmstflint_sdk.so -Wl,--allow-multiple-definition -Wl,--no-undefined \
+    -Wl,--version-script=$(srcdir)/libmstflint_sdk.map
+EXTRA_libmstflint_sdk_la_DEPENDENCIES = libmstflint_sdk.map
 
 libmstflint_sdk_la_LIBADD = \
     $(top_builddir)/hca_capabilities/libhca_capabilities.la \
