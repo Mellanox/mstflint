@@ -42,6 +42,7 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/sinks/rotating_file_sink.h>
+#include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/syslog_sink.h>
 
 #include <algorithm>
@@ -281,13 +282,23 @@ struct NvToolsLogger::Impl
                     break;
                 case nvtoolslogger::Sink::FILE_SINK:
                 {
-                    std::string logDir = getBaseLogDirectory();
-                    cleanupOldLogFiles(logDir, config.getMaxLogDirFiles());
-                    std::string logPath = logDir + getProcessLogName() + ".log";
+                    const std::string& customPath = config.getLogFilePath();
                     try
                     {
-                        sinks.push_back(std::make_shared<spdlog::sinks::rotating_file_sink_st>(
-                          logPath, LOG_FILE_MAX_SIZE, LOG_FILE_MAX_FILES));
+                        if (!customPath.empty())
+                        {
+                            // Shared by concurrent tool runs: plain append, because per-process
+                            // size rotation would rename the file out from under the others.
+                            sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_st>(customPath));
+                        }
+                        else
+                        {
+                            std::string logDir = getBaseLogDirectory();
+                            cleanupOldLogFiles(logDir, config.getMaxLogDirFiles());
+                            std::string logPath = logDir + getProcessLogName() + ".log";
+                            sinks.push_back(std::make_shared<spdlog::sinks::rotating_file_sink_st>(
+                              logPath, LOG_FILE_MAX_SIZE, LOG_FILE_MAX_FILES));
+                        }
                     }
                     catch (const spdlog::spdlog_ex& ex)
                     {
