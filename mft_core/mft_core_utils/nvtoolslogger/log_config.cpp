@@ -97,6 +97,7 @@ void LogConfig::initDefaults()
     _moduleLevels.clear();
     _activeSinks.clear();
     _maxLogDirFiles = DEFAULT_MAX_LOG_DIR_FILES;
+    _logFilePath.clear();
 }
 
 void LogConfig::reset()
@@ -246,6 +247,16 @@ uint32_t LogConfig::getMaxLogDirFiles() const
     return _maxLogDirFiles;
 }
 
+void LogConfig::setLogFilePath(const std::string& path)
+{
+    _logFilePath = path;
+}
+
+const std::string& LogConfig::getLogFilePath() const
+{
+    return _logFilePath;
+}
+
 void LogConfig::show() const
 {
     std::cout << "NVIDIA Tools Logger Configuration" << std::endl;
@@ -254,6 +265,8 @@ void LogConfig::show() const
 
     std::cout << "Global severity level: " << getSeverityName(_globalLevel) << std::endl;
     std::cout << "Max log directory files: " << _maxLogDirFiles << std::endl;
+    std::cout << "Log file: "
+              << (_logFilePath.empty() ? "default (per-process file in the log directory)" : _logFilePath) << std::endl;
     std::cout << std::endl;
 
     std::cout << "Active sinks:";
@@ -306,6 +319,7 @@ std::string LogConfig::toJson() const
     root["version"] = CONFIG_VERSION;
     root["global_level"] = getSeverityName(_globalLevel);
     root["max_log_dir_files"] = static_cast<Json::UInt>(_maxLogDirFiles);
+    root["log_file"] = _logFilePath;
 
     Json::Value sinksArray(Json::arrayValue);
     for (const auto& sink : _activeSinks)
@@ -352,6 +366,11 @@ bool LogConfig::fromJson(const std::string& jsonStr)
     if (root.isMember("max_log_dir_files") && root["max_log_dir_files"].isUInt())
     {
         _maxLogDirFiles = root["max_log_dir_files"].asUInt();
+    }
+
+    if (root.isMember("log_file") && root["log_file"].isString())
+    {
+        _logFilePath = root["log_file"].asString();
     }
 
     if (root.isMember("sinks") && root["sinks"].isArray())

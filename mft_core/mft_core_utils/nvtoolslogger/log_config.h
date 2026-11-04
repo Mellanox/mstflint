@@ -73,6 +73,10 @@ public:
     void setMaxLogDirFiles(uint32_t maxFiles);
     uint32_t getMaxLogDirFiles() const;
 
+    /* Empty means the file sink writes a per-process file in the default log directory. */
+    void setLogFilePath(const std::string& path);
+    const std::string& getLogFilePath() const;
+
     void show() const;
 
 private:
@@ -84,6 +88,7 @@ private:
     std::map<std::string, Severity> _moduleLevels;
     std::vector<Sink> _activeSinks;
     uint32_t _maxLogDirFiles;
+    std::string _logFilePath;
 };
 
 } // namespace nvtoolslogger
