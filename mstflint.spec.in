@@ -255,6 +255,7 @@ fi
 %{_includedir}/mtcr_ul/mtcr.h
 %{_includedir}/mtcr_ul/mtcr_com_defs.h
 %{_libdir}/mstflint/libmtcr_ul.a
+%{_libdir}/mstflint/libmtcr_ul_deprecation.a
 %{_libdir}/libmtcr_ul.a
 
 %{mstflint_python_tools}/tools_version.py

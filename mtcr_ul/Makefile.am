@@ -91,15 +91,30 @@ libmtcr_ul_la_LIBADD = $(libmtcr_ul_la_DEPENDENCIES)
 libraryincludedir=$(includedir)/mstflint
 libraryinclude_HEADERS = $(top_srcdir)/include/mtcr_ul/mtcr.h  $(top_srcdir)/include/mtcr_ul/mtcr_com_defs.h  $(top_srcdir)/include/mtcr_ul/mtcr_mf.h
 
+# The libmtcr_ul.a deprecation notice (see mtcr_ul_deprecation.c), built as a
+# one-member archive that is installed next to libmtcr_ul.a and named only in
+# the installed linker script below. -fno-lto keeps the object plain whatever
+# CFLAGS say, and -g0 keeps it from adding debug info to programs.
+mtcrnoticedir = $(pkglibdir)
+mtcrnotice_DATA = libmtcr_ul_deprecation.a
+mtcr_ul_deprecation.o: $(srcdir)/mtcr_ul_deprecation.c
+	$(AM_V_CC)$(CC) $(CPPFLAGS) $(CFLAGS) -g0 -fno-lto -c -o $@ $(srcdir)/mtcr_ul_deprecation.c
+libmtcr_ul_deprecation.a: mtcr_ul_deprecation.o
+	$(AR) cr $@ mtcr_ul_deprecation.o && $(RANLIB) $@
+EXTRA_DIST = mtcr_ul_deprecation.c
+
 # $(libdir)/libmtcr_ul.a is a GNU ld script, not a symlink, so -lmtcr_ul also
-# links libstdc++ (the same trick as glibc's libc.so and libncurses.so).
+# links libstdc++ (the same trick as glibc's libc.so and libncurses.so) and the
+# deprecation notice above. EXTERN makes the linker take the notice's archive
+# member once per program, however often -lmtcr_ul is given.
 # The script is written in the build directory, then installed with
 # $(INSTALL_DATA), which replaces an old symlink there instead of writing
 # through it into the real archive.
 install-exec-hook:
 	rm -f $(DESTDIR)$(pkglibdir)/libmtcr_ul.so* $(DESTDIR)$(pkglibdir)/libmtcr_ul.la
-	echo '/* GNU ld script: libmtcr_ul.a contains C++ code, so link libstdc++ too */' > libmtcr_ul.ldscript
-	echo 'INPUT($(pkglibdir)/libmtcr_ul.a -lstdc++)' >> libmtcr_ul.ldscript
+	echo '/* GNU ld script: the libmtcr_ul.a archive, its deprecation notice, and libstdc++ for its C++ code */' > libmtcr_ul.ldscript
+	echo 'EXTERN(mtcr_ul_deprecation_notice)' >> libmtcr_ul.ldscript
+	echo 'INPUT($(pkglibdir)/libmtcr_ul.a $(pkglibdir)/libmtcr_ul_deprecation.a -lstdc++)' >> libmtcr_ul.ldscript
 	$(INSTALL_DATA) libmtcr_ul.ldscript $(DESTDIR)$(libdir)/libmtcr_ul.a
 
-CLEANFILES = libmtcr_ul.ldscript
+CLEANFILES = libmtcr_ul.ldscript mtcr_ul_deprecation.o libmtcr_ul_deprecation.a

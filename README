@@ -13,6 +13,11 @@ MSTFLINT Package - Firmware Burning and Diagnostics Tools
 
     ----------------------------------------------------------------------------
     NOTES:
+    Linking libmtcr_ul.a (-lmtcr_ul) prints a deprecation notice. The deprecation
+    of libmtcr_ul.a will be announced after mstflint-4.39.0. Programs that link it
+    are encouraged to migrate to the mstflint SDK, libmstflint_sdk.so (pkg-config:
+    mstflint_sdk).
+
     As of mstflint-4.8.0 ./configure --enable-cs will be deprecated, instead need to use
     ./configure --enable-openssl which will enable all open SSL features including CS.
 
