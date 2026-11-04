@@ -50,8 +50,10 @@ libmtcr_ul_la_SOURCES = mtcr_ul.c mtcr_ib.h  mtcr_int_defs.h\
 libmtcr_ul_la_CFLAGS = -W -Wall -g -MP -MD -fPIC -DMTCR_API="" -DMST_UL
 # The MTCR layer of the central NVIDIA Tools logger. Every tool links
 # libmtcr_ul, so this is what puts mft_log() in reach of the whole suite.
-# -lstdc++ is already in LDFLAGS below, so the C++ logger adds no new link
-# requirement.
+# Both libraries below are C++ (device_info is reached from mopen(), the logger
+# from every MTCR_LOG_* call), so linking libmtcr_ul.a also needs -lstdc++.
+# The -lstdc++ in LDFLAGS below is recorded only in the .la, which
+# install-exec-hook deletes; the hook passes it on to consumers instead.
 libmtcr_ul_la_DEPENDENCIES = $(top_builddir)/mft_core/device/device_info/libdevice_info.la \
                              $(top_builddir)/mft_core/mft_core_utils/nvtoolslogger/libnvtoolslogger.la
 
@@ -89,6 +91,15 @@ libmtcr_ul_la_LIBADD = $(libmtcr_ul_la_DEPENDENCIES)
 libraryincludedir=$(includedir)/mstflint
 libraryinclude_HEADERS = $(top_srcdir)/include/mtcr_ul/mtcr.h  $(top_srcdir)/include/mtcr_ul/mtcr_com_defs.h  $(top_srcdir)/include/mtcr_ul/mtcr_mf.h
 
+# $(libdir)/libmtcr_ul.a is a GNU ld script, not a symlink, so -lmtcr_ul also
+# links libstdc++ (the same trick as glibc's libc.so and libncurses.so).
+# The script is written in the build directory, then installed with
+# $(INSTALL_DATA), which replaces an old symlink there instead of writing
+# through it into the real archive.
 install-exec-hook:
 	rm -f $(DESTDIR)$(pkglibdir)/libmtcr_ul.so* $(DESTDIR)$(pkglibdir)/libmtcr_ul.la
-	ln -snf mstflint/libmtcr_ul.a $(DESTDIR)$(libdir)/libmtcr_ul.a
+	echo '/* GNU ld script: libmtcr_ul.a contains C++ code, so link libstdc++ too */' > libmtcr_ul.ldscript
+	echo 'INPUT($(pkglibdir)/libmtcr_ul.a -lstdc++)' >> libmtcr_ul.ldscript
+	$(INSTALL_DATA) libmtcr_ul.ldscript $(DESTDIR)$(libdir)/libmtcr_ul.a
+
+CLEANFILES = libmtcr_ul.ldscript
