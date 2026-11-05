@@ -61,6 +61,10 @@
 #define SET_MAX_LOG_FILES_FLAG "set-max-log-files"
 #define SET_MAX_LOG_FILES_FLAG_SHORT 'n'
 
+#define LOG_FILE_FLAG "log-file"
+#define LOG_FILE_FLAG_SHORT 'f'
+#define LOG_FILE_DEFAULT_VALUE "default"
+
 #define HELP_FLAG "help"
 #define HELP_FLAG_SHORT 'h'
 
@@ -99,6 +103,13 @@ bool parsePositiveCount(const std::string& value, uint32_t max, uint32_t& out)
     }
     return true;
 }
+
+// The saved path is used by every tool from whatever directory it runs in, so a relative
+// path would land in a different place on each run.
+bool isAbsolutePath(const std::string& path)
+{
+    return !path.empty() && path[0] == '/';
+}
 } // namespace
 
 LogConfigUi::LogConfigUi() :
@@ -108,7 +119,8 @@ LogConfigUi::LogConfigUi() :
     _hasGlobalLevel(false),
     _globalLevel(DEFAULT_SEVERITY),
     _hasMaxLogDirFiles(false),
-    _maxLogDirFiles(DEFAULT_MAX_LOG_DIR_FILES)
+    _maxLogDirFiles(DEFAULT_MAX_LOG_DIR_FILES),
+    _hasLogFilePath(false)
 {
     initCmdParser();
 }
@@ -136,6 +148,10 @@ void LogConfigUi::initCmdParser()
     AddOptions(SET_MAX_LOG_FILES_FLAG, SET_MAX_LOG_FILES_FLAG_SHORT, "COUNT",
                "Set maximum number of log files in the log directory (1-" + std::to_string(MAX_LOG_DIR_FILES_LIMIT) +
                  ", default: " + std::to_string(DEFAULT_MAX_LOG_DIR_FILES) + ")");
+
+    AddOptions(LOG_FILE_FLAG, LOG_FILE_FLAG_SHORT, "PATH",
+               "Write the file sink to PATH (absolute) shared by all tools, and enable the file sink. "
+               "Use '" LOG_FILE_DEFAULT_VALUE "' to restore the per-process file in the default log directory");
 
     AddOptions(SHOW_FLAG, SHOW_FLAG_SHORT, "", "Display the active configuration and resolved layer settings");
 
@@ -295,6 +311,27 @@ ParseStatus LogConfigUi::HandleOption(std::string name, std::string value)
         return PARSE_OK;
     }
 
+    if (name == LOG_FILE_FLAG)
+    {
+        if (value == LOG_FILE_DEFAULT_VALUE)
+        {
+            _logFilePath.clear();
+        }
+        else if (isAbsolutePath(value))
+        {
+            _logFilePath = value;
+        }
+        else
+        {
+            std::cerr << "Error: Invalid path '" << value << "' for --" << LOG_FILE_FLAG
+                      << ". Expected an absolute path or '" << LOG_FILE_DEFAULT_VALUE << "'." << std::endl;
+            return PARSE_ERROR;
+        }
+        _hasLogFilePath = true;
+        _sinksToEnable.push_back(Sink::FILE_SINK);
+        return PARSE_OK;
+    }
+
     if (name == SHOW_FLAG)
     {
         _action = Action::SHOW;
@@ -327,7 +364,7 @@ int LogConfigUi::run(int argc, char** argv)
         return 1;
     }
 
-    bool hasModifications = _hasGlobalLevel || _hasMaxLogDirFiles || !_moduleOverrides.empty() ||
+    bool hasModifications = _hasGlobalLevel || _hasMaxLogDirFiles || _hasLogFilePath || !_moduleOverrides.empty() ||
                             !_modulesToClear.empty() || !_sinksToEnable.empty() || !_sinksToDisable.empty();
 
     if (_action == Action::NONE && !hasModifications)
@@ -367,6 +404,11 @@ int LogConfigUi::run(int argc, char** argv)
         if (_hasMaxLogDirFiles)
         {
             config.setMaxLogDirFiles(_maxLogDirFiles);
+        }
+
+        if (_hasLogFilePath)
+        {
+            config.setLogFilePath(_logFilePath);
         }
 
         for (const auto& moduleName : _modulesToClear)
