@@ -456,6 +456,7 @@
 #define PCAM_TEST_MODE_FSM_STATE_CAP_MASK 0x2000000
 
 #define OPERATIONAL_ERROR_STR "ME_ICMD_OPERATIONAL_ERROR"
+#define CABLE_DEVICE_ERROR_STR "Cable devices are not an mstlink target"
 
 #define MAX_SBYTE 127
 #define MIN_SBYTE -128
