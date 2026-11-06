@@ -706,8 +706,28 @@ int main(int argc, char** argv)
 
         /* dev_lst = devs; */
         /* dev_lst_len = len; */
+        /* Sort a pointer list, so the backing array keeps the order the other
+         * status sections print in. */
+        dev_info** order = (dev_info**)malloc(sizeof(dev_info*) * len);
+        if (!order)
+        {
+            printf("-E- Failed to allocate memory for the device display order\n");
+            goto cleanup;
+        }
+        int order_count = 0;
         for (i = 0; i < len; i++)
         {
+            if ((devs[i].type == MDEVS_TAVOR_CR) && (strstr(devs[i].dev_name, "cable_") == NULL))
+            {
+                order[order_count++] = &devs[i];
+            }
+        }
+        qsort(order, order_count, sizeof(dev_info*), mdevices_display_order_compare_ptr);
+
+        int order_idx;
+        for (order_idx = 0; order_idx < order_count; order_idx++)
+        {
+            i = (int)(order[order_idx] - devs);
             if ((devs[i].type == MDEVS_TAVOR_CR) && (strstr(devs[i].dev_name, "cable_") == NULL))
             {
                 mfile* mf = mopen(devs[i].dev_name);
@@ -810,6 +830,7 @@ int main(int argc, char** argv)
                 }
             }
         }
+        free(order);
     }
 
     /* print remote devices (registered as marker files, see mtcr_remote.h) */

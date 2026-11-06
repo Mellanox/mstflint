@@ -53,6 +53,7 @@
 
 #include "pldm_utils/pldm_utils.h"
 #include "mft_utils/mft_utils.h"
+#include "mtcr_ul/mtcr_ul_com.h"
 
 #define TUPLE_POS_COMPID 0
 #define TUPLE_POS_BUFF_PTR 1
@@ -1913,6 +1914,8 @@ int getLocalDevices(dev_info** devs)
     {
         return 0;
     }
+    // Safe to reorder: mdevices_info_destroy releases each entry by index.
+    qsort(*devs, len, sizeof(dev_info), mdevices_display_order_compare);
     return len;
 }
 
