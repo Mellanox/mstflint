@@ -33,6 +33,7 @@
 
 #include "test_utils.h"
 
+#include <algorithm>
 #include <string>
 #include <sys/types.h>
 
@@ -48,16 +49,16 @@ thread_local std::string g_stringBuffer;
 
 /* Operational-info enum -> mlxlink display name.
  *
- * Deliberately NOT MlxlinkMaps::getInstance(). That singleton lives inside
- * the SDK shared object and is reached through a C++ class layout and a
- * std::string ABI that only agree when the harness and the .so were produced
- * by the same toolchain from the same headers. They are not: this harness is
- * built by MFT (pre-C++11 COW std::string, MFT's mlxlink_maps.h member
- * order) and is also run against libmstflint_sdk.so (SSO std::string,
- * mstflint's member order, MlxlinkMaps declared with a different member
- * index). Both mismatches are silent - the read lands in-bounds on garbage -
- * and every enum-decoded op-info field came out "Unknown(N)" even though the
- * numeric value underneath was correct.
+ * Deliberately NOT MlxlinkMaps::getInstance(). The decisive reason is the
+ * member index: _operationalInfoState is data member #190 in MFT's
+ * mlxlink_maps.h and #17 in mstflint's, whose object holds 187 in total, so
+ * a reader built against the wrong layout indexes past the end. getInstance()
+ * passes no std::string, so nothing in its mangled name catches that - it
+ * links cleanly, the read lands on garbage, and every enum-decoded op-info
+ * field came out "Unknown(N)" over a correct numeric value. The map is also
+ * the wrong way round (std::map<std::string, OperationalInfoState>), and
+ * decoding the SDK's output with the SDK's own map would prove only that the
+ * map is self-consistent, not that it agrees with mlxlink.
  *
  * The display STRINGS below are the same mlxlink_enums.h constants
  * MlxlinkMaps::initSdkOperationalInfo*Mapping() uses, so an mlxlink rename
@@ -184,6 +185,9 @@ const EnumName<OperationalInfoFec> FEC_NAMES[] = {
   {OPERATIONAL_INFO_FEC_LL_FEC_271_257_PLR, FEC_LL_FEC_271_257_PLR},
   {OPERATIONAL_INFO_FEC_ETHERNET_CONSORTIUM_LL_50G_RS_FEC_PLR_272_258, FEC_LL_50G_RS_FEC_PLR_272_258},
   {OPERATIONAL_INFO_FEC_INTERLEAVED_ETHERNET_CONSORTIUM_LL_50G_RS_FEC_PLR_272_258, FEC_INTERLEAVED_LL_50G_RS_FEC_PLR_272_258},
+  {OPERATIONAL_INFO_FEC_INTERLEAVED_DOUBLE_RS_HALF_KP4_FEC_PLR_288_258, FEC_INTERLEAVED_DOUBLE_RS_HALF_KP4_FEC_PLR_288_258},
+  {OPERATIONAL_INFO_FEC_INTERLEAVED_QUAD_RS_HALF_KP4_FEC_PLR_288_258, FEC_INTERLEAVED_QUAD_RS_HALF_KP4_FEC_PLR_288_258},
+  {OPERATIONAL_INFO_FEC_INTERLEAVED_OCTET_RS_HALF_KP4_FEC_PLR_288_258, FEC_INTERLEAVED_OCTET_RS_HALF_KP4_FEC_PLR_288_258},
 };
 
 const EnumName<OperationalInfoLoopbackMode> LOOPBACK_MODE_NAMES[] = {
@@ -199,6 +203,12 @@ const EnumName<OperationalInfoLoopbackMode> LOOPBACK_MODE_NAMES[] = {
 const EnumName<OperationalInfoAutoNegotiation> AUTO_NEGOTIATION_NAMES[] = {
   {OPERATIONAL_INFO_AUTO_NEGOTIATION_ENABLE, AUTO_NEGOTIATION_ON},
   {OPERATIONAL_INFO_AUTO_NEGOTIATION_FORCE, AUTO_NEGOTIATION_FORCE},
+};
+
+const EnumName<TroubleShootingInfoGroupOpcode> GROUP_OPCODE_NAMES[] = {
+  {TROUBLESHOOTING_INFO_GROUP_OPCODE_PHY_FW, GROUP_OPCODE_STR_PHY_FW},
+  {TROUBLESHOOTING_INFO_GROUP_OPCODE_MNG_FW, GROUP_OPCODE_STR_MNG_FW},
+  {TROUBLESHOOTING_INFO_GROUP_OPCODE_CORE_DRIVER, GROUP_OPCODE_STR_CORE_DRIVER},
 };
 
 template<typename EnumType, size_t N>
@@ -252,6 +262,14 @@ static const FieldDescriptor ddmFields[NUM_DDM_FIELDS] = {
   {TELEMETRY_CABLE_DDM_INFO_VOLTAGE, DDM_FIELD_VOLTAGE, offsetof(MstCableDDMInfo, voltage), 7},
 };
 
+// Troubleshooting info fields — order matches mlxlink's "Troubleshooting Info" page
+static const FieldDescriptor troubInfoFields[NUM_TROUB_INFO_FIELDS] = {
+  {TELEMETRY_TROUBLESHOOTING_INFO_STATUS_OPCODE, FIELD_STATUS_OPCODE, offsetof(MstTroubleShootingInfo, statusOpcode), 3},
+  {TELEMETRY_TROUBLESHOOTING_INFO_GROUP_OPCODE, FIELD_GROUP_OPCODE, offsetof(MstTroubleShootingInfo, groupOpcode), 12},
+  {TELEMETRY_TROUBLESHOOTING_INFO_RECOMMENDATION, FIELD_RECOMMENDATION,
+   offsetof(MstTroubleShootingInfo, recommendation), 11},
+};
+
 extern "C"
 {
     const FieldDescriptor* getOpInfoFields(void)
@@ -261,6 +279,10 @@ extern "C"
     const FieldDescriptor* getCounterFields(void)
     {
         return counterFields;
+    }
+    const FieldDescriptor* getTroubInfoFields(void)
+    {
+        return troubInfoFields;
     }
     const FieldDescriptor* getDDMFields(void)
     {
@@ -350,6 +372,15 @@ extern "C"
                 }
                 return g_stringBuffer.c_str();
             }
+            case 11: /* NUL-terminated char array */
+                g_stringBuffer = base + field->offset;
+                return g_stringBuffer.c_str();
+            case 12: /* troubleshooting group opcode */
+            {
+                int v = *reinterpret_cast<const int*>(base + field->offset);
+                g_stringBuffer = lookupEnum(GROUP_OPCODE_NAMES, static_cast<TroubleShootingInfoGroupOpcode>(v));
+                return g_stringBuffer.c_str();
+            }
             default:
                 return "?";
         }
@@ -405,7 +436,8 @@ void parseDevicePciArg(int argc, char** argv)
         if (std::string(argv[i]) == "-d")
         {
             g_devicePci = argv[i + 1];
-            if (g_devicePci.find(':') != std::string::npos && g_devicePci.substr(0, 5) != "0000:")
+            // Same rule as mft_sdk_test_main.cpp: only a bare BB:DD.F gets the 0000: domain.
+            if (std::count(g_devicePci.begin(), g_devicePci.end(), ':') == 1)
             {
                 g_devicePci = "0000:" + g_devicePci;
             }

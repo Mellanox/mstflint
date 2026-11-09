@@ -57,6 +57,7 @@
 #include "mft_utils/mft_utils.h"
 #include "common/tools_string.h"
 #include "mlxfwops/lib/fs_pldm.h"
+#include "common/tools_endianness.h"
 #include "pldm_utils/pldm_utils.h"
 
 using nbu::mft::common::string_format;
@@ -1227,8 +1228,23 @@ mlxCfgStatus MlxCfg::setDevCfg()
     return rc;
 }
 
+// Resetting several devices prints one message, so it must be the one asking for the strongest reset
+static int loadCfgMsgStrictness(const string& loadCfgMsg)
+{
+    if (loadCfgMsg == POWER_CYCLE_TO_LOAD_CFG_MSG)
+    {
+        return 2;
+    }
+    if (loadCfgMsg == REBOOT_TO_LOAD_CFG_MSG)
+    {
+        return 1;
+    }
+    return 0;
+}
+
 mlxCfgStatus MlxCfg::resetDevsCfg()
 {
+    string loadCfgMsg;
     // check if a single device was specified and apply reset for this device only
     if (_mlxParams.device.length())
     {
@@ -1241,7 +1257,7 @@ mlxCfgStatus MlxCfg::resetDevsCfg()
         }
 
         printf("Applying... ");
-        if (resetDevCfg(_mlxParams.device.c_str()))
+        if (resetDevCfg(_mlxParams.device.c_str(), loadCfgMsg))
         {
             printf("Failed!\n");
             printErr();
@@ -1276,9 +1292,14 @@ mlxCfgStatus MlxCfg::resetDevsCfg()
 
         for (int i = 0; i < numOfDev; i++)
         {
-            if (resetDevCfg(devPtr->pci.conf_dev))
+            string devLoadCfgMsg;
+            if (resetDevCfg(devPtr->pci.conf_dev, devLoadCfgMsg))
             {
                 shouldFail = true;
+            }
+            else if (loadCfgMsg.empty() || loadCfgMsgStrictness(devLoadCfgMsg) > loadCfgMsgStrictness(loadCfgMsg))
+            {
+                loadCfgMsg = devLoadCfgMsg;
             }
             devPtr++;
         }
@@ -1291,7 +1312,7 @@ mlxCfgStatus MlxCfg::resetDevsCfg()
     }
     // done successfully
     printf("Done!\n");
-    printf("-I- Please reboot machine to load new configurations.\n");
+    printf("-I- %s\n", loadCfgMsg.c_str());
     return MLX_CFG_OK;
 }
 
@@ -1332,6 +1353,7 @@ mlxCfgStatus MlxCfg::clrDevSem()
 mlxCfgStatus MlxCfg::devRawCfg(RawTlvMode mode)
 {
     Commander* commander = NULL;
+    string loadCfgMsg;
     try
     {
         commander = Commander::create(_mlxParams.device, _mlxParams.dbName, false, _mlxParams.deviceType, false);
@@ -1394,27 +1416,11 @@ mlxCfgStatus MlxCfg::devRawCfg(RawTlvMode mode)
             }
             printf("Applying... ");
         }
-        tlvIdx = 1;
-        // set each of the raw TLVs
-        std::vector<u_int32_t> queryData;
-        for (std::vector<std::vector<u_int32_t>>::iterator it = rawTlvsAsDw.begin(); it != rawTlvsAsDw.end();
-             it++, tlvIdx++)
-        {
-            if (mode == SET_RAW)
-            {
-                commander->setRawCfg(*it);
-            }
-            else
-            {
-                queryData = commander->getRawCfg(*it);
-                commander->dumpRawCfg(queryData, dumpStr);
-                printf("Raw TLV #%d Info:\n%s\n", tlvIdx, dumpStr.c_str());
-            }
-        }
+        commander->handleRawCfg(rawTlvsAsDw, mode);
         // send mfrl command to fw
         // this command indicate to the fw that next time perst signal go down
         //[reboot] fw need to perform reset )
-        commander->loadConfigurationGetStr();
+        loadCfgMsg = commander->loadConfigurationGetStr();
     }
     catch (MlxcfgException& e)
     {
@@ -1429,7 +1435,7 @@ mlxCfgStatus MlxCfg::devRawCfg(RawTlvMode mode)
     printf("Done!\n");
     if (mode == SET_RAW)
     {
-        printf("-I- Please reboot machine to load new configurations.\n");
+        printf("-I- %s\n", loadCfgMsg.c_str());
     }
     return MLX_CFG_OK;
 }
@@ -1485,7 +1491,7 @@ mlxCfgStatus MlxCfg::backupCfg(string deviceName)
             vector<u_int8_t> v = it->tlvBin;
             for (size_t i = 0; i < v.size() / 4; i++)
             {
-                fprintf(file, "0x%08x ", __cpu_to_be32(((u_int32_t*)v.data())[i]));
+                fprintf(file, "0x%08x ", (unsigned int)mft_cpu_to_be32(((u_int32_t*)v.data())[i]));
             }
             fprintf(file, "\n");
         }
@@ -1516,7 +1522,7 @@ mlxCfgStatus MlxCfg::tlvLine2DwVec(const std::string& tlvStringLine, std::vector
     return MLX_CFG_OK;
 }
 
-mlxCfgStatus MlxCfg::resetDevCfg(const char* dev)
+mlxCfgStatus MlxCfg::resetDevCfg(const char* dev, string& loadCfgMsg)
 {
     mlxCfgStatus rc = MLX_CFG_OK;
     Commander* commander = createCommander(string(dev), false, _mlxParams.force);
@@ -1538,7 +1544,7 @@ mlxCfgStatus MlxCfg::resetDevCfg(const char* dev)
                 commander->invalidateCfg((*p).mlxconfigName);
             }
         }
-        commander->loadConfigurationGetStr(); // why to call this? seems needless
+        loadCfgMsg = commander->loadConfigurationGetStr();
     }
     catch (MlxcfgException& e)
     {

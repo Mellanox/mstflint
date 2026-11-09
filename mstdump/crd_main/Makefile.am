@@ -38,6 +38,12 @@ bin_PROGRAMS = mstregdump
 
 mstregdump_SOURCES = mstdump.c
 mstregdump_LDADD = ../crd_lib/libcrdump.a ../../dev_mgt/libdev_mgt.la ../../reg_access/libreg_access.la ../../tools_layouts/libtools_layouts.la ../../mft_utils/libmftutils.la\
-			../../${MTCR_CONF_DIR}/libmtcr_ul.la  -lm ${LDL}
+			../../${MTCR_CONF_DIR}/libmtcr_ul.la ../../ext_libs/minixz/libminixz.la  -lm ${LDL}
 mstregdump_LDFLAGS = -static
 mstregdump_CFLAGS = -DMSTDUMP_NAME=\"mstregdump\" -DDEV_EXAMPLE=\"0b:00.0\"
+
+# The python front end is not a command of its own -- mstregdump already is one.
+# It is installed as a module so the tools that dump a device at the python
+# level, and can take the faster resource dump path, reach it by import.
+mstdumppythonlibdir=$(libdir)/mstflint/python_tools/mstdump
+dist_mstdumppythonlib_DATA = $(srcdir)/mstdump.py

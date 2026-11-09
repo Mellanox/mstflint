@@ -56,6 +56,7 @@
 #include "mlxcfg_status.h"
 #include "mlxcfg_tlv.h"
 #include "mlxcfg_utils.h"
+#include "common/tools_endianness.h"
 
 #if !defined(DISABLE_XML2)
 #include <libxml/parser.h>
@@ -1100,11 +1101,11 @@ const char* GenericCommander::loadConfigurationGetStr()
         dealWithSignal();
         if (rc)
         {
-            return "Please power cycle machine to load new configurations.";
+            return POWER_CYCLE_TO_LOAD_CFG_MSG;
         }
     }
 
-    return "Please reboot machine to load new configurations.";
+    return REBOOT_TO_LOAD_CFG_MSG;
 }
 
 bool GenericCommander::checkPCIResetRequired()
@@ -1129,10 +1130,38 @@ bool GenericCommander::checkPCIResetRequired()
     return false;
 }
 
-void GenericCommander::setRawCfg(std::vector<u_int32_t> rawTlvVec)
+void GenericCommander::handleRawCfg(const std::vector<std::vector<u_int32_t>>& rawTlvs, RawTlvMode mode)
+{
+    bool isPrivNvOtherHost = false;
+    if (mode == SET_RAW && std::any_of(rawTlvs.begin(), rawTlvs.end(), RawCfgParams5thGen::isHostTargetClass))
+    {
+        bool isDefaultSupported = false;
+        bool isCurrentSupported = false;
+        // A failed query must not fall back to false. For Host-PF TLVs, FW would then write the caller's own host.
+        getGlobalCapabilities(isDefaultSupported, isCurrentSupported, isPrivNvOtherHost);
+    }
+    std::string dumpStr;
+    int tlvIdx = 1;
+    std::vector<u_int32_t> queryData;
+    for (std::vector<std::vector<u_int32_t>>::const_iterator it = rawTlvs.begin(); it != rawTlvs.end(); it++, tlvIdx++)
+    {
+        if (mode == SET_RAW)
+        {
+            setRawCfg(*it, isPrivNvOtherHost);
+        }
+        else
+        {
+            queryData = getRawCfg(*it);
+            dumpRawCfg(queryData, dumpStr);
+            printf("Raw TLV #%d Info:\n%s\n", tlvIdx, dumpStr.c_str());
+        }
+    }
+}
+
+void GenericCommander::setRawCfg(std::vector<u_int32_t> rawTlvVec, bool hostIdValid)
 {
     RawCfgParams5thGen rawTlv;
-    if (rawTlv.setRawData(rawTlvVec))
+    if (rawTlv.setRawData(rawTlvVec, SET_RAW, hostIdValid))
     {
         throw MlxcfgException(rawTlv.err());
     }
@@ -2269,7 +2298,7 @@ void GenericCommander::raw2XML(const vector<string>& lines, string& xmlTemplate)
             for (vector<string>::iterator s = dws.begin(); s != dws.end(); ++s)
             {
                 /* printf("s=%s\n", s->c_str()); */
-                u_int32_t dw = __cpu_to_be32(strtoul((*s).c_str(), &p, 0));
+                u_int32_t dw = mft_cpu_to_be32(strtoul((*s).c_str(), &p, 0));
                 /* printf("-D- s=%s dw=0x%x\n", s->c_str(), dw); */
                 if (!p)
                 {
@@ -2320,7 +2349,7 @@ RawCfgParams5thGen::RawCfgParams5thGen()
     memset(&_nvdaTlv, 0, sizeof(tools_open_mnvda));
 }
 
-int RawCfgParams5thGen::setRawData(const std::vector<u_int32_t>& tlvBuff)
+int RawCfgParams5thGen::setRawData(const std::vector<u_int32_t>& tlvBuff, RawTlvMode mode, bool hostIdValid)
 {
     if (tlvBuff.size() * 4 > TOOLS_OPEN_MNVDA_SIZE)
     {
@@ -2337,10 +2366,17 @@ int RawCfgParams5thGen::setRawData(const std::vector<u_int32_t>& tlvBuff)
     tlvBuffBe.insert(tlvBuffBe.begin(), _tlvBuff.begin(), _tlvBuff.end());
     for (std::vector<u_int32_t>::iterator it = tlvBuffBe.begin(); it != tlvBuffBe.end(); it++)
     {
-        *it = __cpu_to_be32(*it);
+        *it = mft_cpu_to_be32(*it);
     }
     tools_open_mnvda_unpack(&_nvdaTlv, ((u_int8_t*)(&tlvBuffBe[0])));
     _nvdaTlv.nv_hdr.writer_id = WRITER_ID_ICMD_MLXCONFIG_SET_RAW;
+    if (mode == SET_RAW && isHostTargetClass(_tlvBuff))
+    {
+        // Without host_id_valid, FW ignores the host field of the type and targets the caller's own host.
+        // writer_host_id spans header bits 9..11. Backup files fill it with the MNVGN writer host,
+        // while MNVDA reads bit 9 as host_id_valid and reserves bits 10..11.
+        _nvdaTlv.nv_hdr.writer_host_id = hostIdValid ? 1 : 0;
+    }
     return verifyTlv();
 }
 
@@ -2352,7 +2388,7 @@ std::vector<u_int32_t> RawCfgParams5thGen::getRawData()
     tools_open_mnvda_pack(&_nvdaTlv, ((u_int8_t*)(&tlvBuff[0])));
     for (std::vector<u_int32_t>::iterator it = tlvBuff.begin(); it != tlvBuff.end(); it++)
     {
-        *it = __be32_to_cpu(*it);
+        *it = mft_be32_to_cpu(*it);
     }
     /* Truncate to the correct data size */
     tlvBuff.resize(this->_tlvBuff.size());
@@ -2389,6 +2425,16 @@ std::string RawCfgParams5thGen::dumpTlv()
     }
     strcat(str, "\n");
     return str;
+}
+
+bool RawCfgParams5thGen::isHostTargetClass(const std::vector<u_int32_t>& tlvBuff)
+{
+    if (tlvBuff.size() < 2)
+    {
+        return false;
+    }
+    TLVClass tlvClass = (TLVClass)EXTRACT(tlvBuff[1], TLVCLASS_OFFSET, TLVCLASS_SIZE);
+    return tlvClass == Per_Host_Per_Function || tlvClass == Per_Host;
 }
 
 int RawCfgParams5thGen::verifyTlv()

@@ -64,7 +64,6 @@ FlintParams::FlintParams()
     allow_psid_change = false;
     allow_rom_change = false;
     override_cache_replacement = false;
-    use_fw = false; // access flash via FW on CX3/CX3Pro
     no_flash_verify = false;
     silent = false;
     yes = false;
@@ -76,6 +75,7 @@ FlintParams::FlintParams()
     dual_image = false;
     striped_image = false;
     ignore_dev_data = false;
+    dev_data_only = false;
     banks_specified = false;
     banks = -1; // must be -1 for mflash to get default num of flash
     log_specified = false;
@@ -109,6 +109,7 @@ FlintParams::FlintParams()
     cable_device_size_specified = false;
     cable_device_index_specified = false;
     linkx_auto_update = false;
+    no_stop_on_error = false;
     activate = false;
     run_module_image = false;
     commit_module_image = false;

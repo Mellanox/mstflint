@@ -32,7 +32,7 @@
 
 PYTHON_WRAPPER_SCRIPT = ../common/python_wrapper
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common -I$(top_builddir)/common -I$(top_srcdir)/mvpd -I$(top_srcdir)/dev_mgt $(COMPILER_FPIC)
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common -I$(top_builddir)/common -I$(top_srcdir)/mvpd -I$(top_srcdir)/dev_mgt -I$(top_srcdir)/mft_core/mft_core_utils $(COMPILER_FPIC)
 
 bin_PROGRAMS = \
     mstmread \
@@ -91,6 +91,7 @@ mstfwctrl_LDFLAGS = -static
 endif
 
 mstmtserver_SOURCES = mtserver.c tcp.c tcp.h
+mstmtserver_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/${MTCR_CONF_DIR} -I$(top_srcdir)/mtcr_ul -I$(top_srcdir)/mft_core/mft_core_utils
 mstmtserver_CFLAGS = -DMST_UL
 mstmtserver_DEPENDENCIES = $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la
 mstmtserver_LDADD = $(mstmtserver_DEPENDENCIES) ${LDL}
@@ -107,10 +108,16 @@ mlxpcilib_DATA = binary_file.py mlxpci_lib.py
 
 mstfwresetlib_DATA = $(MSTFWRESET_PYTHON_WRAPPER).py
 
+# The mget_temp reading, shared by the CLI and the SDK so the two cannot disagree
+# about a device.
+noinst_LTLIBRARIES = libmgettemp.la
+libmgettemp_la_SOURCES = mget_temp_lib.c mget_temp_lib.h mget_temp_sensors.h
+
 bin_PROGRAMS += mstmget_temp
 
 mstmget_temp_SOURCES = mget_temp.c mget_temp.h
-mstmget_temp_DEPENDENCIES = $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
+mstmget_temp_DEPENDENCIES = libmgettemp.la \
+               			 $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
                			 $(top_builddir)/dev_mgt/libdev_mgt.la \
  	                     $(top_builddir)/reg_access/libreg_access.la \
  	                     $(top_builddir)/tools_layouts/libtools_layouts.la

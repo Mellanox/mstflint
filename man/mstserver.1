@@ -1,0 +1,119 @@
+.TH MSTSERVER "1" "September 2026" "mstflint" "User Commands"
+.SH NAME
+mstserver \- serve local devices to remote mstflint tools over HTTPS
+.SH SYNOPSIS
+.B mstserver start
+[\fB\-p\fR \fIport\fR] [\fB\-s\fR \fIpassphrase\fR]
+.br
+.B mstserver stop
+[\fB\-p\fR \fIport\fR]
+.SH DESCRIPTION
+.B mstserver
+exposes the devices of the host it runs on to mstflint tools running elsewhere.
+Clients register those devices with
+.BR mstremote (1)
+and then address them as
+\fIhost\fR:\fIport\fR,\fIdevice\fR, for example
+.IP
+mstflint \-d myhost:23108,0000:43:00.0 q
+.PP
+.B start
+detaches and runs in the background, recording its process id in
+\fI/var/run/mstflint/mstserver.<port>.pid\fR.
+.B stop
+signals that process and removes the file.
+Both require root: the server opens devices directly.
+.PP
+Access is authenticated. Every request other than the health probe requires a
+session token, which clients obtain with the passphrase. If
+.B \-s
+is not given, a random passphrase is generated and printed once at start; there
+is no unauthenticated mode. Tokens are held in memory only, so restarting the
+server invalidates them and clients must run
+.B mstremote add
+again.
+.SS Transport security
+Traffic is TLS. On its first start the server generates a P\-256 key pair under
+\fI/var/lib/mstflint/mst_server\fR and issues itself a certificate for it; the
+key is then reused for the life of the installation. The certificate is not
+signed by any authority, so clients do not validate a chain: they pin the
+public key instead, the way
+.BR ssh (1)
+pins a host key.
+.PP
+The fingerprint of that key is printed at every start. It is what a client shows
+when it first connects to this server, and comparing the two out of band is what
+makes the client's question worth answering. It can be re\-read at any time by
+running
+.B mstserver start
+again, or from the certificate with
+.IP
+openssl x509 \-in /var/lib/mstflint/mst_server/server.crt \-pubkey \-noout |
+.br
+openssl pkey \-pubin \-outform der | openssl dgst \-sha256 \-binary |
+.br
+openssl base64
+.PP
+The key must outlive restarts, reinstalls of the certificate, and changes of
+hostname: every client that has connected refuses a server whose key has
+changed, and an operator has to clear the stale entry by hand. Deleting
+\fIserver.key\fR is therefore not a routine operation.
+.PP
+The passphrase travels inside the TLS session. The server keeps only a salted
+PBKDF2\-HMAC\-SHA256 verifier of it, never the passphrase or a digest that
+could be replayed in its place.
+.SH OPTIONS
+.TP
+\fB\-p\fR, \fB\-\-port\fR \fIport\fR
+TCP port to listen on. The default is 23108. One server may run per port; the
+process id file is named after the port.
+.TP
+\fB\-s\fR, \fB\-\-passphrase\fR \fIpassphrase\fR
+Session passphrase. When omitted a random one is generated and printed. Note
+that an argument is visible in \fBps\fR(1) and recorded in the shell history.
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Show usage and exit.
+.TP
+\fB\-v\fR, \fB\-\-version\fR
+Show the version and exit.
+.SH EXAMPLES
+Start on the default port and register the devices from another host:
+.IP
+# mstserver start
+.br
+\-I\- Passphrase for this session:
+.br
+\-I\-     0ad7ab253962c94de05194ecc27fe432
+.br
+\-I\- Server key fingerprint:
+.br
+\-I\-     SHA256:2YMOeTLaODASHO/h44tV8KPGg4xG1X+TOQIZVjC2ghA
+.PP
+On the client, which asks you to confirm that same fingerprint:
+.IP
+# mstremote add myhost:23108 \-s 0ad7ab253962c94de05194ecc27fe432
+.PP
+Stop it:
+.IP
+# mstserver stop
+.SH FILES
+.TP
+\fI/var/run/mstflint/mstserver.<port>.pid\fR
+Process id of the running server.
+.TP
+\fI/var/lib/mstflint/mst_server/server.key\fR
+The server's private key, owner\-readable only. Its public half is what clients
+pin.
+.TP
+\fI/var/lib/mstflint/mst_server/server.crt\fR
+Self\-signed certificate for that key. Re\-issued automatically if it is
+removed or stops matching the key.
+.SH ENVIRONMENT
+.TP
+.B MST_SERVER_TLS_DIR
+Directory holding the key and certificate, instead of
+\fI/var/lib/mstflint/mst_server\fR. Intended for testing; a server started with
+it has a different identity from one started without.
+.SH "SEE ALSO"
+.B mstremote(1), mstflint(1)

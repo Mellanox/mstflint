@@ -1,0 +1,79 @@
+{
+  "0x254": {
+    "general_info": {
+      "device_name": "Spectrum4",
+      "device_short_name": "spectrum4",
+      "fw_name": "Albatross",
+      "device_type": "Switch",
+      "fw_major": 34,
+      "image_layout_format": "fs4",
+      "pci_device_id_list": [
+        53120
+      ],
+      "vendor": "Mellanox",
+      "device_family": "MT53120",
+      "is_secured": true,
+      "supports_eth": true,
+      "supports_ib": false,
+      "ports_num": 128,
+      "series": "Spectrum",
+      "series_index": 3
+    },
+    "dump_tools_info": {
+      "number_of_clusters": 128,
+      "pcie_uc_supported": false,
+      "phy_uc_supported": true,
+      "sx_dump_supported": false,
+      "rx_dump_supported": false,
+      "valid_cluster_indexes": 4,
+      "cmas_context_node_name": "tpt_cmas_context",
+      "hw_sxdc_valid_field_name": "valid",
+      "ignore_steering_last_qp_field": false
+    },
+    "tracers_info": {
+      "ptr_chunk_size": 8,
+      "fifo_events_in_row": 4,
+      "fifo_size": 256,
+      "ts_id": 255,
+      "g_event_ts_offs": 56,
+      "g_event_ts_size": 7,
+      "g_event_lost_bit_offs": 63,
+      "g_event_data_offs": 0,
+      "g_event_data_size": 45,
+      "g_event_id_offs": 48,
+      "g_event_id_size": 8,
+      "g_event_unrel_bit_offs": 45,
+      "supports_dynamic_db": true,
+      "fw_str_db_signature_exists": false,
+      "maxMainIrisc": 10,
+      "maxAPU": 0,
+      "maxNumOfTiles": 8,
+      "maxIriscPerTile": 5,
+      "IriscStartAddr": 655388,
+      "IriscStep": 512,
+      "TileStart": 201326592,
+      "TileStep": 8388608,
+      "ApuStartAddr": 0,
+      "ApuStep": 0,
+      "ApuMaxNumOfSteps": 0,
+      "supportPhyUc": true,
+      "is_dynamic_device_without_irisc_id": true,
+      "support_nvrisc": false
+    },
+    "devmon_info": {
+      "market_name": "Spectrum-4",
+      "project_name": "albatross",
+      "hw_rev_id": -1
+    },
+    "mtcr_icmd_info": {
+      "cmd_ptr_address": 1048576,
+      "cmd_ptr_bitlen": 24,
+      "semaphore_address": 676600,
+      "static_cfg_not_done_address": 1048592,
+      "static_cfg_not_done_offset": 0,
+      "version_bit_offset": 24,
+      "version_bitlen": 8,
+      "version_address": 1048576
+    }
+  }
+}

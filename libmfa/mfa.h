@@ -34,13 +34,16 @@
 #ifndef _MFA_H_
 #define _MFA_H_
 #include <sys/types.h>
-
+#define PSID_SIZE 13
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
 #include "mfa_section.h"
+
+#define KEY_SIZE 32
+#define AES_CTR_IV_SIZE 16
 
     enum mfa_image_types
     {
@@ -53,17 +56,27 @@ extern "C"
 
     void mfa_init(); // Must be called before any MFA function to perform one time initializations
     int mfa_open_buf(mfa_desc**, u_int8_t* arbuf, int size);
-    int mfa_open_file(mfa_desc**, char* fname);
+    int mfa_open_file(mfa_desc**, const char* fname);
     int mfa_close(mfa_desc* mfa_d);
     ssize_t mfa_get_image(mfa_desc* mfa_d, char* board_type_id, u_int8_t type, char* selector_tag, u_int8_t** buffer);
     char* mfa_get_board_metadata(mfa_desc* mfa_d, char* board_type_id, char* key);
     void mfa_release_image(u_int8_t* buffer);
     const char* mfa_get_last_error(mfa_desc* mfa_d);
     int mfa_get_crc32(u_int8_t* arbuf, long sz, u_int32_t* ar_crc, u_int32_t* calc_crc);
+    int find_metadata_value_len(const char* first_key, const char* second_key, const u_int8_t* metadata_start);
     char* mfa_get_map_entry_metadata(map_entry_hdr* map_entry, char* key);
     map_entry_hdr* mfa_get_next_mentry(mfa_desc* mfa_d, map_entry_hdr* curr_me);
     map_image_entry* mfa_get_map_image(map_entry_hdr* me, int image_index);
+    map_entry_hdr* mfa_get_map_entry(mfa_desc* mfa_d, char* board_type_id);
     toc_entry* mfa_get_image_toc(mfa_desc* mfa_d, map_image_entry* img_e);
+    int mfa_map_get_num_images(map_entry_hdr* me);
+    ssize_t get_image_by_map_entry(mfa_desc* mfa_d,
+                                   u_int8_t type,
+                                   char* selector_tag,
+                                   u_int8_t** buffer,
+                                   map_entry_hdr* map_entry_hdr,
+                                   char* board_type_id);
+    int is_encrypted(map_entry_hdr* me);
 
 #ifdef __cplusplus
 }

@@ -17,7 +17,7 @@ DEB_PKG := $(shell dpkg-parsechangelog -SSource)
 
 override_dh_auto_configure:
 	./autogen.sh
-	dh_auto_configure -- --enable-adb-generic-tools --enable-mstflint-sdk
+	dh_auto_configure -- --enable-adb-generic-tools --enable-mstflint-sdk --disable-rdmem
 
 override_dh_auto_build:
 	dh_auto_build -- sdk

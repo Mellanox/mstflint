@@ -32,6 +32,17 @@
  *
  */
 
+/* configure builds C as -std=c11 with _POSIX_C_SOURCE set, which turns
+   __BSD_VISIBLE off and hides the BSD-only declarations in <sys/memrange.h>,
+   <sys/agpio.h> and <dev/pci/pcireg.h>. Re-enable them, and raise
+   __POSIX_VISIBLE to POSIX.1-2008 for getline(). */
+#define __BSD_VISIBLE 1
+#undef _KERNEL
+#ifdef __POSIX_VISIBLE
+#undef __POSIX_VISIBLE
+#endif
+#define __POSIX_VISIBLE 200809L
+
 #include <sys/types.h>
 #include <sys/memrange.h>
 #include <sys/mman.h>
@@ -49,15 +60,17 @@
 #include "mtcr_common.h"
 #include "mtcr.h"
 #include "common/compatibility.h"
+#include "common/tools_endianness.h"
 #include "common/bit_slice.h"
 #include "common/tools_time.h"
 #include <stdlib.h>
+#include <malloc_np.h>
 #include "tools_dev_types.h"
+#include "mft_core/device/device_info/device_properties_api.h"
 
 #include <unistd.h>
 
 #include "mtcr_icmd_cif.h"
-#include "mtcr_tools_cif.h"
 #ifndef MST_UL
 #include "mtcr_utils.h"
 #else
@@ -75,6 +88,8 @@
 #include <dlfcn.h>
 #include <dirent.h>
 #include <sys/file.h>
+#include "mtcr_int_defs.h"
+#include "nvtoolslogger/nvtoolslogger_c.h"
 
 #define MST_VPD_DFLT_TIMEOUT 2000
 #define PCI_VPD_ADDR 0x2
@@ -176,7 +191,7 @@ void mtcr_connectx_flush(void* ptr, int fdlock)
     *((u_int32_t*)((char*)ptr + 0xf0380)) = 0x0;
     do
     {
-        asm volatile("" ::: "memory");
+        __asm__ volatile("" ::: "memory");
         value = __be32_to_cpu(*((u_int32_t*)((char*)ptr + 0xf0380)));
     } while (value);
     rc = _flock_int(fdlock, LOCK_UN);
@@ -195,11 +210,16 @@ int read_device_id(mfile* mf, u_int32_t* device_id)
 
     unsigned hw_id_address = mf->cr_space_offset + HW_ID_ADDR;
 
-    mf->rev_id = EXTRACT(*device_id, 16, 4);
-    *device_id = (*device_id & 0xffff);
-    mf->hw_dev_id = (*device_id & 0xffff);
+    int rc = mread4(mf, hw_id_address, device_id);
 
-    return mread4(mf, hw_id_address, device_id);
+    /* Derive after the read: these used to run before mread4() and so read the
+     * caller's uninitialized stack. *device_id stays raw because
+     * mtcr_check_signature() compares the full 32-bit word. */
+    mf->rev_id = EXTRACT(*device_id, 16, 4);
+    mf->hw_dev_id = (*device_id & 0xffff);
+    mf->functional_device_id = resolve_functional_device_id(mf->hw_dev_id, mf->rev_id, mf->pci_device_id);
+
+    return rc;
 }
 
 int mtcr_check_signature(mfile* mf)
@@ -1326,7 +1346,7 @@ int mread4_old(mfile* mf, unsigned int offset, u_int32_t* value)
 {
     int rc;
 
-    offset = __cpu_to_le32(offset);
+    offset = mft_cpu_to_le32(offset);
     if (mf->wo_addr)
     {
         offset |= 0x1;
@@ -1352,7 +1372,7 @@ int mread4_old(mfile* mf, unsigned int offset, u_int32_t* value)
         goto cleanup;
     }
 
-    *value = __le32_to_cpu(*value);
+    *value = mft_le32_to_cpu(*value);
 cleanup:
     lock_rc = _flock_int(mf->fdlock, LOCK_UN);
     if (lock_rc || rc)
@@ -1420,8 +1440,8 @@ int mwrite4_old(mfile* mf, unsigned int offset, u_int32_t value)
 {
     int rc;
 
-    offset = __cpu_to_le32(offset);
-    value = __cpu_to_le32(value);
+    offset = mft_cpu_to_le32(offset);
+    value = mft_cpu_to_le32(value);
 
     int lock_rc;
 
@@ -2474,7 +2494,6 @@ void mdevices_info_destroy(dev_info* dev_info, int len)
 #define OP_TLV_SIZE 16
 #define REG_TLV_HEADER_LEN 4
 static int supports_icmd(mfile* mf);
-static int supports_tools_cmdif_reg(mfile* mf);
 static int mreg_send_wrapper(mfile* mf, u_int8_t* data, int r_icmd_size, int w_icmd_size);
 static int mreg_send_raw(mfile* mf, u_int16_t reg_id, maccess_reg_method_t method, void* reg_data, u_int32_t reg_size, u_int32_t r_size_reg, u_int32_t w_size_reg, int* reg_status);
 int mget_max_reg_size(mfile* mf, maccess_reg_method_t reg_method);
@@ -2510,8 +2529,8 @@ int maccess_reg(mfile* mf, u_int16_t reg_id, maccess_reg_method_t reg_method, vo
             /* space */
             swap_pci_address_space(mf);
             rc = mreg_send_raw(mf, reg_id, reg_method, reg_data, reg_size, r_size_reg, w_size_reg, reg_status);
-            DBG_PRINTF(
-              "Entered PCI VSC space support flow. Second attempt to run mreg_send_raw with VSC address space: %d returned with rc: %d. Restoring address space back to CORE's address space\n",
+            MTCR_LOG_DEBUG(
+              "Entered PCI VSC space support flow. Second attempt to run mreg_send_raw with VSC address space: %d returned with rc: %d. Restoring address space back to CORE's address space",
               mf->address_space,
               rc);
         }
@@ -2591,14 +2610,6 @@ static int mreg_send_wrapper(mfile* mf, u_int8_t* data, int r_icmd_size, int w_i
             return rc;
         }
     }
-    else if (supports_tools_cmdif_reg(mf))
-    {
-        rc = tools_cmdif_reg_access(mf, data, w_icmd_size, r_icmd_size);
-        if (rc)
-        {
-            return rc;
-        }
-    }
     else
     {
         return ME_NOT_IMPLEMENTED;
@@ -2666,9 +2677,6 @@ static int mreg_send_raw(mfile* mf, u_int16_t reg_id, maccess_reg_method_t metho
     return ME_OK;
 }
 
-#define CONNECTX3_HW_ID 0x1f5
-#define CONNECTX3_PRO_HW_ID 0x1f7
-
 static int supports_icmd(mfile* mf)
 {
     u_int32_t dev_id;
@@ -2678,39 +2686,7 @@ static int supports_icmd(mfile* mf)
         /* cr might be locked and retured 0xbad0cafe but we dont care we search for device that supports icmd */
         return 0;
     }
-    switch (dev_id & 0xffff)
-    { /* that the hw device id */
-        case CONNECTX3_HW_ID:
-        case CONNECTX3_PRO_HW_ID:
-            return 0;
-
-        default:
-            break;
-    }
     return 1;
-}
-
-static int supports_tools_cmdif_reg(mfile* mf)
-{
-    u_int32_t dev_id;
-
-    if (read_device_id(mf, &dev_id) != 4)
-    {
-        return 0;
-    }
-    switch (dev_id & 0xffff)
-    {                             /* that the hw device id */
-        case CONNECTX3_HW_ID:     /* Cx3 */
-        case CONNECTX3_PRO_HW_ID: /* Cx3-pro */
-            if (tools_cmdif_is_supported(mf) == ME_OK)
-            {
-                return 1;
-            }
-            return 0;
-
-        default:
-            return 0;
-    }
 }
 
 int mget_max_reg_size(mfile* mf, maccess_reg_method_t reg_method)
@@ -2725,10 +2701,6 @@ int mget_max_reg_size(mfile* mf, maccess_reg_method_t reg_method)
         /* TOOD: get size dynamically from icmd_params once we have support by fw for mfba with size field greater than */
         /* 8 bits */
         mf->acc_reg_params.max_reg_size[reg_method] = ICMD_MAX_REG_SIZE;
-    }
-    else if (supports_tools_cmdif_reg(mf))
-    {
-        mf->acc_reg_params.max_reg_size[reg_method] = TOOLS_HCR_MAX_REG_SIZE;
     }
     return mf->acc_reg_params.max_reg_size[reg_method];
 }
@@ -3003,7 +2975,7 @@ int get_dma_pages(mfile* mf, struct mtcr_page_info* page_info, int page_amount)
     for (page_counter = 0; page_counter < page_amount; page_counter++)
     {
         /* Allocate the buffer. */
-        char* current_page = aligned_alloc(PAGE_SIZE, PAGE_SIZE);
+        char* current_page = __aligned_alloc(PAGE_SIZE, PAGE_SIZE);
 
         /* Page allocated ? */
         if (!current_page)
@@ -3216,6 +3188,10 @@ static int check_zf_through_memory(mfile* mf)
             gis_address = 0x152080;
             break;
 
+        case DeviceSpectrum6_HwId:
+            gis_address = 0x155004;
+            break;
+
         default:
             return 0; /* Device does not support Zombiefish mode */
     }
@@ -3277,7 +3253,8 @@ int is_zombiefish_device(mfile* mf)
     }
     if ((mf->device_hw_id != DeviceConnectX8_HwId) && (mf->device_hw_id != DeviceConnectX8_Pure_PCIe_Switch_HwId) && (mf->device_hw_id != DeviceQuantum3_HwId) &&
         (mf->device_hw_id != DeviceConnectX9_HwId) && (mf->device_hw_id != DeviceNVLink6_Switch_HwId) && (mf->device_hw_id != DeviceConnectX7_HwId) &&
-        (mf->device_hw_id != DeviceBlueField3_HwId) && (mf->device_hw_id != DeviceConnectX9_Pure_PCIe_Switch_HwId))
+        (mf->device_hw_id != DeviceBlueField3_HwId) && (mf->device_hw_id != DeviceConnectX9_Pure_PCIe_Switch_HwId) &&
+        (mf->device_hw_id != DeviceSpectrum6_HwId))
     {
         return 0;
     }
@@ -3297,7 +3274,7 @@ int is_zombiefish_device(mfile* mf)
     }
 }
 
-void set_fwctl_dev(char* fwctl_dev, u_int16_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func)
+void set_fwctl_dev(char* fwctl_dev, u_int32_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func)
 {
     (void)fwctl_dev;
     (void)domain;
@@ -3306,7 +3283,7 @@ void set_fwctl_dev(char* fwctl_dev, u_int16_t domain, u_int8_t bus, u_int8_t dev
     (void)func;
 }
 
-void open_fwctl_dev(mfile* mf, u_int16_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func)
+void open_fwctl_dev(mfile* mf, u_int32_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func)
 {
     (void)mf;
     (void)domain;

@@ -51,6 +51,18 @@ QueryCommand::QueryCommand(device_attributes device_attrs) :
     ResourceDumpCommand{device_attrs, dump_request{static_cast<uint16_t>(SegmentType::menu), 0, 0, 0, 0}, 0, false},
     _sstream{make_shared<stringstream>()}
 {
+    init_streams();
+}
+
+QueryCommand::QueryCommand(mfile_t* mf, device_attributes device_attrs) :
+    ResourceDumpCommand{mf, device_attrs, dump_request{static_cast<uint16_t>(SegmentType::menu), 0, 0, 0, 0}, 0, false},
+    _sstream{make_shared<stringstream>()}
+{
+    init_streams();
+}
+
+void QueryCommand::init_streams()
+{
     _ostream = _sstream;
     _istream = _sstream;
 }
@@ -77,14 +89,24 @@ const string QueryCommand::to_string() const
     return str;
 }
 
-RecordList::RecordList(string&& retrieved_data) : _full_data(move(retrieved_data))
+RecordList::RecordList(string&& retrieved_data) : _size(0), _full_data(move(retrieved_data)), _record_data(nullptr)
 {
     uint16_t prefix_size_bytes = sizeof(resource_dump_segment_header) + sizeof(info_segment_data) +
                                  sizeof(resource_dump_segment_header) + sizeof(command_segment_data) +
                                  sizeof(resource_dump_segment_header);
+    // The record count is reported by the device, so both it and the prefix it sits behind are checked
+    // against the data actually retrieved before anything is read through a pointer into it.
+    if (_full_data.size() < prefix_size_bytes + sizeof(menu_segment_sub_header))
+    {
+        throw ResourceDumpException(ResourceDumpException::Reason::DATA_OVERFLOW);
+    }
     _size = (reinterpret_cast<menu_segment_sub_header*>(&_full_data[prefix_size_bytes]))->num_of_records;
 
     prefix_size_bytes += sizeof(menu_segment_sub_header);
+    if (_full_data.size() - prefix_size_bytes < _size * sizeof(menu_record_data))
+    {
+        throw ResourceDumpException(ResourceDumpException::Reason::DATA_OVERFLOW);
+    }
     _record_data = reinterpret_cast<menu_record_data*>(&_full_data[prefix_size_bytes]);
 
     // Switch endianness of char* to represent strings

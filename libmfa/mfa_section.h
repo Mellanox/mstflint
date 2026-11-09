@@ -36,6 +36,7 @@
 
 #include <compatibility.h>
 #include "xz_io_ops.h"
+#define MAP_ENTRY_METADATA_SIZE 152
 
 enum
 {
@@ -79,6 +80,7 @@ enum section_flags
     SFLAG_XZ_COMPRESSED = 1
 };
 
+// sections - TOC, MAP, DATA
 typedef struct section_hdr
 {
     u_int8_t type;
@@ -87,23 +89,29 @@ typedef struct section_hdr
     u_int32_t size;
 } section_hdr;
 
+#pragma pack(push, 1)
 typedef struct map_entry_hdr
 {
-    char board_type_id[32];
+    char board_type_id[32]; // 32 bytes for PSID
     u_int8_t nimages;
-    u_int8_t reserved;
-    u_int16_t metadata_size;
+    u_int8_t map_type;       // 0 = binary, 1 = MFT fwpkg, 2 = NVIDIA fwpkg
+    u_int16_t metadata_size; // 152 bytes
 } map_entry_hdr;
+#pragma pack(pop)
 // This struct is followed by the metadata unless metadata_size is zero
 
+// This struct is followed by the metadata unless metadata_size is zero
+#pragma pack(push, 1)
 typedef struct map_image_entry
 {
     u_int32_t toc_offset;
     u_int16_t image_type;
-    u_int8_t reserved;
+    u_int8_t is_encrypted;
     u_int8_t group_id;
     char select_tag[32];
+
 } map_image_entry;
+#pragma pack(pop)
 
 typedef struct toc_entry
 {
@@ -124,21 +132,18 @@ enum metadata_type
 };
 
 // MDT_KEY_VALUE_PAIR => modifier is number of pairs
+#pragma pack(push, 1)
 typedef struct metadata_hdr
 {
-    u_int8_t type;
-    u_int8_t reserved;
-    u_int16_t modifier;
+    u_int8_t type;      // format version
+    u_int8_t reserved;  // flags/reserved
+    u_int16_t modifier; // number of pairs
 } metadata_hdr;
+#pragma pack(pop)
 
 void mfasec_init();
 u_int32_t mfasec_crc32(const u_int8_t* buf, size_t size, u_int32_t crc);
 ssize_t mfasec_get_map(u_int8_t* inbuf, size_t inbufsz, u_int8_t** outbuf);
 ssize_t mfasec_get_toc(u_int8_t* inbuf, size_t inbufsz, u_int8_t** outbuf);
-int mfasec_get_data_chunk(u_int8_t* data_sec_ptr,
-                          size_t data_sec_len,
-                          u_int64_t chunk_offset,
-                          size_t length,
-                          u_int8_t* outbuf);
 char* mfasec_get_sub_image_type_str(int t);
 #endif

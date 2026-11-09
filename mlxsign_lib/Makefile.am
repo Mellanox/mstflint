@@ -40,6 +40,8 @@ AM_CXXFLAGS += -DTOOLS_CRYPTO_KEY='$(TOOLS_CRYPTO_KEY)' -DTOOLS_CRYPTO_IV='$(TOO
 
 noinst_LTLIBRARIES = libmlxsign.la
 libmlxsign_la_SOURCES = mlxsign_lib.cpp mlxsign_lib.h mlxsign_com_def.h \
+                       mlxsign_aesctr_c.cpp mlxsign_aesctr_c.h \
+                       mlxsign_aesctr_via_openssl.cpp mlxsign_aesctr_via_openssl.h \
                        mlxsign_signer_interface.h mlxsign_signer_interface.cpp
 
 if ENABLE_OPENSSL

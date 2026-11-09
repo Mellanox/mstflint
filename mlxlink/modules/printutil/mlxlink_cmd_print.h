@@ -46,6 +46,7 @@ public:
     virtual ~MlxlinkCmdPrint();
     friend std::ostream& operator<<(std::ostream& out, const MlxlinkCmdPrint& cmdPrint);
     void initRecords(int size);
+    void clear();
     void toJsonFormat(Json::Value& jsonRoot);
     u_int32_t getCurrRow();
     void setLineLen(int lineLen);

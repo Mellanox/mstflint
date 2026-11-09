@@ -1,0 +1,18 @@
+{
+    "0x6b": {
+        "general_info": {
+            "device_name": "Baritone",
+            "device_type": "LinkX",
+            "vendor": "Mellanox"
+        },
+        "linkx_info": {
+            "i2c_secondary" : 94,
+            "addr_width" : 2
+        },
+        "devmon_info": {
+          "market_name": "",
+          "project_name": "baritone",
+          "hw_rev_id": -1
+        }
+    }
+}

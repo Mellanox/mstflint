@@ -48,12 +48,13 @@ cmdifincludedir = $(includedir)/mstflint/cmdif/
 
 cmdifinclude_HEADERS = icmd_cif_common.h icmd_cif_open.h
 
-libcmdif_la_SOURCES = tools_cif.c tools_cif.h icmd_cif_common.c icmd_cif_common.h icmd_cif_open.c icmd_cif_open.h
+libcmdif_la_SOURCES = icmd_cif_common.c icmd_cif_common.h icmd_cif_open.c icmd_cif_open.h
 
 cmdif_pylibdir = $(libdir)/mstflint/python_tools/
 cmdif_pylib_DATA = ${CCMDIF_SO} cmdif.py
 ${CCMDIF_SO}: libcmdif.la
 	$(CC) -g -Wall -pthread -shared ${CFLAGS} ${LDFLAGS} *.o -o ${CCMDIF_SO} \
-	$(top_builddir)/tools_layouts/.libs/libtools_layouts.a $(top_builddir)/${MTCR_CONF_DIR}/.libs/libmtcr_ul.a -lstdc++
+	$(top_builddir)/tools_layouts/.libs/libtools_layouts.a $(top_builddir)/${MTCR_CONF_DIR}/.libs/libmtcr_ul.a \
+	$(MST_REMOTE_LINK_LIBS) -lstdc++
 
 CLEANFILES = ${CCMDIF_SO}

@@ -37,6 +37,7 @@
 #include "nvml_device.h"
 #include "nvml_lib_wrapper.h"
 #include "nvml_exception.h"
+#include "nvtoolslogger/NvToolsLogger.h"
 #include "include/mtcr_ul/mtcr_com_defs.h"
 
 NvmlDevice::NvmlDevice(const unsigned int deviceIndex)
@@ -87,7 +88,14 @@ int NvmlDevice::SendPRMRegister(unsigned char    * registerData,
     prmBuffer.dataSize = registerSize + tlvSize;
     memcpy(prmBuffer.inData, registerData, registerSize + tlvSize);
 
-    result = TranslateNvStatus(_nvmlLibWrapper->nvmlDeviceReadWritePRM(_nvmlDevice, &prmBuffer));
+    nvmlReturn_t nvmlStatus = _nvmlLibWrapper->nvmlDeviceReadWritePRM(_nvmlDevice, &prmBuffer);
+    result = TranslateNvStatus(nvmlStatus);
+    if (nvmlStatus != NVML_SUCCESS)
+    {
+        MFT_LOG_ERRORF(nvtoolslogger::Layer::MFT_CORE, "NVML PRM access of %u byte(s) failed: %s", registerSize,
+                       _nvmlLibWrapper->nvmlErrorString(nvmlStatus));
+    }
+
     memcpy(registerData, prmBuffer.outData, registerSize + tlvSize);
     registerStatus = prmBuffer.status;
     return result;

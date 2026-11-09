@@ -106,9 +106,13 @@ UserInput::UserInput()
     _showMultiPortInfo = false;
     _allPorts = false;
     _showMultiPortModuleInfo = false;
+    _showMultiPortCpoInfo = false;
     _showPlr = false;
     _setPlr = false;
+    _showApsu = false;
+    _setApsu = false;
     _showKr = false;
+    _showLtx = false;
     _showRxRecoveryCounters = false;
     _extendedPcie = false;
     _device = "";
@@ -144,6 +148,14 @@ UserInput::UserInput()
     _setGroup = -1;
     _showGroup = -1;
     _slrgTestIterations = -1;
+    _moduleIndType = 0;
+    _isEls = false;
+    _isOe = false;
+    _elsModuleProvided = false;
+    _elsModule = 0;
+    _elsLaserIdxs = {};
+    _elsOperation = "";
+    _saveLaserSetpoint = (u_int32_t)-1;
     _linkTraining = "";
     _phyRecovery = "";
     _phyRecoveryType = "";
@@ -206,4 +218,6 @@ UserInput::UserInput()
     _setTxPrecodingProvided = false;
     _setRxPrecodingProvided = false;
     _showModuleCap = false;
+
+    amberRewrite = false;
 }

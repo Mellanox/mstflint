@@ -28,21 +28,15 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-#######################################################
-#
-# constants.py
-# Python implementation of resource dump constants
-# This file will supply all the constants needed
-# for the resource parse tool
-# Original author: talve
-#
-#######################################################
-
 TOOL_NAME = "ResourceParse"
 
 RESOURCE_DUMP_SEGMENT_TYPE_INFO = 0xfffe
 RESOURCE_DUMP_SEGMENT_TYPE_MENU = 0xffff
 RESOURCE_DUMP_SEGMENT_TYPE_REFERENCE = 0xfffd
+RESOURCE_DUMP_SEGMENT_TYPE_NOTICE = 0xfff9
+RESOURCE_DUMP_SEGMENT_TYPE_ERROR = 0xfffc
+RESOURCE_DUMP_SEGMENT_TYPE_COMMAND = 0xfffa
+RESOURCE_DUMP_SEGMENT_TYPE_TERMINATE = 0xfffb
 
 # segment start/end specify where the 'type' attr starts and ends in the raw_data of each segment.
 # should be 0-16 bits
@@ -53,10 +47,11 @@ DWORD_SIZE = 4
 
 RESOURCE_SEGMENT_START_OFFSET_IN_DW = 4
 RESOURCE_SEGMENT_START_OFFSET_IN_BYTES = 4 * RESOURCE_SEGMENT_START_OFFSET_IN_DW
-PARSER_NUM_OF_DW_IN_ROW = 4
 PARSER_STRING_NOT_FOUND = -1
 
 DATA_PRINTER_SEPARATOR = 80 * "-"
+
+LABEL_NOT_AVAILABLE = "N/A"
 
 WARNING_SIZE_DOESNT_MATCH = " Segment size({0} DWs) doesn't match the adb segment size({1} DWs)"
 WARNING_FAILED_EVAL_CONDITION = ' Failed evaluating condition: {}, at field - "{}", exporting field by default'

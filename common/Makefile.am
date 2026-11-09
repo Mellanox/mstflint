@@ -37,7 +37,9 @@ AM_CPPFLAGS = $(JSON_CFLAGS) -I$(top_srcdir) -I$(top_srcdir)/include/mtcr_ul
 libcommon_la_SOURCES = \
     bit_slice.h \
     compatibility.h \
+    package_error_codes.h \
     tools_algorithm.h \
+    tools_endianness.h \
     tools_filesystem.cpp \
     tools_filesystem.h \
     tools_json.cpp \
@@ -52,7 +54,7 @@ libcommon_la_SOURCES = \
     tools_string.cpp
 
 commonincludedir = $(includedir)/mstflint/common/
-commoninclude_HEADERS = compatibility.h
+commoninclude_HEADERS = compatibility.h tools_endianness.h
 
 update_prefix = sed -e 's,[@]MST_LIB_DIR[@]${CONF_DISABLE_PATH_UPDATE},$(libdir),g'\
                     -e 's,[@]MST_BIN_DIR[@]${CONF_DISABLE_PATH_UPDATE},$(bindir),g'\
@@ -62,7 +64,7 @@ update_tools_version = sed -e 's,[@]MSTFLINT_VERSION_STR[@],${MSTFLINT_VERSION_S
      	          	-e 's,[@]TOOLS_BUILD_TIME[@],${TOOLS_BUILD_TIME},g' \
                     -e 's,[@]TOOLS_GIT_SHA[@],${TOOLS_GIT_SHA},g'
 
-all: python_wrapper.sh tools_version.py tools_version.h mft_logger.py
+all: python_wrapper.sh tools_version.py tools_version.h nvtoolslogger.py tools_arg_types.py
 	$(update_prefix) < $(srcdir)/python_wrapper.sh > python_wrapper
 	chmod +x python_wrapper
 
@@ -75,10 +77,13 @@ tools_version.h:
 tools_version_pylibdir=$(libdir)/mstflint/python_tools/
 tools_version_pylib_DATA = tools_version.py
 
-mft_logger_pylibdir=$(libdir)/mstflint/python_tools/
-mft_logger_pylib_DATA = mft_logger.py
+nvtoolslogger_pylibdir=$(libdir)/mstflint/python_tools/
+nvtoolslogger_pylib_DATA = nvtoolslogger.py
 
-EXTRA_DIST = tools_version.py.in python_wrapper.sh
+tools_arg_types_pylibdir=$(libdir)/mstflint/python_tools/
+tools_arg_types_pylib_DATA = tools_arg_types.py
+
+EXTRA_DIST = tools_version.py.in python_wrapper.sh tools_arg_types.py
 
 CLEANFILES = python_wrapper tools_version.py
 

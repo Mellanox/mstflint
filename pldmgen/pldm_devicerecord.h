@@ -54,7 +54,32 @@
                       const std::string& updateOptionFlags,
                       const std::vector<u_int8_t>& appliedComponentsBitMap,
                       const std::vector<PLDMDescriptor>& descriptors);
+     virtual ~PLDMDeviceRecord() = default;
      void Pack(std::vector<u_int8_t>& buff);
+
+ protected:
+     virtual bool IncludesVersionString() const { return true; }
+     virtual void PackPostVersionString(std::vector<u_int8_t>&) {}
+ };
+
+ // Downstream Device ID Record
+ // the two variant points are:
+ // (1) MinVersionString is conditional;
+ // (2) A MinVersionComparisonStamp uint32 follows the MinVersionString when bit 0 is set.
+ class PLDMDownstreamDeviceRecord : public PLDMDeviceRecord
+ {
+ public:
+     u_int32_t _minVersionComparisonStamp;
+
+     PLDMDownstreamDeviceRecord(const std::string& setVersion,
+                                const std::string& updateOptionFlags,
+                                const std::vector<u_int8_t>& appliedComponentsBitMap,
+                                const std::vector<PLDMDescriptor>& descriptors,
+                                u_int32_t minVersionComparisonStamp);
+
+ protected:
+     bool IncludesVersionString() const override;
+     void PackPostVersionString(std::vector<u_int8_t>& buff) override;
  };
  
  #endif

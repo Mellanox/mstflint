@@ -86,6 +86,10 @@ bool PldmPkgHdr::unpack(PldmBuffer& buff)
     buff.read(componentBitmapBitLength);
     buff.read(packageVersionStringType);
     buff.read(packageVersionStringLength);
+    if (packageVersionStringLength > buff.remaining())
+    {
+        return false;
+    }
     buff.read(packageVersionString, packageVersionStringLength);
     return true;
 }

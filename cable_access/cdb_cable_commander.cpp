@@ -32,6 +32,7 @@
  */
 
 #include <iostream>
+#include "nvtoolslogger/NvToolsLogger.h"
 #include <sstream>
 #include <fstream>
 #include <iomanip>
@@ -43,6 +44,7 @@
 #include "mft_utils/mft_sig_handler.h"
 #include "mft_utils/mft_utils.h"
 #include "common/tools_time.h"
+#include "common/tools_endianness.h"
 
 #define TOCPUn(s, n)                                \
     do                                              \
@@ -129,7 +131,7 @@ string FwManagementCdbCommander::ParseCmisFWVersion(const CmisFWVersion& fwVersi
 
     ss << std::setw(40) << left << fwImage + " FW Version:";
     ss << right << (unsigned)fwVersion.major << "." << (unsigned)fwVersion.minor << "." << std::setfill('0')
-       << std::setw(4) << __be16_to_cpu(fwVersion.build) << endl;
+       << std::setw(4) << mft_be16_to_cpu(fwVersion.build) << endl;
 
     ss << std::setfill(' ') << std::setw(40) << left << fwImage + " Additional Info:"
        << string((const char*)fwVersion.extraString, sizeof(fwVersion.extraString))
@@ -145,7 +147,7 @@ void FwManagementCdbCommander::SendFwChunk(CmisCdbAccess::PayloadMethod payloadM
 {
     try
     {
-        u_int32_t blockAddressBigEndian = __be32_to_cpu(blockAddress);
+        u_int32_t blockAddressBigEndian = mft_be32_to_cpu(blockAddress);
         FWManagementCdbAccess::FWManagedCdbCommand command =
           (payloadMethod == CmisCdbAccess::EPL ? FWManagementCdbAccess::CDB_WRITE_FW_BLOCK_EPL :
                                                  FWManagementCdbAccess::CDB_WRITE_FW_BLOCK_LPL);
@@ -180,7 +182,7 @@ void FwManagementCdbCommander::SendFwChunk(CmisCdbAccess::PayloadMethod payloadM
             {
                 throw e;
             }
-            CDB_ACCESS_DPRINTF(("Got timeout, moving on to next chunk"));
+            CABLE_CDB_LOG_WARNING("Got timeout, moving on to next chunk");
         }
         else
         {
@@ -394,15 +396,15 @@ void FwManagementCdbCommander::QueryStatus()
 
     if (status.unlockLevelAndPrivileges == 0)
     {
-        CDB_ACCESS_DPRINTF(("Module Boot Up.\n"));
+        CABLE_CDB_LOG_DEBUG("Module Boot Up.");
     }
     if (status.unlockLevelAndPrivileges == 1)
     {
-        CDB_ACCESS_DPRINTF(("Password Accepted.\n"));
+        CABLE_CDB_LOG_DEBUG("Password Accepted.");
     }
     if ((status.unlockLevelAndPrivileges & 0x80) != 0)
     {
-        CDB_ACCESS_DPRINTF(("Vendor password accepted.\n"));
+        CABLE_CDB_LOG_DEBUG("Vendor password accepted.");
     }
 }
 

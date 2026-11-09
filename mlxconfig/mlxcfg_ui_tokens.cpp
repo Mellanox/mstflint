@@ -562,7 +562,7 @@ void KeepAliveSession::runMKDC(mfile* mf, struct reg_access_switch_mkdc_reg_ext*
     }
     else if (rc)
     {
-        throw MlxcfgException("cannot access MKDC register, error code is %d.");
+        throw MlxcfgException("cannot access MKDC register: %s.", m_err2str((MError)rc));
     }
 }
 

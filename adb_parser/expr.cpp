@@ -38,8 +38,8 @@
 #include <string.h>
 #include "expr.h"
 
-char* Expr::str;
-char* Expr::initial_arg;
+const char* Expr::str;
+const char* Expr::initial_arg;
 Expr::status Expr::state;
 
 /*
@@ -159,7 +159,7 @@ static int Lbinar = numbel(binar);
  *        ERR_BAD_NAME   - Name not found in symbol table.
  *
  ********************************************************/
-int Expr::expr(char** pstr, u_int64_t* result)
+int Expr::expr(const char** pstr, u_int64_t* result)
 {
     int rc = 0;
     int len = 0;
@@ -207,7 +207,7 @@ int Expr::expr(char** pstr, u_int64_t* result)
  ********************************************************/
 int Expr::GetBinaryOp(u_int64_t* val, int priority)
 {
-    char* str_old;
+    const char* str_old;
     int rc = 0;
     int i = 0;
     u_int64_t left = 0;
@@ -469,7 +469,7 @@ int Expr::GetUnaryOp(u_int64_t* val)
  ********************************************************/
 void Expr::GetToken(token* pt)
 {
-    char *old_str, *p;
+    const char *old_str, *p;
     int i, rc, oplen;
 
     /*
@@ -478,7 +478,7 @@ void Expr::GetToken(token* pt)
     do
     {
         old_str = str;
-        for (p = (char*)IGNORE; *p; p++)
+        for (p = IGNORE; *p; p++)
             if (*str == *p)
             {
                 str++;
@@ -729,7 +729,8 @@ int Expr::GetNumb(u_int64_t* val)
 int Expr::GetName(u_int64_t* val)
 {
     static char name[MAXNAM];
-    char *p, *old_str;
+    char* p;
+    const char* old_str;
 
     old_str = str; /* Save start name position. */
 

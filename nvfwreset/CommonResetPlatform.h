@@ -51,6 +51,9 @@ public:
     virtual void CheckUptimeAfterReset() override;
 
 protected:
+    void WaitForResetTriggerState();
+    unsigned long long GetEmbeddedCpuOsShutdownTimeoutMs();
+
     std::map<std::string, NicDriverState> _nicDriverState;
     std::unique_ptr<OperatingSystemAPI> _operatingSystemAPI;
 };

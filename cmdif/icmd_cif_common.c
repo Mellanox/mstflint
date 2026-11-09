@@ -44,7 +44,7 @@ char* gcif_get_last_err()
 /*
  * gcif_err_str
  */
-char* gcif_err_str(int rc)
+const char* gcif_err_str(int rc)
 {
     switch (rc)
     {
@@ -108,6 +108,15 @@ char* gcif_err_str(int rc)
         case GCIF_STATUS_ICM_NOT_AVAIL:
             return "ICM not available";
 
+        case GCIF_STATUS_WRITE_PROTECT:
+            return m_err2str(ME_ICMD_WRITE_PROTECT);
+
+        case GCIF_STATUS_NO_MEM:
+            return m_err2str(ME_MEM_ERROR);
+
+        case GCIF_STATUS_UNABLE_TO_TAKE_SEMAPHORE:
+            return m_err2str(ME_ICMD_UNABLE_TO_TAKE_SEMAOHORE);
+
         default:
             return "Unknown error";
     }
@@ -153,6 +162,9 @@ int convert_rc(int rc)
 
         case ME_ICMD_ICM_NOT_AVAIL:
             return GCIF_STATUS_ICM_NOT_AVAIL;
+
+        case ME_ICMD_UNABLE_TO_TAKE_SEMAOHORE:
+            return GCIF_STATUS_UNABLE_TO_TAKE_SEMAPHORE;
 
         case ME_ICMD_WRITE_PROTECT:
             return GCIF_STATUS_WRITE_PROTECT;

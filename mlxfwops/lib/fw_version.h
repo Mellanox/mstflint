@@ -49,6 +49,8 @@
 #define MLXFWOP_API
 #endif
 
+#define VERSION_FORMAT(minor) ((minor) < 100 ? "%d.%d.%04d" : "%d.%04d.%04d")
+
 const std::string DIFFERENT_BRANCHES_EXCEPTION = "Trying to compare different branches is invalid";
 const std::string NOT_SET_VERSION = "";
 const unsigned short MAX_VERSION_LENGTH = 28;

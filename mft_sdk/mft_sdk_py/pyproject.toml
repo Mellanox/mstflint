@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools >= 59.6.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mft_sdk"
+version = "1.0.0"
+authors = []
+description = "A library for calling the MFT SDK from Python."
+readme = "README.md"
+requires-python = ">=3.6"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: Linux"
+]
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["src"]

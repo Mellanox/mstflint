@@ -1,0 +1,18 @@
+{
+    "0xd": {
+        "general_info": {
+            "device_name": "CableQSFP",
+            "device_type": "Cable",
+            "vendor": "Mellanox",
+            "hw_rev_id": 0
+        },
+        "cable_info": {
+            "cable_type": "QSFP"
+        },
+        "devmon_info": {
+          "market_name": "",
+          "project_name": "cable_qsfp",
+          "hw_rev_id": 0
+        }
+    }
+}

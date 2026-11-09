@@ -295,9 +295,7 @@ string _AdbInstance_impl<e, O>::evalExpr(string expr, AttrsMap* vars)
                 vnameCopy = matches.suffix();
             }
 
-            char exp[vname.size() + 1];
-            char* expPtr = exp;
-            strcpy(exp, vname.c_str());
+            const char* expPtr = vname.c_str();
             uint64_t res;
             AdbExpr adbExpr;
             adbExpr.setVars(vars);
@@ -474,6 +472,15 @@ template<bool e, typename O>
 bool _AdbInstance_impl<e, O>::isNode()
 {
     return !isLeaf();
+}
+
+/**
+ * Function: _AdbInstance_impl::get_array_size
+ **/
+template<bool e, typename T_OFFSET>
+T_OFFSET _AdbInstance_impl<e, T_OFFSET>::get_array_size()
+{
+    return fieldDesc ? fieldDesc->get_size() : 0;
 }
 
 /**
@@ -1424,7 +1431,7 @@ bool _AdbInstance_impl<e, O>::isConditionalNode()
 template<bool e, typename O>
 bool _AdbInstance_impl<e, O>::containsDynamicArray()
 {
-    if (!isNode())
+    if (!isNode() || subItems.empty())
     {
         return false;
     }
@@ -1452,21 +1459,13 @@ bool _AdbInstance_impl<e, O>::isConditionValid(map<string, string>* valuesMap)
     uint64_t res;
     AdbExpr expressionChecker;
     int status = -1;
-    char* condExp;
-    char* exp;
 
     if (fieldDesc->condition.empty())
     {
         return true;
     }
 
-    condExp = new char[fieldDesc->condition.size() + 1];
-    exp = condExp;
-    if (!exp)
-    {
-        throw AdbException("Memory allocation error");
-    }
-    strcpy(exp, fieldDesc->condition.c_str());
+    const char* exp = fieldDesc->condition.c_str();
 
     expressionChecker.setVars(valuesMap);
     try
@@ -1475,10 +1474,8 @@ bool _AdbInstance_impl<e, O>::isConditionValid(map<string, string>* valuesMap)
     }
     catch (AdbException& er)
     {
-        delete[] condExp;
         throw AdbException(string("AdbException: ") + er.what_s());
     }
-    delete[] condExp;
 
     if (status < 0)
     {
@@ -1851,7 +1848,7 @@ void _AdbInstance_impl<eval_expr, T_OFFSET>::traverse_layout(
                 }
             }
         }
-        else
+        else if (this->isLeaf())
         {
             T_OFFSET field_offset = this->offset + element_offset_shift;
             uint64_t value = 0;

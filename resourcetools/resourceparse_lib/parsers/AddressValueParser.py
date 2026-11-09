@@ -28,17 +28,10 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-#######################################################
-#
-# ResourceParser.py
-# Created on:      12-Jun-2023 11:13:33 AM
-# Original author: astrutsovsky
-#
-#######################################################
-
 from resourceparse_lib.utils import constants as cs
 from resourceparse_lib.utils.common_functions import is_resource_segment
 from resourceparse_lib.parsers.ResourceParser import ResourceParser, PARSER_CLASSES
+from resourceparse_lib.formatters.AdbBasicFormatter import AdbBasicFormatter
 
 import struct
 
@@ -48,8 +41,14 @@ class AddressValueParser(ResourceParser):
 
     address_value_struct = struct.Struct('II')
 
-    def __init__(self, parser_args):
-        pass
+    @classmethod
+    def get_supported_formatters(cls):
+        # this parse method emits its own text, so only the basic formatter
+        # (which yields that same output) is compatible for now
+        return [AdbBasicFormatter.FORMATTER_TYPE]
+
+    def __init__(self, parser_args, formatter):
+        self._formatter = formatter
 
     def parse_segment(self, segment):
         if is_resource_segment(segment.get_type()):

@@ -152,9 +152,14 @@ def _host_dist():
 def _sdk_version():
     """Project version from configure.ac, mirroring build_sdk.sh's sdk_version()."""
     rc, out = _run(
-        "sed -nE 's/^AC_INIT\\(mstflint,[[:space:]]*([0-9.]+).*/\\1/p' {} | head -1"
+        "sed -nE 's/^AC_INIT\\(\\[?mstflint\\]?,[[:space:]]*\\[?([0-9.]+)\\]?.*/\\1/p' {} | head -1"
         .format(os.path.join(REPO_ROOT, "configure.ac")))
-    return out.strip() or "4.37.0"
+    v = out.strip()
+    if not v:
+        raise AssertionError(
+            "cannot parse the project version from configure.ac (AC_INIT) -- this "
+            "regex and build_sdk.sh's sdk_version() must stay in sync")
+    return v
 
 
 RPMBUILD_STUB = r'''#!/bin/bash

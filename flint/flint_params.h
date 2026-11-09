@@ -131,7 +131,6 @@ public:
     bool allow_psid_change;
     bool allow_rom_change;
     bool override_cache_replacement;
-    bool use_fw;
     bool no_flash_verify;
     bool silent;
     bool yes;
@@ -144,6 +143,7 @@ public:
     bool dual_image;
     bool striped_image;
     bool ignore_dev_data;
+    bool dev_data_only;
     bool banks_specified;
     int banks;
     bool log_specified;
@@ -190,6 +190,7 @@ public:
     bool cable_device_index_specified;
     bool cable_device_size_specified;
     bool linkx_auto_update;
+    bool no_stop_on_error;
     bool activate;
     bool run_module_image;
     bool commit_module_image;

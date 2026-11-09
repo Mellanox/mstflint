@@ -61,6 +61,7 @@ public:
     u_int32_t _uniqueCableCmds;
     u_int32_t _uniquePcieCmds;
     u_int32_t _networkCmds;
+    u_int32_t _moduleIndType;
     int _pciSltpPort;
     bool _showModule;
     bool _sendPrbs;
@@ -87,6 +88,7 @@ public:
     bool _portSpecified;
     bool _multiPortSpecified;
     std::vector<std::string> _multiPortsList;
+    bool _elsModuleProvided;
     bool _splitProvided;
     bool _secondSplitProvided;
     bool _forceSplit;
@@ -105,9 +107,13 @@ public:
     bool _showMultiPortInfo;
     bool _allPorts;
     bool _showMultiPortModuleInfo;
+    bool _showMultiPortCpoInfo;
     bool _showPlr;
     bool _setPlr;
+    bool _showApsu;
+    bool _setApsu;
     bool _showKr;
+    bool _showLtx;
     bool _showRxRecoveryCounters;
     bool _extendedPcie;
 
@@ -142,6 +148,7 @@ public:
     bool _plrRejectModeProvided;
     bool _plrMarginThresholdProvided;
     bool _plrTxCrcProvided;
+    vector<pair<string, string>> _apsuParamsToSet;
     bool _setPrimary;
     bool _primarySecondarySpecified;
     string _constantRole;
@@ -157,6 +164,7 @@ public:
     std::map<u_int32_t, u_int32_t> _sltpParams;
     std::vector<std::string> _ptysSpeeds;
     std::vector<string> _amberPagesStr;
+    bool amberRewrite;
     u_int32_t _lane;
     u_int32_t _bkvGroupId;
     std::vector<std::string> _bkvRates;
@@ -179,6 +187,12 @@ public:
     int _setGroup;
     int _showGroup;
     int _slrgTestIterations;
+    bool _isEls;
+    bool _isOe;
+    uint32_t _elsModule;
+    std::vector<uint32_t> _elsLaserIdxs;
+    string _elsOperation;
+    uint32_t _saveLaserSetpoint;
     vector<string> _labelPorts;
 
     string eyeSelect;

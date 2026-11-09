@@ -42,18 +42,11 @@
 #include "common/compatibility.h"
 #include "cable_access.h"
 
-#define CDB_ACCESS_DPRINTF(args)                      \
-    do                                                \
-    {                                                 \
-        char* reacDebug = getenv("CDB_ACCESS_DEBUG"); \
-        if (reacDebug != NULL)                        \
-        {                                             \
-            printf("\33[2K\r");                       \
-            printf("[CDB_ACCESS_DEBUG]: ");           \
-            printf args;                              \
-            fflush(stdout);                           \
-        }                                             \
-    } while (0)
+#define CABLE_CDB_LOG_DEBUG(...) MFT_LOG_DEBUGF(nvtoolslogger::Layer::CABLE_CDB, __VA_ARGS__)
+#define CABLE_CDB_LOG_INFO(...) MFT_LOG_INFOF(nvtoolslogger::Layer::CABLE_CDB, __VA_ARGS__)
+#define CABLE_CDB_LOG_WARNING(...) MFT_LOG_WARNINGF(nvtoolslogger::Layer::CABLE_CDB, __VA_ARGS__)
+#define CABLE_CDB_LOG_ERROR(...) MFT_LOG_ERRORF(nvtoolslogger::Layer::CABLE_CDB, __VA_ARGS__)
+#define CABLE_CDB_LOG_FATAL(...) MFT_LOG_FATALF(nvtoolslogger::Layer::CABLE_CDB, __VA_ARGS__)
 
 typedef u_int8_t cdb_status_code;
 typedef std::map<cdb_status_code, std::pair<bool, string>> CdbStatusToErrorMap;

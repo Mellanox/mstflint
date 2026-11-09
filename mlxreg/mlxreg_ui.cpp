@@ -52,6 +52,7 @@
 #endif
 #include "mlxreg_ui.h"
 #include "mlxreg_lib/mlxreg_parser.h"
+#include "common/tools_endianness.h"
 
 #define IDENT "    "
 #define IDENT2 IDENT IDENT
@@ -409,7 +410,7 @@ void MlxRegUi::printBuff(std::vector<u_int32_t> buff)
     PRINT_LINE(23);
     for (std::vector<u_int32_t>::size_type i = 0; i != buff.size(); i++)
     {
-        printf("0x%08x | 0x%08x\n", rawAddr, CPU_TO_BE32(buff[i]));
+        printf("0x%08x | 0x%08x\n", rawAddr, (u_int32_t)CPU_TO_BE32(buff[i]));
         rawAddr += 4;
     }
     PRINT_LINE(23);
@@ -424,7 +425,7 @@ void MlxRegUi::printRawBuffer(std::vector<u_int32_t> buff)
     PRINT_LINE(35);
     for (std::vector<u_int32_t>::size_type i = 0; i != buff.size(); i++)
     {
-        printf("Word[%02lu]: 0x%08x\n", (unsigned long)i, CPU_TO_BE32(buff[i]));
+        printf("Word[%02lu]: 0x%08x\n", (unsigned long)i, (u_int32_t)CPU_TO_BE32(buff[i]));
     }
     PRINT_LINE(35);
 }
@@ -736,7 +737,7 @@ void MlxRegUi::readFromFile(string file_name, vector<u_int32_t>& buff, int len)
         {
             MlxRegException("Failed to read from file");
         }
-        buff.push_back(__cpu_to_be32(data));
+        buff.push_back(mft_cpu_to_be32(data));
     }
 
     file.close();
@@ -747,7 +748,7 @@ void MlxRegUi::writeToFile(string file_name, vector<u_int32_t> buff)
     ofstream file(file_name.c_str(), ios::binary | ios::in | ios::out);// Overwrite the file (in/out)
     for (unsigned int idx = 0; idx < buff.size(); idx++)
     {
-        u_int32_t data = __cpu_to_be32(buff[idx]);
+        u_int32_t data = mft_cpu_to_be32(buff[idx]);
         file.write((char*)&data, sizeof(u_int32_t));
     }
     file.close();

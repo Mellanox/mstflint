@@ -68,14 +68,19 @@ bool isIn(const T& val, const std::vector<T>& vect)
 }
 
 u_int32_t findMaxKey(std::vector<std::string> keys);
+std::vector<uint32_t> getIdxsFromParams(std::vector<std::string> params);
+uint8_t getElsLaserMaskFromList(const std::vector<uint32_t>& laserIdxs);
+uint8_t extractMCIAModuleState(uint8_t statusByte);
 string getCompliance(u_int32_t compliance, std::map<u_int32_t, std::string> complianceMap, bool bitMasked = false);
 string getComplianceIb(u_int32_t compliance, std::map<u_int32_t, std::string> complianceMap, bool bitMasked = false);
 void termHandler(int sig);
 string deleteLastChar(const string& s, u_int32_t numOfCharsToRemove = 1);
 string getStringFromVector(std::vector<std::string> values);
+string getStringFromVector(std::vector<uint32_t> values);
 string getStringFromVector(std::vector<float> values);
 string bitsToPerLaneStr(u_int32_t bitmask, u_int32_t numOfLanes);
 float convertFloatPrec(float value);
+u_int32_t toNegativePolarity(u_int32_t value, u_int32_t bitWidth = 32);
 u_int64_t add32BitTo64(u_int32_t value1, u_int32_t value2);
 string getFullString(u_int64_t intVal);
 string status2Color(u_int32_t status);
@@ -90,6 +95,7 @@ int ptysSpeedToMaskNVLINK(const string& speed);
 string convertSpeedToNVLINK(const string& speed);
 bool checkNvl6ModeBSpeed(const string& speed);
 bool isNvlinkModeBSpeed(bool isNvl6, u_int32_t linkSpeed);
+bool isPrbsLaneRateModeB(u_int32_t laneRate);
 string getOui(u_int32_t oui);
 int getBitvalue(u_int32_t mask, int idx);
 string getMaxPowerStr(u_int32_t maxPower);
@@ -182,7 +188,8 @@ std::string generateTableRow(const std::vector<std::pair<std::string, u_int32_t>
                              const std::string& delimiter);
 int getStringLengthWOColorCodes(const std::string& s);
 void printMlxlinkTable(const std::vector<std::string>& tableData,
-                       const std::vector<std::pair<std::string, u_int32_t>>& tableHeader);
+                       const std::vector<std::pair<std::string, u_int32_t>>& tableHeader,
+                       const std::vector<u_int32_t>& separatorAfterRows = std::vector<u_int32_t>());
 void updateColumnWidthPopulateTable(std::vector<std::pair<std::string, u_int32_t>>& vectorToAmend,
                                     const u_int32_t locationInVector,
                                     std::vector<std::string>& tableData,

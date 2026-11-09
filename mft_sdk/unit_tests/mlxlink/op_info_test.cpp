@@ -41,7 +41,26 @@
 
 #include <cstdio>
 #include <string>
+#include <utility>
 #include <vector>
+
+// PHY Local and the near-end analog/digital modes loop the signal inside the port.
+static bool isNearEndPhyLoopback(const MstTelemetryOperationalInfo& info)
+{
+    if (!MST_QUERY_HAS(&info, TELEMETRY_OP_INFO_LOOPBACK_MODE))
+    {
+        return false;
+    }
+    switch (info.loopbackMode)
+    {
+        case OPERATIONAL_INFO_LOOPBACK_MODE_PHY_LOCAL:
+        case OPERATIONAL_INFO_LOOPBACK_MODE_NEAR_END_ANALOG:
+        case OPERATIONAL_INFO_LOOPBACK_MODE_NEAR_END_DIGITAL:
+            return true;
+        default:
+            return false;
+    }
+}
 
 // Test fixture for SDK telemetry tests
 class MftSdkTelemetryTest : public ::testing::Test
@@ -69,13 +88,17 @@ TEST_F(MftSdkTelemetryTest, GetTelemetryOperationalInfo)
     MST_QUERY_INIT(&operationalInfo);
     MstTelemetryContext context = makeTelemetryContext();
     status = mstGetTelemetryOperationalInfo(mstDevice, &context, &operationalInfo);
-    ASSERT_EQ(status, MST_SUCCESS) << "Failed to get telemetry operational info";
+    // Keep the "Failed to get ...: <reason>" shape: utils.py's _GTEST_ERROR_RE
+    // scrapes it to fill the C++ error column.
+    ASSERT_EQ(status, MST_SUCCESS)
+      << "Failed to get telemetry operational info: " << mstGetLastErrorString(mstDevice);
 
     const FieldDescriptor* fields = getOpInfoFields();
 
     std::vector<std::pair<std::string, std::string>> results;
     results.reserve(NUM_OP_INFO_FIELDS);
 
+    std::string stateValue;
     for (size_t i = 0; i < NUM_OP_INFO_FIELDS; i++)
     {
         const char* valueStr;
@@ -89,6 +112,10 @@ TEST_F(MftSdkTelemetryTest, GetTelemetryOperationalInfo)
         {
             valueStr = NA_FIELD_VALUE;
         }
+        if (bit == TELEMETRY_OP_INFO_STATE)
+        {
+            stateValue = valueStr;
+        }
         results.emplace_back(fields[i].displayName, valueStr);
     }
 
@@ -99,11 +126,85 @@ TEST_F(MftSdkTelemetryTest, GetTelemetryOperationalInfo)
         printf("%-35s: %s\n", result.first.c_str(), result.second.c_str());
     }
 
-    EXPECT_EQ(operationalInfo.header.valid_fields_mask,
-              (1ULL << TELEMETRY_OP_INFO_STATE) | (1ULL << TELEMETRY_OP_INFO_PHYSICAL_STATE) |
-                (1ULL << TELEMETRY_OP_INFO_SPEED) | (1ULL << TELEMETRY_OP_INFO_WIDTH) |
-                (1ULL << TELEMETRY_OP_INFO_FEC) | (1ULL << TELEMETRY_OP_INFO_LOOPBACK_MODE) |
-                (1ULL << TELEMETRY_OP_INFO_AUTO_NEGOTIATION));
+    // Which fields are reported is a property of the link, not of the SDK; only
+    // an Active link must report all of them.
+    uint64_t definedBits = 0;
+    for (size_t i = 0; i < NUM_OP_INFO_FIELDS; i++)
+    {
+        definedBits |= 1ULL << fields[i].capabilityBit;
+    }
+    const uint64_t mask = operationalInfo.header.valid_fields_mask;
+
+    EXPECT_EQ(mask & ~definedBits, 0ULL) << "valid_fields_mask sets a bit outside the defined fields";
+    if (stateValue == "Active")
+    {
+        // A near-end PHY loopback runs the port without the link-training FSM, so it has
+        // no physical state: mlxlink prints "Physical state : N/A" and the SDK leaves the
+        // bit clear. Every other field is still required.
+        uint64_t required = definedBits;
+        if (isNearEndPhyLoopback(operationalInfo))
+        {
+            required &= ~(1ULL << TELEMETRY_OP_INFO_PHYSICAL_STATE);
+            printf("\n[ INFO ] near-end PHY loopback: physical state is not required\n");
+        }
+        EXPECT_EQ(mask & required, required) << "on an Active link all operational-info fields must be reported";
+    }
+    else
+    {
+        printf("\n[ INFO ] link state '%s' is not Active: mask 0x%llx\n", stateValue.c_str(),
+               (unsigned long long)mask);
+    }
+}
+
+TEST_F(MftSdkTelemetryTest, ExtendedFecModesHaveNames)
+{
+    const FieldDescriptor* fields = getOpInfoFields();
+    const FieldDescriptor* fecField = nullptr;
+    for (size_t i = 0; i < NUM_OP_INFO_FIELDS; i++)
+    {
+        if (fields[i].capabilityBit == TELEMETRY_OP_INFO_FEC)
+        {
+            fecField = &fields[i];
+            break;
+        }
+    }
+    ASSERT_NE(fecField, nullptr);
+
+    MstTelemetryOperationalInfo operationalInfo{};
+    const std::vector<std::pair<OperationalInfoFec, const char*>> fecModes = {
+      {OPERATIONAL_INFO_FEC_INTERLEAVED_DOUBLE_RS_HALF_KP4_FEC_PLR_288_258,
+       "Interleaved Double RS Half KP4 FEC + PLR - (288,258)"},
+      {OPERATIONAL_INFO_FEC_INTERLEAVED_QUAD_RS_HALF_KP4_FEC_PLR_288_258,
+       "Interleaved Quad RS Half KP4 FEC + PLR - (288,258)"},
+      {OPERATIONAL_INFO_FEC_INTERLEAVED_OCTET_RS_HALF_KP4_FEC_PLR_288_258,
+       "Interleaved Octet RS Half KP4 FEC + PLR - (288,258)"},
+    };
+
+    for (const auto& fecMode : fecModes)
+    {
+        operationalInfo.fec = fecMode.first;
+        EXPECT_STREQ(fieldValueToString(&operationalInfo, fecField), fecMode.second);
+    }
+}
+
+// Snapshot every reported operational-info field as display strings, so two queries can be
+// compared without naming a single mlxlink UserInput field. Deliberately field-agnostic: that is
+// what lets it catch a port-state leak this test does not know about yet.
+static std::vector<std::pair<std::string, std::string>> snapshotOpInfo(const MstTelemetryOperationalInfo& info)
+{
+    const FieldDescriptor* fields = getOpInfoFields();
+    std::vector<std::pair<std::string, std::string>> snapshot;
+    snapshot.reserve(NUM_OP_INFO_FIELDS);
+    for (size_t i = 0; i < NUM_OP_INFO_FIELDS; i++)
+    {
+        // fieldValueToString() hands back a pointer into a shared thread_local buffer
+        // (test_utils.cpp:47), so copy before the next call overwrites it.
+        const std::string value = MST_QUERY_HAS(&info, fields[i].capabilityBit)
+                                    ? std::string(fieldValueToString(&info, &fields[i]))
+                                    : std::string(NA_FIELD_VALUE);
+        snapshot.emplace_back(fields[i].displayName, value);
+    }
+    return snapshot;
 }
 
 TEST_F(MftSdkTelemetryTest, DefaultPortAfterSpecificPortDoesNotThrow)
@@ -121,10 +222,69 @@ TEST_F(MftSdkTelemetryTest, DefaultPortAfterSpecificPortDoesNotThrow)
     status = mstGetTelemetryOperationalInfo(mstDevice, &specificPort, &operationalInfo);
     ASSERT_EQ(status, MST_SUCCESS) << "Failed to bind port 1: " << mstGetLastErrorString(mstDevice);
 
-    // 2) Switch back to the device default; must not throw "Invalid port number!".
+    // 2) Switch back to the device default. initMlxLinkSdk() re-binds whenever the
+    // port differs from the last one, and the device default is the empty label,
+    // which handlePortStr() answers by restoring the CLI's own port defaults and
+    // returning. Redmine #5319177.
     MST_QUERY_INIT(&operationalInfo);
     status = mstGetTelemetryOperationalInfo(mstDevice, nullptr, &operationalInfo);
     EXPECT_EQ(status, MST_SUCCESS) << "Default port after a specific port failed: " << mstGetLastErrorString(mstDevice);
+}
+
+// Split labels are a documented public input (mft_sdk_telemetry_types.h shows "1/1/1"), and
+// handlePortStr() clears _splitProvided/_secondSplitProvided on entry, so a split label
+// followed by a plain one resolves the plain one: "1/2" then "3" resolves port 3, not 3/2.
+// Redmine #5319177.
+TEST_F(MftSdkTelemetryTest, PlainPortAfterSplitPortDoesNotInheritTheSplit)
+{
+    MstStatus status = MST_SUCCESS;
+    MstTelemetryOperationalInfo operationalInfo;
+
+    std::vector<std::pair<std::string, std::string>> freshHandlePort1;
+    {
+        MstDevice freshDevice = nullptr;
+        status = mstGetDeviceHandle(&freshDevice, g_devicePci.c_str());
+        ASSERT_EQ(status, MST_SUCCESS) << "Failed to get device handle for " << g_devicePci;
+        MstTelemetryContext plainPort;
+        MST_TELEMETRY_CONTEXT_INIT(&plainPort);
+        snprintf(plainPort.label_port, sizeof(plainPort.label_port), "1");
+        MST_QUERY_INIT(&operationalInfo);
+        status = mstGetTelemetryOperationalInfo(freshDevice, &plainPort, &operationalInfo);
+        ASSERT_EQ(status, MST_SUCCESS) << "Port 1 query on a fresh handle failed: "
+                                       << mstGetLastErrorString(freshDevice);
+        freshHandlePort1 = snapshotOpInfo(operationalInfo);
+        mstReleaseDeviceHandle(freshDevice);
+    }
+
+    status = mstGetDeviceHandle(&mstDevice, g_devicePci.c_str());
+    ASSERT_EQ(status, MST_SUCCESS) << "Failed to get device handle for " << g_devicePci;
+
+    // A split label first. Whether this device has a split 2 on port 1 is not the point and the
+    // query is allowed to fail; what matters is the state it leaves behind.
+    MstTelemetryContext splitPort;
+    MST_TELEMETRY_CONTEXT_INIT(&splitPort);
+    snprintf(splitPort.label_port, sizeof(splitPort.label_port), "1/2");
+    MST_QUERY_INIT(&operationalInfo);
+    (void)mstGetTelemetryOperationalInfo(mstDevice, &splitPort, &operationalInfo);
+
+    // Now a plain label on the same handle. It must mean exactly what it means on a fresh handle.
+    MstTelemetryContext plainPort;
+    MST_TELEMETRY_CONTEXT_INIT(&plainPort);
+    snprintf(plainPort.label_port, sizeof(plainPort.label_port), "1");
+    MST_QUERY_INIT(&operationalInfo);
+    status = mstGetTelemetryOperationalInfo(mstDevice, &plainPort, &operationalInfo);
+    ASSERT_EQ(status, MST_SUCCESS) << "Plain port 1 after a split label failed: "
+                                   << mstGetLastErrorString(mstDevice);
+
+    const std::vector<std::pair<std::string, std::string>> reboundPort1 = snapshotOpInfo(operationalInfo);
+    ASSERT_EQ(reboundPort1.size(), freshHandlePort1.size());
+    for (size_t i = 0; i < reboundPort1.size(); i++)
+    {
+        EXPECT_EQ(reboundPort1[i].second, freshHandlePort1[i].second)
+          << "Field '" << reboundPort1[i].first
+          << "': port \"1\" after port \"1/2\" did not match port \"1\" on a fresh handle -- the "
+             "split from the previous label leaked into the plain one.";
+    }
 }
 
 #ifndef MFT_SDK_SO_UNIFIED

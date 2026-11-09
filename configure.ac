@@ -28,7 +28,7 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-AC_INIT(mstflint, 4.37.0, akiselman-org@exchange.nvidia.com)
+AC_INIT([mstflint],[4.38.0],[akiselman-org@exchange.nvidia.com])
 
 AC_DEFINE_UNQUOTED([PROJECT], ["mstflint"], [Firmware Burning and Diagnostics Tools for NVIDIA network devices.])
 AC_SUBST([PROJECT])
@@ -55,6 +55,9 @@ AS_IF([test "x$mstflint_musl" = xyes],
 
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 LT_INIT
+dnl Python is optional: only needed to run the Device Properties Python unit
+dnl tests via "make check". Build itself has no Python prerequisite.
+AM_PATH_PYTHON([2.7],, [:])
 AC_CONFIG_HEADERS(config.h)
 
 PKG_PROG_PKG_CONFIG
@@ -77,7 +80,9 @@ KERNEL_VER=`uname -r | egrep -E -o '[[0-9]]+\.[[0-9]]+' | head -1`
 OFED_VER=`ofed_info -s | egrep -E -o '[[0-9]]+\.[[0-9]]+' | head -1`
 MIN_OFED_VER="5.6"
 MIN_RDMA_CORE_VER="2607"
-RDMA_CORE_VER=`{ rpm -q rdma-core --queryformat '%{VERSION}\n' 2>/dev/null; dpkg-query -W -f='${Version}\n' rdma-core 2>/dev/null; } | egrep -E -o '^[[0-9]]+' | head -1`
+MIN_UPSTREAM_RDMA_CORE_VER="60"
+UPSTREAM_RDMA_CORE_VER_LIMIT="1000"
+RDMA_CORE_VER=`{ rpm -q rdma-core --queryformat '%{VERSION}\n' 2>/dev/null; dpkg-query -W -f='${Version}\n' rdma-core 2>/dev/null; apk info -e -v rdma-core 2>/dev/null | sed -e 's/^rdma-core-//'; } | egrep -E -o '^[[0-9]]+' | head -1`
 MTCR_CONF_DIR=""
 LDL=""
 LDFLAGS="$LDFLAGS -lstdc++"
@@ -93,8 +98,14 @@ KERNEL_BUILD_CHK=0
 if test -n "$OFED_VER" && test $(echo $OFED_VER $MIN_OFED_VER | tr " " "\n" | sort -V | tail -n 1) == "$OFED_VER" ; then
     OFED_VERSION_CHK=1
 fi
-if test -n "$RDMA_CORE_VER" && test $(echo $RDMA_CORE_VER $MIN_RDMA_CORE_VER | tr " " "\n" | sort -V | tail -n 1) == "$RDMA_CORE_VER" ; then
-    OFED_VERSION_CHK=1
+if test -n "$RDMA_CORE_VER" ; then
+    if test ${RDMA_CORE_VER} -lt ${UPSTREAM_RDMA_CORE_VER_LIMIT} ; then
+        if test ${RDMA_CORE_VER} -ge ${MIN_UPSTREAM_RDMA_CORE_VER} ; then
+            OFED_VERSION_CHK=1
+        fi
+    elif test ${RDMA_CORE_VER} -ge ${MIN_RDMA_CORE_VER} ; then
+        OFED_VERSION_CHK=1
+    fi
 fi
 
 AM_CONDITIONAL(OFED_BUILD,[test ${OFED_VERSION_CHK} = 1])
@@ -588,6 +599,24 @@ fi
 AM_CONDITIONAL(ENABLE_MST_DEV_I2C, [ test "x$enable_i2c" = "xyes" ])
 ##
 
+# Compress the mstdump device DBs at build time when xz is available.
+# crd_lib reads both forms, so a tree without a usable xz simply installs plain .csv.
+AC_CHECK_PROG([XZ], [xz], [xz], [no])
+# Finding the binary is not enough: a wrapper that fails, or an xz too old for
+# --check=crc32, would break the build instead of degrading to plain .csv. Probe
+# the exact flags the build uses and fall back unless they round-trip.
+if test "x$XZ" != "xno"; then
+    AC_MSG_CHECKING([whether $XZ can produce crc32 streams])
+    if test "x`echo mstflint_xz_probe | $XZ --check=crc32 -c 2>/dev/null | $XZ -d -c 2>/dev/null`" = "xmstflint_xz_probe"; then
+        AC_MSG_RESULT([yes])
+    else
+        AC_MSG_RESULT([no, installing the device DBs uncompressed])
+        XZ=no
+    fi
+fi
+AM_CONDITIONAL(HAVE_XZ, [test "x$XZ" != "xno"])
+##
+
 # Enable mstflint SDK:
 AC_MSG_CHECKING(--enable-mstflint-sdk argument)
 AC_ARG_ENABLE(mstflint-sdk,
@@ -598,6 +627,7 @@ AC_ARG_ENABLE(mstflint-sdk,
 AC_MSG_RESULT($enable_mstflint_sdk)
 MSTFLINT_SDK_DIR=""
 HCA_CAP_DIR=""
+RESOURCE_DUMP_SDK_DIR=""
 MLXREG_SDK_DIR=""
 DEVICE_DIR=""
 LOAD_SHARED_LIB_DIR=""
@@ -609,6 +639,7 @@ if test "x$enable_mstflint_sdk" = "xyes"; then
     CFLAGS="$CFLAGS -DMFT_SDK_EXTERNAL -DMFT_SDK_STANDALONE_BUILD"
     MSTFLINT_SDK_DIR="mft_sdk"
     HCA_CAP_DIR="hca_capabilities"
+    RESOURCE_DUMP_SDK_DIR="resourcetools/resourcedump_lib/src"
     MLXREG_SDK_DIR="mlxreg_sdk"
     DEVICE_DIR="device"
     # Link mtcr statically (whole-archive) into libmstflint_sdk.so so it carries
@@ -620,7 +651,6 @@ if test "x$enable_mstflint_sdk" = "xyes"; then
     AC_CONFIG_FILES(mft_sdk/mstflint_sdk.pc)
     AC_CONFIG_FILES(hca_capabilities/Makefile)
     AC_CONFIG_FILES(mlxreg/mlxreg_sdk/Makefile)
-    AC_CONFIG_FILES(mft_core/device/Makefile)
     # NVML-backed GPU discovery is pulled in only when NVML is enabled; the SDK
     # source gates its use of it on ENABLE_NVML to keep the build self-consistent.
     if test "x$enable_nvml" = "xyes"; then
@@ -662,6 +692,7 @@ AC_SUBST(MSTFLINT_SDK_DIR)
 AC_SUBST(MTCR_SDK_WHOLE_ARCHIVE)
 AC_SUBST(MSTREG_SDK_WHOLE_ARCHIVE)
 AC_SUBST(HCA_CAP_DIR)
+AC_SUBST(RESOURCE_DUMP_SDK_DIR)
 AC_SUBST(MLXREG_SDK_DIR)
 AC_SUBST(DEVICE_DIR)
 AC_SUBST(LOAD_SHARED_LIB_DIR)
@@ -762,12 +793,17 @@ AM_CONDITIONAL([USE_LOCAL_INIPARSER], [test "$INIPARSER_SYSTEM_AVAILABLE" = no])
 AS_IF([test "x$INIPARSER_SYSTEM_AVAILABLE" = "xyes" ], [
     CXXFLAGS="$CXXFLAGS -DHAVE_INI_PARSER"])
 
-AC_SEARCH_LIBS([JSON], [jsoncpp], [JSON_SYSTEM_AVAILABLE="yes"],[
-    JSON_SYSTEM_AVAILABLE="no"
-    JSON_CFLAGS='-I$(top_srcdir)/ext_libs/json'
-    AC_SUBST(JSON_CFLAGS)
-    JSON_LIBS='$(top_builddir)/ext_libs/json/libjson.la'
-    AC_SUBST(JSON_LIBS)])
+# mtcr uses ceilf, so every program needs -lm. Without this the FreeBSD build fails.
+AC_SEARCH_LIBS([ceilf], [m])
+
+# Always use the jsoncpp copy in ext_libs/json. The tools are linked -static and
+# no package declares a jsoncpp dependency, so linking a system libjsoncpp would
+# leave a runtime dependency nothing installs.
+JSON_SYSTEM_AVAILABLE="no"
+JSON_CFLAGS='-I$(top_srcdir)/ext_libs/json'
+AC_SUBST(JSON_CFLAGS)
+JSON_LIBS='$(top_builddir)/ext_libs/json/libjson.la'
+AC_SUBST(JSON_LIBS)
 AM_CONDITIONAL([USE_LOCAL_JSON], [test "$JSON_SYSTEM_AVAILABLE" = no])
 
 AC_SEARCH_LIBS([mupCreateVar], [muparser], [MUPARSER_SYSTEM_AVAILABLE="yes"],[
@@ -789,14 +825,24 @@ AM_CONDITIONAL([USE_LOCAL_SQLITE], [test "$SQLITE_SYSTEM_AVAILABLE" = no])
 CFLAGS="$CFLAGS -DMST_UL"
 CXXFLAGS="$CXXFLAGS -DMST_UL"
 
-CCVER=`${CC} --version | grep ${CC} | grep -E -o "( )[[4-9]]\.[[0-9]]\.[[0-9]]" | head -1`
+CFLAGS="$CFLAGS -std=c11 -D_XOPEN_SOURCE=700 -D_POSIX_C_SOURCE=200809L -D_DEFAULT_SOURCE"
+
+# mstflint is still a C++14 project; it becomes C++17 two releases from now.
+# Pin the standard explicitly so a C++17-only construct is rejected here even
+# on a new compiler, rather than compiling locally and breaking for everyone on
+# an older one. Only mst_server/ opts out, and only because Crow requires it.
+#
+# -dumpversion rather than parsing --version: the old pattern required a single
+# leading digit, so it matched nothing from GCC 10 onwards, left CXXFLAGS with
+# no -std at all, and let the tree inherit the compiler default (gnu++17 on
+# GCC 11+). The guard has been silently absent on modern toolchains.
+CCVER=`${CC} -dumpversion 2>/dev/null`
+CC_MAJOR=`echo "${CCVER}" | cut -d. -f1`
 AC_MSG_NOTICE(Compiler: ${CC}; version: ${CCVER};)
-if test ${CCVER} \> 5.0.0 ; then
-    CXXFLAGS="$CXXFLAGS -std=c++14"
-    CFLAGS="$CFLAGS -fgnu89-inline"
-elif test ${CCVER} \> 4.7.2 ; then
-    CXXFLAGS="$CXXFLAGS -std=c++11"
-fi
+AS_IF([test -n "${CC_MAJOR}" && expr "${CC_MAJOR}" : '[[0-9]][[0-9]]*$' >/dev/null && test "${CC_MAJOR}" -ge 5],
+      [CXXFLAGS="$CXXFLAGS -std=c++14"],
+      [test -n "${CC_MAJOR}" && expr "${CC_MAJOR}" : '[[0-9]][[0-9]]*$' >/dev/null && test "${CC_MAJOR}" -ge 4],
+      [CXXFLAGS="$CXXFLAGS -std=c++11"])
 
 # Deprecation notice: as of January 2027 mstflint will be built as C++17,
 # which requires GCC 9 or newer. Warn users still on an older compiler.
@@ -808,6 +854,152 @@ Detected compiler ${CC} version ${CC_MAJOR_VER}.
 Starting January 2027, the mstflint project will require C++17, and the
 minimal supported GCC version will be 9. Please upgrade your compiler.
 *******************************************************************************])])
+
+# Per-target C++17 opt-in. The tree as a whole is still built as C++14 (see
+# above); components that genuinely require C++17 - currently the Crow-based
+# MST HTTP server and the libcurl-based MST HTTP client under mst_server/ - add
+# $(CXX17_STD) to their own _CXXFLAGS. Where the compiler cannot do C++17,
+# CXX17_STD expands to empty and the mst_server directories are left unset so
+# those components are simply not built, instead of failing on an unknown
+# option.
+AC_LANG_PUSH([C++])
+mstflint_saved_CXXFLAGS="$CXXFLAGS"
+CXXFLAGS="$CXXFLAGS -std=c++17"
+AC_MSG_CHECKING([whether $CXX accepts -std=c++17])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <string_view>
+#include <optional>]],
+                                   [[std::string_view sv = "c++17";
+std::optional<int> o = 17;
+(void)sv; (void)o;]])],
+                  [have_cxx17=yes], [have_cxx17=no])
+AC_MSG_RESULT([$have_cxx17])
+CXXFLAGS="$mstflint_saved_CXXFLAGS"
+AC_LANG_POP([C++])
+AM_CONDITIONAL([HAVE_CXX17], [test "x$have_cxx17" = "xyes"])
+AS_IF([test "x$have_cxx17" = "xyes"], [CXX17_STD="-std=c++17"], [CXX17_STD=""])
+AC_SUBST(CXX17_STD)
+
+# Remote device access: route mtcr through the MST HTTP client so tools can
+# drive a device attached to another host. Off by default - it pulls the C++17
+# client (and libstdc++/jsoncpp/libcurl) into libmtcr_ul, which every tool links.
+AC_MSG_CHECKING(--enable-remote argument)
+AC_ARG_ENABLE(remote,
+    AS_HELP_STRING([--enable-remote], [enable remote device access via the MST HTTP server, requires C++17/openssl>=3.0/libcurl [default=disabled]]),
+    [enable_remote="$enableval"],
+    [enable_remote="no"]
+)
+AC_MSG_RESULT($enable_remote)
+
+# mst_server/ is the only part of the tree built as C++17, and accepting
+# -std=c++17 is not by itself proof of a usable C++17 runtime: some toolchains
+# need an extra library to link it, others cannot link it at all. Probe rather
+# than version-check, since compilers differ here.
+#
+# Only under --enable-remote, so a build that does not ask for the feature is
+# never held up by a requirement that belongs to it.
+FILESYSTEM_LIBS=""
+AS_IF([test "x$enable_remote" = "xyes" && test "x$have_cxx17" = "xyes"], [
+    AC_LANG_PUSH([C++])
+    save_CXXFLAGS="$CXXFLAGS"
+    CXXFLAGS="$CXXFLAGS -std=c++17"
+    AC_MSG_CHECKING([whether std::filesystem needs -lstdc++fs])
+    AC_LINK_IFELSE(
+        [AC_LANG_PROGRAM([[#include <filesystem>]],
+                         [[return std::filesystem::is_directory("/") ? 0 : 1;]])],
+        [AC_MSG_RESULT([no])],
+        [save_LIBS="$LIBS"
+         LIBS="$LIBS -lstdc++fs"
+         AC_LINK_IFELSE(
+             [AC_LANG_PROGRAM([[#include <filesystem>]],
+                              [[return std::filesystem::is_directory("/") ? 0 : 1;]])],
+             [AC_MSG_RESULT([yes])
+              FILESYSTEM_LIBS="-lstdc++fs"],
+             [AC_MSG_RESULT([unavailable])
+              AC_MSG_ERROR([--enable-remote requires full C++17 support, which this compiler
+  does not provide. Build without --enable-remote, or use a newer compiler.])])
+         LIBS="$save_LIBS"])
+    CXXFLAGS="$save_CXXFLAGS"
+    AC_LANG_POP([C++])
+])
+AC_SUBST(FILESYSTEM_LIBS)
+
+# The client speaks HTTP through libcurl, so the feature needs it even when the
+# fw-manager and pldm tools that also use libcurl are disabled.
+mst_remote_curl_CFLAGS=""
+mst_remote_curl_LIBS=""
+# --with-libcurl is declared by the fw-manager block below; AC_ARG_WITH puts the
+# option in configure's preamble, so $with_libcurl is set here regardless of
+# whether that feature is enabled. Honour it so a libcurl outside the default
+# prefix works for --enable-remote too.
+AS_IF([test "x$enable_remote" = "xyes"], [
+    AS_IF([test -n "$with_libcurl" && test "x$with_libcurl" != "xyes" && test "x$with_libcurl" != "xno"],
+        [AC_MSG_NOTICE([--enable-remote: using libcurl from $with_libcurl])
+         mst_remote_curl_CFLAGS="-I$with_libcurl/include"
+         mst_remote_curl_LIBS="-L$with_libcurl/lib -lcurl"],
+        [PKG_CHECK_MODULES([mst_remote_curl], [libcurl],
+            [],
+            [AC_CHECK_HEADERS([curl/curl.h], [],
+                [AC_MSG_ERROR([--enable-remote needs the libcurl development headers.
+  Install libcurl-devel (RHEL/Fedora/SUSE) or libcurl4-openssl-dev (Debian/Ubuntu),
+  or point at an existing tree with --with-libcurl=PATH.])])
+             AC_CHECK_LIB([curl], [curl_easy_init], [],
+                [AC_MSG_ERROR([--enable-remote needs the libcurl library.
+  Install libcurl-devel (RHEL/Fedora/SUSE) or libcurl4-openssl-dev (Debian/Ubuntu),
+  or point at an existing tree with --with-libcurl=PATH.])])
+             mst_remote_curl_CFLAGS=""
+             mst_remote_curl_LIBS="-lcurl"])])
+])
+AC_SUBST(mst_remote_curl_CFLAGS)
+AC_SUBST(mst_remote_curl_LIBS)
+
+if test "x$enable_remote" = "xyes"; then
+    if test "x$have_cxx17" != "xyes"; then
+        AC_MSG_ERROR([--enable-remote requires a C++17 compiler: the MST HTTP client is built as C++17])
+    fi
+    if test "x$enable_openssl" != "xyes"; then
+        AC_MSG_ERROR([--enable-remote requires openssl: the MST HTTP transport is TLS and the client pins the server key])
+    fi
+    # --enable-remote requires OpenSSL 3.0+
+    PKG_CHECK_MODULES([openssl3], [openssl >= 3.0.0], [],
+        [AC_MSG_ERROR([--enable-remote requires OpenSSL 3.0 or newer])])
+    CFLAGS="$CFLAGS -DENABLE_MTCR_REMOTE"
+    CXXFLAGS="$CXXFLAGS -DENABLE_MTCR_REMOTE"
+fi
+AM_CONDITIONAL(ENABLE_MTCR_REMOTE, [test "x$enable_remote" = "xyes"])
+
+# Under --enable-remote libtool folds the MST HTTP client into libmtcr_ul, so
+# the archive carries unresolved libcurl and openssl references. Consumers that
+# link it as a libtool library pick those up from dependency_libs in the .la;
+# the hand-written .so recipes name the raw .libs/libmtcr_ul.a path instead and
+# so bypass that, leaving the modules to load with undefined symbols. They have
+# to name the libraries themselves.
+MST_REMOTE_LINK_LIBS=""
+AS_IF([test "x$enable_remote" = "xyes"],
+      [MST_REMOTE_LINK_LIBS="$mst_remote_curl_LIBS $openssl_LIBS"])
+AC_SUBST(MST_REMOTE_LINK_LIBS)
+
+# mst_server/ (HTTP server + client) is built only for --enable-remote, and only
+# on a C++17 toolchain. The two halves are listed separately because they sit on
+# opposite sides of mtcr in the build order: the client is a dependency of
+# libmtcr_ul and must be built before it, while the server links libmtcr_ul and
+# must be built after it.
+#
+# Gating on enable_remote as well as have_cxx17 keeps the feature strictly
+# opt-in: without it the client would still be descended into and would need
+# libcurl headers that were never probed for.
+#
+# Both halves need openssl now that the transport is TLS: the server generates
+# and serves its own key pair, and the client pins that key's fingerprint.
+MST_CLIENT_DIR=""
+MST_SERVICE_DIR=""
+# The C++17 and openssl requirements are already enforced above, so reaching
+# here with --enable-remote means both hold.
+AS_IF([test "x$enable_remote" = "xyes"],
+      [MST_CLIENT_DIR="mst_server/client"
+       MST_SERVICE_DIR="mst_server/service"],
+      [AC_MSG_NOTICE([--enable-remote not given - the MST HTTP server/client (mst_server) will not be built])])
+AC_SUBST(MST_CLIENT_DIR)
+AC_SUBST(MST_SERVICE_DIR)
 
 AM_CFLAGS="-Wall"
 AM_CXXFLAGS="-Wall"
@@ -1034,7 +1226,7 @@ AC_MSG_NOTICE(TOOLS_GIT_SHA $TOOLS_GIT_SHA)
 
 AC_CONFIG_FILES([debian/mstflint.install])
 
-AC_OUTPUT( \
+AC_CONFIG_FILES([\
     Makefile \
     cmdif/Makefile \
     cmdparser/Makefile \
@@ -1070,6 +1262,7 @@ AC_OUTPUT( \
     pldm_utils/Makefile \
     pldmlib/Makefile \
     reg_access/Makefile \
+    nvpcie/Makefile \
     resourcetools/Makefile \
     resourcetools/resourcedump_lib/Makefile \
     resourcetools/resourcedump_lib/src/Makefile \
@@ -1080,6 +1273,8 @@ AC_OUTPUT( \
     resourcetools/resourcedump_lib/src/sdk/Makefile \
     small_utils/Makefile \
     mst_utils/Makefile \
+    mst_server/client/Makefile \
+    mst_server/service/Makefile \
     small_utils/mlxfwresetlib/Makefile \
     tools_layouts/Makefile \
     tools_res_mgmt/Makefile \
@@ -1091,4 +1286,8 @@ AC_OUTPUT( \
     mft_core/mft_core_utils/logger/Makefile \
     mft_core/mft_core_utils/operating_system_api/Makefile \
     mft_core/mft_core_utils/mft_exceptions/Makefile \
- )
+    mft_core/mft_core_utils/nvtoolslogger/Makefile \
+    mft_core/device/Makefile \
+    mft_core/device/device_info/Makefile \
+ ])
+AC_OUTPUT

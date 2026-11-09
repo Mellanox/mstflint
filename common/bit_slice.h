@@ -33,6 +33,11 @@
 #ifndef BIT_SLICE_H
 #define BIT_SLICE_H
 
+#include <stdint.h>
+
+/* Compile-time check usable in expressions (works in C and C++). */
+#define BIT_SLICE_STATIC_ASSERT(cond) ((void)sizeof(char[(cond) ? 1 : -1]))
+
 #define ONES32(size) ((size) ? (0xffffffff >> (32 - (size))) : 0)
 #define MASK32(offset, size) (ONES32(size) << (offset))
 
@@ -40,9 +45,10 @@
 #define EXTRACT(src, start, len) (((len) == 32) ? (src) : EXTRACT_C(src, start, len))
 #define EXT(src, end, start) EXTRACT(src, start, end - start + 1)
 
-#define MERGE_C(rsrc1, rsrc2, start, len) \
-    ((((rsrc2) << (start)) & (MASK32((start), (len)))) | ((rsrc1) & (~MASK32((start), (len)))))
-#define MERGE(rsrc1, rsrc2, start, len) (((len) == 32) ? (rsrc2) : MERGE_C(rsrc1, rsrc2, start, len))
+#define MERGE_C(rsrc1, rsrc2, start, len)                        \
+    (BIT_SLICE_STATIC_ASSERT(sizeof(rsrc2) <= sizeof(uint32_t)), \
+     ((((uint32_t)(rsrc2) << (start)) & MASK32((start), (len))) | (((uint32_t)(rsrc1)) & ~MASK32((start), (len)))))
+#define MERGE(rsrc1, rsrc2, start, len) (((len) == 32) ? (uint32_t)(rsrc2) : MERGE_C(rsrc1, rsrc2, start, len))
 #define INSERTF(src1, start1, src2, start2, len) MERGE((src1), EXTRACT((src2), (start2), (len)), (start1), (len))
 
 #define ONES64(size) ((size) ? (0xffffffffffffffffULL >> (64 - (size))) : 0)

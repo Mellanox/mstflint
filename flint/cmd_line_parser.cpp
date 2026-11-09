@@ -203,6 +203,7 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("", "use_image_guids", 0));
     _flags.push_back(new Flag("", "use_image_rom", 0));
     _flags.push_back(new Flag("", "ignore_dev_data", 0));
+    _flags.push_back(new Flag("", "dev_data_only", 0));
     _flags.push_back(new Flag("", "dual_image", 0));
     _flags.push_back(new Flag("", "striped_image", 0));
     _flags.push_back(new Flag("", "banks", 1));
@@ -211,7 +212,6 @@ FlagMetaData::FlagMetaData()
                                                        // one
     _flags.push_back(new Flag("v", "version", 0));
     _flags.push_back(new Flag("", "no_devid_check", 0));
-    _flags.push_back(new Flag("", "use_fw", 0));
     _flags.push_back(new Flag("", "use_dev_img_info", 0));
     _flags.push_back(new Flag("", "ignore_crc_check", 0));
     _flags.push_back(new Flag("", "hexdump_format", 0));
@@ -233,6 +233,7 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("", "downstream_device_id_start_index", 1));
     _flags.push_back(new Flag("", "num_of_downstream_devices", 1));
     _flags.push_back(new Flag("", "linkx_auto_update", 0));
+    _flags.push_back(new Flag("", "no_stop_on_error", 0));
     _flags.push_back(new Flag("", "activate", 0));
     _flags.push_back(new Flag("", "activate_delay_sec", 1));
     _flags.push_back(new Flag("", "run_module_image", 0));
@@ -629,7 +630,7 @@ void Flint::initCmdParser()
     AddOptions("uid",
                ' ',
                "<UID>",
-               "ConnectIB/SwitchIB only. Derive and set the device UIDs (GUIDs, MACs, WWNs).\n"
+               "SwitchIB only. Derive and set the device UIDs (GUIDs, MACs, WWNs).\n"
                "UIDs are derived from the given base UID according to Mellanox Methodology\n"
                "Commands affected: burn, sg");
 
@@ -698,14 +699,12 @@ void Flint::initCmdParser()
     AddOptions("override_cache_replacement",
                ' ',
                "",
-               "On SwitchX/ConnectIB devices:\n"
+               "On SwitchX devices:\n"
                "Allow accessing the flash even if the cache replacement mode is enabled.\n"
                "NOTE: This flag is intended for advanced users only.\n"
                "Running in this mode may cause the firmware to hang.\n");
 
     AddOptions("no_flash_verify", ' ', "", "Do not verify each write on the flash.");
-
-    AddOptions("use_fw", ' ', "", "Flash access will be done using FW (ConnectX-3/ConnectX-3Pro only).");
 
     AddOptions("silent",
                's',
@@ -744,6 +743,11 @@ void Flint::initCmdParser()
                "",
                "Do not attempt to take device data sections from device(sections will be taken from the image. FS3"
                " Only).\n"
+               "Commands affected: burn");
+    AddOptions("dev_data_only",
+               ' ',
+               "",
+               "Burns only device data, skipping the image sections. FS4/FS5 only.\n"
                "Commands affected: burn");
 
     AddOptions("no_fw_ctrl", ' ', "", "Do not attempt to work with the FW Ctrl update commands");
@@ -846,6 +850,11 @@ void Flint::initCmdParser()
 
     AddOptions("linkx_auto_update", ' ', "", "Use this flag while burning all cable devices connected to host.", false,
                false, 1);
+
+    AddOptions("no_stop_on_error", ' ', "",
+               "Use this flag to keep burning the remaining cables when one of them fails. Failed cables are skipped "
+               "and reported at the end of the burn. Valid for auto-update and range burn.",
+               false, false, 1);
 
     AddOptions("activate",
                ' ',
@@ -1147,10 +1156,6 @@ ParseStatus Flint::HandleOption(string name, string value)
     {
         _flintParams.override_cache_replacement = true;
     }
-    else if (name == "use_fw")
-    {
-        _flintParams.use_fw = true;
-    }
     else if (name == "no_flash_verify")
     {
         _flintParams.no_flash_verify = true;
@@ -1195,6 +1200,10 @@ ParseStatus Flint::HandleOption(string name, string value)
     else if (name == "ignore_dev_data")
     {
         _flintParams.ignore_dev_data = true;
+    }
+    else if (name == "dev_data_only")
+    {
+        _flintParams.dev_data_only = true;
     }
     else if (name == "no_fw_ctrl")
     {
@@ -1379,6 +1388,10 @@ ParseStatus Flint::HandleOption(string name, string value)
     else if (name == "linkx_auto_update")
     {
         _flintParams.linkx_auto_update = true;
+    }
+    else if (name == "no_stop_on_error")
+    {
+        _flintParams.no_stop_on_error = true;
     }
 
     else if (name == "download_transfer")

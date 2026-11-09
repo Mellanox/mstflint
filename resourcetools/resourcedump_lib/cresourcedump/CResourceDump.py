@@ -28,15 +28,6 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-#######################################################
-#
-# CResourceDump.py
-# ctypes connection to C SDK
-# Created on:      5-Sep-2023 8:43:00 AM
-# Original author: astrutsovsky
-#
-#######################################################
-
 # from tools_external_libs import get_external_libs_dir
 
 import sys

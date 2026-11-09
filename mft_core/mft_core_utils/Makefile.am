@@ -30,4 +30,4 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-SUBDIRS = operating_system_api logger mft_exceptions $(LOAD_SHARED_LIB_DIR)
+SUBDIRS = operating_system_api nvtoolslogger logger mft_exceptions $(LOAD_SHARED_LIB_DIR)

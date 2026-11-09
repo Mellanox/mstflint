@@ -50,9 +50,6 @@ namespace Regex = mstflint::common::regex;
 
 // Constants Definitions
 template<typename T_OFFSET>
-const size_t _AdbCondition_impl<T_OFFSET>::MAX_CONDITION_SIZE = 256;
-
-template<typename T_OFFSET>
 const string _AdbCondition_impl<T_OFFSET>::DOLLAR = "__dollar__";
 template<typename T_OFFSET>
 const string _AdbCondition_impl<T_OFFSET>::DUNDER = "__";
@@ -265,9 +262,7 @@ uint64_t _AdbCondition_impl<T_OFFSET>::evaluate(uint8_t* buffer, T_OFFSET offset
     }
     ConditionExpr<T_OFFSET> expr_evaluator(_vars_map);
 
-    char condition_str_cpy[MAX_CONDITION_SIZE + 1];
-    char* condition_str_ptr = condition_str_cpy;
-    strncpy(condition_str_cpy, _condition_str.c_str(), MAX_CONDITION_SIZE);
+    const char* condition_str_ptr = _condition_str.c_str();
     uint64_t result = 0;
     int status = expr_evaluator.expr(&condition_str_ptr, &result);
     if (status < 0)

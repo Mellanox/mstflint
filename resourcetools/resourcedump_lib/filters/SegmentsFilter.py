@@ -28,15 +28,6 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-#######################################################
-#
-# SegmentsFilter.py
-# Python implementation of the Class SegmentsFilter
-# Original author: romany
-#
-#######################################################
-
-
 class SegmentsFilter:
     """this class is responsible for filtering the segments.
     """

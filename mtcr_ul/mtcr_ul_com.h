@@ -53,6 +53,13 @@ extern "C"
 #define MLX_VSC_TYPE_LEN    8
 #define FUNCTIONAL_VSC      0
 #define RECOVERY_VSC        2
+/* Gateways reaching the full 32b CrSpace. The functional one takes the target address shifted right by 2, the recovery
+ * one carries the posted/non-posted flag on address bit 1 so bit 31 is free to carry address. */
+#define FUNCTIONAL_VSC_32B  0x10
+#define RECOVERY_VSC_32B    0x12
+
+#define IS_FUNCTIONAL_VSC(vsc_type) ((vsc_type) == FUNCTIONAL_VSC || (vsc_type) == FUNCTIONAL_VSC_32B)
+#define IS_RECOVERY_VSC(vsc_type)   ((vsc_type) == RECOVERY_VSC || (vsc_type) == RECOVERY_VSC_32B)
 
 /*
  * Read 4 bytes, return number of succ. read bytes or -1 on failure
@@ -128,24 +135,6 @@ int maccess_reg_ul(mfile              * mf,
                                                     /* to the scratchpad) if you dont know what you are doing then r_size_reg = */
                                                     /* w_size_reg = your_register_size */
                    int* reg_status);
-
-int tools_cmdif_send_inline_cmd_ul(mfile    * mf,
-                                   u_int64_t  in_param,
-                                   u_int64_t* out_param,
-                                   u_int32_t  input_modifier,
-                                   u_int16_t  opcode,
-                                   u_int8_t   opcode_modifier);
-
-int tools_cmdif_send_mbox_command_ul(mfile   * mf,
-                                     u_int32_t input_modifier,
-                                     u_int16_t opcode,
-                                     u_int8_t  opcode_modifier,
-                                     int       data_offs_in_mbox,
-                                     void    * data,
-                                     int       data_size,
-                                     int       skip_write);
-
-int tools_cmdif_unlock_semaphore_ul(mfile* mf);
 
 int mget_max_reg_size_ul(mfile* mf, maccess_reg_method_t reg_method);
 int supports_reg_access_gmp_ul(mfile* mf, maccess_reg_method_t reg_method);

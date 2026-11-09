@@ -1,0 +1,13 @@
+{
+    "0x73": {
+        "general_info": {
+            "device_name": "Menhit Version 2",
+            "device_type": "LinkX",
+            "vendor": "Mellanox"
+        },
+        "linkx_info": {
+            "i2c_secondary" : 18,
+            "addr_width" : 2
+        }
+    }
+}

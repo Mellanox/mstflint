@@ -283,7 +283,7 @@ class DriversSafetyCheckManager:
         Returns:
             list: List of discovered device DBDFs with matching V3 fields
         """
-        cmd = "mdevices_info -vv"
+        cmd = "mstdevices_info -vv"
         logger.debug("Running command: {}".format(cmd))
         (rc, out, stderr) = cmdExec(cmd)
         if rc != 0:

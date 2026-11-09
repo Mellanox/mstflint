@@ -141,6 +141,9 @@ using namespace mft_utils;
 #define PSID_L "psid"
 #define PSID_S ' '
 
+#define SHOW_PSIDS_L "show-psids"
+#define SHOW_PSIDS_S ' '
+
 #define CRC_L "crc"
 #define CRC_S ' '
 
@@ -218,6 +221,33 @@ using namespace mft_utils;
 
 #define SKIP_IF_SAME_L "skip_if_same"
 #define SKIP_IF_SAME_S ' '
+
+#define MODULE_QUERY_L "module_query"
+#define MODULE_QUERY_S ' '
+
+#define MODULE_DRY_RUN_L "module_dry_run"
+#define MODULE_DRY_RUN_S ' '
+
+#define MODULE_UPDATE_L "module_update"
+#define MODULE_UPDATE_S ' '
+
+#define MODULE_ACTIVATION_WAIT_L "module_activation_wait"
+#define MODULE_ACTIVATION_WAIT_S ' '
+
+#define MODULE_VERIFY_WAIT_L "module_verify_wait"
+#define MODULE_VERIFY_WAIT_S ' '
+
+#define MODULE_REPORT_DIR_L "module_report_dir"
+#define MODULE_REPORT_DIR_S ' '
+
+#define MODULE_REPORT_SILENT_L "module_report_silent"
+#define MODULE_REPORT_SILENT_S ' '
+
+#define MODULE_REPORT_VERBOSE_L "module_report_verbose"
+#define MODULE_REPORT_VERBOSE_S ' '
+
+#define MODULE_INCLUDE_SERVICE_PORTS_L "module_include_service_ports"
+#define MODULE_INCLUDE_SERVICE_PORTS_S ' '
 
 string toolName = "";
 /************************************
@@ -317,6 +347,10 @@ void CmdLineParser::initOptions()
 
     this->AddOptions(NUM_OF_RETRIALS_L, NUM_OF_RETRIALS_S, "NumOfRetrials", "Number of download retrials default is 5",
                      true);
+    this->AddOptions(SHOW_PSIDS_L,
+                     SHOW_PSIDS_S,
+                     "<PSID1>,<PSID2>,...",
+                     "PSIDs must be separated by comma. Multiple PSIDs can be specified delimited by commas.");
 
     this->AddOptions(HELP_L, HELP_S, "", "Show this message and exit");
 
@@ -337,7 +371,10 @@ void CmdLineParser::initOptions()
 
     this->AddOptions(UPDATE_L, UPDATE_S, "", "Update firmware image(s) on the device(s)");
 
-    this->AddOptions(USE_IMG_FILE_L, USE_IMG_FILE_S, "FileName", "Specified image file to use");
+    this->AddOptions(USE_IMG_FILE_L, USE_IMG_FILE_S, "FileName",
+                     "Specified image file to use: an MFA or PLDM file, or with --" MODULE_DRY_RUN_L
+                     " and --" MODULE_UPDATE_L " a module firmware update package to update from: a tgz file, "
+                     "or a directory holding its contents");
 
     this->AddOptions(USE_IMG_DIR_L, USE_IMG_DIR_S, "DirectoryName",
                      "Specified directory instead of default to locate image files");
@@ -470,14 +507,39 @@ void CmdLineParser::initOptions()
     this->AddOptions(COMP_TYPE_L, COMP_TYPE_S, "componentName", "Specify the PLDM component type to extract");
 
     this->AddOptions(SKIP_IF_SAME_L, SKIP_IF_SAME_S, "", "Skip firmware update if current and new versions match");
+
+    this->AddOptions(MODULE_QUERY_L, MODULE_QUERY_S, "", "Query the firmware of the modules plugged into the system");
+
+    this->AddOptions(MODULE_DRY_RUN_L, MODULE_DRY_RUN_S, "", "Show the module update plan without updating anything");
+
+    this->AddOptions(MODULE_UPDATE_L, MODULE_UPDATE_S, "",
+                     "Update module firmware from the package given by -i");
+
+    this->AddOptions(MODULE_ACTIVATION_WAIT_L, MODULE_ACTIVATION_WAIT_S, "Seconds",
+                     "Seconds to wait between downloading the module firmware and activating it (default 0)");
+
+    this->AddOptions(MODULE_VERIFY_WAIT_L, MODULE_VERIFY_WAIT_S, "Seconds",
+                     "Seconds to let the modules finish re-training before the update is verified (default 5)");
+
+    this->AddOptions(MODULE_REPORT_DIR_L, MODULE_REPORT_DIR_S, "DirectoryName",
+                     "Directory to write the module update report to (default current directory)");
+
+    this->AddOptions(MODULE_REPORT_SILENT_L, MODULE_REPORT_SILENT_S, "",
+                     "Write the module report to its file only, without printing it to the screen");
+
+    this->AddOptions(MODULE_REPORT_VERBOSE_L, MODULE_REPORT_VERBOSE_S, "",
+                     "Add the owning ASIC and the per-ASIC port number to the module report");
+
+    this->AddOptions(MODULE_INCLUDE_SERVICE_PORTS_L, MODULE_INCLUDE_SERVICE_PORTS_S, "",
+                     "Include the switch's service (FNM) ports in the module scan, which skips them by default");
 }
 
-bool csvSplit(string str, vector<string>& strv)
+bool csvSplit(string str, vector<string>& strv, char delimiter = ';')
 {
     size_t pos;
     bool res = true;
 
-    while ((pos = str.find(';')) != string::npos)
+    while ((pos = str.find(delimiter)) != string::npos)
     {
         string tmp = str.substr(0, pos);
         strv.push_back(tmp);
@@ -773,6 +835,18 @@ ParseStatus CmdLineParser::HandleOption(string name, string value)
         _cmdLineParams->list_file_contents = true;
         return PARSE_OK;
     }
+    else if (name == SHOW_PSIDS_L)
+    {
+        if (value.empty())
+        {
+            return PARSE_OK;
+        }
+        if (!csvSplit(value, _cmdLineParams->psid_list, ','))
+        {
+            return PARSE_ERROR_SHOW_USAGE;
+        }
+        return PARSE_OK;
+    }
     else if (name == FFV_L)
     {
         _cmdLineParams->compare_ffv = 1;
@@ -841,6 +915,75 @@ ParseStatus CmdLineParser::HandleOption(string name, string value)
     else if (name == SKIP_IF_SAME_L)
     {
         _cmdLineParams->skip_if_same = true;
+        return PARSE_OK;
+    }
+    else if (name == MODULE_QUERY_L)
+    {
+        _cmdLineParams->cable_query = true;
+        return PARSE_OK;
+    }
+    else if (name == MODULE_DRY_RUN_L)
+    {
+        _cmdLineParams->cable_dry_run = true;
+        return PARSE_OK;
+    }
+    else if (name == MODULE_UPDATE_L)
+    {
+        _cmdLineParams->cable_update = true;
+        return PARSE_OK;
+    }
+    else if (name == MODULE_ACTIVATION_WAIT_L)
+    {
+        std::istringstream iss(value);
+        iss >> _cmdLineParams->cable_activation_wait;
+        // Not followed by std::ws: the extraction above consumes the last character, and the
+        // std::ws sentry sets failbit on a stream already at eof, which rejected every value.
+        if (iss.fail() || !iss.eof())
+        {
+            cout << "-E- Could not parse val: " << value << "\n";
+            return PARSE_ERROR_SHOW_USAGE;
+        }
+        if (_cmdLineParams->cable_activation_wait < 0)
+        {
+            cout << "-E- Negative value is not allowed " << value << "\n";
+            return PARSE_ERROR;
+        }
+        return PARSE_OK;
+    }
+    else if (name == MODULE_VERIFY_WAIT_L)
+    {
+        std::istringstream iss(value);
+        iss >> _cmdLineParams->cable_verify_wait;
+        if (iss.fail() || !iss.eof())
+        {
+            cout << "-E- Invalid value for " MODULE_VERIFY_WAIT_L ": " << value << "\n";
+            return PARSE_ERROR_SHOW_USAGE;
+        }
+        if (_cmdLineParams->cable_verify_wait < 0)
+        {
+            cout << "-E- Negative value is not allowed " << value << "\n";
+            return PARSE_ERROR;
+        }
+        return PARSE_OK;
+    }
+    else if (name == MODULE_REPORT_DIR_L)
+    {
+        _cmdLineParams->cable_report_dir = value;
+        return PARSE_OK;
+    }
+    else if (name == MODULE_REPORT_SILENT_L)
+    {
+        _cmdLineParams->cable_report_file_only = true;
+        return PARSE_OK;
+    }
+    else if (name == MODULE_INCLUDE_SERVICE_PORTS_L)
+    {
+        _cmdLineParams->cable_include_service_ports = true;
+        return PARSE_OK;
+    }
+    else if (name == MODULE_REPORT_VERBOSE_L)
+    {
+        _cmdLineParams->verbose = true;
         return PARSE_OK;
     }
     else

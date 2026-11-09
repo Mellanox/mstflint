@@ -39,6 +39,8 @@
  */
 
 #include "fw_comps_mgr_direct_access.h"
+#include "nvtoolslogger/NvToolsLogger.h"
+#include "common/tools_endianness.h"
 
 #ifndef UEFI_BUILD
 #include <mft_sig_handler.h>
@@ -60,6 +62,7 @@ bool DirectComponentAccess::accessComponent(u_int32_t updateHandle,
                                             const char* currComponentStr,
                                             ProgressCallBackAdvSt* progressFuncAdv)
 {
+    _stoppedByCaller = false;
     int leftSize = (int)size;
     u_int32_t i = 0;
     mcdaReg accessData;
@@ -84,7 +87,7 @@ bool DirectComponentAccess::accessComponent(u_int32_t updateHandle,
     std::vector<u_int32_t> dataToRW(maxDataSize, 0);
     while (leftSize > 0)
     {
-        DPRINTF(("0x%x bytes left to %s\n", leftSize, access == MCC_READ_COMP ? "read" : "burn"));
+        MLXFWOPS_LOG_DEBUG("0x%x bytes left to %s", leftSize, access == MCC_READ_COMP ? "read" : "burn");
         memset(&accessData, 0, sizeof(mcdaReg));
 
         memcpy(accessData.data, dataToRW.data(), sizeof(accessData.data));
@@ -105,7 +108,7 @@ bool DirectComponentAccess::accessComponent(u_int32_t updateHandle,
             }
             for (i = 0; i < accessData.size / 4; i++)
             {
-                data[(size - leftSize) / 4 + i] = __le32_to_cpu(accessData.data[i]);
+                data[(size - leftSize) / 4 + i] = mft_le32_to_cpu(accessData.data[i]);
             }
             // printf("data[%#02x]: %#08x\n", (i-1)*4, data[(size - leftSize)/4 + i-1]);
         }
@@ -113,7 +116,7 @@ bool DirectComponentAccess::accessComponent(u_int32_t updateHandle,
         {
             for (i = 0; i < accessData.size / 4; i++)
             {
-                accessData.data[i] = __cpu_to_le32(data[(size - leftSize) / 4 + i]);
+                accessData.data[i] = mft_cpu_to_le32(data[(size - leftSize) / 4 + i]);
             }
             reg_access_status_t rc = reg_access_mcda(_mf, REG_ACCESS_METHOD_SET, &accessData);
             _manager->deal_with_signal();
@@ -142,6 +145,7 @@ bool DirectComponentAccess::accessComponent(u_int32_t updateHandle,
             if (progressFuncAdv->func(progressPercentage, stage, PROG_WITH_PRECENTAGE, progressFuncAdv->opaque))
             {
                 setLastFwError(FWCOMPS_ABORTED);
+                _stoppedByCaller = true;
                 return false;
             }
         }
@@ -153,6 +157,7 @@ bool DirectComponentAccess::accessComponent(u_int32_t updateHandle,
         if (progressFuncAdv->func(0, stage, PROG_OK, progressFuncAdv->opaque))
         {
             setLastFwError(FWCOMPS_ABORTED);
+            _stoppedByCaller = true;
             return false;
         }
     }

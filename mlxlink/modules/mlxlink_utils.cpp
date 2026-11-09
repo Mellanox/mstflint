@@ -33,6 +33,7 @@
  */
 
 #include "mlxlink_utils.h"
+#include <algorithm>
 
 void termHandler(int sig)
 {
@@ -51,6 +52,39 @@ u_int32_t findMaxKey(vector<string> keys)
         }
     }
     return maxKeySize;
+}
+
+std::vector<uint32_t> getIdxsFromParams(std::vector<string> params)
+{
+    std::vector<uint32_t> idxs;
+    uint32_t num = 0;
+
+    for (const auto& str : params)
+    {
+        mlxreg::RegAccessParser::strToUint32((char*)str.c_str(), num);
+        idxs.push_back(num);
+    }
+    std::sort(idxs.begin(), idxs.end());
+    return idxs;
+}
+
+// Pack a list of laser indices into a per-laser bitmask (bit i = laser i).
+uint8_t getElsLaserMaskFromList(const std::vector<uint32_t>& laserIdxs)
+{
+    uint8_t laserMask = 0;
+    for (uint32_t laserIdx : laserIdxs)
+    {
+        laserMask |= (1u << laserIdx);
+    }
+    return laserMask;
+}
+
+// Extract the CMIS ModuleState (3 bits) from the status byte at lower-mem page 0
+// byte 3 read via MCIA. Per OIF-ELSFP-CMIS-01.0 / CMIS, ModuleState lives in
+// bits 1-3 of that byte.
+uint8_t extractMCIAModuleState(uint8_t statusByte)
+{
+    return (statusByte >> ELS_MODULE_STATE_SHIFT) & ELS_MODULE_STATE_MASK;
 }
 
 string convertIntToHexString(int toConvert)
@@ -83,12 +117,29 @@ float convertFloatPrec(float value)
     return res;
 }
 
+u_int32_t toNegativePolarity(u_int32_t value, u_int32_t bitWidth)
+{
+    // One's complement within the given bit width, e.g. (0x1000, 16) -> 0xEFFF.
+    u_int32_t mask = (bitWidth >= 32) ? 0xFFFFFFFFu : ((1u << bitWidth) - 1u);
+    return (~value) & mask;
+}
+
 string getStringFromVector(vector<string> values)
 {
     string s;
     for (vector<string>::const_iterator i = values.begin(); i != values.end(); ++i)
     {
         s += *i + ',';
+    }
+    return deleteLastChar(s);
+}
+
+string getStringFromVector(vector<uint32_t> values)
+{
+    string s;
+    for (vector<uint32_t>::const_iterator i = values.begin(); i != values.end(); ++i)
+    {
+        s += to_string(*i) + ',';
     }
     return deleteLastChar(s);
 }
@@ -116,6 +167,11 @@ string getStringFromVector(vector<float> values)
 
 string bitsToPerLaneStr(u_int32_t bitmask, u_int32_t numOfLanes)
 {
+    if (numOfLanes == 0)
+    {
+        return "N/A";
+    }
+
     vector<string> perLane;
     for (u_int32_t i = 0; i < numOfLanes; i++)
     {
@@ -137,7 +193,13 @@ string getFullString(u_int64_t intVal)
     {
         for (int i = 56; i > -1; i -= 8)
         {
-            strVal.push_back((char)(intVal >> i));
+            char ch = (char)(intVal >> i);
+            // Names shorter than 8 characters are NUL padded; keep the padding out of the string.
+            if (ch == '\0')
+            {
+                break;
+            }
+            strVal.push_back(ch);
         }
     }
     else
@@ -502,6 +564,11 @@ string getPowerClassStringValue(u_int32_t cableIdentifier, u_int32_t powerClass,
         case IDENTIFIER_QSFP_DD:
         case IDENTIFIER_OSFP:
             return mlxlinkMaps->_qsfpddOsfpPowerClass[powerClass];
+        // CPO,OE,ELS needs dedicated FR after PRM is updated with the new power_class values
+        case IDENTIFIER_CPO:
+        case IDENTIFIER_ELS:
+        case IDENTIFIER_OE:
+            return "";
         default:
             try
             {
@@ -548,6 +615,11 @@ string getPowerClass(MlxlinkMaps* mlxlinkMaps, u_int32_t cableIdentifier, u_int3
     string val = getPowerClassStringValue(cableIdentifier, powerClass, mlxlinkMaps);
     float powerClassVal = getPowerClassValue(cableIdentifier, powerClass, mlxlinkMaps);
 
+    if (cableIdentifier == IDENTIFIER_ELS || cableIdentifier == IDENTIFIER_CPO || cableIdentifier == IDENTIFIER_OE)
+    {
+        // CPO,OE,ELS needs dedicated FR after PRM is updated with the new power_class values
+        return NA_FIELD_VALUE;
+    }
     if ((maxPowerValue > powerClassVal) || (powerClass == POWER_CLASS8))
     {
         powerClassStr = getMaxPowerStr(maxPower);
@@ -842,6 +914,12 @@ bool isNvlinkModeBSpeed(bool isNvl6, u_int32_t linkSpeed)
     return (isNvl6 &&
             (linkSpeed & (NVLINK_SPEED_400G_2X_MODE_B | NVLINK_SPEED_360G_2X_MODE_B | NVLINK_SPEED_328G_2X_MODE_B |
                           NVLINK_SPEED_378G_2X_MODE_B | NVLINK_SPEED_345G_2X_MODE_B)));
+}
+
+bool isPrbsLaneRateModeB(u_int32_t laneRate)
+{
+    return (laneRate == PRBS_400G_2X_MODE_B || laneRate == PRBS_360G_2X_MODE_B || laneRate == PRBS_328G_2X_MODE_B ||
+            laneRate == PRBS_378G_2X_MODE_B || laneRate == PRBS_345G_2X_MODE_B);
 }
 
 string getStrByValue(u_int32_t flags, std::map<u_int32_t, std::string> map)
@@ -1223,6 +1301,15 @@ string getCableIdentifier(u_int32_t identifier)
         case IDENTIFIER_DSFP:
             identifierStr = "DSFP";
             break;
+        case IDENTIFIER_CPO:
+            identifierStr = "CPO";
+            break;
+        case IDENTIFIER_OE:
+            identifierStr = "OE";
+            break;
+        case IDENTIFIER_ELS:
+            identifierStr = "ELS";
+            break;
         default:
             identifierStr = NA_FIELD_VALUE;
     }
@@ -1233,7 +1320,7 @@ bool isCMISCable(u_int32_t identifier)
 {
     bool cmisCable = (identifier == IDENTIFIER_SFP_DD) || (identifier == IDENTIFIER_QSFP_DD) ||
                      (identifier == IDENTIFIER_QSFP_CMIS) || (identifier == IDENTIFIER_OSFP) ||
-                     (identifier == IDENTIFIER_DSFP);
+                     (identifier == IDENTIFIER_DSFP || identifier == IDENTIFIER_CPO || identifier == IDENTIFIER_ELS);
     return cmisCable;
 }
 
@@ -1362,13 +1449,13 @@ string getGroupStr(u_int32_t advancedOpcode)
     }
     else if (advancedOpcode < 1023)
     {
-        return "PHY FW";
+        return GROUP_OPCODE_STR_PHY_FW;
     }
     else if (advancedOpcode < 2048)
     {
-        return "MNG FW";
+        return GROUP_OPCODE_STR_MNG_FW;
     }
-    return "CORE/DRIVER";
+    return GROUP_OPCODE_STR_CORE_DRIVER;
 }
 
 string toUpperCase(string& str)
@@ -1958,15 +2045,22 @@ int getStringLengthWOColorCodes(const std::string& s)
 }
 
 void printMlxlinkTable(const std::vector<std::string>& tableData,
-                       const std::vector<std::pair<std::string, u_int32_t>>& tableHeader)
+                       const std::vector<std::pair<std::string, u_int32_t>>& tableHeader,
+                       const std::vector<u_int32_t>& separatorAfterRows)
 {
     u_int32_t numCols = tableHeader.size();
+    if (numCols == 0)
+    {
+        return;
+    }
     std::string tableHeaderRow = generateTableRow(tableHeader, "|");
     std::string underscoreRow(tableHeaderRow.length() - 2, '-');
-    std::cout << "|" << underscoreRow << "|" << std::endl;
+    std::string rule = "|" + underscoreRow + "|";
+    std::cout << rule << std::endl;
     std::cout << tableHeaderRow << std::endl;
-    std::cout << "|" << underscoreRow << "|" << std::endl;
-    for (u_int32_t i = 0; i < tableData.size() / numCols; i++)
+    std::cout << rule << std::endl;
+    u_int32_t numRows = (u_int32_t)(tableData.size() / numCols);
+    for (u_int32_t i = 0; i < numRows; i++)
     {
         std::vector<std::pair<std::string, u_int32_t>> rowData = {};
         for (u_int32_t j = 0; j < numCols; j++)
@@ -1974,6 +2068,10 @@ void printMlxlinkTable(const std::vector<std::string>& tableData,
             rowData.push_back(std::make_pair(tableData[i * numCols + j], tableHeader[j].second));
         }
         std::cout << generateTableRow(rowData, "|") << std::endl;
+        if (std::find(separatorAfterRows.begin(), separatorAfterRows.end(), i) != separatorAfterRows.end())
+        {
+            std::cout << rule << std::endl;
+        }
     }
 }
 

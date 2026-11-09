@@ -108,7 +108,21 @@ TEST_F(MftSdkCableDDMTest, GetCableDDMInfo)
     MST_QUERY_INIT(&cableDDMInfo);
     MstTelemetryContext context = makeTelemetryContext();
     status = mstGetCableDDMInfo(mstDevice, &context, &cableDDMInfo);
-    ASSERT_EQ(status, MST_SUCCESS) << "Failed to get cable DDM info: " << mstGetLastErrorString(mstDevice);
+
+    // With no cable plugged there is no DDM data to read; mstlink refuses too.
+    // Assert the refusal is well-formed rather than failing the suite.
+    if (status != MST_SUCCESS)
+    {
+        const std::string error = mstGetLastErrorString(mstDevice);
+        // Keep the "Failed to get ...: <reason>" wording: utils.py's
+        // _GTEST_ERROR_RE scrapes this line for the error comparison, which
+        // fails if the C++ column comes back empty.
+        printf("\nFailed to get cable DDM info: %s\n", error.c_str());
+        EXPECT_EQ(status, MST_ERROR_FAILED_TO_GET_TELEMETRY)
+          << "unavailable DDM must report MST_ERROR_FAILED_TO_GET_TELEMETRY, got " << status;
+        EXPECT_FALSE(error.empty()) << "the SDK must explain why DDM is unavailable";
+        return;
+    }
 
     const FieldDescriptor* fields = getDDMFields();
 

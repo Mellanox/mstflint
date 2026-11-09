@@ -40,6 +40,7 @@
 #include "mft_core/mft_core_utils/mft_exceptions/MftGeneralException.h"
 #include "mft_core/mft_core_utils/operating_system_api/FactoryOperatingSystemAPI.h"
 #include "mtcr.h"
+#include "mtcr_ul/mtcr_gpu.h"
 
 using std::string;
 using std::memset;

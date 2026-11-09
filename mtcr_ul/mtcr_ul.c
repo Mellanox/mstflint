@@ -35,7 +35,11 @@
  */
 
 #include <mtcr_ul_com.h>
+#include <mtcr_remote.h>
 #include <mtcr_ib.h>
+#include "mtcr_common.h"
+#include "mtcr_int_defs.h"
+#include "nvtoolslogger/nvtoolslogger_c.h"
 #include <errno.h>
 #include <common/tools_utils.h>
 #include <stdlib.h>
@@ -95,7 +99,19 @@ dev_info* mdevices_info(int mask, int* len)
     int counter, new_length = 0;
 
     dev_info* dev_info_all = mdevices_info_ul(mask, len);
+    if (!dev_info_all || !*len)
+    {
+        return dev_info_all;
+    }
+
     dev_info* dev_info_new = (dev_info*)malloc(sizeof(dev_info) * *len);
+    if (!dev_info_new)
+    {
+        mdevices_info_destroy(dev_info_all, *len);
+        *len = 0;
+        errno = ENOMEM;
+        return NULL;
+    }
 
     // Remove devices without VSEC supported.
     for (counter = 0; counter < *len; counter++)
@@ -103,8 +119,10 @@ dev_info* mdevices_info(int mask, int* len)
         mfile* mf = mopen(dev_info_all[counter].dev_name);
         if (!mf)
         {
+            int dev_count = *len;
             *len = 0;
             free(dev_info_new);
+            mdevices_info_destroy(dev_info_all, dev_count);
             return NULL;
         }
         if (is_pcie_switch_device(mf) && !mf->functional_vsec_supp)
@@ -170,6 +188,8 @@ mfile* mopen(const char* name)
 mfile* mopend(const char* name, DType dtype)
 {
     if (dtype != MST_TAVOR) {
+        mtcr_clear_last_err();
+        MTCR_LOG_AND_SET_ERROR("Cannot open %s: device type %d is not supported in user-level mode", name, dtype);
         return NULL;
     }
     return mopen(name);
@@ -188,8 +208,10 @@ mfile* mopen_adv(const char* name, MType mtype)
         if (mf->tp & mtype) {
             return mf;
         } else {
-            errno = EPERM;
+            MTCR_LOG_AND_SET_ERROR("Device %s has access type 0x%x, not one of the requested types 0x%x", name, mf->tp,
+                                   mtype);
             mclose(mf);
+            errno = EPERM;
             return NULL;
         }
     }
@@ -291,6 +313,11 @@ MTCR_API int mset_addr_space(mfile* mf, int space)
     if ((space < 0) || (space >= AS_END)) {
         return -1;
     }
+#ifdef ENABLE_MTCR_REMOTE
+    if (mf->is_remote) {
+        return mtcr_remote_set_addr_space(mf, space);
+    }
+#endif
     if (VSEC_SUPPORTED_UL(mf) && (mf->vsec_cap_mask & (1 << space_to_cap_offset(space)))) {
         mf->address_space = space;
         /* printf("VSC address space was set successfully to: %d\n", mf->address_space); */

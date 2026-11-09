@@ -43,9 +43,13 @@
 #include <errno.h>
 #include <getopt.h>
 #include <limits.h>
+#include <stdint.h>
 #include "mtcr.h"
 #include "tools_version.h"
 #include <reg_access/reg_access.h>
+
+/* Compile-time check usable in expressions (works in C and C++). */
+#define BIT_SLICE_STATIC_ASSERT(cond) ((void)sizeof(char[(cond) ? 1 : -1]))
 
 #define ONES32(size) ((size) ? (0xffffffff >> (32 - (size))) : 0)
 #define MASK32(offset, size) (ONES32(size) << (offset))
@@ -53,9 +57,10 @@
 #define EXTRACT_C(source, offset, size) ((((unsigned)(source)) >> (offset)) & ONES32(size))
 #define EXTRACT(src, start, len) (((len) == 32) ? (src) : EXTRACT_C(src, start, len))
 
-#define MERGE_C(rsrc1, rsrc2, start, len) \
-    ((((rsrc2) << (start)) & (MASK32((start), (len)))) | ((rsrc1) & (~MASK32((start), (len)))))
-#define MERGE(rsrc1, rsrc2, start, len) (((len) == 32) ? (rsrc2) : MERGE_C(rsrc1, rsrc2, start, len))
+#define MERGE_C(rsrc1, rsrc2, start, len)                        \
+    (BIT_SLICE_STATIC_ASSERT(sizeof(rsrc2) <= sizeof(uint32_t)), \
+     ((((uint32_t)(rsrc2) << (start)) & MASK32((start), (len))) | (((uint32_t)(rsrc1)) & ~MASK32((start), (len)))))
+#define MERGE(rsrc1, rsrc2, start, len) (((len) == 32) ? (uint32_t)(rsrc2) : MERGE_C(rsrc1, rsrc2, start, len))
 
 #define ADB_DUMP_VAR "ADB_DUMP"
 #define MAX_DEV_LEN 512

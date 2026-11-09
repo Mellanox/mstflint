@@ -33,7 +33,8 @@
 AM_CPPFLAGS = \
     -I$(srcdir) \
     -I$(top_srcdir) \
-    -I$(top_srcdir)/include/mtcr_ul
+    -I$(top_srcdir)/include/mtcr_ul \
+    -I$(top_srcdir)/mft_core/mft_core_utils
 
 AM_CPPFLAGS += $(nvml_CFLAGS)
 

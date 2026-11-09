@@ -46,6 +46,12 @@
 #include "adb_parser/adb_parser.h"
 #include "mlxreg/mlxreg_lib/mlxreg_lib.h"
 
+#define MLXREG_SDK_LOG_DEBUG(...) MFT_LOG_DEBUGF(nvtoolslogger::Layer::MLXREG, __VA_ARGS__)
+#define MLXREG_SDK_LOG_INFO(...) MFT_LOG_INFOF(nvtoolslogger::Layer::MLXREG, __VA_ARGS__)
+#define MLXREG_SDK_LOG_WARNING(...) MFT_LOG_WARNINGF(nvtoolslogger::Layer::MLXREG, __VA_ARGS__)
+#define MLXREG_SDK_LOG_ERROR(...) MFT_LOG_ERRORF(nvtoolslogger::Layer::MLXREG, __VA_ARGS__)
+#define MLXREG_SDK_LOG_FATAL(...) MFT_LOG_FATALF(nvtoolslogger::Layer::MLXREG, __VA_ARGS__)
+
 typedef struct MstPrmRegisterMetadata_t MstPrmRegisterMetadata;
 typedef struct MstPrmRegisterExpandedMetadata_t MstPrmRegisterExpandedMetadata;
 typedef struct MstPrmRegisterMap_t MstPrmRegisterMap;

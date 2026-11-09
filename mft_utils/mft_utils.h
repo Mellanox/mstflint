@@ -90,10 +90,14 @@ void WriteNamedFilesToDirectory(const string& dirPath, const vector<pair<string,
 bool ToVector(string& str, vector<u_int8_t>& vec);
 
 int IsDirectory(const string& path);
+int IsRegularFile(const string& path);
+int IsSymlink(const string& path);
 void MkDirIfNotExists(const string& path);
 vector<string> GetListOfFiles(const string& dirPath);
 vector<vector<u_int8_t>> ReadBinaryFilesFromDirectory(const string& dirPath);
 std::vector<u_int32_t> Uuid2Dword(const std::string& uuid_str);
+/* Creates an empty uniquely named file at <sibling>.XXXXXX and returns its path, or an empty string on failure. */
+string CreateSiblingTempFile(const string& sibling);
 
 } // namespace mft_utils
 

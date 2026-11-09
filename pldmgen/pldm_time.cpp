@@ -38,6 +38,7 @@
 
  #include "pldm_time.h"
  #include "pldm_utils/pldm_utils.h"
+ #include "common/tools_endianness.h"
  
  void dumpTimeStamp104(std::vector<u_int8_t>& buff, const std::string& releaseDateTime)
  {
@@ -47,7 +48,7 @@
  
      // bytes 0:1 are for UTC diff
      short utcDiffInMinute = (short)(getUTCOffsetInSecond(tv.tv_sec) / 60);
-     utcDiffInMinute = __cpu_to_le16(utcDiffInMinute);
+     utcDiffInMinute = mft_cpu_to_le16(utcDiffInMinute);
      buff.push_back(((u_int8_t*)&(utcDiffInMinute))[0]);
      buff.push_back(((u_int8_t*)&(utcDiffInMinute))[1]);
  

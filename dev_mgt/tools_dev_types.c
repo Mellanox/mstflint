@@ -50,6 +50,9 @@
 #include "mflash/mflash_types.h"
 #include "mtcr_ul/mtcr_ul_com.h"
 #include "mtcr_ul/mtcr_common.h"
+#include "mtcr_ul/mtcr_int_defs.h"
+#include "nvtoolslogger/nvtoolslogger_c.h"
+#include "mft_core/device/device_info/device_properties_api.h"
 #ifdef CABLES_SUPPORT
 #include "mtcr_ul/mtcr_cables.h"
 #endif
@@ -83,42 +86,6 @@ struct device_info
 #define ARCUS_E_REV0_DEVID 0x81
 
 static struct device_info g_devs_info[] = {{
-                                             DeviceConnectX3, /* dm_id */
-                                             0x1f5,           /* hw_dev_id */
-                                             -1,              /* hw_rev_id */
-                                             -1,              /* sw_dev_id */
-                                             "ConnectX3",     /* name */
-                                             2,               /* port_num */
-                                             DM_HCA           /* dev_type */
-                                           },
-                                           {
-                                             DeviceConnectIB, /* dm_id */
-                                             0x1ff,           /* hw_dev_id */
-                                             -1,              /* hw_rev_id */
-                                             4113,            /* sw_dev_id */
-                                             "ConnectIB",     /* name */
-                                             2,               /* port_num */
-                                             DM_HCA           /* dev_type */
-                                           },
-                                           {
-                                             DeviceConnectX3Pro, /* dm_id */
-                                             0x1f7,              /* hw_dev_id */
-                                             -1,                 /* hw_rev_id */
-                                             4103,               /* sw_dev_id */
-                                             "ConnectX3Pro",     /* name */
-                                             2,                  /* port_num */
-                                             DM_HCA              /* dev_type */
-                                           },
-                                           {
-                                             DeviceSwitchIB, /* dm_id */
-                                             0x247,          /* hw_dev_id */
-                                             -1,             /* hw_rev_id */
-                                             52000,          /* sw_dev_id */
-                                             "SwitchIB",     /* name */
-                                             36,             /* port_num */
-                                             DM_SWITCH       /* dev_type */
-                                           },
-                                           {
                                              DeviceSpectrum, /* dm_id */
                                              0x249,          /* hw_dev_id */
                                              -1,             /* hw_rev_id */
@@ -263,15 +230,6 @@ static struct device_info g_devs_info[] = {{
                                              DM_HCA            // dev_type
                                            },
                                            {
-                                             DeviceSwitchIB2, /* dm_id */
-                                             0x24b,           /* hw_dev_id */
-                                             -1,              /* hw_rev_id */
-                                             53000,           /* sw_dev_id */
-                                             "SwitchIB2",     /* name */
-                                             36,              /* port_num */
-                                             DM_SWITCH        /* dev_type */
-                                           },
-                                           {
                                              DeviceCableQSFP, /* dm_id */
                                              0x0d,            /* hw_dev_id */
                                              0,               /* hw_rev_id */
@@ -351,15 +309,6 @@ static struct device_info g_devs_info[] = {{
                                              "DummyDevice", /* name */
                                              2,             /* port_num */
                                              DM_HCA         /* dev_type */
-                                           },
-                                           {
-                                             DeviceQuantum, /* dm_id */
-                                             0x24d,         /* hw_dev_id */
-                                             -1,            /* hw_rev_id */
-                                             54000,         /* sw_dev_id */
-                                             "Quantum",     /* name */
-                                             80,            /* port_num */
-                                             DM_SWITCH      /* dev_type */
                                            },
                                            {
                                              DeviceNVLink6_Switch,      // dm_id
@@ -504,7 +453,7 @@ static struct device_info g_devs_info[] = {{
                                              10496,       /* sw_dev_id */
                                              "GB100",     /* name */
                                              128,         /* port_num NEED_CHECK */
-                                             DM_SWITCH    /* dev_type */
+                                             DM_GPU       /* dev_type */
                                            },
                                            {
                                              DeviceGR100, /* dm_id */
@@ -513,34 +462,7 @@ static struct device_info g_devs_info[] = {{
                                              12288,       /* sw_dev_id */
                                              "GR100",     /* name */
                                              128,         /* port_num NEED_CHECK */
-                                             DM_SWITCH    /* dev_type */
-                                           },
-                                           {
-                                             DeviceGearBox, /* dm_id */
-                                             0x252,         /* hw_dev_id */
-                                             -1,            /* hw_rev_id */
-                                             53108,         /* sw_dev_id */
-                                             "AmosGearBox", /* name */
-                                             128,           /* port_num NEED_CHECK */
-                                             DM_GEARBOX     /* dev_type */
-                                           },
-                                           {
-                                             DeviceGearBoxManager, /* dm_id */
-                                             0x253,                /* hw_dev_id */
-                                             -1,                   /* hw_rev_id */
-                                             -1,                   /* sw_dev_id */
-                                             "AmosGearBoxManager", /* name */
-                                             -1,                   /* port_num NEED_CHECK */
-                                             DM_GEARBOX            /* dev_type */
-                                           },
-                                           {
-                                             DeviceAbirGearBox, /* dm_id */
-                                             0x256,             /* hw_dev_id */
-                                             -1,                /* hw_rev_id */
-                                             -1,                /* sw_dev_id */
-                                             "AbirGearBox",     /* name */
-                                             -1,                /* port_num NEED_CHECK */
-                                             DM_GEARBOX         /* dev_type */
+                                             DM_GPU       /* dev_type */
                                            },
                                            {
                                              DeviceUnknown,    /* dm_id */
@@ -668,25 +590,15 @@ static int dm_get_device_id_inner(mfile* mf, dm_dev_id_t* ptr_dm_dev_id, u_int32
         /* mgir.HWInfo.DEVID, mgir.HWInfo.hw_dev_id); */
         if (rc)
         {
-            dword = get_entry(DeviceSwitchIB)->hw_dev_id;
-            *ptr_hw_rev = 0;
-            *ptr_hw_dev_id = get_entry(DeviceSwitchIB)->hw_dev_id;
+            return GET_DEV_ID_ERROR;
         }
-        else
+        dword = mgir.hw_info.hw_dev_id;
+        if (dword == 0)
         {
-            dword = mgir.hw_info.hw_dev_id;
-            if (dword == 0)
-            {
-                dword = get_entry(DeviceSwitchIB)->hw_dev_id;
-                *ptr_hw_dev_id = get_entry(DeviceSwitchIB)->hw_dev_id;
-                *ptr_hw_rev = mgir.hw_info.device_hw_revision & 0xf;
-            }
-            else
-            {
-                *ptr_hw_dev_id = dword;
-                *ptr_hw_rev = 0; /* WA: MGIR should have also hw_rev_id and then we can use it. */
-            }
+            return GET_DEV_ID_ERROR;
         }
+        *ptr_hw_dev_id = dword;
+        *ptr_hw_rev = 0; /* WA: MGIR should have also hw_rev_id and then we can use it. */
     }
     else
     {
@@ -703,6 +615,19 @@ static int dm_get_device_id_inner(mfile* mf, dm_dev_id_t* ptr_dm_dev_id, u_int32
     return CHECK_PTR_DEV_ID;
 }
 
+/*
+ * Covers the paths that never reach read_device_id(): BlueField4 by PCI, LinkX,
+ * cables and MGIR. Only the two codes below guarantee *ptr_hw_dev_id was
+ * written. mf->rev_id, not *ptr_hw_rev, which is always 0 on the CR-space path.
+ */
+static void update_functional_device_id(mfile* mf, int return_value, const u_int32_t* ptr_hw_dev_id)
+{
+    if (return_value == GET_DEV_ID_SUCCESS || return_value == CHECK_PTR_DEV_ID)
+    {
+        mf->functional_device_id = resolve_functional_device_id(*ptr_hw_dev_id, mf->rev_id, mf->pci_device_id);
+    }
+}
+
 /**
  * Returns 0 on success and 1 on failure.
  */
@@ -710,13 +635,22 @@ int dm_get_device_id(mfile* mf, dm_dev_id_t* ptr_dm_dev_id, u_int32_t* ptr_hw_de
 {
     int return_value = 1;
 
+    if (mf == NULL)
+    {
+        return MFE_ERROR;
+    }
+
     return_value = dm_get_device_id_inner(mf, ptr_dm_dev_id, ptr_hw_dev_id, ptr_hw_rev);
     if (return_value == CRSPACE_READ_ERROR)
     {
-        printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno));
+        int err = errno;
+        MTCR_LOG_ERROR("Failed to read the device ID from CR-space%s%s", err ? ": " : "", err ? strerror(err) : "");
         return GET_DEV_ID_ERROR;
     }
-    else if (return_value == CHECK_PTR_DEV_ID)
+
+    update_functional_device_id(mf, return_value, ptr_hw_dev_id);
+
+    if (return_value == CHECK_PTR_DEV_ID)
     {
         if (*ptr_dm_dev_id == DeviceUnknown)
         {
@@ -738,7 +672,13 @@ int dm_get_device_id_without_prints(mfile* mf, dm_dev_id_t* ptr_dm_dev_id, u_int
 {
     int return_value = 1;
 
+    if (mf == NULL)
+    {
+        return MFE_ERROR;
+    }
+
     return_value = dm_get_device_id_inner(mf, ptr_dm_dev_id, ptr_hw_dev_id, ptr_hw_rev);
+    update_functional_device_id(mf, return_value, ptr_hw_dev_id);
     if (return_value == CHECK_PTR_DEV_ID)
     {
         if (*ptr_dm_dev_id == DeviceUnknown)
@@ -880,11 +820,6 @@ int dm_dev_is_dummy(dm_dev_id_t type)
     return type == DeviceDummy;
 }
 
-int dm_dev_is_gearbox(dm_dev_id_t type)
-{
-    return (get_entry(type)->dev_type == DM_GEARBOX);
-}
-
 int dm_is_menhit(dm_dev_id_t type)
 {
     return type == DeviceMenhit || type == DeviceArcusPTC || type == DeviceArcusP || type == DeviceArcusE;
@@ -905,11 +840,6 @@ int dm_dev_is_200g_speed_supported_hca(dm_dev_id_t type)
 int dm_dev_is_switch(dm_dev_id_t type)
 {
     return get_entry(type)->dev_type == DM_SWITCH;
-}
-
-int dm_dev_is_200g_speed_supported_switch(dm_dev_id_t type)
-{
-    return (dm_dev_is_switch(type) && (get_entry(type)->hw_dev_id >= get_entry(DeviceQuantum)->hw_dev_id));
 }
 
 int dm_dev_is_bridge(dm_dev_id_t type)
@@ -994,47 +924,22 @@ int dm_is_livefish_mode(mfile* mf)
         return 0;
     }
 
-    if (dm_is_4th_gen(devid_t))
-    {
-        return (devid == swid - 1);
-    }
-    else
-    {
-        int zombiefish = is_zombiefish_device(mf);
-        return ((devid == swid) || zombiefish);
-    }
-
-    return 0;
-}
-
-int dm_is_4th_gen(dm_dev_id_t type)
-{
-    return (type == DeviceConnectX3 || type == DeviceConnectX3Pro);
+    return ((devid == swid) || is_zombiefish_device(mf));
 }
 
 int dm_is_5th_gen_hca(dm_dev_id_t type)
 {
-    return (dm_dev_is_hca(type) && !dm_is_4th_gen(type));
+    return dm_dev_is_hca(type);
 }
 
-int dm_is_connectib(dm_dev_id_t type)
+int dm_is_qt3(dm_dev_id_t type)
 {
-    return (type == DeviceConnectIB);
-}
-
-int dm_is_gb100(dm_dev_id_t type)
-{
-    return (type == DeviceGB100);
-}
-
-int dm_is_gr100(dm_dev_id_t type)
-{
-    return (type == DeviceGR100);
+    return (type == DeviceQuantum3);
 }
 
 int dm_is_gpu(dm_dev_id_t type)
 {
-    return (dm_is_gb100(type) || dm_is_gr100(type));
+    return get_entry(type)->dev_type == DM_GPU;
 }
 
 int dm_is_cpo(mfile* mf, u_int8_t* ptr_cpo_ind)
@@ -1075,14 +980,14 @@ int dm_is_new_gen_switch(dm_dev_id_t type)
 
 int dm_dev_is_raven_family_switch(dm_dev_id_t type)
 {
-    return (dm_dev_is_switch(type) && (type == DeviceQuantum || type == DeviceQuantum2 || type == DeviceQuantum3 || type == DeviceNVLink6_Switch || type == DeviceGB100 || type == DeviceGR100 || type == DeviceSpectrum2 ||
+    return (dm_dev_is_switch(type) && (type == DeviceQuantum2 || type == DeviceQuantum3 || type == DeviceNVLink6_Switch || type == DeviceSpectrum2 ||
                                        type == DeviceSpectrum3 || type == DeviceSpectrum4 || type == DeviceSpectrum5 || type == DeviceSpectrum6));
 }
 
 int dm_dev_is_ib_switch(dm_dev_id_t type)
 {
     return (dm_dev_is_switch(type) &&
-            (type == DeviceQuantum || type == DeviceQuantum2 || type == DeviceQuantum3 || type == DeviceNVLink6_Switch || type == DeviceGB100 || type == DeviceGR100 || type == DeviceSwitchIB || type == DeviceSwitchIB2));
+            (type == DeviceQuantum2 || type == DeviceQuantum3 || type == DeviceNVLink6_Switch));
 }
 
 int dm_dev_is_eth_switch(dm_dev_id_t type)
@@ -1092,14 +997,14 @@ int dm_dev_is_eth_switch(dm_dev_id_t type)
 
 int dm_dev_is_fs3(dm_dev_id_t type)
 {
-    return type == DeviceConnectIB || type == DeviceSwitchIB || type == DeviceConnectX4 || type == DeviceConnectX4LX || type == DeviceSpectrum || type == DeviceSwitchIB2;
+    return type == DeviceConnectX4 || type == DeviceConnectX4LX || type == DeviceSpectrum;
 }
 
 int dm_dev_is_fs4(dm_dev_id_t type)
 {
     return type == DeviceConnectX5 || type == DeviceConnectX6 || type == DeviceConnectX6DX || type == DeviceConnectX6LX || type == DeviceConnectX7 || type == DeviceBlueField ||
-           type == DeviceBlueField2 || type == DeviceBlueField3 || type == DeviceQuantum || type == DeviceQuantum2 || type == DeviceSpectrum5 || type == DeviceSpectrum4 || type == DeviceSpectrum2 ||
-           type == DeviceSpectrum3 || type == DeviceGearBox || type == DeviceGearBoxManager;
+           type == DeviceBlueField2 || type == DeviceBlueField3 || type == DeviceQuantum2 || type == DeviceSpectrum5 || type == DeviceSpectrum4 || type == DeviceSpectrum2 ||
+           type == DeviceSpectrum3;
 }
 
 int dm_dev_is_fs5(dm_dev_id_t type)

@@ -30,13 +30,13 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common -I$(top_srcdir)/dev_mgt
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common -I$(top_srcdir)/dev_mgt \
+              -I$(top_srcdir)/mft_core/mft_core_utils
 
 pkglib_LTLIBRARIES = libmtcr_ul.la
 
 libmtcr_ul_la_SOURCES = mtcr_ul.c mtcr_ib.h  mtcr_int_defs.h\
 			mtcr_ib_res_mgt.h mtcr_ib_res_mgt.c\
-			mtcr_tools_cif.c mtcr_tools_cif.h\
 			mtcr_ul_icmd_cif.c mtcr_icmd_cif.h\
 			mtcr_mem_ops.c mtcr_mem_ops.h\
 			mtcr_ul_com_defs.h mtcr_mf.h\
@@ -45,9 +45,15 @@ libmtcr_ul_la_SOURCES = mtcr_ul.c mtcr_ib.h  mtcr_int_defs.h\
 			packets_common.c packets_common.h\
 			packets_layout.c packets_layout.h \
 			fwctrl.c fwctrl.h fwctrl_ioctl.h \
+			mtcr_remote.c mtcr_remote.h \
 			mtcr_gpu.c mtcr_gpu.h
 libmtcr_ul_la_CFLAGS = -W -Wall -g -MP -MD -fPIC -DMTCR_API="" -DMST_UL
-libmtcr_ul_la_DEPENDENCIES = 
+# The MTCR layer of the central NVIDIA Tools logger. Every tool links
+# libmtcr_ul, so this is what puts mft_log() in reach of the whole suite.
+# -lstdc++ is already in LDFLAGS below, so the C++ logger adds no new link
+# requirement.
+libmtcr_ul_la_DEPENDENCIES = $(top_builddir)/mft_core/device/device_info/libdevice_info.la \
+                             $(top_builddir)/mft_core/mft_core_utils/nvtoolslogger/libnvtoolslogger.la
 
 if ENABLE_INBAND
 libmtcr_ul_la_SOURCES += mtcr_ib_ofed.c
@@ -56,7 +62,7 @@ endif
 if ENABLE_VFIO
 libmtcr_ul_la_DEPENDENCIES += $(top_builddir)/vfio_driver_access/libvfio_access_driver.la
 endif
-libmtcr_ul_la_LDFLAGS = -lstdc++
+libmtcr_ul_la_LDFLAGS = -static -lstdc++
 
 if ENABLE_NVML
 libmtcr_ul_la_DEPENDENCIES += $(top_builddir)/$(NVML_DIR)/libnvml_device.la
@@ -66,7 +72,15 @@ endif
 if ENABLE_CABLES
 libmtcr_ul_la_SOURCES += mtcr_cables.c mtcr_cables.h
 libmtcr_ul_la_DEPENDENCIES += $(top_builddir)/tools_layouts/libcables_layouts.la
-libmtcr_ul_la_LDFLAGS += -static 
+libmtcr_ul_la_LDFLAGS += -static
+endif
+
+# --enable-remote: mtcr_remote.c drives the MST HTTP client, so libmtcr_ul (and
+# hence every tool that links it) picks up the client archive, jsoncpp, libcurl
+# and libstdc++. Off by default; without it mtcr_remote.c compiles to just the
+# never-matching mtcr_remote_is_remote_name() stub.
+if ENABLE_MTCR_REMOTE
+libmtcr_ul_la_DEPENDENCIES += $(top_builddir)/mst_server/client/libmst_http_client.la
 endif
 
 libmtcr_ul_la_LIBADD = $(libmtcr_ul_la_DEPENDENCIES)

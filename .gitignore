@@ -3,7 +3,11 @@
 *.la
 *.lo
 *.so
+*.lai
 .deps/
+.libs/
+.dirstamp
+__pycache__/
 
 __pycache__/
 *.py[cod]
@@ -16,6 +20,7 @@ Makefile.in
 /autom4te.cache/
 /common/gitversion.h
 /common/python_wrapper
+/common/tools_version.h
 /common/tools_version.py
 /config.h
 /config.h.in
@@ -24,21 +29,46 @@ Makefile.in
 /config.status
 config/
 /configure
+/configure~
+/efuse/mstefuse
 flint/mstflint
 libtool
 /m4/*.m4
+/mft_core/mft_core_utils/nvtoolslogger/mstflintlogger
+/mft_sdk/mstflint_sdk.pc
 /mlxconfig/mstconfig
 /mlxconfig/mstprivhost
+/mlxlink/mstlink
+/mlxreg/mstreg
+/mlxreg/scripts/mstgenerate_pgcb_commands
+/mlxtokengenerator/msttokengenerator
+/mst_utils/mstdevices_info
 /mstdump/crd_main/mstregdump
 /mstflint.spec
+/mstflint-sdk.spec
 /resourcetools/mstresourcedump
 /resourcetools/mstresourceparse
+/nvpcie/mstpcie
 /small_utils/mstcongestion
+/small_utils/mstfwctrl
 /small_utils/mstfwreset
 /small_utils/mstmcra
+/small_utils/mstmget_temp
 /small_utils/mstmread
 /small_utils/mstmtserver
 /small_utils/mstmwrite
 /small_utils/mstvpd
 /stamp-h1
+/tools_git_sha
 /tracers/fwtrace/mstfwtrace
+mst_utils/mstremote
+mst_server/service/mstserver
+
+# SDK unit-test build output.
+build-tests/
+
+# Hand-written, not autotools output; the unanchored Makefile rule above hides it.
+!mft_sdk/unit_tests/Makefile
+
+# Compressed mstdump device DBs, generated at build time from the .csv sources.
+/mstdump/mstdump_dbs/*.csv.xz

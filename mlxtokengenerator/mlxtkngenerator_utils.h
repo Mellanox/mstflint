@@ -39,18 +39,11 @@
 #include <stdarg.h>
 #include "common/compatibility.h"
 
-#define MLX_TOKEN_DPRINTF(args)                      \
-    do                                               \
-    {                                                \
-        char* reacDebug = getenv("MLX_TOKEN_DEBUG"); \
-        if (reacDebug != NULL)                       \
-        {                                            \
-            printf("\33[2K\r");                      \
-            printf("[MLX_TOKEN_DEBUG]: ");           \
-            printf args;                             \
-            fflush(stdout);                          \
-        }                                            \
-    } while (0)
+#define MLX_TOKEN_LOG_DEBUG(...) MFT_LOG_DEBUGF(nvtoolslogger::Layer::MLXTOKENGENERATOR, __VA_ARGS__)
+#define MLX_TOKEN_LOG_INFO(...) MFT_LOG_INFOF(nvtoolslogger::Layer::MLXTOKENGENERATOR, __VA_ARGS__)
+#define MLX_TOKEN_LOG_WARNING(...) MFT_LOG_WARNINGF(nvtoolslogger::Layer::MLXTOKENGENERATOR, __VA_ARGS__)
+#define MLX_TOKEN_LOG_ERROR(...) MFT_LOG_ERRORF(nvtoolslogger::Layer::MLXTOKENGENERATOR, __VA_ARGS__)
+#define MLX_TOKEN_LOG_FATAL(...) MFT_LOG_FATALF(nvtoolslogger::Layer::MLXTOKENGENERATOR, __VA_ARGS__)
 
 using namespace std;
 

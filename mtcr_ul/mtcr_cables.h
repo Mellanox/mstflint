@@ -10,6 +10,12 @@ extern "C"
 #include "include/mtcr_ul/mtcr_com_defs.h"
 #include "dev_mgt/tools_dev_types.h"
 
+#define CABLE_ACCESS_LOG_DEBUG(...) MFT_LOG_C_DEBUGF(MFT_LAYER_CABLE_ACCESS, __VA_ARGS__)
+#define CABLE_ACCESS_LOG_INFO(...) MFT_LOG_C_INFOF(MFT_LAYER_CABLE_ACCESS, __VA_ARGS__)
+#define CABLE_ACCESS_LOG_WARNING(...) MFT_LOG_C_WARNINGF(MFT_LAYER_CABLE_ACCESS, __VA_ARGS__)
+#define CABLE_ACCESS_LOG_ERROR(...) MFT_LOG_C_ERRORF(MFT_LAYER_CABLE_ACCESS, __VA_ARGS__)
+#define CABLE_ACCESS_LOG_FATAL(...) MFT_LOG_C_FATALF(MFT_LAYER_CABLE_ACCESS, __VA_ARGS__)
+
 #define CABLE_DEVICE_STR "_cable_"
 
 typedef enum {

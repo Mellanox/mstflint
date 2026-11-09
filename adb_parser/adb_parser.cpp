@@ -55,6 +55,22 @@ namespace Regex = mstflint::common::regex;
 using namespace std;
 using namespace xmlCreator;
 
+namespace
+{
+const string ROOT_NODE_NAME = "root";
+const string XML_NODES_DEF_OPEN = "<NodesDefinition>\n";
+const string XML_NODES_DEF_OPEN_V2 = "<NodesDefinition version=\"2\">\n";
+const string XML_NODES_DEF_CLOSE = "</NodesDefinition>\n";
+
+// Render a size in bits as ADB's "0xBYTES.BITS" format.
+string formatAdbSize(uint32_t sizeBits)
+{
+    stringstream buf;
+    buf << "0x" << hex << ((sizeBits >> 5) << 2) << "." << dec << (sizeBits % 32);
+    return buf.str();
+}
+} // namespace
+
 #if 0
 
 int main()
@@ -269,6 +285,81 @@ bool _Adb_impl<e, O>::loadFromString(const char* adbContents,
     }
 }
 
+// Section emitters — shared by toXml, toXmlStructural, and toXmlWrapper.
+
+template<bool e, typename O>
+string _Adb_impl<e, O>::_xmlNodesDefOpen() const
+{
+    return this->version == "2" ? XML_NODES_DEF_OPEN_V2 : XML_NODES_DEF_OPEN;
+}
+
+template<bool e, typename O>
+string _Adb_impl<e, O>::_xmlConfigsAndInfo(const string& nameOverride, const string& versionOverride)
+{
+    string xml;
+    for (ConfigList::iterator it = configs.begin(); it != configs.end(); it++)
+    {
+        xml += (*it)->toXml() + "\n";
+    }
+    const string& name = nameOverride.empty() ? srcDocName : nameOverride;
+    const string& version = versionOverride.empty() ? srcDocVer : versionOverride;
+    xml += "<info source_doc_name=\"" + encodeXml(descNativeToXml(name)) + "\" source_doc_version=\"" +
+           encodeXml(descNativeToXml(version)) + "\" />\n";
+    return xml;
+}
+
+template<bool e, typename O>
+string _Adb_impl<e, O>::_xmlInclude(const string& filename)
+{
+    return "<include file=\"" + encodeXml(filename) + "\" />\n";
+}
+
+template<bool e, typename O>
+string _Adb_impl<e, O>::_xmlAllNodes(bool excludeRoot, const string& addPrefix, bool bigEndian)
+{
+    string xml;
+    for (typename NodesMap::iterator it = nodesMap.begin(); it != nodesMap.end(); it++)
+    {
+        if (excludeRoot && it->first == ROOT_NODE_NAME)
+        {
+            continue;
+        }
+        AdbNode* node = it->second;
+        xml += node->toXml(addPrefix, bigEndian) + "\n";
+    }
+    return xml;
+}
+
+// Emit a node (used by toXml's addRootNode synthesis for the root node and the
+// grouping union node) whose fields all sit at offset 0x0.0 with subnode =
+// (addPrefix + field name). Emitting via AdbNode::toXml() reuses its stable_sort,
+// so field order is deterministic (offset-then-name) whatever order the caller gives.
+template<bool e, typename O>
+string _Adb_impl<e, O>::xmlSynthesizedNode(const string& nodeName,
+                                           bool isUnion,
+                                           uint32_t nodeSizeBits,
+                                           const vector<pair<string, uint32_t>>& fields,
+                                           const string& addPrefix)
+{
+    AdbNode* node = AdbNode::create_AdbNode(nodeName, nodeSizeBits, isUnion);
+    if (isUnion)
+    {
+        node->attrs["attr_is_union"] = "1";
+    }
+    node->attrs["size"] = formatAdbSize(nodeSizeBits);
+    for (size_t i = 0; i < fields.size(); i++)
+    {
+        AdbField* field =
+          AdbField::create_AdbField(fields[i].first, 0, fields[i].second, false, addPrefix + fields[i].first);
+        field->attrs["offset"] = "0x0.0";
+        field->attrs["size"] = formatAdbSize(fields[i].second);
+        node->fields.push_back(field);
+    }
+    string xml = node->toXml("") + "\n";
+    delete node;
+    return xml;
+}
+
 /**
  * Function: _Adb_impl::toXml
  **/
@@ -287,31 +378,12 @@ string
         stable_sort(nodeDeps.begin(), nodeDeps.end());
         nodeDeps.erase(unique(nodeDeps.begin(), nodeDeps.end()), nodeDeps.end());
 
-        string xml;
-        if (this->version == "2")
-        {
-            xml = "<NodesDefinition version=\"2\">\n";
-        }
-        else
-        {
-            xml = "<NodesDefinition>\n";
-        }
-        for (ConfigList::iterator it = configs.begin(); it != configs.end(); it++)
-        {
-            xml += (*it)->toXml() + "\n";
-        }
-
-        // Add source info
-        xml += "<info source_doc_name=\"" + encodeXml(descNativeToXml(srcDocName)) + "\" source_doc_version=\"" +
-               encodeXml(descNativeToXml(srcDocVer)) + "\" />\n";
+        string xml = _xmlNodesDefOpen();
+        xml += _xmlConfigsAndInfo();
 
         if (nodeNames.empty())
         {
-            for (typename NodesMap::iterator it = nodesMap.begin(); it != nodesMap.end(); it++)
-            {
-                AdbNode* node = it->second;
-                xml += node->toXml(addPrefix, bigEndian) + "\n";
-            }
+            xml += _xmlAllNodes(/*excludeRoot=*/false, addPrefix, bigEndian);
         }
         else
         {
@@ -333,29 +405,69 @@ string
 
             if (addRootNode)
             {
-                stringstream buf;
-                buf << "<node name=\"root\" size=\"0x" << hex << ((maxSize >> 5) << 2) << "." << dec << (maxSize % 32)
-                    << "\" descr=\"\" >\n";
-                buf << "\t<field name=\"" << rootName << "\" offset=\"0x0.0\""
-                    << " size=\"0x" << hex << ((maxSize >> 5) << 2) << "." << dec << (maxSize % 32) << "\" subnode=\""
-                    << addPrefix + rootName << "\" descr=\"\" />\n";
-                buf << "</node>\n\n";
-
-                buf << "<node name=\"" + addPrefix + rootName + "\" size=\"0x" << hex << ((maxSize >> 5) << 2) << "."
-                    << dec << (maxSize % 32) << "\" attr_is_union=\"1\" descr=\"\" >\n";
+                xml += xmlSynthesizedNode(ROOT_NODE_NAME, /*isUnion=*/false, maxSize, {{rootName, maxSize}}, addPrefix);
+                xml += "\n";
+                // Missing names were already rejected by the nodeDeps loop
+                // above; skipping here is a belt-and-braces guard, not an
+                // expected code path.
+                vector<pair<string, uint32_t>> unionFields;
+                unionFields.reserve(nodeNames.size());
                 for (size_t i = 0; i < nodeNames.size(); i++)
                 {
-                    AdbNode* node = nodesMap[nodeNames[i]];
-                    buf << "\t<field name=\"" << node->name << "\" offset=\"0x0.0\" size=\"0x" << hex
-                        << ((node->get_size() >> 5) << 2) << "." << dec << (node->get_size() % 32)
-                        << "\" subnode=\"" + addPrefix + node->name + "\" descr=\"\" />\n";
+                    typename NodesMap::iterator it = nodesMap.find(nodeNames[i]);
+                    if (it != nodesMap.end())
+                    {
+                        unionFields.emplace_back(nodeNames[i], it->second->get_size());
+                    }
                 }
-                buf << "</node>\n";
-                xml += buf.str();
+                xml += xmlSynthesizedNode(addPrefix + rootName, /*isUnion=*/true, maxSize, unionFields, addPrefix);
             }
         }
 
-        xml += "</NodesDefinition>\n";
+        xml += XML_NODES_DEF_CLOSE;
+        return xml;
+    }
+    catch (AdbException& exp)
+    {
+        _lastError = exp.what_s();
+        return "";
+    }
+}
+
+template<bool e, typename O>
+string _Adb_impl<e, O>::toXmlStructural()
+{
+    try
+    {
+        string xml = _xmlNodesDefOpen();
+        xml += _xmlAllNodes(/*excludeRoot=*/true, /*addPrefix=*/"", /*bigEndian=*/false);
+        xml += XML_NODES_DEF_CLOSE;
+        return xml;
+    }
+    catch (AdbException& exp)
+    {
+        _lastError = exp.what_s();
+        return "";
+    }
+}
+
+template<bool e, typename O>
+string _Adb_impl<e, O>::toXmlWrapper(string includeFilename, string sourceDocName, string sourceDocVersion)
+{
+    try
+    {
+        string xml = _xmlNodesDefOpen();
+        xml += _xmlConfigsAndInfo(sourceDocName, sourceDocVersion);
+        if (!includeFilename.empty())
+        {
+            xml += _xmlInclude(includeFilename);
+        }
+        typename NodesMap::iterator root_it = nodesMap.find(ROOT_NODE_NAME);
+        if (root_it != nodesMap.end())
+        {
+            xml += root_it->second->toXml(/*addPrefix=*/"", /*bigEndian=*/false) + "\n";
+        }
+        xml += XML_NODES_DEF_CLOSE;
         return xml;
     }
     catch (AdbException& exp)

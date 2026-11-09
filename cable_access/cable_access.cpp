@@ -284,7 +284,7 @@ bool cableAccess::rw(u_int32_t addr, u_int32_t len, u_int8_t* data, int _rw)
     if (rc)
     {
         ostringstream ss;
-        if (((cable_ctx*)(_mf->cable_ctx))->internal_error_msg[0] != '\0')
+        if (_mf->cable_ctx && ((cable_ctx*)(_mf->cable_ctx))->internal_error_msg[0] != '\0')
         {
             ss << ((cable_ctx*)(_mf->cable_ctx))->internal_error_msg;
         }
@@ -315,10 +315,6 @@ void cableAccess::setBurnFlow(bool isBurnFlow)
 
 bool cableAccess::isBurnSupported()
 {
-    if (_mf->hw_dev_id == DeviceConnectX3_HwId || _mf->hw_dev_id == DeviceConnectX3Pro_HwId)
-    {
-        return false;
-    }
     return true;
 }
 

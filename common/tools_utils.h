@@ -34,19 +34,20 @@
 #define TOOLS_UTILS_H
 
 #include "compatibility.h"
+#include "tools_endianness.h"
 
-#define CPU_TO_BE32(x) __cpu_to_be32(x)
-#define CPU_TO_LE32(x) __cpu_to_le32(x)
-#define BE32_TO_CPU(x) __be32_to_cpu(x)
-#define LE32_TO_CPU(x) __le32_to_cpu(x)
-#define CPU_TO_BE16(x) __cpu_to_be16(x)
-#define CPU_TO_LE16(x) __cpu_to_le16(x)
-#define BE16_TO_CPU(x) __be16_to_cpu(x)
-#define LE16_TO_CPU(x) __le16_to_cpu(x)
-#define CPU_TO_BE64(x) __cpu_to_be64(x)
-#define CPU_TO_LE64(x) __cpu_to_le64(x)
-#define BE64_TO_CPU(x) __be64_to_cpu(x)
-#define LE64_TO_CPU(x) __le64_to_cpu(x)
+#define CPU_TO_BE32(x) mft_cpu_to_be32(x)
+#define CPU_TO_LE32(x) mft_cpu_to_le32(x)
+#define BE32_TO_CPU(x) mft_be32_to_cpu(x)
+#define LE32_TO_CPU(x) mft_le32_to_cpu(x)
+#define CPU_TO_BE16(x) mft_cpu_to_be16(x)
+#define CPU_TO_LE16(x) mft_cpu_to_le16(x)
+#define BE16_TO_CPU(x) mft_be16_to_cpu(x)
+#define LE16_TO_CPU(x) mft_le16_to_cpu(x)
+#define CPU_TO_BE64(x) mft_cpu_to_be64(x)
+#define CPU_TO_LE64(x) mft_cpu_to_le64(x)
+#define BE64_TO_CPU(x) mft_be64_to_cpu(x)
+#define LE64_TO_CPU(x) mft_le64_to_cpu(x)
 
 #define FIELD_8_OF_BUFF(buf, offset) (*(u_int8_t*)((u_int8_t*)(buf) + (offset)))
 #define FIELD_16_OF_BUFF(buf, offset) (*(u_int16_t*)((u_int8_t*)(buf) + (offset)))

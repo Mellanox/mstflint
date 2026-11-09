@@ -50,6 +50,7 @@
 
 #include <mtcr.h>
 #include <reg_access/reg_access.h>
+#include "common/tools_endianness.h"
 
 using namespace std;
 
@@ -109,7 +110,7 @@ typedef enum
 #define VECTOR_BE32_TO_CPU(buff)                   \
     for (unsigned int i = 0; i < buff.size(); i++) \
     {                                              \
-        buff[i] = __be32_to_cpu(buff[i]);          \
+        buff[i] = mft_be32_to_cpu(buff[i]);        \
     }
 
 #define MAX_ARRAY_SIZE 32

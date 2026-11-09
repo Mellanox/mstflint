@@ -58,7 +58,7 @@ from utils import (
     BaseConfig, clean_value, format_sdk_command, MFT_SDK_LINK_TOOL,
     CommandRunner,
     BaseCTestRunner, BaseCppTestRunner, BaseMlxlinkRunner,
-    BaseTestSuite,
+    BaseTestSuite, device_not_answering,
     print_usage as _print_usage_base, run_main,
 )
 
@@ -443,14 +443,28 @@ class TestSuite(BaseTestSuite):
             return self.RESULT_PASS if all_match else self.RESULT_FAIL
 
         if c_result.error_message or cpp_result.error_message or mlxlink_result.error_message:
+            # "Not supported" is only a finding about a device that answered.
+            # On 2026-10-07 apps-127 and apps-132 reached this SKIP with "got
+            # status 12: FW burnt on device does not support generic access
+            # register" -- a device answering no register access at all,
+            # filed as an unsupported feature.
+            errors = dict((name, err) for name, err in (
+                ("C", c_result.error_message),
+                ("C++", cpp_result.error_message),
+                ("mlxlink", mlxlink_result.error_message or
+                 self.mlxlink_runner.get_error())) if err)
+            dead, why = device_not_answering(self.device, errors.values())
+            if dead:
+                return self._fail_device_not_answering(errors, why)
             ComparisonTable(
                 c_result, cpp_result, mlxlink_result,
                 self.device, self.device_type).print_table()
             return self.RESULT_SKIP
 
         # No data and no error message from any runner — defer to error
-        # comparison so runners agreeing on a failure count as PASS.
-        return self._compare_errors()
+        # comparison so runners agreeing on a failure count as PASS, unless
+        # the device answered nothing at all (positive: data was expected).
+        return self._compare_errors(positive=True)
 
 
 # =============================================================================

@@ -41,6 +41,7 @@
 #include <string.h>
 #include "xz_io_ops.h"
 #include <compatibility.h>
+#include "common/tools_endianness.h"
 
 #define _ERR(errcode) (-errcode)
 
@@ -65,7 +66,7 @@ ssize_t mfasec_get_section(u_int8_t* inbuf, size_t inbufsz, u_int8_t** outbuf)
     if (hdr->flags & SFLAG_XZ_COMPRESSED)
     {
         ssize_t sz;
-        sz = xz_stream_len(&inbuf[sizeof(section_hdr)], __be32_to_cpu(hdr->size));
+        sz = xz_stream_len(&inbuf[sizeof(section_hdr)], mft_be32_to_cpu(hdr->size));
         if (sz <= 0)
         {
             return _ERR(MFA_ERR_DECOMPRESSION);
@@ -95,21 +96,21 @@ ssize_t mfasec_get_section(u_int8_t* inbuf, size_t inbufsz, u_int8_t** outbuf)
         }
         section_hdr* hdr = (section_hdr*)buf;
         hdr->flags &= (u_int8_t)(~SFLAG_XZ_COMPRESSED);
-        hdr->size = __cpu_to_be32(((u_int32_t)sz));
+        hdr->size = mft_cpu_to_be32(((u_int32_t)sz));
     }
     else
     {
-        ssize_t msize = __be32_to_cpu(hdr->size) + sizeof(section_hdr);
+        ssize_t msize = mft_be32_to_cpu(hdr->size) + sizeof(section_hdr);
         buf = (u_int8_t*)malloc(msize);
         if (buf == NULL)
         {
             return _ERR(MFA_ERR_MEM_ALLOC);
         }
-        memcpy(buf, inbuf, __be32_to_cpu(hdr->size) + sizeof(section_hdr));
+        memcpy(buf, inbuf, mft_be32_to_cpu(hdr->size) + sizeof(section_hdr));
     }
 
     hdr = (section_hdr*)buf;
-    hdr->size = __be32_to_cpu(hdr->size);
+    hdr->size = mft_be32_to_cpu(hdr->size);
 
     *outbuf = buf;
     res = hdr->size + sizeof(section_hdr);
@@ -138,7 +139,7 @@ ssize_t mfasec_get_map(u_int8_t* inbuf, size_t inbufsz, u_int8_t** outbuf)
     {
         map_entry_hdr* map_entry = (map_entry_hdr*)&((*outbuf)[pos]);
         int n = map_entry->nimages;
-        map_entry->metadata_size = __be16_to_cpu(map_entry->metadata_size);
+        map_entry->metadata_size = mft_be16_to_cpu(map_entry->metadata_size);
         // printf("%s %d\n", map_entry->board_type_id, n);
         pos += sizeof(map_entry_hdr);
         if (pos >= total)
@@ -148,7 +149,7 @@ ssize_t mfasec_get_map(u_int8_t* inbuf, size_t inbufsz, u_int8_t** outbuf)
         if (map_entry->metadata_size > 0)
         {
             metadata_hdr* md_hdr = (metadata_hdr*)&((*outbuf)[pos]);
-            md_hdr->modifier = __be16_to_cpu(md_hdr->modifier);
+            md_hdr->modifier = mft_be16_to_cpu(md_hdr->modifier);
         }
         pos += map_entry->metadata_size;
         if (pos >= total)
@@ -158,8 +159,8 @@ ssize_t mfasec_get_map(u_int8_t* inbuf, size_t inbufsz, u_int8_t** outbuf)
         for (j = 0; j < n; j++)
         {
             map_image_entry* img_entry = (map_image_entry*)&((*outbuf)[pos]);
-            img_entry->toc_offset = __be32_to_cpu(img_entry->toc_offset);
-            img_entry->image_type = __be16_to_cpu(img_entry->image_type);
+            img_entry->toc_offset = mft_be32_to_cpu(img_entry->toc_offset);
+            img_entry->image_type = mft_be16_to_cpu(img_entry->image_type);
             // printf("Image #%d Offset: %08x\n", j, img_entry->toc_offset);
             pos += sizeof(map_image_entry);
         }
@@ -188,15 +189,15 @@ ssize_t mfasec_get_toc(u_int8_t* inbuf, size_t inbufsz, u_int8_t** outbuf)
     while (pos < total)
     {
         toc_entry* toc_e = (toc_entry*)&((*outbuf)[pos]);
-        toc_e->data_offset = __be32_to_cpu(toc_e->data_offset);
-        toc_e->data_size = __be32_to_cpu(toc_e->data_size);
-        toc_e->subimage_type = __be16_to_cpu(toc_e->subimage_type);
+        toc_e->data_offset = mft_be32_to_cpu(toc_e->data_offset);
+        toc_e->data_size = mft_be32_to_cpu(toc_e->data_size);
+        toc_e->subimage_type = mft_be16_to_cpu(toc_e->subimage_type);
         for (i = 0; i < 4; i++)
         {
-            toc_e->version[i] = __be16_to_cpu(toc_e->version[i]);
+            toc_e->version[i] = mft_be16_to_cpu(toc_e->version[i]);
         }
-        toc_e->data_offset_msb = __be16_to_cpu(toc_e->data_offset_msb);
-        toc_e->metadata_size = __be16_to_cpu(toc_e->metadata_size);
+        toc_e->data_offset_msb = mft_be16_to_cpu(toc_e->data_offset_msb);
+        toc_e->metadata_size = mft_be16_to_cpu(toc_e->metadata_size);
         pos += sizeof(toc_entry);
         pos += toc_e->metadata_size;
     }
@@ -211,124 +212,6 @@ enum read_states
     SEEK,
     COPY
 };
-
-int mfasec_get_data_chunk(u_int8_t* data_sec_ptr,
-                          size_t data_sec_len,
-                          u_int64_t chunk_offset,
-                          size_t length,
-                          u_int8_t* outbuf)
-{
-    int res = 0;
-    int rc;
-    xzhandle_t* xzh;
-    u_int8_t* buf = NULL;
-    size_t src_sz;
-
-    u_int8_t* ptr = data_sec_ptr;
-    if (data_sec_len < sizeof(section_hdr))
-    {
-        return _ERR(MFA_ERR_BUFF_SIZE);
-    }
-    ptr += sizeof(section_hdr);
-    data_sec_len -= sizeof(section_hdr);
-
-    section_hdr* hdr = (section_hdr*)data_sec_ptr;
-    src_sz = __be32_to_cpu(hdr->size);
-
-    if (hdr->flags & SFLAG_XZ_COMPRESSED)
-    {
-        size_t sz;
-        buf = (u_int8_t*)malloc(BUF_SIZE);
-        if (buf == NULL)
-        {
-            return _ERR(MFA_ERR_MEM_ALLOC);
-        }
-        if (data_sec_len < src_sz)
-        {
-            res = _ERR(MFA_ERR_BUFF_SIZE);
-            goto clean_up;
-        }
-        sz = xz_stream_len(ptr, src_sz);
-        if (sz <= 0)
-        {
-            res = _ERR(MFA_ERR_DECOMPRESSION);
-            goto clean_up;
-        }
-        if (sz < (chunk_offset + length))
-        {
-            res = _ERR(MFA_ERR_DECOMPRESSION);
-            goto clean_up;
-        }
-
-        // Read section into buffer
-        xzh = xz_open_buf(ptr, src_sz);
-        if (xzh == NULL)
-        {
-            res = _ERR(MFA_ERR_DECOMPRESSION);
-            goto clean_up;
-        }
-
-        size_t index = 0;
-        size_t rlen = 0;
-        int state = SEEK;
-        do
-        {
-            rc = xz_read(xzh, buf, BUF_SIZE);
-            if (rc > 0)
-            {
-                index += rc;
-            }
-            else
-            {
-                break;
-            }
-
-            if (state == SEEK)
-            {
-                if (index > chunk_offset)
-                {
-                    rlen += index - chunk_offset;
-                    memcpy(outbuf, &buf[rc - (rlen)], rlen);
-                    state = COPY;
-                }
-            }
-            else if (state == COPY)
-            {
-                size_t delta = rc;
-                if ((rlen + rc) > length)
-                {
-                    delta = length - rlen;
-                }
-                memcpy(&outbuf[rlen], buf, delta);
-                rlen += delta;
-            }
-            if (rlen == length)
-            {
-                break;
-            }
-        } while (rc == BUF_SIZE);
-
-        xz_close(xzh);
-
-        if (rlen != length)
-        {
-            res = _ERR(MFA_ERR_DECOMPRESSION);
-            goto clean_up;
-        }
-    }
-    else
-    {
-        ptr += chunk_offset;
-        memcpy(outbuf, ptr, length);
-    }
-
-clean_up:
-    if (buf != NULL)
-    {
-        free(buf);
-    }
-    return res;
-}
 
 char* mfasec_get_sub_image_type_str(int t)
 {

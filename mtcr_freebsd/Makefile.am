@@ -36,7 +36,8 @@ AM_CPPFLAGS = \
     -I$(top_srcdir)/common -I$(top_builddir)/common \
     -I$(top_srcdir)/include/mtcr_ul \
     -I$(top_srcdir)/mtcr_ul \
-    -I$(top_srcdir)/dev_mgt
+    -I$(top_srcdir)/dev_mgt \
+    -I$(top_srcdir)/mft_core/mft_core_utils
 
 noinst_LTLIBRARIES = libmtcr_ul.la
 
@@ -48,8 +49,6 @@ libmtcr_ul_la_SOURCES = \
     $(top_srcdir)/mtcr_ul/mtcr_int_defs.h \
     $(top_srcdir)/mtcr_ul/mtcr_mem_ops.c \
     $(top_srcdir)/mtcr_ul/mtcr_mem_ops.h \
-    $(top_srcdir)/mtcr_ul/mtcr_tools_cif.c \
-    $(top_srcdir)/mtcr_ul/mtcr_tools_cif.h\
     $(top_srcdir)/mtcr_ul/mtcr_ul_icmd_cif.c \
     $(top_srcdir)/mtcr_ul/packets_common.c \
     $(top_srcdir)/mtcr_ul/packets_common.h\
@@ -66,9 +65,18 @@ libmtcr_ul_la_SOURCES = \
 
 libmtcr_ul_la_CFLAGS = -W -Wall -g -MP -MD -fPIC -DMTCR_API="" -DMST_UL
 
+# This target compiles the shared mtcr_ul/*.c sources, which log on the MTCR
+# layer of the central NVIDIA Tools logger, so it needs the same dependency
+# the Linux libmtcr_ul has.
 if ENABLE_INBAND
 libmtcr_ul_la_SOURCES += $(top_srcdir)/mtcr_ul/mtcr_ib_ofed.c
 endif
+
+libmtcr_ul_la_DEPENDENCIES = \
+    $(top_builddir)/mft_core/device/device_info/libdevice_info.la \
+    $(top_builddir)/mft_core/mft_core_utils/nvtoolslogger/libnvtoolslogger.la
+
+libmtcr_ul_la_LIBADD = $(libmtcr_ul_la_DEPENDENCIES) -lstdc++
 
 libraryincludedir=$(includedir)/mstflint
 

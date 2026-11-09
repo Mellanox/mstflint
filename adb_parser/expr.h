@@ -118,7 +118,7 @@ public:
     Expr() : def_radix(10) {}
     virtual ~Expr() {}
 
-    int expr(char** pstr, u_int64_t* result);
+    int expr(const char** pstr, u_int64_t* result);
 
     /* Current state of parsing. */
     typedef enum
@@ -130,7 +130,7 @@ public:
     /* Token as it read by parser. */
     typedef struct
     {
-        char* beg;       /* pointer to token begining                         */
+        const char* beg; /* pointer to token begining                         */
         status sta;      /* state of parser before this token                 */
         int type;        /* type of token (any operation, VALUE or error code */
         u_int64_t value; /* if type == VALUE value of token                   */
@@ -145,8 +145,8 @@ public:
     } table;
 
 private:
-    static char* str;
-    static char* initial_arg;
+    static const char* str;
+    static const char* initial_arg;
     static status state;
     int def_radix;
 

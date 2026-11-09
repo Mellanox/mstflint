@@ -34,9 +34,16 @@ AM_CPPFLAGS = \
     -I$(srcdir) \
     -I$(top_srcdir) \
     -I$(top_srcdir)/include/mtcr_ul \
+    -I$(top_srcdir)/mft_core/mft_core_utils \
     -I$(top_srcdir)/mft_utils \
     -I$(top_srcdir)/mlxlink \
-    -I$(top_srcdir)/mlxreg
+    -I$(top_srcdir)/mlxreg \
+    -I$(top_srcdir)/resourcetools/resourcedump_lib/src/commands \
+    -I$(top_srcdir)/resourcetools/resourcedump_lib/src/common \
+    -I$(top_srcdir)/resourcetools/resourcedump_lib/src/fetchers \
+    -I$(top_srcdir)/resourcetools/resourcedump_lib/src/filters \
+    -I$(top_srcdir)/resourcetools/resourcedump_lib/src/sdk \
+    -I$(top_srcdir)/resourcetools/resourcedump_lib/src/segments
 
 AM_CPPFLAGS += $(JSON_CFLAGS)
 
@@ -62,29 +69,39 @@ sdklibdir = $(libdir)/mstflint/sdk
 sdklib_LTLIBRARIES = libmstflint_sdk.la
 
 libmstflint_sdk_la_SOURCES = \
+    mft_sdk_amber.cpp \
     mft_sdk_class.cpp \
     mft_sdk_cr_space_access.cpp \
     mft_sdk_discovery.cpp \
     mft_sdk_errors.cpp \
     mft_sdk_hca_caps.cpp \
     mft_sdk_i2c_access.cpp \
+    mft_sdk_icmd.cpp \
     mft_sdk_reg_access.cpp \
+    mft_sdk_resource_dump.cpp \
+    mft_sdk_temperature.cpp \
     mft_sdk_telemetry.cpp \
+    mft_sdk_telemetry_common.cpp \
     mft_sdk.h \
+    mft_sdk_amber.h \
     mft_sdk_class.hpp \
     mft_sdk_cr_space_access.h \
     mft_sdk_discovery.h \
     mft_sdk_errors.h \
     mft_sdk_hca_caps.h \
     mft_sdk_i2c_access.h \
+    mft_sdk_icmd.h \
     mft_sdk_query.h \
     mft_sdk_reg_access.h \
+    mft_sdk_resource_dump.h \
     mft_sdk_telemetry.h \
+    mft_sdk_telemetry_common.hpp \
+    mft_sdk_temperature.h \
     mft_sdk_telemetry_types.h \
     mft_sdk_types.h
 
 libmstflint_sdk_la_CXXFLAGS = $(AM_CXXFLAGS) $(COMPILER_FPIC)
-libmstflint_sdk_la_LDFLAGS = -shared -avoid-version -Wl,-soname,libmstflint_sdk.so -Wl,--allow-multiple-definition
+libmstflint_sdk_la_LDFLAGS = -shared -avoid-version -Wl,-soname,libmstflint_sdk.so -Wl,--allow-multiple-definition -Wl,--no-undefined
 
 libmstflint_sdk_la_LIBADD = \
     $(top_builddir)/hca_capabilities/libhca_capabilities.la \
@@ -92,7 +109,13 @@ libmstflint_sdk_la_LIBADD = \
     $(top_builddir)/mlxlink/modules/libmodules_lib.la \
     $(MSTREG_SDK_WHOLE_ARCHIVE) \
     $(top_builddir)/mft_utils/libmftutils.la \
+    $(top_builddir)/small_utils/libmgettemp.la \
     $(MTCR_SDK_WHOLE_ARCHIVE) \
+    $(top_builddir)/resourcetools/resourcedump_lib/src/sdk/libresource_dump_sdk.la \
+    $(top_builddir)/resourcetools/resourcedump_lib/src/commands/libresource_dump_commands.la \
+    $(top_builddir)/resourcetools/resourcedump_lib/src/fetchers/libreg_access_resource_dump_fetcher.la \
+    $(top_builddir)/resourcetools/resourcedump_lib/src/filters/libresource_dump_filters.la \
+    $(top_builddir)/resourcetools/resourcedump_lib/src/common/libresource_dump_common.la \
     $(top_builddir)/adb_parser/libadb_parser.la \
     $(top_builddir)/cmdif/libcmdif.la \
     $(top_builddir)/dev_mgt/libdev_mgt.la \
@@ -119,16 +142,27 @@ libmstflint_sdk_la_LIBADD = \
 sdkincludedir = $(includedir)/mstflint/sdk/mft_sdk
 sdkinclude_HEADERS = \
     mft_sdk.h \
+    mft_sdk_amber.h \
     mft_sdk_cr_space_access.h \
     mft_sdk_discovery.h \
     mft_sdk_errors.h \
     mft_sdk_hca_caps.h \
     mft_sdk_i2c_access.h \
+    mft_sdk_icmd.h \
     mft_sdk_query.h \
     mft_sdk_reg_access.h \
+    mft_sdk_resource_dump.h \
     mft_sdk_telemetry.h \
+    mft_sdk_temperature.h \
     mft_sdk_telemetry_types.h \
     mft_sdk_types.h
+
+# The ctypes bindings live with the rest of the SDK rather than under
+# python_tools, which holds tool entry points. common/python_wrapper.sh puts the
+# parent directory on PYTHONPATH, so `import mft_sdk` resolves with no sys.path
+# manipulation by the importing tool.
+sdkpythonlibdir = $(sdklibdir)/mft_sdk_py/mft_sdk
+dist_sdkpythonlib_DATA = $(srcdir)/mft_sdk_py/src/mft_sdk/*.py
 
 # pkg-config metadata so consumers can build against the SDK with
 # `pkg-config --cflags --libs mstflint_sdk`. Installed to the conventional

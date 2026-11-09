@@ -98,7 +98,15 @@ TEST_F(MftSdkCountersTest, GetCountersInfo)
         printf("%-35s: %s\n", result.first.c_str(), result.second.c_str());
     }
 
-    EXPECT_NE(countersInfo.header.valid_fields_mask, 0u) << "Valid fields mask should be non-zero";
+    // Which counters exist is a property of the link, not of the SDK: a down
+    // port legitimately reports an empty mask, so only reject undefined bits.
+    uint64_t definedBits = 0;
+    for (size_t i = 0; i < NUM_COUNTER_FIELDS; i++)
+    {
+        definedBits |= 1ULL << fields[i].capabilityBit;
+    }
+    EXPECT_EQ(countersInfo.header.valid_fields_mask & ~definedBits, 0ULL)
+      << "valid_fields_mask claims a counter outside the defined ones";
 
     if (countersInfo.numberOfLanes > 0)
     {

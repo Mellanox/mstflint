@@ -55,6 +55,8 @@
 #endif
 #include "pldm_utils/pldm_utils.h"
 #include <mlxarchive/mlxarchive_mfa2.h>
+#include <openssl/sha.h>
+#include "mlxsign_lib/mlxsign_aesctr_via_openssl.h"
 
 #define ITOC_ASCII 0x49544f43
 #define TOC_HEADER_SIZE 0x20
@@ -292,10 +294,23 @@ int ImageAccess::queryPsid(const string&  fname,
     vector < u_int8_t > dest;
     bool isStripedImage = false;
     int signature = getFileSignature(fname);
+    int mfaPldm = 0;
+    u_int8_t* nicBuff = NULL;
+    u_int32_t nicSize = 0;
+    u_int16_t swDevId = 0;
 
     if (signature == IMG_SIG_TYPE_MFA2)
     {
         return queryPsidMfa2(fname, psid, selector_tag, image_type, ri);
+    }
+
+    if (signature == IMG_SIG_TYPE_MFA)
+    {
+        mfaPldm = getMfaPldmNicImage(fname, psid, &nicBuff, nicSize, swDevId);
+        if (mfaPldm < 0)
+        {
+            return -1;
+        }
     }
 
     if (signature == IMG_SIG_TYPE_PLDM)
@@ -304,6 +319,16 @@ int ImageAccess::queryPsid(const string&  fname,
         if (res != 1)
         {
             goto clean_up;
+        }
+        isStripedImage = true;
+    }
+    else if (mfaPldm == 1)
+    {
+        bool opened = openImg(FHT_FW_BUFF, (char*)psid.c_str(), NULL, swDevId, (u_int32_t*)nicBuff, nicSize);
+        free(nicBuff);
+        if (!opened)
+        {
+            return -1;
         }
         isStripedImage = true;
     }
@@ -348,17 +373,40 @@ int ImageAccess::queryPsid(const string&  fname,
             }
         }
         ri.iniName = iniName;
-        if (!mfa_open_file(&mfa_d, (char*)fname.c_str())) {
-            char* pn = mfa_get_board_metadata(mfa_d, (char*)psid.c_str(), (char*)"PN");
-            if (pn != NULL) {
-                ri.pns = pn;
-                free(pn);
+        if (!mfa_open_file(&mfa_d, (char*)fname.c_str())) 
+        {
+            map_entry_hdr* map_entry = mfa_get_map_entry(mfa_d, (char*)psid.c_str());
+            if (map_entry != NULL && is_encrypted(map_entry)) 
+            {
+                /* encrypted metadata points into the map buffer and must not be freed */
+                string psid_copy = psid;
+                string pn_key = "PN";
+                string desc_key = "DESCRIPTION";
+                if (!decrypt_metadata_section(pn_key, map_entry, psid_copy, ri.pns) ||
+                    !decrypt_metadata_section(desc_key, map_entry, psid_copy, ri.description)) 
+                {
+                    _errMsg = "Failed to decrypt PN/description for psid: " + psid;
+                    _log += _errMsg;
+                    mfa_close(mfa_d);
+                    res = -1;
+                    goto clean_up;
+                }
             }
-            char* desc =
-                mfa_get_board_metadata(mfa_d, (char*)psid.c_str(), (char*)"DESCRIPTION"); /* TODO: Make more efficient */
-            if (desc != NULL) {
-                ri.description = desc;
-                free(desc);
+            else 
+            {
+                char* pn = mfa_get_board_metadata(mfa_d, (char*)psid.c_str(), (char*)"PN");
+                if (pn != NULL)
+                {
+                    ri.pns = pn;
+                    free(pn);
+                }
+                char* desc = mfa_get_board_metadata(mfa_d, (char*)psid.c_str(),
+                                                    (char*)"DESCRIPTION"); /* TODO: Make more efficient */
+                if (desc != NULL)
+                {
+                    ri.description = desc;
+                    free(desc);
+                }
             }
             mfa_close(mfa_d);
         }
@@ -455,13 +503,26 @@ int ImageAccess::getImage(const string& fname,
     int type = getFileSignature(fname);
 
     if (type == IMG_SIG_TYPE_MFA) {
-        mfa_desc* mfa_d;
-        int       rc = mfa_open_file(&mfa_d, (char*)fname.c_str());
-        if (!rc) {
-            res = mfa_get_image(mfa_d, (char*)psid.c_str(), image_type, (char*)selector_tag.c_str(), filebuf);
-            mfa_close(mfa_d);
-        } else {
-            res = -1;
+        u_int32_t nicSize = 0;
+        u_int16_t swDevId = 0;
+        int       mfaPldm = getMfaPldmNicImage(fname, psid, filebuf, nicSize, swDevId);
+        if (mfaPldm > 0)
+        {
+            res = (int)nicSize;
+        }
+        else if (mfaPldm == 0)
+        {
+            mfa_desc* mfa_d;
+            int       rc = mfa_open_file(&mfa_d, (char*)fname.c_str());
+            if (!rc)
+            {
+                res = mfa_get_image(mfa_d, (char*)psid.c_str(), image_type, (char*)selector_tag.c_str(), filebuf);
+                mfa_close(mfa_d);
+            }
+            else
+            {
+                res = -1;
+            }
         }
     } else if (type == IMG_SIG_TYPE_MFA2) {
         mfa2::MFA2* mfa2Pkg = mfa2::MFA2::LoadMFA2Package(fname);
@@ -572,6 +633,28 @@ clean_up:
     return res;
 }
 
+bool ImageAccess::isMfaEncrypted(const string& fname)
+{
+    static const int header_size = 4;
+    char magic[header_size];
+    FILE* fin = fopen(fname.c_str(), "rb");
+    if (!fin)
+    {
+        return false;
+    }
+    bool ok = (1 == fread(magic, header_size, 1, fin));
+    fclose(fin);
+    if (!ok)
+    {
+        return false;
+    }
+    if (0 == memcmp(magic, "MFAE", 4))
+    {
+        return true;
+    }
+    return false;
+}
+
 int ImageAccess::getFileSignature(const string& fname)
 {
     static const u_int32_t header_size = 16;
@@ -602,7 +685,9 @@ int ImageAccess::getBufferSignature(u_int8_t* buf, u_int32_t size)
 
     if (size >= 4 && 0 == memcmp(buf, "MTFW", 4)) {
         res = IMG_SIG_TYPE_BIN;
-    } else if (size >= 4 && 0 == memcmp(buf, "MFAR", 4)) {
+    }
+    else if (size >= 4 && (0 == memcmp(buf, "MFAR", 4) || 0 == memcmp(buf, "MFAE", 4)))
+    {
         res = IMG_SIG_TYPE_MFA;
     } else if (size >= strlen(MFA2_FINGER_PRINT) && 0 == memcmp(buf, MFA2_FINGER_PRINT, strlen(MFA2_FINGER_PRINT))) {
         res = IMG_SIG_TYPE_MFA2;
@@ -673,11 +758,12 @@ clean_up:
     return res;
 }
 
-int ImageAccess::get_mfa_content(const string& fname, vector < PsidQueryItem >& riv)
+int ImageAccess::get_mfa_content(const string& fname, vector < PsidQueryItem >& riv, const vector < string >& psid_list)
 {
     mfa_desc     * mfa_d;
     map_entry_hdr* me = NULL;
     char           psid[33];
+    int            res = 0;
 
     if (mfa_open_file(&mfa_d, (char*)fname.c_str())) {
         return -1;
@@ -685,29 +771,69 @@ int ImageAccess::get_mfa_content(const string& fname, vector < PsidQueryItem >& 
     me = NULL;
     while ((me = mfa_get_next_mentry(mfa_d, me))) {
         PsidQueryItem item;
-        strncpy(psid, me->board_type_id, 32);
-        psid[32] = 0;
-        item.psid = psid;
-        char* val = mfa_get_map_entry_metadata(me, (char*)"PN");
-        if (val == NULL) {
-            item.pns = "";
+        char*         val = NULL;
+        if (is_encrypted(me))
+        {
+            if (psid_list.empty())
+            {
+                _errMsg = "Listing an encrypted MFA archive requires --show-psids";
+                _log += _errMsg;
+                res = -1;
+                break;
+            }
+            if (!decrypt_psid(me, psid_list, item))
+            {
+                /* not one of the requested PSIDs, skip this entry */
+                continue;
+            }
+            string pn_key = "PN";
+            string desc_key = "DESCRIPTION";
+            if (!decrypt_metadata_section(pn_key, me, item.psid, item.pns) ||
+                !decrypt_metadata_section(desc_key, me, item.psid, item.description))
+            {
+                _errMsg = "Failed to decrypt metadata for psid: " + item.psid;
+                _log += _errMsg;
+                res = -1;
+                break;
+            }
         } else {
-            item.pns = val;
-            free(val);
-        }
-        val = mfa_get_map_entry_metadata(me, (char*)"BOARD_REV");
-        if (val == NULL) {
-            item.board_rev = "";
-        } else {
-            item.board_rev = val;
-            free(val);
-        }
-        val = mfa_get_map_entry_metadata(me, (char*)"DESCRIPTION");
-        if (val == NULL) {
-            item.description = "";
-        } else {
-            item.description = val;
-            free(val);
+            strncpy(psid, me->board_type_id, 32);
+            psid[32] = 0;
+            item.psid = psid;
+            if (!psid_list.empty() && std::find(psid_list.begin(), psid_list.end(), item.psid) == psid_list.end())
+            {
+                continue;
+            }
+            val = mfa_get_map_entry_metadata(me, (char*)"PN");
+            if (val == NULL)
+            {
+                item.pns = "";
+            }
+            else
+            {
+                item.pns = val;
+                free(val);
+            }
+            val = mfa_get_map_entry_metadata(me, (char*)"BOARD_REV");
+            if (val == NULL)
+            {
+                item.board_rev = "";
+            }
+            else
+            {
+                item.board_rev = val;
+                free(val);
+            }
+            val = mfa_get_map_entry_metadata(me, (char*)"DESCRIPTION");
+            if (val == NULL)
+            {
+                item.description = "";
+            }
+            else
+            {
+                item.description = val;
+                free(val);
+            }
         }
         val = mfa_get_map_entry_metadata(me, (char*)"BRANCH");
         if (val == NULL) {
@@ -746,7 +872,7 @@ int ImageAccess::get_mfa_content(const string& fname, vector < PsidQueryItem >& 
         riv.push_back(item);
     }
     mfa_close(mfa_d);
-    return 0;
+    return res;
 }
 
 #define FS3_DEFAULT_SECTOR_SIZE 0x1000
@@ -840,7 +966,7 @@ bool ImageAccess::extract_pldm_image_info(const u_int8_t* buff, u_int32_t size, 
     return 0;
 }
 
-int ImageAccess::get_file_content(const string& fname, vector < PsidQueryItem >& riv)
+int ImageAccess::get_file_content(const string& fname, vector < PsidQueryItem >& riv, const vector < string >& psid_list)
 {
     int type = getFileSignature(fname);
     int res = -1;
@@ -851,7 +977,7 @@ int ImageAccess::get_file_content(const string& fname, vector < PsidQueryItem >&
         break;
 
     case IMG_SIG_TYPE_MFA:
-        res = get_mfa_content(fname, riv);
+        res = get_mfa_content(fname, riv, psid_list);
         break;
 
     case IMG_SIG_TYPE_MFA2:
@@ -867,6 +993,82 @@ int ImageAccess::get_file_content(const string& fname, vector < PsidQueryItem >&
         break;
     }
     return res;
+}
+
+bool ImageAccess::decrypt_aes_ctr(const char* ct, u_int8_t ct_size, const string& keySource, string& pt)
+{
+    vector<u_int8_t> iv(AES_CTR_IV_SIZE, 0x00); /* 16 bytes of zeros - not used in the encryption */
+    vector<u_int8_t> key(KEY_SIZE);
+    vector<u_int8_t> ciphertext(ct, ct + ct_size);
+    vector<u_int8_t> msg;
+
+    /* the key is derived from the PSID using SHA256 */
+    SHA256(reinterpret_cast<const unsigned char*>(keySource.c_str()), keySource.size(), key.data());
+    try
+    {
+        MlxSign::MlxSignAESCTRViaOpenSSL aesctr(key, iv);
+        aesctr.Init();
+        aesctr.Decrypt(ciphertext, msg);
+    }
+    catch (const exception&)
+    {
+        return false;
+    }
+
+    /* strip trailing null bytes (encrypted padding) */
+    size_t len = msg.size();
+    while (len > 0 && msg[len - 1] == '\0')
+    {
+        len--;
+    }
+    pt = string(reinterpret_cast<const char*>(msg.data()), len);
+    return true;
+}
+
+bool ImageAccess::decrypt_psid(map_entry_hdr* me, const vector<string>& psid_list, PsidQueryItem& item)
+{
+    for (const string& psid : psid_list)
+    {
+        string psid_candidate;
+        if (decrypt_aes_ctr(me->board_type_id, PSID_SIZE, psid, psid_candidate) &&
+            strncmp(psid_candidate.c_str(), psid.c_str(), PSID_SIZE) == 0)
+        {
+            item.psid = psid_candidate;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool ImageAccess::decrypt_metadata_section(const string& key, map_entry_hdr* me, const string& psid, string& value)
+{
+    const char* next_key = NULL;
+    if (key == "PN")
+    {
+        next_key = "DESCRIPTION";
+    }
+    else if (key == "DESCRIPTION")
+    {
+        next_key = "BRANCH";
+    }
+    else
+    {
+        return false;
+    }
+
+    /* encrypted PN/DESCRIPTION values point into the map buffer, they must not be freed */
+    char* section = mfa_get_map_entry_metadata(me, (char*)key.c_str());
+    if (section == NULL)
+    {
+        return false;
+    }
+    const u_int8_t* metadata_start = (const u_int8_t*)me + sizeof(map_entry_hdr) + sizeof(metadata_hdr);
+    int section_len = find_metadata_value_len(key.c_str(), next_key, metadata_start);
+    if (section_len < 0)
+    {
+        return false;
+    }
+    return decrypt_aes_ctr(section, section_len, psid, value);
 }
 
 string ImageAccess::getLastErrMsg()
@@ -1184,6 +1386,92 @@ bool ImageAccess::loadPldmPkg(const string& fname)
         return false;
     }
     return true;
+}
+
+bool ImageAccess::loadPldmPkgBuffer(u_int8_t* buffer, u_int32_t size)
+{
+    _pldm_buff.reset();
+    _pldm_buff.loadBuffer(buffer, size);
+    _pldmPkg.reset();
+    return _pldmPkg.unpack(_pldm_buff);
+}
+
+int ImageAccess::getMfaPldmNicImage(const string& fname,
+                                    const string& psid,
+                                    u_int8_t** buff,
+                                    u_int32_t& buffSize,
+                                    u_int16_t& swDevId)
+{
+    int res = -1;
+    mfa_desc* mfa_d = NULL;
+    map_entry_hdr* me = NULL;
+    u_int8_t* pkgBuff = NULL;
+    u_int8_t* nicBuff = NULL;
+    u_int32_t nicSize = 0;
+    ssize_t pkgSize = 0;
+
+    if (mfa_open_file(&mfa_d, (char*)fname.c_str()))
+    {
+        _errMsg = "Failed to open MFA file: " + fname;
+        _log += _errMsg;
+        return -1;
+    }
+    me = mfa_get_map_entry(mfa_d, (char*)psid.c_str());
+    if (me == NULL || me->map_type == BINARY_IN_MFA_FLOW)
+    {
+        res = 0;
+        goto clean_up;
+    }
+    if (me->map_type != PLDM_TYPE_1_IN_MFA_FLOW)
+    {
+        _errMsg = "MFA entry of PSID " + psid + " holds an unsupported package type";
+        _log += _errMsg;
+        goto clean_up;
+    }
+    pkgSize = get_image_by_map_entry(mfa_d, 1, (char*)"", &pkgBuff, me, (char*)psid.c_str());
+    if (pkgSize <= 0 || pkgBuff == NULL)
+    {
+        _errMsg = "Failed to extract the PLDM package of PSID " + psid + " from the MFA file";
+        _log += _errMsg;
+        goto clean_up;
+    }
+    if (!loadPldmPkgBuffer(pkgBuff, (u_int32_t)pkgSize))
+    {
+        _errMsg = "Failed to parse the PLDM package of PSID " + psid + " inside the MFA file";
+        _log += _errMsg;
+        goto clean_up;
+    }
+    if (!_pldmPkg.isPsidInPldm(psid) || !getPldmDescriptorByPsid(psid, DEV_ID_TYPE, swDevId))
+    {
+        _errMsg = "PSID " + psid + " was not found in the PLDM package inside the MFA file";
+        _log += _errMsg;
+        goto clean_up;
+    }
+    if (!getPldmComponentByPsid(psid, ComponentIdentifier::Identifier_NIC_FW_Comp, &nicBuff, nicSize))
+    {
+        _errMsg = "NIC FW component was not found in the PLDM package of PSID " + psid;
+        _log += _errMsg;
+        goto clean_up;
+    }
+    *buff = (u_int8_t*)malloc(nicSize);
+    if (*buff == NULL)
+    {
+        _errMsg = "Memory allocation failure for the NIC FW image of PSID " + psid;
+        _log += _errMsg;
+        goto clean_up;
+    }
+    memcpy(*buff, nicBuff, nicSize);
+    buffSize = nicSize;
+    res = 1;
+
+clean_up:
+    delete[] nicBuff;
+    if (pkgBuff != NULL)
+    {
+        mfa_release_image(pkgBuff);
+    }
+    mfa_close(mfa_d);
+    return res;
 }
 
 FwComponent::comps_ids_t ImageAccess::ToCompId(ComponentIdentifier compIdentifier)

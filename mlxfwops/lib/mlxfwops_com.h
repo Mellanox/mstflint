@@ -59,10 +59,7 @@
 #define EFIAPI
 #endif
 
-#define SWITCH_IB_HW_ID 583
 #define SPECTRUM_HW_ID 585
-#define SWITCH_IB2_HW_ID 587
-#define QUANTUM_HW_ID 589
 #define SPECTRUM2_HW_ID 590
 #define SPECTRUM3_HW_ID 592
 #define QUANTUM2_HW_ID 599
@@ -72,9 +69,6 @@
 #define SPECTRUM4_HW_ID 596
 #define SPECTRUM5_HW_ID 624
 #define SPECTRUM6_HW_ID 628
-#define GEARBOX_HW_ID 594
-#define GB_MANAGER_HW_ID 595
-#define ABIR_GB_HW_ID 598
 #define CX4_HW_ID 521
 #define CX4LX_HW_ID 523
 #define CX5_HW_ID 525
@@ -90,9 +84,6 @@
 #define BF2_HW_ID 532
 #define BF3_HW_ID 540
 #define BF4_HW_ID 544
-#define CX3_HW_ID 501
-#define CX3_PRO_HW_ID 503
-#define CONNECT_IB_HW_ID 511
 
 #define INBAND_MAX_REG_SIZE 44
 #define MCDA_REG_HEADER 16
@@ -367,9 +358,6 @@ typedef enum chip_type
     CT_SPECTRUM4,
     CT_SPECTRUM5,
     CT_SPECTRUM6,
-    CT_GEARBOX,
-    CT_GEARBOX_MGR,
-    CT_ABIR_GEARBOX,
     CT_ARCUSE
 } chip_type_t;
 
@@ -383,8 +371,7 @@ typedef enum chip_family_type
 {
     CFT_UNKNOWN = 0,
     CFT_HCA,
-    CFT_SWITCH,
-    CFT_GEARBOX
+    CFT_SWITCH
 } chip_family_type_t;
 
 typedef struct guid
@@ -537,6 +524,8 @@ typedef struct fs3_info_ext
     u_int32_t ini_file_version;
     u_int8_t geo_address;
     bool geo_address_valid;
+    u_int8_t board_ga;
+    bool board_ga_valid;
     bool socket_direct;
     bool aux_card_connected;
     bool is_aux_card_connected_valid;
@@ -548,18 +537,6 @@ typedef struct fs3_info_ext
 } fs3_info_t;
 
 // typedef struct fs3_info_ext fs4_info_t;
-
-typedef struct fs2_info_ext
-{
-    guid_t guids[MAX_GUIDS];
-    u_int32_t guid_num;
-    u_int32_t config_sectors;
-    u_int32_t config_pad;
-    u_int8_t access_key_exists;
-    guid_t access_key_value;
-    u_int8_t blank_guids;
-    char prs_name[PRS_NAME_LEN];
-} fs2_info_t;
 
 #ifdef CABLES_SUPP
 typedef struct cablefw_info_ext
@@ -629,7 +606,6 @@ typedef struct fw_info_ext
 {
     u_int8_t fw_type;
     fw_info_com_t fw_info;
-    fs2_info_t fs2_info;
     fs3_info_t fs3_info;
 #ifdef CABLES_SUPP
     cablefw_info_t cablefw_info;
@@ -680,5 +656,11 @@ typedef enum fw_ver_info
     FVI_EQUAL = 0,
     FVI_GREATER = 1,
 } fw_ver_info_t;
+
+#define MLXFWOPS_LOG_DEBUG(...) MFT_LOG_DEBUGF(nvtoolslogger::Layer::MLXFWOPS, __VA_ARGS__)
+#define MLXFWOPS_LOG_INFO(...) MFT_LOG_INFOF(nvtoolslogger::Layer::MLXFWOPS, __VA_ARGS__)
+#define MLXFWOPS_LOG_WARNING(...) MFT_LOG_WARNINGF(nvtoolslogger::Layer::MLXFWOPS, __VA_ARGS__)
+#define MLXFWOPS_LOG_ERROR(...) MFT_LOG_ERRORF(nvtoolslogger::Layer::MLXFWOPS, __VA_ARGS__)
+#define MLXFWOPS_LOG_FATAL(...) MFT_LOG_FATALF(nvtoolslogger::Layer::MLXFWOPS, __VA_ARGS__)
 
 #endif

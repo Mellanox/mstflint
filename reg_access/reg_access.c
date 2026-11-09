@@ -36,6 +36,7 @@
 #include "common/compatibility.h"
 #include <tools_layouts/reg_access_hca_layouts.h>
 #include <tools_layouts/reg_access_switch_layouts.h>
+#include <tools_layouts/cables_layouts.h>
 #include <tools_layouts/tools_open_layouts.h>
 #include <tools_layouts/cibfw_layouts.h>
 
@@ -85,6 +86,12 @@
 #define REG_ID_MCQI      0x9061
 #define REG_ID_MCC       0x9062
 #define REG_ID_MCDA      0x9063
+#define REG_ID_PLLP        0x504A
+#define REG_ID_PDDR        0x5031
+#define REG_ID_MFCDR       0x9178
+#define REG_ID_MCIA        0x9014
+#define REG_ID_MMAM        0x9170
+#define REG_ID_MCCE      0x9108
 #define REG_ID_MQIS      0x9064
 #define REG_ID_MTCQ      0x9065
 #define REG_ID_MKDC      0x9066
@@ -130,6 +137,7 @@
 /* RESOURCE DUMP FEATURE */
 #define REG_ID_RES_DUMP 0xC000
 #define REG_ID_MORD     0x9153
+#define REG_ID_MORD_V2  0x915b
 /*================================== */
 #define REG_ID_MPEGC                0x9056
 #define REG_ID_NIC_CAP_EXT          0xC011
@@ -143,13 +151,6 @@
 #define INBAND_MAX_REG_SIZE 44
 
 #define MAX_DYNAMIC_ARRAY_SIZE_IN_BYTES 704 /* as defined by FW MAD communication */
-
-reg_access_status_t reg_access_mddt(mfile                                * mf,
-                                    reg_access_method_t                    method,
-                                    struct reg_access_switch_mddt_reg_ext* switch_mddt_reg)
-{
-    REG_ACCCESS(mf, method, REG_ID_MDDT, switch_mddt_reg, switch_mddt_reg_ext, reg_access);
-}
 
 reg_access_status_t reg_access_mddq(mfile* mf, reg_access_method_t method, struct reg_access_switch_mddq_ext* mddq)
 {
@@ -429,6 +430,14 @@ reg_access_status_t reg_access_mord(mfile                                  * mf,
 {
     REG_ACCCESS(mf, method, REG_ID_MORD, resource_dump, resource_dump_ext, reg_access_hca);
 }
+
+reg_access_status_t reg_access_mord_v2(mfile                                * mf,
+                                       reg_access_method_t                    method,
+                                       struct reg_access_switch_mord_v2_ext * mord,
+                                       int                                    data_array_size)
+{
+    REG_ACCCESS_VAR_DYNAMIC_ARR(mf, method, REG_ID_MORD_V2, mord, mord_v2_ext, reg_access_switch, data_array_size);
+}
 /*================================================================================================================================= */
 
 reg_access_status_t reg_access_mnvda(mfile* mf, reg_access_method_t method, struct tools_open_mnvda* mnvda)
@@ -546,6 +555,14 @@ reg_access_status_t
   reg_access_mrfv_switch(mfile* mf, reg_access_method_t method, struct reg_access_switch_MRFV_ext* mrfv)
 {
     REG_ACCCESS(mf, method, REG_ID_MRFV, mrfv, MRFV_ext, reg_access_switch);
+}
+
+/************************************
+* Function: reg_access_mrfv
+************************************/
+reg_access_status_t reg_access_mrfv(mfile* mf, reg_access_method_t method, struct reg_access_hca_MRFV_ext* mrfv)
+{
+    REG_ACCCESS(mf, method, REG_ID_MRFV, mrfv, MRFV_ext, reg_access_hca);
 }
 
 /************************************
@@ -859,6 +876,54 @@ reg_access_status_t reg_access_nic_dpa_eu_partition(mfile                       
 reg_access_status_t reg_access_mrsr(mfile* mf, reg_access_method_t method, struct reg_access_switch_mrsr_ext* mrsr)
 {
     REG_ACCCESS(mf, method, REG_ID_MRSR, mrsr, mrsr_ext, reg_access_switch);
+}
+
+/************************************
+* Function: reg_access_mcce
+************************************/
+reg_access_status_t reg_access_mcce(mfile* mf, reg_access_method_t method, struct reg_access_switch_mcce_reg_ext* mcce)
+{
+    REG_ACCCESS(mf, method, REG_ID_MCCE, mcce, mcce_reg_ext, reg_access_switch);
+}
+
+/************************************
+* Function: reg_access_mmam
+************************************/
+reg_access_status_t reg_access_mmam(mfile* mf, reg_access_method_t method, struct reg_access_switch_MMAM_ext* mmam)
+{
+    REG_ACCCESS(mf, method, REG_ID_MMAM, mmam, MMAM_ext, reg_access_switch);
+}
+
+/************************************
+* Function: reg_access_mcia
+************************************/
+reg_access_status_t reg_access_mcia(mfile* mf, reg_access_method_t method, struct reg_access_hca_mcia_ext* mcia)
+{
+    REG_ACCCESS(mf, method, REG_ID_MCIA, mcia, mcia_ext, reg_access_hca);
+}
+
+/************************************
+* Function: reg_access_mfcdr
+************************************/
+reg_access_status_t reg_access_mfcdr(mfile* mf, reg_access_method_t method, struct reg_access_switch_mfcdr_reg_ext* mfcdr)
+{
+    REG_ACCCESS(mf, method, REG_ID_MFCDR, mfcdr, mfcdr_reg_ext, reg_access_switch);
+}
+
+/************************************
+* Function: reg_access_pddr
+************************************/
+reg_access_status_t reg_access_pddr(mfile* mf, reg_access_method_t method, struct reg_access_switch_pddr_reg_ext* pddr)
+{
+    REG_ACCCESS(mf, method, REG_ID_PDDR, pddr, pddr_reg_ext, reg_access_switch);
+}
+
+/************************************
+* Function: reg_access_pllp
+************************************/
+reg_access_status_t reg_access_pllp(mfile* mf, reg_access_method_t method, struct reg_access_switch_pllp_reg_ext* pllp)
+{
+    REG_ACCCESS(mf, method, REG_ID_PLLP, pllp, pllp_reg_ext, reg_access_switch);
 }
 
 /************************************

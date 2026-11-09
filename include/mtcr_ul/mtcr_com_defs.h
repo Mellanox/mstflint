@@ -117,7 +117,17 @@ typedef long long int64_t;
 #define MAX_RETRY_CNT 4096
 #endif /* ifdef __WIN__ */
 
+#ifdef __FreeBSD__
+/* Building as -std=c11 with _POSIX_C_SOURCE set clears __BSD_VISIBLE, so
+   <sys/types.h> above skips these. <sys/pciio.h>, included right after this
+   header by mtcr_mf.h, needs them. */
+typedef unsigned long u_long;
+typedef unsigned int u_int;
+#endif
+
 #define DEV_NAME_SZ 512
+/* "dddddddd:bb:dd.f" - the PCI domain is 32 bits, so up to 8 hex digits. */
+#define PCI_DBDF_STR_SZ 20
 #define MAX_PAGES_SIZE 8
 #define SMP_SEMAPHOE_LOCK_CMD 0xff53
 #define ADDRESS_OUT_OF_RANGE 0x3 /* syndrome_code value */
@@ -220,6 +230,7 @@ typedef enum MError
     ME_REG_ACCESS_BAD_INDEX,
     ME_REG_ACCESS_BAD_INPUT_LEN,
     ME_REG_ACCESS_BAD_OUTPUT_LEN,
+    ME_REG_ACCESS_ISSU_ONGOING,
 
     /* errors regarding ICMD */
     ME_ICMD_STATUS_CR_FAIL = 0x200, /* cr-space access failure */
@@ -260,15 +271,6 @@ typedef enum MError
     ME_MAD_METHOD_ATTR_COMB_NOT_SUPP,
     ME_MAD_BAD_DATA,
     ME_MAD_GENERAL_ERR,
-
-    /* errors regarding gearbox icmd new interface gateway */
-    ME_GB_ICMD_OK = 0x500,
-    ME_GB_ICMD_FAILED,
-    ME_GB_ICMD_FAILED_ACCESS,
-    ME_GB_ICMD_FAILED_BAD_PARAM,
-    ME_GB_ICMD_TIMEOUT,
-    ME_GB_ICMD_NOT_SUPPORTED,
-    ME_GB_ICMD_UNKNOWN_STATUS,
 
     ME_LAST
 } MError;
@@ -341,7 +343,6 @@ typedef enum Mdevs_t
     MDEVS_CABLE = 0x8000,
     MDEVS_SOFTWARE = 0x10000, /* Software system char dev */
     MDEVS_LINKX_CHIP = 0x200000,
-    MDEVS_GBOX = 0x400000,
     MDEVS_TAVOR = (MDEVS_TAVOR_DDR | MDEVS_TAVOR_UAR | MDEVS_TAVOR_CR),
     MDEVS_ALL = 0xffffffff
 } Mdevs;
@@ -396,7 +397,7 @@ typedef enum
 typedef struct vf_info_t
 {
     char dev_name[512];
-    u_int16_t domain;
+    u_int32_t domain;
     u_int8_t bus;
     u_int8_t dev;
     u_int8_t func;
@@ -414,7 +415,7 @@ typedef struct dev_info_t
     {
         struct
         {
-            u_int16_t domain;
+            u_int32_t domain;
             u_int8_t bus;
             u_int8_t dev;
             u_int8_t func;
@@ -459,13 +460,6 @@ typedef enum
 } reg_access_t;
 typedef struct dma_lib_hdl_t dma_lib_hdl;
 
-typedef enum
-{
-    GEARBPX_OVER_MTUSB = 1,
-    GEARBPX_OVER_I2C = 2,
-    GEARBPX_OVER_SWITCH = 3,
-    GEARBPXO_UNKNOWN_CONNECTION = 0
-} gearbox_connection_t;
 typedef enum
 {
     MTCR_STATUS_UNKNOWN,
@@ -552,35 +546,6 @@ struct mtcr_read_dword_from_config_space
 };
 
 typedef void (*f_mpci_change)(mfile* mf);
-
-#define GEARBOX_ADDR_WIDTH 4
-#define GEARBOX_SLAVE_ADDR 0x48
-#define GB_MNGR_SLAVE_ADDR 0x33
-
-typedef enum
-{
-    GB_UNKNOWN = 0,
-    GB_AMOS,
-    GB_ABIR
-} gearbox_type;
-
-typedef struct gearbox_info_t
-{
-    gearbox_type gb_type;
-    u_int8_t is_gearbox;
-    u_int8_t is_gb_mngr;
-    int gearbox_index;
-    int ilne_card_id;
-    gearbox_connection_t gb_conn_type;
-    char gb_mngr_full_name[DEV_NAME_SZ];
-    char gearbox_full_name[DEV_NAME_SZ];
-    unsigned char i2c_secondary;
-    u_int8_t addr_width;
-    char device_orig_name[DEV_NAME_SZ];
-    char device_real_name[DEV_NAME_SZ];
-    u_int32_t data_req_addr;
-    u_int32_t data_res_addr;
-} gearbox_info;
 
 typedef struct cables_info_t
 {

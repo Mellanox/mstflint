@@ -28,13 +28,6 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-#######################################################
-#
-# MenuRecord.py
-# Python implementation of the Class MenuRecord
-# Original author: romany
-#
-#######################################################
 import math
 from resourcedump_lib.utils import constants as cs
 from resourceparse_lib.utils.common_functions import reverse_string_endian

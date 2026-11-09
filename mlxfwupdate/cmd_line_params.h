@@ -72,6 +72,7 @@ public:
     bool extract_all;
     string extract_dir;
     bool list_file_contents;
+    vector<string> psid_list;
     bool display_archive_names;
     bool show_progress;
     bool log_on_update;
@@ -103,6 +104,18 @@ public:
     bool no_fw_ctrl;
     bool update_all_fwctl;
     string component_type;
+    bool cable_query;
+    bool cable_dry_run;
+    bool cable_update;
+    string cable_package;
+    int cable_activation_wait;
+    string cable_report_dir;
+    bool cable_report_file_only;
+    // No report directory was given and the current one cannot be written, so the report is only printed.
+    bool cable_report_screen_only;
+    bool cable_include_service_ports;
+    int cable_verify_wait;
+    bool verbose;
 };
 
 #endif

@@ -35,7 +35,8 @@ AM_CPPFLAGS = \
     -I$(top_srcdir) \
     -I$(top_srcdir)/include/mtcr_ul \
     -I$(top_srcdir)/mft_utils \
-    -I$(top_srcdir)/mlxreg
+    -I$(top_srcdir)/mlxreg \
+    -I$(top_srcdir)/mft_core/mft_core_utils
 
 AM_CPPFLAGS += $(JSON_CFLAGS)
 

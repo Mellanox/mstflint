@@ -33,11 +33,20 @@
 #include "VFIODriverAccessWrapperC.h"
 #include "VFIODriverAccess.h"
 #include <string>
+#include <cstring>
 #include <iomanip>
 #include <sstream>
 
+static thread_local char vfioLastError[256] = {0};
+
+const char* GetVFIOLastError(void)
+{
+    return vfioLastError;
+}
+
 int GetStartOffsets(unsigned domain, unsigned bus, unsigned dev, unsigned func, int* deviceFD, uint64_t* vsecOffset, uint64_t* addressRegionOffset)
 {
+    vfioLastError[0] = '\0';
     try
     {
         std::ostringstream oss;
@@ -49,6 +58,8 @@ int GetStartOffsets(unsigned domain, unsigned bus, unsigned dev, unsigned func, 
     }
     catch(const std::exception& e)
     {
+        strncpy(vfioLastError, e.what(), sizeof(vfioLastError) - 1);
+        vfioLastError[sizeof(vfioLastError) - 1] = '\0';
         return -1;
     }
     return 0;

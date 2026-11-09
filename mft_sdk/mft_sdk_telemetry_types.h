@@ -36,15 +36,30 @@
 
 #pragma once
 
+#include <stdbool.h>
 #include <mft_sdk/mft_sdk_query.h>
 #include <mft_sdk/mft_sdk_types.h>
 
 #define MODULE_INFO_MAX_LENGTH 256
+#define TROUBLESHOOTING_INFO_RECOMMENDATION_MAX_LENGTH 256
 #define MAX_NUM_OF_LANES 16
 #define MAX_NUM_OF_BINS 32
 #define MAX_NUM_OF_CHANNELS 8
-
 #define MST_TELEMETRY_PORT_MAX_LENGTH 32
+
+/**
+ * @brief The kind of port an SDK request addresses.
+ *
+ * A network port is named by MstTelemetryContext_t::label_port. A PCIe port is
+ * named by its local port in label_port, or by a depth/pcie_index/node triple
+ * (MstTelemetryContext_t::has_dpn); the SDK lets mlxlink resolve either to the
+ * links the device actually reports.
+ */
+typedef enum MstTelemetryPortType
+{
+    MST_TELEMETRY_PORT_TYPE_NETWORK = 0, /**< Network port, selected by label_port. */
+    MST_TELEMETRY_PORT_TYPE_PCIE = 1     /**< PCIe port; label_port is its local port. */
+} MstTelemetryPortType;
 
 /**
  * @brief Telemetry context options, passed by pointer to the SDK.
@@ -57,6 +72,14 @@
  * struct and stamps @ref size); an empty @ref label_port selects the device
  * default port. Pass NULL to a telemetry function to use the device defaults.
  *
+ * @ref port_type selects between a network port and a PCIe one; it defaults to
+ * MST_TELEMETRY_PORT_TYPE_NETWORK, which is what a caller compiled against an
+ * older struct is taken to mean. Under PCIe, @ref label_port is a PCIe local port;
+ * @ref has_dpn addresses the link by @ref depth / @ref pcie_index / @ref node
+ * instead, and giving both is rejected. Only MST_TELEMETRY_VIEW_OPERATIONAL and
+ * MST_TELEMETRY_VIEW_COUNTERS have a PCIe meaning - every other view returns
+ * MST_ERROR_NOT_SUPPORTED under MST_TELEMETRY_PORT_TYPE_PCIE.
+ *
  * @code
  *   MstTelemetryContext context;
  *   MST_TELEMETRY_CONTEXT_INIT(&context);
@@ -68,6 +91,11 @@ typedef struct MstTelemetryContext_t
 {
     unsigned int size; /**< Must be first; set to sizeof(MstTelemetryContext) before use. */
     char label_port[MST_TELEMETRY_PORT_MAX_LENGTH]; /**< Port label (e.g. "1/1/1"); empty string => device default. */
+    unsigned int port_type;  /**< An MstTelemetryPortType; 0 (network) when the caller predates this field. */
+    bool has_dpn;            /**< @ref depth / @ref pcie_index / @ref node address a specific PCIe link. */
+    unsigned int depth;      /**< PCIe hierarchy depth. Meaningful only when @ref has_dpn is set. */
+    unsigned int pcie_index; /**< PCIe domain index. Meaningful only when @ref has_dpn is set. */
+    unsigned int node;       /**< Node within @ref depth. Meaningful only when @ref has_dpn is set. */
 } MstTelemetryContext;
 
 /**
@@ -170,6 +198,11 @@ typedef struct MstTelemetryContext_t
 #define TELEMETRY_MODULE_INFO_RX_LOS_PER_LANE 51
 #define TELEMETRY_MODULE_INFO_RX_CDR_LOL_PER_LANE 52
 #define TELEMETRY_MODULE_INFO_TX_ADAPTIVE_EQ_FAULT_PER_LANE 53
+
+// Troubleshooting Info capability bits:
+#define TELEMETRY_TROUBLESHOOTING_INFO_STATUS_OPCODE 0  // Status opcode.
+#define TELEMETRY_TROUBLESHOOTING_INFO_GROUP_OPCODE 1   // Group the status opcode belongs to.
+#define TELEMETRY_TROUBLESHOOTING_INFO_RECOMMENDATION 2 // Recommendation text.
 
 /**
  * @brief Numeric value represented in scientific notation.
@@ -320,6 +353,12 @@ typedef enum operationalInfoFec_t
       14, // "Ethernet_Consortium_LL_50G_RS_FEC_PLR -(272,257+1)"
     OPERATIONAL_INFO_FEC_INTERLEAVED_ETHERNET_CONSORTIUM_LL_50G_RS_FEC_PLR_272_258 =
       15, // "Interleaved_Ethernet_Consortium_LL_50G_RS_FEC_PLR - (272,257+1)"
+    OPERATIONAL_INFO_FEC_INTERLEAVED_DOUBLE_RS_HALF_KP4_FEC_PLR_288_258 =
+      16, // "Interleaved Double RS Half KP4 FEC + PLR - (288,258)"
+    OPERATIONAL_INFO_FEC_INTERLEAVED_QUAD_RS_HALF_KP4_FEC_PLR_288_258 =
+      17, // "Interleaved Quad RS Half KP4 FEC + PLR - (288,258)"
+    OPERATIONAL_INFO_FEC_INTERLEAVED_OCTET_RS_HALF_KP4_FEC_PLR_288_258 =
+      18, // "Interleaved Octet RS Half KP4 FEC + PLR - (288,258)"
 } OperationalInfoFec;
 
 /**
@@ -483,6 +522,28 @@ typedef struct MstTelemetryOperationalInfo_t
     OperationalInfoLoopbackMode loopbackMode;       /**< Loopback mode. */
     OperationalInfoAutoNegotiation autoNegotiation; /**< Auto-negotiation mode. */
 } MstTelemetryOperationalInfo;
+
+/**
+ * @brief Component group a troubleshooting status opcode originates from.
+ */
+typedef enum troubleShootingInfoGroupOpcode_t
+{
+    TROUBLESHOOTING_INFO_GROUP_OPCODE_PHY_FW = 0,      // "PHY FW"
+    TROUBLESHOOTING_INFO_GROUP_OPCODE_MNG_FW = 1,      // "MNG FW"
+    TROUBLESHOOTING_INFO_GROUP_OPCODE_CORE_DRIVER = 2, // "CORE/DRIVER"
+} TroubleShootingInfoGroupOpcode;
+
+/**
+ * @brief Link troubleshooting telemetry.
+ */
+typedef struct MstTroubleShootingInfo_t
+{
+    mstQueryHeader header;                      /**< Query response header. */
+    uint32_t statusOpcode;                      /**< Link status opcode reported by the device. */
+    TroubleShootingInfoGroupOpcode groupOpcode; /**< Group the status opcode belongs to. */
+    /** Recommendation text for the status opcode. */
+    char recommendation[TROUBLESHOOTING_INFO_RECOMMENDATION_MAX_LENGTH];
+} MstTroubleShootingInfo;
 
 /**
  * @brief Single FEC histogram bin.

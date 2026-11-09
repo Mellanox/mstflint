@@ -84,6 +84,7 @@ FIELD_ENABLED_LINK_SPEED = "Enabled Link Speed"
 FIELD_SUPPORTED_CABLE_SPEED = "Supported Cable Speed"
 
 # Troubleshooting Info field names
+FIELD_TROUBLESHOOTING_INFO = "Troubleshooting Info"
 FIELD_STATUS_OPCODE = "Status Opcode"
 FIELD_GROUP_OPCODE = "Group Opcode"
 FIELD_RECOMMENDATION = "Recommendation"

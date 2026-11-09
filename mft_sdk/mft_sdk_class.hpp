@@ -39,6 +39,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 #include <mft_sdk/mft_sdk.h>
@@ -50,6 +51,16 @@
 #include "mlxlink/modules/mlxlink_commander.h"
 #include "mtcr.h"
 #include "hca_capabilities/hca_capabilities.h"
+#include "mft_sdk/mft_sdk_telemetry_common.hpp"
+
+namespace mft
+{
+namespace resource_dump
+{
+struct device_attributes;
+class ResourceDumpException;
+} // namespace resource_dump
+} // namespace mft
 
 enum class MlxLinkInitMode
 {
@@ -58,6 +69,7 @@ enum class MlxLinkInitMode
     CABLE_DDM,
     MODULE_INFO
 };
+
 class MftSdk
 {
 public:
@@ -89,6 +101,20 @@ public:
     MstStatus getCableDDMInfo(MstCableDDMInfo* cableDDMInfo,
                               const MstTelemetryContext& context = MstTelemetryContext{0, ""});
     MstStatus getModuleInfo(MstModuleInfo* moduleInfo, const MstTelemetryContext& context = MstTelemetryContext{0, ""});
+    MstStatus getTroubleShootingInfo(MstTroubleShootingInfo* troubleShootingInfo,
+                                     const MstTelemetryContext& context = MstTelemetryContext{0, ""});
+    MstStatus getTelemetryJson(uint32_t views, const MstTelemetryContext& context, char** jsonOut);
+    MstStatus getTelemetryText(uint32_t views, const MstTelemetryContext& context, char** textOut);
+    MstStatus getAmberJson(const std::string& port,
+                           MstTelemetryPortType portType,
+                           const PcieDpn& dpn,
+                           const std::vector<unsigned int>& sheets,
+                           char** jsonOut);
+    MstStatus getAmberReport(const std::string& port,
+                             MstTelemetryPortType portType,
+                             const PcieDpn& dpn,
+                             const std::vector<unsigned int>& sheets,
+                             MstAmberReport* report);
 
     // HCA capabilities SDK functions
     MstStatus getCapabilityTypesList(std::vector<std::string>& capabilityTypes);
@@ -119,6 +145,25 @@ public:
     MstStatus setI2cSecondary(uint8_t newI2cSecondaryAddress);
     MstStatus getI2cSecondary(uint8_t* i2cSecondaryAddress);
 
+    // ICMD SDK functions
+    MstStatus sendIcmd(uint32_t opcode, void* data, uint32_t dataSize, MstIcmdAccessMethod method);
+
+    // temperature SDK functions
+    MstStatus getDeviceTemperature(int32_t* temperature);
+    // resource dump SDK functions
+    MstStatus getResourceMenu(MstResourceDumpEndianness endianness, MstResourceMenu* menu);
+    MstStatus dumpResource(const MstResourceDumpRequest* request,
+                           MstResourceDumpEndianness endianness,
+                           MstResourceDumpData* dumpData);
+    MstStatus dumpResourceToBuffer(const MstResourceDumpRequest* request,
+                                   MstResourceDumpEndianness endianness,
+                                   unsigned char* buffer,
+                                   size_t bufferSize,
+                                   size_t* dumpSize);
+    MstStatus dumpResourceToFile(const MstResourceDumpRequest* request,
+                                 MstResourceDumpEndianness endianness,
+                                 const char* filename);
+
 private:
     void setInitError(MstStatus status, const std::string& errorMessage);
     void setLastError(MstStatus status, const std::string& errorMessage);
@@ -132,19 +177,35 @@ private:
     MstStatus setErrorFromMlxregSDKError(int32_t errorCode);
 
     // mlxlink SDK private functions
-    MstStatus initMlxLinkSdk(MlxLinkInitMode initMode = MlxLinkInitMode::NONE, const std::string& port = "");
-    void initMlxLinkSdkPortInfo();
+    MlxlinkCommander* getMlxlinkCommanderInstance();
+    MstStatus initMlxLinkSdk(MlxLinkInitMode initMode = MlxLinkInitMode::NONE,
+                             const std::string& port = "",
+                             MstTelemetryPortType portType = MST_TELEMETRY_PORT_TYPE_NETWORK,
+                             const PcieDpn& dpn = PcieDpn());
     void initMlxLinkSdkUserInput(MlxLinkInitMode initMode);
+    void mlxlinkClearStaleUnhandledErrors();
+    void mlxlinkThrowOnUnhandledErrors();
+    void applyPcieDpn(const PcieDpn& dpn, bool isPcie);
+    MstStatus runTelemetryViews(uint32_t views,
+                                const std::string& port,
+                                MstTelemetryPortType portType,
+                                const PcieDpn& dpn,
+                                Json::Value& root);
+    void applyAmberSheetSelection(const std::vector<unsigned int>& sheets);
     MstStatus extractOperationalInfoFromJson(MstTelemetryOperationalInfo* operationalInfo);
     MstStatus extractCountersInfoFromJson(MstCountersInfo* countersInfo);
     MstStatus extractCableDDMInfoFrom(MstCableDDMInfo* cableDDMInfo);
     MstStatus extractModuleInfoFromJson(MstModuleInfo* moduleInfo);
+    MstStatus extractTroubleShootingInfoFromJson(MstTroubleShootingInfo* troubleShootingInfo);
     Json::Value getJsonSection(const std::string& sectionName, Json::Value& jsonRoot);
     Json::Value getOperationalInfoJsonSection();
     std::string getJsonStringValue(const Json::Value& jsonValue, const std::string& fieldName, bool isOptional = true);
     Json::Value getCountersInfoJsonSection();
-    Json::Value getCableDDMInfoJsonSection();
     Json::Value getModuleInfoJsonSection();
+    Json::Value getTroubleShootingInfoJsonSection();
+    void appendGeneralSections(Json::Value& root);
+    void appendShowModuleSections(Json::Value& root);
+    MstStatus serializeJsonToBuffer(const Json::Value& root, char** jsonOut);
     void setVendorInfoFromJson(const Json::Value& moduleInfoJson, MstModuleInfo* moduleInfo);
     void setFwVersionFromJson(const Json::Value& moduleInfoJson, MstModuleInfo* moduleInfo);
     void setAttenuationInfoFromJson(const Json::Value& moduleInfoJson, MstModuleInfo* moduleInfo);
@@ -203,9 +264,19 @@ private:
                             uint32_t bitIndex,
                             bool isOptional = true);
     void extractOperationalInfoWidth(const Json::Value& jsonSection, MstTelemetryOperationalInfo* operationalInfo);
+    void extractOperationalInfoAutoNegotiation(const Json::Value& jsonSection,
+                                               MstTelemetryOperationalInfo* operationalInfo);
 
     // hca capabilities SDK private functions
     MstStatus initHcaCapabilities();
+
+    // resource dump SDK private functions
+    mft::resource_dump::device_attributes buildResourceDumpDeviceAttributes(uint16_t vhca);
+    MstStatus executeResourceDump(const MstResourceDumpRequest* request,
+                                  MstResourceDumpEndianness endianness,
+                                  std::string& dumpOut);
+    MstStatus translateResourceDumpReasonToMstStatus(uint16_t reason);
+    MstStatus setErrorFromResourceDumpException(const mft::resource_dump::ResourceDumpException& exception);
 
     std::string _deviceIdentifier;
     mfile* _mf;
@@ -215,9 +286,11 @@ private:
     std::unique_ptr<MlxlinkCommander> _mstMlxLinkSdkInstance;
     std::unique_ptr<HcaCapabilities> _hcaCapabilitiesSdkInstance;
     std::vector<mfile*> _mfiles;
+
     std::map<MlxLinkInitMode, bool> mlxlinkSdkInitialized;
-    // Currently bound mlxlink port label (empty => device default). Guards redundant re-binds.
     std::string _currentMlxLinkPort;
-    // Tracks the per-port init flow (updatePortInfo()+showPddr()) already run for each (port, mode).
-    std::map<std::pair<std::string, MlxLinkInitMode>, bool> _portModeInitialized;
+    MstTelemetryPortType _currentMlxLinkPortType = MST_TELEMETRY_PORT_TYPE_NETWORK;
+    PcieDpn _currentPcieDpn;
+    bool _mlxLinkPortBound = false;
+    std::map<std::tuple<std::string, MlxLinkInitMode, MstTelemetryPortType>, bool> _portModeInitialized;
 };

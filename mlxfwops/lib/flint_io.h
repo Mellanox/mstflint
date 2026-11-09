@@ -59,6 +59,7 @@
 #endif
 
 #include <string>
+#include <vector>
 
 // external flash attr struct
 
@@ -133,7 +134,7 @@ public:
 
     virtual bool open(const char*, bool, bool) = 0;
 
-    virtual bool open(const char* device, bool, bool, int, flash_params_t*, int, bool, int, int = 0) = 0;
+    virtual bool open(const char* device, bool, bool, int, flash_params_t*, int, bool, int = 0) = 0;
 
     virtual bool is_fifth_gen() = 0;
     virtual void close() = 0;
@@ -187,6 +188,18 @@ public:
         phys_addr = cont2phys(cont_addr);
         set_address_convertor(log2_chunk_size_bak, is_image_in_odd_chunks_bak);
         return phys_addr;
+    }
+
+    virtual u_int32_t get_cont_from_phys(u_int32_t phys_addr, u_int32_t log2_chunk_size, bool is_image_in_odd_chunks)
+    {
+        u_int32_t cont_addr;
+        u_int32_t log2_chunk_size_bak = _log2_chunk_size;
+        bool is_image_in_odd_chunks_bak = _is_image_in_odd_chunks;
+
+        set_address_convertor(log2_chunk_size, is_image_in_odd_chunks);
+        cont_addr = phys2cont(phys_addr);
+        set_address_convertor(log2_chunk_size_bak, is_image_in_odd_chunks_bak);
+        return cont_addr;
     }
 
     u_int32_t get_log2_chunk_size() { return _log2_chunk_size; }
@@ -304,7 +317,7 @@ public:
         check_uefi_build();
         return false;
     }
-    virtual bool open(const char*, bool, bool, int, flash_params_t*, int, bool, int, int = 0)
+    virtual bool open(const char*, bool, bool, int, flash_params_t*, int, bool, int = 0)
     {
         check_uefi_build();
         return false;
@@ -400,7 +413,10 @@ public:
         _cr_space_locked(0),
         _flash_working_mode(FBase::Fwm_Default),
         _cputUtilizationApplied(false),
-        _cpuPercent(-1)
+        _cpuPercent(-1),
+        _erase_needed(false),
+        _sector_mirror_addr(0),
+        _sector_mirror_valid(false)
     {
         memset(&_attr, 0, sizeof(_attr));
     }
@@ -416,7 +432,6 @@ public:
                       flash_params_t* flash_params = (flash_params_t*)NULL,
                       int ignoe_cache_replacement = 0,
                       bool advErr = true,
-                      int cx3_fw_access = 0,
                       int no_fw_ctrl = 0);
     using FBase::open;
 
@@ -569,6 +584,16 @@ protected:
     int _flash_working_mode;
     bool _cputUtilizationApplied;
     int _cpuPercent;
+    bool _erase_needed;
+
+    // In-memory mirror of everything written into the currently open sector (_curr_sector) since
+    // write() erased it. Filled from the caller's data only - never read back from flash, which is
+    // unreliable right after a bad write. Lets an erase-miss retry re-erase the sector and replay
+    // it whole, including chunks written by earlier write() calls into the same sector.
+    // Any erase outside write() invalidates it (see Flash::erase_sector).
+    std::vector<u_int8_t> _sector_mirror;
+    u_int32_t _sector_mirror_addr;
+    bool _sector_mirror_valid;
 };
 
 #endif

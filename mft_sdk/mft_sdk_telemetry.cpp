@@ -36,6 +36,7 @@
 
 #include <string.h>
 #include <cstddef>
+#include <cstdlib>
 #include <limits>
 #include <sstream>
 #include <string>
@@ -45,6 +46,7 @@
 #include "mft_sdk/mft_sdk_query.h"
 #include "mft_core/mft_core_utils/mft_exceptions/MftGeneralException.h"
 #include "mlxlink/modules/printutil/mlxlink_record.h"
+#include "mlxlink/modules/mlxlink_report_capture.h"
 
 // Macro to set a capability bit in a capability mask
 #define MST_QUERY_SET_BIT(mask, bit) ((mask) |= (bit))
@@ -66,27 +68,6 @@ using mft_core::MftGeneralException;
 namespace
 {
 
-// Reads the port label out of a caller-supplied telemetry context in an ABI-safe way.
-class TelemetryContextView
-{
-public:
-    explicit TelemetryContextView(const MstTelemetryContext& context) : _context(context) {}
-
-    std::string getPort() const
-    {
-        // Only read 'port' if the caller's struct is large enough to contain it
-        // (a smaller/older caller falls back to the device default port).
-        if (_context.size < offsetof(MstTelemetryContext_t, label_port) + sizeof(_context.label_port))
-        {
-            return std::string();
-        }
-        return std::string(_context.label_port, strnlen(_context.label_port, MST_TELEMETRY_PORT_MAX_LENGTH));
-    }
-
-private:
-    const MstTelemetryContext& _context;
-};
-
 // Validate a caller-supplied telemetry context. NULL means "use device defaults".
 // A non-NULL context must carry a plausible size header, which guards against
 // callers that forgot MST_TELEMETRY_CONTEXT_INIT and against future ABI drift.
@@ -103,22 +84,26 @@ MstStatus validateTelemetryContext(const MstTelemetryContext* context)
     return MST_SUCCESS;
 }
 
-// The device-defaults context, initialized once and shared.
-const MstTelemetryContext& defaultTelemetryContext()
-{
-    static const MstTelemetryContext defaults = []
-    {
-        MstTelemetryContext c;
-        MST_TELEMETRY_CONTEXT_INIT(&c);
-        return c;
-    }();
-    return defaults;
-}
-
 // NULL context => the shared default context (device defaults).
 const MstTelemetryContext& resolveTelemetryContext(const MstTelemetryContext* context)
 {
     return context != nullptr ? *context : defaultTelemetryContext();
+}
+
+// The struct-shaped getters fill fields read out of network-only pages, so a PCIe port has no
+// answer to give them. Saying so beats handing back a network reading the caller did not ask for.
+MstStatus validateNetworkTelemetryContext(const MstTelemetryContext* context)
+{
+    const MstStatus status = validateTelemetryContext(context);
+    if (status != MST_SUCCESS)
+    {
+        return status;
+    }
+    if (context != nullptr && TelemetryContextView(*context).getPortType() == MST_TELEMETRY_PORT_TYPE_PCIE)
+    {
+        return MST_ERROR_NOT_SUPPORTED;
+    }
+    return MST_SUCCESS;
 }
 
 } // namespace
@@ -204,12 +189,6 @@ static std::string joinJsonArray(const Json::Value& arr)
     return result;
 }
 
-void MftSdk::initMlxLinkSdkPortInfo()
-{
-    _mstMlxLinkSdkInstance->updatePortInfo();
-    _mstMlxLinkSdkInstance->showPddr();
-}
-
 void MftSdk::initMlxLinkSdkUserInput(MlxLinkInitMode initMode)
 {
     if (initMode == MlxLinkInitMode::CABLE_DDM)
@@ -225,42 +204,62 @@ void MftSdk::initMlxLinkSdkUserInput(MlxLinkInitMode initMode)
     }
 }
 
-MstStatus MftSdk::initMlxLinkSdk(MlxLinkInitMode initMode, const std::string& port)
+// initForPort() has no notion of DPN, so it must be set on _userInput before it runs -- it only
+// resets label-port state, not _sendDpn/_depth/_pcieIndex/_node.
+void MftSdk::applyPcieDpn(const PcieDpn& dpn, bool isPcie)
+{
+    UserInput& userInput = _mstMlxLinkSdkInstance->_userInput;
+    userInput._sendDpn = isPcie && dpn.hasDpn;
+    userInput._depth = userInput._sendDpn ? dpn.depth : 0;
+    userInput._pcieIndex = userInput._sendDpn ? dpn.pcieIndex : 0;
+    userInput._node = userInput._sendDpn ? dpn.node : 0;
+}
+
+MlxlinkCommander* MftSdk::getMlxlinkCommanderInstance()
+{
+    if (_mstMlxLinkSdkInstance == nullptr)
+    {
+        _mstMlxLinkSdkInstance = std::unique_ptr<MlxlinkCommander>(new MlxlinkCommander(_deviceIdentifier));
+        _mstMlxLinkSdkInstance->setSilentMode();
+        _mfiles.push_back(_mstMlxLinkSdkInstance->_mf);
+    }
+    return _mstMlxLinkSdkInstance.get();
+}
+
+MstStatus MftSdk::initMlxLinkSdk(MlxLinkInitMode initMode,
+                                 const std::string& port,
+                                 MstTelemetryPortType portType,
+                                 const PcieDpn& dpn)
 {
     clearError();
     try
     {
-        if (_mstMlxLinkSdkInstance == nullptr)
-        {
-            _mstMlxLinkSdkInstance = std::unique_ptr<MlxlinkCommander>(new MlxlinkCommander(_deviceIdentifier));
-            _mstMlxLinkSdkInstance->setSilentMode();
-            _mfiles.push_back(_mstMlxLinkSdkInstance->_mf);
-        }
+        getMlxlinkCommanderInstance();
 
-        // The user-input flags for a mode (e.g. cable/ddm/show_module) are set once per mode.
+        // The view flags steer what initForPort() collects, so they are set before it runs.
         if (!mlxlinkSdkInitialized[initMode])
         {
             initMlxLinkSdkUserInput(initMode);
             mlxlinkSdkInitialized[initMode] = true;
         }
 
-        // Re-bind the port only when it changes; handlePortStr parses the new port label.
-        // _currentMlxLinkPort starts empty, so the device-default port ("") never re-parses
-        // (handlePortStr would reject an empty label), matching the original default-port flow.
-        const bool portChanged = (port != _currentMlxLinkPort);
-        if (portChanged)
-        {
-            _mstMlxLinkSdkInstance->handlePortStr(port);
-            _currentMlxLinkPort = port;
-        }
+        const bool isPcie = (portType == MST_TELEMETRY_PORT_TYPE_PCIE);
 
-        // Run the per-port flow (updatePortInfo() + showPddr()) once per (port, mode), and re-run it
-        // whenever the port changes so per-port state stays fresh.
-        const auto key = std::make_pair(port, initMode);
-        if (portChanged || !_portModeInitialized[key])
+        const auto key = std::make_tuple(port, initMode, portType);
+        const bool boundToThisView = _mlxLinkPortBound && port == _currentMlxLinkPort &&
+                                     portType == _currentMlxLinkPortType && dpn == _currentPcieDpn &&
+                                     _portModeInitialized[key];
+        if (!boundToThisView)
         {
-            initMlxLinkSdkPortInfo();
+            // Stays false if the rebind throws, so the previous binding is not reused.
+            _mlxLinkPortBound = false;
+            applyPcieDpn(dpn, isPcie);
+            _mstMlxLinkSdkInstance->initForPort(port, isPcie);
+            _currentMlxLinkPort = port;
+            _currentMlxLinkPortType = portType;
+            _currentPcieDpn = dpn;
             _portModeInitialized[key] = true;
+            _mlxLinkPortBound = true;
         }
     }
     catch (const std::exception& e)
@@ -428,6 +427,30 @@ void MftSdk::extractOperationalInfoWidth(const Json::Value& jsonSection, MstTele
     }
 }
 
+void MftSdk::extractOperationalInfoAutoNegotiation(const Json::Value& jsonSection,
+                                                   MstTelemetryOperationalInfo* operationalInfo)
+{
+    std::string fieldValue = getJsonStringValue(jsonSection, FIELD_AUTO_NEGOTIATION);
+    if (fieldValue != NA_FIELD_VALUE)
+    {
+        // In FORCE mode mlxlink appends a " - <speed>" suffix (see _speedForce in mlxlink_commander);
+        // strip it before mapping since the SDK enum only distinguishes ON/FORCE.
+        size_t suffixPos = fieldValue.find(" - ");
+        if (suffixPos != std::string::npos)
+        {
+            fieldValue.erase(suffixPos);
+        }
+        const auto& autoNegMap = _mstMlxLinkSdkInstance->_mlxlinkMaps->_operationalInfoAutoNegotiation;
+        auto it = autoNegMap.find(fieldValue);
+        if (it == autoNegMap.end())
+        {
+            throw MftGeneralException("Invalid " + std::string(FIELD_AUTO_NEGOTIATION) + ": " + fieldValue);
+        }
+        operationalInfo->autoNegotiation = it->second;
+        mstQuerySetBit(operationalInfo->header, TELEMETRY_OP_INFO_AUTO_NEGOTIATION);
+    }
+}
+
 MstStatus MftSdk::extractOperationalInfoFromJson(MstTelemetryOperationalInfo* operationalInfo)
 {
     try
@@ -471,12 +494,7 @@ MstStatus MftSdk::extractOperationalInfoFromJson(MstTelemetryOperationalInfo* op
                            operationalInfo->header,
                            TELEMETRY_OP_INFO_LOOPBACK_MODE);
 
-        extractAndMapField(operationalInfoJson,
-                           FIELD_AUTO_NEGOTIATION,
-                           _mstMlxLinkSdkInstance->_mlxlinkMaps->_operationalInfoAutoNegotiation,
-                           operationalInfo->autoNegotiation,
-                           operationalInfo->header,
-                           TELEMETRY_OP_INFO_AUTO_NEGOTIATION);
+        extractOperationalInfoAutoNegotiation(operationalInfoJson, operationalInfo);
     }
     catch (const std::exception& e)
     {
@@ -504,7 +522,7 @@ MstStatus MftSdk::getTelemetryOperationalInfo(MstTelemetryOperationalInfo* opera
 
     try
     {
-        _mstMlxLinkSdkInstance->operatingInfoPage();
+        _mstMlxLinkSdkInstance->showOperationalInfo();
         extractOperationalInfoFromJson(operationalInfo);
     }
     catch (const std::exception& e)
@@ -555,12 +573,13 @@ MstStatus MftSdk::getFecHistogram(MstFecHistogram* fecHistogram, const MstTeleme
     try
     {
         _mstMlxLinkSdkInstance->_userInput.enableFecHistogram = true;
-        _mstMlxLinkSdkInstance->_userInput.showFecHistogram = true;
+        _mstMlxLinkSdkInstance->_userInput.showFecHistogram = false;
         _mstMlxLinkSdkInstance->initPortInfo();
         if (_mstMlxLinkSdkInstance->errorObserved())
         {
             throw MftGeneralException(_mstMlxLinkSdkInstance->getAllUnhandledErrors());
         }
+        _mstMlxLinkSdkInstance->_portInfo->showHistogram();
         mlxlinkGetFecHistogram(fecHistogram);
     }
 
@@ -716,7 +735,7 @@ MstStatus MftSdk::getCountersInfo(MstCountersInfo* countersInfo, const MstTeleme
 
     try
     {
-        _mstMlxLinkSdkInstance->showBer();
+        _mstMlxLinkSdkInstance->showCountersInfo();
         extractCountersInfoFromJson(countersInfo);
     }
     catch (const std::exception& e)
@@ -846,6 +865,7 @@ MstStatus MftSdk::getCableDDMInfo(MstCableDDMInfo* cableDDMInfo, const MstTeleme
     {
         return MST_ERROR_INVALID_ARGUMENT;
     }
+    mlxlinkClearStaleUnhandledErrors();
     if (initMlxLinkSdk(MlxLinkInitMode::CABLE_DDM, TelemetryContextView(context).getPort()) != MST_SUCCESS)
     {
         return _lastError.status;
@@ -856,6 +876,7 @@ MstStatus MftSdk::getCableDDMInfo(MstCableDDMInfo* cableDDMInfo, const MstTeleme
     try
     {
         _mstMlxLinkSdkInstance->showCableDDM();
+        mlxlinkThrowOnUnhandledErrors();
         extractCableDDMInfoFrom(cableDDMInfo);
     }
     catch (const std::exception& e)
@@ -1124,12 +1145,6 @@ void MftSdk::setBerModuleInfoFromJson(const Json::Value& moduleInfoJson, MstModu
                               TELEMETRY_MODULE_INFO_CABLE_TX_EQUALIZATION, parseUint8FromString);
     extractAndSetNumericField(moduleInfoJson, FIELD_WAVELENGTH_TOLERANCE, moduleInfo->berModuleInfo.wavelengthTolerance,
                               moduleInfo->header, TELEMETRY_MODULE_INFO_WAVELENGTH_TOLERANCE, parseFloatFromString);
-    extractAndMapField(moduleInfoJson,
-                       FIELD_MODULE_STATE,
-                       _mstMlxLinkSdkInstance->_mlxlinkMaps->_moduleStateSdk,
-                       moduleInfo->berModuleInfo.moduleState,
-                       moduleInfo->header,
-                       TELEMETRY_MODULE_INFO_MODULE_STATE);
     parseLanesDataAsUint8(getJsonStringValue(moduleInfoJson, FIELD_DATA_PATH_STATE_PER_LANE),
                           moduleInfo->berModuleInfo.dataPathStatePerLane, moduleInfo->header,
                           TELEMETRY_MODULE_INFO_DATA_PATH_STATE_PER_LANE);
@@ -1152,6 +1167,12 @@ void MftSdk::setBerModuleInfoFromJson(const Json::Value& moduleInfoJson, MstModu
     extractAndSetStringField(moduleInfoJson, FIELD_ACTIVE_SET_MEDIA_COMPLIANCE_CODE,
                              moduleInfo->berModuleInfo.activeSetMediaComplianceCode, MODULE_INFO_MAX_LENGTH,
                              moduleInfo->header, TELEMETRY_MODULE_INFO_ACTIVE_SET_MEDIA_COMPLIANCE_CODE);
+    extractAndMapField(moduleInfoJson,
+                       FIELD_MODULE_STATE,
+                       _mstMlxLinkSdkInstance->_mlxlinkMaps->_moduleStateSdk,
+                       moduleInfo->berModuleInfo.moduleState,
+                       moduleInfo->header,
+                       TELEMETRY_MODULE_INFO_MODULE_STATE);
     extractAndMapField(moduleInfoJson,
                        FIELD_ERROR_CODE_RESPONSE,
                        _mstMlxLinkSdkInstance->_mlxlinkMaps->_errorCodeResponseSdk,
@@ -1236,6 +1257,76 @@ MstStatus MftSdk::extractModuleInfoFromJson(MstModuleInfo* moduleInfo)
     return MST_SUCCESS;
 }
 
+Json::Value MftSdk::getTroubleShootingInfoJsonSection()
+{
+    Json::Value jsonRoot;
+    _mstMlxLinkSdkInstance->_troubInfoCmd.toJsonFormat(jsonRoot);
+    return getJsonSection(FIELD_TROUBLESHOOTING_INFO, jsonRoot);
+}
+
+MstStatus MftSdk::extractTroubleShootingInfoFromJson(MstTroubleShootingInfo* troubleShootingInfo)
+{
+    try
+    {
+        Json::Value troubleShootingInfoJson = getTroubleShootingInfoJsonSection();
+
+        extractAndSetNumericField(troubleShootingInfoJson,
+                                  FIELD_STATUS_OPCODE,
+                                  troubleShootingInfo->statusOpcode,
+                                  troubleShootingInfo->header,
+                                  TELEMETRY_TROUBLESHOOTING_INFO_STATUS_OPCODE,
+                                  parseUint32FromString);
+
+        extractAndMapField(troubleShootingInfoJson,
+                           FIELD_GROUP_OPCODE,
+                           _mstMlxLinkSdkInstance->_mlxlinkMaps->_groupOpcodeSdk,
+                           troubleShootingInfo->groupOpcode,
+                           troubleShootingInfo->header,
+                           TELEMETRY_TROUBLESHOOTING_INFO_GROUP_OPCODE);
+
+        extractAndSetStringField(troubleShootingInfoJson,
+                                 FIELD_RECOMMENDATION,
+                                 troubleShootingInfo->recommendation,
+                                 TROUBLESHOOTING_INFO_RECOMMENDATION_MAX_LENGTH,
+                                 troubleShootingInfo->header,
+                                 TELEMETRY_TROUBLESHOOTING_INFO_RECOMMENDATION);
+    }
+    catch (const std::exception& e)
+    {
+        std::string errorMessage = "Failed to retrieve telemetry troubleshooting info: " + std::string(e.what());
+        setLastError(MST_ERROR_FAILED_TO_GET_TELEMETRY, errorMessage);
+        return _lastError.status;
+    }
+    return _lastError.status;
+}
+
+MstStatus MftSdk::getTroubleShootingInfo(MstTroubleShootingInfo* troubleShootingInfo,
+                                         const MstTelemetryContext& context)
+{
+    if (!troubleShootingInfo || troubleShootingInfo->header.size < sizeof(mstQueryHeader))
+    {
+        return MST_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (initMlxLinkSdk(MlxLinkInitMode::OPERATIONAL_INFO, TelemetryContextView(context).getPort()) != MST_SUCCESS)
+    {
+        return _lastError.status;
+    }
+
+    MST_QUERY_CLEAR(troubleShootingInfo);
+
+    try
+    {
+        _mstMlxLinkSdkInstance->troubInfoPage();
+        extractTroubleShootingInfoFromJson(troubleShootingInfo);
+    }
+    catch (const std::exception& e)
+    {
+        setLastError(MST_ERROR_FAILED_TO_GET_TELEMETRY, e.what());
+    }
+    return _lastError.status;
+}
+
 MstStatus MftSdk::getModuleInfo(MstModuleInfo* moduleInfo, const MstTelemetryContext& context)
 {
     if (!moduleInfo || moduleInfo->header.size < sizeof(mstQueryHeader))
@@ -1261,6 +1352,385 @@ MstStatus MftSdk::getModuleInfo(MstModuleInfo* moduleInfo, const MstTelemetryCon
     }
     return _lastError.status;
 }
+
+void MftSdk::appendGeneralSections(Json::Value& root)
+{
+    // Mirrors mlxlink's default "showPddr" output order: the PDDR-derived sections
+    // already populated by initMlxLinkSdk's showPddr().
+    _mstMlxLinkSdkInstance->_operatingInfoCmd.toJsonFormat(root);
+    _mstMlxLinkSdkInstance->_portInfoCmd.toJsonFormat(root);
+    if (_mstMlxLinkSdkInstance->_isCpo)
+    {
+        _mstMlxLinkSdkInstance->_cpoInfoCmd.toJsonFormat(root);
+    }
+    _mstMlxLinkSdkInstance->_supportedInfoCmd.toJsonFormat(root);
+    _mstMlxLinkSdkInstance->_troubInfoCmd.toJsonFormat(root);
+    _mstMlxLinkSdkInstance->_toolInfoCmd.toJsonFormat(root);
+}
+
+void MftSdk::appendShowModuleSections(Json::Value& root)
+{
+    // "--show_module" is the general (PDDR) sections plus the module section.
+    appendGeneralSections(root);
+    _mstMlxLinkSdkInstance->_moduleInfoCmd.toJsonFormat(root);
+}
+
+MstStatus MftSdk::serializeJsonToBuffer(const Json::Value& root, char** jsonOut)
+{
+    Json::StreamWriterBuilder builder;
+    builder["indentation"] = "";
+    std::string serialized = Json::writeString(builder, root);
+
+    char* buffer = static_cast<char*>(malloc(serialized.size() + 1));
+    if (!buffer)
+    {
+        return MST_ERROR_FAILED_TO_ALLOCATE_MEMORY;
+    }
+    memcpy(buffer, serialized.c_str(), serialized.size() + 1);
+    *jsonOut = buffer;
+    return MST_SUCCESS;
+}
+
+// Copy the per-section entries under result.output from one document into another.
+static void appendJsonOutput(const Json::Value& from, Json::Value& into)
+{
+    if (from.isMember(JSON_RESULT_SECTION) && from[JSON_RESULT_SECTION].isMember(JSON_OUTPUT_SECTION))
+    {
+        const Json::Value& output = from[JSON_RESULT_SECTION][JSON_OUTPUT_SECTION];
+        for (const auto& key : output.getMemberNames())
+        {
+            into[JSON_RESULT_SECTION][JSON_OUTPUT_SECTION][key] = output[key];
+        }
+    }
+}
+
+// mlxlink's show*() calls catch their own register errors and only append them to the commander's
+// error text (the CLI prints it at the end). The SDK has no such end step, so a failed view would
+// otherwise come back as a success with an empty report.
+// Errors left over from an earlier call must not fail the current one. A commander that does not
+// exist yet has nothing stale, and creating it here could throw outside the callers' error handling.
+void MftSdk::mlxlinkClearStaleUnhandledErrors()
+{
+    if (_mstMlxLinkSdkInstance)
+    {
+        _mstMlxLinkSdkInstance->clearUnhandledErrors();
+    }
+}
+
+void MftSdk::mlxlinkThrowOnUnhandledErrors()
+{
+    if (_mstMlxLinkSdkInstance->errorObserved())
+    {
+        const std::string errors = _mstMlxLinkSdkInstance->getAllUnhandledErrors();
+        _mstMlxLinkSdkInstance->clearUnhandledErrors();
+        throw MftGeneralException(errors);
+    }
+}
+
+// The views that have a PCIe meaning. Every other view reads a network-only page, so asking
+// for it against a PCIe port is a caller mistake rather than an empty answer.
+static const uint32_t PCIE_SUPPORTED_VIEWS = MST_TELEMETRY_VIEW_OPERATIONAL | MST_TELEMETRY_VIEW_COUNTERS;
+
+// Every defined view bit. A bit outside it matches no view, so it would silently produce an empty
+// report; it is rejected up front instead. Add a new view here too (see MstTelemetryView).
+static const uint32_t ALL_TELEMETRY_VIEWS =
+  MST_TELEMETRY_VIEW_OPERATIONAL | MST_TELEMETRY_VIEW_COUNTERS | MST_TELEMETRY_VIEW_CABLE_DDM |
+  MST_TELEMETRY_VIEW_MODULE | MST_TELEMETRY_VIEW_GENERAL | MST_TELEMETRY_VIEW_EYE | MST_TELEMETRY_VIEW_FEC |
+  MST_TELEMETRY_VIEW_SERDES_TX | MST_TELEMETRY_VIEW_BER_MONITOR | MST_TELEMETRY_VIEW_EXTERNAL_PHY |
+  MST_TELEMETRY_VIEW_PLR | MST_TELEMETRY_VIEW_KR | MST_TELEMETRY_VIEW_RX_RECOVERY | MST_TELEMETRY_VIEW_FEC_HISTOGRAM;
+
+MstStatus MftSdk::runTelemetryViews(uint32_t views,
+                                    const std::string& port,
+                                    MstTelemetryPortType portType,
+                                    const PcieDpn& dpn,
+                                    Json::Value& root)
+{
+    const bool isPcie = (portType == MST_TELEMETRY_PORT_TYPE_PCIE);
+    mlxlinkClearStaleUnhandledErrors();
+    if (isPcie && (views & ~PCIE_SUPPORTED_VIEWS))
+    {
+        setLastError(MST_ERROR_NOT_SUPPORTED, "Only the operational and counters views are available for a PCIe port");
+        return _lastError.status;
+    }
+
+    // MODULE is the full "--show_module" view (general PDDR sections + module);
+    if (views & MST_TELEMETRY_VIEW_MODULE)
+    {
+        if (initMlxLinkSdk(MlxLinkInitMode::MODULE_INFO, port, portType) != MST_SUCCESS)
+        {
+            return _lastError.status;
+        }
+        _mstMlxLinkSdkInstance->showModuleInfo();
+        appendShowModuleSections(root);
+    }
+    else if (views & MST_TELEMETRY_VIEW_GENERAL)
+    {
+        // Full mlxlink default snapshot. initMlxLinkSdk already runs showPddr()
+        if (initMlxLinkSdk(MlxLinkInitMode::OPERATIONAL_INFO, port, portType) != MST_SUCCESS)
+        {
+            return _lastError.status;
+        }
+        appendGeneralSections(root);
+    }
+    else if (views & MST_TELEMETRY_VIEW_OPERATIONAL)
+    {
+        if (initMlxLinkSdk(MlxLinkInitMode::OPERATIONAL_INFO, port, portType, dpn) != MST_SUCCESS)
+        {
+            return _lastError.status;
+        }
+        if (isPcie)
+        {
+            // showPcieState() writes its sections straight into the commander's _jsonRoot; clear
+            // it first so we only pick up this call's output. On a PCIe port every link lands
+            // under the same section name, so the JSON keeps only the last one - the text path
+            // presents them all.
+            _mstMlxLinkSdkInstance->_jsonRoot = Json::Value();
+            _mstMlxLinkSdkInstance->showOperationalInfo();
+            appendJsonOutput(_mstMlxLinkSdkInstance->_jsonRoot, root);
+        }
+        else
+        {
+            _mstMlxLinkSdkInstance->showOperationalInfo();
+            _mstMlxLinkSdkInstance->_operatingInfoCmd.toJsonFormat(root);
+        }
+    }
+
+    if (views & MST_TELEMETRY_VIEW_COUNTERS)
+    {
+        if (initMlxLinkSdk(MlxLinkInitMode::NONE, port, portType, dpn) != MST_SUCCESS)
+        {
+            return _lastError.status;
+        }
+        _mstMlxLinkSdkInstance->showCountersInfo();
+        _mstMlxLinkSdkInstance->_berInfoCmd.toJsonFormat(root);
+        _mstMlxLinkSdkInstance->_mpcntPerfInfCmd.toJsonFormat(root);
+    }
+
+    if (views & MST_TELEMETRY_VIEW_CABLE_DDM)
+    {
+        if (initMlxLinkSdk(MlxLinkInitMode::CABLE_DDM, port, portType) != MST_SUCCESS)
+        {
+            return _lastError.status;
+        }
+        // The cables commander writes DDM sections straight into the commander's
+        // _jsonRoot; clear it first so we only pick up this call's output.
+        _mstMlxLinkSdkInstance->_jsonRoot = Json::Value();
+        _mstMlxLinkSdkInstance->showCableDDM();
+        appendJsonOutput(_mstMlxLinkSdkInstance->_jsonRoot, root);
+    }
+
+    // Standalone per-port sections (mlxlink's individual "--show_*" query flags). Each runs on
+    // top of the standard per-port init (updatePortInfo()+showPddr(), which every mode runs)
+    if (views & MST_TELEMETRY_VIEW_EYE)
+    {
+        if (initMlxLinkSdk(MlxLinkInitMode::NONE, port, portType) != MST_SUCCESS)
+        {
+            return _lastError.status;
+        }
+        _mstMlxLinkSdkInstance->showEye();
+        _mstMlxLinkSdkInstance->_eyeOpeningInfoCmd.toJsonFormat(root);
+    }
+
+    if (views & MST_TELEMETRY_VIEW_FEC)
+    {
+        if (initMlxLinkSdk(MlxLinkInitMode::NONE, port, portType) != MST_SUCCESS)
+        {
+            return _lastError.status;
+        }
+        _mstMlxLinkSdkInstance->showFEC();
+        _mstMlxLinkSdkInstance->_fecCapInfoCmd.toJsonFormat(root);
+
+        // Return an empty output instead of null when FEC has nothing to report.
+        if (!root[JSON_RESULT_SECTION].isMember(JSON_OUTPUT_SECTION))
+        {
+            root[JSON_RESULT_SECTION][JSON_OUTPUT_SECTION] = Json::Value(Json::objectValue);
+        }
+    }
+
+    if (views & MST_TELEMETRY_VIEW_SERDES_TX)
+    {
+        if (initMlxLinkSdk(MlxLinkInitMode::NONE, port, portType) != MST_SUCCESS)
+        {
+            return _lastError.status;
+        }
+        _mstMlxLinkSdkInstance->showSltp();
+        _mstMlxLinkSdkInstance->_sltpInfoCmd.toJsonFormat(root);
+    }
+
+    if (views & MST_TELEMETRY_VIEW_BER_MONITOR)
+    {
+        if (initMlxLinkSdk(MlxLinkInitMode::NONE, port, portType) != MST_SUCCESS)
+        {
+            return _lastError.status;
+        }
+        _mstMlxLinkSdkInstance->showBerMonitorInfo();
+        _mstMlxLinkSdkInstance->_showBerMonitorInfo.toJsonFormat(root);
+    }
+
+    if (views & MST_TELEMETRY_VIEW_EXTERNAL_PHY)
+    {
+        if (initMlxLinkSdk(MlxLinkInitMode::NONE, port, portType) != MST_SUCCESS)
+        {
+            return _lastError.status;
+        }
+        _mstMlxLinkSdkInstance->showExternalPhy();
+        _mstMlxLinkSdkInstance->_extPhyInfoCmd.toJsonFormat(root);
+    }
+
+    if (views & MST_TELEMETRY_VIEW_PLR)
+    {
+        if (initMlxLinkSdk(MlxLinkInitMode::NONE, port, portType) != MST_SUCCESS)
+        {
+            return _lastError.status;
+        }
+        _mstMlxLinkSdkInstance->showPlr();
+        _mstMlxLinkSdkInstance->_plrInfoCmd.toJsonFormat(root);
+    }
+
+    if (views & MST_TELEMETRY_VIEW_KR)
+    {
+        if (initMlxLinkSdk(MlxLinkInitMode::NONE, port, portType) != MST_SUCCESS)
+        {
+            return _lastError.status;
+        }
+        _mstMlxLinkSdkInstance->showKr();
+        _mstMlxLinkSdkInstance->_krInfoCmd.toJsonFormat(root);
+    }
+
+    if (views & MST_TELEMETRY_VIEW_RX_RECOVERY)
+    {
+        if (initMlxLinkSdk(MlxLinkInitMode::NONE, port, portType) != MST_SUCCESS)
+        {
+            return _lastError.status;
+        }
+        _mstMlxLinkSdkInstance->_userInput._showRxRecoveryCounters = true;
+        _mstMlxLinkSdkInstance->showRxRecoveryCounters();
+        _mstMlxLinkSdkInstance->_rxRecoveryCountersCmd.toJsonFormat(root);
+    }
+
+    if (views & MST_TELEMETRY_VIEW_FEC_HISTOGRAM)
+    {
+        if (initMlxLinkSdk(MlxLinkInitMode::NONE, port, portType) != MST_SUCCESS)
+        {
+            return _lastError.status;
+        }
+        _mstMlxLinkSdkInstance->_userInput.enableFecHistogram = true;
+        _mstMlxLinkSdkInstance->_userInput.showFecHistogram = false;
+        _mstMlxLinkSdkInstance->initPortInfo();
+        if (_mstMlxLinkSdkInstance->errorObserved())
+        {
+            throw MftGeneralException(_mstMlxLinkSdkInstance->getAllUnhandledErrors());
+        }
+        _mstMlxLinkSdkInstance->_portInfo->showHistogram().toJsonFormat(root);
+    }
+
+    mlxlinkThrowOnUnhandledErrors();
+    return MST_SUCCESS;
+}
+
+MstStatus MftSdk::getTelemetryJson(uint32_t views, const MstTelemetryContext& context, char** jsonOut)
+{
+    if (!jsonOut || views == 0)
+    {
+        return MST_ERROR_INVALID_ARGUMENT;
+    }
+    *jsonOut = nullptr;
+    if (views & ~ALL_TELEMETRY_VIEWS)
+    {
+        setLastError(MST_ERROR_INVALID_ARGUMENT, "The view mask contains an unknown view");
+        return _lastError.status;
+    }
+    const TelemetryContextView contextView(context);
+
+    try
+    {
+        Json::Value root;
+        const MstStatus status =
+          runTelemetryViews(views, contextView.getPort(), contextView.getPortType(), contextView.getDpn(), root);
+        if (status != MST_SUCCESS)
+        {
+            return status;
+        }
+        return serializeJsonToBuffer(root, jsonOut);
+    }
+    catch (const std::exception& e)
+    {
+        setLastError(MST_ERROR_FAILED_TO_GET_TELEMETRY, e.what());
+        return _lastError.status;
+    }
+}
+
+// The views whose report the dispatch prints through mlxlink's own printer, and which therefore
+// have text to return. GENERAL, MODULE and the FEC histogram are assembled out of commands the
+// setup step populated rather than printed by a show call, so they would answer with an empty
+// buffer; they are refused instead. Operating info is in the same position on a network port -
+// mlxlink prints it only as one section of the PDDR snapshot - but a PCIe port reports it through
+// showPcie(), which does print, so the view is allowed and the port type decides.
+static const uint32_t TEXT_SUPPORTED_VIEWS =
+  MST_TELEMETRY_VIEW_OPERATIONAL | MST_TELEMETRY_VIEW_COUNTERS | MST_TELEMETRY_VIEW_EYE | MST_TELEMETRY_VIEW_FEC |
+  MST_TELEMETRY_VIEW_SERDES_TX | MST_TELEMETRY_VIEW_BER_MONITOR | MST_TELEMETRY_VIEW_EXTERNAL_PHY |
+  MST_TELEMETRY_VIEW_PLR | MST_TELEMETRY_VIEW_KR | MST_TELEMETRY_VIEW_RX_RECOVERY;
+
+MstStatus MftSdk::getTelemetryText(uint32_t views, const MstTelemetryContext& context, char** textOut)
+{
+    if (!textOut || views == 0)
+    {
+        return MST_ERROR_INVALID_ARGUMENT;
+    }
+    *textOut = nullptr;
+    if (views & ~ALL_TELEMETRY_VIEWS)
+    {
+        setLastError(MST_ERROR_INVALID_ARGUMENT, "The view mask contains an unknown view");
+        return _lastError.status;
+    }
+    const TelemetryContextView contextView(context);
+    const MstTelemetryPortType portType = contextView.getPortType();
+
+    if (views & ~TEXT_SUPPORTED_VIEWS)
+    {
+        setLastError(MST_ERROR_NOT_SUPPORTED, "One of the requested views has no text report");
+        return _lastError.status;
+    }
+    if ((views & MST_TELEMETRY_VIEW_OPERATIONAL) && portType != MST_TELEMETRY_PORT_TYPE_PCIE)
+    {
+        setLastError(MST_ERROR_NOT_SUPPORTED, "The operational view has a text report only for a PCIe port");
+        return _lastError.status;
+    }
+
+    try
+    {
+        // The same dispatch the JSON path runs, with the commander un-silenced and its output
+        // pointed at a buffer, so what comes back is mlxlink's own report rather than a second
+        // rendering of it. The JSON it builds alongside is discarded.
+        std::ostringstream sink;
+        Json::Value discardedRoot;
+        MstStatus status = MST_SUCCESS;
+        {
+            MlxlinkReportCapture capture(*getMlxlinkCommanderInstance(), sink);
+            status = runTelemetryViews(views, contextView.getPort(), portType, contextView.getDpn(), discardedRoot);
+        }
+        if (status != MST_SUCCESS)
+        {
+            return status;
+        }
+
+        const std::string text = sink.str();
+        char* buffer = static_cast<char*>(malloc(text.size() + 1));
+        if (!buffer)
+        {
+            return MST_ERROR_FAILED_TO_ALLOCATE_MEMORY;
+        }
+        memcpy(buffer, text.c_str(), text.size() + 1);
+        *textOut = buffer;
+        return MST_SUCCESS;
+    }
+    catch (const std::exception& e)
+    {
+        setLastError(MST_ERROR_FAILED_TO_GET_TELEMETRY, e.what());
+        return _lastError.status;
+    }
+}
+
 // Pure C API functions:
 extern "C"
 {
@@ -1268,9 +1738,14 @@ extern "C"
                                              const MstTelemetryContext* context,
                                              MstTelemetryOperationalInfo* operationalInfo)
     {
-        if (!mstDevice || validateTelemetryContext(context) != MST_SUCCESS)
+        if (!mstDevice)
         {
             return MST_ERROR_INVALID_ARGUMENT;
+        }
+        const MstStatus contextStatus = validateNetworkTelemetryContext(context);
+        if (contextStatus != MST_SUCCESS)
+        {
+            return contextStatus;
         }
 
         MftSdk* instance = reinterpret_cast<MftSdk*>(mstDevice);
@@ -1279,9 +1754,14 @@ extern "C"
 
     MstStatus mstGetFecHistogram(MstDevice mstDevice, const MstTelemetryContext* context, MstFecHistogram* fecHistogram)
     {
-        if (!mstDevice || validateTelemetryContext(context) != MST_SUCCESS)
+        if (!mstDevice)
         {
             return MST_ERROR_INVALID_ARGUMENT;
+        }
+        const MstStatus contextStatus = validateNetworkTelemetryContext(context);
+        if (contextStatus != MST_SUCCESS)
+        {
+            return contextStatus;
         }
 
         MftSdk* instance = reinterpret_cast<MftSdk*>(mstDevice);
@@ -1290,9 +1770,14 @@ extern "C"
 
     MstStatus mstGetCountersInfo(MstDevice mstDevice, const MstTelemetryContext* context, MstCountersInfo* countersInfo)
     {
-        if (!mstDevice || validateTelemetryContext(context) != MST_SUCCESS)
+        if (!mstDevice)
         {
             return MST_ERROR_INVALID_ARGUMENT;
+        }
+        const MstStatus contextStatus = validateNetworkTelemetryContext(context);
+        if (contextStatus != MST_SUCCESS)
+        {
+            return contextStatus;
         }
 
         MftSdk* instance = reinterpret_cast<MftSdk*>(mstDevice);
@@ -1301,9 +1786,14 @@ extern "C"
 
     MstStatus mstGetCableDDMInfo(MstDevice mstDevice, const MstTelemetryContext* context, MstCableDDMInfo* cableDDMInfo)
     {
-        if (!mstDevice || validateTelemetryContext(context) != MST_SUCCESS)
+        if (!mstDevice)
         {
             return MST_ERROR_INVALID_ARGUMENT;
+        }
+        const MstStatus contextStatus = validateNetworkTelemetryContext(context);
+        if (contextStatus != MST_SUCCESS)
+        {
+            return contextStatus;
         }
 
         MftSdk* instance = reinterpret_cast<MftSdk*>(mstDevice);
@@ -1312,13 +1802,82 @@ extern "C"
 
     MstStatus mstGetModuleInfo(MstDevice mstDevice, const MstTelemetryContext* context, MstModuleInfo* moduleInfo)
     {
+        if (!mstDevice)
+        {
+            return MST_ERROR_INVALID_ARGUMENT;
+        }
+        const MstStatus contextStatus = validateNetworkTelemetryContext(context);
+        if (contextStatus != MST_SUCCESS)
+        {
+            return contextStatus;
+        }
+
+        MftSdk* instance = reinterpret_cast<MftSdk*>(mstDevice);
+        return instance->getModuleInfo(moduleInfo, resolveTelemetryContext(context));
+    }
+
+    MstStatus mstGetTroubleShootingInfo(MstDevice mstDevice,
+                                        const MstTelemetryContext* context,
+                                        MstTroubleShootingInfo* troubleShootingInfo)
+    {
         if (!mstDevice || validateTelemetryContext(context) != MST_SUCCESS)
         {
             return MST_ERROR_INVALID_ARGUMENT;
         }
 
         MftSdk* instance = reinterpret_cast<MftSdk*>(mstDevice);
-        return instance->getModuleInfo(moduleInfo, resolveTelemetryContext(context));
+        return instance->getTroubleShootingInfo(troubleShootingInfo, resolveTelemetryContext(context));
+    }
+
+    MstStatus
+      mstGetTelemetryJson(MstDevice mstDevice, const MstTelemetryContext* context, uint32_t views, char** jsonOut)
+    {
+        if (!mstDevice || !jsonOut || validateTelemetryContext(context) != MST_SUCCESS)
+        {
+            return MST_ERROR_INVALID_ARGUMENT;
+        }
+
+        const MstTelemetryContext& selection = resolveTelemetryContext(context);
+        if (TelemetryContextView(selection).hasConflictingPortSelection())
+        {
+            return MST_ERROR_INVALID_ARGUMENT;
+        }
+
+        MftSdk* instance = reinterpret_cast<MftSdk*>(mstDevice);
+        return instance->getTelemetryJson(views, selection, jsonOut);
+    }
+
+    MstStatus
+      mstGetTelemetryText(MstDevice mstDevice, const MstTelemetryContext* context, uint32_t views, char** textOut)
+    {
+        if (!mstDevice || !textOut || validateTelemetryContext(context) != MST_SUCCESS)
+        {
+            return MST_ERROR_INVALID_ARGUMENT;
+        }
+
+        const MstTelemetryContext& selection = resolveTelemetryContext(context);
+        if (TelemetryContextView(selection).hasConflictingPortSelection())
+        {
+            return MST_ERROR_INVALID_ARGUMENT;
+        }
+
+        MftSdk* instance = reinterpret_cast<MftSdk*>(mstDevice);
+        return instance->getTelemetryText(views, selection, textOut);
+    }
+
+    MstStatus mstFreeJsonString(char* json)
+    {
+        if (!json)
+        {
+            return MST_ERROR_INVALID_ARGUMENT;
+        }
+        free(json);
+        return MST_SUCCESS;
+    }
+
+    MstStatus mstFreeTextString(char* json)
+    {
+        return mstFreeJsonString(json);
     }
 
 } // extern "C"

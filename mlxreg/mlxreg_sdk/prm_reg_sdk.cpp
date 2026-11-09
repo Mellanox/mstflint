@@ -33,12 +33,16 @@
  *
  */
 #include <iostream>
+#include <cerrno>
+#include <cstring>
 #include "mft_sdk/mft_sdk_reg_access.h"
+#include "nvtoolslogger/NvToolsLogger.h"
 #include "mlxreg_sdk.h"
 #include "prm_reg_sdk.h"
 #include "adb_parser/buf_ops.h"
 #include "mlxreg/mlxreg_lib/mlxreg_parser.h"
 #include "common/compatibility.h"
+#include "common/tools_endianness.h"
 
 MstPrmAccessType convertRegisterAccessType(const std::string& access)
 {
@@ -308,6 +312,7 @@ uint32_t PrmRegSdk::getNodeFields(AdbInstanceAdvLegacy* regNode,
     }
     if (!regNode)
     {
+        MLXREG_SDK_LOG_ERROR("No register node available on device '%s' - cannot enumerate fields", _mstDevStr.c_str());
         rc = ERR_CODE_FAILD_TO_FIND_REG_NODE;
     }
     else
@@ -328,7 +333,7 @@ int PrmRegSdk::fillBuffWithParams(void* regNode,
     // convert to CPU
     for (std::vector<uint32_t>::size_type j = 0; j < buffer.size(); j++)
     {
-        buffer[j] = __be32_to_cpu((buffer[j]));
+        buffer[j] = mft_be32_to_cpu((buffer[j]));
     }
 
     for (const auto& pair : params)
@@ -350,6 +355,7 @@ int PrmRegSdk::fillBuffWithParams(void* regNode,
         }
         else
         {
+            MLXREG_SDK_LOG_ERROR("Unknown field '%s' in the supplied register parameters", pair.first.c_str());
             rc = ERR_CODE_FAILD_TO_PARSE_FIELD;
             break;
         }
@@ -390,6 +396,8 @@ int32_t PrmRegSdk::initRegLib()
     _mf = mopen(_mstDevStr.c_str());
     if (!_mf)
     {
+        int openErrno = errno;
+        MLXREG_SDK_LOG_ERROR("Failed to open MST device '%s': %s", _mstDevStr.c_str(), strerror(openErrno));
         return ERR_CODE_FAILD_TO_OPEN_MST_DEV;
     }
 
@@ -404,8 +412,13 @@ int32_t PrmRegSdk::initRegLib()
     catch (exception& exc)
     {
         setErrorMessage(exc.what());
+        MLXREG_SDK_LOG_ERROR("Failed to init register library for device '%s' (adb '%s', external %d): %s",
+                             _mstDevStr.c_str(), externalAdbPathStr.empty() ? "<default>" : externalAdbPathStr.c_str(),
+                             (int)_isExternal, exc.what());
         return ERR_CODE_FAILD_TO_INIT_REG_LIB;
     }
+    MLXREG_SDK_LOG_DEBUG("Register library ready for device '%s' (adb '%s', external %d)", _mstDevStr.c_str(),
+                         externalAdbPathStr.empty() ? "<default>" : externalAdbPathStr.c_str(), (int)_isExternal);
     return 0;
 }
 
@@ -449,11 +462,15 @@ int32_t PrmRegSdk::processRegisterMethod(AdbInstanceAdvLegacy* regNode,
                 }
                 else
                 {
+                    MLXREG_SDK_LOG_ERROR(
+                      "Read-modify-write: initial GET of register '%s' on device '%s' failed with status %d",
+                      regName.c_str(), _mstDevStr.c_str(), (int)reg_status);
                     rc = ERR_CODE_FAILD_TO_SEND_ACCESS_REG;
                 }
             }
             break;
         default:
+            MLXREG_SDK_LOG_ERROR("Invalid access register method %u for register '%s'", _method, regName.c_str());
             rc = ERR_CODE_INVALID_METHOD;
             break;
     }
@@ -469,6 +486,8 @@ int32_t PrmRegSdk::sendRegisterAndPopulateFields(const std::string& regName,
                                                  uint32_t* number_of_fields)
 {
     int32_t rc = 0;
+    MLXREG_SDK_LOG_DEBUG("Sending register '%s' (method %u, %zu dwords) to device '%s'", regName.c_str(), _method,
+                         buffer.size(), _mstDevStr.c_str());
     mlxreg::MlxRegLibStatus reg_status = _mlxRegLib->sendRegister(regName, _method, buffer);
     if (reg_status == mlxreg::MRLS_SUCCESS)
     {
@@ -500,6 +519,8 @@ int32_t PrmRegSdk::sendRegisterAndPopulateFields(const std::string& regName,
     }
     else
     {
+        MLXREG_SDK_LOG_ERROR("Access register '%s' (method %u) failed on device '%s': status %d, syndrome 0x%x",
+                             regName.c_str(), _method, _mstDevStr.c_str(), (int)reg_status, getSyndromeCode());
         rc = ERR_CODE_FAILD_TO_SEND_ACCESS_REG;
     }
     return rc;
@@ -521,6 +542,8 @@ template int32_t PrmRegSdk::sendRegisterAndPopulateFields<MstPrmRegisterField>(c
 
 int32_t PrmRegSdk::performRegRequest(void* responseOutboxMap)
 {
+    MLXREG_SDK_LOG_DEBUG("Register request on device '%s': register '%s', method %u, params '%s'", _mstDevStr.c_str(),
+                         _regName.c_str(), _method, _paramsStr.c_str());
     int32_t rc = ensureRegLibInitialized();
     AdbInstanceAdvLegacy* regNode = nullptr;
 
@@ -533,6 +556,7 @@ int32_t PrmRegSdk::performRegRequest(void* responseOutboxMap)
         catch (exception& exc)
         {
             setErrorMessage(exc.what());
+            MLXREG_SDK_LOG_ERROR("Register '%s' not found in the adb layout: %s", _regName.c_str(), exc.what());
             rc = ERR_CODE_FAILD_TO_FIND_REG_NODE;
         }
         if (rc == 0 && regNode)
@@ -540,6 +564,8 @@ int32_t PrmRegSdk::performRegRequest(void* responseOutboxMap)
             std::map<std::string, uint32_t> params = parseRegParams(_paramsStr);
             if (!_paramsStr.empty() && params.empty())
             {
+                MLXREG_SDK_LOG_ERROR("Failed to parse parameters '%s' for register '%s'", _paramsStr.c_str(),
+                                     _regName.c_str());
                 rc = ERR_CODE_INVALID_FIELD_ARG;
             }
             if (rc == 0)
@@ -569,6 +595,8 @@ int32_t PrmRegSdk::performRegRequest(void* responseOutboxMap)
                 catch (exception& exc)
                 {
                     setErrorMessage(exc.what());
+                    MLXREG_SDK_LOG_ERROR("Register request for '%s' on device '%s' failed: %s", _regName.c_str(),
+                                         _mstDevStr.c_str(), exc.what());
                     rc = ERR_CODE_FAILD_TO_SEND_ACCESS_REG;
                 }
             }
@@ -587,6 +615,10 @@ int32_t PrmRegSdk::showAllRegisters(std::vector<std::string>& registers)
     if (!rc && _mlxRegLib)
     {
         rc = _mlxRegLib->showRegisters(registers);
+        if (rc != 0)
+        {
+            MLXREG_SDK_LOG_ERROR("Failed to enumerate registers on device '%s', rc %d", _mstDevStr.c_str(), rc);
+        }
     }
     return rc;
 }
@@ -676,6 +708,8 @@ int32_t PrmRegSdk::getRegisterMetadataInt(std::string regName, void* responseOut
     catch (exception& exc)
     {
         setErrorMessage(exc.what());
+        MLXREG_SDK_LOG_ERROR("Failed to read metadata of register '%s' on device '%s': %s", regName.c_str(),
+                             _mstDevStr.c_str(), exc.what());
         rc = ERR_CODE_FAILD_TO_FIND_REG_NODE;
     }
     return rc;
@@ -746,6 +780,8 @@ int32_t PrmRegSdk::getRegisterFields(const std::string& regName, void* responseO
     catch (exception& exc)
     {
         setErrorMessage(exc.what());
+        MLXREG_SDK_LOG_ERROR("Failed to read fields of register '%s' on device '%s': %s", regName.c_str(),
+                             _mstDevStr.c_str(), exc.what());
         rc = ERR_CODE_FAILD_TO_FIND_REG_NODE;
     }
     return rc;
@@ -758,6 +794,8 @@ uint32_t PrmRegSdk::getFieldIndexAndMap(const std::string& fieldName, uint32_t& 
     if (layout.find(fieldName) == layout.end())
     {
         setErrorMessage("Can't find field name: " + fieldName);
+        MLXREG_SDK_LOG_ERROR("Field '%s' is not present in the cached layout of register '%s'", fieldName.c_str(),
+                             regName.c_str());
         return ERR_CODE_FAILD_TO_PARSE_FIELD;
     }
     fieldIndex = layout[fieldName];
@@ -816,8 +854,13 @@ int32_t PrmRegSdk::performRawRegRequest(void* buffer, const uint32_t size)
     vector<uint32_t> outBuffer;
     vector<tuple<AdbInstanceAdvLegacy*, uint32_t>> fields_offsets;
 
+    MLXREG_SDK_LOG_DEBUG("Raw register request on device '%s': register id 0x%x, method %u, buffer size %u",
+                         _mstDevStr.c_str(), (unsigned int)_regId, _method, size);
+
     if ((access_type)_method != GET && (access_type)_method != SET)
     {
+        MLXREG_SDK_LOG_ERROR("Invalid method %u for raw access of register id 0x%x (only GET/SET are supported)",
+                             _method, (unsigned int)_regId);
         rc = ERR_CODE_INVALID_METHOD;
     }
 
@@ -835,6 +878,7 @@ int32_t PrmRegSdk::performRawRegRequest(void* buffer, const uint32_t size)
         catch (AdbException& exc)
         {
             setErrorMessage(exc.what());
+            MLXREG_SDK_LOG_ERROR("Register id 0x%x not found in the adb layout: %s", (unsigned int)_regId, exc.what());
             rc = ERR_CODE_FAILD_TO_FIND_REG_NODE;
         }
     }
@@ -864,12 +908,17 @@ int32_t PrmRegSdk::performRawRegRequest(void* buffer, const uint32_t size)
             reg_status = _mlxRegLib->sendRegister(_regId, _method, outBuffer);
             if (reg_status != mlxreg::MRLS_SUCCESS)
             {
+                MLXREG_SDK_LOG_ERROR(
+                  "Raw access register 0x%x (method %u) failed on device '%s': status %d, syndrome 0x%x",
+                  (unsigned int)_regId, _method, _mstDevStr.c_str(), (int)reg_status, getSyndromeCode());
                 rc = ERR_CODE_FAILD_TO_SEND_ACCESS_REG;
             }
         }
         catch (exception& exc)
         {
             setErrorMessage(exc.what());
+            MLXREG_SDK_LOG_ERROR("Raw access of register 0x%x on device '%s' failed: %s", (unsigned int)_regId,
+                                 _mstDevStr.c_str(), exc.what());
             rc = ERR_CODE_FAILD_TO_SEND_ACCESS_REG;
         }
         // Convert to BE32
@@ -916,6 +965,8 @@ int32_t PrmRegSdk::performRegRequestUsingMap(void* registerMap)
 {
     MstPrmRegisterMap* reqMap = static_cast<MstPrmRegisterMap*>(registerMap);
     std::string regName = reqMap->name;
+    MLXREG_SDK_LOG_DEBUG("Register request via map on device '%s': register '%s', method %u", _mstDevStr.c_str(),
+                         regName.c_str(), _method);
     int32_t rc = ensureRegLibInitialized();
     AdbInstanceAdvLegacy* regNode = nullptr;
 
@@ -928,6 +979,7 @@ int32_t PrmRegSdk::performRegRequestUsingMap(void* registerMap)
         catch (exception& exc)
         {
             setErrorMessage(exc.what());
+            MLXREG_SDK_LOG_ERROR("Register '%s' not found in the adb layout: %s", regName.c_str(), exc.what());
             rc = ERR_CODE_FAILD_TO_FIND_REG_NODE;
         }
         if (rc == 0 && regNode)
@@ -951,6 +1003,8 @@ int32_t PrmRegSdk::performRegRequestUsingMap(void* registerMap)
                 catch (exception& exc)
                 {
                     setErrorMessage(exc.what());
+                    MLXREG_SDK_LOG_ERROR("Register request via map for '%s' on device '%s' failed: %s", regName.c_str(),
+                                         _mstDevStr.c_str(), exc.what());
                     rc = ERR_CODE_FAILD_TO_SEND_ACCESS_REG;
                 }
             }

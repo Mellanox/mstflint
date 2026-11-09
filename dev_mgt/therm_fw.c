@@ -38,6 +38,7 @@
 #include "reg_access/reg_access.h"
 #include "therm_fw.h"
 #include "tools_dev_types.h"
+#include "common/tools_endianness.h"
 
 #define SKIP_INLINE_METHODS
 
@@ -102,8 +103,8 @@ static reg_access_status_t _mtmp_read(mfile* mf,
 /* Decode MTMP sensor_name (hi 4 bytes + lo 4 bytes, big-endian on wire) into dst[9]. */
 static void _decode_sensor_name(u_int32_t name_hi, u_int32_t name_lo, char dst[9])
 {
-    u_int32_t hi_be = __cpu_to_be32(name_hi);
-    u_int32_t lo_be = __cpu_to_be32(name_lo);
+    u_int32_t hi_be = mft_cpu_to_be32(name_hi);
+    u_int32_t lo_be = mft_cpu_to_be32(name_lo);
     memcpy(dst, &hi_be, 4);
     memcpy(dst + 4, &lo_be, 4);
     dst[8] = '\0';
@@ -643,8 +644,8 @@ td_fw_result_t td_fw_read_diode(mfile* mf, int diode_idx, td_data_fw* diode_data
         diode_data->threshold_lo = (int16_t)mtmp.temperature_threshold_lo;
         diode_data->hw_threshold = DEFAULT_THRESH_PROT_VAL;
         // name_lo and name_hi are actually strings i.e no need for swapping (restore to original format)
-        mtmp.sensor_name_lo = __cpu_to_be32(mtmp.sensor_name_lo);
-        mtmp.sensor_name_hi = __cpu_to_be32(mtmp.sensor_name_hi);
+        mtmp.sensor_name_lo = mft_cpu_to_be32(mtmp.sensor_name_lo);
+        mtmp.sensor_name_hi = mft_cpu_to_be32(mtmp.sensor_name_hi);
         memcpy(diode_data->diode_name, (char*)&mtmp.sensor_name_hi, 4);
         memcpy(&(diode_data->diode_name[4]), (char*)&mtmp.sensor_name_lo, 4);
         // strncpy(td_data_fw->diode_name, _diode_idx_to_str(diode_idx), MAX_DIODE_LEN -1);

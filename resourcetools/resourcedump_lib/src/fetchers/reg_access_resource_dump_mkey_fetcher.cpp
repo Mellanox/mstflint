@@ -111,47 +111,21 @@ RegAccessResourceDumpMkeyFetcher::~RegAccessResourceDumpMkeyFetcher()
 
 void RegAccessResourceDumpMkeyFetcher::init_reg_access_layout()
 {
-    _reg_access_layout = {
-      _segment_params.reference_segment_type,     // segment_type
-      _current_seq_num,                           // seq_num
-      0,                                          // vhca_id_valid
-      0,                                          // inline_dump
-      0,                                          // more_dump
-      0,                                          // vhca_id
-      _segment_params.segment_params.index1,      // index1
-      _segment_params.segment_params.index2,      // index2
-      _segment_params.segment_params.num_of_obj2, // num_of_obj2
-      _segment_params.segment_params.num_of_obj1, // num_of_obj1
-      0,                                          // device_opaque
-      _dv_mkey.lkey,                              // mkey
-      _umem_size,                                 // size
-      get_umem_address(),                         // address
-      0                                           // inline_data
-    };
-
-    if (_vhca != DEFAULT_VHCA)
-    {
-        _reg_access_layout.vhca_id = _vhca;
-        _reg_access_layout.vhca_id_valid = 1;
-    }
+    _reg_handler->init(_segment_params, _current_seq_num, _vhca, /*inline_dump=*/false, _dv_mkey.lkey, _umem_size,
+                       get_umem_address());
 }
 
 void RegAccessResourceDumpMkeyFetcher::reset_reg_access_layout()
 {
-    _reg_access_layout.segment_type = _segment_params.reference_segment_type;
-    _reg_access_layout.vhca_id = _vhca != DEFAULT_VHCA ? _vhca : 0;
-    _reg_access_layout.vhca_id_valid = _vhca != DEFAULT_VHCA ? 1 : 0;
-    _reg_access_layout.inline_dump = 0;
-    _reg_access_layout.mkey = _dv_mkey.lkey;
-    _reg_access_layout.size = _umem_size;
-    _reg_access_layout.address = get_umem_address();
+    _reg_handler->reset(_segment_params, _vhca, /*inline_dump=*/false, _dv_mkey.lkey, _umem_size, get_umem_address());
 }
 
 void RegAccessResourceDumpMkeyFetcher::write_payload_data_to_ostream()
 {
-    for (size_t i = 0; i < _reg_access_layout.size / 4; ++i)
+    const uint32_t dumped_size = _reg_handler->reply_size();
+    for (size_t i = 0; i < dumped_size / 4; ++i)
     {
-        auto offset = adb2c_calc_array_field_address(0, 32, i, _reg_access_layout.size, 1);
+        auto offset = adb2c_calc_array_field_address(0, 32, i, dumped_size, 1);
         auto dword = adb2c_pop_integer_from_buff(static_cast<const uint8_t*>(_mkey_buffer), offset, 4);
         _ostream->write(reinterpret_cast<const char*>(&dword), 4);
     }

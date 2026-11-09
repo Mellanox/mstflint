@@ -47,6 +47,8 @@
 #include <reg_access/reg_access.h>
 #include <mft_utils/mft_sig_handler.h>
 #include <stdbool.h>
+#include <stdint.h>
+#include <xz.h>
 
 #define CRD_CHECK_NULL(var)                        \
     if (var == NULL)                               \
@@ -77,6 +79,13 @@
 #define CRD_CSV_PATH_SIZE 1024
 #define CRD_MAX_REG_ACCESS_BLOCK 256
 
+#define CRD_CSV_SUFFIX ".csv"
+#define CRD_XZ_SUFFIX ".xz"
+#define CRD_CSV_XZ_SUFFIX ".csv.xz"
+/* The DBs compress by a factor of 30-45, so the first guess almost always holds */
+#define CRD_XZ_SIZE_GUESS_FACTOR 32
+#define CRD_XZ_DICT_MAX (16 * 1024 * 1024)
+
 // Scratchpad 2
 #define CRD_SP2_TLV_FIRST_ADDRESS 0x18         /* This first tlv address is valid only for HCA */
 #define CRD_SP2_TLV_FIRST_ADDRESS_CX8 0x1A00018 /* This first tlv address is valid only for CX8 and up */
@@ -99,6 +108,14 @@ typedef struct crd_parsed_csv
     char enable_addr[100];
 
 } crd_parsed_csv_t;
+
+/* Whole DB content, already decompressed if it was shipped as .csv.xz */
+typedef struct crd_csv_data
+{
+    char* data;
+    size_t size;
+    size_t pos;
+} crd_csv_data_t;
 
 struct crd_ctxt
 {
@@ -124,10 +141,22 @@ static int crd_get_csv_path(IN dm_dev_id_t dev_type,
                             const char* csv_path_from_user);
 
 /*
+   Read the csv file into memory, decompressing it when it is an .xz one
+ */
+static int crd_load_csv(IN const char* csv_file_path, OUT crd_csv_data_t* csv);
+
+/*
+   Decompress an xz stream into a buffer allocated for the caller
+ */
+static int crd_decompress_csv(IN u_int8_t* compressed, IN size_t compressed_size, OUT crd_csv_data_t* csv);
+
+static void crd_free_csv(IN crd_csv_data_t* csv);
+
+/*
    count number of dwords, and store all needed data from csv file at parsed_csv
  */
 static int crd_count_double_word(IN mfile* mf,
-                                 IN char* csv_file_path,
+                                 IN crd_csv_data_t* csv,
                                  IN dm_dev_id_t dev_type,
                                  OUT u_int32_t* number_of_dwords,
                                  OUT crd_parsed_csv_t blocks[],
@@ -138,7 +167,7 @@ static int crd_count_double_word(IN mfile* mf,
 /*
    Read a line from csv file
  */
-static int crd_read_line(IN FILE* fd, OUT char* tmp);
+static int crd_read_line(IN crd_csv_data_t* csv, OUT char* tmp);
 
 /*
    Tokenize line for address, len, and enable_adder
@@ -148,7 +177,7 @@ static void crd_parse(IN char* record, IN char* delim, OUT char arr[][CRD_MAXFLD
 
 static int crd_update_csv_path(IN OUT char* csv_file_path, IN const char* db_path);
 
-static int crd_count_blocks(IN char* csv_file_path, OUT u_int32_t* block_count, u_int8_t read_single_dword);
+static int crd_count_blocks(IN crd_csv_data_t* csv, OUT u_int32_t* block_count, u_int8_t read_single_dword);
 
 static int crd_count_tlv_blocks_and_dwords(IN mfile* mf,
                                            IN u_int32_t tlv_start_address,
@@ -200,6 +229,7 @@ int crd_init(OUT crd_ctxt_t** context,
     u_int32_t sp2_block_count = 0;
     u_int8_t read_single_dword = 0;
     char csv_file_path[CRD_CSV_PATH_SIZE] = {0x0};
+    crd_csv_data_t csv = {NULL, 0, 0};
 
     int rc = CRD_OK;
 
@@ -248,9 +278,17 @@ int crd_init(OUT crd_ctxt_t** context,
         }
     }
 
-    rc = crd_count_blocks(csv_file_path, &block_count, read_single_dword);
+    rc = crd_load_csv(csv_file_path, &csv);
     if (rc)
     {
+        free(*context);
+        return rc;
+    }
+
+    rc = crd_count_blocks(&csv, &block_count, read_single_dword);
+    if (rc)
+    {
+        crd_free_csv(&csv);
         free(*context);
         return rc;
     }
@@ -260,12 +298,15 @@ int crd_init(OUT crd_ctxt_t** context,
     if ((*context)->blocks == NULL)
     {
         CRD_DEBUG("Failed to allocate memmory for csv blocks\n");
+        crd_free_csv(&csv);
         free(*context);
         return CRD_MEM_ALLOCATION_ERR;
     }
 
-    rc = crd_count_double_word(mf, csv_file_path, dev_type, &number_of_dwords, (*context)->blocks, is_full,
-                               read_single_dword, with_sp2);
+    csv.pos = 0;
+    rc = crd_count_double_word(mf, &csv, dev_type, &number_of_dwords, (*context)->blocks, is_full, read_single_dword,
+                               with_sp2);
+    crd_free_csv(&csv);
     if (rc)
     {
         goto Cleanup;
@@ -416,66 +457,240 @@ static bool ends_with(char* str, char* suffix)
     return ends_with;
 }
 
-static bool is_valid_csv(char* csv_path_from_user)
+static bool is_valid_csv_content(IN const char* data, IN size_t size)
 {
-    if (!ends_with((char*)csv_path_from_user, ".csv"))
-    {
-        return false; // not a .csv file
-    }
-
-    FILE* file = fopen(csv_path_from_user, "r");
-    if (!file)
-    {
-        return false; // file does not exist
-    }
-
-    // check the format is valid
-    char line[256] = {0};
-    // char* line = calloc(256, sizeof(char));
-    // if (line == NULL) {
-    //     goto cleanup;
-    // }
-    int buf_len = sizeof(line);
-    size_t len = 0;
+    size_t line_start = 0;
+    size_t line_end = 0;
     size_t i = 0;
     bool ret = true; // assume format is valid
     int count = 0;
     int digit_counter = 0;
-    while (fgets(line, buf_len, file) != NULL)
+
+    while (line_start < size)
     {
-        if (line[0] == '#')
+        for (line_end = line_start; line_end < size && data[line_end] != '\n'; line_end++)
         {
-            continue; // skipping lines that are a comment
         }
-        len = strlen(line);
-        digit_counter = 0;
-        if (len > 1)
-        { // skip blank lines
+
+        if (data[line_start] != '#' && line_end > line_start)
+        { // skipping comments and blank lines
             count = 0;
-            for (i = 0; i < len; i++)
+            digit_counter = 0;
+            for (i = line_start; i < line_end; i++)
             {
-                if (line[i] == ',')
+                if (data[i] == ',')
                 {
                     count++;
                 }
 
-                if (isxdigit(line[i]) != 0 && count < 1)
+                if (isxdigit((unsigned char)data[i]) != 0 && count < 1)
                 {
                     digit_counter++;
                 }
 
+                if (count > 2 || digit_counter > 9)
+                { // both counters only grow, and the check below already rejects these
+                    break;
+                }
             }
 
             if ((count < 1) || (count > 2) || (digit_counter < 2) || (digit_counter > 9))
             { // support a,b or a,b, format
                 ret = false;
-                goto cleanup;
+                break;
             }
         }
+        line_start = line_end + 1;
     }
-cleanup:
-    fclose(file);
     return ret;
+}
+
+static bool is_valid_csv(char* csv_path_from_user)
+{
+    crd_csv_data_t csv;
+    bool ret = false;
+
+    // a .csv.xz is validated on its decompressed content, exactly like a plain .csv
+    if (!ends_with(csv_path_from_user, CRD_CSV_SUFFIX) && !ends_with(csv_path_from_user, CRD_CSV_XZ_SUFFIX))
+    {
+        return false; // not a .csv / .csv.xz file
+    }
+
+    if (crd_load_csv(csv_path_from_user, &csv) != CRD_OK)
+    {
+        return false; // file does not exist, or could not be decompressed
+    }
+
+    ret = is_valid_csv_content(csv.data, csv.size);
+    crd_free_csv(&csv);
+    return ret;
+}
+
+static bool crd_file_exists(IN const char* path)
+{
+    FILE* fd = fopen(path, "rb");
+
+    if (fd == NULL)
+    {
+        return false;
+    }
+    fclose(fd);
+    return true;
+}
+
+static int crd_decompress_csv(IN u_int8_t* compressed, IN size_t compressed_size, OUT crd_csv_data_t* csv)
+{
+    struct xz_dec* decoder = NULL;
+    struct xz_buf buf;
+    enum xz_ret ret = XZ_OK;
+    char* data = NULL;
+    char* larger_data = NULL;
+    size_t capacity = 0;
+
+    if (compressed_size > SIZE_MAX / CRD_XZ_SIZE_GUESS_FACTOR)
+    {
+        CRD_DEBUG("Compressed csv is too large : %llu bytes\n", (unsigned long long)compressed_size);
+        sprintf(crd_error, "Compressed csv file is too large");
+        return CRD_MEM_ALLOCATION_ERR;
+    }
+    capacity = compressed_size * CRD_XZ_SIZE_GUESS_FACTOR;
+
+    xz_crc32_init();
+    decoder = xz_dec_init(XZ_DYNALLOC, CRD_XZ_DICT_MAX);
+    if (decoder == NULL)
+    {
+        CRD_DEBUG("Failed to initialize the xz decoder\n");
+        sprintf(crd_error, "Failed to initialize the xz decoder");
+        return CRD_MEM_ALLOCATION_ERR;
+    }
+
+    data = (char*)malloc(capacity);
+    if (data == NULL)
+    {
+        CRD_DEBUG("Failed to allocate %llu bytes for the decompressed csv\n", (unsigned long long)capacity);
+        xz_dec_end(decoder);
+        return CRD_MEM_ALLOCATION_ERR;
+    }
+
+    memset(&buf, 0, sizeof(buf));
+    buf.in = compressed;
+    buf.in_size = compressed_size;
+    buf.out = (u_int8_t*)data;
+    buf.out_size = capacity;
+
+    /* XZ_OK with a full output buffer means the guessed size was too small - grow and resume */
+    while ((ret = xz_dec_run(decoder, &buf)) == XZ_OK)
+    {
+        if (buf.out_pos != buf.out_size)
+        {
+            CRD_DEBUG("xz stream ended prematurely, %llu bytes decompressed\n", (unsigned long long)buf.out_pos);
+            break;
+        }
+        if (capacity > SIZE_MAX / 2)
+        {
+            CRD_DEBUG("Decompressed csv exceeded %llu bytes\n", (unsigned long long)capacity);
+            sprintf(crd_error, "Decompressed csv file is too large");
+            free(data);
+            xz_dec_end(decoder);
+            return CRD_MEM_ALLOCATION_ERR;
+        }
+        capacity *= 2;
+        larger_data = (char*)realloc(data, capacity);
+        if (larger_data == NULL)
+        {
+            CRD_DEBUG("Failed to allocate %llu bytes for the decompressed csv\n", (unsigned long long)capacity);
+            free(data);
+            xz_dec_end(decoder);
+            return CRD_MEM_ALLOCATION_ERR;
+        }
+        data = larger_data;
+        buf.out = (u_int8_t*)data;
+        buf.out_size = capacity;
+    }
+    xz_dec_end(decoder);
+
+    if (ret != XZ_STREAM_END)
+    {
+        CRD_DEBUG("Failed to decompress the csv file, xz error : %d\n", ret);
+        sprintf(crd_error, "Failed to decompress the csv file (xz error %d)", ret);
+        free(data);
+        return CRD_CSV_BAD_FORMAT;
+    }
+
+    csv->data = data;
+    csv->size = buf.out_pos;
+    csv->pos = 0;
+    CRD_DEBUG("Decompressed %llu bytes into %llu bytes\n", (unsigned long long)compressed_size,
+              (unsigned long long)csv->size);
+    return CRD_OK;
+}
+
+static int crd_load_csv(IN const char* csv_file_path, OUT crd_csv_data_t* csv)
+{
+    long file_size = 0;
+    size_t read_size = 0;
+    u_int8_t* raw = NULL;
+    int rc = CRD_OK;
+    FILE* fd = NULL;
+
+    csv->data = NULL;
+    csv->size = 0;
+    csv->pos = 0;
+
+    CRD_DEBUG("CSV file path : %s\n", csv_file_path);
+    fd = fopen(csv_file_path, "rb");
+    if (fd == NULL)
+    {
+        CRD_DEBUG("Failed to open csv file : '%s'\n", csv_file_path);
+        sprintf(crd_error, "Failed to open csv file : '%s'", csv_file_path);
+        return CRD_OPEN_FILE_ERROR;
+    }
+
+    if (fseek(fd, 0, SEEK_END) != 0 || (file_size = ftell(fd)) < 0 || fseek(fd, 0, SEEK_SET) != 0)
+    {
+        CRD_DEBUG("Failed to get the size of csv file : '%s'\n", csv_file_path);
+        sprintf(crd_error, "Failed to get the size of csv file : '%s'", csv_file_path);
+        fclose(fd);
+        return CRD_OPEN_FILE_ERROR;
+    }
+
+    raw = (u_int8_t*)malloc(file_size);
+    if (raw == NULL)
+    {
+        CRD_DEBUG("Failed to allocate %ld bytes for csv file : '%s'\n", file_size, csv_file_path);
+        fclose(fd);
+        return CRD_MEM_ALLOCATION_ERR;
+    }
+
+    read_size = fread(raw, 1, (size_t)file_size, fd);
+    fclose(fd);
+    if (read_size != (size_t)file_size)
+    {
+        CRD_DEBUG("Read %llu bytes out of %ld from csv file : '%s'\n", (unsigned long long)read_size, file_size,
+                  csv_file_path);
+        sprintf(crd_error, "Failed to read csv file : '%s'", csv_file_path);
+        free(raw);
+        return CRD_OPEN_FILE_ERROR;
+    }
+
+    if (ends_with((char*)csv_file_path, CRD_XZ_SUFFIX))
+    {
+        rc = crd_decompress_csv(raw, read_size, csv);
+        free(raw);
+        return rc;
+    }
+
+    csv->data = (char*)raw;
+    csv->size = read_size;
+    return CRD_OK;
+}
+
+static void crd_free_csv(IN crd_csv_data_t* csv)
+{
+    free(csv->data);
+    csv->data = NULL;
+    csv->size = 0;
+    csv->pos = 0;
 }
 
 static int crd_get_csv_path(IN dm_dev_id_t dev_type,
@@ -517,7 +732,12 @@ static int crd_get_csv_path(IN dm_dev_id_t dev_type,
             return rc;
         }
         strcat(csv_file_path, dev_name);
-        strcat(csv_file_path, ".csv");
+        strcat(csv_file_path, CRD_CSV_SUFFIX);
+        // The DBs ship compressed, but an uncompressed one placed next to them takes precedence
+        if (!crd_file_exists(csv_file_path) && (strlen(csv_file_path) + strlen(CRD_XZ_SUFFIX) < CRD_CSV_PATH_SIZE))
+        {
+            strcat(csv_file_path, CRD_XZ_SUFFIX);
+        }
         return CRD_OK;
     }
     return 0;
@@ -694,29 +914,20 @@ static uint32_t crd_get_sp2_start_block(IN dm_dev_id_t dev_type)
     }
     return sp2_start_block;
 }
-static int crd_count_blocks(IN char* csv_file_path, OUT u_int32_t* block_count, u_int8_t read_single_dword)
+static int crd_count_blocks(IN crd_csv_data_t* csv, OUT u_int32_t* block_count, u_int8_t read_single_dword)
 {
     char tmp[1024] = {0x0};
     char arr[CRD_MAXFLDS][CRD_MAXFLDSIZE];
     int field_count = 0;
     *block_count = 0;
 
-    CRD_DEBUG("CSV file path : %s\n", csv_file_path);
-    FILE* fd = fopen(csv_file_path, "r");
-    if (fd == NULL)
-    {
-        CRD_DEBUG("Failed to open csv file : '%s'\n", csv_file_path);
-        sprintf(crd_error, "Failed to open csv file : '%s'", csv_file_path);
-        return CRD_OPEN_FILE_ERROR;
-    }
-    while (!feof(fd))
+    while (csv->pos < csv->size)
     {
         if (mft_signal_is_fired())
         {
-            fclose(fd);
             return CRD_SIGNAL_INTERRUPTED;
         }
-        int read_line_result = crd_read_line(fd, tmp);
+        int read_line_result = crd_read_line(csv, tmp);
         if (read_line_result == CRD_SKIP)
         {
             continue;
@@ -727,7 +938,6 @@ static int crd_count_blocks(IN char* csv_file_path, OUT u_int32_t* block_count, 
         {
             CRD_DEBUG("CSV File has bad format - invalid char in address");
             sprintf(crd_error, "CSV File has bad format");
-            fclose(fd);
             return CRD_CSV_BAD_FORMAT;
         }
         crd_parse(tmp, ",", arr, &field_count); /* whack record into fields */
@@ -735,7 +945,6 @@ static int crd_count_blocks(IN char* csv_file_path, OUT u_int32_t* block_count, 
         {
             CRD_DEBUG("CSV File has bad format, line : %s\n", tmp);
             sprintf(crd_error, "CSV File has bad format, line : %s", tmp);
-            fclose(fd);
             return CRD_CSV_BAD_FORMAT;
         }
         if (read_single_dword)
@@ -747,12 +956,11 @@ static int crd_count_blocks(IN char* csv_file_path, OUT u_int32_t* block_count, 
             *block_count += 1;
         }
     }
-    fclose(fd);
     return CRD_OK;
 }
 
 static int crd_count_double_word(IN mfile* mf,
-                                 IN char* csv_file_path,
+                                 IN crd_csv_data_t* csv,
                                  IN dm_dev_id_t dev_type,
                                  OUT u_int32_t* number_of_dwords,
                                  OUT crd_parsed_csv_t blocks[],
@@ -772,23 +980,13 @@ static int crd_count_double_word(IN mfile* mf,
 
     *number_of_dwords = 0;
 
-    CRD_DEBUG("CSV file path : %s\n", csv_file_path);
-    FILE* fd = fopen(csv_file_path, "r");
-    if (fd == NULL)
-    {
-        CRD_DEBUG("Failed to open csv file : '%s'\n", csv_file_path);
-        sprintf(crd_error, "Failed to open csv file : '%s'", csv_file_path);
-        return CRD_OPEN_FILE_ERROR;
-    }
-
-    while (!feof(fd))
+    while (csv->pos < csv->size)
     {
         if (mft_signal_is_fired())
         {
-            fclose(fd);
             return CRD_SIGNAL_INTERRUPTED;
         }
-        int read_line_result = crd_read_line(fd, tmp);
+        int read_line_result = crd_read_line(csv, tmp);
         if (read_line_result == CRD_SKIP)
         {
             continue;
@@ -799,7 +997,6 @@ static int crd_count_double_word(IN mfile* mf,
         {
             CRD_DEBUG("CSV File has bad format - invalid char in address");
             sprintf(crd_error, "CSV File has bad format");
-            fclose(fd);
             return CRD_CSV_BAD_FORMAT;
         }
 
@@ -808,7 +1005,6 @@ static int crd_count_double_word(IN mfile* mf,
         {
             CRD_DEBUG("CSV File has bad format, line : %s\n", tmp);
             sprintf(crd_error, "CSV File has bad format, line : %s", tmp);
-            fclose(fd);
             return CRD_CSV_BAD_FORMAT;
         }
         addr = (u_int32_t)strtol(arr[0], NULL, 0);
@@ -856,7 +1052,6 @@ static int crd_count_double_word(IN mfile* mf,
             }
         }
     }
-    fclose(fd);
 
     if (with_sp2)
     {
@@ -870,60 +1065,55 @@ static int crd_count_double_word(IN mfile* mf,
     return CRD_OK;
 }
 
-static int crd_read_line(IN FILE* fd, OUT char* tmp)
+static int crd_read_line(IN crd_csv_data_t* csv, OUT char* tmp)
 {
     int i = 0;
     int j = 0;
     int has_comma = 0;
     for (i = 0; i < CRD_MAXLINESIZE;)
     { // This loop to read line by line no matter the length of the line.
-        if (!feof(fd))
+        int c;
+        if (csv->pos >= csv->size)
         {
-            int c = fgetc(fd);
-            if (c == '#')
+            break;
+        }
+        c = csv->data[csv->pos++];
+        if (c == '#')
+        { // skip the rest of the comment line
+            while (csv->pos < csv->size && csv->data[csv->pos] != '\n')
             {
-                if (!fgets(tmp, 300, fd))
-                { // Avoid warning
-                }
-                tmp[0] = 0;
-                continue;
+                csv->pos++;
             }
-            else if (c == '\r')
-            {
-                break;
-            }
-            else if (c == '\n')
-            {
-                break;
-            }
-            else if (feof(fd))
-            {
-                break;
-            }
-            else if (c == ' ')
-            {
-                continue;
-            }
-            else if (!((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f')) &&
-                     !(i == 1 && c == 'x') && !(has_comma < 2 && c == ','))
-            {
-                printf("Error - the character %c is not valid for address!\n", c);
-                return CRD_CSV_BAD_FORMAT;
-            }
-            else
-            {
-                if (c == ',')
-                {
-                    has_comma++;
-                }
-                j++;
-                tmp[i] = c;
-                i++;
-            }
+            tmp[0] = 0;
+            continue;
+        }
+        else if (c == '\r')
+        {
+            break;
+        }
+        else if (c == '\n')
+        {
+            break;
+        }
+        else if (c == ' ')
+        {
+            continue;
+        }
+        else if (!((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f')) &&
+                 !(i == 1 && c == 'x') && !(has_comma < 2 && c == ','))
+        {
+            printf("Error - the character %c is not valid for address!\n", c);
+            return CRD_CSV_BAD_FORMAT;
         }
         else
         {
-            return CRD_SKIP;
+            if (c == ',')
+            {
+                has_comma++;
+            }
+            j++;
+            tmp[i] = c;
+            i++;
         }
     }
     if (!j)

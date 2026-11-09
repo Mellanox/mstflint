@@ -8,6 +8,8 @@
 #include "reg_access/reg_access.h"
 #include "tools_layouts/cables_layouts.h"
 #include "mtcr_ul_com.h"
+#include "nvtoolslogger/nvtoolslogger_c.h"
+#include "common/tools_endianness.h"
 
 
 #define MAX_PORT_NUM                                       128
@@ -23,7 +25,9 @@
 
 bool is_cable_burn_flow = false;
 
-reg_access_status_t reg_access_mcia(mfile* mf, reg_access_method_t method, struct reg_access_hca_mcia_ext* mcia)
+/* libmtcr_ul sits below reg_access and cannot link it, so it carries its own MCIA access; static, so it does not
+ * clash with the reg_access_mcia() that libreg_access exports. */
+static reg_access_status_t mtcr_cables_mcia(mfile* mf, reg_access_method_t method, struct reg_access_hca_mcia_ext* mcia)
 {
     int       data_size = reg_access_hca_mcia_ext_size();
     int       status = 0;
@@ -70,11 +74,11 @@ void copy_data(u_int8_t* dest, u_int8_t* src, int size, int be2cpu)
     int last_bytes = size % 4;
 
     for (j = 0; j < size / 4; j++) {
-        ((u_int32_t*)dest)[j] = __be32_to_cpu(((u_int32_t*)src)[j]);
+        ((u_int32_t*)dest)[j] = mft_be32_to_cpu(((u_int32_t*)src)[j]);
     }
 
     if (last_bytes) {
-        u_int32_t last_dword = __be32_to_cpu(((u_int32_t*)src)[size / 4]);
+        u_int32_t last_dword = mft_be32_to_cpu(((u_int32_t*)src)[size / 4]);
         if (be2cpu) {
             memcpy(dest + (size - size % 4), &last_dword, last_bytes);
         } else {
@@ -114,17 +118,17 @@ int cable_access_reg_rw(mfile    * mf,
 /*     printf("MCIA write: data[%d] = %#x \n",ii, cbl_reg_t.dword[ii]); */
 /* } */
     }
-    reg_access_status_t rc = reg_access_mcia(mf, op, &cbl_reg_t);
+    reg_access_status_t rc = mtcr_cables_mcia(mf, op, &cbl_reg_t);
 
     if (rc) {
-        DBG_PRINTF("-D- MCIA Failed with rc: %d\n", (int)rc);
+        CABLE_ACCESS_LOG_DEBUG("MCIA Failed with rc: %d", (int)rc);
         return MCABLES_REG_FAILED;
     }
     if (_rw == READ_OP) {
         copy_data((u_int8_t*)data, (u_int8_t*)cbl_reg_t.dword, size, 1);
-        DBG_PRINTF("MCIA read: page: %#x, offset: %#x, size: %d\n", page_num, page_off, size);
+        CABLE_ACCESS_LOG_DEBUG("MCIA read: page: %#x, offset: %#x, size: %d", page_num, page_off, size);
         for (ii = 0; ii < size; ii++) {
-            DBG_PRINTF("MCIA read: data[%d] = %#x \n", ii, cbl_reg_t.dword[ii]);
+            CABLE_ACCESS_LOG_DEBUG("MCIA read: data[%d] = %#x", ii, cbl_reg_t.dword[ii]);
         }
     }
 /* printf("-D- RW: %d offset: %#x, Len: %#x\n", _rw, page_off, size); */
@@ -171,7 +175,7 @@ int cable_access_rw(mfile* mf, u_int32_t addr, u_int32_t len, u_int32_t* data, r
         case MLXCABLES_REG_ACCESS:
             if (cable_access_reg_rw(mf, page_num + page_i, device_addr + addr_i, tmp_size, ctx->port, page_lock,
                                     data + i / 4, _rw)) {
-                DBG_PRINTF("cable_access_reg_rw failed\n");
+                CABLE_ACCESS_LOG_DEBUG("cable_access_reg_rw failed");
                 ret = MCABLES_REG_FAILED;
                 goto cleanup;
             }
@@ -208,7 +212,7 @@ int mcables_open(mfile* mf, int port)
     /* int semaphore_num_of_resources = 1; */
 
     if (!mf || (port < 0) || (port > MAX_PORT_NUM)) {
-        DBG_PRINTF("unable to open cable, invalid args\n");
+        CABLE_ACCESS_LOG_ERROR("unable to open cable, invalid args");
         return MCABLES_BAD_PARAMS;
     }
     cbl = (cable_ctx*)malloc(sizeof(cable_ctx));
@@ -257,7 +261,7 @@ int mcables_open(mfile* mf, int port)
     int       rw_result = cable_access_rw(mf, 0, 1, (u_int32_t*)&id, READ_OP);
 
     if (rw_result || (id == 0)) {
-        DBG_PRINTF("Failed to read ID from device or id is not supported: id 0x%04x rc %d:\n", id, rw_result);
+        CABLE_ACCESS_LOG_ERROR("Failed to read ID from device or id is not supported: id 0x%04x rc %d:", id, rw_result);
         mcables_close(mf);
 
         return MCABLES_ACCESS_ERROR;
@@ -266,11 +270,11 @@ int mcables_open(mfile* mf, int port)
     u_int32_t devid = 0;
     int       rc = get_cable_id(mf, &devid, &(cbl->cable_type));
 
-    DBG_PRINTF("cable type: %d\n", cbl->cable_type);
-    DBG_PRINTF("devid: %d\n", devid);
+    CABLE_ACCESS_LOG_DEBUG("cable type: %d", cbl->cable_type);
+    CABLE_ACCESS_LOG_DEBUG("devid: %d", devid);
 
     if (rc) {
-        DBG_PRINTF("Failed to get dev_mgt device id\n");
+        CABLE_ACCESS_LOG_ERROR("Failed to get dev_mgt device id");
         mcables_close(mf);
         return MCABLES_ACCESS_ERROR;
     }
@@ -292,7 +296,7 @@ int mcables_open(mfile* mf, int port)
     /*     return MCABLES_SEM_UNLOCK_FAILED; */
     /* } */
 
-    DBG_PRINTF("mcables_open finished\n");
+    CABLE_ACCESS_LOG_DEBUG("mcables_open finished");
     return MCABLES_OK;
 }
 
@@ -322,7 +326,7 @@ int mcables_read4(mfile* mf, u_int32_t offset, u_int32_t* value)
     int rc = cable_access_rw(mf, offset, 4, value, READ_OP);
 
     if (!rc) {
-        *value = __cpu_to_le32(*value);
+        *value = mft_cpu_to_le32(*value);
         rc = 4;
     }
     return rc;
@@ -351,7 +355,7 @@ int mcables_read4_block(mfile* mf, u_int32_t offset, u_int32_t* value, int byte_
     if (!rc) {
         int i = 0;
         for (; i < byte_len / 4; i++) {
-            value[i] = __cpu_to_le32(value[i]);
+            value[i] = mft_cpu_to_le32(value[i]);
         }
         rc = byte_len;
     }
@@ -431,7 +435,7 @@ int get_cable_id(mfile* mf, u_int32_t* ptr_hw_dev_id, dm_dev_id_t* ptr_dm_dev_id
         /* printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno)); */
         return GET_DEV_ID_ERROR;
     }
-    /* dword = __cpu_to_le32(dword); // Cable pages are read in LE, no need to swap */
+    /* dword = mft_cpu_to_le32(dword); // Cable pages are read in LE, no need to swap */
     *ptr_hw_dev_id = 0xffff;
     u_int8_t         id = EXTRACT(dword, 0, 8);
     enum dm_dev_type cbl_type = getCableType(id);

@@ -343,13 +343,13 @@ static void swap_pci_address_space(int* address_space)
     {
         case AS_ICMD_EXT:
             *address_space = AS_PCI_ICMD;
-            fallthrough;
+            break;
 
         case AS_ND_CRSPACE:
             fallthrough;
         case AS_CR_SPACE:
             *address_space = AS_PCI_CRSPACE;
-            fallthrough;
+            break;
 
         case AS_ICMD:
             *address_space = AS_PCI_ALL_ICMD;
@@ -516,10 +516,11 @@ static int get_syndrome_code(struct mst_dev_data* dev, u_int8_t* syndrome_code)
     /* ioctl will fail and then we'll retry with PCI space. */
     int error = 0;
     unsigned int syndrome = 0;
+    unsigned int address_offset = dev->functional_vsc_offset + PCI_ADDR_OFFSET; // VSC + 0x10
 
     *syndrome_code = 0;
-    error = pci_read_config_dword(dev->pci_dev, dev->addr_reg, &syndrome); /* addr_reg should be vsec+0x10 */
-    CHECK_PCI_READ_ERROR(error, dev->addr_reg);                            /* dev->addr_reg equivalent in MFT: nnt_device->pciconf_device.address_offset */
+    error = pci_read_config_dword(dev->pci_dev, address_offset, &syndrome);
+    CHECK_PCI_READ_ERROR(error, address_offset);
     syndrome = EXTRACT(syndrome, PCI_SYNDROME_BIT_OFFSET, PCI_SYNDROME_BIT_LEN);
     if (syndrome)
     {

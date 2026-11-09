@@ -2202,18 +2202,11 @@ void AdbParser<e, T_OFFSET>::endElement(void* _adbParser, const XML_Char* name)
                 }
 
                 AdbExpr adbExpr;
-                char* expOrg = new char[it->second.size() + 1];
-                char* exp = expOrg;
-                if (!exp)
-                {
-                    throw AdbException("Memory allocation error");
-                }
-                strcpy(exp, it->second.c_str());
+                const char* exp = it->second.c_str();
 
                 uint64_t res;
                 adbExpr.setVars(&vars);
                 int status = adbExpr.expr(&exp, &res);
-                delete[] expOrg;
                 string statusStr;
 
                 if (status < 0)

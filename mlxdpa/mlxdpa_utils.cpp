@@ -42,18 +42,19 @@
  #include <vector>
  
 #include "compatibility.h"
+#include "nvtoolslogger/NvToolsLogger.h"
 
 void RunCommand(string cmd, string errorMsg)
 {
-    MLX_DPA_DPRINTF(("Running command: %s\n", cmd.c_str()));
+    MLX_DPA_LOG_DEBUG("Running command: %s", cmd.c_str());
     int status = system(cmd.c_str());
     if (WIFEXITED(status))
     {
-        MLX_DPA_DPRINTF(("Running command %s exited with status: %d\n", cmd.c_str(), WEXITSTATUS(status)));
+        MLX_DPA_LOG_DEBUG("Running command %s exited with status: %d", cmd.c_str(), WEXITSTATUS(status));
     }
     else
     {
-        MLX_DPA_DPRINTF(("Running command %s exited with signal no: %d\n", cmd.c_str(), WTERMSIG(status)));
+        MLX_DPA_LOG_ERROR("Running command %s exited with signal no: %d", cmd.c_str(), WTERMSIG(status));
         throw MlxDpaException(errorMsg.c_str());
     }
 }
@@ -68,7 +69,10 @@ string OpenTempFile(string path, ofstream& f)
 
     if (fd == -1)
     {
-        throw MlxDpaException("Failed to create file with error: %s", strerror(errno));
+        // capture errno before the log call, which may clobber it
+        const char* errStr = strerror(errno);
+        MLX_DPA_LOG_ERROR("Failed to create temp file from template %s: %s", path.c_str(), errStr);
+        throw MlxDpaException("Failed to create file with error: %s", errStr);
     }
 
     path.assign(dst_path.begin(), dst_path.end() - 1);

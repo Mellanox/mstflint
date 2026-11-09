@@ -352,8 +352,6 @@ MstDeviceType getDeviceType(dm_dev_id_t hwDevId)
             return Spectrum5;
         case DeviceSpectrum6:
             return Spectrum6;
-        case DeviceQuantum:
-            return Quantum;
         case DeviceQuantum2:
             return Quantum2;
         case DeviceQuantum3:

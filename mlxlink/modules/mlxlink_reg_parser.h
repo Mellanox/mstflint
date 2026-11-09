@@ -75,7 +75,7 @@ public:
                        bool offsetSpecified = false,
                        bool processDynamicFields = false);
     string getRawFieldValueStr(const string fieldName);
-    u_int32_t getFieldSize(string field_name);
+    u_int32_t getFieldSize(string field_name, bool array_size = false);
     string getAscii(const string& name, u_int32_t size = 4);
     string getFieldDescription(const string& fieldName);
 
@@ -98,6 +98,8 @@ public:
     bool _isHCA;
     bool _isSwControled;
     bool _isDPNvSupported;
+    int _currentModuleIndexType;
+    int _originalModuleIndexType;
 };
 
 #endif /* MLXLINK_REG_PARSER_H */

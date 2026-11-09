@@ -103,24 +103,31 @@
 
 EXTERN_C_START
 
-#ifndef UEFI_BUILD
-#define FLASH_ACCESS_DPRINTF(args)                      \
-    do                                                  \
-    {                                                   \
-        char* reacDebug = getenv("FLASH_ACCESS_DEBUG"); \
-        if (reacDebug != NULL)                          \
-        {                                               \
-            printf("\33[2K\r");                         \
-            printf("[FLASH_ACCESS_DEBUG]: -D- ");       \
-            printf args;                                \
-            fflush(stdout);                             \
-        }                                               \
-    } while (0)
-#else
-#define FLASH_ACCESS_DPRINTF(...)
-#endif
+#define MFLASH_LOG_DEBUG(...) MFT_LOG_C_DEBUGF(MFT_LAYER_MFLASH, __VA_ARGS__)
+#define MFLASH_LOG_INFO(...) MFT_LOG_C_INFOF(MFT_LAYER_MFLASH, __VA_ARGS__)
+#define MFLASH_LOG_WARNING(...) MFT_LOG_C_WARNINGF(MFT_LAYER_MFLASH, __VA_ARGS__)
+#define MFLASH_LOG_ERROR(...) MFT_LOG_C_ERRORF(MFT_LAYER_MFLASH, __VA_ARGS__)
+#define MFLASH_LOG_FATAL(...) MFT_LOG_C_FATALF(MFT_LAYER_MFLASH, __VA_ARGS__)
+
+#define MFLASH_ACCESS_LOG_DEBUG(...) MFT_LOG_C_DEBUGF(MFT_LAYER_MFLASH_ACCESS, __VA_ARGS__)
+#define MFLASH_ACCESS_LOG_INFO(...) MFT_LOG_C_INFOF(MFT_LAYER_MFLASH_ACCESS, __VA_ARGS__)
+#define MFLASH_ACCESS_LOG_WARNING(...) MFT_LOG_C_WARNINGF(MFT_LAYER_MFLASH_ACCESS, __VA_ARGS__)
+#define MFLASH_ACCESS_LOG_ERROR(...) MFT_LOG_C_ERRORF(MFT_LAYER_MFLASH_ACCESS, __VA_ARGS__)
+#define MFLASH_ACCESS_LOG_FATAL(...) MFT_LOG_C_FATALF(MFT_LAYER_MFLASH_ACCESS, __VA_ARGS__)
+
+#define MFLASH_SPI_LOG_DEBUG(...) MFT_LOG_C_DEBUGF(MFT_LAYER_MFLASH_SPI, __VA_ARGS__)
+#define MFLASH_SPI_LOG_INFO(...) MFT_LOG_C_INFOF(MFT_LAYER_MFLASH_SPI, __VA_ARGS__)
+#define MFLASH_SPI_LOG_WARNING(...) MFT_LOG_C_WARNINGF(MFT_LAYER_MFLASH_SPI, __VA_ARGS__)
+#define MFLASH_SPI_LOG_ERROR(...) MFT_LOG_C_ERRORF(MFT_LAYER_MFLASH_SPI, __VA_ARGS__)
+#define MFLASH_SPI_LOG_FATAL(...) MFT_LOG_C_FATALF(MFT_LAYER_MFLASH_SPI, __VA_ARGS__)
 
 #define MAX_FLASH_FREQ 90 // MHz
+
+// overridable by the MFLASH_WRITE_RETRIES env var.
+#define DEFAULT_WRITE_RETRIES 3
+
+// overridable by the MFLASH_ERASE_RETRIES env var.
+#define DEFAULT_ERASE_RETRIES 3
 
 #define MAX_NUM_OF_CYCLES 15
 #define MIN_NUM_OF_CYCLES 1
@@ -195,7 +202,6 @@ int mf_open_adv(mflash** pmfl,
                 int num_of_banks,
                 flash_params_t* flash_params,
                 int ignore_cache_rep_guard,
-                int cx3_fw_access,
                 int no_fw_ctrl);
 
 int mf_open_uefi(mflash** pmfl, uefi_Dev_t* uefi_dev, uefi_dev_extra_t* dev_extra, int no_fw_ctrl);
@@ -307,6 +313,7 @@ int modify_flash_info_if_needed(mflash* mfl, flash_info_t* f_info);
 int mf_read_sfdp_table(mflash* mfl, uint32_t address, uint8_t bytes_num, bool swap, uint32_t* data);
 int is_macronix_mx25u51245g(mflash* mfl);
 int is_gigadevice_gd25lfxxx_512(mflash* mfl);
+int is_gigadevice_gd25q256d(mflash* mfl);
 int is_macronix_mx25u51294g_mx25u51294gxdi08_wrapper(mflash* mfl);
 int is_macronix_mx25u51294g_mx25u51294gxdi08(uint8_t vendor,
                                              uint16_t type,

@@ -378,8 +378,9 @@ public:
         bool noDevidCheck;
         bool skipCiReq; // FS2 image only - skip sending cache image request to driver at the end of the burn
         bool ignoreVersionCheck;
-        bool useImgDevData; // FS3 image only - take device data sections from image (valid only if burnFailsafe==
-                            // false)
+        bool useImgDevData;   // FS3 image only - take device data sections from image (valid only if burnFailsafe==
+                              // false)
+        bool burnDevDataOnly; // FS4/FS5 image only - burn only DTOCs.
         bool useDevImgInfo; // FS3 image only - preserve select fields of image_info section on the device when burning.
         BurnRomOption burnRomOptions;
         bool shift8MBIfNeeded;
@@ -412,6 +413,7 @@ public:
             skipCiReq(false),
             ignoreVersionCheck(false),
             useImgDevData(false),
+            burnDevDataOnly(false),
             useDevImgInfo(false),
             burnRomOptions(BRO_DEFAULT),
             shift8MBIfNeeded(false),
@@ -480,7 +482,6 @@ public:
         int ignoreCacheRep;
         bool noFlashVerify;
         bool shortErrors; // show short/long error msgs (default shuold be false)
-        int cx3FwAccess;
         int isCableFw;
         bool noFwCtrl;
         bool mccUnsupported;
@@ -763,13 +764,11 @@ private:
     static bool CntxEthOnly(u_int32_t devid);
 
     /* Name:        WriteToErrBuff
-     * Description: Write a string into buffer.
-     *              if buffer is null or smaller than string size,
-     *              write "..." as at the end of the string.
+     * Description: Write a string into buffer, truncating it to fit.
      * @param[in] errBuff - pointer to dist error buffer
      * @param[in] errStr - pointer to source string
      * @param[in] bufSize - size of error buffer */
-    static void WriteToErrBuff(char* errBuff, char* errStr, int bufSize);
+    static void WriteToErrBuff(char* errBuff, const char* errStr, int bufSize);
 
     // Methods
     void BackUpFwParams(fw_ops_params_t& fwParams);

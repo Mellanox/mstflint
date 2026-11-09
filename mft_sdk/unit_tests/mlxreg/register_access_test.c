@@ -377,7 +377,11 @@ int main(int argc, char** argv)
     IndexField paosIndexes[] = {{"local_port", 1}};
     result |= test_register_get_indexed(mstDevice, devicePci, "PAOS", paosIndexes, 1);
 
-    IndexField ptysIndexes[] = {{"local_port", 1}, {"proto_mask", 0x7}};
+    /* proto_mask is a one-hot protocol selector (0x1 IB, 0x2 reserved, 0x4
+     * Ethernet), not a filter: 0x7 asks for three at once and the firmware
+     * rejects it. Keep in step with register_access_test.cpp and
+     * test_register_access.py. */
+    IndexField ptysIndexes[] = {{"local_port", 1}, {"proto_mask", 0x1}};
     result |= test_register_get_indexed(mstDevice, devicePci, "PTYS", ptysIndexes, 2);
 
     result |= test_register_set_paos(mstDevice, devicePci);

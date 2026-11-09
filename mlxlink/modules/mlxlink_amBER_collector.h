@@ -50,6 +50,26 @@ struct FIELDS_COUNT
     u_int32_t numOfPcieFields;
 };
 
+struct AmberReportField
+{
+    unsigned int sheet_id;
+    std::string field_name;
+    std::string value;
+};
+
+struct AmberPortReport
+{
+    std::string port;
+    std::vector<AmberReportField> fields;
+};
+
+enum class AmberOutput
+{
+    Csv,
+    Json,
+    Report
+};
+
 class MlxlinkAmBerCollector : public MlxlinkRegParser
 {
 public:
@@ -85,15 +105,23 @@ public:
     virtual void getPemiLaserMonitors(vector<AmberField>& fields, bool isGroupSupported);
     void getPemiModuleStatus(vector<AmberField>& fields, bool isGroupSupported);
     void getPemiPreFecBer(vector<AmberField>& fields, bool isGroupSupported);
+    void getPemiOpticalEngineTelemetry(vector<AmberField>& fields, bool isGroupSupported);
     void getMTMGFields(vector<AmberField>& fields);
     void getMTMRFields(vector<AmberField>& fields);
+    void pushOpticalChannelTemperatureFields(vector<AmberField>& fields);
 
     void getPpcntBer(u_int32_t portType, vector<AmberField>& fields);
     bool isGBValid();
     bool isMCMValid();
 
     string getClRawBer();
-    void startCollector();
+    void startCollector(AmberOutput output);
+    void collectLine(AmberOutput output);
+
+    void setSheetsToDump(const vector<string>& sheetIds);
+
+    string exportToJSON() const;
+    const std::vector<AmberPortReport>& exportToReport() const { return _amberReport; }
 
     u_int32_t _pnat;
     u_int32_t _localPort;
@@ -114,9 +142,18 @@ public:
     bool _isNvlinkTestModeBOper;
     vector<PortGroup> _localPorts; // will be valid for switches
     bool _isHca;
+    bool _isCpo;
     vector<AMBER_SHEET> _sheetsToDump;
+    bool _amberRewrite;
+    string _lastCollectError;
 
 private:
+    void sendLocalPrmRegVaList(const string& regName,
+                               maccess_reg_method_t method,
+                               const char* fields,
+                               va_list args,
+                               bool cache,
+                               u_int32_t cacheKey);
     string getRawFieldValue(const string fieldName);
     string getNodeGUID();
     string getMACAddress();
@@ -141,6 +178,7 @@ private:
                                u_int32_t cableTechnology);
     void initCableIdentifier(u_int32_t cableIdentifier);
     void getModuleLatchedFlagInfoPage(vector<AmberField>& fields);
+    void getModuleLaserInfo(vector<AmberField>& fields);
     string getPrbsModeCap(u_int32_t modeSelector, u_int32_t capsMask);
     string getPrpsRateCap(u_int32_t capsMask);
     void groupValidIf(bool condition);
@@ -155,6 +193,18 @@ private:
     u_int32_t fixFieldsData();
     void exportToCSV();
     void exportToConsole();
+    std::vector<AmberReportField> _collectVisibleFields() const;
+    void prepareOutput(AmberOutput output);
+    void appendPortToJson();
+    void appendPortToReport();
+    string getPortKey() const;
+    string getLabelPortStr() const;
+    bool createPemiCacheKey(u_int32_t& keyOut,
+                            uint8_t pemiPage,
+                            MODULE_IND_TYPE moduleIndType = MODULE_IND_TYPE_DEFAULT_CPO);
+    bool isCached(u_int32_t cacheKey);
+    void cacheRegister(u_int32_t cacheKey);
+    void loadCachedRegister(u_int32_t cacheKey);
 
     bool _isQsfpCable;
     bool _isSfpCable;
@@ -165,6 +215,10 @@ private:
     bool _isFnmPort;
     map<AMBER_SHEET, vector<AmberField>> _amberCollection;
     map<AMBER_SHEET, FIELDS_COUNT> _baseSheetsList;
+    map<u_int32_t, vector<u_int32_t>> _registerCache;
+
+    Json::Value _amberJson;
+    std::vector<AmberPortReport> _amberReport;
 
 protected:
     void resetLocalParser(const string& regName);
@@ -172,6 +226,12 @@ protected:
     u_int32_t getLocalFieldValue(const string& fieldName);
     void sendRegister(const string& regName, maccess_reg_method_t method);
     void sendLocalPrmReg(const string& regName, maccess_reg_method_t method, const char* fields, ...);
+    void sendLocalPrmRegCached(const string& regName,
+                               maccess_reg_method_t method,
+                               bool cache,
+                               u_int32_t cacheKey,
+                               const char* fields,
+                               ...);
 
     string getBitmaskPerLaneStr(u_int32_t bitmask);
     void fillParamsToFields(const string& title, const vector<string>& values, vector<AmberField>& fields);

@@ -42,8 +42,28 @@
 
 using namespace mft_core;
 
+namespace
+{
+#ifdef MFT_SDK_STANDALONE_BUILD
+const char* MFT_CONFIG_PATH_ENV = "MFT_CONFIG_PATH";
+const char* MFT_SDK_CONFIG_PATH = "/etc/mft_sdk/mft.conf";
+
+void setDefaultSdkConfigPath()
+{
+    const char* configPath = std::getenv(MFT_CONFIG_PATH_ENV);
+    if (configPath == nullptr || configPath[0] == '\0')
+    {
+        setenv(MFT_CONFIG_PATH_ENV, MFT_SDK_CONFIG_PATH, 1);
+    }
+}
+#else
+void setDefaultSdkConfigPath() {}
+#endif
+} // namespace
+
 MftSdk::MftSdk(const std::string& deviceIdentifier) : _deviceIdentifier(deviceIdentifier)
 {
+    setDefaultSdkConfigPath();
     clearError();
     _mf = mopen(_deviceIdentifier.c_str());
     if (!_mf)

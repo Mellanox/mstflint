@@ -123,10 +123,6 @@ if DEV_MGT:
             return DEV_MGT.dm_dev_is_ib_switch(dm_dev_id)
 
         @classmethod
-        def is_connectib(cls, dm_dev_id):
-            return DEV_MGT.dm_is_connectib(dm_dev_id)
-
-        @classmethod
         def is_gpu(cls, dm_dev_id):
             return DEV_MGT.dm_is_gpu(dm_dev_id)
 
@@ -145,10 +141,6 @@ if DEV_MGT:
         @classmethod
         def is_fs5(cls, dm_dev_id):
             return DEV_MGT.dm_dev_is_fs5(dm_dev_id)
-
-        @classmethod
-        def is_4th_gen(cls, dm_dev_id):
-            return DEV_MGT.dm_is_4th_gen(dm_dev_id)
 
         @classmethod
         def sw_id2hw_id(cls, sw_dev_id):

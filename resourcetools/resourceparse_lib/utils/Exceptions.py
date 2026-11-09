@@ -28,14 +28,5 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-#######################################################
-#
-# Exceptions.py
-# Python implementation of the Class Exceptions
-# Created on:      22-Mar-2023
-# Original author: harelk
-#
-#######################################################
-
 class ResourceParseException(Exception):
     pass

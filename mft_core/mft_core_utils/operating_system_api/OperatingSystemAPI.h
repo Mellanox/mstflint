@@ -50,6 +50,9 @@ public:
     virtual int SuppressStderr();
     virtual const std::string GetFilePath(const std::string& oDirName, const std::string& oFileName) = 0;
     virtual const std::string GetExecutableName() = 0;
+    // Full argv of the running process, joined by spaces. Used by the MFT
+    // logger's startup banner so a log describes the invocation that produced it.
+    virtual const std::string GetCommandLineString() = 0;
     virtual const std::string GetExecutableDir() = 0;
     virtual const std::string GetLogDirectory() = 0;
     virtual void RestoreStderr(const int iFd);

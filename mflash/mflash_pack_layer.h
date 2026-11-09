@@ -82,8 +82,6 @@ typedef void* trm_ctx;
 #define MFLASH_ERR_STR_SIZE 4
 #endif
 
-#define CX3_PRO_HW_ID       0x1F7
-#define CX3_HW_ID           0x1F5
 #define CX4_HW_ID           0x209
 #define CX4LX_HW_ID         0x20b
 #define CX5_HW_ID           0x20d
@@ -99,11 +97,7 @@ typedef void* trm_ctx;
 #define BLUEFIELD2_HW_ID    0x214
 #define BLUEFIELD3_HW_ID    0x21c
 #define BLUEFIELD4_HW_ID    0x220
-#define CONNECT_IB_HW_ID    0x1FF
-#define SWITCH_IB_HW_ID     0x247
 #define SPECTRUM_HW_ID      0x249
-#define SWITCH_IB2_HW_ID    0x24b
-#define QUANTUM_HW_ID       0x24d
 #define SPECTRUM2_HW_ID     0x24e
 #define SPECTRUM3_HW_ID     0x250
 #define QUANTUM2_HW_ID      0x257
@@ -119,12 +113,8 @@ typedef void* trm_ctx;
 /*
  * Device IDs Macros:
  */
-#define IS_CONNECTX_4TH_GEN_FAMILY(dev_id) (((dev_id) == CX3_HW_ID) || ((dev_id) == CX3_PRO_HW_ID))
-#define IS_SIB(dev_id)                     ((dev_id) == SWITCH_IB_HW_ID)
-#define IS_SIB2(dev_id)                    ((dev_id) == SWITCH_IB2_HW_ID)
 #define IS_SEN(dev_id)                     ((dev_id) == SPECTRUM_HW_ID)
 #define IS_SPECTRUM2(dev_id)               ((dev_id) == SPECTRUM2_HW_ID)
-#define IS_CONNECT_IB(dev_id)              ((dev_id) == CONNECT_IB_HW_ID)
 #define IS_CONNECTX4(dev_id)               ((dev_id) == CX4_HW_ID)
 #define IS_CONNECTX4LX(dev_id)             ((dev_id) == CX4LX_HW_ID)
 #define IS_CONNECTX5(dev_id)               ((dev_id) == CX5_HW_ID)
@@ -137,7 +127,6 @@ typedef void* trm_ctx;
 #define IS_CONNECTX6DX(dev_id)             ((dev_id) == CX6DX_HW_ID)
 #define IS_CONNECTX6LX(dev_id)             ((dev_id) == CX6LX_HW_ID)
 #define IS_BLUEFIELD(dev_id)               ((dev_id) == BLUEFIELD_HW_ID)
-#define IS_QUANTUM(dev_id)                 ((dev_id) == QUANTUM_HW_ID)
 #define IS_SPECTRUM(dev_id)                ((dev_id) == SPECTRUM_HW_ID)
 #define IS_BLUEFEILD(dev_id)               ((dev_id) == BLUEFIELD_HW_ID)
 #define IS_BLUEFEILD2(dev_id)              ((dev_id) == BLUEFIELD2_HW_ID)
@@ -149,8 +138,6 @@ typedef void* trm_ctx;
 #define IS_SPECTRUM4(dev_id)               ((dev_id) == SPECTRUM4_HW_ID)
 #define IS_SPECTRUM5(dev_id)               ((dev_id) == SPECTRUM5_HW_ID)
 #define IS_SPECTRUM6(dev_id)               ((dev_id) == SPECTRUM6_HW_ID)
-
-#define HAS_TOOLS_CMDIF(dev_id) ((((dev_id) == CX3_HW_ID) || ((dev_id) == CX3_PRO_HW_ID)))
 
 typedef int (*f_mf_lock)(mflash* mfl, int lock_state);
 
@@ -317,7 +304,6 @@ enum AccessTypeByMfile {
     ATBM_INBAND,
     ATBM_MLNXOS_CMDIF,
     ATBM_ICMD,
-    ATBM_TOOLS_CMDIF,
 };
 
 enum CntxCrConstants {
@@ -327,13 +313,6 @@ enum CntxCrConstants {
     HCR_FLASH_CACHE_REPLACEMENT_CMD    = 0xf040c,
     HCR_FLASH_DATA                     = 0xf0410,
     HCR_CACHE_REPLACEMNT_EN_ADDR       = 0xf0420,
-    /* Gearbox flash GW registers addresses */
-    HCR_FLASH_GEARBOX_CMD                       = 0x2000,
-    HCR_FLASH_GEARBOX_ADDR                      = 0x2004,
-    HCR_FLASH_GEARBOX_CACHE_REPLACEMENT_OFFSET  = 0x2008,
-    HCR_FLASH_GEARBOX_DATA                      = 0x2010,
-    HCR_FLASH_GEARBOX_CACHE_REPLACEMENT_CMD     = 0x200c,
-    HCR_FLASH_GEARBOX_CACHE_REPLACEMENT_EN_ADDR = 0x2020,
     /* 6th gen flash GW registers addresses */
     HCR_6GEN_FLASH_GW_BASE_ADDR         = 0xf0420,
     HCR_NEW_GW_FLASH_ADDR               = HCR_6GEN_FLASH_GW_BASE_ADDR,

@@ -58,15 +58,18 @@
      u_int16_t _options;
      u_int16_t _activationMethod;
      u_int32_t _comparisonStamp;
+     u_int16_t _classification;
+
      PLDMComponent(const std::string& name,
                    const std::string& src,
                    const std::string& version,
                    ComponentIdentifier componentIdentifier,
                    const std::string& options,
                    const std::string& activationMethod,
-                   u_int32_t comparisonStamp);
+                   u_int32_t comparisonStamp,
+                   const std::string& classification);
      ~PLDMComponent(){};
-     void ComponentInfoPack(std::vector<u_int8_t>& buff);
+     void ComponentInfoPack(std::vector<u_int8_t>& buff, u_int8_t pldmRevision = 0x1);
      void ComponentDataPack(std::vector<u_int8_t>& buff);
      u_int32_t ComponentDataSize();
      void SetComponentLocationOffset(std::vector<u_int8_t>& buff, u_int32_t value);

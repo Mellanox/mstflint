@@ -107,7 +107,7 @@ int mget_mdevs_type(mfile* mf, u_int32_t* mtype);
 
 /*
  * Open Mellanox Software tools (mst) driver. Device type==INFINIHOST
- * Return valid mfile ptr or 0 on failure
+ * Return valid mfile ptr or 0 on failure, see mtcr_get_last_err() for the reason
  */
 mfile* mopen(const char* name);
 
@@ -116,6 +116,12 @@ mfile* mopend(const char* name, DType dtype);
 /* mfile* mopen_fw_ctx(void *fw_cmd_context, void *fw_cmd_func, void *extra_data); */
 
 mfile* mopen_adv(const char* name, MType mtype);
+
+/*
+ * Reason the last mopen/mopend/mopen_adv on this thread failed, to display to the user.
+ * Never NULL. Only meaningful right after an open returned 0.
+ */
+const char* mtcr_get_last_err(void);
 
 /*
  * Close Mellanox driver
@@ -128,6 +134,9 @@ void get_pci_dev_rdma(mfile* mf, char* buf);
 unsigned char mset_i2c_secondary(mfile* mf, unsigned char new_i2c_secondary);
 unsigned char mget_i2c_secondary(mfile* mf);
 void set_force_i2c_address(int i2c_address);
+/* The remote path forwards the forced address to the server, which applies it
+   while opening the device there. */
+int get_force_i2c_address(void);
 
 int mget_mdevs_flags(mfile* mf, u_int32_t* devs_flags);
 
@@ -152,24 +161,6 @@ int maccess_reg(mfile              * mf,
 int icmd_send_command(mfile* mf, int opcode, void* data, int data_size, int skip_write);
 
 int icmd_clear_semaphore(mfile* mf);
-
-int tools_cmdif_send_inline_cmd(mfile    * mf,
-                                u_int64_t  in_param,
-                                u_int64_t* out_param,
-                                u_int32_t  input_modifier,
-                                u_int16_t  opcode,
-                                u_int8_t   opcode_modifier);
-
-int tools_cmdif_send_mbox_command(mfile   * mf,
-                                  u_int32_t input_modifier,
-                                  u_int16_t opcode,
-                                  u_int8_t  opcode_modifier,
-                                  int       data_offs_in_mbox,
-                                  void    * data,
-                                  int       data_size,
-                                  int       skip_write);
-
-int tools_cmdif_unlock_semaphore(mfile* mf);
 
 int mget_max_reg_size(mfile* mf, maccess_reg_method_t reg_method);
 int supports_reg_access_gmp(mfile* mf, maccess_reg_method_t reg_method);
@@ -214,9 +205,9 @@ int hot_reset(mfile* mf, int in_parallel,
               int domain_2, int bus_2,
               int device_2, int function_2);
 
-void set_fwctl_dev(char* fwctl_dev, u_int16_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func);
+void set_fwctl_dev(char* fwctl_dev, u_int32_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func);
 
-void open_fwctl_dev(mfile* mf, u_int16_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func);
+void open_fwctl_dev(mfile* mf, u_int32_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func);
 
 #ifdef __cplusplus
 }

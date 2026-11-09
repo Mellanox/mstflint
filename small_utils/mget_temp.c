@@ -63,46 +63,6 @@ void print_help()
     printf("--version      : display version info\n");
 }
 
-/* CPO module sensor helpers. Reads are gated on MGIR.cpo_indication because MMTA is
- * MCAM-valid on non-CPO devices too, where its module rows describe no real hardware. */
-int read_cpo_module_sensors(mfile* mf,
-                            td_temp_unit_t requested_unit,
-                            td_data_mmta** mmta_data_p,
-                            bool* cpo_supported,
-                            bool no_modules)
-{
-    int mmta_sensors_read = 0;
-
-    reg_access_status_t rc = isRegisterValidAccordingToMcamReg(mf, REG_ID_MMTA, cpo_supported);
-    *cpo_supported = *cpo_supported && (rc == ME_OK);
-
-    // MMTA module sensors (ELS/OE/TEC) only map to real hardware on CPO systems. On non-CPO
-    // devices MMTA is still MCAM-valid and MGPIR still reports a module count, so probing every
-    // index would emit phantom "modN_ELS" rows. Gate on MGIR.cpo_indication; dm_is_cpo leaves
-    // cpo_indication untouched on failure, so an unreadable MGIR is treated as non-CPO.
-    if (*cpo_supported)
-    {
-        u_int8_t cpo_indication = 0;
-        dm_is_cpo(mf, &cpo_indication);
-        *cpo_supported = (cpo_indication == 1);
-    }
-
-    if (*cpo_supported && !no_modules)
-    {
-        td_fw_result_t td_rc = td_fw_read_module_sensors(mf, requested_unit, &mmta_sensors_read, mmta_data_p);
-        if (td_rc != TDFW_SUCCESS)
-        {
-            return -1;
-        }
-    }
-    else
-    {
-        *mmta_data_p = NULL;
-    }
-
-    return mmta_sensors_read;
-}
-
 void print_temperature_table_header(bool cpo_supported)
 {
     if (cpo_supported)
@@ -120,22 +80,6 @@ void display_mmta_sensor_verbose(td_data_mmta* sensor, int decimals, int* row_nu
     int d = (sensor->type == TD_MMTA_SENSOR_TEC) ? 2 : decimals;
     printf("%-5d %-20s %-20s %-15s %-15.*f %-15.*f %-15.*f", (*row_num)++, sensor->base.diode_name, "Module",
            sensor->unit_str, d, sensor->base.temp, d, sensor->base.max_temp, d, sensor->base.hw_threshold);
-}
-
-int include_mmta_in_max_temp(td_data_mmta* mmta_data, int mmta_sensors_read, int current_max)
-{
-    int max_temp = current_max;
-    int i;
-
-    for (i = 0; i < mmta_sensors_read; i++)
-    {
-        if (mmta_data[i].type != TD_MMTA_SENSOR_TEC && (int)mmta_data[i].base.temp > max_temp)
-        {
-            max_temp = (int)mmta_data[i].base.temp;
-        }
-    }
-
-    return max_temp;
 }
 
 static void print_zones_table(td_fw_zone_data_t* zones, int count)
@@ -272,9 +216,6 @@ int parseAndRun(int argc, char** argv)
     int ai;
     int i, j;
     int final_rc = 0;
-    dm_dev_id_t dev_id = DeviceUnknown;
-    u_int32_t hw_dev_id = 0;
-    u_int32_t hw_rev_id = 0;
 
     for (ai = 1; ai < argc;)
     {
@@ -373,21 +314,22 @@ int parseAndRun(int argc, char** argv)
         perror("mopen");
         exit(1);
     }
-    if (dm_is_livefish_mode(mf))
+    /* The device gate applies to every report mode, not just the bare reading: a device
+     * that cannot report a temperature has no diode/zone/state tables to print either. */
+    int resolved_temp = MGET_TEMP_INVALID_TEMP;
+    int device_rc = mget_temp_resolve_device(mf, &resolved_temp);
+    switch (device_rc)
     {
-        printf("-E- mstmget_temp over device in livefish mode is not supported.\n");
-        mclose(mf);
-        exit(1);
-    }
-
-    if (!dm_get_device_id(mf, &dev_id, &hw_dev_id, &hw_rev_id))
-    {
-        if (dm_is_gpu(dev_id))
-        {
+        case MGET_TEMP_ERR_LIVEFISH:
+            printf("-E- mstmget_temp over device in livefish mode is not supported.\n");
+            mclose(mf);
+            exit(1);
+        case MGET_TEMP_ERR_GPU_ASIC:
             printf("-E- mstmget_temp over GPU is not supported.\n");
             mclose(mf);
             exit(1);
-        }
+        default:
+            break;
     }
 
     /* --states is a standalone report; skip diode/MMTA reads. */
@@ -406,6 +348,30 @@ int parseAndRun(int argc, char** argv)
         return zrc;
     }
 
+    /* Bare reading: the shared reader owns the diode/MMTA reads and the max, so the SDK
+     * (mstGetDeviceTemperature) answers with the same number this prints. --precision is
+     * passed through even though the output is whole degrees - it quantizes the module
+     * readings, so it can still move the truncated maximum by a degree. */
+    if (!print_all_termal_diode)
+    {
+        int max_temp = MGET_TEMP_INVALID_TEMP;
+        char read_error[MGET_TEMP_MAX_ERR_LEN] = {0};
+        int trc =
+          mget_temp_read_sensors_max_unit(mf, requested_unit, no_modules, &max_temp, read_error, sizeof(read_error));
+        if (trc != MGET_TEMP_OK)
+        {
+            fprintf(stderr,
+                    trc == MGET_TEMP_ERR_DIODE_READ ? "Thermal diode read failed (%s)\n" :
+                                                      "Failed to read module sensors (%s)\n",
+                    read_error);
+            mclose(mf);
+            exit(1);
+        }
+        PRINT_FINAL_TEMP(max_temp)
+        mclose(mf);
+        return 0;
+    }
+
     /* read and copy out diode data*/
 
     rc = td_fw_read_diodes(mf, TD_FW_ALL_DIODES, &diodes_read, &data);
@@ -416,7 +382,7 @@ int parseAndRun(int argc, char** argv)
         exit(1);
     }
 
-    mmta_modules_read = read_cpo_module_sensors(mf, requested_unit, &mmta_data, &cpo_supported, no_modules);
+    mmta_modules_read = mget_temp_read_cpo_module_sensors(mf, requested_unit, &mmta_data, &cpo_supported, no_modules);
     if (mmta_modules_read == -1)
     {
         fprintf(stderr, "Failed to read module sensors (%s)\n", td_fw_err_str);
@@ -425,49 +391,27 @@ int parseAndRun(int argc, char** argv)
         exit(1);
     }
 
-    if (print_all_termal_diode)
-    {
-        /* verbose */
+    /* header for verbose mode - extended format on CPO devices */
+    print_temperature_table_header(cpo_supported);
+    printf("\n");
 
-        /* header for verbose mode - extended format on CPO devices */
-        print_temperature_table_header(cpo_supported);
+    for (i = 0, j = 1; i < diodes_read; i++)
+    {
+        display_internal_sensors_verbose(&data[i], cpo_supported, &j);
         printf("\n");
-
-        for (i = 0, j = 1; i < diodes_read; i++)
-        {
-            display_internal_sensors_verbose(&data[i], cpo_supported, &j);
-            printf("\n");
-        }
-
-        for (i = 0; i < mmta_modules_read; i++)
-        {
-            int decimals = (mmta_data[i].temp_unit == TD_FW_TEMP_UNIT_1_256C) ? 4 : 1;
-            display_mmta_sensor_verbose(&mmta_data[i], decimals, &j);
-            printf("\n");
-        }
-
-        if (zones_request)
-        {
-            printf("\n--------------------------------------------------------------------------------------\n\n");
-            final_rc = handle_zones_request(mf, /*unsupported_is_warning=*/true);
-        }
     }
-    else
+
+    for (i = 0; i < mmta_modules_read; i++)
     {
-        /* non-verbose */
-        int max_temp = TD_FW_INVALID_TEMP; /* if anything below this is a valid measurement we're in trouble... */
-        for (i = 0; i < diodes_read; i++)
-        { /* find maximum temperature */
-            /* check if its temperature is greater than the maximum encountered up to now */
-            if (data[i].temp > TD_FW_INVALID_TEMP && data[i].temp > max_temp)
-            {
-                max_temp = data[i].temp;
-            }
-        }
+        int decimals = (mmta_data[i].temp_unit == TD_FW_TEMP_UNIT_1_256C) ? 4 : 1;
+        display_mmta_sensor_verbose(&mmta_data[i], decimals, &j);
+        printf("\n");
+    }
 
-        max_temp = include_mmta_in_max_temp(mmta_data, mmta_modules_read, max_temp);
-
-        PRINT_FINAL_TEMP(max_temp)
+    if (zones_request)
+    {
+        printf("\n--------------------------------------------------------------------------------------\n\n");
+        final_rc = handle_zones_request(mf, /*unsupported_is_warning=*/true);
     }
 
     td_fw_release_mmta_data(mmta_data);

@@ -50,6 +50,7 @@
      std::string _releaseDateTime;
      u_int16_t _componentBitmapLength;
      std::vector<PLDMDeviceRecord> _deviceRecords;
+     std::vector<PLDMDownstreamDeviceRecord> _downstreamDevices;
      std::vector<PLDMComponent> _components;
  
  public:
@@ -71,6 +72,15 @@
                                   std::vector<u_int8_t>& appliedComponents,
                                   std::vector<PLDMDescriptor>& descriptors);
      PLDMDeviceRecord ParseDeviceRecord(const Json::Value& deviceRecord);
+     PLDMDownstreamDeviceRecord ParseDownstreamDeviceRecord(const Json::Value& deviceRecord);
+     bool IsDownstreamComponent(const std::string& componentName, const Json::Value& root) const;
+
+     static Json::Value BuildDeviceRecordFromJson(const Json::Value& deviceRecord,
+                                                  int& componentCounter,
+                                                  Json::Value& components,
+                                                  bool reuseComponents,
+                                                  bool keepDescriptorsOrder,
+                                                  bool isDownstream);
      static std::string FindComponentNameByIdentifier(const std::string& identifier, const Json::Value& components);
      static std::string
        AddComponent(const std::string& identifier, int& componentCounter, Json::Value& components, bool reuseComponents);

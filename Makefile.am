@@ -28,11 +28,17 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-SUBDIRS = $(NVML_DIR) mft_core ext_libs $(TOOLS_CRYPTO) tools_layouts common $(VFIO_DRIVER_DIR) ${MTCR_CONF_DIR} mtcr_py $(MAD_IFC) $(XZ_UTILS_DIR) reg_access cmdif dev_mgt pci_library mft_utils $(CABLE_ACCESS_DIR) tools_res_mgmt mvpd mflash fw_comps_mgr libmfa pldm_utils pldmlib cmdparser $(DPA) mlxfwops mlxconfig $(NVFWRESET_DIR) $(FW_MGR_TOOLS) $(PLDM_PKG_GEN) mlxtokengenerator flint small_utils mst_utils mstdump efuse ${ADABE_TOOLS} $(HCA_CAP_DIR) $(MSTFLINT_SDK_DIR) tracers resourcetools $(IBDUMP_DIR)
+# $(MST_CLIENT_DIR) sits before ${MTCR_CONF_DIR} because libmtcr_ul links the
+# MST HTTP client with --enable-remote; $(MST_SERVICE_DIR) sits at the end
+# because the HTTP server links libmtcr_ul. Both are empty unless configure
+# found a C++17 compiler.
+SUBDIRS = $(NVML_DIR) ext_libs $(MST_CLIENT_DIR) common cmdparser mft_core $(TOOLS_CRYPTO) tools_layouts $(VFIO_DRIVER_DIR) ${MTCR_CONF_DIR} mtcr_py $(MAD_IFC) $(XZ_UTILS_DIR) reg_access cmdif dev_mgt pci_library mft_utils $(CABLE_ACCESS_DIR) tools_res_mgmt mvpd mflash fw_comps_mgr libmfa pldm_utils pldmlib $(DPA) mlxfwops mlxconfig $(NVFWRESET_DIR) $(FW_MGR_TOOLS) $(PLDM_PKG_GEN) mlxtokengenerator flint small_utils mst_utils mstdump efuse ${ADABE_TOOLS} $(HCA_CAP_DIR) resourcetools nvpcie $(MSTFLINT_SDK_DIR) tracers $(IBDUMP_DIR) $(MST_SERVICE_DIR)
 
-DIST_SUBDIRS = tracers
+# mst_server is only in SUBDIRS when configure found a C++17 compiler, but it
+# must always be distributed.
+DIST_SUBDIRS = tracers mst_server/client mst_server/service
 
-man_MANS = man/mstflint.1 man/mstconfig.1 man/mstmcra.1 man/mstmread.1 man/mstmwrite.1 man/mstmtserver.1 man/mstregdump.1 man/mstvpd.1 man/mstprivhost.1 man/mstarchive.1 man/mstreg.1 man/mstfwtrace.1 man/mstlink.1 man/mstcongestion.1 man/mstfwmanager.1 man/mstfwreset.1 man/mstresourcedump.1
+man_MANS = man/mstflint.1 man/mstconfig.1 man/mstmcra.1 man/mstmread.1 man/mstmwrite.1 man/mstmtserver.1 man/mstregdump.1 man/mstvpd.1 man/mstprivhost.1 man/mstarchive.1 man/mstreg.1 man/mstfwtrace.1 man/mstlink.1 man/mstcongestion.1 man/mstfwmanager.1 man/mstfwreset.1 man/mstresourcedump.1 man/mstflintlogger.1 man/mstserver.1 man/mstremote.1
 
 EXTRA_DIST = \
 	mstflint.spec \
@@ -63,10 +69,12 @@ if ENABLE_MSTFLINT_SDK
 # builds the convenience libs the SDK links (libmstreg_lib, libmlxreg_sdk,
 # libmodules_lib); mft_core builds the mft_core_utils and NVML libs.
 SDK_BUILD_SUBDIRS = \
-	mft_core \
+	$(NVML_DIR) \
 	ext_libs \
-	tools_layouts \
 	common \
+	cmdparser \
+	mft_core \
+	tools_layouts \
 	$(VFIO_DRIVER_DIR) \
 	${MTCR_CONF_DIR} \
 	$(XZ_UTILS_DIR) \
@@ -75,10 +83,17 @@ SDK_BUILD_SUBDIRS = \
 	dev_mgt \
 	pci_library \
 	mft_utils \
-	cmdparser \
 	$(ADABE_TOOLS) \
 	$(HCA_CAP_DIR) \
+	$(RESOURCE_DUMP_SDK_DIR) \
 	$(MSTFLINT_SDK_DIR)
+
+# Subdirs the SDK needs only a single convenience library from, as
+# "<dir>:<target>" pairs. small_utils' `all' would link the mst* CLI tools and
+# drag in their unrelated dependencies, so build just libmgettemp.la -- the
+# mget_temp reading mft_sdk links against.
+SDK_BUILD_SUBDIR_TARGETS = \
+	small_utils:libmgettemp.la
 
 # Subdirs that install SDK runtime artifacts: the .so and headers (mft_sdk) and
 # the PRM databases getDefaultDBName() opens under $(pkgdatadir)/prm_dbs.
@@ -89,6 +104,12 @@ SDK_INSTALL_SUBDIRS = \
 	tools_layouts/adb/prm/switch/ext
 
 sdk:
+	@for entry in $(SDK_BUILD_SUBDIR_TARGETS); do \
+		dir=`echo $$entry | sed 's/:.*//'`; \
+		target=`echo $$entry | sed 's/.*://'`; \
+		echo "  SDK-BUILD    $$dir ($$target)"; \
+		$(MAKE) $(AM_MAKEFLAGS) -C $$dir $$target || exit 1; \
+	done
 	@for dir in $(SDK_BUILD_SUBDIRS); do \
 		echo "  SDK-BUILD    $$dir"; \
 		$(MAKE) $(AM_MAKEFLAGS) -C $$dir all || exit 1; \

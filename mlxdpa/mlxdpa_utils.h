@@ -35,27 +35,21 @@
  
 #include <exception>
 #include <string>
+#include "common/tools_endianness.h"
 #include <vector>
 #include <stdarg.h>
-#define MLX_DPA_DPRINTF(args)                      \
-    do                                             \
-    {                                              \
-        char* reacDebug = getenv("MLX_DPA_DEBUG"); \
-        if (reacDebug != NULL)                     \
-        {                                          \
-            printf("\33[2K\r");                    \
-            printf("[MLX_DPA_DEBUG]: ");           \
-            printf args;                           \
-            fflush(stdout);                        \
-        }                                          \
-    } while (0)
+#define MLX_DPA_LOG_DEBUG(...) MFT_LOG_DEBUGF(nvtoolslogger::Layer::MLXDPA, __VA_ARGS__)
+#define MLX_DPA_LOG_INFO(...) MFT_LOG_INFOF(nvtoolslogger::Layer::MLXDPA, __VA_ARGS__)
+#define MLX_DPA_LOG_WARNING(...) MFT_LOG_WARNINGF(nvtoolslogger::Layer::MLXDPA, __VA_ARGS__)
+#define MLX_DPA_LOG_ERROR(...) MFT_LOG_ERRORF(nvtoolslogger::Layer::MLXDPA, __VA_ARGS__)
+#define MLX_DPA_LOG_FATAL(...) MFT_LOG_FATALF(nvtoolslogger::Layer::MLXDPA, __VA_ARGS__)
 
 #define CPUTOn(s, n)                                \
     do                                              \
     {                                               \
         u_int32_t* p = (u_int32_t*)(s);             \
         for (u_int32_t ii = 0; ii < (n); ii++, p++) \
-            *p = __cpu_to_be32(*p);                 \
+            *p = mft_cpu_to_be32(*p);               \
     } while (0)
 
 using namespace std;

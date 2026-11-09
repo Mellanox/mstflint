@@ -118,7 +118,7 @@ void CongestionUI::initCmdParser()
 
 bool CongestionUI::isDeviceSupported(dm_dev_id_t devid)
 { /* Supported devices are CX4+ */
-    return (dm_is_5th_gen_hca(devid) && !dm_is_connectib(devid));
+    return dm_is_5th_gen_hca(devid);
 }
 
 ParseStatus CongestionUI::HandleOption(string name, string value)

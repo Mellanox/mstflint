@@ -39,8 +39,17 @@
 
 #include "common/compatibility.h"
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 int is_gpu_pci_device(u_int16_t pci_device_id);
 bool is_gpu_device(u_int16_t hw_dev_id);
 u_int16_t get_hw_dev_id_by_pci_id(u_int16_t pci_device_id);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _MTCR_GPU guard */

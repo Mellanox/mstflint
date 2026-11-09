@@ -101,7 +101,12 @@ MSTFLINT Package - Firmware Burning and Diagnostics Tools
        # Use mstvpd tool to dump the VPD of this device
        > mstvpd mlx5_0
 
-    c) PCI configuration access
+    c) The devices can be accessed by their network interface name using the
+       net- prefix. The interface is resolved to its PCI address through sysfs.
+       Example:
+       > mstflint -d net-enp2s0 q
+
+    d) PCI configuration access
        In examples a and b above, the device is accessed via PCI Memory Mapping.
        The device can also be accessed by PCI configuration cycles.
        PCI configuration access is slower and less safe than memory access --
@@ -120,7 +125,7 @@ MSTFLINT Package - Firmware Burning and Diagnostics Tools
 
        Note: Typically, you will need root privileges for hardware access
 
-	d) Accessing a multi-function device:
+	e) Accessing a multi-function device:
 
 	   In some configuration, the CA device identifies as a multi-function device on PCI. E.G.:
 	   > /sbin/lspci -d 15b3:
@@ -142,7 +147,7 @@ MSTFLINT Package - Firmware Burning and Diagnostics Tools
 	   > mstflint -d 07:00.0 q
 
 	   When the device driver is not loaded, all the functions can be accessed using configuration cycles, as
-	   described in sub section c) above. It is recommended to use function 0 for FW update or diagnostics, E.G.:
+	   described in sub section d) above. It is recommended to use function 0 for FW update or diagnostics, E.G.:
 	   > mstflint -d /proc/bus/pci/07/00.0 q
 
 ## Usage

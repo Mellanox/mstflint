@@ -32,6 +32,48 @@
  */
 
 #include "mtcr_common.h"
+#include "mtcr_int_defs.h"
+#include "nvtoolslogger/nvtoolslogger_c.h"
+
+#include <stdarg.h>
+#include <string.h>
+
+#ifdef _MSC_VER
+#define MTCR_THREAD_LOCAL __declspec(thread)
+#else
+#define MTCR_THREAD_LOCAL __thread
+#endif
+
+static MTCR_THREAD_LOCAL char mtcr_last_err[256];
+
+const char* mtcr_get_last_err(void)
+{
+    return mtcr_last_err;
+}
+
+void mtcr_clear_last_err(void)
+{
+    mtcr_last_err[0] = '\0';
+}
+
+void mtcr_set_last_err(const char* fmt, ...)
+{
+    // The first reason recorded is the most specific one; callers up the stack only add context.
+    if (mtcr_last_err[0]) {
+        return;
+    }
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(mtcr_last_err, sizeof(mtcr_last_err), fmt, args);
+    va_end(args);
+}
+
+void mtcr_set_open_failed_err(const char* name)
+{
+    int err = errno;
+    mtcr_set_last_err("Failed to open %s: %s", name, err ? strerror(err) : "unknown error");
+    errno = err;
+}
 
 int is_bluefield4_pci_device(u_int16_t pci_device_id)
 {
@@ -83,11 +125,11 @@ void swap_pci_address_space(mfile* mf)
         break;
 
     default:
-        DBG_PRINTF("MTCR: swap_pci_address_space: no address_space found: %x\n", mf->address_space);
+        MTCR_LOG_DEBUG("MTCR: swap_pci_address_space: no address_space found: %x", mf->address_space);
         return;
     }
 
-    DBG_PRINTF("mf->address_space swapped to: %x\n", mf->address_space);
+    MTCR_LOG_DEBUG("mf->address_space swapped to: %x", mf->address_space);
 }
 
 const char* m_err2str(MError status)
@@ -226,6 +268,9 @@ const char* m_err2str(MError status)
 
     case ME_REG_ACCESS_NOT_READY:
         return "Register access not ready";
+
+    case ME_REG_ACCESS_ISSU_ONGOING:
+        return "Register access rejected, an ISSU is in progress on the device. Please retry once it completes.";
 
     /* ICMD access errors */
     case ME_ICMD_STATUS_CR_FAIL:

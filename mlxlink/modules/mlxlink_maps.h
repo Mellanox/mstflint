@@ -132,25 +132,33 @@ struct CAP_VALUE
         value = 0;
         capExtMask = 0;
         name = "";
+        modulation = PRBS_MODULATION_DEFAULT;
     }
-    CAP_VALUE(u_int32_t _cap, u_int32_t _val, u_int32_t _capExt = 0)
+    CAP_VALUE(u_int32_t _cap, u_int32_t _val, u_int32_t _capExt = 0, u_int32_t _modulation = PRBS_MODULATION_DEFAULT)
     {
         capMask = _cap;
         value = _val;
         capExtMask = _capExt;
         name = "";
+        modulation = _modulation;
     }
-    CAP_VALUE(string _name, u_int32_t _cap, u_int32_t _val, u_int32_t _capExt = 0)
+    CAP_VALUE(string _name,
+              u_int32_t _cap,
+              u_int32_t _val,
+              u_int32_t _capExt = 0,
+              u_int32_t _modulation = PRBS_MODULATION_DEFAULT)
     {
         capMask = _cap;
         value = _val;
         capExtMask = _capExt;
         name = _name;
+        modulation = _modulation;
     }
     u_int32_t capMask;
     u_int32_t value;
     u_int32_t capExtMask;
     string name;
+    u_int32_t modulation;
 
     bool capSupported(u_int32_t devCapMask) const { return (devCapMask & capMask) != 0; }
 
@@ -201,6 +209,59 @@ struct PRM_FIELD
     u_int32_t validationMask;
 };
 
+enum APSU_PARAM_KIND
+{
+    APSU_PARAM_CTL,
+    APSU_PARAM_EN_BOOL,
+    APSU_PARAM_NUMERIC,
+    APSU_PARAM_TRIGGER,
+};
+
+struct APSU_CONFIG_PARAM
+{
+    APSU_CONFIG_PARAM()
+    {
+        flagName = "";
+        uiField = "";
+        prmField = "";
+        capField = "";
+        operField = "";
+        kind = APSU_PARAM_NUMERIC;
+        maxValue = 0;
+        minValue = 0;
+    }
+
+    APSU_CONFIG_PARAM(string _flagName,
+                      string _uiField,
+                      string _prmField,
+                      string _capField,
+                      string _operField,
+                      APSU_PARAM_KIND _kind,
+                      u_int32_t _maxValue,
+                      std::map<u_int32_t, std::string> _valueMap = std::map<u_int32_t, std::string>())
+    {
+        flagName = _flagName;
+        uiField = _uiField;
+        prmField = _prmField;
+        capField = _capField;
+        operField = _operField;
+        kind = _kind;
+        maxValue = _maxValue;
+        minValue = 0;
+        valueMap = _valueMap;
+    }
+
+    string flagName;
+    string uiField;
+    string prmField;
+    string capField;
+    string operField;
+    APSU_PARAM_KIND kind;
+    u_int32_t maxValue;
+    u_int32_t minValue; // Smallest accepted value; stays 0 unless the PRM defines a 1-based field.
+    std::map<u_int32_t, std::string> valueMap;
+};
+
 struct BonusPortTableFields
 {
     std::string labelPortStr;
@@ -213,6 +274,10 @@ struct BonusPortTableFields
 
 extern const std::vector<u_int32_t> bonusPortAllowedCommands;
 extern const std::vector<u_int32_t> bonusPortCounterGroups;
+
+const std::vector<u_int32_t>& getElsModuleSupportedFunctions();
+const std::vector<u_int32_t>& getCpuSupportedFunctions();
+const APSU_CONFIG_PARAM* getApsuConfigParam(const std::string& flagName);
 
 class MlxlinkMaps
 {
@@ -233,6 +298,7 @@ private:
     void initPpbmcAndPepcMapping();
     void initLinkDownInfoMapping();
     void initLinkUpInfo();
+    void initLinkStatusMapping();
     void initSltpStatusMapping();
     void initPSCDRateMaskMapping();
     void initPSCDRoleMaskMapping();
@@ -252,6 +318,7 @@ private:
     void initCableTechnologyMapping();
     void initCablePowerClassMapping();
     void cmisModuleStMapping();
+    void pemiModuleStMapping();
     void tempFlagsMapping();
     void vccFlagsMapping();
     void dataPathStateMapping();
@@ -274,9 +341,14 @@ private:
     void initCableTypeForTableView();
     void initTableHeaders();
     void initPlrRejectModeMapping();
+    void initApsuMapping();
     void initKrMapping();
+    void initLtxMapping();
+    void initPmpeModuleStatusMapping();
     void initHostClassMapping();
     void initSDKMappings();
+    void initElsMapping();
+    void initNvlinkPhy6CauseListMapping();
     void initSdkOperationalInfoStateMapping();
     void initSdkOperationalInfoPhysicalStateMapping();
     void initSdkOperationalInfoLoopbackModeMapping();
@@ -290,6 +362,7 @@ private:
     void initSdkModuleStateMapping();
     void initSdkRxPowerTypeMapping();
     void initSdkErrorCodeResponseMapping();
+    void initSdkGroupOpcodeMapping();
 
 public:
     static MlxlinkMaps* getInstance();
@@ -326,6 +399,7 @@ public:
     std::map<std::string, ModuleInfoModuleState> _moduleStateSdk;
     std::map<std::string, ModuleInfoRxPowerType> _rxPowerTypeSdk;
     std::map<std::string, ModuleInfoErrorCodeResponse> _errorCodeResponseSdk;
+    std::map<std::string, TroubleShootingInfoGroupOpcode> _groupOpcodeSdk;
     std::map<u_int32_t, std::string> _prbsLaneRateCap;
     std::map<u_int32_t, std::string> _prbsLaneRateCapExt;
     std::map<u_int32_t, std::string> _prbsTuningType;
@@ -378,8 +452,21 @@ public:
     std::map<std::string, u_int32_t> _plrRejectModeStrToValue;
     std::map<u_int32_t, std::string> _plrRejectModeMaskToStr;
     std::map<u_int32_t, std::string> _plrMarginThMaskToStr;
+    std::map<u_int32_t, std::string> _apsuRtsUpdateState;
+    std::map<u_int32_t, std::string> _apsuTrainingStatus;
+    std::map<u_int32_t, std::string> _apsuRtsStatus;
+    std::map<u_int32_t, std::string> _apsuRemoteType;
+    std::map<u_int32_t, std::string> _apsuRemoteHostIud;
+    std::map<u_int32_t, std::string> _apsuOperToStr;
+    std::map<u_int32_t, std::string> _apsuCtlToStr;
+    std::map<std::string, u_int32_t> _apsuCtlStrToValue;
+    std::vector<PRM_FIELD> _apsuLaneFields;
+    std::map<std::string, std::map<u_int32_t, std::string>> _apsuLaneValueMaps;
+    std::vector<APSU_CONFIG_PARAM> _apsuConfigParams;
     std::map<u_int32_t, std::string> _krExtOper;
     std::map<u_int32_t, std::string> _krPrbsType;
+    std::map<u_int32_t, std::string> _ltxStatus;
+    std::map<u_int32_t, std::string> _ltxFailReason;
     std::map<u_int32_t, std::string> _hostClass;
     std::map<u_int32_t, pair<string, string>> _fecModeMask;
     std::vector<pair<string, string>> _fecPerSpeed;
@@ -395,6 +482,14 @@ public:
     std::map<u_int32_t, std::string> _vccFlags;
     std::map<u_int32_t, std::string> _dataPathSt;
     std::map<u_int32_t, std::string> _moduleOperSt;
+    std::map<u_int32_t, std::string> _elsOperState;
+    std::map<u_int32_t, std::string> _laserEnabled;
+    std::map<u_int32_t, std::string> _laser2Enabled;
+    std::map<u_int32_t, std::string> _laserStatus;
+    std::map<u_int32_t, std::string> _laser2Status;
+    std::map<u_int32_t, std::string> _laserRestriction;
+    std::map<u_int32_t, std::string> _laser2Restriction;
+    std::map<u_int32_t, std::string> _elsLaserFaultState;
     std::map<u_int32_t, std::string> _moduleErrType;
     std::map<u_int32_t, std::string> _errorCodeRes;
     std::map<u_int32_t, std::string> _cimsCableBreakout;
@@ -414,12 +509,18 @@ public:
     std::map<u_int32_t, std::string> _pdFsmState;
     std::map<u_int32_t, std::string> _pdFsmStateNdr;
     std::map<u_int32_t, std::string> _negModeActive;
+    std::map<u_int32_t, std::string> _linkHealth;
+    std::map<u_int32_t, std::string> _attentionTrigger;
+    std::map<u_int32_t, std::string> _linkHealthConfigChanged;
+    std::map<u_int32_t, std::string> _nvlinkPhy6CauseList1;
+    std::map<u_int32_t, std::string> _nvlinkPhy6CauseList2;
     std::map<u_int32_t, std::string> _upReasonPwr;
     std::map<u_int32_t, std::string> _upReasonDrv;
     std::map<u_int32_t, std::string> _upReasonMng;
     std::map<u_int32_t, std::string> _fastLinkUpStatus;
     std::map<u_int32_t, std::string> _localReasonOpcode;
     std::map<u_int32_t, std::string> _cimsModuleSt;
+    std::map<u_int32_t, std::string> _pemiModuleSt;
     std::map<u_int32_t, std::string> _mmfCompliance;
     std::map<u_int32_t, std::string> _smfCompliance;
     std::map<u_int32_t, std::string> _activeCableCompliance;
@@ -457,13 +558,25 @@ public:
     std::map<u_int32_t, std::string> _fecModeActiveForTableDispaly;
     std::map<u_int32_t, std::string> _cableTypeForTableDisplay;
     std::map<u_int32_t, std::string> _phyMgrStateForTableDisplay;
+    std::map<u_int32_t, std::string> _pmpeModuleStatusForTableDisplay;
     std::map<u_int32_t, std::string> _precodingOperStatus;
+
+    // ELS operation maps
+    std::map<std::string, u_int32_t> _elsOperationToVal;
+    std::map<u_int32_t, std::string> _elsValToOperation;
+    std::map<u_int32_t, std::string> _pmlseOperStatusToStr;
 
     // Vectors
     std::vector<std::pair<std::string, u_int32_t>> _multiPortInfoTableHeader;
     std::vector<std::pair<std::string, u_int32_t>> _multiPortModuleInfoTableHeader;
+    std::vector<std::pair<std::string, u_int32_t>> _multiPortCpoInfoTableHeader;
     std::vector<std::pair<std::string, u_int32_t>> _bkvGroupsTableHeader;
     std::vector<std::pair<std::string, u_int32_t>> _bkvGroupEntriesTableHeader;
+    std::vector<std::pair<std::string, u_int32_t>> _ltxStatusTableHeader;
+    std::vector<std::pair<std::string, u_int32_t>> _ltxLoggerHistoryTableHeader;
+    std::vector<std::pair<std::string, u_int32_t>> _ltxNvl5PortTableHeader;
+    std::vector<std::pair<std::string, u_int32_t>> _ltxNvl5LaneTableHeader;
+    std::vector<std::pair<std::string, u_int32_t>> _ltxNvl5IterTableHeader;
 
     string _sltpHeader;
     string _showErrorsTitle;

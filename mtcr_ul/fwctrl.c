@@ -47,6 +47,8 @@
 #include "mtcr_ul_com.h"
 #include "fwctrl.h"
 #include "fwctrl_ioctl.h"
+#include "mtcr_int_defs.h"
+#include "nvtoolslogger/nvtoolslogger_c.h"
 
 
 void fwctl_set_device_id(mfile* mf)
@@ -175,7 +177,7 @@ int fwctl_control_access_register(int    fd,
 
     err = ioctl(fd, FWCTL_RPC, &rpc);
     if (err) {
-        FWCTL_DEBUG_PRINT(mf,"FWCTL_IOCTL_CMD_RPC ioctl() failed: err=%d, errno=%d (%s)\n", err, errno, strerror(errno));
+        MTCR_LOG_ERROR("FWCTL_IOCTL_CMD_RPC ioctl() failed: err=%d, errno=%d (%s)", err, errno, strerror(errno));
         goto out;
     }
 
@@ -186,19 +188,19 @@ int fwctl_control_access_register(int    fd,
     if (cmd_status) {
         u_int32_t syndrome = MLX5_GET(access_register_out, out, syndrome);
         mf->icmd.syndrome = syndrome;
-        FWCTL_DEBUG_PRINT(mf, "FWCTL_IOCTL_CMD_RPC returned error from FW: reg_id=0x%x, method=0x%x, cmd_status=0x%x, syndrome=0x%x\n",
-                          reg_id, method, cmd_status, syndrome);
+        MTCR_LOG_ERROR("FWCTL_IOCTL_CMD_RPC returned error from FW: reg_id=0x%x, method=0x%x, cmd_status=0x%x, syndrome=0x%x",
+                       reg_id, method, cmd_status, syndrome);
 
         *reg_status = translate_cmd_status_to_reg_status(cmd_status);
-        FWCTL_DEBUG_PRINT(mf, "Mapped FW cmd_status=0x%x to reg_status=0x%x (%s)\n", cmd_status, *reg_status, m_err2str(*reg_status));
+        MTCR_LOG_DEBUG("Mapped FW cmd_status=0x%x to reg_status=0x%x (%s)", cmd_status, *reg_status, m_err2str(*reg_status));
     } else {
         *reg_status = 0;
         mf->icmd.syndrome = 0;
-        FWCTL_DEBUG_PRINT(mf, "FWCTL_IOCTL_CMD_RPC succeeded: reg_id=0x%x, method=0x%x\n", reg_id, method);
+        MTCR_LOG_DEBUG("FWCTL_IOCTL_CMD_RPC succeeded: reg_id=0x%x, method=0x%x", reg_id, method);
     }
 
-    FWCTL_DEBUG_PRINT(mf, "Final result: reg_id=0x%x, cmd_status=0x%x, reg_status=0x%x (%s)\n",
-                      reg_id, cmd_status, *reg_status, m_err2str(*reg_status));
+    MTCR_LOG_DEBUG("Final result: reg_id=0x%x, cmd_status=0x%x, reg_status=0x%x (%s)",
+                   reg_id, cmd_status, *reg_status, m_err2str(*reg_status));
 out:
     free(out);
     free(in);
@@ -214,13 +216,13 @@ int mlx5u_fwctl_umem_reg(mfile* mf, void *addr, size_t len, uint32_t *umem_id, u
 	umem.addr = (uint64_t)addr;
 	umem.len = len;
 	umem.flags = FWCTL_UMEM_FLAG_MKEY | FWCTL_UMEM_FLAG_MCDD;
-	FWCTL_DEBUG_PRINT(mf, "umem.addr %p umem.len %llu UMEM ID=0x%x\n", (void *)umem.addr, umem.len, umem.umem_id);
+	MTCR_LOG_DEBUG("umem.addr %p umem.len %llu UMEM ID=0x%x", (void *)umem.addr, umem.len, umem.umem_id);
 	ret = ioctl(mf->fd, FWCTL_RSC_UMEM_REG, &umem);
 	if (ret) {
-		FWCTL_DEBUG_PRINT(mf, "FWCTL_RSC_UMEM_REG failed: %d errno(%d): %s\n", ret, errno, strerror(errno));
+		MTCR_LOG_ERROR("FWCTL_RSC_UMEM_REG failed: %d errno(%d): %s", ret, errno, strerror(errno));
 		return ret > 0 ? -ret : ret;
 	}
-	FWCTL_DEBUG_PRINT(mf, "umem.addr reg success %p umem.len %llu UMEM ID=0x%x MKEY ID=0x%x\n", (void *)umem.addr, umem.len, umem.umem_id, umem.mkey_id);
+	MTCR_LOG_DEBUG("umem.addr reg success %p umem.len %llu UMEM ID=0x%x MKEY ID=0x%x", (void *)umem.addr, umem.len, umem.umem_id, umem.mkey_id);
 	*umem_id = umem.umem_id;
 	*mkey_id = umem.mkey_id;
 	return umem.rsc_id;
@@ -233,7 +235,7 @@ struct mlx5_umem_buff* mlx5lib_alloc_umem_mkey_buff(mfile* mf, size_t size, int 
 
 	umem_buff = malloc(sizeof(*umem_buff));
 	if (!umem_buff) {
-		FWCTL_DEBUG_PRINT(mf, "Failed to allocate umem_buff\n");
+		MTCR_LOG_ERROR("Failed to allocate umem_buff");
 		return NULL;
 	}
 	memset(umem_buff, 0, sizeof(*umem_buff));
@@ -243,29 +245,29 @@ struct mlx5_umem_buff* mlx5lib_alloc_umem_mkey_buff(mfile* mf, size_t size, int 
 	int rc = posix_memalign(&buf, (size_t)page_size, umem_buff->size);
 	umem_buff->buff = buf;
     if (rc != 0 || !buf) {
-        FWCTL_DEBUG_PRINT(mf, "posix_memalign failed: %d (%s)\n", rc, strerror(rc));
+        MTCR_LOG_ERROR("posix_memalign failed: %d (%s)", rc, strerror(rc));
         free(umem_buff);
         return NULL;
     }
 	if (!umem_buff->buff) {
-		FWCTL_DEBUG_PRINT(mf, "memalign Failed with size %lu\n", umem_buff->size);
+		MTCR_LOG_ERROR("memalign Failed with size %lu", umem_buff->size);
 		free(umem_buff);
 		return NULL;
 	}
 	memset(umem_buff->buff, 0, umem_buff->size);
 
-	FWCTL_DEBUG_PRINT(mf, "Allocated umem buff %p Aligned to bytes %zu\n", umem_buff->buff, umem_buff->size);
+	MTCR_LOG_DEBUG("Allocated umem buff %p Aligned to bytes %zu", umem_buff->buff, umem_buff->size);
 
 	ret = mlx5u_fwctl_umem_reg(mf, umem_buff->buff, umem_buff->size, &umem_buff->umem_id, &umem_buff->umem_mkey);
 	if (ret < 0) {
-		FWCTL_DEBUG_PRINT(mf, "Failed to register umem buff %p, size %zu, err %d\n",
+		MTCR_LOG_ERROR("Failed to register umem buff %p, size %zu, err %d",
 			umem_buff->buff, umem_buff->size, ret);
 		free(umem_buff->buff);
 		free(umem_buff);
 		return NULL;
 	}
 	umem_buff->rsc_id = ret;
-	FWCTL_DEBUG_PRINT(mf, "\tAllocated umem_id 0x%x mkey 0x%x for buff %p\n", umem_buff->umem_id, umem_buff->umem_mkey, umem_buff->buff);
+	MTCR_LOG_DEBUG("Allocated umem_id 0x%x mkey 0x%x for buff %p", umem_buff->umem_id, umem_buff->umem_mkey, umem_buff->buff);
 
 	return umem_buff;
 }
@@ -277,10 +279,10 @@ int mlx5u_fwctl_rsc_destroy(mfile* mf, uint32_t rsc_id)
 
 	ret = ioctl(mf->fd, FWCTL_RSC_DESTROY, &rsc_destroy);
 	if (ret) {
-		FWCTL_DEBUG_PRINT(mf, "MLX5CTL_IOCTL_UMEM_UNREG failed: %d errno(%d): %s\n", ret, errno, strerror(errno));
+		MTCR_LOG_ERROR("MLX5CTL_IOCTL_UMEM_UNREG failed: %d errno(%d): %s", ret, errno, strerror(errno));
 		return ret;
 	}
-	FWCTL_DEBUG_PRINT(mf, "rsc_id unreg success 0x%x\n", rsc_id);
+	MTCR_LOG_DEBUG("rsc_id unreg success 0x%x", rsc_id);
 	return 0;
 }
 
@@ -394,8 +396,8 @@ static int fwctl_hca_cap_do_rpc(mfile* mf,
     int err = ioctl(mf->fd, FWCTL_RPC, &rpc);
     if (err)
     {
-        FWCTL_DEBUG_PRINT(mf, "FWCTL_IOCTL_CMD_RPC ioctl() failed: capability_type=0x%x, err=%d, errno=%d (%s)\n",
-                          capability_type, err, errno, strerror(errno));
+        MTCR_LOG_ERROR("FWCTL_IOCTL_CMD_RPC ioctl() failed: capability_type=0x%x, err=%d, errno=%d (%s)",
+                       capability_type, err, errno, strerror(errno));
         return err;
     }
 
@@ -406,17 +408,16 @@ static int fwctl_hca_cap_do_rpc(mfile* mf,
     if (cmd_status)
     {
         mf->icmd.syndrome = syndrome;
-        FWCTL_DEBUG_PRINT(
-          mf,
-          "FWCTL_IOCTL_CMD_RPC returned error from FW: capability_type=0x%x, capability_mode=0x%x, cmd_status=0x%x, syndrome=0x%x\n",
+        MTCR_LOG_ERROR(
+          "FWCTL_IOCTL_CMD_RPC returned error from FW: capability_type=0x%x, capability_mode=0x%x, cmd_status=0x%x, syndrome=0x%x",
           capability_type, cap_mode, cmd_status, syndrome);
         /* Return the raw FW command status; HCA cap is a general command, not a register access, so the
          * register-access status strings would be misleading. The syndrome is kept in mf->icmd.syndrome. */
         return cmd_status;
     }
 
-    FWCTL_DEBUG_PRINT(mf, "FWCTL_IOCTL_CMD_RPC succeeded: capability_type=0x%x, capability_mode=0x%x\n",
-                      capability_type, cap_mode);
+    MTCR_LOG_DEBUG("FWCTL_IOCTL_CMD_RPC succeeded: capability_type=0x%x, capability_mode=0x%x", capability_type,
+                   cap_mode);
     return MLX5_CMD_STAT_OK;
 }
 
@@ -433,8 +434,7 @@ int fwctl_query_hca_capability(mfile* mf,
     uint32_t out[MLX5_ST_SZ_DW(query_hca_cap_out)] = {0};
     uint16_t op_mod = fwctl_hca_cap_op_mod(capability_type, cap_mode);
 
-    FWCTL_DEBUG_PRINT(mf, "op_mod = %x, function_id = %x, function_id_type = %x\n", op_mod, function_id,
-                      function_id_type);
+    MTCR_LOG_DEBUG("op_mod = %x, function_id = %x, function_id_type = %x", op_mod, function_id, function_id_type);
     MLX5_SET(query_hca_cap_in, in, opcode, MLX5_CMD_OP_QUERY_HCA_CAP);
     MLX5_SET(query_hca_cap_in, in, op_mod, op_mod);
     MLX5_SET(query_hca_cap_in, in, function_id, function_id);
@@ -463,8 +463,7 @@ int fwctl_set_hca_capability(mfile* mf,
     uint32_t out[MLX5_ST_SZ_DW(set_hca_cap_out)] = {0};
     uint16_t op_mod = fwctl_hca_cap_op_mod(capability_type, cap_mode);
 
-    FWCTL_DEBUG_PRINT(mf, "op_mod = %x, function_id = %x, function_id_type = %x\n", op_mod, function_id,
-                      function_id_type);
+    MTCR_LOG_DEBUG("op_mod = %x, function_id = %x, function_id_type = %x", op_mod, function_id, function_id_type);
     MLX5_SET(set_hca_cap_in, in, opcode, MLX5_CMD_OP_SET_HCA_CAP);
     MLX5_SET(set_hca_cap_in, in, op_mod, op_mod);
     MLX5_SET(set_hca_cap_in, in, function_id, function_id);

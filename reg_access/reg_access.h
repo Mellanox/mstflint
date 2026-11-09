@@ -61,10 +61,6 @@ typedef MError reg_access_status_t;
 /* Add new methods here */
 struct reg_access_switch_mddq_ext;
 reg_access_status_t reg_access_mddq(mfile* mf, reg_access_method_t method, struct reg_access_switch_mddq_ext* mddq);
-struct reg_access_switch_mddt_reg_ext;
-reg_access_status_t reg_access_mddt(mfile                                * mf,
-                                    reg_access_method_t                    method,
-                                    struct reg_access_switch_mddt_reg_ext* switch_mddt_reg);
 struct reg_access_hca_paos_reg_ext;
 reg_access_status_t reg_access_paos(mfile* mf, reg_access_method_t method, struct reg_access_hca_paos_reg_ext* paos);
 
@@ -81,6 +77,19 @@ reg_access_status_t
 struct reg_access_switch_mtecr_ext;
 reg_access_status_t
   reg_access_mtecr_ext(mfile* mf, reg_access_method_t method, struct reg_access_switch_mtecr_ext* mtecr);
+struct reg_access_switch_mcce_reg_ext;
+reg_access_status_t
+  reg_access_mcce(mfile* mf, reg_access_method_t method, struct reg_access_switch_mcce_reg_ext* mcce);
+struct reg_access_switch_MMAM_ext;
+reg_access_status_t reg_access_mmam(mfile* mf, reg_access_method_t method, struct reg_access_switch_MMAM_ext* mmam);
+struct reg_access_hca_mcia_ext;
+reg_access_status_t reg_access_mcia(mfile* mf, reg_access_method_t method, struct reg_access_hca_mcia_ext* mcia);
+struct reg_access_switch_mfcdr_reg_ext;
+reg_access_status_t reg_access_mfcdr(mfile* mf, reg_access_method_t method, struct reg_access_switch_mfcdr_reg_ext* mfcdr);
+struct reg_access_switch_pddr_reg_ext;
+reg_access_status_t reg_access_pddr(mfile* mf, reg_access_method_t method, struct reg_access_switch_pddr_reg_ext* pddr);
+struct reg_access_switch_pllp_reg_ext;
+reg_access_status_t reg_access_pllp(mfile* mf, reg_access_method_t method, struct reg_access_switch_pllp_reg_ext* pllp);
 struct reg_access_switch_mgpir_ext;
 reg_access_status_t reg_access_mgpir_switch_ext(mfile* mf, reg_access_method_t method,
                                                 struct reg_access_switch_mgpir_ext* mgpir);
@@ -144,6 +153,11 @@ reg_access_status_t reg_access_res_dump(mfile                                  *
 reg_access_status_t reg_access_mord(mfile                                  * mf,
                                     reg_access_method_t                      method,
                                     struct reg_access_hca_resource_dump_ext* res_dump);
+struct reg_access_switch_mord_v2_ext;
+reg_access_status_t reg_access_mord_v2(mfile                                 * mf,
+                                       reg_access_method_t                     method,
+                                       struct reg_access_switch_mord_v2_ext  * mord,
+                                       int                                     data_array_size);
 
 struct switchen_ppcnt_reg;
 reg_access_status_t reg_access_ppcnt(mfile* mf, reg_access_method_t method, struct switchen_ppcnt_reg* ricnt);
@@ -200,6 +214,8 @@ reg_access_status_t reg_access_mqis(mfile* mf, reg_access_method_t method, struc
 struct reg_access_switch_MRFV_ext;
 reg_access_status_t
   reg_access_mrfv_switch(mfile* mf, reg_access_method_t method, struct reg_access_switch_MRFV_ext* mrfv);
+struct reg_access_hca_MRFV_ext;
+reg_access_status_t reg_access_mrfv(mfile* mf, reg_access_method_t method, struct reg_access_hca_MRFV_ext* mrfv);
 struct reg_access_hca_mcc_reg_ext;
 reg_access_status_t reg_access_mcc(mfile* mf, reg_access_method_t method, struct reg_access_hca_mcc_reg_ext* mcc);
 struct reg_access_hca_mcqs_reg_ext;

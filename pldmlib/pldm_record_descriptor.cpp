@@ -6,6 +6,7 @@
 
 #include "pldm_buff.h"
 #include "pldm_record_descriptor.h"
+#include "common/tools_endianness.h"
 
 PldmRecordDescriptor::PldmRecordDescriptor() :
     bufferOffset(0),
@@ -33,6 +34,10 @@ bool PldmRecordDescriptor::unpack(PldmBuffer& buff)
     buff.read(descriptorLength);
     if (descriptorLength)
     {
+        if (descriptorLength > buff.remaining())
+        {
+            return false;
+        }
         descriptorData = new u_int8_t[descriptorLength];
         buff.read(descriptorData, descriptorLength);
         if (!extractVendorDefined())
@@ -50,6 +55,12 @@ bool PldmRecordDescriptor::extractVendorDefined()
 {
     if (descriptorType == Vendor_Defined)
     {
+        // descriptorData[1] is the title string length N (layout is described in getValueOffset).
+        // It comes from the package, make sure the 2 header bytes + the title fit in descriptorLength
+        if (descriptorLength < 2 || descriptorData[1] > descriptorLength - 2)
+        {
+            return false;
+        }
         u_int8_t* vendoreDefinedPtr = descriptorData;
         vendoreDefinedPtr++;
         u_int8_t prefixlen = *vendoreDefinedPtr;
@@ -71,12 +82,20 @@ bool PldmRecordDescriptor::extractVendorDefined()
         }
         else if (descriptorName == "APSKU")
         {
-            vendorDefinedNumericValue = __cpu_to_le32(*reinterpret_cast<u_int32_t*>(vendoreDefinedPtr));
+            if (dataLen < sizeof(u_int32_t))
+            {
+                return false;
+            }
+            vendorDefinedNumericValue = mft_cpu_to_le32(*reinterpret_cast<u_int32_t*>(vendoreDefinedPtr));
             vendorDefinedType = VendorDefinedType::APSKU;
         }
         else if (descriptorName == "GLACIERDSD")
         {
-            vendorDefinedNumericValue = __cpu_to_le32(*reinterpret_cast<u_int32_t*>(vendoreDefinedPtr));
+            if (dataLen < sizeof(u_int32_t))
+            {
+                return false;
+            }
+            vendorDefinedNumericValue = mft_cpu_to_le32(*reinterpret_cast<u_int32_t*>(vendoreDefinedPtr));
             vendorDefinedType = VendorDefinedType::GLACIERDSD;
         }
         else
@@ -172,14 +191,14 @@ bool PldmRecordDescriptor::pack(PldmBuffer& buff) const
     }
     size_t off = (size_t)bufferOffset;
 
-    u_int16_t typeLE = __cpu_to_le16(descriptorType);
+    u_int16_t typeLE = mft_cpu_to_le16(descriptorType);
     if (!buff.writeAt(off, (const u_int8_t*)&typeLE, sizeof(typeLE)))
     {
         return false;
     }
     off += sizeof(typeLE);
 
-    u_int16_t lenLE = __cpu_to_le16(descriptorLength);
+    u_int16_t lenLE = mft_cpu_to_le16(descriptorLength);
     if (!buff.writeAt(off, (const u_int8_t*)&lenLE, sizeof(lenLE)))
     {
         return false;
@@ -235,6 +254,15 @@ void PldmRecordDescriptor::printFormatted() const
             break;
         case ACPI_Product_ID:
             printf("%-*s0x%02x%02x\n", LABEL_WIDTH, "ACPI Product ID:", descriptorData[1], descriptorData[0]);
+            break;
+        case IEEE_Assigned_ID:
+            if (descriptorLength < 3)
+            {
+                printf("%-*s<invalid length %u>\n", LABEL_WIDTH, "IEEE Assigned ID:", descriptorLength);
+                break;
+            }
+            printf("%-*s0x%02x%02x%02x\n", LABEL_WIDTH, "IEEE Assigned ID:", descriptorData[2], descriptorData[1],
+                   descriptorData[0]);
             break;
         case Vendor_Defined:
             if (vendorDefinedType == VendorDefinedType::PSID)

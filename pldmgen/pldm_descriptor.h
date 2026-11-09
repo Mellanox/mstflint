@@ -46,6 +46,7 @@
  #define APSKU_STR "APSKU"
  #define PSID_STR "PSID"
  #define UUID_STR "UUID"
+ #define IEEE_ASSIGNED_ID_STR "IEEE Assigned ID"
  #define IANA_ENTERPRISE_ID_STR "IANA Enterprise ID"
  #define PCI_REVISION_ID_STR "PCI Revision ID"
  #define PCI_DEVICE_ID_STR "PCI Device ID"
@@ -61,6 +62,7 @@
    {PCI_VENDOR_ID_STR, DescriptorType::TYPE_PCI_VENDOR_ID},
    {IANA_ENTERPRISE_ID_STR, DescriptorType::TYPE_IANA_ENTERPRISE_ID},
    {UUID_STR, DescriptorType::TYPE_UUID},
+   {IEEE_ASSIGNED_ID_STR, DescriptorType::TYPE_IEEE_ASSIGNED_ID},
    // Vendor defined descriptors
    {APSKU_STR, DescriptorType::TYPE_VENDOR_DEFINED},
    {PSID_STR, DescriptorType::TYPE_VENDOR_DEFINED},

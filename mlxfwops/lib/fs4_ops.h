@@ -358,7 +358,8 @@ private:
     bool getBootDataForSign(vector<u_int8_t>& data);
     bool getBootDataForSignVersion1(vector<u_int8_t>& data);
     bool getBootDataForSignVersion2(vector<u_int8_t>& data);
-    bool CheckFs4ImgSize(Fs4Operations& imageOps, bool useImageDevData = false);
+    bool BurnDevData(Fs4Operations& imageOps, ExtBurnParams& burnParams);
+    bool CheckFs4ImgSize(Fs4Operations& imageOps, bool useImageDevData = false, bool burnDevDataOnly = false);
 
     u_int32_t getAbsAddr(fs4_toc_info* toc);
     u_int32_t getAbsAddr(fs4_toc_info* toc, u_int32_t imgStart);

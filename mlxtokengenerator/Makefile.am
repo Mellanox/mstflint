@@ -37,6 +37,7 @@ AM_CPPFLAGS = \
     -I$(top_srcdir)/common -I$(top_builddir)/common \
     -I$(top_srcdir)/tools_layouts \
     -I$(top_srcdir)/mft_utils \
+    -I$(top_srcdir)/mft_core/mft_core_utils \
     -I$(top_srcdir)/dev_mgt \
     -I$(top_srcdir)/mflash \
     -I$(top_srcdir)/cmdif \
@@ -62,12 +63,13 @@ msttokengenerator_DEPENDENCIES = \
                                 $(top_builddir)/cmdparser/libcmdparser.a \
                                 $(top_builddir)/tools_layouts/libtools_layouts.la \
                                 $(top_builddir)/mft_utils/libmftutils.la \
+                                $(top_builddir)/mft_core/mft_core_utils/nvtoolslogger/libnvtoolslogger.la \
+                                $(top_builddir)/mft_core/mft_core_utils/operating_system_api/lib_os_api.la \
 							    $(top_builddir)/libmfa/libmfa.la \
                                 $(top_builddir)/cmdif/libcmdif.la \
 							    $(top_builddir)/dev_mgt/libdev_mgt.la \
                                 $(top_builddir)/fw_comps_mgr/libfw_comps_mgr.la \
                                 $(SQLITE_LIBS) \
-                                $(JSON_LIBS) \
                                 $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la
 
 if ENABLE_DPA
@@ -77,6 +79,7 @@ endif
 msttokengenerator_LDFLAGS = -static
 
 if ENABLE_OPENSSL
+msttokengenerator_DEPENDENCIES += $(top_builddir)/mlxsign_lib/libmlxsign.la
 else
 AM_CXXFLAGS += -DNO_OPEN_SSL
 endif
@@ -86,7 +89,11 @@ msttokengenerator_DEPENDENCIES += \
     $(top_builddir)/ext_libs/minixz/libminixz.la
 endif
 
-msttokengenerator_LDADD = $(msttokengenerator_DEPENDENCIES) ${LDL}
+msttokengenerator_LDADD = $(msttokengenerator_DEPENDENCIES) $(JSON_LIBS) ${LDL}
+
+if ENABLE_OPENSSL
+msttokengenerator_LDADD += $(openssl_LIBS)
+endif
 
 if DISABLE_XML2
 AM_CXXFLAGS += -DDISABLE_XML2

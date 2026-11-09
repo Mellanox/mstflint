@@ -58,16 +58,22 @@ __attribute__((weak)) std::string g_port = "";
 
 extern "C"
 {
+    int amber_collect_test_main(int argc, char** argv);
+    int amber_sheet_select_test_main(int argc, char** argv); // both defined in amber_collect_test.c
     int cable_ddm_test_main(int argc, char** argv);
     int counters_test_main(int argc, char** argv);
     int fec_histogram_test_main(int argc, char** argv);
     int module_info_test_main(int argc, char** argv);
     int op_info_test_main(int argc, char** argv);
+    int troub_info_test_main(int argc, char** argv);
     int error_handling_test_main(int argc, char** argv);
     int full_path_test_main(int argc, char** argv);
     int metadata_test_main(int argc, char** argv);
     int register_access_test_main(int argc, char** argv);
     int register_list_test_main(int argc, char** argv);
+    int resource_menu_test_main(int argc, char** argv);
+    int resource_dump_test_main(int argc, char** argv);
+    int resource_dump_error_handling_test_main(int argc, char** argv);
 }
 
 struct CSuite
@@ -77,16 +83,22 @@ struct CSuite
 };
 
 static const CSuite SUITES[] = {
+    {"amber_collect", amber_collect_test_main},
+    {"amber_sheet_select", amber_sheet_select_test_main},
     {"cable_ddm", cable_ddm_test_main},
     {"counters", counters_test_main},
     {"fec_histogram", fec_histogram_test_main},
     {"module_info", module_info_test_main},
     {"op_info", op_info_test_main},
+    {"troub_info", troub_info_test_main},
     {"error_handling", error_handling_test_main},
     {"full_path", full_path_test_main},
     {"metadata", metadata_test_main},
     {"register_access", register_access_test_main},
     {"register_list", register_list_test_main},
+    {"resource_menu", resource_menu_test_main},
+    {"resource_dump", resource_dump_test_main},
+    {"resource_dump_error_handling", resource_dump_error_handling_test_main},
 };
 
 static void printUsage(const char* prog)

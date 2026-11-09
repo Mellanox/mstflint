@@ -66,7 +66,6 @@ private:
     std::string find_enclosing_parenthesis(size_t var_pos);
     std::string _condition_str;
     map<string, AdbCondVar> _vars_map;
-    static const size_t MAX_CONDITION_SIZE;
     static const string DOLLAR;
     static const string DUNDER;
     static const string VARIABLE_PATTERN;

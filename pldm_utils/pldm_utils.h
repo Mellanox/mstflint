@@ -52,6 +52,9 @@ constexpr u_int16_t COMPONENT_OPTIONS_VALUE_FW = 0x0001;
 constexpr u_int16_t COMPONENT_OPTIONS_VALUE_DEFAULT = 0x0000;
 constexpr u_int16_t REQUESTED_COMPONENT_ACTIVATION_MODE_VALUE_DEFAULT = 0x0038;
 constexpr u_int16_t DEV_ID_TYPE = 0x0100;
+// Bit 0 of DownstreamDeviceUpdateOptionFlags - when set, the SelfContainedActivationMinVersionString
+// is present and the SelfContainedActivationMinVersionComparisonStamp follows it
+constexpr u_int32_t DOWNSTREAM_SELF_CONTAINED_ACTIVATION_BIT = 0x1;
 
 enum class ComponentField : u_int16_t
 {
@@ -76,6 +79,7 @@ enum class DescriptorType : uint16_t
     TYPE_PCI_VENDOR_ID = 0x0,
     TYPE_IANA_ENTERPRISE_ID = 0x1,
     TYPE_UUID = 0x02,
+    TYPE_IEEE_ASSIGNED_ID = 0x05,
     TYPE_PCI_DEVICE_ID = 0x100,
     TYPE_PCI_SUBSYSTEM_VENDOR_ID = 0x101,
     TYPE_PCI_SUBSYSTEM_ID = 0x102,
@@ -95,6 +99,8 @@ enum class ComponentIdentifier
     Identifier_BF3BMC_CEC_PLDM_Comp = 0x3018,
     Identifier_ARM_Capsule_Comp = 0x3020,
     Identifier_BFB_Comp = 0x3030,
+    Identifier_LinkX_Comp = 0xE003,
+    Identifier_LinkX_ELS_Comp = 0xE004,
     Identifier_VMOD_Comp = 0xE005,
     Identifier_DIGITAL_CACERT_REMOVAL_Comp = 0x0017,
     Identifier_DIGITAL_CACERT_CHAIN_REMOVAL_Comp = 0x0018,
@@ -130,7 +136,8 @@ std::string GetComponentNames();
 void strToArry(const std::string& number,
                const std::string& fieldName,
                std::vector<u_int8_t>& value,
-               u_int32_t maxSize = 0);
+               u_int32_t maxSize = 0,
+               bool littleEndian = false);
 std::string createTempFile();
 std::string GetStringFromJson(const Json::Value& root, const char* key, const char* defaultValue = nullptr);
 void StringToComponentIdentifier(const std::string& componentIdentifierStr, ComponentIdentifier& componentIdentifier);

@@ -50,6 +50,7 @@
 
 #include "gtest/gtest.h"
 
+#include <algorithm>
 #include <string>
 
 __attribute__((weak)) std::string g_devicePci = "";
@@ -81,8 +82,9 @@ int main(int argc, char** argv)
         }
     }
 
-    // Prepend 0000: if not present
-    if (!g_devicePci.empty() && g_devicePci.find(':') != std::string::npos && g_devicePci.substr(0, 5) != "0000:")
+    // A bare BB:DD.F (one ':') gets the default 0000: domain. A DDDD:BB:DD.F
+    // already names its domain, which is not 0000 on multi-segment hosts.
+    if (std::count(g_devicePci.begin(), g_devicePci.end(), ':') == 1)
     {
         g_devicePci = "0000:" + g_devicePci;
     }

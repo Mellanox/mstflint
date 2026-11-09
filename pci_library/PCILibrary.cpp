@@ -39,7 +39,7 @@
  #else // not defined(__WIN__) || defined(__FreeBSD__)
  #include "reg_access/mcam_capabilities.h"
  #include "reg_access/reg_ids.h"
- #include "mft_core/mft_core_utils/logger/Logger.h"
+ #include "nvtoolslogger/NvToolsLogger.h"
  #include "mft_core/mft_core_utils/mft_exceptions/MftGeneralException.h"
  #include "dev_mgt/tools_dev_types.h"
  #include "common/tools_regex.h"
@@ -151,7 +151,7 @@ namespace Regex = mstflint::common::regex;
         {
             buffer[sizeof(buffer) - 1] = '\0';
             std::string line(buffer);
-            LOG.Debug(line);
+            MFT_LOG_DEBUG(nvtoolslogger::Layer::COMMON, line.c_str());
 
             // The DBDF is the first token before the space
             std::size_t first_space = line.find(' ');
@@ -159,7 +159,7 @@ namespace Regex = mstflint::common::regex;
             {
                 std::string dbdf = line.substr(0, first_space);
                 std::string _dbdf = IsValidDBDF(dbdf);
-                LOG.Debug(std::string("Found direct nic device: ") + _dbdf);
+                MFT_LOG_DEBUG(nvtoolslogger::Layer::COMMON, (std::string("Found direct nic device: ") + _dbdf).c_str());
                 // _dbdf has been sanitized by IsValidDBDF - safe to pass to GetV3FieldFromVPD
                 /* coverity[tainted_data] : _dbdf sanitized via IsValidDBDF character-by-character validation */
                 try
@@ -169,7 +169,7 @@ namespace Regex = mstflint::common::regex;
                 }
                 catch(const std::exception& e)
                 {
-                    LOG.Debug(std::string(e.what()));
+                    MFT_LOG_DEBUG(nvtoolslogger::Layer::COMMON, e.what());
                 }
             }
         }
@@ -197,27 +197,27 @@ namespace Regex = mstflint::common::regex;
 
      std::map<std::string, std::string> directNicDevice;
      PCILibrary::FindDirectNicDevice(directNicDevice);
-     LOG.Debug("Number of found direct nic devices: " + std::to_string(directNicDevice.size()));
+     MFT_LOG_DEBUG(nvtoolslogger::Layer::COMMON, ("Number of found direct nic devices: " + std::to_string(directNicDevice.size())).c_str());
      for (int count = 0; count < numDevices; count++)
      {
          mfile* mf = mopen(pciDevices[count].dev_name);
          if (!mf)
          {
-             LOG.Error(std::string("Failed to open device: ") + pciDevices[count].dev_name);
+             MFT_LOG_ERROR(nvtoolslogger::Layer::COMMON, (std::string("Failed to open device: ") + pciDevices[count].dev_name).c_str());
              continue;
          }
          try
          {
             if (dm_get_device_id(mf, &DeviceType, &hwDevId, &hwRevId))
             {
-                LOG.Error(std::string("Failed to get device id: ") + pciDevices[count].dev_name);
+                MFT_LOG_ERROR(nvtoolslogger::Layer::COMMON, (std::string("Failed to get device id: ") + pciDevices[count].dev_name).c_str());
                 mclose(mf);
                 continue;
             }
             if (dm_is_livefish_mode(mf) || !(dm_dev_is_hca(DeviceType)))
             {
-                LOG.Info(std::string("Only Functional HCA devices are supported. Skipping device: ") +
-                         pciDevices[count].dev_name);
+                MFT_LOG_INFO(nvtoolslogger::Layer::COMMON, (std::string("Only Functional HCA devices are supported. Skipping device: ") +
+                         pciDevices[count].dev_name).c_str());
                 mclose(mf);
                 continue;
             }
@@ -240,7 +240,7 @@ namespace Regex = mstflint::common::regex;
          rc = reg_access_mpqd(mf, REG_ACCESS_METHOD_GET, &mpqd);
          if (rc)
          {
-             LOG.Error(std::string("Failed to get requester PCIe index for dbdf: ") + dbdf);
+             MFT_LOG_ERROR(nvtoolslogger::Layer::COMMON, (std::string("Failed to get requester PCIe index for dbdf: ") + dbdf).c_str());
              mclose(mf);
              continue;
          }
@@ -249,12 +249,12 @@ namespace Regex = mstflint::common::regex;
          mpegc.pcie_index = mpqd.requester_pcie_index;
          mpegc.DPNv = 1;
          mpegc.field_select = field_select;
-         LOG.Debug(std::string("Setting segment base for dbdf: ") + dbdf + " with segment base: " +
-                   std::to_string(mpegc.segment_base) + " and pcie index: " + std::to_string(mpegc.pcie_index));
+         MFT_LOG_DEBUG(nvtoolslogger::Layer::COMMON, (std::string("Setting segment base for dbdf: ") + dbdf + " with segment base: " +
+                   std::to_string(mpegc.segment_base) + " and pcie index: " + std::to_string(mpegc.pcie_index)).c_str());
          rc = reg_access_mpegc(mf, REG_ACCESS_METHOD_SET, &mpegc);
          if (rc)
          {
-             LOG.Error(std::string("Failed to set segment base for dbdf: ") + dbdf);
+             MFT_LOG_ERROR(nvtoolslogger::Layer::COMMON, (std::string("Failed to set segment base for dbdf: ") + dbdf).c_str());
              mclose(mf);
              continue;
          }
@@ -275,8 +275,8 @@ namespace Regex = mstflint::common::regex;
                  // According to arch (Oren S), when its direct nic, pci index < 1
                  if (mpqd.requester_pcie_index > 1)
                  {
-                     LOG.Error(std::string("Direct nic device: ") + dbdf +
-                               " has pci index > 1, but arch requires pci index < 1");
+                     MFT_LOG_ERROR(nvtoolslogger::Layer::COMMON, (std::string("Direct nic device: ") + dbdf +
+                               " has pci index > 1, but arch requires pci index < 1").c_str());
                      break;
                  }
                  else
@@ -284,21 +284,21 @@ namespace Regex = mstflint::common::regex;
                      mpegc.pcie_index = (mpqd.requester_pcie_index == 1) ? 0 : 1;
                  }
                  mpegc.DPNv = 1;
-                 LOG.Debug(std::string("Setting segment base for direct nic device: ") +
+                 MFT_LOG_DEBUG(nvtoolslogger::Layer::COMMON, (std::string("Setting segment base for direct nic device: ") +
                            directNicDBDF + " with segment base: " +
-                           std::to_string(mpegc.segment_base) + " and pcie index: " + std::to_string(mpegc.pcie_index));
+                           std::to_string(mpegc.segment_base) + " and pcie index: " + std::to_string(mpegc.pcie_index)).c_str());
                  rc = reg_access_mpegc(mf, REG_ACCESS_METHOD_SET, &mpegc);
                  if (rc)
                  {
-                     LOG.Error(std::string("Failed to set segment base for direct nic device: ") +
+                     MFT_LOG_ERROR(nvtoolslogger::Layer::COMMON, (std::string("Failed to set segment base for direct nic device: ") +
                                directNicDBDF +
                                " with segment base: " + std::to_string(mpegc.segment_base) +
-                               " and pcie index: " + std::to_string(mpegc.pcie_index));
+                               " and pcie index: " + std::to_string(mpegc.pcie_index)).c_str());
                      break;
                  }
-                 LOG.Debug(std::string("Successfully set segment base for direct nic device: ") +
+                 MFT_LOG_DEBUG(nvtoolslogger::Layer::COMMON, (std::string("Successfully set segment base for direct nic device: ") +
                            directNicDBDF + " with segment base: " +
-                           std::to_string(mpegc.segment_base) + " and pcie index: " + std::to_string(mpegc.pcie_index));
+                           std::to_string(mpegc.segment_base) + " and pcie index: " + std::to_string(mpegc.pcie_index)).c_str());
              }
          }
          mclose(mf);

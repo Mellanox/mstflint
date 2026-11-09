@@ -37,6 +37,7 @@
 
 #include "compatibility.h"
 #include "bit_slice.h"
+#include "tools_endianness.h"
 #include "mtcr.h"
 
 #include "mflash_types.h"
@@ -78,7 +79,7 @@ int sx_st_block_access(mfile* mf,
         u_int32_t i;
         for (i = 0; i < size / 4; i++)
         {
-            mfba.data[i] = __le32_to_cpu(*((u_int32_t*)&(data[4 * i])));
+            mfba.data[i] = mft_le32_to_cpu(*((u_int32_t*)&(data[4 * i])));
         }
     }
     rc = reg_access_mfba(mf, method, &mfba);
@@ -90,7 +91,7 @@ int sx_st_block_access(mfile* mf,
         u_int32_t i;
         for (i = 0; i < size / 4; i++)
         {
-            *((u_int32_t*)&(data[i * 4])) = __cpu_to_le32(mfba.data[i]);
+            *((u_int32_t*)&(data[i * 4])) = mft_cpu_to_le32(mfba.data[i]);
         }
     }
     return MFE_OK;

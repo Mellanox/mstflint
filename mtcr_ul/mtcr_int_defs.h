@@ -36,6 +36,28 @@
 
 #include "mtcr_com_defs.h"
 
+/*
+ * mtcr logging - thin, printf-style wrappers over the central NVIDIA Tools
+ * logger C API on the MTCR layer. What is emitted is controlled by the logger
+ * configuration (/var/lib/mstflint/mstflintlogger.json), so these cost a null
+ * check and an integer compare until someone turns the mtcr layer on.
+ *
+ * These only bind the MTCR layer to the shared MFT_LOG_C_*F macros; every layer
+ * uses the same shared macros with its own MFT_LAYER_* constant, so no per-layer
+ * implementation is needed. They live in this internal header rather than in
+ * mtcr_com_defs.h because the latter is installed as a public header
+ * ($(includedir)/mstflint) and must not drag the logger headers into the
+ * external API. Translation units that use these must include
+ * "nvtoolslogger/nvtoolslogger_c.h".
+ *
+ * Pass a single self-contained message per call, without a trailing newline.
+ */
+#define MTCR_LOG_DEBUG(...) MFT_LOG_C_DEBUGF(MFT_LAYER_MTCR, __VA_ARGS__)
+#define MTCR_LOG_INFO(...) MFT_LOG_C_INFOF(MFT_LAYER_MTCR, __VA_ARGS__)
+#define MTCR_LOG_WARNING(...) MFT_LOG_C_WARNINGF(MFT_LAYER_MTCR, __VA_ARGS__)
+#define MTCR_LOG_ERROR(...) MFT_LOG_C_ERRORF(MFT_LAYER_MTCR, __VA_ARGS__)
+#define MTCR_LOG_FATAL(...) MFT_LOG_C_FATALF(MFT_LAYER_MTCR, __VA_ARGS__)
+
 typedef int (*f_mread4)(mfile* mf, unsigned int offset, u_int32_t* value);
 typedef int (*f_mwrite4)(mfile* mf, unsigned int offset, u_int32_t value);
 typedef int (*f_mread4_block)(mfile* mf, unsigned int offset, void* data, int byte_len);
@@ -46,10 +68,6 @@ typedef int (*f_mclose)(mfile* mf);
 typedef struct ul_ctx
 {
     int fdlock;
-    /* Hermon WA */
-    int connectx_flush; /* For ConnectX A0 */
-    int need_flush;     /* For ConnectX A0 */
-
     f_mread4 mread4;
     f_mwrite4 mwrite4;
     f_mread4_block mread4_block;
@@ -66,5 +84,10 @@ typedef struct ul_ctx
     f_mwrite4_block res_mwrite4_block;
     /*************************************************************/
     int via_driver;
+    /* Remote (MST HTTP) devices only: mtcr_remote_ctx*, owned by mtcr_remote.c
+     * and released by mtcr_remote_mclose(). Kept here rather than in mfile so
+     * the installed mtcr_mf.h layout is unchanged. Declared unconditionally so
+     * the struct layout does not depend on ENABLE_MTCR_REMOTE. */
+    void* remote_ctx;
 } ul_ctx_t;
 #endif

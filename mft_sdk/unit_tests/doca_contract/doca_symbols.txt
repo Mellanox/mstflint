@@ -1,0 +1,38 @@
+# The mst* symbols DOCA's libs/doca_mgmt links against.
+#
+# Authoritative regeneration (needs a DOCA checkout):
+#   grep -rhoE '\bmst[A-Z][A-Za-z]*' libs/doca_mgmt/src/ | sort -u
+#
+# Every name here must stay exported from libmstflint_sdk.so; dropping one
+# breaks the doca-dms link, not any mstflint test.
+#
+# Blank lines and #-comments are ignored by check_contract.sh.
+
+# --- lifecycle (src/doca_mgmt.c) -------------------------------------------
+mstGetDeviceHandleByFwctlDeviceName
+mstReleaseDeviceHandle
+mstGetInitErrorString
+mstGetLastErrorString
+
+# --- raw register (src/raw/doca_mgmt_raw_register.c) -----------------------
+mstShowAllPRMRegisters
+mstFreePRMRegisterNamesArray
+mstGetRegisterMetadata
+mstFreePrmRegisterMetadata
+mstInitRegisterMap
+mstSetPRMRegisterField
+mstFreePrmRegisterMap
+mstSendPRMRegister
+mstGetPRMRegisterField
+
+# --- raw HCA caps (src/raw/doca_mgmt_raw_hca_cap.c) ------------------------
+mstGetCapabilityTypesList
+mstFreeHcaCapabilitiesArray
+mstGetCapabilitiesByType
+mstFreeHcaCapabilitiesMetadata
+mstInitHcaCapabilityMap
+mstSetCapabilityValue
+mstFreeHcaCapabilityMap
+mstQueryHcaCapability
+mstGetCapabilityValue
+mstSetHcaCapability

@@ -71,6 +71,7 @@
 #endif
 
 #include "fs3_ops.h"
+#include "nvtoolslogger/NvToolsLogger.h"
 
 #define FS3_LOG_CHUNK_SIZE 21
 
@@ -175,7 +176,7 @@ const Fs3Operations::SectionInfo Fs3Operations::_fs3SectionsInfoArr[] = {
 
 bool Fs3Operations::Fs3UpdateImgCache(u_int8_t* buff, u_int32_t addr, u_int32_t size)
 {
-    DPRINTF(("Fs3Operations::Fs3UpdateImgCache\n"));
+    MLXFWOPS_LOG_DEBUG("addr=0x%x size=0x%x", addr, size);
     if (size == 0)
     {
         return true;
@@ -304,7 +305,7 @@ bool Fs3Operations::GetMfgInfo(u_int8_t* buff)
 
 bool Fs3Operations::GetImageInfo(u_int8_t* buff)
 {
-    DPRINTF(("Fs3Operations::GetImageInfo\n"));
+    MLXFWOPS_LOG_DEBUG("Fs3Operations::GetImageInfo");
     struct image_layout_image_info image_info;
 
     image_layout_image_info_unpack(&image_info, buff);
@@ -379,7 +380,7 @@ bool Fs3Operations::GetImageInfo(u_int8_t* buff)
     _fs3ImgInfo.logStep = image_info.image_size.log_step;
 
     const u_int32_t* swId = (u_int32_t*)NULL;
-    DPRINTF(("Fs3Operations::GetImageInfo _fwImgInfo.supportedHwId[0]=0x%x\n", _fwImgInfo.supportedHwId[0]));
+    MLXFWOPS_LOG_DEBUG("_fwImgInfo.supportedHwId[0]=0x%x", _fwImgInfo.supportedHwId[0]);
     if (!getInfoFromHwDevid(_fwImgInfo.supportedHwId[0], _fwImgInfo.ext_info.chip_type, &swId))
     {
         return false;
@@ -478,8 +479,7 @@ bool Fs3Operations::GetImageInfoFromSection(u_int8_t* buff,
                                             u_int32_t sect_size,
                                             u_int8_t check_support_only)
 {
-    DPRINTF(
-      ("Fs3Operations::GetImageInfoFromSection sect_type (%s:0x%x)\n", GetSectionNameByType(sect_type), sect_type));
+    MLXFWOPS_LOG_DEBUG("sect_type (%s:0x%x)", GetSectionNameByType(sect_type), sect_type);
 #define EXEC_GET_INFO_OR_GET_SUPPORT(get_info_func, buff, check_support_only) \
     (check_support_only) ? true : get_info_func(buff);
 
@@ -565,7 +565,7 @@ bool Fs3Operations::VerifyTOC(u_int32_t dtoc_addr,
                               bool ignoreDToc,
                               bool verbose)
 {
-    DPRINTF(("Fs3Operations::VerifyTOC\n"));
+    MLXFWOPS_LOG_DEBUG("dtoc_addr=0x%x show_itoc=%d", dtoc_addr, (int)show_itoc);
     u_int8_t buffer[TOC_HEADER_SIZE], entry_buffer[TOC_ENTRY_SIZE];
     struct cibfw_itoc_header itoc_header;
     bool ret_val = true, mfg_exists = false;
@@ -769,7 +769,7 @@ bool Fs3Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
                                 bool ignoreDToc,
                                 bool verbose)
 {
-    DPRINTF(("Fs3Operations::FsVerifyAux\n"));
+    MLXFWOPS_LOG_DEBUG("show_itoc=%d ignoreDToc=%d", (int)show_itoc, (int)ignoreDToc);
     u_int32_t cntx_image_start[CNTX_START_POS_SIZE] = {0};
     u_int32_t cntx_image_num;
     u_int32_t buff[FS3_BOOT_START_IN_DW];
@@ -865,7 +865,7 @@ bool Fs3Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
 
 bool Fs3Operations::FsIntQueryAux(bool readRom, bool quickQuery, bool ignoreDToc, bool verbose)
 {
-    DPRINTF(("Fs3Operations::FsIntQueryAux\n"));
+    MLXFWOPS_LOG_DEBUG("readRom=%d quickQuery=%d ignoreDToc=%d", (int)readRom, (int)quickQuery, (int)ignoreDToc);
     struct QueryOptions queryOptions;
 
     queryOptions.readRom = readRom;
@@ -1015,7 +1015,8 @@ bool Fs3Operations::FwQuery(fw_info_t* fwInfo,
                             bool verbose)
 {
     /* isStripedImage flag is not needed in FS3 image format */
-    DPRINTF(("Fs3Operations::FwQuery\n"));
+    MLXFWOPS_LOG_DEBUG("readRom=%d isStripedImage=%d quickQuery=%d", (int)readRom, (int)isStripedImage,
+                       (int)quickQuery);
     if (isStripedImage)
     {
         ignoreDToc = true;
@@ -1770,7 +1771,7 @@ bool Fs3Operations::FwSetMFG(guid_t baseGuid, PrintCallBack callBackFunc)
     return FwSetMFG(bGuid, callBackFunc);
 }
 
-bool Fs3Operations::ParseDevData(bool quickQuery, bool verbose, VerifyCallBack)
+bool Fs3Operations::ParseDevData(bool quickQuery, bool verbose, VerifyCallBack, bool)
 {
     return FsIntQueryAux(false, quickQuery, false, verbose);
 }
@@ -2938,7 +2939,7 @@ bool Fs3Operations::FwSetAccessKey(hw_key_t userKey, ProgressCallBack)
     int rc = (int)reg_access_secure_host(getMfileObj(), REG_ACCESS_METHOD_GET, &mlock);
     if (rc)
     {
-        return errmsg("secure host operation failed. reported error code: %d", rc);
+        return errmsg("secure host operation failed: %s", m_err2str((MError)rc));
     }
     if (mlock.operation)
     {
@@ -2953,7 +2954,7 @@ bool Fs3Operations::FwSetAccessKey(hw_key_t userKey, ProgressCallBack)
     rc = reg_access_secure_host(getMfileObj(), REG_ACCESS_METHOD_SET, &mlock);
     if (rc)
     {
-        return errmsg("secure host operation failed. reported error code: %d", rc);
+        return errmsg("secure host operation failed: %s", m_err2str((MError)rc));
     }
     printf("-I- Secure Host was enabled successfully on the device.\n");
     return true;
@@ -2966,7 +2967,7 @@ bool Fs3Operations::GetSecureHostState(u_int8_t& state)
     int rc = (int)reg_access_secure_host(getMfileObj(), REG_ACCESS_METHOD_GET, &mlock);
     if (rc)
     {
-        return errmsg("secure host operation failed. reported error code: %d", rc);
+        return errmsg("secure host operation failed: %s", m_err2str((MError)rc));
     }
     state = mlock.operation;
     return true;
@@ -2974,29 +2975,7 @@ bool Fs3Operations::GetSecureHostState(u_int8_t& state)
 
 bool Fs3Operations::FwResetNvData()
 {
-    return errmsg("Unsupported Device, can only reset configuration on a CX3/3-PRO device.");
-    /*
-     *  // future support for cx4
-     *
-     *  if (!FsIntQueryAux(false)) {
-     *   return false;
-     *  }
-     *  if (_fwImgInfo.ext_info.chip_type != CT_CONNECTX) {
-     *   // TODO: Indicate the device name.
-     *      return errmsg("Unsupported device type %d", _fwImgInfo.ext_info.dev_type);
-     *  }
-     *
-     *  struct toc_info *currToc;
-     *
-     *  if (!Fs3GetItocInfo(_fs3ImgInfo.tocArr, _fs3ImgInfo.numOfItocs, FS3_NV_DATA, currToc)) {
-     *   return false;
-     *  }
-     *  // allocate new NvData which will contain only zeroes
-     *  std::vector<u_int8_t> newNvData(currToc->section_data.size());
-     *  memset(&newNvData[0], 0, currToc->section_data.size());
-     *
-     *  return Fs3AddSection(FS3_NV_DATA, FS3_DEV_INFO, (u_int32_t *)&newNvData[0], newNvData.size()/4, progressFunc);
-     */
+    return errmsg("Unsupported device, cannot reset NV data.");
 }
 
 u_int32_t Fs3Operations::getAbsAddr(toc_info* toc)
@@ -3933,103 +3912,8 @@ bool Fs3Operations::TocComp::operator()(toc_info* elem1, toc_info* elem2)
 
 bool Fs3Operations::FwShiftDevData(PrintCallBack progressFunc)
 {
-    if (!_ioAccess->is_flash())
-    {
-        return errmsg("cannot shift device data sections on Image.");
-    }
-    const char* flashType = ((Flash*)_ioAccess)->getFlashType();
-
-    if (flashType == NULL)
-    {
-        return errmsg("Cannot shift device data on old flash types.");
-    }
-    if (strcasecmp(flashType, "N25Q0XX") != 0)
-    {
-        return errmsg("Cannot shift device data on flash type %s.", flashType);
-    }
-
-    /* query device and get device data sectors. */
-    PUSH_DEV_DATA(_readSectList);
-    if (!FsIntQueryAux())
-    {
-        POP_DEV_DATA(_readSectList);
-        return false;
-    }
-    POP_DEV_DATA(_readSectList);
-
-    if (_fwImgInfo.ext_info.chip_type != CT_CONNECT_IB)
-    {
-        return errmsg("Cannot shift device data. Unsupported device.");
-    }
-
-    u_int32_t lastFwDataAddr;
-    u_int32_t firstDevDataAddr;
-
-    if (!getLastFwSAddr(lastFwDataAddr) || !getFirstDevDataAddr(firstDevDataAddr))
-    {
-        return errmsg("Failed to get ITOC information.");
-    }
-
-    /* check if we already shifted */
-    struct toc_info* mfgToc = (struct toc_info*)NULL;
-
-    if (!Fs3GetItocInfo(_fs3ImgInfo.tocArr, _fs3ImgInfo.numOfItocs, FS3_MFG_INFO, mfgToc))
-    {
-        return errmsg("Failed to get MFG_INFO ITOC information.");
-    }
-
-    if (getAbsAddr(mfgToc) < _ioAccess->get_effective_size() - (((Flash*)(_ioAccess))->get_sector_size()))
-    {
-        return errmsg("Device data sections already shifted.");
-    }
-
-    /* check if we can shift all dev data sections by 60KB */
-    if (lastFwDataAddr > (firstDevDataAddr - SHIFT_SIZE))
-    {
-        return errmsg("Cannot shift device data sections, fw image is too big.");
-    }
-    /* for each device data section move it by an offset of 60kb (0xf000) */
-
-    PRINT_PROGRESS(progressFunc, (char*)"Shifting dev data section - ");
-
-    /* possible problem : if itoc array isnt ordered by ascending flash address and dev data sections are larger that */
-    /* 60kb there is a chance we runover exsisting device data sections Fix : preform the section shift by order from */
-    /* the lowest addresss to the highest. */
-    std::vector<struct toc_info*> sortedTocs(_fs3ImgInfo.numOfItocs);
-    for (int i = 0; i < _fs3ImgInfo.numOfItocs; i++)
-    {
-        sortedTocs[i] = &(_fs3ImgInfo.tocArr[i]);
-    }
-    std::sort(sortedTocs.begin(), sortedTocs.end(), TocComp(_fwImgInfo.imgStart));
-
-    /* shift the location of device data sections by SHIFT_SIZE (60kb) */
-    for (std::vector<struct toc_info*>::iterator it = sortedTocs.begin(); it != sortedTocs.end(); it++)
-    {
-        if ((*it)->toc_entry.device_data)
-        {
-            /* update the itoc (basically update the flash_addr and itoc entry crc) */
-            struct toc_info* currToc = *it;
-            if (!Fs3UpdateItocInfo(currToc, ((currToc->toc_entry.flash_addr << 2) - SHIFT_SIZE)))
-            {
-                PRINT_PROGRESS(progressFunc, (char*)"FAILED\n");
-                return false;
-            }
-            /* write the section to its new place in the flash */
-            if (!writeImage((ProgressCallBack)NULL, getAbsAddr(currToc), (u_int8_t*)&currToc->section_data[0],
-                            (currToc->toc_entry.size << 2), true, true))
-            {
-                PRINT_PROGRESS(progressFunc, (char*)"FAILED\n");
-                return false;
-            }
-        }
-    }
-    PRINT_PROGRESS(progressFunc, (char*)"OK\n");
-    /* update itoc section */
-    if (!reburnItocSection(progressFunc))
-    {
-        return false;
-    }
-    return true;
+    (void)progressFunc;
+    return errmsg("Cannot shift device data. Unsupported device.");
 }
 
 bool Fs3Operations::CheckItocArrConsistency(std::vector<struct toc_info*>& sortedTocVec, u_int32_t imageStartAddr)
@@ -4489,7 +4373,7 @@ bool Fs3Operations::invalidateOldFWImages(const u_int32_t magic_pattern[],
     u_int32_t image_start_addrs[CNTX_START_POS_SIZE] = {0};
     u_int32_t num_of_images_found;
 
-    DPRINTF(("Fs3Operations::invalidateOldFWImages new_image_start=0x%08x\n", new_image_start));
+    MLXFWOPS_LOG_DEBUG("new_image_start=0x%08x", new_image_start);
 
     FindAllImageStart(flash_access, image_start_addrs, &num_of_images_found, magic_pattern);
     /* Address convertor is disabled after FindAllImageStart() - use phys addresses */
@@ -4497,8 +4381,7 @@ bool Fs3Operations::invalidateOldFWImages(const u_int32_t magic_pattern[],
     {
         if (image_start_addrs[i] != new_image_start)
         {
-            DPRINTF(("Fs3Operations::invalidateOldFWImages - Invalidating old fw signature at addr 0x%x\n",
-                     image_start_addrs[i]));
+            MLXFWOPS_LOG_DEBUG("Invalidating old fw signature at addr 0x%x", image_start_addrs[i]);
             if (!flash_access->write(image_start_addrs[i], &zeroes, sizeof(zeroes), true))
             {
                 return errmsg(MLXFW_FLASH_WRITE_ERR, "Failed to invalidate old fw signature: %s", flash_access->err());
@@ -4566,7 +4449,7 @@ bool Fs3Operations::DoAfterBurnJobs(const u_int32_t magic_pattern[],
             {
                 flash_access->set_address_convertor(imageOps._fwImgInfo.cntxLog2ChunkSize, is_curr_image_in_odd_chunks);
             }
-            DPRINTF(("Fs3Operations::DoAfterBurnJobs - Invalidating old fw signature\n"));
+            MLXFWOPS_LOG_DEBUG("Invalidating old fw signature");
             if (!flash_access->write(0, &zeroes, sizeof(zeroes), true))
             {
                 return errmsg(MLXFW_FLASH_WRITE_ERR, "Failed to invalidate old fw signature: %s", flash_access->err());
@@ -4588,7 +4471,7 @@ bool Fs3Operations::DoAfterBurnJobs(const u_int32_t magic_pattern[],
 
 bool Fs3Operations::ClearLivefishfIndication(Flash*)
 {
-    DPRINTF(("Fs3Operations::ClearLivefishfIndication\n"));
+    MLXFWOPS_LOG_DEBUG("Fs3Operations::ClearLivefishfIndication");
     return true;
 }
 

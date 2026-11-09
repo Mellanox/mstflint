@@ -34,6 +34,8 @@
 
 #include "mlxlink_ui.h"
 #include <mlxreg/mlxreg_lib/mlxreg_parser.h>
+#include <algorithm>
+#include <set>
 MlxlinkUi::MlxlinkUi() : CommandLineRequester(MLXLINK_EXEC " OPTIONS"), _cmdParser(MLXLINK_EXEC)
 {
     _mlxlinkCommander = nullptr;
@@ -72,12 +74,31 @@ void MlxlinkUi::initPortInfo()
     _mlxlinkCommander->updatePortInfo();
 }
 
+void MlxlinkUi::initElsInfo()
+{
+    _mlxlinkCommander->checkElsModuleCommands();
+    _mlxlinkCommander->updateCpoStatus();
+
+    // Verify CPO switch
+    if (!_mlxlinkCommander->_isCpo || !isSwitch())
+    {
+        throw MlxRegException("ELS operation is not supported on this device");
+    }
+}
+
 void MlxlinkUi::initMlxlinkCommander()
 {
     createMlxlinkCommander();
     _mlxlinkCommander->setRequestedCommands(_sendRegFuncMap);
 
-    initPortInfo();
+    if (_userInput._elsModuleProvided)
+    {
+        initElsInfo();
+    }
+    else
+    {
+        initPortInfo();
+    }
 }
 
 void MlxlinkUi::printSynopsisHeader()
@@ -93,6 +114,10 @@ void MlxlinkUi::printSynopsisHeader()
     MlxlinkRecord::printFlagLine(DEVICE_FLAG_SHORT, DEVICE_FLAG, "device",
                                  "Perform operation for a specified mst device");
     MlxlinkRecord::printFlagLine(LABEL_PORT_FLAG_SHORT, LABEL_PORT_FLAG, "port_number", "Port Number");
+    MlxlinkRecord::printFlagLine(
+      ELS_MODULE_FLAG_SHORT, ELS_MODULE_FLAG, "module_index",
+      "ELS module index (use with operations that works directly on an ELS module on CPO systems). Mutually exclusive with --" LABEL_PORT_FLAG
+      ")");
     MlxlinkRecord::printFlagLine(PORT_TYPE_FLAG_SHORT, PORT_TYPE_FLAG, "port_type",
                                  "Port Type [NETWORK(Default)/PCIE] (PCIE on HCA/CPU/Switches with PCIe management)");
     MlxlinkRecord::printFlagLine(DEPTH_FLAG_SHORT, DEPTH_FLAG, "depth",
@@ -103,6 +128,10 @@ void MlxlinkUi::printSynopsisHeader()
                                  "the node within each depth (with --" PORT_TYPE_FLAG " PCIE)");
     MlxlinkRecord::printFlagLine(PRINT_JSON_OUTPUT_FLAG_SHORT, PRINT_JSON_OUTPUT_FLAG, "",
                                  "Print the output in json format");
+    MlxlinkRecord::printFlagLine(LINKX_ELS_FLAG_SHORT, LINKX_ELS_FLAG, "",
+                                 "Module type ELS, provide information on ELS port");
+    MlxlinkRecord::printFlagLine(LINKX_OE_FLAG_SHORT, LINKX_OE_FLAG, "",
+                                 "Module type OE, provide information on OE port");
 }
 
 void MlxlinkUi::printSynopsisQueries()
@@ -111,7 +140,9 @@ void MlxlinkUi::printSynopsisQueries()
     MlxlinkRecord::printFlagLine(PCIE_LINKS_FLAG_SHORT, PCIE_LINKS_FLAG, "",
                                  "Show valid PCIe links (with --" PORT_TYPE_FLAG " PCIE)");
     MlxlinkRecord::printFlagLine(PLR_INFO_FLAG_SHORT, PLR_INFO_FLAG, "", "Show PLR Info");
+    MlxlinkRecord::printFlagLine(APSU_INFO_FLAG_SHORT, APSU_INFO_FLAG, "", "Show APSU (ILT/RTS) Info");
     MlxlinkRecord::printFlagLine(KR_INFO_FLAG_SHORT, KR_INFO_FLAG, "", "Show KR Info");
+    MlxlinkRecord::printFlagLine(LTX_INFO_FLAG_SHORT, LTX_INFO_FLAG, "", "Show LTX status and logger history");
     MlxlinkRecord::printFlagLine(HOST_CLASS_FLAG_SHORT, HOST_CLASS_FLAG, "", "Show Host Class Info");
     MlxlinkRecord::printFlagLine(MODULE_INFO_FLAG_SHORT, MODULE_INFO_FLAG, "", "Show Module Info");
     MlxlinkRecord::printFlagLine(BER_FLAG_SHORT, BER_FLAG, "", "Show Physical Counters and BER Info");
@@ -146,6 +177,9 @@ void MlxlinkUi::printSynopsisQueries()
     MlxlinkRecord::printFlagLineWithAcronym(
       MULTI_PORT_MODULE_INFO_FLAG_SHORT, MULTI_PORT_MODULE_INFO_FLAG, MULTI_PORT_MODULE_INFO_ACRONYM_FLAG_SHORT,
       MULTI_PORT_MODULE_INFO_ACRONYM_FLAG, "", "Show Multi Port Module Info Table");
+    MlxlinkRecord::printFlagLineWithAcronym(MULTI_PORT_CPO_INFO_FLAG_SHORT, MULTI_PORT_CPO_INFO_FLAG,
+                                            MULTI_PORT_CPO_INFO_ACRONYM_FLAG_SHORT, MULTI_PORT_CPO_INFO_ACRONYM_FLAG,
+                                            "", "Show Multi Port Module CPO Info Table");
 }
 
 void MlxlinkUi::printSynopsisCommands()
@@ -157,7 +191,8 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(ALL_PORTS_FLAG_SHORT, ALL_PORTS_FLAG, "",
                                  "Apply --port_state to all ports (only with --port_state)");
     MlxlinkRecord::printFlagLine(PMAOS_FLAG_SHORT, PMAOS_FLAG, "module_state",
-                                "Configure Module State [UP(up)/DN(down)/TG(toggle)]");
+                                "Configure Module State [UP(up)/DN(down)/TG(toggle)] for the port (default) or for ELS module directly: use with --" ELS_MODULE_FLAG
+                                " instead of --" LABEL_PORT_FLAG);
     MlxlinkRecord::printFlagLine(
       PTYS_FLAG_SHORT, PTYS_FLAG, "speeds",
       "Configure Speeds "
@@ -248,6 +283,19 @@ void MlxlinkUi::printSynopsisCommands()
     printf(IDENT);
     MlxlinkRecord::printFlagLine(CONSTANT_ROLE_FLAG_SHORT, CONSTANT_ROLE_FLAG, "EN/DS",
         "Keep primary/secondary role constant [EN(enable)/DS(disable)] (Optional, use with --set_primary or --set_secondary)");
+    MlxlinkRecord::printFlagLine(ELS_OPERATION_FLAG_SHORT, ELS_OPERATION_FLAG, "operation",
+                                 "ELS operation [FC(fiber_check)/LT(laser_tuning)/WLT(laser_wl_tuning)/UP(laser_up)"
+                                 "], works on the ELS module directly, provide --" ELS_MODULE_FLAG);
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(ELS_LASER_FLAG_SHORT, ELS_LASER_FLAG, "lasers",
+                                 "Lasers to operate on (comma-separated) [0,1,2,3,4,5,6,7]");
+    MlxlinkRecord::printFlagLine(SAVE_LASER_SETPOINT_FLAG_SHORT, SAVE_LASER_SETPOINT_FLAG, "power_setpoint",
+                                 "CPO ELS: save laser power setpoint for specified lasers"
+                                 " (PRM units: 0.01 mW; works on the ELS module directly, provide --" ELS_MODULE_FLAG
+                                 ")");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(ELS_LASER_FLAG_SHORT, ELS_LASER_FLAG, "lasers",
+                                 "Lasers to operate on (comma-separated) [0,1,2,3,4,5,6,7]");
     MlxlinkRecord::printFlagLine(SET_PLR_FLAG_SHORT, SET_PLR_FLAG, "", "Set PLR Configuration");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(
@@ -259,6 +307,76 @@ void MlxlinkUi::printSynopsisCommands()
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PLR_TX_CRC_FLAG_SHORT, PLR_TX_CRC_FLAG, "tx_crc",
                                  "TX CRC over PLR: 0/DS(disable), 1/EN(enable) (Optional)");
+    MlxlinkRecord::printFlagLine(SET_APSU_FLAG_SHORT, SET_APSU_FLAG, "",
+                                 "Set APSU (ILT/RTS) Configuration. Takes one or more of the parameters below; "
+                                 "they are applied in a single write");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_CTL_FLAG_SHORT, APSU_CTL_FLAG, "ctl", "APSU [EN(enable)/DS(disable)] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_TRAINING_EN_FLAG_SHORT, APSU_TRAINING_EN_FLAG, "training_en",
+                                 "Training Enable [EN(enable)/DS(disable)] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_PEER_DET_FLAG_SHORT, APSU_PEER_DET_FLAG, "peer_det",
+                                 "LT Peer Detection [EN(enable)/DS(disable)] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_HOP_COUNT_CTL_FLAG_SHORT, APSU_HOP_COUNT_CTL_FLAG, "hop_count_ctl",
+                                 "Hop Count Control [EN(enable)/DS(disable)] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_NLUT_FLAG_SHORT, APSU_NLUT_FLAG, "nlut",
+                                 "nLUT Control [EN(enable)/DS(disable)] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_VALIDATION_EN_FLAG_SHORT, APSU_VALIDATION_EN_FLAG, "validation_en",
+                                 "ILT Frame Validation [EN(enable)/DS(disable)] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_RESTART_FLAG_SHORT, APSU_RESTART_FLAG, "", "Restart Training (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_RECOVERY_TIMER_FLAG_SHORT, APSU_RECOVERY_TIMER_FLAG, "recovery_timer",
+                                 "Recovery Timer in ms [0-255] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_MAX_RECOVERY_EVENTS_FLAG_SHORT, APSU_MAX_RECOVERY_EVENTS_FLAG,
+                                 "max_recovery_events", "Max Recovery Events [0-255] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_MAX_WAIT_TIMER_FLAG_SHORT, APSU_MAX_WAIT_TIMER_FLAG, "max_wait_timer",
+                                 "Max Wait Timer in seconds [0-65535] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_PROPAGATION_TIMER_FLAG_SHORT, APSU_PROPAGATION_TIMER_FLAG, "propagation_timer",
+                                 "Propagation Timer in 10ms units [0-31] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_QUIET_TIMER_FLAG_SHORT, APSU_QUIET_TIMER_FLAG, "quiet_timer",
+                                 "Quiet Timer in 10ms units [0-15] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_INVERT_TO_FLAG_SHORT, APSU_INVERT_TO_FLAG, "invert_to",
+                                 "Invert Timeout in ms [0-15] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_TF_DETECT_TIMER_FLAG_SHORT, APSU_TF_DETECT_TIMER_FLAG, "tf_detect_timer",
+                                 "TF Detect Timer in ms [0-15] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_PEER_DET_TIMER_FLAG_SHORT, APSU_PEER_DET_TIMER_FLAG, "peer_det_timer",
+                                 "Peer Detection Timer in 100ms units [0-15] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_FAIL_TIMER_FLAG_SHORT, APSU_FAIL_TIMER_FLAG, "fail_timer",
+                                 "Fail Timer in 10ms units [0-255] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_VALIDATION_TIMER_FLAG_SHORT, APSU_VALIDATION_TIMER_FLAG, "validation_timer",
+                                 "Validation Timer in 10ms units [0-15] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_RESTART_ON_LOS_FLAG_SHORT, APSU_RESTART_ON_LOS_FLAG, "restart_on_los",
+                                 "Restart On LoS: 0(no restart), 1(restart), 2(restart on long LoS only) (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_LOCAL_PATTERN_TX_FLAG_SHORT, APSU_LOCAL_PATTERN_TX_FLAG, "local_pattern_tx",
+                                 "Local Pattern TX: 0(PRBS31), 1(PCS data) (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_MAX_HOP_COUNT_FLAG_SHORT, APSU_MAX_HOP_COUNT_FLAG, "max_hop_count",
+                                 "Max Hop Count [0-3] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_HOP_DECREMENT_FLAG_SHORT, APSU_HOP_DECREMENT_FLAG, "hop_decrement",
+                                 "Hop Decrement [0-3] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_HOP_COUNT_FLAG_SHORT, APSU_HOP_COUNT_FLAG, "hop_count",
+                                 "Hop Count [0-3] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(APSU_BCNL_PAGES_RETRANSMISSIONS_FLAG_SHORT, APSU_BCNL_PAGES_RETRANSMISSIONS_FLAG,
+                                 "bcnl_pages_retransmissions", "BCNL Pages Retransmissions [1-255] (Optional)");
     MlxlinkRecord::printFlagLine(SET_TX_PRECODING_FLAG_SHORT, SET_TX_PRECODING_FLAG, "tx_precoding",
                                  "Set TX Precoding [EN(enable)/DS(disable)]; with --" CABLE_FLAG
                                  " operates at module level and requires --" PMLR_SIDE_FLAG " [host|line]");
@@ -292,14 +410,16 @@ void MlxlinkUi::printSynopsisCommands()
       PPRT_RATE_FLAG_SHORT, PPRT_RATE_FLAG, "rx_lane_rate",
       "RX Lane Rate "
       "[XDR,NDR,HDR,EDR,FDR10,FDR,QDR,DDR,SDR,1600G_8X,800G_4X,400G_2X,200G_1X,800G_8X,400G_8X,200G_4X,100G_2X,50G_1X,100G,100G_4X,50G,50G_"
-      "2X,25G,40G,10G,2.5G,1G,400G_2X_MODE_B,360G_2X_MODE_B,328G_2X_MODE_B,378G_2X_MODE_B,345G_2X_MODE_B]  "
+      "2X,25G,40G,10G,2.5G,1G,400G_2X_MODE_B,360G_2X_MODE_B,328G_2X_MODE_B,378G_2X_MODE_B,345G_2X_MODE_B,"
+      "187G_1X_MODE_A,176G_1X_MODE_A,169G_1X_MODE_A]  "
       "(Optional - Default 25G)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(
       PPTT_RATE_FLAG_SHORT, PPTT_RATE_FLAG, "tx_lane_rate",
       "TX Lane Rate "
       "[XDR,NDR,HDR,EDR,FDR10,FDR,QDR,DDR,SDR,1600G_8X,800G_4X,400G_2X,200G_1X,800G_8X,400G_8X,200G_4X,100G_2X,50G_1X,100G,100G_4X,50G,50G_"
-      "2X,25G,40G,10G,2.5G,1G,400G_2X_MODE_B,360G_2X_MODE_B,328G_2X_MODE_B,378G_2X_MODE_B,345G_2X_MODE_B]  "
+      "2X,25G,40G,10G,2.5G,1G,400G_2X_MODE_B,360G_2X_MODE_B,328G_2X_MODE_B,378G_2X_MODE_B,345G_2X_MODE_B,"
+      "187G_1X_MODE_A,176G_1X_MODE_A,169G_1X_MODE_A]  "
       "(Optional - Default 25G)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PRBS_INVERT_TX_POL_FLAG_SHORT, PRBS_INVERT_TX_POL_FLAG, "",
@@ -331,6 +451,18 @@ void MlxlinkUi::printSynopsisCommands()
                                  "Port Extended Information Collection [CSV File]");
     MlxlinkRecord::printFlagLine(AMBER_COLLECT_FLAG_SHORT, AMBER_COLLECT_FLAG, "csv_file",
                                  "AmBER Port Extended Information Collection For 16nm Products and Later [CSV File]");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(AMBER_INDEX_FLAG_SHORT, AMBER_INDEX_FLAG, "page",
+                                 "AmBER group selection, working with " AMBER_COLLECT_FLAG
+                                 " option [1(GENERAL)/2(INDEXES)/3(Link_STATUS)/4(MODULE_STATUS)/5(SYSTEM)/"
+                                 "6(HDR_SERDES)/7(NDR_SERDES)/8(PORT_COUNTERS)/9(TROUBLESHOOTING)/10(PHY_OP)/"
+                                 "11(LINK_UP)/12(LINK_DOWN)/13(TEST_MODE)/14(MODULE_TEST_MODE)/15(PHY_DEBUG)/"
+                                 "16(EXT_MODULE_STATUS)/17(SERDES_5NM_GEN7)/20(RECOVERY_COUNTERS)/"
+                                 "21(SERDES_5NM_GEN8)]");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(AMBER_REWRITE_FLAG_SHORT, AMBER_REWRITE_FLAG, "",
+                                 "Rewrite the csv file instead of appending to it, working with " AMBER_COLLECT_FLAG
+                                 " option (required when the file columns do not match the selected amBER sheets)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(BER_LIMIT_FLAG_SHORT, BER_LIMIT_FLAG, "limit_criteria",
                                  "BER Limit Criteria [Nominal(Default)/Corner/Drift] (Optional - Default Nominal)");
@@ -370,6 +502,15 @@ void MlxlinkUi::printSynopsisCommands()
     printf(IDENT2);
     MlxlinkRecord::printFlagLine(WRITE_OFFSET_FLAG_SHORT, WRITE_OFFSET_FLAG, "offset",
                                  "Specific page offset to read/write");
+
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(SAVE_LASER_SETPOINT_FLAG_SHORT, SAVE_LASER_SETPOINT_FLAG, "power_setpoint",
+                                 "Save ELS laser power setpoint to cable EEPROM via MCIA "
+                                 "(OptPowerSetpoint, page 0x1B bytes 144-159, 10 uW per LSB) "
+                                 "(requires --" ELS_MODULE_FLAG " and --" ELS_LASER_FLAG ")");
+    printf(IDENT2);
+    MlxlinkRecord::printFlagLine(ELS_LASER_FLAG_SHORT, ELS_LASER_FLAG, "lasers",
+                                 "Lasers to operate on (comma-separated) [0,1,2,3,4,5,6,7]");
 
     printf(IDENT);
     MlxlinkRecord::printFlagLine(CABLE_PRBS_SELECT_SHORT, CABLE_PRBS_SELECT, "side",
@@ -512,6 +653,8 @@ void MlxlinkUi::printHelp()
     printf(IDENT "Examples:\n");
     printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "get info of <device>, <port_number>",
            MLXLINK_EXEC " -d <device> -p <port_number>");
+    printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "get info of <device>, <port_number>, <module_type_els>",
+           MLXLINK_EXEC " -d <device> -p <port_number> -m --linkx_els");
     printf(IDENT2 "%-40s: \n" IDENT3 "%s\n",
            "get info of <device>, <port_number> and BER Counters",
            MLXLINK_EXEC " -d <device> -p <port_number> -c");
@@ -530,6 +673,14 @@ void MlxlinkUi::printHelp()
            "--tx_rate 10G)");
     printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Perform PRBS Tuning",
            MLXLINK_EXEC " -d <device> -p <port_number> --test_mode TU");
+    printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "ELS Laser Operations",
+           MLXLINK_EXEC " -d <device> --" ELS_OPERATION_FLAG " <operation> --" ELS_MODULE_FLAG
+                        " <module_index> --" ELS_LASER_FLAG " <lasers>");
+    printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Save ELS Laser Power Setpoint",
+           MLXLINK_EXEC " -d <device> --" SAVE_LASER_SETPOINT_FLAG " <power_setpoint> --" ELS_MODULE_FLAG
+                        " <module_index> --" ELS_LASER_FLAG " <lasers>");
+    printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "ELS module state (PMAOS on module, e.g. reset)",
+           MLXLINK_EXEC " -d <device> --" PMAOS_FLAG " <module_state> --" ELS_MODULE_FLAG " <module_index>");
     printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Cable operations", MLXLINK_EXEC " -d <device> --cable options");
     printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Dump cable EEPROM pages", MLXLINK_EXEC " -d <device> --cable --dump");
     printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Get cable DDM info", MLXLINK_EXEC " -d <device> --cable --ddm");
@@ -539,6 +690,9 @@ void MlxlinkUi::printHelp()
     printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Write to cable",
            MLXLINK_EXEC
            " -d <device> --cable --write <bytes separated by comma> --page <page number> --offset <bytes offset> ");
+    printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Save ELS Laser Power Setpoint to Cable EEPROM (via MCIA)",
+           MLXLINK_EXEC " -d <device> --" CABLE_FLAG " --" SAVE_LASER_SETPOINT_FLAG
+                        " <power_setpoint> --" ELS_MODULE_FLAG " <module_index> --" ELS_LASER_FLAG " <lasers>");
     if (_userInput._advancedMode)
     {
         printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Configure Transmitter Parameters (on lane, to database)",
@@ -564,6 +718,10 @@ void MlxlinkUi::validateMandatoryParams()
     {
         throw MlxRegException("Please provide a device name");
     }
+    if (_userInput._portSpecified && _userInput._elsModuleProvided)
+    {
+        throw MlxRegException("The --" LABEL_PORT_FLAG " (-p) and --" ELS_MODULE_FLAG " options are mutually exclusive");
+    }
     if (_userInput._links && _userInput._portType != "PCIE")
     {
         throw MlxRegException("The --" PCIE_LINKS_FLAG " option is valid only with --port_type PCIE");
@@ -573,7 +731,7 @@ void MlxlinkUi::validateMandatoryParams()
     {
         throw MlxRegException("No options allowed to use while querying --" PCIE_LINKS_FLAG);
     }
-    if ((_userInput._labelPort == 0) && (_userInput._portType != "PCIE"))
+    if ((_userInput._labelPort == 0) && (_userInput._portType != "PCIE") && !_userInput._elsModuleProvided)
     {
         if (_userInput._allPorts)
         {
@@ -952,6 +1110,17 @@ void MlxlinkUi::validateSpeedAndCSVBerParams()
 
 void MlxlinkUi::validateCableParams()
 {
+    bool cableSaveLaserSetpoint = false;
+    // When --cable is combined with --save_laser_setpoint, switch from the PMMP-based
+    // SAVE_LASER_SETPOINT path to the EEPROM/MCIA-based CABLE_SAVE_LASER_SETPOINT path.
+    if (_userInput._cable && isIn(SAVE_LASER_SETPOINT, _sendRegFuncMap))
+    {
+        removeCmd(SAVE_LASER_SETPOINT);
+        addCmd(CABLE_SAVE_LASER_SETPOINT);
+        cableSaveLaserSetpoint = true;
+        _userInput._uniqueCableCmds++;
+    }
+
     // When --cable is combined with --set_tx_precoding/--set_rx_precoding, switch from the
     // PLTC-based link precoding (SEND_PRECODING) to the PMCR-based module precoding path.
     bool cablePrecoding = false;
@@ -980,8 +1149,8 @@ void MlxlinkUi::validateCableParams()
     bool cableConfigParamProvided = _userInput.isModuleConfigParamsProvided;
     bool paramSetProvided = _userInput.configParamsToSet.size();
     bool cableCommandProvided = _userInput._dump || _userInput._write || _userInput._read || _userInput._ddm ||
-                                cablePrbsParamProvided || cableConfigParamProvided || _userInput._showModuleCap ||
-                                cablePrecoding || cableShowModuleInfo;
+                                cablePrbsParamProvided || cableConfigParamProvided || cableSaveLaserSetpoint ||
+                                _userInput._showModuleCap || cablePrecoding || cableShowModuleInfo;
 
     if (!_userInput._cable && (cableCommandProvided || readWriteFlags))
     {
@@ -1146,11 +1315,107 @@ void MlxlinkUi::validatePortInfoParams()
     }
 }
 
+void MlxlinkUi::validatePortInfoCpoParams() {
+    if (!_userInput._showModule && (_userInput._isEls || _userInput._isOe))
+    {
+        throw MlxRegException("When using OE/ELS flags, the --" MODULE_INFO_FLAG "/-m flag must be specified!");
+    }
+    if (_userInput._isEls && _userInput._isOe)
+    {
+        throw MlxRegException("Please provide one of module type options: "
+                              "--" LINKX_ELS_FLAG " or --" LINKX_OE_FLAG);
+    }
+}
+
+void MlxlinkUi::validateElsParams()
+{
+    const bool saveLaserSetpoint =
+      isIn(SAVE_LASER_SETPOINT, _sendRegFuncMap) || isIn(CABLE_SAVE_LASER_SETPOINT, _sendRegFuncMap);
+    const bool handleElsOperation = isIn(HANDLE_ELS_OPERATION, _sendRegFuncMap);
+
+    if (!handleElsOperation && !saveLaserSetpoint)
+    {
+        if (_userInput._elsLaserIdxs.empty())
+        {
+            // If no ELS flags specified, nothing to validate
+            return;
+        }
+        else
+        {
+            throw MlxRegException("--" ELS_LASER_FLAG " must be specified only with --" ELS_OPERATION_FLAG
+                                  " or --" SAVE_LASER_SETPOINT_FLAG);
+        }
+    }
+
+    if (!_userInput._elsModuleProvided || _userInput._elsLaserIdxs.empty())
+    {
+        throw MlxRegException("--" ELS_OPERATION_FLAG " or --" SAVE_LASER_SETPOINT_FLAG
+                              " must be specified together with --" ELS_MODULE_FLAG " and --" ELS_LASER_FLAG);
+    }
+
+    // Validate laser indexes
+    bool firstLaserIdx = true;
+    uint32_t prevLaserIdx = 0;
+    for (uint32_t laserIdx : _userInput._elsLaserIdxs)
+    {
+        // Validate laser index is in valid range
+        if (laserIdx >= ELS_LASER_NUM)
+        {
+            throw MlxRegException("Invalid laser number: %u. Valid range is [0-%d]", laserIdx, ELS_LASER_NUM - 1);
+        }
+
+        // Validate no duplicate laser indices (assuming list is sorted)
+        if (!firstLaserIdx && laserIdx == prevLaserIdx)
+        {
+            throw MlxRegException("Duplicate laser number: %u", laserIdx);
+        }
+        prevLaserIdx = laserIdx;
+        firstLaserIdx = false;
+    }
+
+    // Validate operation value
+    if (handleElsOperation && !isValidElsOperation(_userInput._elsOperation))
+    {
+        throw MlxRegException("Invalid ELS operation '%s'. See --help for valid operations",
+                              _userInput._elsOperation.c_str());
+    }
+
+    if (saveLaserSetpoint && _userInput._saveLaserSetpoint > (uint16_t)-1)
+    {
+        throw MlxRegException("Invalid power setpoint value: %u. Valid range is [0-65535]",
+                              _userInput._saveLaserSetpoint);
+    }
+}
+
+bool MlxlinkUi::isValidElsOperation(const string& op)
+{
+    return (op == ELS_OPERATION_FIBER_CHECK_STR || op == ELS_OPERATION_LASER_TUNING_STR ||
+            op == ELS_OPERATION_LASER_WL_TUNING_STR || op == ELS_OPERATION_LASER_UP_STR);
+}
+
+void MlxlinkUi::validateAmberCollectParams()
+{
+    if (_userInput._csvBer != "" && (_userInput._isEls || _userInput._isOe))
+    {
+        throw MlxRegException("Amber collect is not supported for specific OE \\ ELS!");
+    }
+    if (!_userInput._amberPagesStr.empty() && !isIn(SEND_AMBER_COLLECT, _sendRegFuncMap))
+    {
+        throw MlxRegException(AMBER_INDEX_FLAG " option is used with " AMBER_COLLECT_FLAG);
+    }
+    if (_userInput.amberRewrite && !isIn(SEND_AMBER_COLLECT, _sendRegFuncMap))
+    {
+        throw MlxRegException(AMBER_REWRITE_FLAG " option is used with " AMBER_COLLECT_FLAG);
+    }
+}
+
 void MlxlinkUi::validateMultiPortInfoParams()
 {
-    if ((_userInput._showMultiPortInfo || _userInput._showMultiPortModuleInfo) && _userInput._portSpecified)
+    if ((_userInput._showMultiPortInfo || _userInput._showMultiPortModuleInfo || _userInput._showMultiPortCpoInfo) &&
+        _userInput._portSpecified)
     {
-        throw MlxRegException("When using " MULTI_PORT_INFO_FLAG " or " MULTI_PORT_MODULE_INFO_FLAG " flags, "
+        throw MlxRegException("When using " MULTI_PORT_INFO_FLAG ", " MULTI_PORT_MODULE_INFO_FLAG
+                              ", or " MULTI_PORT_CPO_INFO_FLAG " flags, "
                               "the port flag must not be specified!");
     }
 }
@@ -1210,6 +1475,35 @@ void MlxlinkUi::validatePlrParams()
         {
             throw MlxRegException("At least one of the following parameters must be provided with --" SET_PLR_FLAG ": "
                                   "--" PLR_REJECT_MODE_FLAG ", --" PLR_MARGIN_THRESHOLD_FLAG ", --" PLR_TX_CRC_FLAG);
+        }
+    }
+}
+
+void MlxlinkUi::validateApsuParams()
+{
+    if (!_userInput._apsuParamsToSet.empty() && !_userInput._setApsu)
+    {
+        throw MlxRegException("APSU parameters are valid with --" SET_APSU_FLAG " only");
+    }
+
+    if (_userInput._setApsu && _userInput._apsuParamsToSet.empty())
+    {
+        vector<string> flagNames;
+        for (const auto& param : MlxlinkMaps::getInstance()->_apsuConfigParams)
+        {
+            flagNames.push_back("--" + param.flagName);
+        }
+
+        throw MlxRegException("At least one of the following parameters must be provided with --" SET_APSU_FLAG ": " +
+                              getStringFromVector(flagNames));
+    }
+
+    set<string> providedFlags;
+    for (const auto& param : _userInput._apsuParamsToSet)
+    {
+        if (!providedFlags.insert(param.first).second)
+        {
+            throw MlxRegException("The --" + param.first + " flag was provided more than once");
         }
     }
 }
@@ -1338,6 +1632,7 @@ void MlxlinkUi::paramValidate()
     validatePrrParams();
     validatePlrParams();
     validatePRBSParams();
+    validateApsuParams();
     validatePhyRecoveryParams();
     validateLinkTrainingParams();
     validatePeriodicEqParams();
@@ -1348,6 +1643,10 @@ void MlxlinkUi::paramValidate()
     validateGradeScanParams();
     validateErrInjParams();
     validatePortInfoParams();
+    validatePortInfoCpoParams();
+    validateElsParams();
+    validateAmberCollectParams();
+    validateMultiPortInfoParams();
 }
 
 void MlxlinkUi::initCmdParser()
@@ -1362,11 +1661,21 @@ void MlxlinkUi::initCmdParser()
     AddOptions(LABEL_PORT_FLAG, LABEL_PORT_FLAG_SHORT, "LabelPort",
                "Label Port (single port e.g. 3/2, or comma-separated list e.g. 1,2,3 - "
                "list currently supported only with --" PAOS_FLAG " (-a))");
+    AddOptions(ELS_MODULE_FLAG, ELS_MODULE_FLAG_SHORT, "module_index", "CPO-ELS module index for laser operations flows");
     AddOptions(PCIE_LINKS_FLAG, PCIE_LINKS_FLAG_SHORT, "", "Show valid PCIe links");
     AddOptions(EXTENDED_PCIE_FLAG, EXTENDED_PCIE_FLAG_SHORT, "", "Show extended PCIe link info");
     AddOptions(BER_FLAG, BER_FLAG_SHORT, "", "Show BER Info");
     AddOptions(EYE_OPENING_FLAG, EYE_OPENING_FLAG_SHORT, "", "Show Eye Opening Info");
     AddOptions(MODULE_INFO_FLAG, MODULE_INFO_FLAG_SHORT, "", "Show Module Info");
+    AddOptions(LINKX_ELS_FLAG, LINKX_ELS_FLAG_SHORT, "", "Module type ELS, provide information on ELS port");
+    AddOptions(LINKX_OE_FLAG, LINKX_OE_FLAG_SHORT, "", "Module type OE, provide information on OE port");
+    AddOptions(ELS_LASER_FLAG, ELS_LASER_FLAG_SHORT, "els lasers",
+               "Lasers to operate on (comma-separated) [0,1,2,3,4,5,6,7]");
+    AddOptions(ELS_OPERATION_FLAG, ELS_OPERATION_FLAG_SHORT, "els operation",
+               "ELS operation [FC(fiber_check)/LT(laser_tuning)/WLT(laser_wl_tuning)/UP(laser_up)]");
+    AddOptions(SAVE_LASER_SETPOINT_FLAG, SAVE_LASER_SETPOINT_FLAG_SHORT, "power_setpoint",
+               "CPO ELS: write laser power setpoint to EEPROM via PMMP for each --" ELS_LASER_FLAG
+               " (PRM units: 0.01 mW; requires --" ELS_MODULE_FLAG " and --" ELS_LASER_FLAG ")");
     AddOptions(PPCNT_CLEAR_FLAG, PPCNT_CLEAR_FLAG_SHORT, "", "Clear PPCNT Counters");
     AddOptions(DEVICE_DATA_FLAG, DEVICE_DATA_FLAG_SHORT, "", "Device Info");
     AddOptions(BER_MONITOR_INFO_FLAG, BER_MONITOR_INFO_FLAG_SHORT, "", "Show BER Monitor Info");
@@ -1378,6 +1687,9 @@ void MlxlinkUi::initCmdParser()
     AddOptions(MULTI_PORT_MODULE_INFO_FLAG, MULTI_PORT_MODULE_INFO_FLAG_SHORT, "", "Show multi port module info table");
     AddOptions(MULTI_PORT_MODULE_INFO_ACRONYM_FLAG, MULTI_PORT_MODULE_INFO_ACRONYM_FLAG_SHORT, "",
                "Show multi port module info table");
+    AddOptions(MULTI_PORT_CPO_INFO_FLAG, MULTI_PORT_CPO_INFO_FLAG_SHORT, "", "Show multi port CPO info table");
+    AddOptions(MULTI_PORT_CPO_INFO_ACRONYM_FLAG, MULTI_PORT_CPO_INFO_ACRONYM_FLAG_SHORT, "",
+               "Show multi port CPO info table");
     AddOptions(PLR_INFO_FLAG, PLR_INFO_FLAG_SHORT, "", "Show PLR Info");
     AddOptions(SET_PLR_FLAG, SET_PLR_FLAG_SHORT, "", "Set PLR configuration");
     AddOptions(PLR_REJECT_MODE_FLAG, PLR_REJECT_MODE_FLAG_SHORT, "PLR_REJECT_MODE",
@@ -1386,7 +1698,51 @@ void MlxlinkUi::initCmdParser()
                "PLR margin threshold (0-7)");
     AddOptions(PLR_TX_CRC_FLAG, PLR_TX_CRC_FLAG_SHORT, "PLR_TX_CRC",
                "TX CRC over PLR: 0/DS(disable), 1/EN(enable) (Optional)");
+    AddOptions(APSU_INFO_FLAG, APSU_INFO_FLAG_SHORT, "", "Show APSU (ILT/RTS) Info");
+    AddOptions(SET_APSU_FLAG, SET_APSU_FLAG_SHORT, "", "Set APSU (ILT/RTS) configuration");
+    AddOptions(APSU_CTL_FLAG, APSU_CTL_FLAG_SHORT, "ctl", "APSU: EN(enable)/DS(disable) (Optional)");
+    AddOptions(APSU_TRAINING_EN_FLAG, APSU_TRAINING_EN_FLAG_SHORT, "training_en",
+               "Training Enable: EN(enable)/DS(disable) (Optional)");
+    AddOptions(APSU_PEER_DET_FLAG, APSU_PEER_DET_FLAG_SHORT, "peer_det",
+               "LT Peer Detection: EN(enable)/DS(disable) (Optional)");
+    AddOptions(APSU_HOP_COUNT_CTL_FLAG, APSU_HOP_COUNT_CTL_FLAG_SHORT, "hop_count_ctl",
+               "Hop Count Control: EN(enable)/DS(disable) (Optional)");
+    AddOptions(APSU_NLUT_FLAG, APSU_NLUT_FLAG_SHORT, "nlut", "nLUT Control: EN(enable)/DS(disable) (Optional)");
+    AddOptions(APSU_VALIDATION_EN_FLAG, APSU_VALIDATION_EN_FLAG_SHORT, "validation_en",
+               "ILT Frame Validation: EN(enable)/DS(disable) (Optional)");
+    AddOptions(APSU_RESTART_FLAG, APSU_RESTART_FLAG_SHORT, "", "Restart Training (Optional)");
+    AddOptions(APSU_RECOVERY_TIMER_FLAG, APSU_RECOVERY_TIMER_FLAG_SHORT, "recovery_timer",
+               "Recovery Timer in ms [0-255] (Optional)");
+    AddOptions(APSU_MAX_RECOVERY_EVENTS_FLAG, APSU_MAX_RECOVERY_EVENTS_FLAG_SHORT, "max_recovery_events",
+               "Max Recovery Events [0-255] (Optional)");
+    AddOptions(APSU_MAX_WAIT_TIMER_FLAG, APSU_MAX_WAIT_TIMER_FLAG_SHORT, "max_wait_timer",
+               "Max Wait Timer in seconds [0-65535] (Optional)");
+    AddOptions(APSU_PROPAGATION_TIMER_FLAG, APSU_PROPAGATION_TIMER_FLAG_SHORT, "propagation_timer",
+               "Propagation Timer in 10ms units [0-31] (Optional)");
+    AddOptions(APSU_QUIET_TIMER_FLAG, APSU_QUIET_TIMER_FLAG_SHORT, "quiet_timer",
+               "Quiet Timer in 10ms units [0-15] (Optional)");
+    AddOptions(APSU_INVERT_TO_FLAG, APSU_INVERT_TO_FLAG_SHORT, "invert_to", "Invert Timeout in ms [0-15] (Optional)");
+    AddOptions(APSU_TF_DETECT_TIMER_FLAG, APSU_TF_DETECT_TIMER_FLAG_SHORT, "tf_detect_timer",
+               "TF Detect Timer in ms [0-15] (Optional)");
+    AddOptions(APSU_PEER_DET_TIMER_FLAG, APSU_PEER_DET_TIMER_FLAG_SHORT, "peer_det_timer",
+               "Peer Detection Timer in 100ms units [0-15] (Optional)");
+    AddOptions(APSU_FAIL_TIMER_FLAG, APSU_FAIL_TIMER_FLAG_SHORT, "fail_timer",
+               "Fail Timer in 10ms units [0-255] (Optional)");
+    AddOptions(APSU_VALIDATION_TIMER_FLAG, APSU_VALIDATION_TIMER_FLAG_SHORT, "validation_timer",
+               "Validation Timer in 10ms units [0-15] (Optional)");
+    AddOptions(APSU_RESTART_ON_LOS_FLAG, APSU_RESTART_ON_LOS_FLAG_SHORT, "restart_on_los",
+               "Restart On LoS: 0(no restart), 1(restart), 2(restart on long LoS only) (Optional)");
+    AddOptions(APSU_LOCAL_PATTERN_TX_FLAG, APSU_LOCAL_PATTERN_TX_FLAG_SHORT, "local_pattern_tx",
+               "Local Pattern TX: 0(PRBS31), 1(PCS data) (Optional)");
+    AddOptions(APSU_MAX_HOP_COUNT_FLAG, APSU_MAX_HOP_COUNT_FLAG_SHORT, "max_hop_count",
+               "Max Hop Count [0-3] (Optional)");
+    AddOptions(APSU_HOP_DECREMENT_FLAG, APSU_HOP_DECREMENT_FLAG_SHORT, "hop_decrement",
+               "Hop Decrement [0-3] (Optional)");
+    AddOptions(APSU_HOP_COUNT_FLAG, APSU_HOP_COUNT_FLAG_SHORT, "hop_count", "Hop Count [0-3] (Optional)");
+    AddOptions(APSU_BCNL_PAGES_RETRANSMISSIONS_FLAG, APSU_BCNL_PAGES_RETRANSMISSIONS_FLAG_SHORT,
+               "bcnl_pages_retransmissions", "BCNL Pages Retransmissions [1-255] (Optional)");
     AddOptions(KR_INFO_FLAG, KR_INFO_FLAG_SHORT, "", "Show KR Info");
+    AddOptions(LTX_INFO_FLAG, LTX_INFO_FLAG_SHORT, "", "Show LTX status and logger history");
     AddOptions(HOST_CLASS_FLAG, HOST_CLASS_FLAG_SHORT, "", "Show Host Class Info");
     AddOptions(PERIODIC_EQ_FLAG, PERIODIC_EQ_FLAG_SHORT, "", "Show Link PEQ (Periodic Equalization) Info");
     AddOptions(RX_RECOVERY_COUNTERS_FLAG, RX_RECOVERY_COUNTERS_FLAG_SHORT, "", "Show Rx Recovery Counters");
@@ -1427,6 +1783,8 @@ void MlxlinkUi::initCmdParser()
                "Transceiver loopback state (only with -l TRAN) [input|output|disable]");
     AddOptions(BER_COLLECT_FLAG, BER_COLLECT_FLAG_SHORT, "BERCollectFile", "BER Collection csv file");
     AddOptions(AMBER_COLLECT_FLAG, AMBER_COLLECT_FLAG_SHORT, "AMBERCollectFile", "AMBER Collection csv file");
+    AddOptions(AMBER_INDEX_FLAG, AMBER_INDEX_FLAG_SHORT, "Page index", "Amber pages to dump");
+    AddOptions(AMBER_REWRITE_FLAG, AMBER_REWRITE_FLAG_SHORT, "", "Rewrite the amber csv instead of append to it");
     AddOptions(BER_LIMIT_FLAG, BER_LIMIT_FLAG_SHORT, "Mode", "Test Mode of Ber Collect (Nominal/Corner/Drift)");
     AddOptions(ITERATION_FLAG, ITERATION_FLAG_SHORT, "Iteration", "Iteration of BER Collect");
     AddOptions(PHY_RECOVERY_FLAG, PHY_RECOVERY_FLAG_SHORT, "Recovery", "Enable/Disable PHY Recovery");
@@ -1667,6 +2025,9 @@ void MlxlinkUi::commandsCaller()
             case CABLE_PRECODING:
                 _mlxlinkCommander->performModulePrecoding();
                 break;
+            case CABLE_SAVE_LASER_SETPOINT:
+                _mlxlinkCommander->cableSaveLaserSetpoint();
+                break;
             case PCIE_ERROR_INJ:
                 _mlxlinkCommander->handlePCIeErrInj();
                 break;
@@ -1676,14 +2037,26 @@ void MlxlinkUi::commandsCaller()
             case SHOW_MULTI_PORT_MODULE_INFO:
                 _mlxlinkCommander->showMultiPortModuleInfo();
                 break;
+            case SHOW_MULTI_PORT_CPO_INFO:
+                _mlxlinkCommander->showMultiPortCpoInfo();
+                break;
             case SHOW_PLR:
                 _mlxlinkCommander->showPlr();
                 break;
             case SET_PLR:
                 _mlxlinkCommander->setPlr();
                 break;
+            case SHOW_APSU:
+                _mlxlinkCommander->showApsu();
+                break;
+            case SET_APSU:
+                _mlxlinkCommander->handleApsu();
+                break;
             case SHOW_KR:
                 _mlxlinkCommander->showKr();
+                break;
+            case SHOW_LTX:
+                _mlxlinkCommander->showLtx();
                 break;
             case SHOW_HOST_CLASS:
                 _mlxlinkCommander->showHostClass();
@@ -1702,6 +2075,12 @@ void MlxlinkUi::commandsCaller()
                 break;
             case SEND_PRECODING:
                 _mlxlinkCommander->setPrecoding();
+                break;
+            case SAVE_LASER_SETPOINT:
+                _mlxlinkCommander->handleSaveLaserSetpoint();
+                break;
+            case HANDLE_ELS_OPERATION:
+                _mlxlinkCommander->handleElsOperation();
                 break;
             default:
                 break;
@@ -1775,6 +2154,45 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _userInput._device = value;
         return PARSE_OK;
     }
+    else if (name == LINKX_ELS_FLAG)
+    {
+        _userInput._isEls = true;
+        return PARSE_OK;
+    }
+    else if (name == LINKX_OE_FLAG)
+    {
+        _userInput._isOe = true;
+        return PARSE_OK;
+    }
+    else if (name == ELS_MODULE_FLAG)
+    {
+        checkStrLength(value);
+        _userInput._elsModuleProvided = true;
+        mlxreg::RegAccessParser::strToUint32((char*)value.c_str(), _userInput._elsModule);
+        return PARSE_OK;
+    }
+    else if (name == ELS_LASER_FLAG)
+    {
+        std::vector<string> laserParams = parseParamsFromLine(toUpperCase(value));
+        _userInput._elsLaserIdxs = getIdxsFromParams(laserParams);
+        return PARSE_OK;
+    }
+    else if (name == ELS_OPERATION_FLAG)
+    {
+        addCmd(HANDLE_ELS_OPERATION);
+        _userInput._elsOperation = toUpperCase(value);
+        _userInput._uniqueCmds++;
+        return PARSE_OK;
+    }
+    else if (name == SAVE_LASER_SETPOINT_FLAG)
+    {
+        validateNonEmptyValue(value, "--" SAVE_LASER_SETPOINT_FLAG);
+        checkStrLength(value);
+        RegAccessParser::strToUint32((char*)value.c_str(), _userInput._saveLaserSetpoint);
+        addCmd(SAVE_LASER_SETPOINT);
+        _userInput._uniqueCmds++;
+        return PARSE_OK;
+    }
     else if (name == MODULE_INFO_FLAG)
     {
         addCmd(SHOW_MODULE);
@@ -1833,10 +2251,38 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _userInput._plrTxCrcProvided = true;
         return PARSE_OK;
     }
+    else if (name == APSU_INFO_FLAG)
+    {
+        addCmd(SHOW_APSU);
+        _userInput._showApsu = true;
+        return PARSE_OK;
+    }
+    else if (name == SET_APSU_FLAG)
+    {
+        addCmd(SET_APSU);
+        _userInput._setApsu = true;
+        _userInput._uniqueCmds++;
+        return PARSE_OK;
+    }
+    else if (getApsuConfigParam(name) != nullptr)
+    {
+        if (name != APSU_RESTART_FLAG)
+        {
+            validateNonEmptyValue(value, "--" + name);
+        }
+        _userInput._apsuParamsToSet.push_back(make_pair(name, toUpperCase(value)));
+        return PARSE_OK;
+    }
     else if (name == KR_INFO_FLAG)
     {
         addCmd(SHOW_KR);
         _userInput._showKr = true;
+        return PARSE_OK;
+    }
+    else if (name == LTX_INFO_FLAG)
+    {
+        addCmd(SHOW_LTX);
+        _userInput._showLtx = true;
         return PARSE_OK;
     }
     else if (name == HOST_CLASS_FLAG)
@@ -2240,6 +2686,16 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _userInput._csvBer = value;
         return PARSE_OK;
     }
+    else if (name == AMBER_INDEX_FLAG)
+    {
+        _userInput._amberPagesStr = parseParamsFromLine(value);
+        return PARSE_OK;
+    }
+    else if (name == AMBER_REWRITE_FLAG)
+    {
+        _userInput.amberRewrite = true;
+        return PARSE_OK;
+    }
     else if (name == BER_LIMIT_FLAG)
     {
         _userInput._testMode = toUpperCase(value);
@@ -2594,6 +3050,13 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _userInput._uniqueCmds++;
         return PARSE_OK;
     }
+    else if (name == MULTI_PORT_CPO_INFO_ACRONYM_FLAG || name == MULTI_PORT_CPO_INFO_FLAG)
+    {
+        addCmd(SHOW_MULTI_PORT_CPO_INFO);
+        _userInput._showMultiPortCpoInfo = true;
+        _userInput._uniqueCmds++;
+        return PARSE_OK;
+    }
     return PARSE_ERROR;
 }
 
@@ -2626,6 +3089,12 @@ int MlxlinkUi::run(int argc, char** argv)
             _userInput._splitProvided = true;
             _userInput._splitPort = _userInput._forceSplitValue;
         }
+    }
+
+    // Remove SHOW_PDDR command if ELS flags are specified
+    if (_userInput._elsModuleProvided)
+    {
+        removeCmd(SHOW_PDDR);
     }
 
     paramValidate();
