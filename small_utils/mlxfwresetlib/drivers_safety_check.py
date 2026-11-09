@@ -30,7 +30,7 @@
 # --
 import sys
 try:
-    from mlxfwresetlib.mlxfwreset_utils import cmdExec, split_dbdf, getDevDBDF, get_device_without_function
+    from mlxfwresetlib.mlxfwreset_utils import cmdExec, split_dbdf, getDevDBDF, get_device_without_function, PCI_DOMAIN_PATTERN, PCI_DBDF_PATTERN
     from mlxfwresetlib.hot_reset import HotResetFlow, HotResetError
 
     import mtcr
@@ -289,7 +289,7 @@ class DriversSafetyCheckManager:
         if rc != 0:
             raise RuntimeError("Failed to run: {}. Error: {}".format(cmd, stderr))
 
-        dbdf_pattern = re.compile(r'^[0-9a-f]{4}:[0-9a-f]{2}:[0-9a-f]{2}\.[0-9a-f]$', re.IGNORECASE)
+        dbdf_pattern = re.compile(PCI_DBDF_PATTERN)
         bdf_no_domain_pattern = re.compile(r'^[0-9a-f]{2}:[0-9a-f]{2}\.[0-9a-f]$', re.IGNORECASE)  # BDF without domain
         discovered_devices = []
 
@@ -334,7 +334,7 @@ class DriversSafetyCheckManager:
 
         # Use regex to validate and parse the entire lspci output format
         # Expected format: 31:00.0 0604: 15b3:197e (domain may or may not be present)
-        pattern = r'^((?:[0-9a-fA-F]{4}:)?[0-9a-fA-F]{2}:[0-9a-fA-F]{2}\.[0-9a-fA-F])\s+([0-9a-fA-F]{4}):\s+([0-9a-fA-F]{4}:[0-9a-fA-F]{4})'
+        pattern = r'^((?:' + PCI_DOMAIN_PATTERN + r':)?[0-9a-fA-F]{2}:[0-9a-fA-F]{2}\.[0-9a-fA-F])\s+([0-9a-fA-F]{4}):\s+([0-9a-fA-F]{4}:[0-9a-fA-F]{4})'
 
         match = re.match(pattern, output)
         if not match:

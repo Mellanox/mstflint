@@ -118,10 +118,13 @@ class LinuxRshimUserSpaceDriver:
 
         self.logger = logger
 
+        # The rshim is another PCI function of the user's device
+        user_pci_device = mlxfwreset_utils.get_device_without_function(user_pci_device_name)
         for rshim_misc_file, rshim_pci_device_name, rshim_drop_mode in self._scan_rshim_drivers():
-            if user_pci_device_name[5:11] in rshim_pci_device_name and rshim_drop_mode == 0:
+            rshim_dbdf = rshim_pci_device_name.rsplit('-', 1)[-1]  # DEV_NAME is e.g. pcie-0000:03:00.2
+            if mlxfwreset_utils.get_device_without_function(rshim_dbdf) == user_pci_device and rshim_drop_mode == 0:
                 self.rshim_misc_file = rshim_misc_file
-                self.pci_device_name = rshim_pci_device_name[5:]
+                self.pci_device_name = rshim_dbdf
                 break
         else:
             raise DriverNotExist("There is no running user-space rshim driver")
@@ -193,7 +196,8 @@ class MlnxDriverLinux(MlnxDriver):
                                 raise RuntimeError('Reset virtual functions failed! Please reset virtual functions manually and resume operation')
 
                 # insert all the instances of the driver that need unbind/bind
-                cmd = "find {0} | grep {1}".format(MlnxDriverLinux.PCI_DRIVERS_PATH, dbd)
+                # Anchor on '/' so 0000:01:00 doesn't also match a wider domain such as 10000:01:00
+                cmd = "find {0} | grep '/{1}\\.'".format(MlnxDriverLinux.PCI_DRIVERS_PATH, dbd)
                 logger.info('{0}'.format(cmd))
                 (_, out, _) = cmdExec(cmd)
                 for line in out.split('\n')[:-1]:
