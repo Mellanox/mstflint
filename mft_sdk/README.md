@@ -124,6 +124,25 @@ $(includedir)/mstflint/sdk/mft_sdk/*.h                # public SDK headers
 $(datadir)/mstflint/sdk/prm_dbs/{hca,gpu,switch}/ext/*.adb   # PRM databases opened at runtime (SDK-private path)
 ```
 
+## Exported symbols
+
+`libmstflint_sdk.so` exports exactly the SDK API: the `mst*` functions declared
+in the public headers (`sdkinclude_HEADERS`). Everything else linked into the
+library is local to it: mtcr, the register layouts, the adb parser, mlxlink,
+the bundled jsoncpp/spdlog/fmt and `std::` template instances. Applications
+can neither link against those symbols nor override them.
+
+The export list is `libmstflint_sdk.map`, a GNU ld version script that names
+every API function, grouped by header, and ends in `local: *`. To add an API
+function, declare it in a public header **and** list it in
+`libmstflint_sdk.map`; a function that is not listed is not exported. Do not
+replace the list with a wildcard: `mst*` would also export mtcr's internal
+`mst_driver_vpd_read4`.
+
+The three i2c functions are always declared but defined only in a
+`--enable-i2c` build. GNU ld ignores a listed function that is not defined
+(lld 16 and later need `-Wl,--undefined-version` for that).
+
 ## Using the SDK
 
 Headers are included via the `mft_sdk/` prefix (consistent with MFT). Add the
