@@ -1115,6 +1115,8 @@ static int mst_open(struct inode* inode, struct file* file)
 }
 
 /****************************************************/
+static int page_unpin(struct mst_dev_data* dev);
+
 static int mst_release(struct inode* inode, struct file* file)
 {
     int res = 0;
@@ -1156,12 +1158,16 @@ static int mst_release(struct inode* inode, struct file* file)
      *			md->connectx_wa_slot_p1 - 1, dev->connectx_wa_slots);
      */
     md->connectx_wa_slot_p1 = 0;
+    if (dev->dma_page.owner == file)
+    {
+        page_unpin(dev);
+    }
     mutex_unlock(&dev->lock);
 
+out:
     kfree(file->private_data);
     file->private_data = NULL;
 
-out:
     return res;
 }
 
@@ -1169,16 +1175,28 @@ static int page_pin(struct mst_dev_data* dev, struct page_info_st* page_info)
 {
     unsigned long page_pointer_start = page_info->page_pointer_start;
     unsigned int page_amount = page_info->page_amount;
-    unsigned int pages_size = page_amount * PAGE_SIZE;
-    unsigned long end_of_buffer = page_pointer_start + pages_size;
+    unsigned long pages_size;
+    unsigned long end_of_buffer;
     unsigned int gup_flags = FOLL_WRITE;
-    int page_mapped_counter = 0;
     int page_counter = 0;
     int total_pinned = 0;
 
+    if (page_amount == 0 || page_amount > PCICONF_MAX_PAGES_SIZE)
+    {
+        return -EINVAL;
+    }
+
+    if (dev->dma_page.page_list)
+    {
+        return -EBUSY;
+    }
+
+    pages_size = page_amount * PAGE_SIZE;
+    end_of_buffer = page_pointer_start + pages_size;
+
     /* If the combination of the addr and size requested for this memory */
     /* region causes an integer overflow, return error. */
-    if (((end_of_buffer) < page_pointer_start) || (PAGE_ALIGN(end_of_buffer) < (end_of_buffer)) || (page_amount < 1))
+    if (((end_of_buffer) < page_pointer_start) || (PAGE_ALIGN(end_of_buffer) < (end_of_buffer)))
     {
         return -EINVAL;
     }
@@ -1199,11 +1217,13 @@ static int page_pin(struct mst_dev_data* dev, struct page_info_st* page_info)
     /* Go over the user memory buffer and pin user pages in memory. */
     while (total_pinned < page_amount)
     {
+        int page_mapped_counter = 0;
+
         /* Save the current number of pages to pin */
         int num_pages = page_amount - total_pinned;
 
         /* Save the current pointer to the right offset. */
-        uint64_t current_ptr = page_pointer_start + (total_pinned * PAGE_SIZE);
+        unsigned long current_ptr = page_pointer_start + (total_pinned * PAGE_SIZE);
 
         /* Save the current page. */
         struct page** current_pages = dev->dma_page.page_list + total_pinned;
@@ -1214,8 +1234,8 @@ static int page_pin(struct mst_dev_data* dev, struct page_info_st* page_info)
         int pinned_pages = get_user_pages_fast(current_ptr, num_pages, gup_flags, current_pages);
         if (pinned_pages < 1)
         {
-            kfree(dev->dma_page.page_list);
-            return -EFAULT;
+            page_unpin(dev);
+            return pinned_pages ? pinned_pages : -EFAULT;
         }
 
         /* When the parameter 'inter_iommu' is on, we need to set up */
@@ -1225,16 +1245,23 @@ static int page_pin(struct mst_dev_data* dev, struct page_info_st* page_info)
             int current_page = total_pinned + page_mapped_counter;
 
             /* Get the dma address. */
-            dev->dma_page.dma_addr[current_page] = dma_map_page(&dev->pci_dev->dev, current_pages[current_page], 0, PAGE_SIZE, DMA_BIDIRECTIONAL);
+            dev->dma_page.dma_addr[current_page] = dma_map_page(&dev->pci_dev->dev, current_pages[page_mapped_counter], 0, PAGE_SIZE, DMA_BIDIRECTIONAL);
             /* Do we get a valid dma address ? */
             if (dma_mapping_error(&dev->pci_dev->dev, dev->dma_page.dma_addr[current_page]))
             {
                 printk(KERN_ERR "Failed to get DMA addresses\n");
+                while (page_mapped_counter < pinned_pages)
+                {
+                    put_page(current_pages[page_mapped_counter]);
+                    page_mapped_counter++;
+                }
+                page_unpin(dev);
                 return -EINVAL;
             }
 
             page_info->page_address_array[current_page].dma_address = dev->dma_page.dma_addr[current_page];
 
+            dev->dma_page.pinned_count++;
             page_mapped_counter++;
         }
 
@@ -1258,7 +1285,7 @@ static int page_pin(struct mst_dev_data* dev, struct page_info_st* page_info)
     return 0;
 }
 
-static int page_unpin(struct mst_dev_data* dev, struct page_info_st* page_info)
+static int page_unpin(struct mst_dev_data* dev)
 {
     int page_counter;
 
@@ -1269,7 +1296,7 @@ static int page_unpin(struct mst_dev_data* dev, struct page_info_st* page_info)
     }
 
     /* Deallocate the pages. */
-    for (page_counter = 0; page_counter < page_info->page_amount; page_counter++)
+    for (page_counter = 0; page_counter < dev->dma_page.pinned_count; page_counter++)
     {
         /* DMA activity is finished. */
         dma_unmap_page(&dev->pci_dev->dev, dev->dma_page.dma_addr[page_counter], PAGE_SIZE, DMA_BIDIRECTIONAL);
@@ -1285,7 +1312,10 @@ static int page_unpin(struct mst_dev_data* dev, struct page_info_st* page_info)
     }
 
     /* All the pages are clean. */
+    kfree(dev->dma_page.page_list);
     dev->dma_page.page_list = NULL;
+    dev->dma_page.pinned_count = 0;
+    dev->dma_page.owner = NULL;
 
     return 0;
 }
@@ -1395,13 +1425,6 @@ static int mst_ioctl(struct inode* inode, struct file* file, unsigned int opcode
     void* user_buf = (void*)input;
 
     /*
-     * In MEM mapped data flow there is no need to lock the semaphore.
-     * Since the HW handles the requests in PCI level thus no need
-     * for serializing (HW is capable of handling parallel requests)
-     */
-#define IS_LOCK_NEEDED(dev) (!(dev->type == PCIMEM && (opcode == MST_READ4 || opcode == MST_WRITE4)))
-
-    /*
      * make sure the device is available since it
      * could be removed by hotplug event
      * if available grab its lock
@@ -1411,10 +1434,8 @@ static int mst_ioctl(struct inode* inode, struct file* file, unsigned int opcode
         if (cur->major == imajor(inode))
         {
             dev = cur;
-            if (IS_LOCK_NEEDED(dev))
-            {
-                mutex_lock(&dev->lock);
-            }
+            /* Serialize I/O with BAR mapping changes. */
+            mutex_lock(&dev->lock);
             break;
         }
     }
@@ -1509,7 +1530,7 @@ static int mst_ioctl(struct inode* inode, struct file* file, unsigned int opcode
                     break;
 
                 case PCIMEM:
-                    if ((readst.offset + sizeof(u32)) > MST_MEMORY_SIZE)
+                    if ((u64)readst.offset + sizeof(u32) > MST_MEMORY_SIZE)
                     {
                         mst_err("accessing invalid address\n");
                         res = -EINVAL;
@@ -1571,7 +1592,7 @@ static int mst_ioctl(struct inode* inode, struct file* file, unsigned int opcode
                     break;
 
                 case PCIMEM:
-                    if ((writest.offset + sizeof(u32)) > MST_MEMORY_SIZE)
+                    if ((u64)writest.offset + sizeof(u32) > MST_MEMORY_SIZE)
                     {
                         mst_err("Accesing invalid address\n");
                         res = -EINVAL;
@@ -1624,7 +1645,7 @@ static int mst_ioctl(struct inode* inode, struct file* file, unsigned int opcode
                 goto fin;
             }
 
-            if ((readst.offset + readst.size) > MST_MEMORY_SIZE)
+            if (readst.size > sizeof(readst.data) || (u64)readst.offset + readst.size > MST_MEMORY_SIZE)
             {
                 mst_err("accessing invalid address\n");
                 res = -EINVAL;
@@ -1692,7 +1713,7 @@ static int mst_ioctl(struct inode* inode, struct file* file, unsigned int opcode
                 goto fin;
             }
 
-            if ((writest.offset + writest.size) > MST_MEMORY_SIZE)
+            if (writest.size > sizeof(writest.data) || (u64)writest.offset + writest.size > MST_MEMORY_SIZE)
             {
                 mst_err("accessing invalid address\n");
                 res = -EINVAL;
@@ -1748,6 +1769,12 @@ static int mst_ioctl(struct inode* inode, struct file* file, unsigned int opcode
                 goto fin;
             }
 
+            if (read4_buf.size < 0 || read4_buf.size > (int)sizeof(read4_buf.data))
+            {
+                res = -EINVAL;
+                goto fin;
+            }
+
             res = read4_block_vsec(dev, read4_buf.address_space, read4_buf.offset, read4_buf.size, read4_buf.data);
             if (res != read4_buf.size)
             {
@@ -1795,6 +1822,12 @@ static int mst_ioctl(struct inode* inode, struct file* file, unsigned int opcode
                 goto fin;
             }
 
+            if (write4_buf.size < 0 || write4_buf.size > (int)sizeof(write4_buf.data))
+            {
+                res = -EINVAL;
+                goto fin;
+            }
+
             res = write4_block_vsec(dev, write4_buf.address_space, write4_buf.offset, write4_buf.size, write4_buf.data);
             if (res != write4_buf.size)
             {
@@ -1826,6 +1859,13 @@ static int mst_ioctl(struct inode* inode, struct file* file, unsigned int opcode
             if (copy_from_user(&initst, user_buf, sizeof(struct mst_pciconf_init_st)))
             {
                 res = -EFAULT;
+                goto fin;
+            }
+
+            if (initst.addr_reg >= dev->pci_dev->cfg_size || initst.data_reg >= dev->pci_dev->cfg_size ||
+                initst.addr_reg % sizeof(u32) || initst.data_reg % sizeof(u32))
+            {
+                res = -EINVAL;
                 goto fin;
             }
 
@@ -1884,6 +1924,13 @@ static int mst_ioctl(struct inode* inode, struct file* file, unsigned int opcode
             if (copy_from_user(&initst, user_buf, sizeof(struct mst_mem_init_st)))
             {
                 res = -EFAULT;
+                goto fin;
+            }
+
+            if (initst.bar >= PCI_STD_NUM_BARS || !(pci_resource_flags(dev->pci_dev, initst.bar) & IORESOURCE_MEM) ||
+                pci_resource_len(dev->pci_dev, initst.bar) < MST_MEMORY_SIZE)
+            {
+                res = -EINVAL;
                 goto fin;
             }
 
@@ -2080,16 +2127,23 @@ static int mst_ioctl(struct inode* inode, struct file* file, unsigned int opcode
                     goto fin;
                 }
 
+                dev->dma_page.owner = file;
                 /* Return the physical address to the user. */
                 if (copy_to_user(user_buf, &page_info, sizeof(struct page_info_st)) != 0)
                 {
+                    page_unpin(dev);
                     res = -EFAULT;
                     goto fin;
                 }
             }
             else
             {
-                res = page_unpin(dev, &page_info);
+                if (dev->dma_page.page_list && dev->dma_page.owner != file)
+                {
+                    res = -EPERM;
+                    goto fin;
+                }
+                res = page_unpin(dev);
             }
 
             break;
@@ -2146,10 +2200,7 @@ static int mst_ioctl(struct inode* inode, struct file* file, unsigned int opcode
     }
 
 fin:
-    if (IS_LOCK_NEEDED(dev))
-    {
-        mutex_unlock(&dev->lock);
-    }
+    mutex_unlock(&dev->lock);
 fin_err:
     return res;
 }
@@ -2218,6 +2269,11 @@ static struct mst_dev_data* mst_device_create(enum dev_type type, struct pci_dev
             dev->addr_reg = 0; /* invalid */
             dev->data_reg = 0; /* invalid */
             dev->bar = 0;
+            if (!(pci_resource_flags(pdev, dev->bar) & IORESOURCE_MEM) || pci_resource_len(pdev, dev->bar) < MST_MEMORY_SIZE)
+            {
+                mst_err("invalid memory resource, BAR: %x\n", dev->bar);
+                goto out;
+            }
             dev->hw_addr = ioremap(pci_resource_start(pdev, dev->bar), MST_MEMORY_SIZE);
             if (!dev->hw_addr)
             {
@@ -2287,6 +2343,11 @@ out:
 
 static void mst_device_destroy(struct mst_dev_data* dev)
 {
+    if (dev->dma_page.page_list)
+    {
+        page_unpin(dev);
+    }
+
     if (dev->hw_addr)
     {
         iounmap(dev->hw_addr);
