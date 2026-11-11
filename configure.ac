@@ -42,6 +42,19 @@ dnl Checks for programs
 AC_PROG_CC
 AC_PROG_CXX
 
+dnl The device-properties generator runs on the build machine, not the host.
+AC_ARG_VAR([CXX_FOR_BUILD], [build-machine C++ compiler for the device-properties generator])
+AC_ARG_VAR([CPPFLAGS_FOR_BUILD], [build-machine C/C++ preprocessor flags])
+AC_ARG_VAR([CXXFLAGS_FOR_BUILD], [build-machine C++ compiler flags])
+AC_ARG_VAR([LDFLAGS_FOR_BUILD], [build-machine linker flags])
+AS_IF([test "x$cross_compiling" = xno], [
+    : ${CXX_FOR_BUILD="$CXX"}
+    : ${CPPFLAGS_FOR_BUILD="$CPPFLAGS"}
+    : ${CXXFLAGS_FOR_BUILD="$CXXFLAGS"}
+    : ${LDFLAGS_FOR_BUILD="$LDFLAGS"}
+])
+AC_CHECK_PROGS([CXX_FOR_BUILD], [c++ g++ clang++])
+
 AC_MSG_CHECKING([whether the C library is musl])
 AC_EGREP_CPP([mstflint_is_musl],
     [#include <stdlib.h>
