@@ -58,6 +58,7 @@ enum mft_layer
     MFT_LAYER_CABLE_ACCESS,
     MFT_LAYER_CABLE_CDB,
     MFT_LAYER_MLXFWMANAGER,
+    MFT_LAYER_MSTDUMP,
 
     MFT_LAYER_COUNT
 };
@@ -91,6 +92,7 @@ enum class Layer
     CABLE_ACCESS = MFT_LAYER_CABLE_ACCESS,
     CABLE_CDB = MFT_LAYER_CABLE_CDB,
     MLXFWMANAGER = MFT_LAYER_MLXFWMANAGER,
+    MSTDUMP = MFT_LAYER_MSTDUMP,
     ALL = MFT_LAYER_COUNT
 };
 
@@ -120,6 +122,7 @@ inline const std::vector<LayerEntry>& getLayerTable()
       {Layer::CABLE_ACCESS, "cable_access"},
       {Layer::CABLE_CDB, "cable_cdb"},
       {Layer::MLXFWMANAGER, "mlxfwmanager"},
+      {Layer::MSTDUMP, "mstdump"},
       {Layer::ALL, "all"},
     };
     return table;

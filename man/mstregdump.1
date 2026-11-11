@@ -2,12 +2,18 @@
 .SH NAME
 mstdump \- Mellanox mstdump utility, dumps device internal configuration data
 .SH SYNOPSIS
-mstregdump [\-full] <device> [i2c\-slave] [\-v[ersion] [\-h[elp]]]
+mstregdump [\-full] [\-\-i2c_secondary I2C_SECONDARY] [\-\-output_file FILENAME] <device> [i2c\-slave] [\-v[ersion] [\-h[elp]]]
 .SH OPTIONS
 .TP
 \fB\-full\fR
 Dump more expanded list of addresses
 Note: be careful when using this flag, None safe addresses might be read.
+.TP
+\fB\-\-i2c_secondary\fR I2C_SECONDARY
+I2C secondary [0-127]; it can also be given after the device
+.TP
+\fB\-\-output_file\fR FILENAME
+Write the dump to a file instead of the screen
 .TP
 \fB\-v\fR | \fB\-\-version\fR
 Display version info
