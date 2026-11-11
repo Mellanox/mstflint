@@ -34,16 +34,22 @@
 AM_CPPFLAGS = -I$(top_srcdir) -I$(srcdir)/../crd_lib -I$(top_srcdir)/include/mtcr_ul $(COMPILER_FPIC)
 AM_CFLAGS = -MD -pipe -g -Wall -W $(COMPILER_FPIC)
 
-bin_PROGRAMS = mstregdump
-
-mstregdump_SOURCES = mstdump.c
-mstregdump_LDADD = ../crd_lib/libcrdump.a ../../dev_mgt/libdev_mgt.la ../../reg_access/libreg_access.la ../../tools_layouts/libtools_layouts.la ../../mft_utils/libmftutils.la\
-			../../${MTCR_CONF_DIR}/libmtcr_ul.la ../../ext_libs/minixz/libminixz.la  -lm ${LDL}
-mstregdump_LDFLAGS = -static
-mstregdump_CFLAGS = -DMSTDUMP_NAME=\"mstregdump\" -DDEV_EXAMPLE=\"0b:00.0\"
-
-# The python front end is not a command of its own -- mstregdump already is one.
-# It is installed as a module so the tools that dump a device at the python
-# level, and can take the faster resource dump path, reach it by import.
 mstdumppythonlibdir=$(libdir)/mstflint/python_tools/mstdump
-dist_mstdumppythonlib_DATA = $(srcdir)/mstdump.py
+mstdumppythonlib_PROGRAMS = mstregdump-bin
+
+mstregdump_bin_SOURCES = mstdump.c
+mstregdump_bin_LDADD = ../crd_lib/libcrdump.a ../../dev_mgt/libdev_mgt.la ../../reg_access/libreg_access.la ../../tools_layouts/libtools_layouts.la ../../mft_utils/libmftutils.la\
+			../../${MTCR_CONF_DIR}/libmtcr_ul.la ../../ext_libs/minixz/libminixz.la  -lm ${LDL}
+mstregdump_bin_LDFLAGS = -static
+mstregdump_bin_CFLAGS = -DMSTDUMP_NAME=\"mstregdump\" -DDEV_EXAMPLE=\"0b:00.0\"
+
+dist_mstdumppythonlib_DATA = $(srcdir)/mstdump.py $(srcdir)/mstregdump.py
+
+USER_DIR = $(top_builddir)
+bin_SCRIPTS = mstregdump
+PYTHON_WRAPPER=mstregdump
+PYTHON_WRAPPER_SCRIPT=$(USER_DIR)/common/python_wrapper
+${PYTHON_WRAPPER}: $(PYTHON_WRAPPER_SCRIPT)
+	cp $(PYTHON_WRAPPER_SCRIPT) $@
+
+CLEANFILES = ${PYTHON_WRAPPER}

@@ -304,6 +304,8 @@ fi
 %{mstflint_python_tools}/mstpcie/commands/*.py
 %{mstflint_python_tools}/mstpcie/data/*.adb
 %{mstflint_python_tools}/mstdump/mstdump.py
+%{mstflint_python_tools}/mstdump/mstregdump.py
+%{mstflint_python_tools}/mstdump/mstregdump-bin
 
 %if %{enableadbgenerictools}
  %{mstflint_python_tools}/mstgenerate_pgcb_commands.py
