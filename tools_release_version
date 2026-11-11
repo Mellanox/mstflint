@@ -1,2 +1,2 @@
-$Format:%(describe:tags,abbrev=0,match=v[0-9]*)$
+$Format:%(describe:tags,match=v[0-9]*)$
 $Format:%H$
