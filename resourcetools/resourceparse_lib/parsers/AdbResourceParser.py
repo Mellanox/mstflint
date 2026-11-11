@@ -197,6 +197,9 @@ class AdbResourceParser(ResourceParser):
 
         selector_field_size = field.uSelector.selector_layout_item.size
         selector_field_offset = calculate_aligned_offset(field.uSelector.selector_layout_item.offset, selector_field_size)
+        # a selector beyond the end of a short segment selects no arm
+        if len(self._current_bit_array) < (selector_field_offset + selector_field_size):
+            return []
         selected_layout_item = field.uSelector.select_to_layout_item.get(int(self._current_bit_array[selector_field_offset:selector_field_offset + selector_field_size], 2))
 
         return [selected_layout_item] if selected_layout_item else field.subItems
@@ -241,8 +244,8 @@ class AdbResourceParser(ResourceParser):
         """This method parse enum field and present the enum name as well as the enum value.
         """
         field_offset = calculate_aligned_offset(field.offset + offset_shift, field.size)
-        enum_value = int(self._current_bit_array[field_offset:field_offset + field.size], 2)
         if len(self._current_bit_array) >= (field_offset + field.size):
+            enum_value = int(self._current_bit_array[field_offset:field_offset + field.size], 2)
             enum_string = field.adb_enum.num_to_string.get(enum_value)
             if enum_string is not None:
                 self._formatter.format_terminal_field(field_str, "({} = {})".format(enum_string, hex(enum_value)), seg, field)
