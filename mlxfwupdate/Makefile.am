@@ -30,8 +30,11 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-docdir = $(INSTALL_BASEDIR)/etc/mstflint
-dist_doc_DATA = certificate/ca-bundle.crt
+# Note: certificate/ca-bundle.crt is not installed anymore. mstfwmanager uses
+# libcurl's default CA bundle (the system trust store) unless --ssl-certificate
+# is given. The file is kept for Windows builds, which look for it next to the
+# executable.
+EXTRA_DIST = certificate/ca-bundle.crt
 
 AM_CPPFLAGS = \
     -I$(srcdir) \

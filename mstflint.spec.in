@@ -229,7 +229,6 @@ fi
 %if %{enablefwmgr}
  %{_bindir}/mstfwmanager
  %{_bindir}/mstarchive
-%{CONF_DIR}/ca-bundle.crt
 %endif
 %if %{enabledpa}
  %{_bindir}/mstdpa
