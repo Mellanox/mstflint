@@ -1205,6 +1205,7 @@ static int mtcr_driver_open(mfile* mf, MType dev_type, unsigned domain_p, unsign
     int cr_valid = 0;
 
     ctx->via_driver = 1;
+    ctx->mst_driver_backed = 1;
     if (dev_type == MST_DRIVER_CR)
     {
         mf->fd = open(driver_cr_name, O_RDWR | O_SYNC);
@@ -5699,6 +5700,22 @@ void switch_access_funcs(mfile* mf)
 #else
     (void)mf;
 #endif
+}
+
+/* True when the device was opened through one of the mst driver (mstflint_access)
+ * character devices (/dev/<dbdf>_mstcr or /dev/<dbdf>_mstconf). Only such a file
+ * descriptor can carry the mst driver ioctls (e.g. PCICONF_HOT_RESET used by the
+ * sync 2 reset flow). Returns 0 for user-space accesses (sysfs config space,
+ * memory mapped BAR, remote, ...) and for fwctl devices, which are driver backed
+ * but not by the mst driver. */
+int is_mst_driver_backed(mfile* mf)
+{
+    if (!mf || !mf->ul_ctx)
+    {
+        return 0;
+    }
+
+    return ((ul_ctx_t*)mf->ul_ctx)->mst_driver_backed;
 }
 
 int hot_reset(mfile* mf,
