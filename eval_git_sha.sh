@@ -30,22 +30,26 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+CDPATH= cd -- "$(dirname -- "$0")" > /dev/null || exit 1
+
 GIT_SHA_FILENAME=tools_git_sha
+RELEASE_VERSION_FILENAME=tools_release_version
 
 unset GIT_SHA
+EXPORTED_SHA=$(sed -n 2p "$RELEASE_VERSION_FILENAME" 2>/dev/null) || EXPORTED_SHA=
+CACHED_SHA=$(cat "$GIT_SHA_FILENAME" 2>/dev/null) || CACHED_SHA=
 
-# Check if the current directory is inside a Git repository.
-if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
-  # If inside a Git repository, retrieve commit hash.
-  GIT_SHA=$(git rev-parse --short HEAD)
+# Only this tree's own git metadata counts, not that of an enclosing repository.
+if [ -e .git ] && GIT_SHA=$(git rev-parse --short=8 HEAD 2>/dev/null); then
+  :
+elif [[ "$EXPORTED_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+  # Full hash written by "git archive" (export-subst) into the second line; the
+  # full form keeps the archive bytes stable as the repository grows.
+  GIT_SHA=${EXPORTED_SHA:0:8}
+elif [[ "$CACHED_SHA" =~ ^[0-9a-f]{4,40}$ ]]; then
+  GIT_SHA=$CACHED_SHA
 else
-  # If not in a Git repository, check if GIT_SHA_FILENAME exists.
-  if [ -f "$GIT_SHA_FILENAME" ]; then
-    # If the file exists, assume it contains the commit hash.
-    GIT_SHA=$(<"$GIT_SHA_FILENAME")
-  else
-    GIT_SHA="N/A"
-  fi
+  GIT_SHA="N/A"
 fi
 
 if [ -z "$GIT_SHA" ]; then

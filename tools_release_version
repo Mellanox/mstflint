@@ -1,0 +1,2 @@
+$Format:%(describe:tags,match=v[0-9]*)$
+$Format:%H$

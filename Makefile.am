@@ -37,5 +37,21 @@ man_MANS = man/mstflint.1 man/mstconfig.1 man/mstmcra.1 man/mstmread.1 man/mstmw
 EXTRA_DIST = \
 	mstflint.spec \
 	tools_git_sha \
+	tools_release_version \
+	eval_version.sh \
+	eval_git_sha.sh \
 	debian \
 	$(man_MANS)
+
+# "git archive" fills tools_release_version in through export-subst; "make dist"
+# has no equivalent, so resolve the same two values from the source tree here.
+# An empty line is harmless: both readers fall back to the base version and to
+# tools_git_sha.
+dist-hook:
+	@if test -e "$(top_srcdir)/.git"; then \
+	  version=`"$(top_srcdir)/eval_version.sh" "$(PACKAGE_VERSION)"` || exit 1; \
+	  sha=`CDPATH= cd "$(top_srcdir)" >/dev/null && git rev-parse --verify HEAD 2>/dev/null` || exit 1; \
+	  if test -n "$$version" && test -n "$$sha"; then \
+	    printf '%s\n%s\n' "$$version" "$$sha" > "$(distdir)/tools_release_version"; \
+	  fi; \
+	fi

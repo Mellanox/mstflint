@@ -11,7 +11,12 @@ pname:=mstflint
 pdkms:=$(pname)-dkms
 dkms_pkg:=$(pname)-$(pversion)
 pversion_number:=$(shell sed -r '1 s:(.*) \((.*)\).*:\2:; q' debian/changelog)
-pversion_string:=$(shell sed -r '1 s:(.*) \((.*)\).*:\1 \2:; q' debian/changelog)
+# dpkg-source packages carry neither .git nor expanded release metadata, so fall
+# back to the changelog version. Only when eval_version.sh found a real suffix is
+# it left to configure, whose value is the more precise one.
+pversion_base:=$(firstword $(subst -, ,$(pversion_number)))
+pversion_derived:=$(shell ./eval_version.sh $(pversion_base) 2>/dev/null)
+pversion_full:=$(if $(filter-out $(pversion_base),$(pversion_derived)),$(pversion_derived),$(pversion_number))
 
 %:
 	dh $@ --with dkms
@@ -20,7 +25,7 @@ pversion_string:=$(shell sed -r '1 s:(.*) \((.*)\).*:\1 \2:; q' debian/changelog
 
 override_dh_auto_configure:
 	./autogen.sh
-	dh_auto_configure -- $(DEB_CONFIGURE_EXTRA_FLAGS) "MSTFLINT_VERSION_STR=$(pversion_string)" --enable-adb-generic-tools
+	dh_auto_configure -- $(DEB_CONFIGURE_EXTRA_FLAGS) "MSTFLINT_VERSION_STR=$(pname) $(pversion_full)" --enable-adb-generic-tools
 
 override_dh_auto_build:
 	make

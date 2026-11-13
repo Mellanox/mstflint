@@ -80,8 +80,6 @@ for network adapters based on Mellanox Technologies chips.
 
 %build
 
-MSTFLINT_VERSION_STR="%{name} %{version}-%{release}"
-
 %if %{nodc}
     config_flags="$config_flags --disable-dc"
 %endif
@@ -154,7 +152,15 @@ MSTFLINT_VERSION_STR="%{name} %{version}-%{release}"
     config_flags="$config_flags --host arm"
 %endif
 
-%configure ${config_flags} MSTFLINT_VERSION_STR="${MSTFLINT_VERSION_STR}"
+# Source RPMs built outside "make dist" carry neither .git nor expanded release
+# metadata, so fall back to the spec version-release. Where eval_version.sh found
+# a real suffix that value is the more precise one and is used instead.
+version_str=$(./eval_version.sh "%{version}" 2>/dev/null) || version_str=
+if [ -z "${version_str}" ] || [ "${version_str}" = "%{version}" ]; then
+    version_str="%{version}-%{release}"
+fi
+
+%configure ${config_flags} MSTFLINT_VERSION_STR="%{name} ${version_str}"
 
 make
 
