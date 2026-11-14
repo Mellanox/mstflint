@@ -10,4 +10,5 @@ Name: mstflint_sdk
 Description: SDK shared library and headers for mstflint (NVIDIA Firmware Tools)
 Version: @PACKAGE_VERSION@
 Libs: -L${libdir} -lmstflint_sdk
+Libs.private: -lexpat -lstdc++ -lm -ldl -pthread
 Cflags: -I${includedir}

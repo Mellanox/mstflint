@@ -50,6 +50,9 @@
 #                                         #   what the Python suites need
 #   make -C mft_sdk/unit_tests op_info    # fast path: op-info C and C++ only
 #   make -C mft_sdk/unit_tests print-env  # env block for the Python suites
+#   make -C mft_sdk/unit_tests SDK_LINK=static clean gtest unified
+#                                         # the same harness, linked against
+#                                         #   libmstflint_sdk.a instead
 # ---------------------------------------------------------------------------
 
 # --- Where the installed SDK lives -----------------------------------------
@@ -79,12 +82,29 @@ SDK_INCDIR ?= $(SDK_PREFIX)/include/mstflint/sdk
 SDK_ORIGIN := SDK_PREFIX=$(SDK_PREFIX) (no $(SDK_PKG).pc found)
 endif
 
+# --- Link mode ----------------------------------------------------------------
+# SDK_LINK=shared (default) links libmstflint_sdk.so by soname, with an rpath.
+# SDK_LINK=static links the libmstflint_sdk.a installed next to it instead: the
+# archive by path, then the -l libraries of the .pc's Libs.private, no rpath --
+# what a static consumer gets. The binaries keep their names, so the static
+# flavour defaults to its own BUILD_DIR and TESTS_INSTALLDIR.
+SDK_LINK ?= shared
+ifeq ($(SDK_LINK),shared)
+SDK_LIB_FILE := libmstflint_sdk.so
+SDK_NM_SCOPE := -D
+else ifeq ($(SDK_LINK),static)
+SDK_LIB_FILE := libmstflint_sdk.a
+SDK_NM_SCOPE := -g
+else
+$(error SDK_LINK must be shared or static, not '$(SDK_LINK)')
+endif
+
 # --- Optional SDK APIs: probe, do not assume ---------------------------------
 # The i2c entry points are declared by the headers but only defined in the .so
 # when the SDK was built with --enable-i2c, so the suites gate them at compile
 # time. Never pass -DMFT_SDK_HAS_I2C=0: the suites test it with #ifdef, so a
 # zero value enables that code and breaks the link.
-SDK_HAS_I2C := $(shell nm -D --defined-only $(SDK_LIBDIR)/libmstflint_sdk.so 2>/dev/null \
+SDK_HAS_I2C := $(shell nm $(SDK_NM_SCOPE) --defined-only $(SDK_LIBDIR)/$(SDK_LIB_FILE) 2>/dev/null \
                  | grep -qw mstGetI2cSecondary && echo 1 || echo 0)
 # Two macro names for the same --enable-i2c option, both from this one probe.
 I2C_DEFS := $(if $(filter 1,$(SDK_HAS_I2C)),-DMFT_SDK_HAS_I2C=1 -DMFT_SDK_HAS_I2C_SECONDARY=1,)
@@ -95,7 +115,7 @@ I2C_DEFS := $(if $(filter 1,$(SDK_HAS_I2C)),-DMFT_SDK_HAS_I2C=1 -DMFT_SDK_HAS_I2
 # --- Tree layout ------------------------------------------------------------
 TESTS_DIR := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 REPO_ROOT := $(abspath $(TESTS_DIR)/../..)
-BUILD_DIR ?= $(TESTS_DIR)/build-tests
+BUILD_DIR ?= $(TESTS_DIR)/build-tests$(if $(filter static,$(SDK_LINK)),-static)
 
 # --- gtest ------------------------------------------------------------------
 # Built from source by the `gtest` target, with this machine's compiler, so it
@@ -125,6 +145,13 @@ INCLUDES := -I$(SDK_INCDIR) -I$(TESTS_DIR) -I$(REPO_ROOT)
 # Python suites also export MFT_SDK_SO_DIR, so either route works).
 LDFLAGS  := -L$(SDK_LIBDIR) -Wl,-rpath,$(SDK_LIBDIR)
 LDLIBS   := -lmstflint_sdk
+ifeq ($(SDK_LINK),static)
+# The archive by path (-lmstflint_sdk would pick the .so next to it), then what
+# the .pc's Libs.private lists; the fixed list only if pkg-config has no answer.
+SDK_LIBS_PRIVATE := $(filter-out -lmstflint_sdk,$(shell $(PKG_CONFIG) --static --libs-only-l $(SDK_PKG) 2>/dev/null))
+LDFLAGS  :=
+LDLIBS   := $(SDK_LIBDIR)/libmstflint_sdk.a $(or $(SDK_LIBS_PRIVATE),-lexpat -lstdc++ -lm -ldl) -pthread
+endif
 
 # --- Binaries ---------------------------------------------------------------
 # C++ (gtest) op-info test. op_info_test.cpp carries its own main() when
@@ -278,7 +305,7 @@ check-ref-cli:
 test: check-ref-cli
 	@test -n "$(DEVICE)" || { echo "usage: make test DEVICE=0000:21:00.0" >&2; exit 1; }
 	@test -x $(CPP_BIN) || { echo "error: harness missing -- run 'make prepare'" >&2; exit 1; }
-	@env $(shell $(MAKE) --no-print-directory -C $(TESTS_DIR) print-env | sed 's/^export //') \
+	@env $(shell $(MAKE) --no-print-directory -C $(TESTS_DIR) $(if $(filter static,$(SDK_LINK)),SDK_LINK=static BUILD_DIR=$(BUILD_DIR)) print-env | sed 's/^export //') \
 	  $(TESTS_DIR)/run_all_suites.py -d $(DEVICE) $(if $(JSON),--json $(JSON),)
 
 # Pinned so adding a target above cannot silently change the default goal.
@@ -317,8 +344,8 @@ check-sdk:
 	  echo "       install the SDK first, e.g.:"; \
 	  echo "         ./build_sdk.sh --prefix /usr --build-only && sudo make install-sdk"; \
 	  exit 1; }
-	@test -f "$(SDK_LIBDIR)/libmstflint_sdk.so" || { \
-	  echo "ERROR: SDK library not found at $(SDK_LIBDIR)/libmstflint_sdk.so"; \
+	@test -f "$(SDK_LIBDIR)/$(SDK_LIB_FILE)" || { \
+	  echo "ERROR: SDK library not found at $(SDK_LIBDIR)/$(SDK_LIB_FILE)"; \
 	  exit 1; }
 
 $(BUILD_DIR):
@@ -369,7 +396,7 @@ unified: $(unified_CPP) $(unified_C)
 # --- install ----------------------------------------------------------------
 # Build TEST_TARGET and install exactly the binaries it produces, into the MFT
 # SDK's layout (<sdk libdir>/tests) where the Python suites look for them.
-TESTS_INSTALLDIR ?= $(SDK_LIBDIR)/tests
+TESTS_INSTALLDIR ?= $(SDK_LIBDIR)/tests$(if $(filter static,$(SDK_LINK)),/static)
 TEST_BINS        ?= $($(TEST_TARGET)_CPP) $($(TEST_TARGET)_C)
 
 # Which installed binary plays which role, written next to them so it survives
@@ -395,6 +422,9 @@ install-tests: $(TEST_TARGET)
 	  'MFT_SDK_SO_TEST_BIN=$(TESTS_INSTALLDIR)/$(notdir $($(TEST_TARGET)_CPP))' \
 	  'MFT_SDK_C_SO_TEST_BIN=$(TESTS_INSTALLDIR)/$(notdir $($(TEST_TARGET)_C))' \
 	  > $(TESTS_MANIFEST)
+ifeq ($(SDK_LINK),static)
+	@echo 'MFT_SDK_LINK=static' >> $(TESTS_MANIFEST)
+endif
 	@chmod 0644 $(TESTS_MANIFEST)
 	@echo "installed into $(TESTS_INSTALLDIR): $(notdir $(TEST_BINS))"
 	@echo "recorded $(TESTS_MANIFEST)"
@@ -474,6 +504,9 @@ print-env:
 	  echo "       Build it first:  make -C $(TESTS_DIR) unified" >&2; \
 	  exit 1; }
 	@echo "export MFT_SDK_SO_DIR=$(SDK_LIBDIR)"
+ifeq ($(SDK_LINK),static)
+	@echo "export MFT_SDK_LINK=static"
+endif
 	@echo "export MFT_SDK_SO_TEST_BIN=$(CPP_BIN)"
 	@echo "export MFT_SDK_C_SO_TEST_BIN=$(C_BIN)"
 	@echo "export MFT_SDK_LINK_TOOL=$(REF_CLI_BINDIR)/mstlink"

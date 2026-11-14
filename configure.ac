@@ -55,6 +55,7 @@ AS_IF([test "x$mstflint_musl" = xyes],
 
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 LT_INIT
+AC_CHECK_TOOL([OBJCOPY], [objcopy])
 dnl Python is optional: only needed to run the Device Properties Python unit
 dnl tests via "make check". Build itself has no Python prerequisite.
 AM_PATH_PYTHON([2.7],, [:])
