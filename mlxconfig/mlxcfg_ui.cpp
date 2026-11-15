@@ -1352,6 +1352,8 @@ mlxCfgStatus MlxCfg::devRawCfg(RawTlvMode mode)
 {
     Commander* commander = NULL;
     string loadCfgMsg;
+    std::vector<std::vector<u_int32_t>> rawTlvsAsDw;
+    std::vector<std::string> failedTlvs;
     try
     {
         commander = Commander::create(_mlxParams.device, _mlxParams.dbName, false, _mlxParams.deviceType, false);
@@ -1362,7 +1364,6 @@ mlxCfgStatus MlxCfg::devRawCfg(RawTlvMode mode)
             delete commander;
             return err(true, "Failed to open file: %s", _mlxParams.rawTlvFile.c_str());
         }
-        std::vector<std::vector<u_int32_t>> rawTlvsAsDw;
         rawTlvsAsDw.resize(0);
         // Check file Sig
         std::string startLine;
@@ -1414,28 +1415,44 @@ mlxCfgStatus MlxCfg::devRawCfg(RawTlvMode mode)
             }
             printf("Applying... ");
         }
-        commander->handleRawCfg(rawTlvsAsDw, mode);
+        commander->handleRawCfg(rawTlvsAsDw, mode, failedTlvs);
         // send mfrl command to fw
         // this command indicate to the fw that next time perst signal go down
         //[reboot] fw need to perform reset )
-        loadCfgMsg = commander->loadConfigurationGetStr();
+        // Skipped only when every TLV was rejected, since nothing was written.
+        if (failedTlvs.empty() || failedTlvs.size() < rawTlvsAsDw.size())
+        {
+            loadCfgMsg = commander->loadConfigurationGetStr();
+        }
     }
     catch (MlxcfgException& e)
     {
         delete commander;
         return err(true, "Failed to run %s command: %s", mode == SET_RAW ? "set_raw" : "get_raw", e._err.c_str());
     }
-    if (commander != NULL)
+    delete commander;
+    if (failedTlvs.empty())
     {
-        delete commander;
+        printf("Done!\n");
     }
-    // done successfully
-    printf("Done!\n");
-    if (mode == SET_RAW)
+    else if (failedTlvs.size() < rawTlvsAsDw.size())
+    {
+        printf("-W- Successfully set %d of %d raw TLVs. Failed to set:\n",
+               (int)(rawTlvsAsDw.size() - failedTlvs.size()), (int)rawTlvsAsDw.size());
+    }
+    else
+    {
+        err(true, "Failed to set %d of %d raw TLVs:", (int)failedTlvs.size(), (int)rawTlvsAsDw.size());
+    }
+    for (std::vector<std::string>::const_iterator it = failedTlvs.begin(); it != failedTlvs.end(); it++)
+    {
+        printf("    %s\n", it->c_str());
+    }
+    if (mode == SET_RAW && !loadCfgMsg.empty())
     {
         printf("-I- %s\n", loadCfgMsg.c_str());
     }
-    return MLX_CFG_OK;
+    return failedTlvs.empty() ? MLX_CFG_OK : MLX_CFG_ERROR;
 }
 
 mlxCfgStatus MlxCfg::backupCfg(string deviceName)

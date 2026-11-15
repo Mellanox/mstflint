@@ -1129,7 +1129,9 @@ bool GenericCommander::checkPCIResetRequired()
     return false;
 }
 
-void GenericCommander::handleRawCfg(const std::vector<std::vector<u_int32_t>>& rawTlvs, RawTlvMode mode)
+void GenericCommander::handleRawCfg(const std::vector<std::vector<u_int32_t>>& rawTlvs,
+                                    RawTlvMode mode,
+                                    std::vector<std::string>& failedTlvs)
 {
     bool isPrivNvOtherHost = false;
     if (mode == SET_RAW && std::any_of(rawTlvs.begin(), rawTlvs.end(), RawCfgParams5thGen::isHostTargetClass))
@@ -1146,7 +1148,17 @@ void GenericCommander::handleRawCfg(const std::vector<std::vector<u_int32_t>>& r
     {
         if (mode == SET_RAW)
         {
-            setRawCfg(*it, isPrivNvOtherHost);
+            try
+            {
+                setRawCfg(*it, isPrivNvOtherHost);
+            }
+            catch (MlxcfgException& e)
+            {
+                // FW rejected this TLV. Record the failure and continue restoring the rest.
+                char tlvType[16] = {0};
+                snprintf(tlvType, sizeof(tlvType), "0x%08x", it->size() > 1 ? (*it)[1] : 0);
+                failedTlvs.push_back("TLV #" + to_string(tlvIdx) + " (Type: " + tlvType + "): " + e._err);
+            }
         }
         else
         {
