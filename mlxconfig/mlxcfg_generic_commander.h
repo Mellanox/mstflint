@@ -105,7 +105,9 @@ public:
     bool shouldSkipPrepareReset();
     const char* loadConfigurationGetStr() override;
     bool checkPCIResetRequired() override;
-    void handleRawCfg(const std::vector<std::vector<u_int32_t>>& rawTlvs, RawTlvMode mode) override;
+    void handleRawCfg(const std::vector<std::vector<u_int32_t>>& rawTlvs,
+                      RawTlvMode mode,
+                      std::vector<std::string>& failedTlvs) override;
     void dumpRawCfg(std::vector<u_int32_t> rawTlvVec, std::string& tlvDump) override;
     void backupCfgs(vector<BackupView>& view) override;
     void updateParamViewValue(ParamView& p, std::string v, QueryType qt) override;
