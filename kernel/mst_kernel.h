@@ -109,6 +109,8 @@ struct dma_page
 {
     struct page** page_list;
     dma_addr_t dma_addr[PCICONF_MAX_PAGES_SIZE];
+    /* The length page_list was allocated with. The release path must not take it from its caller. */
+    unsigned int allocated_pages;
 };
 
 struct mst_dev_data
