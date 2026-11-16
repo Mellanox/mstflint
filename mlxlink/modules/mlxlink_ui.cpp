@@ -3099,12 +3099,8 @@ int MlxlinkUi::run(int argc, char** argv)
 
     paramValidate();
 
-    _mf = mopen(_userInput._device.c_str());
+    _mf = openMlxlinkDevice(_userInput._device);
 
-    if (!_mf)
-    {
-        throw MlxRegException("Failed to open device: \"" + _userInput._device + "\", " + strerror(errno));
-    }
     if (!MlxRegLib::isDeviceSupported(_mf))
     {
         mclose(_mf);
