@@ -10,7 +10,7 @@ mstflintlogger
 > \[-l|-\-set-level \<LEVEL\>\] \[-m|-\-set-module \<MODULE:LEVEL\>\]
 > \[-M|-\-clear-module \<MODULE\>\] \[-o|-\-enable-output \<SINK\>\]
 > \[-O|-\-disable-output \<SINK\>\] \[-n|-\-set-max-log-files \<COUNT\>\]
-> \[-s|-\-show\] \[-r|-\-reset\] \[-h|-\-help\]
+> \[-f|-\-log-file \<PATH\>\] \[-s|-\-show\] \[-r|-\-reset\] \[-h|-\-help\]
 
 # DESCRIPTION
 
@@ -33,7 +33,8 @@ mstflintlogger
 > Severity levels are debug, info, warning, error, fatal and off. A level
 > means "this level and above"; off silences the layer. Output sinks are
 > stdout, stderr, file and syslog. The file sink writes
-> /var/log/mstflint/\<executable\>_\<pid\>.log. When stdout is not a terminal,
+> /var/log/mstflint/\<executable\>_\<pid\>.log, or the single file named with
+> -\-log-file. When stdout is not a terminal,
 > the stdout sink writes to stderr instead, so log records never end up in
 > output that another program parses.
 >
@@ -66,6 +67,12 @@ OPTIONS
     : Cap the number of .log files kept in the log directory, 1 to 1000
     (default: 100). Older files beyond the cap are deleted when a new log file
     is opened
+
+  - **-f**|-\-log-file \<PATH\>
+    : Write the file sink to PATH, which must be absolute, and enable the file
+    sink. Every tool appends to that one file, without size rotation. Use
+    default to restore the per-process file in the log directory; -\-reset
+    restores it too
 
   - **-s**|-\-show
     : Print the configuration and the resolved severity of every layer,
