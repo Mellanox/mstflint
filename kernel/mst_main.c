@@ -758,6 +758,13 @@ static int _block_op(struct mst_dev_data* dev, int space, unsigned int offset, i
     int ret = 0;
     int wrote_or_read = size;
 
+    /* size comes from user space and indexes data[], so it has to be checked against the buffer
+     * before any loop runs over it. */
+    if (size < 0 || size > PCICONF_MAX_BUFFER_SIZE)
+    {
+        return -EINVAL;
+    }
+
     if (size % 4)
     {
         return -1;
@@ -1176,6 +1183,14 @@ static int page_pin(struct mst_dev_data* dev, struct page_info_st* page_info)
     int page_counter = 0;
     int total_pinned = 0;
 
+    /* page_address_array (in the caller's structure, which the ioctl holds on the stack) and the device's
+       dma_addr are fixed PCICONF_MAX_PAGES_SIZE arrays, so a request past them has to be refused before
+       anything fills them. */
+    if (page_amount == 0 || page_amount > PCICONF_MAX_PAGES_SIZE)
+    {
+        return -EINVAL;
+    }
+
     /* If the combination of the addr and size requested for this memory */
     /* region causes an integer overflow, return error. */
     if (((end_of_buffer) < page_pointer_start) || (PAGE_ALIGN(end_of_buffer) < (end_of_buffer)) || (page_amount < 1))
@@ -1195,6 +1210,8 @@ static int page_pin(struct mst_dev_data* dev, struct page_info_st* page_info)
     {
         return -ENOMEM;
     }
+
+    dev->dma_page.allocated_pages = page_amount;
 
     /* Go over the user memory buffer and pin user pages in memory. */
     while (total_pinned < page_amount)
@@ -1258,7 +1275,7 @@ static int page_pin(struct mst_dev_data* dev, struct page_info_st* page_info)
     return 0;
 }
 
-static int page_unpin(struct mst_dev_data* dev, struct page_info_st* page_info)
+static int page_unpin(struct mst_dev_data* dev)
 {
     int page_counter;
 
@@ -1268,8 +1285,9 @@ static int page_unpin(struct mst_dev_data* dev, struct page_info_st* page_info)
         return -EINVAL;
     }
 
-    /* Deallocate the pages. */
-    for (page_counter = 0; page_counter < page_info->page_amount; page_counter++)
+    /* Deallocate the pages. The count comes from the allocation: the release ioctl carries one of
+       its own, which can disagree with the list that is about to be walked. */
+    for (page_counter = 0; page_counter < dev->dma_page.allocated_pages; page_counter++)
     {
         /* DMA activity is finished. */
         dma_unmap_page(&dev->pci_dev->dev, dev->dma_page.dma_addr[page_counter], PAGE_SIZE, DMA_BIDIRECTIONAL);
@@ -1286,6 +1304,7 @@ static int page_unpin(struct mst_dev_data* dev, struct page_info_st* page_info)
 
     /* All the pages are clean. */
     dev->dma_page.page_list = NULL;
+    dev->dma_page.allocated_pages = 0;
 
     return 0;
 }
@@ -1624,7 +1643,8 @@ static int mst_ioctl(struct inode* inode, struct file* file, unsigned int opcode
                 goto fin;
             }
 
-            if ((readst.offset + readst.size) > MST_MEMORY_SIZE)
+            /* Checked without adding offset and size, which can wrap around. */
+            if (readst.size > MST_MEMORY_SIZE || readst.offset > MST_MEMORY_SIZE - readst.size)
             {
                 mst_err("accessing invalid address\n");
                 res = -EINVAL;
@@ -1685,6 +1705,14 @@ static int mst_ioctl(struct inode* inode, struct file* file, unsigned int opcode
                 goto fin;
             }
 
+            /* size comes from user space and indexes data[], which the ioctl holds on the stack. */
+            if (writest.size > sizeof(writest.data))
+            {
+                mst_err("invalid size. size should not exceed %zu bytes\n", sizeof(writest.data));
+                res = -EINVAL;
+                goto fin;
+            }
+
             if (writest.size % sizeof(u32))
             {
                 mst_err("invalid size. size should be in bytes and divide sizeof(u32)\n");
@@ -1692,7 +1720,8 @@ static int mst_ioctl(struct inode* inode, struct file* file, unsigned int opcode
                 goto fin;
             }
 
-            if ((writest.offset + writest.size) > MST_MEMORY_SIZE)
+            /* Checked without adding offset and size, which can wrap around. */
+            if (writest.offset > MST_MEMORY_SIZE - writest.size)
             {
                 mst_err("accessing invalid address\n");
                 res = -EINVAL;
@@ -2089,7 +2118,7 @@ static int mst_ioctl(struct inode* inode, struct file* file, unsigned int opcode
             }
             else
             {
-                res = page_unpin(dev, &page_info);
+                res = page_unpin(dev);
             }
 
             break;
