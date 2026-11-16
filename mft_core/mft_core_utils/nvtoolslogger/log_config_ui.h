@@ -82,6 +82,8 @@ private:
     Severity _globalLevel;
     bool _hasMaxLogDirFiles;
     uint32_t _maxLogDirFiles;
+    bool _hasLogFilePath;
+    std::string _logFilePath;
     std::vector<ModuleOverride> _moduleOverrides;
     std::vector<std::string> _modulesToClear;
     std::vector<Sink> _sinksToEnable;
