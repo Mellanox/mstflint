@@ -191,6 +191,8 @@ string parseIndexStr(const string& indexedMlxconfigName);
 
 void parseIndexedMlxconfigName(const string& indexedMlxconfigName, string& mlxconfigName, u_int32_t& index);
 
+void parseIndexRange(const string& indexesStr, u_int32_t& leftIndex, u_int32_t& rightIndex);
+
 void extractIndexes(const string& indexesStr, vector<u_int32_t>& indexes);
 
 bool isContinuanceArray(const string& mlxconfigName);

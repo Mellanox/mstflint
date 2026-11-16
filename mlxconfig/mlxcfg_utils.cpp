@@ -494,12 +494,11 @@ void parseIndexedMlxconfigName(const string& indexedMlxconfigName, string& mlxco
     mlxconfigName = indexedMlxconfigName.substr(0, p);
 }
 
-void extractIndexes(const string& indexesStr, vector<u_int32_t>& indexes)
+void parseIndexRange(const string& indexesStr, u_int32_t& leftIndex, u_int32_t& rightIndex)
 {
     size_t p = indexesStr.find("..");
     if (p != string::npos)
     {
-        unsigned int leftIndex = 0, rightIndex = 0;
         string leftIndexStr = indexesStr.substr(0, p);
         string rightIndexStr = indexesStr.substr(p + 2);
         if (!strToNum(leftIndexStr, leftIndex))
@@ -514,20 +513,28 @@ void extractIndexes(const string& indexesStr, vector<u_int32_t>& indexes)
         {
             throw MlxcfgException("Left index %d can not be greater than right index %d", leftIndex, rightIndex);
         }
-        while (rightIndex >= leftIndex)
-        {
-            indexes.push_back(leftIndex);
-            leftIndex++;
-        }
     }
     else
     {
-        u_int32_t index = 0;
-        if (!strToNum(indexesStr, index))
+        if (!strToNum(indexesStr, leftIndex))
         {
             throw MlxcfgException("Can not parse the index %s", indexesStr.c_str());
         }
+        rightIndex = leftIndex;
+    }
+}
+
+void extractIndexes(const string& indexesStr, vector<u_int32_t>& indexes)
+{
+    u_int32_t leftIndex = 0, rightIndex = 0;
+    parseIndexRange(indexesStr, leftIndex, rightIndex);
+    for (u_int32_t index = leftIndex;; index++)
+    {
         indexes.push_back(index);
+        if (index == rightIndex)
+        {
+            break;
+        }
     }
 }
 
