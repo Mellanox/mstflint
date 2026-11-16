@@ -355,7 +355,29 @@ int LogConfigUi::run(int argc, char** argv)
         return 0;
     }
 
-    config.load(DEFAULT_CONFIG_PATH);
+    // Showing defaults for a config that could not be loaded, or saving over it, would hide
+    // the user's actual settings, so stop and point at how to get past it instead.
+    LoadStatus loadStatus = config.load(DEFAULT_CONFIG_PATH);
+    if (loadStatus == LoadStatus::PERMISSION_DENIED)
+    {
+        std::cerr << "Error: Permission denied reading configuration file " << DEFAULT_CONFIG_PATH << "." << std::endl;
+        std::cerr << "Run '" << TOOL_NAME << "' as root." << std::endl;
+        return 1;
+    }
+
+    if (loadStatus == LoadStatus::READ_ERROR)
+    {
+        std::cerr << "Error: Cannot open configuration file " << DEFAULT_CONFIG_PATH << "." << std::endl;
+        return 1;
+    }
+
+    if (loadStatus == LoadStatus::INVALID_FORMAT)
+    {
+        std::cerr << "Error: Cannot load configuration file " << DEFAULT_CONFIG_PATH << "." << std::endl;
+        std::cerr << "Run '" << TOOL_NAME << " --" << RESET_FLAG << "' to restore the default configuration."
+                  << std::endl;
+        return 1;
+    }
 
     if (hasModifications)
     {

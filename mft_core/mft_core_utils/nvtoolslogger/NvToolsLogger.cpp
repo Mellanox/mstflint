@@ -242,8 +242,7 @@ struct NvToolsLogger::Impl
         }
         else
         {
-            bool success = config.load(nvtoolslogger::DEFAULT_CONFIG_PATH);
-            if (!success)
+            if (config.load(nvtoolslogger::DEFAULT_CONFIG_PATH) != nvtoolslogger::LoadStatus::OK)
             {
                 return;
             }
