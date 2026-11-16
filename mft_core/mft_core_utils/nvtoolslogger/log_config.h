@@ -41,12 +41,23 @@
 namespace nvtoolslogger
 {
 
+enum class LoadStatus
+{
+    OK,
+    /* Nothing has been saved yet, so the defaults apply. */
+    FILE_NOT_FOUND,
+    PERMISSION_DENIED,
+    /* Any other failure to open the file, e.g. a path component that is not a directory. */
+    READ_ERROR,
+    INVALID_FORMAT
+};
+
 class LogConfig
 {
 public:
     LogConfig();
 
-    bool load(const std::string& path);
+    LoadStatus load(const std::string& path);
     bool save(const std::string& path) const;
     void reset();
 

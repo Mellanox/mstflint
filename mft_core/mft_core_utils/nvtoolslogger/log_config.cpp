@@ -46,6 +46,7 @@
 
 #include <cerrno>
 #include <sys/stat.h>
+#include <unistd.h>
 
 static bool mkdirSingle(const std::string& dir)
 {
@@ -86,6 +87,27 @@ static bool ensureParentDirExists(const std::string& filePath)
 
 namespace nvtoolslogger
 {
+// std::ifstream does not report why an open failed, so probe the file again with an API
+// that does: callers fall back to defaults, ask for privileges, or fail outright on it.
+static LoadStatus getOpenFailureStatus(const std::string& path)
+{
+    if (access(path.c_str(), R_OK) == 0)
+    {
+        return LoadStatus::READ_ERROR;
+    }
+
+    switch (errno)
+    {
+        case ENOENT:
+            return LoadStatus::FILE_NOT_FOUND;
+        case EACCES:
+        case EPERM:
+            return LoadStatus::PERMISSION_DENIED;
+        default:
+            return LoadStatus::READ_ERROR;
+    }
+}
+
 LogConfig::LogConfig()
 {
     initDefaults();
@@ -104,19 +126,19 @@ void LogConfig::reset()
     initDefaults();
 }
 
-bool LogConfig::load(const std::string& path)
+LoadStatus LogConfig::load(const std::string& path)
 {
     std::ifstream file(path);
     if (!file.is_open())
     {
-        return false;
+        return getOpenFailureStatus(path);
     }
 
     std::stringstream buffer(std::ios_base::in | std::ios_base::out);
     buffer << file.rdbuf();
     file.close();
 
-    return fromJson(buffer.str());
+    return fromJson(buffer.str()) ? LoadStatus::OK : LoadStatus::INVALID_FORMAT;
 }
 
 bool LogConfig::save(const std::string& path) const
