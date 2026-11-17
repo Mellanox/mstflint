@@ -1637,6 +1637,7 @@ static bool readCableModuleInfo(mfile* mf, u_int32_t localPort, CableInfo& cable
 /* phy_mngr_fsm_state. The link is carrying traffic on exactly one of these. */
 #define CABLE_LINK_STATE_ACTIVE 3
 #define CABLE_LINK_STATE_ACTIVE_NAME "Active"
+#define CABLE_LINK_STATE_UNKNOWN_NAME "Unknown"
 
 /* The PHY manager link state, which is what mlxlink prints as "State". It is the link, not the
  * cable: a healthy cable with nothing at the far end sits in Polling forever.
@@ -1673,6 +1674,12 @@ static const char* cableLinkStateName(u_int8_t state)
             return "Training";
         case 13:
             return "SubFSM active";
+        case 14:
+            return "Protocol detect";
+        case 15:
+            return CABLE_LINK_STATE_UNKNOWN_NAME;
+        case 17:
+            return "Waiting state";
         default:
             return CABLE_REPORT_NOT_AVAILABLE;
     }
@@ -3822,11 +3829,11 @@ void CableFwManager::verifyBurnedCables()
 
         // A link that was carrying traffic before the update has to be carrying it after. This is
         // the thing an operator actually loses. A
-        // state the register would not report is unknown rather than down.
+        // state the register would not report, or reports as unknown, is unknown rather than down.
         result.stateAfter = readCableLinkStateText(current);
-        result.stateRegressed = (result.stateBefore == CABLE_LINK_STATE_ACTIVE_NAME) &&
-                                (result.stateAfter != CABLE_LINK_STATE_ACTIVE_NAME) &&
-                                (result.stateAfter != CABLE_REPORT_NOT_AVAILABLE);
+        result.stateRegressed =
+          (result.stateBefore == CABLE_LINK_STATE_ACTIVE_NAME) && (result.stateAfter != CABLE_LINK_STATE_ACTIVE_NAME) &&
+          (result.stateAfter != CABLE_REPORT_NOT_AVAILABLE) && (result.stateAfter != CABLE_LINK_STATE_UNKNOWN_NAME);
         if (read)
         {
             result.readBack = true;
