@@ -59,7 +59,7 @@ using I2C.16: MODULE_DISABLED - module is disabled */
 	/* 0x0.0 - 0x0.7 */
 	/* access: RO */
 	u_int8_t status;
-	/* Description - [Switch][DWIP]:Module number, bits [11:8]. */
+	/* Description - [Switch][DWIP]:Module number, bits [11:8].Switch: Local module indexes.Supported concatenated module number ranges are -Range 1 base: MGPIR.tl_module_mission_base_index_localRange 1 count: <MGPIR.max_modules_per_slot_msb, MGPIR.max_modules_per_slot> - MGPIR.tl_module_non_mission_count_localRange 2 base: MGPIR.tl_module_non_mission_base_index_localRange 2 count: MGPIR.tl_module_non_mission_count_localIn case of debug token applied, the following range is also supported -Range 3 base: MGPIR.els_base_index_localRange 3 count: MGPIR.els_count_local */
 	/* 0x0.8 - 0x0.11 */
 	/* access: INDEX */
 	u_int8_t module_bits_11_8;
@@ -67,11 +67,11 @@ using I2C.16: MODULE_DISABLED - module is disabled */
 	/* 0x0.12 - 0x0.15 */
 	/* access: INDEX */
 	u_int8_t slot_index;
-	/* Description - Module number, bits [7:0].NIC: Range 0 .. MGPIR.num_of_modules -1 */
+	/* Description - Module number, bits [7:0].Switch: Local module indexes.Supported concatenated module number ranges are -Range 1 base: MGPIR.tl_module_mission_base_index_localRange 1 count: <MGPIR.max_modules_per_slot_msb, MGPIR.max_modules_per_slot> - MGPIR.tl_module_non_mission_count_localRange 2 base: MGPIR.tl_module_non_mission_base_index_localRange 2 count: MGPIR.tl_module_non_mission_count_localIn case of debug token applied, the following range is also supported -Range 3 base: MGPIR.els_base_index_localRange 3 count: MGPIR.els_count_local */
 	/* 0x0.16 - 0x0.23 */
 	/* access: INDEX */
 	u_int8_t module;
-	/* Description - [Switch][DWIP]:Module number, bits [14:12]. */
+	/* Description - [Switch][DWIP]:Module number, bits [14:12].Switch: Local module indexes.Supported concatenated module number ranges are -Range 1 base: MGPIR.tl_module_mission_base_index_localRange 1 count: <MGPIR.max_modules_per_slot_msb, MGPIR.max_modules_per_slot> - MGPIR.tl_module_non_mission_count_localRange 2 base: MGPIR.tl_module_non_mission_base_index_localRange 2 count: MGPIR.tl_module_non_mission_count_localIn case of debug token applied, the following range is also supported -Range 3 base: MGPIR.els_base_index_localRange 3 count: MGPIR.els_count_local */
 	/* 0x0.26 - 0x0.28 */
 	/* access: INDEX */
 	u_int8_t module_bits_14_12;
@@ -105,7 +105,7 @@ using I2C.16: MODULE_DISABLED - module is disabled */
 	/* 0x8.16 - 0x8.23 */
 	/* access: INDEX */
 	u_int8_t bank_number;
-	/* Description - [Switch][DWIP]:Module number, bit [15]. */
+	/* Description - [Switch][DWIP]:Module number, bit [15].Switch: Local module indexes.Supported concatenated module number ranges are -Range 1 base: MGPIR.tl_module_mission_base_index_localRange 1 count: <MGPIR.max_modules_per_slot_msb, MGPIR.max_modules_per_slot> - MGPIR.tl_module_non_mission_count_localRange 2 base: MGPIR.tl_module_non_mission_base_index_localRange 2 count: MGPIR.tl_module_non_mission_count_localIn case of debug token applied, the following range is also supported -Range 3 base: MGPIR.els_base_index_localRange 3 count: MGPIR.els_count_local */
 	/* 0x8.24 - 0x8.24 */
 	/* access: INDEX */
 	u_int8_t module_bit_15;
