@@ -82,7 +82,7 @@ string CshSectionIDToString(u_int32_t sectionId)
     CPUTOn(sectionName, 1);
     string sectionNameStr(sectionName);
 
-    if (sectionNameStr == "PBLT" || sectionNameStr == "PBLD")
+    if (sectionNameStr == "PBLT" || sectionNameStr == "PBLD" || sectionNameStr == "SBDF")
     {
         return sectionNameStr;
     }
