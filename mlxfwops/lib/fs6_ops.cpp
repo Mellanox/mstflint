@@ -162,6 +162,13 @@ Fs6Operations::Fs6Operations(FBase* ioAccess) : FwOperations(ioAccess), _l1ptOff
 
 bool Fs6Operations::Init()
 {
+    // Guard against re-initialization
+    if (!_l1pt.GetEntries().empty())
+    {
+        MLXFWOPS_LOG_DEBUG("Fs6Operations::Init() - already initialized, skipping");
+        return true;
+    }
+
     vector<u_int8_t> partitionTable(PartitionTable::HeaderSize());
     vector<u_int8_t> entryData(PartitionTableEntry::Size());
 
