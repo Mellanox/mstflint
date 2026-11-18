@@ -3427,7 +3427,15 @@ FlintStatus BurnSubCommand::executeCommand()
     updateBurnParams();
 
     // query both image and device (deviceQuery can fail but we save rc)
-    _devQueryRes = _fwOps->FwQuery(&_devInfo, true, false, true, false, (_flintParams.silent == false));
+    if (_fwType == FIT_FS6 && _flintParams.override_cache_replacement && _flintParams.nofs &&
+        _flintParams.ignore_dev_data)
+    {
+        MLXFWOPS_LOG_DEBUG("skipping device query. assumption is its image is empty for this flow");
+    }
+    else
+    {
+        _devQueryRes = _fwOps->FwQuery(&_devInfo, true, false, true, false, (_flintParams.silent == false));
+    }
     
     if (_imgOps->FwType() == FIT_PLDM)
     {
@@ -3608,6 +3616,26 @@ FlintStatus BurnSubCommand::executeCommand()
         FlintStatus res = burnFs3();
         UnlockDevice(_fwOps);
         return res;
+    }
+    else if (_fwType == FIT_FS6)
+    {
+        if (!_fwOps->FwBurnAdvanced(_imgOps, _burnParams))
+        {
+            reportErr(true, FLINT_FSX_BURN_ERROR, "FIT_FS6", _fwOps->err());
+            UnlockDevice(_fwOps);
+            return FLINT_FAILED;
+        }
+        else
+        {
+            cout << "-I- FS6 burn finished successfully." << endl;
+            const char* resetRec = _imgOps->FwGetResetRecommandationStr();
+            if (resetRec)
+            {
+                printf("-I- %s\n", resetRec);
+            }
+            UnlockDevice(_fwOps);
+            return FLINT_SUCCESS;
+        }
     }
     // unknown fw type
     reportErr(true, FLINT_UNKNOWN_FW_TYPE_ERROR);

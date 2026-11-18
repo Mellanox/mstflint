@@ -283,6 +283,7 @@ bool Fs6Operations::FwInit()
 
 bool Fs6Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedImage, bool showItoc, bool ignoreDToc)
 {
+    MLXFWOPS_LOG_DEBUG("Fs6Operations::FwVerify");
     if (!Init())
     {
         return false;
@@ -351,6 +352,7 @@ bool Fs6Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
                                           _l2ptOffset + l2Entry.GetStartOffset() + l2Entry.GetSectionSize() - 1,
                                           l2Entry.GetSectionSize(), partitionType, "L2 Partition");
                     }
+                    _l2ptEnd = _l2ptOffset + l2Entry.GetStartOffset() + l2Entry.GetSectionSize();
                 }
             }
             else if (PartitionType(entry.GetSectionType()) == PartitionType::PT_DEV_INFO)
@@ -916,6 +918,7 @@ bool Fs6Operations::GetCshSectionOffset(PartitionType partitionType,
 
 bool Fs6Operations::FwQuery(fw_info_t* fwInfo, bool, bool, bool, bool, bool)
 {
+    MLXFWOPS_LOG_DEBUG("Fs6Operations::FwQuery");
     if (!FwVerify((VerifyCallBack) nullptr))
     {
         return false;
@@ -1006,8 +1009,51 @@ bool Fs6Operations::FwBurn(FwOperations* imageOps, u_int8_t forceVersion, Progre
 }
 bool Fs6Operations::FwBurnAdvanced(FwOperations* imageOps, ExtBurnParams& burnParams)
 {
-    return Unsupported(__FUNCTION__);
+    // Verify that imageOps is actually an FS6 image
+    if (imageOps->FwType() != FIT_FS6)
+    {
+        return errmsg("Expected FS6 image but got type %d", imageOps->FwType());
+    }
+
+    // Cast to FImage to access the image buffer
+    FImage* fim = (FImage*)(imageOps->GetIoAccess());
+    u_int8_t* imageData = (u_int8_t*)fim->getBuf();
+
+    if (imageData == NULL)
+    {
+        return errmsg("Failed to get image buffer");
+    }
+
+    uint32_t imageStart = 0;
+    Fs6Operations* fs6ImageOps = static_cast<Fs6Operations*>(imageOps);
+    uint32_t l2ptEnd = fs6ImageOps->GetL2ptEnd();
+    uint32_t dtocStart = 0x01f00000;
+    uint32_t dtocEnd = 0x01ff813f;
+    uint32_t totalSize = l2ptEnd - imageStart + dtocEnd - dtocStart;
+
+    MLXFWOPS_LOG_DEBUG("writing data from address 0x%x to 0x%x ", imageStart, l2ptEnd);
+    MLXFWOPS_LOG_DEBUG("size: 0x%x ", l2ptEnd - imageStart);
+    MLXFWOPS_LOG_DEBUG("writing data from address 0x%x to 0x%x ", dtocStart, dtocEnd);
+    MLXFWOPS_LOG_DEBUG("size: 0x%x ", dtocEnd - dtocStart);
+    MLXFWOPS_LOG_DEBUG("total size: 0x%x ", l2ptEnd - imageStart + dtocEnd - dtocStart);
+
+    if (!writeImageEx(burnParams.progressFuncEx, burnParams.progressUserData, burnParams.progressFunc, imageStart,
+                      imageData, l2ptEnd - imageStart, true, true, totalSize, 0))
+    {
+        return errmsg("Failed to burn image until end of L2PT - %s\n", this->err());
+    }
+    MLXFWOPS_LOG_DEBUG("finished writing data from address 0x%x to 0x%x", imageStart, l2ptEnd);
+
+    if (!writeImageEx(burnParams.progressFuncEx, burnParams.progressUserData, burnParams.progressFunc, dtocStart,
+                      imageData, dtocEnd - dtocStart, true, true, totalSize, l2ptEnd - imageStart))
+    {
+        return errmsg("Failed to burn DTOC area - %s\n", this->err());
+    }
+    MLXFWOPS_LOG_DEBUG("finished writing data from address 0x%x to 0x%x", dtocStart, dtocEnd);
+
+    return true;
 }
+
 bool Fs6Operations::FwBurnBlock(FwOperations* imageOps, ProgressCallBack progressFunc)
 {
     return Unsupported(__FUNCTION__);

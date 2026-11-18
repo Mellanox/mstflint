@@ -113,6 +113,8 @@ public:
     virtual bool GetDevInfo(u_int8_t* buff = nullptr) override;
     virtual bool GetImageInfo();
 
+    uint32_t GetL2ptEnd() { return _l2ptEnd; }
+
     class PartitionValidator
     {
     public:
@@ -167,4 +169,5 @@ private:
     const u_int32_t _l1ptOffset;
     u_int32_t _l2ptOffset;
     u_int8_t _dotMagicId[4];
+    u_int32_t _l2ptEnd;
 };
