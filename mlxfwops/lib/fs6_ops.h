@@ -50,7 +50,7 @@ string ToString(PartitionType type);
 class Fs6Operations : public FwOperations
 {
 public:
-    Fs6Operations(FBase* ioAccess) : FwOperations(ioAccess), _l1ptOffset(0x2000), _l2ptOffset(0) {}
+    Fs6Operations(FBase* ioAccess) : FwOperations(ioAccess), _l1ptOffset(0xe000), _l2ptOffset(0) {}
     u_int8_t FwType() override { return FIT_FS6; }
     bool FwInit() override;
     bool GetImageSize(u_int32_t* image_size) override;
@@ -109,14 +109,19 @@ protected:
 private:
     bool Init();
     bool InitCshComponent(PartitionType partitionType, u_int32_t offset);
-    bool VerifyCshComponent(PartitionType partitionType, u_int32_t offset);
+
+    bool VerifyCshComponent(PartitionType partitionType, u_int32_t offset, VerifyCallBack verifyCallBackFunc);
     bool VerifyCshComponent();
 
     void UpdatePartitionTable(bool l1pt);
     bool IsL2ptSection(CshComponentID cshId);
 
-    string
-      FormatAddressRange(u_int32_t startAddr, u_int32_t endAddr, u_int32_t size, string sectionType, string suffix = "");
+    void PrintSectionRange(VerifyCallBack verifyCallBackFunc,
+                           u_int32_t startAddr,
+                           u_int32_t endAddr,
+                           u_int32_t size,
+                           const string& sectionType,
+                           const string& suffix = "");
 
     PartitionTable _l1pt;
     PartitionTable _l2pt;

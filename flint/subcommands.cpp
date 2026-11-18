@@ -1635,6 +1635,10 @@ const char* SubCommand::fwImgTypeToStr(u_int8_t fwImgType)
             return "FS5";
             break;
 
+        case FIT_FS6:
+            return "FS6";
+            break;
+
         case FIT_FSCTRL:
             return "FSCTRL";
             break;
@@ -4390,6 +4394,7 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
     MLXFWOPS_LOG_DEBUG("fullQuery=%d", fullQuery);
     bool isFs3 = (fwInfo.fw_type == FIT_FS3) ? true : false;
     bool isFs4 = (fwInfo.fw_type == FIT_FS4 || fwInfo.fw_type == FIT_FS5) ? true : false;
+    bool isFs6 = (fwInfo.fw_type == FIT_FS6) ? true : false;
     bool isFsCtrl = (fwInfo.fw_type == FIT_FSCTRL) ? true : false;
     FwOperations* ops = (_flintParams.device_specified) ? _fwOps : _imgOps;
     FwVersion image_version = FwOperations::createFwVersion(&fwInfo.fw_info);
@@ -4397,6 +4402,12 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
     bool isStripedImage = ops->GetIsReducedImage();
 
     printf("Image type:            %s\n", fwImgTypeToStr(fwInfo.fw_type));
+
+    // TODO: remove this once query is supported for fs6
+    if (isFs6)
+    {
+        return FLINT_SUCCESS;
+    }
     if (fwInfo.fw_info.isfu_major)
     {
         printf("FW ISSU Version:       %d\n", fwInfo.fw_info.isfu_major);

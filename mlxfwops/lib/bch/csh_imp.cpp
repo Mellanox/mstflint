@@ -41,6 +41,7 @@
 #endif // } MST_CPU_armv7l_umbriel
 
 #include "common/tools_json.h"
+#include "mft_utils/mft_utils.h"
 #include <algorithm>
 #include <limits.h>
 
@@ -71,6 +72,10 @@ string ToString(CshComponentID cshId)
             return "Unknown";
     }
 }
+
+const string CSH::cshMetadataName = "csh_metadata";
+const string CSH::binarySectionMetadataArrName = "binary_section_matadata_";
+
 vector<u_int8_t> PartitionTable::Pack()
 {
     vector<u_int8_t> data = PackHeader();
@@ -188,6 +193,11 @@ void PartitionTableEntry::SetSectionType(u_int32_t type)
     _struct.partition_type = type;
 }
 
+BinarySectionMetadata::BinarySectionMetadata()
+{
+    memset(&_struct, 0, sizeof(_struct));
+}
+
 BinarySectionMetadata::BinarySectionMetadata(size_t sectionSize, size_t flashOffset, const vector<u_int8_t>& digest)
 {
     memset(&_struct, 0, sizeof(_struct));
@@ -235,12 +245,37 @@ void BinarySectionMetadata::Unpack(const vector<u_int8_t>& binarySection)
 
 void BinarySectionMetadata::SetJsonParams(const Json::Value& root)
 {
-    _struct.version.u8_ver_major = std::stoul(
-      nbu::mft::common::GetStrValue(root["binary_section_metadata"]["version"]["ver_major"], true), nullptr, 16);
-    _struct.version.u8_ver_minor = std::stoul(
-      nbu::mft::common::GetStrValue(root["binary_section_metadata"]["version"]["ver_minor"], true), nullptr, 16);
-    _struct.version.u8_ratchet_level = std::stoul(
-      nbu::mft::common::GetStrValue(root["binary_section_metadata"]["version"]["ratchet_level"], true), nullptr, 16);
+    const size_t MAGIC_ID_LEN = 4;
+    const size_t ENCRYPTION_DERIVATION_STRING_LEN = 16;
+
+    if (root["magic_id"].asString().length() != MAGIC_ID_LEN)
+    {
+        throw runtime_error("Invalid magic ID");
+    }
+    memcpy(_struct.u8_magic_id, root["magic_id"].asCString(), MAGIC_ID_LEN);
+
+    _struct.version.u8_ver_major =
+      std::stoul(nbu::mft::common::GetStrValue(root["version"]["ver_major"], true), nullptr, 16);
+    _struct.version.u8_ver_minor =
+      std::stoul(nbu::mft::common::GetStrValue(root["version"]["ver_minor"], true), nullptr, 16);
+    _struct.version.u8_ratchet_level =
+      std::stoul(nbu::mft::common::GetStrValue(root["version"]["ratchet_level"], true), nullptr, 16);
+
+    _struct.bin_length = std::stoul(nbu::mft::common::GetStrValue(root["bin_length"], true), nullptr, 16);
+    _struct.flash_offset = std::stoul(nbu::mft::common::GetStrValue(root["flash_offset"], true), nullptr, 16);
+    _struct.load_dest[0] = std::stoul(nbu::mft::common::GetStrValue(root["load_dest"], true), nullptr, 16);
+    _struct.entry_point[0] = std::stoul(nbu::mft::common::GetStrValue(root["entry_point"], true), nullptr, 16);
+
+    vector<u_int8_t> buf =
+      mft_utils::HexStringToBytes(root["encryption_params"]["encryption_derivation_string"].asString());
+    if (buf.size() != ENCRYPTION_DERIVATION_STRING_LEN)
+    {
+        throw runtime_error("Invalid encryption derivation string");
+    }
+    memcpy(_struct.encryption_params.u8_encryption_derivation_string.u8_dummy, buf.data(), buf.size());
+
+    _struct.encryption_params.u8_data_encryption_key_version = std::stoul(
+      nbu::mft::common::GetStrValue(root["encryption_params"]["data_encryption_key_version"], true), nullptr, 16);
 }
 
 CSH::CSH() : _isUnpacked(false)
@@ -300,7 +335,9 @@ void CSH::UnpackHeader(const vector<u_int8_t>& cshHeader)
 
     if (!IsValidCompId(_metadata.component_id))
     {
-        throw runtime_error("Unknown CSH Component ID " + std::to_string(_metadata.component_id));
+        std::stringstream ss;
+        ss << "Unknown CSH Component ID 0x" << std::hex << _metadata.component_id;
+        throw runtime_error(ss.str());
     }
 }
 
@@ -415,27 +452,75 @@ void CSH::SetOemSignature(const vector<u_int8_t>& signature, SigType sigType)
 
 void CSH::SetJsonParams(const Json::Value& root)
 {
-    if (root["csh_metadata"].empty())
+    vector<string> binarySectionMetadataNames;
+
+    if (root[cshMetadataName].empty())
     {
-        printf("Couldn't find csh_metadata field.");
-    }
-    if (!_isUnpacked)
-    {
-        _metadata.component_id =
-          std::stoul(nbu::mft::common::GetStrValue(root["csh_metadata"]["component_id"], true), nullptr, 16);
-        if (!IsValidCompId(_metadata.component_id))
-        {
-            throw runtime_error("Unknown CSH Component ID in JSON file: " + std::to_string(_metadata.component_id));
-        }
-        _metadata.num_of_binaries = 1;
+        throw runtime_error("Couldn't find csh_metadata field in JSON file.");
     }
 
-    _metadata.version.u8_ver_major =
-      std::stoul(nbu::mft::common::GetStrValue(root["csh_metadata"]["version"]["ver_major"], true), nullptr, 16);
-    _metadata.version.u8_ver_minor =
-      std::stoul(nbu::mft::common::GetStrValue(root["csh_metadata"]["version"]["ver_minor"], true), nullptr, 16);
-    _metadata.version.u8_ratchet_level =
-      std::stoul(nbu::mft::common::GetStrValue(root["csh_metadata"]["version"]["ratchet_level"], true), nullptr, 16);
+    size_t expectedIndex = 0;
+    for (auto jsonField = root.begin(); jsonField != root.end(); jsonField++)
+    {
+        string name = jsonField.name();
+        if (name == cshMetadataName)
+        {
+            SetMetadataFromJson(root[cshMetadataName]);
+            continue;
+        }
+
+        // binary section metadata field name is expected to be in the format of binary_section_matadata_<index>
+        if (name.find(binarySectionMetadataArrName) != 0 || name.length() <= binarySectionMetadataArrName.length() ||
+            !all_of(name.begin() + binarySectionMetadataArrName.length(), name.end(), ::isdigit) ||
+            name[binarySectionMetadataArrName.length()] == '-')
+        {
+            throw runtime_error("Invalid field name: " + name);
+        }
+
+        // JSON lib is getting fields in alphabetical order, so we check if the index is sequential
+        size_t index = stoi(name.substr(binarySectionMetadataArrName.length()));
+        if (index != expectedIndex)
+        {
+            throw runtime_error("Non-sequential index for binary section metadata: " + to_string(index));
+        }
+
+        if (index < _cshSections.size())
+        {
+            _cshSections[index].SetJsonParams(root[name]);
+        }
+        else
+        {
+            throw runtime_error("Index for binary section metadata is out of range: " + to_string(index));
+        }
+
+        expectedIndex++;
+    }
+
+    if (expectedIndex != _cshSections.size())
+    {
+        throw runtime_error("Number of binary_section_metadata fields in JSON is not equal to the number of binaries");
+    }
+
+    // TODO verify that the binary section metadata offsets are sequential
+}
+
+void CSH::CalcDigest()
+{
+#ifndef MST_CPU_armv7l_umbriel // {
+    vector<u_int8_t> data;
+    for (auto section : _cshSections)
+    {
+        vector<u_int8_t> sectionData = section.Pack();
+        data.insert(data.end(), sectionData.begin(), sectionData.end());
+    }
+
+    vector<u_int8_t> digest;
+    MlxSignSHA384 Sha384;
+    Sha384 << data;
+    Sha384.getDigest(digest);
+
+    memcpy(_metadata.binaries_list_digest.digest, digest.data(), digest.size());
+#endif // } MST_CPU_armv7l_umbriel
 }
 
 bool CSH::IsValidCompId(u_int16_t id)
@@ -447,6 +532,7 @@ bool CSH::IsValidCompId(u_int16_t id)
         case CshComponentID::OEM_FWS:
         case CshComponentID::NV_FWS:
         case CshComponentID::SWITCH_FWS:
+        case CshComponentID::SBD_FW:
             return true;
         default:
             return false;
@@ -457,4 +543,24 @@ size_t CSH::HeaderSize()
 {
     return fs5_image_layout_csh_header_size() + fs5_image_layout_csh_signature_size() +
            fs5_image_layout_csh_signature_size() + fs5_image_layout_csh_metadata_size();
+}
+
+void CSH::SetMetadataFromJson(const Json::Value& root)
+{
+    if (!_isUnpacked)
+    {
+        _metadata.component_id = std::stoul(nbu::mft::common::GetStrValue(root["component_id"], true), nullptr, 16);
+        if (!IsValidCompId(_metadata.component_id))
+        {
+            throw runtime_error("Unknown CSH Component ID in JSON file: " + std::to_string(_metadata.component_id));
+        }
+        // _metadata.num_of_binaries = 1;
+    }
+
+    _metadata.version.u8_ver_major =
+      std::stoul(nbu::mft::common::GetStrValue(root["version"]["ver_major"], true), nullptr, 16);
+    _metadata.version.u8_ver_minor =
+      std::stoul(nbu::mft::common::GetStrValue(root["version"]["ver_minor"], true), nullptr, 16);
+    _metadata.version.u8_ratchet_level =
+      std::stoul(nbu::mft::common::GetStrValue(root["version"]["ratchet_level"], true), nullptr, 16);
 }

@@ -170,7 +170,9 @@ bool Fs6Operations::Init()
 
     for (size_t i = 0; i < _l1pt.GetNumberOfEntries(); i++)
     {
-        if (!_ioAccess->read(0x2070 + i * PartitionTableEntry::Size(), entryData.data(), PartitionTableEntry::Size()))
+        size_t l1PartitionsOffset = _l1ptOffset + PartitionTable::HeaderSize();
+        if (!_ioAccess->read(l1PartitionsOffset + i * PartitionTableEntry::Size(), entryData.data(),
+                             PartitionTableEntry::Size()))
         {
             return errmsg(MLXFW_BAD_PARAM_ERR, "%s", _ioAccess->err());
         }
@@ -200,7 +202,8 @@ bool Fs6Operations::Init()
 
             for (size_t i = 0; i < _l2pt.GetNumberOfEntries(); i++)
             {
-                if (!_ioAccess->read(_l2ptOffset + PartitionTable::HeaderSize() + i * PartitionTableEntry::Size(),
+                size_t l2PartitionsOffset = _l2ptOffset + PartitionTable::HeaderSize();
+                if (!_ioAccess->read(l2PartitionsOffset + i * PartitionTableEntry::Size(),
                                      entryData.data(),
                                      PartitionTableEntry::Size()))
                 {
@@ -260,7 +263,8 @@ bool Fs6Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
 
     report_callback(verifyCallBackFunc, "\nFS6 failsafe image\n\n");
 
-    cout << FormatAddressRange(_l1ptOffset, _l1ptOffset + _l1pt.Size() - 1, _l1pt.Size(), "L1 Partition Table") << endl;
+    PrintSectionRange(verifyCallBackFunc, _l1ptOffset, _l1ptOffset + _l1pt.Size() - 1, _l1pt.Size(),
+                      "L1 Partition Table");
 
     for (auto entry : _l1pt.GetEntries())
     {
@@ -280,14 +284,17 @@ bool Fs6Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
         {
             if (IsCshComponent((PartitionType)entry.GetSectionType()))
             {
-                VerifyCshComponent((PartitionType)entry.GetSectionType(), entry.GetStartOffset());
+                if (!VerifyCshComponent((PartitionType)entry.GetSectionType(), entry.GetStartOffset(),
+                                        verifyCallBackFunc))
+                {
+                    return false;
+                }
             }
             else if (PartitionType(entry.GetSectionType()) == PartitionType::PT_CHAIN_CONTAINER)
             {
                 bool isKnownPartition = true;
-                cout << FormatAddressRange(_l2ptOffset, _l2ptOffset + _l2pt.Size() - 1, _l2pt.Size(),
-                                           "L2 Partition Table")
-                     << endl;
+                PrintSectionRange(verifyCallBackFunc, _l2ptOffset, _l2ptOffset + _l2pt.Size() - 1, _l2pt.Size(),
+                                  "L2 Partition Table");
                 for (auto l2Entry : _l2pt.GetEntries())
                 {
                     partitionType = ToString((PartitionType)l2Entry.GetSectionType());
@@ -301,39 +308,40 @@ bool Fs6Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
                     {
                         if (IsCshComponent((PartitionType)l2Entry.GetSectionType()))
                         {
-                            VerifyCshComponent((PartitionType)l2Entry.GetSectionType(),
-                                               _l2ptOffset + l2Entry.GetStartOffset());
+                            if (!VerifyCshComponent((PartitionType)l2Entry.GetSectionType(),
+                                                    _l2ptOffset + l2Entry.GetStartOffset(), verifyCallBackFunc))
+                            {
+                                return false;
+                            }
                         }
                     }
                     else
                     {
-                        cout << FormatAddressRange(
-                                  _l2ptOffset + l2Entry.GetStartOffset(),
-                                  _l2ptOffset + l2Entry.GetStartOffset() + l2Entry.GetSectionSize() - 1,
-                                  l2Entry.GetSectionSize(), partitionType, "L2 Partition")
-                             << endl;
+                        PrintSectionRange(verifyCallBackFunc, _l2ptOffset + l2Entry.GetStartOffset(),
+                                          _l2ptOffset + l2Entry.GetStartOffset() + l2Entry.GetSectionSize() - 1,
+                                          l2Entry.GetSectionSize(), partitionType, "L2 Partition");
                     }
                 }
             }
             else
             {
-                cout << FormatAddressRange(entry.GetStartOffset(), entry.GetStartOffset() + entry.GetSectionSize() - 1,
-                                           entry.GetSectionSize(), partitionType, "L1 Partition")
-                     << endl;
+                PrintSectionRange(verifyCallBackFunc, entry.GetStartOffset(),
+                                  entry.GetStartOffset() + entry.GetSectionSize() - 1, entry.GetSectionSize(),
+                                  partitionType, "L1 Partition");
             }
         }
         else
         {
-            cout << FormatAddressRange(entry.GetStartOffset(), entry.GetStartOffset() + entry.GetSectionSize() - 1,
-                                       entry.GetSectionSize(), partitionType, "L1 Partition")
-                 << endl;
+            PrintSectionRange(verifyCallBackFunc, entry.GetStartOffset(),
+                              entry.GetStartOffset() + entry.GetSectionSize() - 1, entry.GetSectionSize(),
+                              partitionType, "L1 Partition");
         }
     }
 
     return true;
 }
 
-bool Fs6Operations::VerifyCshComponent(PartitionType partitionType, u_int32_t offset)
+bool Fs6Operations::VerifyCshComponent(PartitionType partitionType, u_int32_t offset, VerifyCallBack verifyCallBackFunc)
 {
     auto cshComponent =
       find_if(_cshComponents.begin(), _cshComponents.end(),
@@ -342,13 +350,15 @@ bool Fs6Operations::VerifyCshComponent(PartitionType partitionType, u_int32_t of
     if (cshComponent != _cshComponents.end())
     {
         string compName = ToString(CshComponentID(cshComponent->second.GetComponentId()));
-        cout << FormatAddressRange(offset, offset + cshComponent->second.Size() - 1, cshComponent->second.Size(),
-                                   compName, "CSH")
-             << endl;
+        PrintSectionRange(verifyCallBackFunc, offset, offset + cshComponent->second.Size() - 1,
+                          cshComponent->second.Size(), compName, "CSH");
+
+        u_int32_t prevSectionEnd = cshComponent->second.Size();
+        u_int32_t currSectionBegin = 0;
+        string sectionName;
 
         for (auto section : cshComponent->second.GetSections())
         {
-            string sectionName = ToString(CshComponentID(section.GetSectionType()));
             if (partitionType == PartitionType::PT_SWITCH_FWS)
             {
                 sectionName = GetSectionNameByType(section.GetSectionType());
@@ -358,13 +368,24 @@ bool Fs6Operations::VerifyCshComponent(PartitionType partitionType, u_int32_t of
                 sectionName = mft_utils::ToHexString(section.GetSectionType(), 2);
             }
             size_t sectionOffset = offset + section.GetSectionOffset();
-            cout << FormatAddressRange(sectionOffset, sectionOffset + section.GetSectionSize() - 1,
-                                       section.GetSectionSize(), sectionName, "CSH Section")
-                 << endl;
+            PrintSectionRange(verifyCallBackFunc, sectionOffset, sectionOffset + section.GetSectionSize() - 1,
+                              section.GetSectionSize(), sectionName, "CSH Section");
+
+            currSectionBegin = section.GetSectionOffset();
+            if (currSectionBegin > prevSectionEnd)
+            {
+                return errmsg("section %s intersects with the previous section", sectionName.c_str());
+            }
+            prevSectionEnd = section.GetSectionOffset() + section.GetSectionSize();
+        }
+
+        if (prevSectionEnd > cshComponent->second.GetComponentSize())
+        {
+            return errmsg("section %s is out of CSH bounds", sectionName.c_str());
         }
     }
 
-    return false;
+    return true;
 }
 
 bool Fs6Operations::GetImageSize(u_int32_t* image_size)
@@ -478,7 +499,14 @@ const char* Fs6Operations::FwGetResetRecommandationStr()
 
 bool Fs6Operations::FwQuery(fw_info_t* fwInfo, bool, bool, bool, bool, bool)
 {
-    return Unsupported(__FUNCTION__);
+    if (!FwVerify((VerifyCallBack) nullptr))
+    {
+        return false;
+    }
+
+    fwInfo->fw_type = FwType();
+
+    return true;
 }
 
 #ifndef MST_CPU_armv7l_umbriel // {
@@ -589,15 +617,16 @@ bool Fs6Operations::FwCalcMD5(u_int8_t md5sum[16])
     return Unsupported(__FUNCTION__);
 }
 
-string Fs6Operations::FormatAddressRange(u_int32_t startAddr,
-                                         u_int32_t endAddr,
-                                         u_int32_t size,
-                                         string sectionType,
-                                         string suffix)
+void Fs6Operations::PrintSectionRange(VerifyCallBack verifyCallBackFunc,
+                                      u_int32_t startAddr,
+                                      u_int32_t endAddr,
+                                      u_int32_t size,
+                                      const string& sectionType,
+                                      const string& suffix)
 {
     std::stringstream ss;
     ss << "0x" << std::hex << std::setw(8) << std::setfill('0') << startAddr << "-0x" << std::setw(8)
        << std::setfill('0') << endAddr << " (0x" << std::setw(6) << std::setfill('0') << size << ")/ " << std::left
-       << std::setw(25) << std::setfill(' ') << sectionType << " | " << suffix;
-    return ss.str();
+       << std::setw(25) << std::setfill(' ') << sectionType << " | " << suffix << std::endl;
+    report_callback(verifyCallBackFunc, ss.str().c_str());
 }

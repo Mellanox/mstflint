@@ -66,7 +66,7 @@ enum class CshComponentID
     BCT_DTB = 0x5,
     OEM_FWS = 0x6,
     NV_FWS = 0x7,
-    SWITCH_FWS = 0x20,
+    SWITCH_FWS = 0x2020,
     SBD_FW = 0x21,
     Unknown = 0xff
 };
@@ -157,7 +157,7 @@ private:
 class MLXFWOP_API BinarySectionMetadata
 {
 public:
-    BinarySectionMetadata() {}
+    BinarySectionMetadata();
     BinarySectionMetadata(size_t sectionSize, size_t flashOffset, const vector<u_int8_t>& digest);
     BinarySectionMetadata(u_int32_t itoc_type, size_t sectionSize, size_t flashOffset, const vector<u_int8_t>& digest);
 
@@ -166,7 +166,7 @@ public:
 
     size_t GetSectionOffset() { return _struct.flash_offset; }
     size_t GetSectionSize() { return _struct.bin_length; }
-    u_int32_t GetSectionType()
+    u_int32_t GetSectionType() const
     {
         u_int32_t magic;
         memcpy(&magic, _struct.u8_magic_id, sizeof(magic));
@@ -213,14 +213,18 @@ public:
     void SetOemSignature(const vector<u_int8_t>& signature, SigType sigType);
 
     void SetJsonParams(const Json::Value& root);
+    void CalcDigest();
 
     static size_t HeaderSize();
 
 private:
     bool IsValidCompId(u_int16_t id);
+    void SetMetadataFromJson(const Json::Value& root);
 
     static const u_int16_t CSH_ECDSA_SIG_SIZE = 96;
     static const u_int16_t CSH_LMS_SIG_SIZE = 1740;
+    static const string cshMetadataName;
+    static const string binarySectionMetadataArrName;
 
     struct fs5_image_layout_csh_header _header;
     struct fs5_image_layout_csh_signature _nv_signature;
