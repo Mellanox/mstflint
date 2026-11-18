@@ -126,7 +126,7 @@ string ToString(PartitionType type)
         case PartitionType::PT_NV_DATA2:
             return "NV_DATA2";
         case PartitionType::PT_VPD_READ_ONLY:
-            return "VPD_READ_ONLY";
+            return "VPD_R0";
         case PartitionType::PT_MFG_INFO:
             return "MFG_INFO";
         case PartitionType::PT_DEV_INFO:
