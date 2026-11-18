@@ -287,6 +287,7 @@ public:
     void SetJsonParams(const Json::Value& root) override;
 
 private:
+    void SetDependencyList(const Json::Value& root);
     struct fs5_image_layout_csh_metadata_nbu _metadata_nbu;
 };
 
@@ -352,6 +353,13 @@ public:
     static size_t HeaderSize(CshStructType type);
     static CshStructType GetCshStructType(const vector<u_int8_t>& cshHeader);
     static bool IsValidCompId(u_int16_t id);
+
+    static const string ROM_IMGS_NAME;
+    static const string BCT_DTB_NAME;
+    static const string OEM_FWS_NAME;
+    static const string NV_FWS_NAME;
+    static const string SWITCH_FWS_NAME;
+    static const string SBD_FW_NAME;
 
 private:
     void UnpackCshMetadata(const vector<u_int8_t>& cshHeader, const u_int8_t* iter);

@@ -110,19 +110,19 @@ string ToString(PartitionType type)
     switch (type)
     {
         case PartitionType::PT_ROM_IMGS:
-            return "ROM_IMGS";
+            return CSH::ROM_IMGS_NAME;
         case PartitionType::PT_CHAIN_CONTAINER:
             return "CHAIN_CONTAINER";
         case PartitionType::PT_BCT_DTB:
-            return "BCT_DTB";
+            return CSH::BCT_DTB_NAME;
         case PartitionType::PT_OEM_FWS:
-            return "OEM_FWS";
+            return CSH::OEM_FWS_NAME;
         case PartitionType::PT_NV_FWS:
-            return "NV_FWS";
+            return CSH::NV_FWS_NAME;
         case PartitionType::PT_SWITCH_FWS:
-            return "SWITCH_FWS";
+            return CSH::SWITCH_FWS_NAME;
         case PartitionType::PT_SBD_FW:
-            return "SBD_FW";
+            return CSH::SBD_FW_NAME;
         case PartitionType::PT_NV_DATA1:
             return "NV_DATA1";
         case PartitionType::PT_NV_DATA2:

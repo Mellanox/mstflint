@@ -88,20 +88,49 @@ string ToString(CshComponentID cshId)
     switch (cshId)
     {
         case CshComponentID::ROM_IMGS:
-            return "ROM_IMGS";
+            return CSH::ROM_IMGS_NAME;
         case CshComponentID::BCT_DTB:
-            return "BCT_DTB";
+            return CSH::BCT_DTB_NAME;
         case CshComponentID::OEM_FWS:
-            return "OEM_FWS";
+            return CSH::OEM_FWS_NAME;
         case CshComponentID::NV_FWS:
-            return "NV_FWS";
+            return CSH::NV_FWS_NAME;
         case CshComponentID::SWITCH_FWS:
-            return "SWITCH_FWS";
+            return CSH::SWITCH_FWS_NAME;
         case CshComponentID::SBD_FW:
-            return "SBD_FW";
+            return CSH::SBD_FW_NAME;
         default:
             return "Unknown";
     }
+}
+
+CshComponentID ToCshId(string cshId)
+{
+    if (cshId == CSH::ROM_IMGS_NAME)
+    {
+        return CshComponentID::ROM_IMGS;
+    }
+    if (cshId == CSH::BCT_DTB_NAME)
+    {
+        return CshComponentID::BCT_DTB;
+    }
+    if (cshId == CSH::OEM_FWS_NAME)
+    {
+        return CshComponentID::OEM_FWS;
+    }
+    if (cshId == CSH::NV_FWS_NAME)
+    {
+        return CshComponentID::NV_FWS;
+    }
+    if (cshId == CSH::SWITCH_FWS_NAME)
+    {
+        return CshComponentID::SWITCH_FWS;
+    }
+    if (cshId == CSH::SBD_FW_NAME)
+    {
+        return CshComponentID::SBD_FW;
+    }
+    return CshComponentID::Unknown;
 }
 
 string CshSectionIDToString(u_int32_t sectionId)
@@ -122,6 +151,13 @@ string CshSectionIDToString(u_int32_t sectionId)
 const string CSH::cshHeaderName = "csh_header";
 const string CSH::cshMetadataName = "csh_metadata";
 const string CSH::binarySectionMetadataName = "binary_section_metadata";
+
+const string CSH::ROM_IMGS_NAME = "ROM_IMGS";
+const string CSH::BCT_DTB_NAME = "BCT_DTB";
+const string CSH::OEM_FWS_NAME = "OEM_FWS";
+const string CSH::NV_FWS_NAME = "NV_FWS";
+const string CSH::SWITCH_FWS_NAME = "SWITCH_FWS";
+const string CSH::SBD_FW_NAME = "SBD_FW";
 
 vector<u_int8_t> PartitionTable::Pack()
 {
@@ -442,6 +478,31 @@ void CshMetadataNbu::SetBinariesListDigest(const vector<u_int8_t>& digest)
     memcpy(_metadata_nbu.binaries_list_digest.digest, digest.data(), SHA384_DIGEST_SIZE);
 }
 
+void CshMetadataNbu::SetDependencyList(const Json::Value& root)
+{
+    const size_t MAX_DEPENDENCY_LIST_SIZE = 8;
+    if (root.size() > MAX_DEPENDENCY_LIST_SIZE)
+    {
+        throw runtime_error("Dependency list unexpected size");
+    }
+    size_t i = 0;
+    for (auto jsonField = root.begin(); jsonField != root.end(); jsonField++)
+    {
+        string jsonFieldName = jsonField.name();
+        CshComponentID cshId = ToCshId(jsonFieldName);
+        if (cshId == CshComponentID::Unknown)
+        {
+            throw runtime_error("Unknown CSH component name in dependency list: " + jsonFieldName);
+        }
+        _metadata_nbu.dependency_list[i].component_id = static_cast<u_int16_t>(cshId);
+        _metadata_nbu.dependency_list[i].min_major_version =
+          std::stoul(nbu::mft::common::GetStrValue(root[jsonFieldName]["ver_major"], true), nullptr, 16);
+        _metadata_nbu.dependency_list[i].min_minor_version =
+          std::stoul(nbu::mft::common::GetStrValue(root[jsonFieldName]["ver_minor"], true), nullptr, 16);
+        i++;
+    }
+}
+
 void CshMetadataNbu::SetJsonParams(const Json::Value& root)
 {
     _metadata_nbu.version.ver_major =
@@ -456,6 +517,10 @@ void CshMetadataNbu::SetJsonParams(const Json::Value& root)
     _metadata_nbu.issu_ver_minor = std::stoul(nbu::mft::common::GetStrValue(root["issu_ver_minor"], true), nullptr, 16);
     _metadata_nbu.issu_notch = std::stoul(nbu::mft::common::GetStrValue(root["issu_notch"], true), nullptr, 16);
     _metadata_nbu.issuable = std::stoul(nbu::mft::common::GetStrValue(root["issuable"], true), nullptr, 16);
+    if (root.isMember("dependency_list"))
+    {
+        SetDependencyList(root["dependency_list"]);
+    }
 }
 
 vector<u_int8_t> CshMetadata::Pack()

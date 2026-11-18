@@ -2726,6 +2726,47 @@ bool FwOperations::FwSetForbiddenVersions(char* fname, PrintCallBack callBackFun
     return errmsg("FwSetForbiddenVersions not supported");
 }
 
+const vector<pair<string, ComponentType>> FwOperations::GetStringToComponentEnum()
+{
+    static const vector<pair<string, ComponentType>> stringToComponentEnum = {
+      {"NCORE", ComponentType::Comp_Psc_Ncore},
+      {"BL1", ComponentType::Comp_Psc_Bl1},
+      {"FW", ComponentType::Comp_Psc_Fw},
+      {"BCT", ComponentType::Comp_Psc_Bct},
+      {"IMAGE_INFO", ComponentType::Comp_IToc_Image_Info},
+      {CSH::ROM_IMGS_NAME, ComponentType::Comp_Csh_Rom_Imgs},
+      {CSH::NV_FWS_NAME, ComponentType::Comp_Csh_Nv_Fws},
+      {CSH::OEM_FWS_NAME, ComponentType::Comp_Csh_Oem_Fws},
+      {CSH::BCT_DTB_NAME, ComponentType::Comp_Csh_Bct_Dtb},
+      {CSH::SWITCH_FWS_NAME, ComponentType::Comp_Csh_Switch_Fws},
+      {CSH::SBD_FW_NAME, ComponentType::Comp_Csh_Sbd_Fw}};
+    return stringToComponentEnum;
+}
+
+ComponentType FwOperations::StringToComponentType(string compName)
+{
+    for (size_t i = 0; i < GetStringToComponentEnum().size(); i++)
+    {
+        if (GetStringToComponentEnum()[i].first == compName)
+        {
+            return GetStringToComponentEnum()[i].second;
+        }
+    }
+    return ComponentType::Comp_Psc_Not_Valid;
+}
+
+string FwOperations::ComponentNameToString(ComponentType compName)
+{
+    for (size_t i = 0; i < GetStringToComponentEnum().size(); i++)
+    {
+        if (GetStringToComponentEnum()[i].second == compName)
+        {
+            return GetStringToComponentEnum()[i].first;
+        }
+    }
+    return "";
+}
+
 bool FwOperations::GetFwComponentsData(string)
 {
     return errmsg("GetFwComponentsData is not supported");
