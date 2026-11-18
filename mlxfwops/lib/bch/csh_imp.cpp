@@ -247,12 +247,56 @@ PartitionTableEntry& PartitionTable::GetEntry(PartitionType entryType, int chain
     return *entry;
 }
 
+int PartitionTable::GetEntryIndex(PartitionType entryType, int chainNumber)
+{
+    bool useChainFilter = (entryType == PartitionType::PT_ROM_IMGS || entryType == PartitionType::PT_CHAIN_CONTAINER);
+    ResolveChainNumber(chainNumber, _activeChain);
+
+    const auto compareFunc = [entryType, useChainFilter, chainNumber](const PartitionTableEntry& entry)
+    {
+        if ((PartitionType)entry.GetSectionType() != entryType)
+            return false;
+        if (useChainFilter)
+            return entry.GetChainNumber() == chainNumber;
+        return true;
+    };
+
+    auto it = std::find_if(_entries.begin(), _entries.end(), compareFunc);
+    if (it == _entries.end())
+    {
+        return -1; // Not found
+    }
+
+    return std::distance(_entries.begin(), it);
+}
+
+size_t PartitionTable::GetEntryTableOffset(PartitionType entryType, int chainNumber)
+{
+    int index = GetEntryIndex(entryType, chainNumber);
+    if (index < 0)
+    {
+        throw runtime_error("couldn't find entry");
+    }
+    return HeaderSize() + index * PartitionTableEntry::Size();
+}
+
+bool PartitionTableEntry::IsCshActiveChain() const
+{
+    return _csh != nullptr && _csh->isActiveChain();
+}
+
+bool PartitionTableEntry::IsCshBackupChain() const
+{
+    return _csh != nullptr && _csh->isBackupChain();
+}
+
 PartitionTableEntry::PartitionTableEntry(size_t offset, size_t size, u_int32_t type)
 {
     memset(&_struct, 0, sizeof(_struct));
     _struct.start_address[0] = offset;
     _struct.partition_size[0] = size;
     _struct.partition_type = type;
+    _csh = nullptr;
 }
 
 vector<u_int8_t> PartitionTableEntry::Pack()
@@ -807,6 +851,16 @@ bool CSH::isActiveChain()
     return false;
 }
 
+bool CSH::isBackupChain()
+{
+    const auto& romImgsBackupMagicPatternBE = PartitionTable::RomImgsBackupMagicPatternBE();
+    if (std::equal(romImgsBackupMagicPatternBE.begin(), romImgsBackupMagicPatternBE.end(), _header.magic_pattern))
+    {
+        return true;
+    }
+    return false;
+}
+
 void CSH::UnpackCshMetadata(const vector<u_int8_t>& cshHeader, const u_int8_t* iter)
 {
     if (_cshStructType == CshStructType::CSH_NBU)
@@ -863,7 +917,7 @@ vector<u_int8_t> CSH::PackMetadata() const
     return _metadata->Pack();
 }
 
-size_t CSH::GetCshSize()
+size_t CSH::GetCshSize() const
 {
     if (_metadata->GetComponentId() == 0x0)
     {
@@ -873,7 +927,7 @@ size_t CSH::GetCshSize()
     return CSH::HeaderSize(_cshStructType) + (isSwitchFws ? 32 : _cshSections.size()) * BinarySectionMetadata::Size();
 }
 
-size_t CSH::GetComponentSize()
+size_t CSH::GetComponentSize() const
 {
     size_t componentSize = GetCshSize();
     if (!_cshSections.empty())

@@ -3429,15 +3429,7 @@ FlintStatus BurnSubCommand::executeCommand()
     updateBurnParams();
 
     // query both image and device (deviceQuery can fail but we save rc)
-    if (_fwType == FIT_FS6 && _flintParams.override_cache_replacement && _flintParams.nofs &&
-        _flintParams.ignore_dev_data)
-    {
-        MLXFWOPS_LOG_DEBUG("skipping device query. assumption is its image is empty for this flow");
-    }
-    else
-    {
-        _devQueryRes = _fwOps->FwQuery(&_devInfo, true, false, true, false, (_flintParams.silent == false));
-    }
+    _devQueryRes = _fwOps->FwQuery(&_devInfo, true, false, true, false, (_flintParams.silent == false));
     
     if (_imgOps->FwType() == FIT_PLDM)
     {

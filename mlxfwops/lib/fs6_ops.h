@@ -126,7 +126,13 @@ public:
                                    bool ignoreImageStart = false,
                                    bool imageSizeOnly = false) override;
 
-    uint32_t GetL2ptEnd() { return _l2ptEnd; }
+    bool isEncrypted(bool& is_encrypted) override;
+    string GetL1ptEntryName(PartitionType partType, bool isCshComponent);
+    bool ExecuteBurn(FwOperations* imageOps, ExtBurnParams& burnParams);
+    bool DoBeforeBurnJobs();
+    bool DoAfterBurnJobs();
+    bool PreBurnChecks(FwOperations* imageOps, ExtBurnParams& burnParams);
+    int GetDestChainNumber(bool failSafe);
 
     class PartitionValidator
     {
@@ -156,6 +162,28 @@ protected:
     {
         return errmsg("Comps operations - unsupported functionality: %s\n", msg.data());
     }
+
+    // Structure to hold burn region info
+    struct BurnRegion
+    {
+        size_t src_offset;
+        size_t dest_offset;
+        size_t size;
+        std::string name;
+        PartitionType partitionType;
+    };
+
+    std::map<PartitionType, std::vector<BurnRegion>>
+      GetBurnRegions(FwOperations* imageOps, bool useImgDevData, bool failSafe);
+    bool HandleRomImgsMagicPatternsPostBurn(ExtBurnParams& burnParams, uint32_t& alreadyWrittenSize, uint32_t totalSize);
+    uint32_t GetTotalBurnSize(map<PartitionType, vector<BurnRegion>>& partitionTypeToBurnRegions);
+    void addBurnRegion(u_int32_t srcOffset,
+                       u_int32_t destOffset,
+                       u_int32_t size,
+                       const std::string& name,
+                       PartitionType pt,
+                       map<PartitionType, vector<BurnRegion>>& partitionMap,
+                       vector<BurnRegion>& allRegions);
 
 private:
     bool Init();
@@ -201,6 +229,6 @@ private:
     const u_int32_t _l1ptOffset;
     u_int32_t _l2ptOffset;
     u_int8_t _dotMagicId[4];
-    u_int32_t _l2ptEnd;
     int _activeChain;
+    int _backupChain;
 };

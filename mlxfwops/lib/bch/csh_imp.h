@@ -132,6 +132,7 @@ enum class CshComponentID
 
 enum class PartitionType
 {
+    PT_UNKNOWN = 0x0,
     PT_ROM_IMGS = 0x2,
     PT_CHAIN_CONTAINER = 0x3,
     PT_BCT_DTB = 0x4,
@@ -139,6 +140,7 @@ enum class PartitionType
     PT_NV_FWS = 0x6,
     PT_SWITCH_FWS = 0x7,
     PT_SBD_FW = 0x8,
+    PT_VMOD_FW = 0x9,
     PT_NV_DATA1 = 0xe4,
     PT_NV_DATA2 = 0xe6,
     PT_VPD_READ_ONLY = 0xe3,
@@ -151,6 +153,7 @@ enum class PartitionType
     PT_NVFILE_BUFFER = 0xf8,
     PT_FW_DEBUG_DUMP = 0xfc,
     PT_FW_DEBUG_DUMP2 = 0xd4,
+    PT_FW_NV_LOG = 0xe5,
 };
 
 const u_int32_t L1PT_OFFSET = 0xe000;
@@ -174,13 +177,20 @@ string ToString(CshComponentID cshId);
 
 // #ifndef MST_CPU_armv7l_umbriel // {
 
+class CSH; // forward declaration
+
 class MLXFWOP_API PartitionTableEntry
 {
 public:
-    PartitionTableEntry() {}
+    PartitionTableEntry() : _csh(nullptr) {}
     PartitionTableEntry(size_t offset, size_t size, u_int32_t type);
     vector<u_int8_t> Pack();
     void Unpack(const vector<u_int8_t>& data);
+
+    void SetCsh(CSH* csh) { _csh = csh; }
+    CSH* GetCsh() const { return _csh; }
+    bool IsCshActiveChain() const;
+    bool IsCshBackupChain() const;
 
     void SetStartOffset(size_t offset);
     size_t GetStartOffset() const { return _struct.start_address[0]; }
@@ -197,6 +207,7 @@ public:
 
 private:
     struct fs5_image_layout_partition_table_entry _struct;
+    CSH* _csh;
 };
 
 class MLXFWOP_API PartitionTable
@@ -220,6 +231,8 @@ public:
     u_int32_t GetEntryOffset(PartitionType entryType, int chainNumber = INVALID_CHAIN_NUMBER);
     u_int32_t GetEntrySize(PartitionType entryType, int chainNumber = INVALID_CHAIN_NUMBER);
     PartitionTableEntry& GetEntry(PartitionType entryType, int chainNumber = INVALID_CHAIN_NUMBER);
+    int GetEntryIndex(PartitionType entryType, int chainNumber = INVALID_CHAIN_NUMBER);
+    size_t GetEntryTableOffset(PartitionType entryType, int chainNumber = INVALID_CHAIN_NUMBER);
     const vector<PartitionTableEntry>& GetEntries() const { return _entries; }
 
     static size_t HeaderSize() { return fs5_image_layout_partition_table_header_size(); }
@@ -237,6 +250,17 @@ public:
     {
         static vector<u_int8_t> romImgsCandidateMagicPatternBE{{0x27, 0x5a, 0x3d, 0x4f}};
         return romImgsCandidateMagicPatternBE;
+    }
+
+    static const vector<u_int8_t>& RomImgsBackupMagicPattern()
+    {
+        static vector<u_int8_t> romImgsBackupMagicPatternLE{{0x40, 0x3c, 0x58, 0x25}};
+        return romImgsBackupMagicPatternLE;
+    }
+    static const vector<u_int8_t>& RomImgsBackupMagicPatternBE()
+    {
+        static vector<u_int8_t> romImgsBackupMagicPatternBE{{0x25, 0x58, 0x3c, 0x40}};
+        return romImgsBackupMagicPatternBE;
     }
 
     void SetActiveChain(int chain) { _activeChain = chain; }
@@ -388,6 +412,7 @@ public:
 
     vector<u_int8_t> Pack();
     vector<u_int8_t> PackMetadata() const;
+    vector<u_int8_t> PackHeader() const;
     void Unpack(const vector<u_int8_t>& buffer);
     void UnpackHeader(const vector<u_int8_t>& cshHeader);
     void UnpackSections(const vector<u_int8_t>& buffer, size_t offset = 0);
@@ -396,12 +421,12 @@ public:
     vector<BinarySectionMetadata>& GetSections() { return _cshSections; }
     BinarySectionMetadata& GetSection(u_int32_t itocType);
 
-    size_t GetCshSize();
+    size_t GetCshSize() const;
 
     u_int16_t GetComponentId() const { return _metadata->GetComponentId(); }
     CshComponentID GetComponentIdEnum() { return static_cast<CshComponentID>(_metadata->GetComponentId()); }
 
-    size_t GetComponentSize();
+    size_t GetComponentSize() const;
     size_t GetNumberOfBinaries() { return _metadata->GetNumberOfBinaries(); }
     u_int8_t GetComponentMajorVersion() { return _metadata->GetComponentMajorVersion(); }
     u_int16_t GetComponentMinorVersion() { return _metadata->GetComponentMinorVersion(); }
@@ -417,6 +442,7 @@ public:
     static bool IsValidCompId(u_int16_t id);
 
     bool isActiveChain();
+    bool isBackupChain();
 
     static const string ROM_IMGS_NAME;
     static const string BCT_DTB_NAME;
