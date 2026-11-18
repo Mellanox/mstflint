@@ -1453,6 +1453,11 @@ bool Fs6Operations::Is32MBLayout()
     return GetChainContainerMaxSize() == 0xA00000;
 }
 
+bool Fs6Operations::Is64MBLayout()
+{
+    return GetChainContainerMaxSize() == 0x1000000;
+}
+
 size_t Fs6Operations::GetChainContainerMaxSize()
 {
     auto chainContainerEntry =
@@ -1467,6 +1472,40 @@ size_t Fs6Operations::GetChainContainerActualSize()
     size_t l2ptSize = PartitionTable::HeaderSize() + _l2pt.GetEntries().size() * PartitionTableEntry::Size();
     MLXFWOPS_LOG_DEBUG("chain container actual size: 0x%zx", l2ptSectionsSize + l2ptSize);
     return l2ptSectionsSize + l2ptSize;
+}
+
+bool Fs6Operations::CheckFlashLayoutCompatibleForPartialBurn(FwOperations* imageOps, ExtBurnParams& burnParams)
+{
+    MLXFWOPS_LOG_DEBUG("Fs6Operations::CheckFlashLayoutCompatibleForPartialBurn");
+    if (burnParams.useImgDevData || imageOps->FwType() != FIT_FS6)
+    {
+        return true;
+    }
+    if (imageOps->GetIsReducedImage())
+    {
+        MLXFWOPS_LOG_DEBUG("Can't check max container size for reduced image, skipping check");
+        return true;
+    }
+
+    try
+    {
+        if (Is64MBLayout() && GetChainContainerMaxSize() >
+                                ((Fs6Operations*)imageOps)->GetChainContainerMaxSize()) // allowing burn will result
+                                                                                        // boot failure since fw doesn't
+                                                                                        // support downgrading fw
+                                                                                        // partially, only with
+                                                                                        // production burn
+        {
+            return errmsg(
+              "Device is in 64MB layout, but image provided is not. Downgrading fw partially is not supported.");
+        }
+    }
+    catch (const std::exception& e)
+    {
+        return errmsg("Failed to check if flash layout compatible for partial burn: %s", e.what());
+    }
+
+    return true;
 }
 
 bool Fs6Operations::PreBurnChecks(FwOperations* imageOps, ExtBurnParams& burnParams)
@@ -1489,6 +1528,12 @@ bool Fs6Operations::PreBurnChecks(FwOperations* imageOps, ExtBurnParams& burnPar
             return errmsg("Chain container size in provided image is too large for device's flash layout.");
         }
     }
+
+    if (!CheckFlashLayoutCompatibleForPartialBurn(imageOps, burnParams))
+    {
+        return false;
+    }
+
     return true;
 }
 
