@@ -79,6 +79,7 @@ public:
                        ComponentHeader compHeader,
                        string file_path,
                        vector<u_int8_t>& componentData) override;
+    bool IsComponentFormatWithKeyId() override { return true; }
 
 private:
     struct DeviceInfoCheckParams

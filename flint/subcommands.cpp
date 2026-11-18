@@ -4725,7 +4725,7 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
             security_mode |= SMM_CRDT_TOKEN;
         }
         u_int32_t imageTypeByKeyId = 0;
-        if (isFs6)
+        if (isFs6 || isCshVmod)
         {
             imageTypeByKeyId = fwInfo.fs3_info.nv_pub_key_idx;
             if (imageTypeByKeyId == 4)
