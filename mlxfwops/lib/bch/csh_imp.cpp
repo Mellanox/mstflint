@@ -836,6 +836,12 @@ vector<u_int8_t> CSH::Pack()
         cshData.resize(GetCshSize());
     }
 
+    if (_metadata->GetComponentId() == (u_int16_t)CshComponentID::VMOD_FW)
+    {
+        //* struct pack/unpack handles vmod_adm in reversed order
+        CPUTOn(cshData.data() + VMOD_ADM_OFFSET, 1);
+    }
+
     return cshData;
 }
 
@@ -874,6 +880,13 @@ void CSH::UnpackHeader(const vector<u_int8_t>& cshHeader)
         std::stringstream ss;
         ss << "Unknown CSH Component ID 0x" << std::hex << std::uppercase << _metadata->GetComponentId();
         throw runtime_error(ss.str());
+    }
+
+    if (_metadata->GetComponentId() == (u_int16_t)CshComponentID::VMOD_FW)
+    {
+        //* struct pack/unpack handles vmod_adm in reversed order
+        u_int8_t* headerPtr = reinterpret_cast<u_int8_t*>(&_header);
+        CPUTOn(headerPtr + VMOD_ADM_OFFSET, 1);
     }
 }
 

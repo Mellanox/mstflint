@@ -511,6 +511,7 @@ private:
 
     static const u_int16_t CSH_ECDSA_SIG_SIZE = 96;
     static const u_int16_t CSH_LMS_SIG_SIZE = 1740;
+    static const u_int16_t VMOD_ADM_OFFSET = 12;
 
     struct fs5_image_layout_csh_header _header;
     struct fs5_image_layout_csh_signature _nv_signature;
