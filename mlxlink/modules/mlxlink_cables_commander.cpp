@@ -50,6 +50,7 @@ MlxlinkCablesCommander::MlxlinkCablesCommander(Json::Value& jsonRoot) : _jsonRoo
     _swControlMode = false;
     _prbsLanes = 0;
     _txBiasMultiplier = 1;
+    _protoActive = 0;
 
     memset(&_cableDdm, 0, sizeof(cable_ddm_q_t));
     // PMCR control fields names
