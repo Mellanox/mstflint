@@ -68,14 +68,14 @@ bool FsCshOperations::LoadImageInfo()
     }
 
     const u_int32_t* swId = (u_int32_t*)NULL;
-    MLXFWOPS_LOG_DEBUG("FsCshOperations::LoadImageInfo fwImgInfo.supportedHwId[0]=0x%x", _fwImgInfo.supportedHwId[0]);
+    MLXFWOPS_LOG_DEBUG("fwImgInfo.supportedHwId[0]=0x%x", _fwImgInfo.supportedHwId[0]);
     if (!getInfoFromHwDevid(_fwImgInfo.supportedHwId[0], _fwImgInfo.ext_info.chip_type, &swId))
     {
-        MLXFWOPS_LOG_DEBUG("FsCshOperations::LoadImageInfo getInfoFromHwDevid failed"); // for backwards compatibility
-                                                                                 // instead of failing I'll
-                                                                                 // issue a debug print. TODO:
-                                                                                 // fail the flow instead in the
-                                                                                 // future
+        MLXFWOPS_LOG_DEBUG("getInfoFromHwDevid failed"); // for backwards compatibility
+                                                         // instead of failing I'll
+                                                         // issue a debug print. TODO:
+                                                         // fail the flow instead in the
+                                                         // future
     }
     // copy the vsd to the branch ver only for switches. Not valid for NICs. VMOD is only for switches, so no need to
     // check it's a switch
@@ -110,8 +110,8 @@ bool FsCshOperations::FwQuery(fw_info_t* fwInfo,
     _fwImgInfo.ext_info.is_failsafe = true;
     _fsCommonInfo.ext_info.nv_pub_key_idx = _csh.GetNvPubKeyIdx();
     _fsCommonInfo.ext_info.image_security_version = _csh.GetRatchetLevel();
-    MLXFWOPS_LOG_DEBUG("FsCshOperations::FwQuery nv_pub_key_idx = %u image_security_version = %u",
-             _fsCommonInfo.ext_info.nv_pub_key_idx, _fsCommonInfo.ext_info.image_security_version);
+    MLXFWOPS_LOG_DEBUG("nv_pub_key_idx = %u image_security_version = %u", _fsCommonInfo.ext_info.nv_pub_key_idx,
+                       _fsCommonInfo.ext_info.image_security_version);
 
     fwInfo->fw_type = FwType();
     memcpy(&(fwInfo->fw_info), &(_fwImgInfo.ext_info), sizeof(fw_info_com_t));
@@ -199,8 +199,8 @@ bool FsCshOperations::FwInit()
     switch (_csh.GetComponentIdEnum())
     {
         case CshComponentID::VMOD_FW:
-            MLXFWOPS_LOG_DEBUG("FsCshOperations::FwInit() - Setting component ID to COMPID_CPO_VMOD_FW = 0x%x",
-                     FwComponent::comps_ids_t::COMPID_CPO_VMOD_FW);
+            MLXFWOPS_LOG_DEBUG("Setting component ID to COMPID_CPO_VMOD_FW = 0x%x",
+                               FwComponent::comps_ids_t::COMPID_CPO_VMOD_FW);
             _componentID = FwComponent::comps_ids_t::COMPID_CPO_VMOD_FW;
             break;
         case CshComponentID::ROM_IMGS:
@@ -208,7 +208,7 @@ bool FsCshOperations::FwInit()
         case CshComponentID::NV_FWS:
         case CshComponentID::SWITCH_FWS:
         case CshComponentID::SBD_FW:
-            MLXFWOPS_LOG_DEBUG("FsCshOperations::FwInit() - Found known CSH component id = 0x%x", (int)_csh.GetComponentIdEnum());
+            MLXFWOPS_LOG_DEBUG("Found known CSH component id = 0x%x", (int)_csh.GetComponentIdEnum());
             _componentID = FwComponent::comps_ids_t::COMPID_UNKNOWN;
             break;
         default:
