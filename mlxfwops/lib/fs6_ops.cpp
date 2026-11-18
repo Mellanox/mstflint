@@ -372,7 +372,7 @@ bool Fs6Operations::VerifyCshComponent(PartitionType partitionType, u_int32_t of
                               section.GetSectionSize(), sectionName, "CSH Section");
 
             currSectionBegin = section.GetSectionOffset();
-            if (currSectionBegin > prevSectionEnd)
+            if (currSectionBegin < prevSectionEnd)
             {
                 return errmsg("section %s intersects with the previous section", sectionName.c_str());
             }

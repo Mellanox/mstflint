@@ -457,12 +457,7 @@ void CSH::AddBinarySectionMetadata(BinarySectionMetadata sectionMetadata, bool u
 {
     if (updateSectionsOffsets)
     {
-        if ((CshComponentID)_metadata.component_id == CshComponentID::SWITCH_FWS)
-        {
-            //* Switch FWs is fixed as 32 sections
-            sectionMetadata.SetSectionOffset(GetComponentSize());
-        }
-        else
+        if ((CshComponentID)_metadata.component_id != CshComponentID::SWITCH_FWS)
         {
             for (auto& section : _cshSections)
             {
