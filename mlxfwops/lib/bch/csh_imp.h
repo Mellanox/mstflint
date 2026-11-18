@@ -276,12 +276,14 @@ public:
     static bool IsValidCompId(u_int16_t id);
 
 private:
+    void SetHeaderFromJson(const Json::Value& root);
     void SetMetadataFromJson(const Json::Value& root);
     void SetSingleSectionFromJson(const Json::Value& root);
     void SetSectionsFromJson(const Json::Value& root, bool ignoreMagicId = false);
 
     static const u_int16_t CSH_ECDSA_SIG_SIZE = 96;
     static const u_int16_t CSH_LMS_SIG_SIZE = 1740;
+    static const string cshHeaderName;
     static const string cshMetadataName;
     static const string binarySectionMetadataName;
 

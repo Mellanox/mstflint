@@ -90,6 +90,7 @@ string CshSectionIDToString(u_int32_t sectionId)
     return mft_utils::ToHexString(sectionId, 4);
 }
 
+const string CSH::cshHeaderName = "csh_header";
 const string CSH::cshMetadataName = "csh_metadata";
 const string CSH::binarySectionMetadataName = "binary_section_metadata";
 
@@ -664,6 +665,10 @@ void CSH::SetJsonParams(const Json::Value& root)
         {
             SetMetadataFromJson(root[cshMetadataName]);
         }
+        else if (jsonFieldName == cshHeaderName)
+        {
+            SetHeaderFromJson(root[cshHeaderName]);
+        }
         else
         {
             throw runtime_error("Invalid field name: " + jsonFieldName);
@@ -711,6 +716,11 @@ size_t CSH::HeaderSize()
 {
     return fs5_image_layout_csh_header_size() + fs5_image_layout_csh_signature_size() +
            fs5_image_layout_csh_signature_size() + fs5_image_layout_csh_metadata_size();
+}
+
+void CSH::SetHeaderFromJson(const Json::Value& root)
+{
+    _header.u8_nv_pub_key_idx = std::stoul(nbu::mft::common::GetStrValue(root["u8_nv_pub_key_idx"], true), nullptr, 16);
 }
 
 void CSH::SetMetadataFromJson(const Json::Value& root)
