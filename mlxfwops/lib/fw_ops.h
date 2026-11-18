@@ -556,6 +556,7 @@ public:
         // FHT_MST_DEV
         char* mstHndl;
         bool forceLock;
+        bool forceCleanup;
         bool readOnly;
         int numOfBanks;              // should be set to -1 for "auto-detect"
         flash_params_t* flashParams; // can be NULL

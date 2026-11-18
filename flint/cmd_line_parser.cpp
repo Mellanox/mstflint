@@ -181,6 +181,7 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("", "uid", 1));
     _flags.push_back(new Flag("", "blank_guids", 0));
     _flags.push_back(new Flag("", "clear_semaphore", 0));
+    _flags.push_back(new Flag("", "force_cleanup", 0));
     _flags.push_back(new Flag("h", "help", 0));
     _flags.push_back(new Flag("", "hh", 0));
     _flags.push_back(new Flag("i", "image", 1));
@@ -649,6 +650,15 @@ void Flint::initCmdParser()
                "NOTE: May result in system instability or flash corruption if the device or another application is"
                " currently using the flash.\n"
                "Exercise caution.\n");
+
+    AddOptions("force_cleanup",
+               ' ',
+               "",
+               "Before executing the command, forcibly clear a stale flash semaphore and release an orphaned FSM"
+               " update handle (e.g. left behind by a previously killed tool), then proceed with the command.\n"
+               "Commands affected: burn\n"
+               "NOTE: May result in system instability or flash corruption if the device or another application is"
+               " currently using the flash.\n");
 
     AddOptions("qq",
                ' ',
@@ -1120,6 +1130,10 @@ ParseStatus Flint::HandleOption(string name, string value)
     else if (name == "clear_semaphore")
     {
         _flintParams.clear_semaphore = true;
+    }
+    else if (name == "force_cleanup")
+    {
+        _flintParams.force_cleanup = true;
     }
     else if (name == "image" || name == "i")
     {

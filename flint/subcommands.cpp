@@ -602,6 +602,7 @@ void SubCommand::initDeviceFwParams(char* errBuff, FwOperations::fw_ops_params_t
     fwParams.errBuffSize = ERR_BUFF_SIZE;
     fwParams.flashParams = _flintParams.flash_params_specified ? &_flintParams.flash_params : NULL;
     fwParams.forceLock = _flintParams.clear_semaphore;
+    fwParams.forceCleanup = _flintParams.force_cleanup;
     fwParams.hndlType = FHT_MST_DEV;
     fwParams.ignoreCacheRep = _flintParams.override_cache_replacement ? 1 : 0;
     fwParams.mstHndl = strcpy(new char[_flintParams.device.length() + 1], _flintParams.device.c_str());
@@ -2891,6 +2892,15 @@ FlintStatus BurnSubCommand::burnFs3() // supports FS3/FS4/FS5/FSCTRL
 {
     _shouldSkip = false;
     bool printPreparing = false;
+    if (_flintParams.force_cleanup && _fwOps->IsFsCtrlOperations())
+    {
+        if (!askUser("The --force_cleanup flag will forcibly clear the flash semaphore and release the MCC "
+                     "update handle on the device, which may cause instability or flash corruption if the "
+                     "device or another application is currently using the flash. Continue"))
+        {
+            return FLINT_FAILED;
+        }
+    }
     if (_devQueryRes)
     {
         char errBuff[ERR_BUFF_SIZE] = {0};

@@ -774,6 +774,10 @@ bool FwCompsMgr::controlFsm(fsm_command_t          command,
                 _isDelayedActivationCommandSent = _activation_delay_sec > 0;
             }
         }
+        if (command == FSM_CMD_FORCE_HANDLE_RELEASE && _lastFsmCtrl.update_handle == 0)
+        {
+            _lastFsmCtrl.update_handle = 1;
+        }
         rc = reg_access_mcc(_mf, method, &_lastFsmCtrl);
         /* add here auto_update + device_index_size */
         deal_with_signal();
@@ -2441,6 +2445,57 @@ void FwCompsMgr::unlock_flash_semaphore()
         _trm = NULL;
     }
 #endif
+}
+
+bool FwCompsMgr::force_clear_flash_semaphore()
+{
+#ifndef UEFI_BUILD
+    trm_sts trm_rc = trm_create(&_trm, _mf);
+    if (trm_rc)
+    {
+        MLXFWOPS_LOG_DEBUG("Failed to create TRM context for flash semaphore cleanup.");
+        return false;
+    }
+    trm_rc = trm_unlock(_trm, TRM_RES_FLASH_PROGRAMING);
+    trm_destroy(_trm);
+    _trm = NULL;
+    if (trm_rc)
+    {
+        MLXFWOPS_LOG_DEBUG("Failed to clear flash semaphore.");
+        return false;
+    }
+#endif
+    return true;
+}
+
+bool FwCompsMgr::CleanupLocks()
+{
+    // Best-effort recovery: run every step even if an earlier one fails
+    MLXFWOPS_LOG_DEBUG("Forcibly clearing stale flash semaphore and FSM update handle.");
+    bool success = true;
+
+    if (!force_clear_flash_semaphore())
+    {
+        success = false;
+    }
+    if (!forceRelease())
+    {
+        MLXFWOPS_LOG_DEBUG("Failed to release FSM update handle.");
+        success = false;
+    }
+    if (!(controlFsm(FSM_QUERY) && (_lastFsmCtrl.control_state == FSMST_IDLE)))
+    {
+        MLXFWOPS_LOG_DEBUG("FSM did not return to IDLE after force cleanup.");
+        success = false;
+    }
+
+    // Reset the error state so cleanup side effects don't taint the subsequent burn.
+    _lastError = FWCOMPS_SUCCESS;
+    _lastRegAccessStatus = ME_OK;
+    isSpecificError = false;
+    _lastSpecificError.clear();
+
+    return success;
 }
 
 void FwCompsMgr::deal_with_signal()

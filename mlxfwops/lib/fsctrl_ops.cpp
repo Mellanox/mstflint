@@ -983,6 +983,13 @@ bool FsCtrlOperations::_Burn(std::vector<u_int8_t> imageOps4MData, ProgressCallB
 
     MLXFWOPS_LOG_INFO("MCC burn started (component %d, %d bytes)", (int)ComponentId, (int)imageOps4MData.size());
     bootImageComponent.init(imageOps4MData, imageOps4MData.size(), ComponentId);
+    if (_fwParams.forceCleanup)
+    {
+        if (!_fwCompsAccess->CleanupLocks())
+        {
+            printf("-W- Forced cleanup did not fully complete. Attempting to burn anyway.\n");
+        }
+    }
     if (!_fwCompsAccess->lock_flash_semaphore())
     {
         return errmsg(FwCompsErrToFwOpsErr(_fwCompsAccess->getLastError()), "%s", _fwCompsAccess->getLastErrMsg());

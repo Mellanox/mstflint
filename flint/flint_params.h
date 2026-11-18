@@ -118,6 +118,7 @@ public:
     bool extended_help;
     bool blank_guids;
     bool clear_semaphore;
+    bool force_cleanup;
     bool quick_query;
     bool low_cpu;
     bool next_boot_fw_ver;

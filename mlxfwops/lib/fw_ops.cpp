@@ -1087,6 +1087,7 @@ void FwOperations::BackUpFwParams(fw_ops_params_t& fwParams)
     // no support for flash params
     _fwParams.flashParams = (flash_params_t*)NULL;
     _fwParams.forceLock = fwParams.forceLock;
+    _fwParams.forceCleanup = fwParams.forceCleanup;
     _fwParams.ignoreCacheRep = fwParams.ignoreCacheRep;
     _fwParams.mstHndl = (fwParams.hndlType == FHT_MST_DEV && fwParams.mstHndl) ?
                           strcpy((char*)(new char[(strlen(fwParams.mstHndl) + 1)]), fwParams.mstHndl) :

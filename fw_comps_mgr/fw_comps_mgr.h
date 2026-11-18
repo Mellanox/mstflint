@@ -585,6 +585,8 @@ public:
     fw_comps_error_t regErrTrans(reg_access_status_t err);
     bool lock_flash_semaphore();
     void unlock_flash_semaphore();
+    bool force_clear_flash_semaphore();
+    bool CleanupLocks();
     void SetIndexAndSize(int deviceIndex,
                          int deviceSize,
                          bool autoUpdate = false,

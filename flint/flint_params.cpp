@@ -53,6 +53,7 @@ FlintParams::FlintParams()
     device_specified = false;
     blank_guids = false;
     clear_semaphore = false;
+    force_cleanup = false;
     quick_query = true; // should now be true by default
     next_boot_fw_ver = false;
     low_cpu = false;
