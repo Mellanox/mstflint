@@ -126,6 +126,8 @@ public:
 
     virtual bool GetMfgInfo(u_int8_t* buff = nullptr) override;
     virtual bool GetDevInfo(u_int8_t* buff = nullptr) override;
+    virtual bool IsSecureBootSupported() override;
+    virtual bool IsLifeCycleAccessible(chip_type_t) override;
     bool GetImageInfoData(vector<u_int8_t>& data);
     virtual bool FwExtract4MBImage(vector<u_int8_t>& img,
                                    bool maskMagicPatternAndDevToc,

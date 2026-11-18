@@ -2264,3 +2264,21 @@ bool Fs6Operations::ParseFs6ImageInfo(struct fs6_image_layout_image_info& image_
 
     return true;
 }
+
+bool Fs6Operations::IsSecureBootSupported()
+{
+    if (_signatureMngr == NULL)
+    {
+        return false;
+    }
+    return _signatureMngr->IsSecureBootSupported();
+}
+
+bool Fs6Operations::IsLifeCycleAccessible(chip_type_t)
+{
+    if (_signatureMngr == NULL)
+    {
+        return false;
+    }
+    return _signatureMngr->IsLifeCycleSupported();
+}
