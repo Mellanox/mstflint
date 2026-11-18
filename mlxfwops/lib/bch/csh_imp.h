@@ -196,8 +196,10 @@ public:
     BinarySectionMetadata();
     BinarySectionMetadata(size_t sectionSize, size_t flashOffset, const vector<u_int8_t>& digest);
     BinarySectionMetadata(u_int32_t itocType,
-                          u_int32_t loadDestinationIdx0,
-                          u_int32_t loadDestinationIdx1,
+                          u_int32_t loadDestinationLSB,
+                          u_int32_t loadDestinationMSB,
+                          u_int32_t entryPointLSB,
+                          u_int32_t entryPointMSB,
                           size_t sectionSize,
                           size_t flashOffset,
                           const vector<u_int8_t>& digest);

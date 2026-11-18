@@ -263,6 +263,8 @@ BinarySectionMetadata::BinarySectionMetadata(size_t sectionSize, size_t flashOff
 BinarySectionMetadata::BinarySectionMetadata(u_int32_t itocType,
                                              u_int32_t loadDestinationLSB,
                                              u_int32_t loadDestinationMSB,
+                                             u_int32_t entryPointLSB,
+                                             u_int32_t entryPointMSB,
                                              size_t sectionSize,
                                              size_t flashOffset,
                                              const vector<u_int8_t>& digest)
@@ -271,6 +273,8 @@ BinarySectionMetadata::BinarySectionMetadata(u_int32_t itocType,
     memcpy(_struct.u8_magic_id, &itocType, sizeof(itocType));
     _struct.load_dest[0] = loadDestinationLSB;
     _struct.load_dest[1] = loadDestinationMSB;
+    _struct.entry_point[0] = entryPointLSB;
+    _struct.entry_point[1] = entryPointMSB;
     _struct.bin_length = sectionSize;
     _struct.flash_offset = flashOffset;
     if (digest.size() != 48)
