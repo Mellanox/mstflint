@@ -162,6 +162,7 @@ enum class PartitionType
 };
 
 const u_int32_t L1PT_OFFSET = 0xe000;
+const u_int32_t SECOND_L1PT_OFFSET = 0x1e000;
 const u_int32_t SHA384_DIGEST_SIZE = 48;
 const u_int32_t ROM_IMGS_MAGIC_PATTERN_OFFSET = 0xc;
 // the ROM images section is aligned to 384KB because the PBLT and PBLD flexible

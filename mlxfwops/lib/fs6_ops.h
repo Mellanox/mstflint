@@ -200,6 +200,8 @@ private:
     bool VerifyCshComponent();
 
     void UpdatePartitionTable(bool isL2pt, PrintCallBack callBackFunc = nullptr);
+    bool CheckSecondL1ptExists();
+    bool VerifyL1ptConsistency();
     void CopyMagicPattern(size_t componentOffset, vector<u_int8_t>& compData);
     bool IsL2ptSection(CshComponentID cshId);
     bool IsL2ptSection(PartitionType partitionType);
@@ -240,4 +242,5 @@ private:
     int _backupChain;
     u_int8_t _vmodAdmStatusA;
     u_int8_t _vmodAdmStatusB;
+    bool _secondL1ptExists;
 };

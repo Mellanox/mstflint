@@ -154,7 +154,8 @@ Fs6Operations::Fs6Operations(FBase* ioAccess) :
     _activeChain(INVALID_CHAIN_NUMBER),
     _backupChain(INVALID_CHAIN_NUMBER),
     _vmodAdmStatusA(CSH::VMOD_ADM_STATUS_UNKNOWN),
-    _vmodAdmStatusB(CSH::VMOD_ADM_STATUS_UNKNOWN)
+    _vmodAdmStatusB(CSH::VMOD_ADM_STATUS_UNKNOWN),
+    _secondL1ptExists(false)
 {
     memset(_dotMagicId, 0, sizeof(_dotMagicId));
 }
@@ -330,6 +331,14 @@ bool Fs6Operations::Init()
         }
     }
 
+    if (!GetIsReducedImage())
+    {
+        if (!CheckSecondL1ptExists()) // if CheckSecondL1ptExists succeds then it initializes _secondL1ptExists
+        {
+            return false;
+        }
+    }
+
     MLXFWOPS_LOG_DEBUG("Fs6Operations::Init() - _activeChain: %s, _backupChain: %s, invalid chains count: %zu",
              _activeChain == INVALID_CHAIN_NUMBER ? "none" : std::to_string(_activeChain).c_str(),
              _backupChain == INVALID_CHAIN_NUMBER ? "none" : std::to_string(_backupChain).c_str(),
@@ -413,6 +422,17 @@ bool Fs6Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
 
     PrintSectionRange(verifyCallBackFunc, _l1ptOffset, _l1ptOffset + _l1pt.Size() - 1, _l1pt.Size(),
                       "L1 Partition Table");
+
+    if (!GetIsReducedImage() && !VerifyL1ptConsistency())
+    {
+        return false;
+    }
+
+    if (_secondL1ptExists)
+    {
+        PrintSectionRange(verifyCallBackFunc, SECOND_L1PT_OFFSET, SECOND_L1PT_OFFSET + _l1pt.Size() - 1, _l1pt.Size(),
+                          "L1 Partition Table", "Backup L1PT");
+    }
 
     int devInfoVaildAmount = 0;
     for (auto entry : _l1pt.GetEntries())
@@ -1111,6 +1131,51 @@ bool Fs6Operations::SignForSecureBoot(const char*, const char*, const MlxSign::S
 }
 #endif // } MST_CPU_armv7l_umbriel
 
+bool Fs6Operations::CheckSecondL1ptExists()
+{
+    // Check if second L1PT exists by looking for magic pattern
+    vector<u_int8_t> secondL1ptMagic(PartitionTable::MagicID().size());
+    if (!_ioAccess->read(SECOND_L1PT_OFFSET, secondL1ptMagic.data(), secondL1ptMagic.size()))
+    {
+        return errmsg(MLXFW_BAD_PARAM_ERR, "Failed to read second L1PT magic: %s", _ioAccess->err());
+    }
+
+    _secondL1ptExists =
+      std::equal(PartitionTable::MagicID().begin(), PartitionTable::MagicID().end(), secondL1ptMagic.begin());
+
+    return true;
+}
+
+bool Fs6Operations::VerifyL1ptConsistency()
+{
+    if (_secondL1ptExists)
+    {
+        MLXFWOPS_LOG_DEBUG("Second L1PT exists at offset 0x%x", SECOND_L1PT_OFFSET);
+        // Get first L1PT data from the already-parsed _l1pt object
+        vector<u_int8_t> firstL1ptData = _l1pt.Pack();
+
+        // Read second L1PT from device/image
+        vector<u_int8_t> secondL1ptData(firstL1ptData.size());
+        if (!_ioAccess->read(SECOND_L1PT_OFFSET, secondL1ptData.data(), secondL1ptData.size()))
+        {
+            return errmsg(MLXFW_BAD_PARAM_ERR, "Failed to read second L1PT: %s", _ioAccess->err());
+        }
+
+        if (firstL1ptData != secondL1ptData)
+        {
+            return errmsg("L1PT mismatch: first L1PT (at 0x%x) differs from second L1PT (at 0x%x)", _l1ptOffset,
+                          SECOND_L1PT_OFFSET);
+        }
+    }
+    else
+    {
+        MLXFWOPS_LOG_DEBUG("Second L1PT does not exist"); // TODO - in the future fail the check
+    }
+
+    MLXFWOPS_LOG_DEBUG("L1PT consistency check passed");
+    return true;
+}
+
 void Fs6Operations::UpdatePartitionTable(bool isL2pt, PrintCallBack callBackFunc)
 {
     vector<u_int8_t> partitionTable;
@@ -1128,13 +1193,23 @@ void Fs6Operations::UpdatePartitionTable(bool isL2pt, PrintCallBack callBackFunc
         partitionTable = _l1pt.Pack();
     }
 
-    PRINT_PROGRESS(callBackFunc, string_format("Updating partition table %s - ", isL2pt ? "L2PT" : "L1PT").c_str());
-    if (!_ioAccess->write(partitionTableOffset, partitionTable.data(), partitionTable.size()))
+    auto writePartitionTable = [this, &partitionTable, callBackFunc](u_int32_t offset, const char* label)
     {
-        PRINT_PROGRESS(callBackFunc, (char*)"FAILED\n");
-        throw runtime_error(string_format("write error - %s", _ioAccess->err()));
+        PRINT_PROGRESS(callBackFunc, string_format("Updating partition table %s - ", label).c_str());
+        if (!_ioAccess->write(offset, partitionTable.data(), partitionTable.size()))
+        {
+            PRINT_PROGRESS(callBackFunc, (char*)"FAILED\n");
+            throw runtime_error(string_format("write error - %s", _ioAccess->err()));
+        }
+        PRINT_PROGRESS(callBackFunc, (char*)"OK\n");
+    };
+
+    writePartitionTable(partitionTableOffset, isL2pt ? "L2PT" : "L1PT");
+
+    if (!isL2pt && _secondL1ptExists)
+    {
+        writePartitionTable(SECOND_L1PT_OFFSET, "L1PT (Copy 1)");
     }
-    PRINT_PROGRESS(callBackFunc, (char*)"OK\n");
 }
 
 bool Fs6Operations::IsL2ptSection(CshComponentID cshId)
