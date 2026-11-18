@@ -400,7 +400,9 @@ string BinarySectionMetadata::CshSectionIDToString(u_int32_t sectionId)
                                                                             {"VMOD", "VMOD_FW_IMG"},
                                                                             {"VMDI", "VMOD_IMAGE_INFO"},
                                                                             {"VMDH", "VMOD_PAGES_HASHES"},
-                                                                            {"VMHS", "VMOD_PAGES_LOCKED_HASHES"}};
+                                                                            {"VMHS", "VMOD_PAGES_LOCKED_HASHES"},
+                                                                            {"L3PW", "L3PT WP"},
+                                                                            {"L3PR", "L3PT RW"}};
     static const std::vector<string> nonNcoreSectionNames = {
       "PBLT", "PBLD", "PFWT", "PFWD", "SBDF", "CALF",
     };
@@ -683,6 +685,12 @@ void CshMetadataNbu::SetBinariesListDigest(const vector<u_int8_t>& digest)
     memcpy(_metadata_nbu.binaries_list_digest.digest, digest.data(), SHA384_DIGEST_SIZE);
 }
 
+void CshMetadataNbu::GetBinariesListDigest(vector<u_int8_t>& digest) const
+{
+    digest.assign(reinterpret_cast<const u_int8_t*>(_metadata_nbu.binaries_list_digest.digest),
+                  reinterpret_cast<const u_int8_t*>(_metadata_nbu.binaries_list_digest.digest) + SHA384_DIGEST_SIZE);
+}
+
 void CshMetadataNbu::SetDependencyList(const Json::Value& root)
 {
     const size_t MAX_DEPENDENCY_LIST_SIZE = 8;
@@ -782,6 +790,12 @@ void CshMetadata::SetBinariesListDigest(const vector<u_int8_t>& digest)
         throw runtime_error("Binaries list digest unexpected size");
     }
     memcpy(_metadata.binaries_list_digest.digest, digest.data(), SHA384_DIGEST_SIZE);
+}
+
+void CshMetadata::GetBinariesListDigest(vector<u_int8_t>& digest) const
+{
+    digest.assign(reinterpret_cast<const u_int8_t*>(_metadata.binaries_list_digest.digest),
+                  reinterpret_cast<const u_int8_t*>(_metadata.binaries_list_digest.digest) + SHA384_DIGEST_SIZE);
 }
 
 void CshMetadata::SetJsonParams(const Json::Value& root)
@@ -1164,6 +1178,18 @@ void CSH::CalcDigest()
 #endif // } MST_CPU_armv7l_umbriel
 }
 
+vector<u_int8_t> CSH::GetDigest()
+{
+#ifndef MST_CPU_armv7l_umbriel // {
+    CalcDigest();
+    vector<u_int8_t> digest;
+    _metadata->GetBinariesListDigest(digest);
+    return digest;
+#else
+    throw runtime_error("GetDigest is not supported on this platform");
+#endif // } MST_CPU_armv7l_umbriel
+}
+
 bool CSH::IsValidCompId(u_int16_t id)
 {
     switch ((CshComponentID)id)
@@ -1300,4 +1326,15 @@ PartitionType ToPartitionType(CshComponentID cshId, bool throwOnError)
             break;
     }
     return type;
+}
+
+vector<u_int8_t> BinarySectionMetadata::GetDigest() const
+{
+    return vector<u_int8_t>(reinterpret_cast<const u_int8_t*>(_struct.bin_digest.digest),
+                            reinterpret_cast<const u_int8_t*>(_struct.bin_digest.digest) + SHA384_DIGEST_SIZE);
+}
+
+void CSH::GetStoredBinariesListDigest(vector<u_int8_t>& digest) const
+{
+    _metadata->GetBinariesListDigest(digest);
 }

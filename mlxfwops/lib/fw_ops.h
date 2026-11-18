@@ -804,12 +804,12 @@ protected:
     virtual bool GetDevInfo(u_int8_t* buff = nullptr);
     virtual bool GetMfgInfo(u_int8_t* buff = nullptr);
     static bool IsFS6ReducedImage(unsigned char* romImageMagicPattern, unsigned char* l2ptMagicPattern = nullptr);
-    void PrintSectionRange(VerifyCallBack verifyCallBackFunc,
-                           u_int32_t startAddr,
-                           u_int32_t endAddr,
-                           u_int32_t size,
-                           const string& sectionType,
-                           const string& suffix = "");
+    virtual void PrintSectionRange(VerifyCallBack verifyCallBackFunc,
+                                   u_int32_t startAddr,
+                                   u_int32_t endAddr,
+                                   u_int32_t size,
+                                   const string& sectionType,
+                                   const string& suffix = "");
 
     // Protected Members
     FBase* _ioAccess;

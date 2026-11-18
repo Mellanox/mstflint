@@ -31,7 +31,7 @@
  */
 
 /***
- *** This file was generated at "2025-08-14 16:59:03"
+ *** This file was generated at "2026-05-31 16:05:11"
  *** by:
  ***    > [REDACTED]/adb2pack.py --input adb/fs6_image_layout/fs6_image_layout.adb --file-prefix fs6_image_layout --prefix fs6_image_layout_ --no-adb-utils
  ***/
@@ -1054,4 +1054,245 @@ void fs6_image_layout_fs6_image_layout_Nodes_dump(const union fs6_image_layout_f
                                                   FILE* fd)
 {
     fs6_image_layout_fs6_image_layout_Nodes_print(ptr_struct, fd, 0);
+}
+
+void fs6_image_layout_dev_area_crc_entry_pack(const struct fs6_image_layout_dev_area_crc_entry* ptr_struct,
+                                              u_int8_t* ptr_buff)
+{
+    u_int32_t offset;
+
+    offset = 0;
+    adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->partition_type);
+    offset = 32;
+    adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->partition_size);
+    offset = 64;
+    adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->crc);
+}
+
+void fs6_image_layout_dev_area_crc_entry_unpack(struct fs6_image_layout_dev_area_crc_entry* ptr_struct,
+                                                const u_int8_t* ptr_buff)
+{
+    u_int32_t offset;
+
+    offset = 0;
+    ptr_struct->partition_type = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+    offset = 32;
+    ptr_struct->partition_size = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+    offset = 64;
+    ptr_struct->crc = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+}
+
+void fs6_image_layout_dev_area_crc_entry_print(const struct fs6_image_layout_dev_area_crc_entry* ptr_struct,
+                                               FILE* fd,
+                                               int indent_level)
+{
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "======== fs6_image_layout_dev_area_crc_entry ========\n");
+
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "partition_type       : " U32H_FMT "\n", ptr_struct->partition_type);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "partition_size       : " U32H_FMT "\n", ptr_struct->partition_size);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "crc                  : " U32H_FMT "\n", ptr_struct->crc);
+}
+
+unsigned int fs6_image_layout_dev_area_crc_entry_size(void)
+{
+    return FS6_IMAGE_LAYOUT_DEV_AREA_CRC_ENTRY_SIZE;
+}
+
+void fs6_image_layout_dev_area_crc_entry_dump(const struct fs6_image_layout_dev_area_crc_entry* ptr_struct, FILE* fd)
+{
+    fs6_image_layout_dev_area_crc_entry_print(ptr_struct, fd, 0);
+}
+
+void fs6_image_layout_dev_area_crc_entry_legacy_pack(const struct fs6_image_layout_dev_area_crc_entry_legacy* ptr_struct,
+                                                     u_int8_t* ptr_buff)
+{
+    u_int32_t offset;
+
+    offset = 0;
+    adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->partition_type);
+    offset = 32;
+    adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->crc);
+}
+
+void fs6_image_layout_dev_area_crc_entry_legacy_unpack(struct fs6_image_layout_dev_area_crc_entry_legacy* ptr_struct,
+                                                       const u_int8_t* ptr_buff)
+{
+    u_int32_t offset;
+
+    offset = 0;
+    ptr_struct->partition_type = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+    offset = 32;
+    ptr_struct->crc = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+}
+
+void fs6_image_layout_dev_area_crc_entry_legacy_print(
+  const struct fs6_image_layout_dev_area_crc_entry_legacy* ptr_struct,
+  FILE* fd,
+  int indent_level)
+{
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "======== fs6_image_layout_dev_area_crc_entry_legacy ========\n");
+
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "partition_type       : " U32H_FMT "\n", ptr_struct->partition_type);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "crc                  : " U32H_FMT "\n", ptr_struct->crc);
+}
+
+unsigned int fs6_image_layout_dev_area_crc_entry_legacy_size(void)
+{
+    return FS6_IMAGE_LAYOUT_DEV_AREA_CRC_ENTRY_LEGACY_SIZE;
+}
+
+void fs6_image_layout_dev_area_crc_entry_legacy_dump(const struct fs6_image_layout_dev_area_crc_entry_legacy* ptr_struct,
+                                                     FILE* fd)
+{
+    fs6_image_layout_dev_area_crc_entry_legacy_print(ptr_struct, fd, 0);
+}
+
+void fs6_image_layout_dev_area_crc_info_pack(const struct fs6_image_layout_dev_area_crc_info* ptr_struct,
+                                             u_int8_t* ptr_buff)
+{
+    u_int32_t offset;
+    int i;
+
+    offset = 0;
+    adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->version);
+    offset = 32;
+    adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->num_entries);
+    for (i = 0; i < 14; ++i)
+    {
+        offset = adb2c_calc_array_field_address(64, 96, i, 8192, 1);
+        fs6_image_layout_dev_area_crc_entry_pack(&(ptr_struct->crc_entry[i]), ptr_buff + offset / 8);
+    }
+    offset = 1408;
+    adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->crc_square);
+}
+
+void fs6_image_layout_dev_area_crc_info_unpack(struct fs6_image_layout_dev_area_crc_info* ptr_struct,
+                                               const u_int8_t* ptr_buff)
+{
+    u_int32_t offset;
+    int i;
+
+    offset = 0;
+    ptr_struct->version = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+    offset = 32;
+    ptr_struct->num_entries = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+    for (i = 0; i < 14; ++i)
+    {
+        offset = adb2c_calc_array_field_address(64, 96, i, 8192, 1);
+        fs6_image_layout_dev_area_crc_entry_unpack(&(ptr_struct->crc_entry[i]), ptr_buff + offset / 8);
+    }
+    offset = 1408;
+    ptr_struct->crc_square = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+}
+
+void fs6_image_layout_dev_area_crc_info_print(const struct fs6_image_layout_dev_area_crc_info* ptr_struct,
+                                              FILE* fd,
+                                              int indent_level)
+{
+    int i;
+
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "======== fs6_image_layout_dev_area_crc_info ========\n");
+
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "version              : " U32H_FMT "\n", ptr_struct->version);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "num_entries          : " U32H_FMT "\n", ptr_struct->num_entries);
+    for (i = 0; i < 14; ++i)
+    {
+        adb2c_add_indentation(fd, indent_level);
+        fprintf(fd, "crc_entry_%03d:\n", i);
+        fs6_image_layout_dev_area_crc_entry_print(&(ptr_struct->crc_entry[i]), fd, indent_level + 1);
+    }
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "crc_square           : " U32H_FMT "\n", ptr_struct->crc_square);
+}
+
+unsigned int fs6_image_layout_dev_area_crc_info_size(void)
+{
+    return FS6_IMAGE_LAYOUT_DEV_AREA_CRC_INFO_SIZE;
+}
+
+void fs6_image_layout_dev_area_crc_info_dump(const struct fs6_image_layout_dev_area_crc_info* ptr_struct, FILE* fd)
+{
+    fs6_image_layout_dev_area_crc_info_print(ptr_struct, fd, 0);
+}
+
+void fs6_image_layout_dev_area_crc_info_legacy_pack(const struct fs6_image_layout_dev_area_crc_info_legacy* ptr_struct,
+                                                    u_int8_t* ptr_buff)
+{
+    u_int32_t offset;
+    int i;
+
+    offset = 0;
+    adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->version);
+    offset = 32;
+    adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->num_entries);
+    for (i = 0; i < 14; ++i)
+    {
+        offset = adb2c_calc_array_field_address(64, 64, i, 8192, 1);
+        fs6_image_layout_dev_area_crc_entry_legacy_pack(&(ptr_struct->crc_entry[i]), ptr_buff + offset / 8);
+    }
+    offset = 960;
+    adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->crc_square);
+}
+
+void fs6_image_layout_dev_area_crc_info_legacy_unpack(struct fs6_image_layout_dev_area_crc_info_legacy* ptr_struct,
+                                                      const u_int8_t* ptr_buff)
+{
+    u_int32_t offset;
+    int i;
+
+    offset = 0;
+    ptr_struct->version = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+    offset = 32;
+    ptr_struct->num_entries = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+    for (i = 0; i < 14; ++i)
+    {
+        offset = adb2c_calc_array_field_address(64, 64, i, 8192, 1);
+        fs6_image_layout_dev_area_crc_entry_legacy_unpack(&(ptr_struct->crc_entry[i]), ptr_buff + offset / 8);
+    }
+    offset = 960;
+    ptr_struct->crc_square = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+}
+
+void fs6_image_layout_dev_area_crc_info_legacy_print(const struct fs6_image_layout_dev_area_crc_info_legacy* ptr_struct,
+                                                     FILE* fd,
+                                                     int indent_level)
+{
+    int i;
+
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "======== fs6_image_layout_dev_area_crc_info_legacy ========\n");
+
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "version              : " U32H_FMT "\n", ptr_struct->version);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "num_entries          : " U32H_FMT "\n", ptr_struct->num_entries);
+    for (i = 0; i < 14; ++i)
+    {
+        adb2c_add_indentation(fd, indent_level);
+        fprintf(fd, "crc_entry_%03d:\n", i);
+        fs6_image_layout_dev_area_crc_entry_legacy_print(&(ptr_struct->crc_entry[i]), fd, indent_level + 1);
+    }
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "crc_square           : " U32H_FMT "\n", ptr_struct->crc_square);
+}
+
+unsigned int fs6_image_layout_dev_area_crc_info_legacy_size(void)
+{
+    return FS6_IMAGE_LAYOUT_DEV_AREA_CRC_INFO_LEGACY_SIZE;
+}
+
+void fs6_image_layout_dev_area_crc_info_legacy_dump(const struct fs6_image_layout_dev_area_crc_info_legacy* ptr_struct,
+                                                    FILE* fd)
+{
+    fs6_image_layout_dev_area_crc_info_legacy_print(ptr_struct, fd, 0);
 }

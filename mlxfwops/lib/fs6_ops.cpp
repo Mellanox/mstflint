@@ -40,6 +40,7 @@
 #include "tools_layouts/fs6_image_layout_layouts.h"
 #include "json/writer.h"
 #include "common/tools_string.h"
+#include "image_crc.h"
 
 #ifndef MST_CPU_armv7l_umbriel // {
 #ifdef MFT_LEGACY_BUILD
@@ -58,6 +59,10 @@
 #include <algorithm>
 #include <iomanip>
 #include <fstream>
+#include <cstddef>
+#include <cstring>
+#include <sstream>
+#include <utility>
 
 using nbu::mft::common::string_format;
 
@@ -146,6 +151,10 @@ string ToString(PartitionType type)
             return "CPO_CALIBRATION_DATA";
         case PartitionType::PT_CRC_INFO:
             return "CRC_INFO";
+        case PartitionType::PT_WP_AREA_PTR:
+            return "WP_AREA_PTR";
+        case PartitionType::PT_RW_AREA_PTR:
+            return "RW_AREA_PTR";
         default:
             return "UNKNOWN";
     }
@@ -155,6 +164,10 @@ Fs6Operations::Fs6Operations(FBase* ioAccess) :
     FwOperations(ioAccess),
     _l1ptOffset(L1PT_OFFSET),
     _l2ptOffset(0),
+    _l3pwOffset(0),
+    _l3prOffset(0),
+    _WPAreaPtr(0),
+    _RWAreaPtr(0),
     _activeChain(INVALID_CHAIN_NUMBER),
     _backupChain(INVALID_CHAIN_NUMBER),
     _vmodAdmStatusA(CSH::VMOD_ADM_STATUS_UNKNOWN),
@@ -270,7 +283,6 @@ bool Fs6Operations::Init()
 
             PartitionTableEntry entry;
             entry.Unpack(entryData);
-            // entry.DumpStruct(); // for debug purposes
             if (IsCshComponent(entry.GetPartitionTypeEnum()))
             {
                 InitCshComponent(entry);
@@ -341,11 +353,25 @@ bool Fs6Operations::Init()
                     return false;
                 }
             }
+
+            if (entry.GetPartitionTypeEnum() == PartitionType::PT_WP_AREA_PTR)
+            {
+                _WPAreaPtr = entry.GetStartOffset();
+            }
+            else if (entry.GetPartitionTypeEnum() == PartitionType::PT_RW_AREA_PTR)
+            {
+                _RWAreaPtr = entry.GetStartOffset();
+            }
         }
     }
 
     if (!GetIsReducedImage())
     {
+        if (!InitL3pt())
+        {
+            return false;
+        }
+
         if (!CheckSecondL1ptExists()) // if CheckSecondL1ptExists succeds then it initializes _secondL1ptExists
         {
             return false;
@@ -455,6 +481,10 @@ bool Fs6Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
 
     PrintSectionRange(verifyCallBackFunc, _l1ptOffset, _l1ptOffset + _l1pt.Size() - 1, _l1pt.Size(),
                       "L1 Partition Table");
+    if (showItoc)
+    {
+        PrintPartitionTable(verifyCallBackFunc, _l1pt, _l1ptOffset, "L1");
+    }
 
     if (!GetIsReducedImage() && !VerifyL1ptConsistency())
     {
@@ -492,7 +522,7 @@ bool Fs6Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
                     PrintNonActiveChainSection(verifyCallBackFunc, entry, partitionType);
                     continue;
                 }
-                if (!VerifyCshComponent(entry, verifyCallBackFunc))
+                if (!VerifyCshComponent(entry, showItoc, verifyCallBackFunc))
                 {
                     return false;
                 }
@@ -507,6 +537,11 @@ bool Fs6Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
                 bool isKnownPartition = true;
                 PrintSectionRange(verifyCallBackFunc, _l2ptOffset, _l2ptOffset + _l2pt.Size() - 1, _l2pt.Size(),
                                   "L2 Partition Table");
+                if (showItoc)
+                {
+                    PrintPartitionTable(verifyCallBackFunc, _l2pt, _l2ptOffset, "L2");
+                }
+
                 for (auto l2Entry : _l2pt.GetEntries())
                 {
                     partitionType = ToString(l2Entry.GetPartitionTypeEnum());
@@ -520,7 +555,7 @@ bool Fs6Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
                     {
                         if (IsCshComponent(l2Entry.GetPartitionTypeEnum()))
                         {
-                            if (!VerifyCshComponent(l2Entry, verifyCallBackFunc))
+                            if (!VerifyCshComponent(l2Entry, showItoc, verifyCallBackFunc))
                             {
                                 return false;
                             }
@@ -559,7 +594,15 @@ bool Fs6Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
                     return errmsg("Multiple DEV_INFO sections found with valid signatures");
                 }
             }
-            else
+            else if (entry.GetPartitionTypeEnum() == PartitionType::PT_CRC_INFO)
+            {
+                if (!PrintCrcInfoLayout(verifyCallBackFunc, entry, showItoc))
+                {
+                    return false;
+                }
+            }
+            else if (entry.GetPartitionTypeEnum() != PartitionType::PT_WP_AREA_PTR &&
+                     entry.GetPartitionTypeEnum() != PartitionType::PT_RW_AREA_PTR)
             {
                 PrintSectionRange(verifyCallBackFunc, entry.GetStartOffset(),
                                   entry.GetStartOffset() + entry.GetSectionSize() - 1, entry.GetSectionSize(),
@@ -586,6 +629,14 @@ bool Fs6Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
             return errmsg("No active chain found"); // no valid use case in which the flash/image will only have a
                                                     // backup/invalid chain without an active one
         }
+
+        if (_RWAreaPtr != 0 && _WPAreaPtr != 0)
+        {
+            if (_l3pwOffset == 0 || _l3prOffset == 0)
+            {
+                return errmsg("Area pointers exist in L1PT but L3PW/L3PR table is missing");
+            }
+        }
     }
 
     return true;
@@ -601,7 +652,9 @@ string Fs6Operations::GetSectionNameByMagicId(u_int32_t magicId)
     return sectionName;
 }
 
-bool Fs6Operations::VerifyCshComponent(const PartitionTableEntry& entry, VerifyCallBack verifyCallBackFunc)
+bool Fs6Operations::VerifyCshComponent(const PartitionTableEntry& entry,
+                                       bool showItoc,
+                                       VerifyCallBack verifyCallBackFunc)
 {
     std::shared_ptr<CSH> cshComponent = entry.GetCsh();
     PartitionType partitionType = entry.GetPartitionTypeEnum();
@@ -625,12 +678,30 @@ bool Fs6Operations::VerifyCshComponent(const PartitionTableEntry& entry, VerifyC
         u_int32_t currSectionBegin = 0;
         string sectionName;
 
+        if (showItoc && IsL2ptSection(partitionType))
+        {
+            report_callback(verifyCallBackFunc, "CSH bin digests and load destinations (%s):\n", compName.c_str());
+            PrintCshBinDigestsAndLoadDestinations(verifyCallBackFunc, *cshComponent);
+        }
+
         for (auto section : cshComponent->GetSections())
         {
             sectionName = GetSectionNameByMagicId(section.GetSectionType());
             size_t sectionOffset = offset + section.GetSectionOffset();
             PrintSectionRange(verifyCallBackFunc, sectionOffset, sectionOffset + section.GetSectionSize() - 1,
                               section.GetSectionSize(), sectionName, "CSH Section");
+
+            if (showItoc)
+            {
+                if ((CshSectionType)section.GetSectionType() == CshSectionType::CSH_SECTION_L3PW_MAGIC_ID)
+                {
+                    PrintPartitionTable(verifyCallBackFunc, _l3pw, _l3pwOffset, "L3PW");
+                }
+                else if ((CshSectionType)section.GetSectionType() == CshSectionType::CSH_SECTION_L3PR_MAGIC_ID)
+                {
+                    PrintPartitionTable(verifyCallBackFunc, _l3pr, _l3prOffset, "L3PR");
+                }
+            }
 
             currSectionBegin = section.GetSectionOffset();
             if (currSectionBegin < prevSectionEnd)
@@ -957,7 +1028,7 @@ bool Fs6Operations::ReadCshSectionInfo(PartitionType partitionType,
                                        int chainNumber)
 {
     size_t section_addr;
-    if (!GetCshSectionOffset(partitionType, sectionType, section_addr, chainNumber))
+    if (!GetCshSectionOffset(partitionType, sectionType, section_addr, true, chainNumber))
     {
         return false; // Error already set by GetCshSectionOffset
     }
@@ -1005,11 +1076,12 @@ size_t Fs6Operations::GetPartitionOffset(PartitionType partitionType, int chainN
 bool Fs6Operations::GetCshSectionOffset(PartitionType partitionType,
                                         CshSectionType sectionType,
                                         size_t& CshSectionOffset,
+                                        bool reportError,
                                         int chainNumber)
 {
     // Find the partition table entry
-    MLXFWOPS_LOG_DEBUG("Fs6Operations::GetCshSectionOffset partitionType = 0x%x, sectionType = 0x%x", (int)partitionType,
-             (int)sectionType);
+    MLXFWOPS_LOG_DEBUG("Fs6Operations::GetCshSectionOffset partitionType = 0x%x, sectionType = 0x%x, setErrMsg = %d",
+             (int)partitionType, (int)sectionType, reportError);
 
     size_t partitionOffset = GetPartitionOffset(partitionType, chainNumber);
 
@@ -1022,7 +1094,11 @@ bool Fs6Operations::GetCshSectionOffset(PartitionType partitionType,
 
     if (cshComponent == _cshComponents.end())
     {
-        return errmsg("CSH component for partition type 0x%x not found", (int)partitionType);
+        if (reportError)
+        {
+            return errmsg("CSH component for partition type 0x%x not found", (int)partitionType);
+        }
+        return false;
     }
 
     // Find the specific section within the CSH component
@@ -1033,7 +1109,11 @@ bool Fs6Operations::GetCshSectionOffset(PartitionType partitionType,
 
     if (section == cshComponent->csh->GetSections().end())
     {
-        return errmsg("Section type 0x%x not found in CSH component", (int)sectionType);
+        if (reportError)
+        {
+            return errmsg("Section type 0x%x not found in CSH component", (int)sectionType);
+        }
+        return false;
     }
 
     // Calculate the final section offset
@@ -1385,7 +1465,7 @@ size_t Fs6Operations::GetChainContainerActualSize()
 {
     size_t l2ptSectionsSize = GetL2ptSectionsSize();
     size_t l2ptSize = PartitionTable::HeaderSize() + _l2pt.GetEntries().size() * PartitionTableEntry::Size();
-
+    MLXFWOPS_LOG_DEBUG("chain container actual size: 0x%zx", l2ptSectionsSize + l2ptSize);
     return l2ptSectionsSize + l2ptSize;
 }
 
@@ -1934,7 +2014,10 @@ bool Fs6Operations::FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc,
 
     image_layout_device_info_pack(&devInfo, devInfoData.data());
     UpdatePartitionData(PartitionType::PT_DEV_INFO, devInfoData, callBackFunc);
-
+    if (!UpdateCrcInfoForPartition(PartitionType::PT_DEV_INFO, devInfoData))
+    {
+        return false;
+    }
     return true;
 }
 
@@ -1973,6 +2056,10 @@ bool Fs6Operations::FwSetMFG(fs3_uid_t baseGuid, PrintCallBack callBackFunc)
     fs6_image_layout_mfg_info_pack(&fs6MfgInfo, mfgInfoData.data());
 
     UpdatePartitionData(PartitionType::PT_MFG_INFO, mfgInfoData, callBackFunc);
+    if (!UpdateCrcInfoForPartition(PartitionType::PT_MFG_INFO, mfgInfoData))
+    {
+        return false;
+    }
 
     return true;
 }
@@ -2002,6 +2089,10 @@ bool Fs6Operations::FwSetVPD(char* vpdFileStr, PrintCallBack callBackFunc)
     }
 
     UpdatePartitionData(PartitionType::PT_VPD_READ_ONLY, vpdData, callBackFunc);
+    if (!UpdateCrcInfoForPartition(PartitionType::PT_VPD_READ_ONLY, vpdData))
+    {
+        return false;
+    }
     _l1pt.SetEntrySize(PartitionType::PT_VPD_READ_ONLY, vpdData.size());
     UpdatePartitionTable(IsL2ptSection(PartitionType::PT_VPD_READ_ONLY), callBackFunc);
 
@@ -2079,6 +2170,10 @@ bool Fs6Operations::UpdateSection(fs3_section_t sectionType,
     }
 
     UpdatePartitionData(PartitionType(sectionType), newSectionData, callBackFunc);
+    if (!UpdateCrcInfoForPartition(PartitionType(sectionType), newSectionData))
+    {
+        return false;
+    }
 
     if (!IsPartitionTypeMaxSize(PartitionType(sectionType))) // updating size is needed
     {
@@ -2337,4 +2432,362 @@ bool Fs6Operations::IsLifeCycleAccessible(chip_type_t)
         return false;
     }
     return _signatureMngr->IsLifeCycleSupported();
+}
+
+void Fs6Operations::PrintSectionRange(VerifyCallBack verifyCallBackFunc,
+                                      u_int32_t startAddr,
+                                      u_int32_t endAddr,
+                                      u_int32_t size,
+                                      const string& sectionType,
+                                      const string& suffix)
+{
+    std::stringstream ss;
+    ss << "0x" << std::hex << std::setw(8) << std::setfill('0') << startAddr << "-0x" << std::setw(8)
+       << std::setfill('0') << endAddr << " (0x" << std::setw(7) << std::setfill('0') << size << ")/ " << std::left
+       << std::setw(35) << std::setfill(' ') << sectionType << " | " << suffix << std::endl;
+    report_callback(verifyCallBackFunc, ss.str().c_str());
+}
+
+void Fs6Operations::PrintPartitionTable(VerifyCallBack verifyCallBackFunc,
+                                        const PartitionTable& partitionTable,
+                                        size_t ptOffset,
+                                        const string& tablePrefix)
+{
+    // Print header
+    report_callback(
+      verifyCallBackFunc,
+      "=========================================== partition table layout ===========================================\n",
+      tablePrefix.c_str());
+    PrintSectionRange(verifyCallBackFunc, ptOffset, ptOffset + PartitionTable::HeaderSize() - 1,
+                      PartitionTable::HeaderSize(), tablePrefix + " Partition Table Header");
+    MLXFWOPS_LOG_DEBUG("number of entries = %zu, max entries = %zu", partitionTable.GetNumberOfEntries(),
+             partitionTable.GetMaxNumberOfEntries());
+
+    // Print entries
+    const vector<PartitionTableEntry>& entries = partitionTable.GetEntries();
+    for (size_t i = 0; i < entries.size(); i++)
+    {
+        PartitionType partType = (PartitionType)entries[i].GetPartitionTypeEnum();
+        bool isCshComponent = IsCshComponent(partType);
+        size_t entryOffset = ptOffset + PartitionTable::HeaderSize() + i * PartitionTableEntry::Size();
+        string entryName = tablePrefix + " " + GetL1ptEntryName(partType, isCshComponent) + " entry";
+
+        PrintSectionRange(verifyCallBackFunc, entryOffset, entryOffset + PartitionTableEntry::Size() - 1,
+                          PartitionTableEntry::Size(), entryName);
+
+        // let's read the offset then dump the entry
+        vector<u_int8_t> entryData(PartitionTableEntry::Size());
+        if (!_ioAccess->read(entryOffset, entryData.data(), PartitionTableEntry::Size()))
+        {
+            report_callback(verifyCallBackFunc, "-E- Failed to read %s partition table entry: %s\n", entryName.c_str(),
+                            _ioAccess->err());
+            return;
+        }
+        PartitionTableEntry entry;
+        entry.Unpack(entryData);
+        entry.DumpStruct();
+    }
+    report_callback(
+      verifyCallBackFunc,
+      "=========================================== end of partition table ===========================================\n\n",
+      tablePrefix.c_str());
+}
+
+bool Fs6Operations::InitL3PartitionTable(PartitionTable& pt, size_t& ptOffset, CshSectionType sectionMagic)
+{
+    vector<u_int8_t> header(PartitionTable::HeaderSize());
+    vector<u_int8_t> entryData(PartitionTableEntry::Size());
+
+    if (!GetCshSectionOffset(PartitionType::PT_SWITCH_FWS, sectionMagic, ptOffset, false))
+    {
+        return true; // for BWC don't fail if L3PT is not found
+    }
+
+    if (!_ioAccess->read(ptOffset, header.data(), PartitionTable::HeaderSize()))
+    {
+        return errmsg(MLXFW_BAD_PARAM_ERR, "%s", _ioAccess->err());
+    }
+
+    if (!std::equal(PartitionTable::MagicID().begin(), PartitionTable::MagicID().end(), header.begin()))
+    {
+        return errmsg("Couldn't find L3 partition table at 0x%x", (u_int32_t)ptOffset);
+    }
+
+    pt.UnpackHeader(header);
+
+    for (size_t i = 0; i < pt.GetNumberOfEntries(); i++)
+    {
+        size_t entriesOffset = ptOffset + PartitionTable::HeaderSize();
+        if (!_ioAccess->read(entriesOffset + i * PartitionTableEntry::Size(), entryData.data(),
+                             PartitionTableEntry::Size()))
+        {
+            return errmsg(MLXFW_BAD_PARAM_ERR, "%s", _ioAccess->err());
+        }
+
+        PartitionTableEntry entry;
+        entry.Unpack(entryData);
+        pt.AddEntry(entry);
+    }
+    return true;
+}
+
+bool Fs6Operations::InitL3pt()
+{
+    MLXFWOPS_LOG_DEBUG("Fs6Operations::InitL3pt");
+
+    if (_WPAreaPtr == 0 || _RWAreaPtr == 0)
+    {
+        MLXFWOPS_LOG_DEBUG("WP/RW area pointers not found in L1PT");
+    }
+
+    if (!InitL3PartitionTable(_l3pw, _l3pwOffset, CshSectionType::CSH_SECTION_L3PW_MAGIC_ID))
+    {
+        return false;
+    }
+
+    if (!InitL3PartitionTable(_l3pr, _l3prOffset, CshSectionType::CSH_SECTION_L3PR_MAGIC_ID))
+    {
+        return false;
+    }
+
+    return true;
+}
+
+static u_int32_t CalcFs6SectionCrc(const vector<u_int8_t>& sectionData)
+{
+    ImageCrc crc;
+    crc << sectionData;
+    return crc.get();
+}
+
+static void UpdateCrcSquareLegacy(fs6_image_layout_dev_area_crc_info_legacy& info, vector<u_int8_t>& buf)
+{
+    // Sync struct -> buf (entries changed in memory; buf was stale after unpack)
+    fs6_image_layout_dev_area_crc_info_legacy_pack(&info, buf.data());
+
+    const size_t bodySize = offsetof(fs6_image_layout_dev_area_crc_info_legacy, crc_square);
+    vector<u_int8_t> body(buf.begin(), buf.begin() + bodySize);
+    ImageCrc c;
+    c << body;
+    info.crc_square = c.get();
+
+    // Write crc_square into buf (same as second full pack, only that field)
+    fs6_image_layout_dev_area_crc_info_legacy_pack(&info, buf.data());
+}
+
+static void UpdateCrcSquareNew(fs6_image_layout_dev_area_crc_info& info, vector<u_int8_t>& buf)
+{
+    fs6_image_layout_dev_area_crc_info_pack(&info, buf.data());
+
+    const size_t bodySize = offsetof(fs6_image_layout_dev_area_crc_info, crc_square);
+    vector<u_int8_t> body(buf.begin(), buf.begin() + bodySize);
+    ImageCrc c;
+    c << body;
+    info.crc_square = c.get();
+
+    fs6_image_layout_dev_area_crc_info_pack(&info, buf.data());
+}
+
+static u_int32_t GetCrcInfoV1MaxEntries()
+{
+    using Info = fs6_image_layout_dev_area_crc_info;
+    return static_cast<u_int32_t>(sizeof(std::declval<Info>().crc_entry) / sizeof(std::declval<Info>().crc_entry[0]));
+}
+
+static u_int32_t GetCrcInfoV0MaxEntries()
+{
+    using Info = fs6_image_layout_dev_area_crc_info_legacy;
+    return static_cast<u_int32_t>(sizeof(std::declval<Info>().crc_entry) / sizeof(std::declval<Info>().crc_entry[0]));
+}
+
+bool Fs6Operations::UpdateCrcInfoForPartition(PartitionType partitionType, const vector<u_int8_t>& sectionData)
+{
+    if (IsCshComponent(partitionType) || partitionType == PartitionType::PT_CRC_INFO)
+    {
+        return true;
+    }
+
+    PartitionTableEntry crcInfoPtEntry;
+    try
+    {
+        crcInfoPtEntry = _l1pt.GetEntry(PartitionType::PT_CRC_INFO);
+    }
+    catch (const runtime_error&)
+    {
+        return true; // no crc_info partition in this image
+    }
+
+    const size_t crcInfoOffset = crcInfoPtEntry.GetStartOffset();
+    vector<u_int8_t> buf(fs6_image_layout_dev_area_crc_info_legacy_size()); // 0x400
+
+    if (!_ioAccess->read(crcInfoOffset, buf.data(), buf.size()))
+    {
+        return errmsg("%s", _ioAccess->err());
+    }
+
+    fs6_image_layout_dev_area_crc_info_legacy info_legacy;
+    fs6_image_layout_dev_area_crc_info_legacy_unpack(&info_legacy, buf.data());
+
+    const u_int32_t newCrc = CalcFs6SectionCrc(sectionData);
+    bool found = false;
+
+    if (info_legacy.version == 1)
+    {
+        fs6_image_layout_dev_area_crc_info info;
+        fs6_image_layout_dev_area_crc_info_unpack(&info, buf.data());
+
+        if (info.num_entries > GetCrcInfoV1MaxEntries())
+        {
+            return errmsg("CRC_INFO num_entries (%u) exceeds layout max (%u)", info.num_entries,
+                          GetCrcInfoV1MaxEntries());
+        }
+        for (u_int32_t i = 0; i < info.num_entries; ++i)
+        {
+            if (static_cast<PartitionType>(info.crc_entry[i].partition_type) != partitionType)
+            {
+                continue;
+            }
+            info.crc_entry[i].partition_size = static_cast<u_int32_t>(sectionData.size());
+            info.crc_entry[i].crc = newCrc;
+            found = true;
+            break;
+        }
+
+        if (!found)
+        {
+            return true;
+        }
+
+        UpdateCrcSquareNew(info, buf);
+    }
+    else
+    {
+        if (info_legacy.num_entries > GetCrcInfoV0MaxEntries())
+        {
+            return errmsg("CRC_INFO num_entries (%u) exceeds layout max (%u)", info_legacy.num_entries,
+                          GetCrcInfoV0MaxEntries());
+        }
+        for (u_int32_t i = 0; i < info_legacy.num_entries; ++i)
+        {
+            if (static_cast<PartitionType>(info_legacy.crc_entry[i].partition_type) != partitionType)
+            {
+                continue;
+            }
+            info_legacy.crc_entry[i].crc = newCrc;
+            found = true;
+            break;
+        }
+
+        if (!found)
+        {
+            return true;
+        }
+
+        UpdateCrcSquareLegacy(info_legacy, buf);
+    }
+
+    if (!_ioAccess->write(crcInfoOffset, buf.data(), buf.size()))
+    {
+        return errmsg("%s", _ioAccess->err());
+    }
+
+    return true;
+}
+
+bool Fs6Operations::PrintCrcInfoLayout(VerifyCallBack verifyCallBackFunc,
+                                       const PartitionTableEntry& entry,
+                                       bool showitoc)
+{
+    const size_t base = entry.GetStartOffset();
+    const size_t sectionSize = fs6_image_layout_dev_area_crc_info_legacy_size(); // same size for both versions
+    vector<u_int8_t> buf(sectionSize);
+    if (!_ioAccess->read(base, buf.data(), buf.size()))
+    {
+        return errmsg("%s", _ioAccess->err());
+    }
+    fs6_image_layout_dev_area_crc_info_legacy info_legacy;
+    fs6_image_layout_dev_area_crc_info_legacy_unpack(&info_legacy, buf.data());
+    const bool v1 = (info_legacy.version == 1);
+    const size_t entrySize =
+      v1 ? FS6_IMAGE_LAYOUT_DEV_AREA_CRC_ENTRY_SIZE : FS6_IMAGE_LAYOUT_DEV_AREA_CRC_ENTRY_LEGACY_SIZE;
+    const size_t crcSquareOff = v1 ? offsetof(fs6_image_layout_dev_area_crc_info, crc_square) :
+                                     offsetof(fs6_image_layout_dev_area_crc_info_legacy, crc_square);
+    u_int32_t numEntries = info_legacy.num_entries;
+    const u_int32_t maxEntries = v1 ? GetCrcInfoV1MaxEntries() : GetCrcInfoV0MaxEntries();
+    if (numEntries > maxEntries)
+    {
+        return errmsg("CRC_INFO num_entries (%u) exceeds layout max (%u)", numEntries, maxEntries);
+    }
+
+    if (!showitoc)
+    {
+        return true; // the rest is for printing, not validation
+    }
+
+    fs6_image_layout_dev_area_crc_info info;
+    if (v1)
+    {
+        fs6_image_layout_dev_area_crc_info_unpack(&info, buf.data());
+    }
+    report_callback(
+      verifyCallBackFunc,
+      "================================= CRC_INFO layout (version=%u, num_entries=%u) =================================\n",
+      info_legacy.version, numEntries);
+    PrintSectionRange(verifyCallBackFunc, base + 0, base + 3, 4, "CRC_INFO version",
+                      string_format("0x%x", info_legacy.version));
+    PrintSectionRange(verifyCallBackFunc, base + 4, base + 7, 4, "CRC_INFO num_entries",
+                      string_format("0x%x", numEntries));
+    for (u_int32_t i = 0; i < numEntries; ++i)
+    {
+        const u_int32_t ptype = v1 ? info.crc_entry[i].partition_type : info_legacy.crc_entry[i].partition_type;
+        if (ptype == 0)
+        {
+            throw runtime_error("CRC_INFO unexpected partition type for CRC_INFO entry #" + to_string(i));
+        }
+        const size_t off = base + 8 + static_cast<size_t>(i) * entrySize;
+        const string name = string_format("CRC_INFO crc_entry[%u]", i);
+        if (v1)
+        {
+            PrintSectionRange(verifyCallBackFunc, off, off + entrySize - 1, entrySize, name,
+                              string_format("type=0x%x size=0x%x crc=0x%x", ptype, info.crc_entry[i].partition_size,
+                                            info.crc_entry[i].crc));
+        }
+        else
+        {
+            PrintSectionRange(verifyCallBackFunc, off, off + entrySize - 1, entrySize, name,
+                              string_format("type=0x%x crc=0x%x", ptype, info_legacy.crc_entry[i].crc));
+        }
+    }
+    const u_int32_t crcSquare = v1 ? info.crc_square : info_legacy.crc_square;
+    PrintSectionRange(verifyCallBackFunc, base + crcSquareOff, base + crcSquareOff + 3, 4, "CRC_INFO crc_square",
+                      string_format("0x%x", crcSquare));
+    if (crcSquareOff + 4 < sectionSize)
+    {
+        PrintSectionRange(verifyCallBackFunc, base + crcSquareOff + 4, base + sectionSize - 1,
+                          sectionSize - (crcSquareOff + 4), "CRC_INFO padding");
+    }
+    report_callback(
+      verifyCallBackFunc,
+      "============================================ end CRC_INFO layout ============================================\n\n");
+
+    return true;
+}
+
+void Fs6Operations::PrintCshBinDigestsAndLoadDestinations(VerifyCallBack verifyCallBackFunc, CSH& csh)
+{
+    vector<u_int8_t> listDigest;
+    csh.GetStoredBinariesListDigest(listDigest);
+    report_callback(verifyCallBackFunc, "  binaries_list_digest: %s\n", mft_utils::ToHexString(listDigest).c_str());
+
+    for (const auto& section : csh.GetSections())
+    {
+        const string name = GetSectionNameByMagicId(section.GetSectionType());
+        const u_int64_t loadDest =
+          (static_cast<u_int64_t>(section.GetLoadDestinationMSB()) << 32) | section.GetLoadDestinationLSB();
+
+        report_callback(verifyCallBackFunc, "  %s load_dest: 0x%016llx\n", name.c_str(),
+                        static_cast<unsigned long long>(loadDest));
+        report_callback(verifyCallBackFunc, "  %s bin_digest: %s\n", name.c_str(),
+                        mft_utils::ToHexString(section.GetDigest()).c_str());
+    }
 }

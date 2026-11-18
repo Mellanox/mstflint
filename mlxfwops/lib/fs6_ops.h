@@ -79,6 +79,18 @@ public:
                        vector<u_int8_t>& componentData) override;
     bool SetSignedFWComponent(string binPath, ComponentType compName, const char* msg) override;
     bool GetFwComponentsData(string path) override;
+    void PrintSectionRange(VerifyCallBack verifyCallBackFunc,
+                           u_int32_t startAddr,
+                           u_int32_t endAddr,
+                           u_int32_t size,
+                           const string& sectionType,
+                           const string& suffix = "") override;
+    void PrintPartitionTable(VerifyCallBack verifyCallBackFunc,
+                             const PartitionTable& partitionTable,
+                             size_t ptOffset,
+                             const string& tablePrefix);
+    bool PrintCrcInfoLayout(VerifyCallBack verifyCallBackFunc, const PartitionTableEntry& entry, bool showitoc = true);
+    void PrintCshBinDigestsAndLoadDestinations(VerifyCallBack verifyCallBackFunc, CSH& csh);
 
 #ifndef MST_CPU_armv7l_umbriel // {
     bool SignForSecureBoot(const char*, const char*, const MlxSign::Signer&) override;
@@ -116,6 +128,7 @@ public:
     bool GetCshSectionOffset(PartitionType partitionType,
                              CshSectionType sectionType,
                              size_t& CshSectionOffset,
+                             bool reportError,
                              int chainNumber = INVALID_CHAIN_NUMBER);
     bool ReadCshSectionInfo(PartitionType partitionType,
                             CshSectionType sectionType,
@@ -225,9 +238,12 @@ protected:
 private:
     bool Init();
     bool InitL2pt();
+    bool InitL3pt();
+    bool InitL3PartitionTable(PartitionTable& pt, size_t& ptOffset, CshSectionType sectionMagic);
+
     bool InitCshComponent(PartitionTableEntry& entry);
 
-    bool VerifyCshComponent(const PartitionTableEntry& entry, VerifyCallBack verifyCallBackFunc);
+    bool VerifyCshComponent(const PartitionTableEntry& entry, bool showItoc, VerifyCallBack verifyCallBackFunc);
     bool VerifyCshComponent();
 
     void UpdatePartitionTable(bool isL2pt, PrintCallBack callBackFunc = nullptr);
@@ -244,6 +260,8 @@ private:
                              const vector<u_int8_t>& data,
                              PrintCallBack callBackFunc,
                              int chainNumber = INVALID_CHAIN_NUMBER);
+    bool UpdateCrcInfoForPartition(PartitionType partitionType, const std::vector<u_int8_t>& sectionData);
+
     size_t GetPartitionOffset(PartitionType partitionType, int chainNumber = INVALID_CHAIN_NUMBER);
     void GetPartitionEntryInfo(PartitionType partitionType,
                                size_t& sectionOffset,
@@ -265,6 +283,8 @@ private:
 
     PartitionTable _l1pt;
     PartitionTable _l2pt;
+    PartitionTable _l3pw;
+    PartitionTable _l3pr;
 
     struct CshComponentInfo
     {
@@ -276,6 +296,10 @@ private:
 
     const u_int32_t _l1ptOffset;
     u_int32_t _l2ptOffset;
+    size_t _l3pwOffset;
+    size_t _l3prOffset;
+    size_t _WPAreaPtr;
+    size_t _RWAreaPtr;
     u_int8_t _dotMagicId[4];
     int _activeChain;
     int _backupChain;

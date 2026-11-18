@@ -31,7 +31,7 @@
  */
 
 /***
- *** This file was generated at "2025-08-14 16:59:03"
+ *** This file was generated at "2026-05-31 16:05:11"
  *** by:
  ***    > [REDACTED]/adb2pack.py --input adb/fs6_image_layout/fs6_image_layout.adb --file-prefix fs6_image_layout --prefix fs6_image_layout_ --no-adb-utils
  ***/
@@ -546,6 +546,95 @@ When this bit is cleared, the GUIDs should be taken from the mfg_info node. */
         struct fs6_image_layout_mfg_info mfg_info;
     };
 
+    /* Description -   */
+    /* Size in bytes - 12 */
+    struct fs6_image_layout_dev_area_crc_entry
+    {
+        /*---------------- DWORD[0] (Offset 0x0) ----------------*/
+        /* Description -  */
+        /* 0x0.0 - 0x0.31 */
+        /* access: RW */
+        u_int32_t partition_type;
+        /*---------------- DWORD[1] (Offset 0x4) ----------------*/
+        /* Description -  */
+        /* 0x4.0 - 0x4.31 */
+        /* access: RW */
+        u_int32_t partition_size;
+        /*---------------- DWORD[2] (Offset 0x8) ----------------*/
+        /* Description -  */
+        /* 0x8.0 - 0x8.31 */
+        /* access: RW */
+        u_int32_t crc;
+    };
+
+    /* Description -   */
+    /* Size in bytes - 8 */
+    struct fs6_image_layout_dev_area_crc_entry_legacy
+    {
+        /*---------------- DWORD[0] (Offset 0x0) ----------------*/
+        /* Description -  */
+        /* 0x0.0 - 0x0.31 */
+        /* access: RW */
+        u_int32_t partition_type;
+        /*---------------- DWORD[1] (Offset 0x4) ----------------*/
+        /* Description -  */
+        /* 0x4.0 - 0x4.31 */
+        /* access: RW */
+        u_int32_t crc;
+    };
+
+    /* Description -   */
+    /* Size in bytes - 1024 */
+    struct fs6_image_layout_dev_area_crc_info
+    {
+        /*---------------- DWORD[0] (Offset 0x0) ----------------*/
+        /* Description -  */
+        /* 0x0.0 - 0x0.31 */
+        /* access: RW */
+        u_int32_t version;
+        /*---------------- DWORD[1] (Offset 0x4) ----------------*/
+        /* Description -  */
+        /* 0x4.0 - 0x4.31 */
+        /* access: RW */
+        u_int32_t num_entries;
+        /*---------------- DWORD[2] (Offset 0x8) ----------------*/
+        /* Description -  */
+        /* 0x8.0 - 0xac.31 */
+        /* access: RW */
+        struct fs6_image_layout_dev_area_crc_entry crc_entry[14];
+        /*---------------- DWORD[44] (Offset 0xb0) ----------------*/
+        /* Description -  */
+        /* 0xb0.0 - 0xb0.31 */
+        /* access: RW */
+        u_int32_t crc_square;
+    };
+
+    /* Description -   */
+    /* Size in bytes - 1024 */
+    struct fs6_image_layout_dev_area_crc_info_legacy
+    {
+        /*---------------- DWORD[0] (Offset 0x0) ----------------*/
+        /* Description -  */
+        /* 0x0.0 - 0x0.31 */
+        /* access: RW */
+        u_int32_t version;
+        /*---------------- DWORD[1] (Offset 0x4) ----------------*/
+        /* Description -  */
+        /* 0x4.0 - 0x4.31 */
+        /* access: RW */
+        u_int32_t num_entries;
+        /*---------------- DWORD[2] (Offset 0x8) ----------------*/
+        /* Description -  */
+        /* 0x8.0 - 0x74.31 */
+        /* access: RW */
+        struct fs6_image_layout_dev_area_crc_entry_legacy crc_entry[14];
+        /*---------------- DWORD[30] (Offset 0x78) ----------------*/
+        /* Description -  */
+        /* 0x78.0 - 0x78.31 */
+        /* access: RW */
+        u_int32_t crc_square;
+    };
+
     /*================= PACK/UNPACK/PRINT FUNCTIONS ======================*/
     /* hi_lo */
     void fs6_image_layout_hi_lo_pack(const struct fs6_image_layout_hi_lo* ptr_struct, u_int8_t* ptr_buff);
@@ -671,6 +760,60 @@ When this bit is cleared, the GUIDs should be taken from the mfg_info node. */
 #define FS6_IMAGE_LAYOUT_FS6_IMAGE_LAYOUT_NODES_SIZE (0x400)
     void fs6_image_layout_fs6_image_layout_Nodes_dump(const union fs6_image_layout_fs6_image_layout_Nodes* ptr_struct,
                                                       FILE* fd);
+
+    /* dev_area_crc_entry */
+    void fs6_image_layout_dev_area_crc_entry_pack(const struct fs6_image_layout_dev_area_crc_entry* ptr_struct,
+                                                  u_int8_t* ptr_buff);
+    void fs6_image_layout_dev_area_crc_entry_unpack(struct fs6_image_layout_dev_area_crc_entry* ptr_struct,
+                                                    const u_int8_t* ptr_buff);
+    void fs6_image_layout_dev_area_crc_entry_print(const struct fs6_image_layout_dev_area_crc_entry* ptr_struct,
+                                                   FILE* fd,
+                                                   int indent_level);
+    unsigned int fs6_image_layout_dev_area_crc_entry_size(void);
+#define FS6_IMAGE_LAYOUT_DEV_AREA_CRC_ENTRY_SIZE (0xc)
+    void fs6_image_layout_dev_area_crc_entry_dump(const struct fs6_image_layout_dev_area_crc_entry* ptr_struct,
+                                                  FILE* fd);
+    /* dev_area_crc_entry_legacy */
+    void fs6_image_layout_dev_area_crc_entry_legacy_pack(
+      const struct fs6_image_layout_dev_area_crc_entry_legacy* ptr_struct,
+      u_int8_t* ptr_buff);
+    void fs6_image_layout_dev_area_crc_entry_legacy_unpack(struct fs6_image_layout_dev_area_crc_entry_legacy* ptr_struct,
+                                                           const u_int8_t* ptr_buff);
+    void fs6_image_layout_dev_area_crc_entry_legacy_print(
+      const struct fs6_image_layout_dev_area_crc_entry_legacy* ptr_struct,
+      FILE* fd,
+      int indent_level);
+    unsigned int fs6_image_layout_dev_area_crc_entry_legacy_size(void);
+#define FS6_IMAGE_LAYOUT_DEV_AREA_CRC_ENTRY_LEGACY_SIZE (0x8)
+    void fs6_image_layout_dev_area_crc_entry_legacy_dump(
+      const struct fs6_image_layout_dev_area_crc_entry_legacy* ptr_struct,
+      FILE* fd);
+    /* dev_area_crc_info */
+    void fs6_image_layout_dev_area_crc_info_pack(const struct fs6_image_layout_dev_area_crc_info* ptr_struct,
+                                                 u_int8_t* ptr_buff);
+    void fs6_image_layout_dev_area_crc_info_unpack(struct fs6_image_layout_dev_area_crc_info* ptr_struct,
+                                                   const u_int8_t* ptr_buff);
+    void fs6_image_layout_dev_area_crc_info_print(const struct fs6_image_layout_dev_area_crc_info* ptr_struct,
+                                                  FILE* fd,
+                                                  int indent_level);
+    unsigned int fs6_image_layout_dev_area_crc_info_size(void);
+#define FS6_IMAGE_LAYOUT_DEV_AREA_CRC_INFO_SIZE (0x400)
+    void fs6_image_layout_dev_area_crc_info_dump(const struct fs6_image_layout_dev_area_crc_info* ptr_struct, FILE* fd);
+    /* dev_area_crc_info_legacy */
+    void
+      fs6_image_layout_dev_area_crc_info_legacy_pack(const struct fs6_image_layout_dev_area_crc_info_legacy* ptr_struct,
+                                                     u_int8_t* ptr_buff);
+    void fs6_image_layout_dev_area_crc_info_legacy_unpack(struct fs6_image_layout_dev_area_crc_info_legacy* ptr_struct,
+                                                          const u_int8_t* ptr_buff);
+    void
+      fs6_image_layout_dev_area_crc_info_legacy_print(const struct fs6_image_layout_dev_area_crc_info_legacy* ptr_struct,
+                                                      FILE* fd,
+                                                      int indent_level);
+    unsigned int fs6_image_layout_dev_area_crc_info_legacy_size(void);
+#define FS6_IMAGE_LAYOUT_DEV_AREA_CRC_INFO_LEGACY_SIZE (0x400)
+    void
+      fs6_image_layout_dev_area_crc_info_legacy_dump(const struct fs6_image_layout_dev_area_crc_info_legacy* ptr_struct,
+                                                     FILE* fd);
 
 #ifdef __cplusplus
 }

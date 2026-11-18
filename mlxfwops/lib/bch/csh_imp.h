@@ -120,7 +120,9 @@ enum class CshSectionType
     CSH_SECTION_SWITCH_VMOD_CODE_HASH_SQUARE_MAGIC_ID = 0x564D4853, // "VMHS"
     CSH_SECTION_SWITCH_VMOD_CODE_HASH_MAGIC_ID = 0x564D4448,        // "VMDH"
     CSH_SECTION_SWITCH_VMOD_CODE_MAGIC_ID = 0x564D4F44,             // "VMOD"
-    CSH_SECTION_SWITCH_VMOD_IMAGE_INFO_MAGIC_ID = 0x564D4449        // "VMDI"
+    CSH_SECTION_SWITCH_VMOD_IMAGE_INFO_MAGIC_ID = 0x564D4449,       // "VMDI"
+    CSH_SECTION_L3PW_MAGIC_ID = 0x4c335057,                         // "L3PW"
+    CSH_SECTION_L3PR_MAGIC_ID = 0x4c335052                          // "L3PR"
 };
 
 enum class CshComponentID
@@ -149,6 +151,8 @@ enum class PartitionType
     PT_SBD_FW = 0x8,
     PT_VMOD_FW = 0x9,
     PT_CRC_INFO = 0xa,
+    PT_WP_AREA_PTR = 0xb,
+    PT_RW_AREA_PTR = 0xc,
     PT_NV_DATA1 = 0xe4,
     PT_NV_DATA2 = 0xe6,
     PT_VPD_READ_ONLY = 0xe3,
@@ -348,6 +352,9 @@ public:
     vector<u_int8_t> GetIV() const;
     void SetAuthenticationTag(const vector<u_int8_t>& tag);
     static const size_t DIGEST_OFFSET_IN_ENTRY = 0x60;
+    vector<u_int8_t> GetDigest() const;
+    u_int32_t GetLoadDestinationLSB() const { return _struct.load_dest[0]; }
+    u_int32_t GetLoadDestinationMSB() const { return _struct.load_dest[1]; }
 
 private:
     void SetDwordsFrom8BytesJsonField(const Json::Value& root,
@@ -375,8 +382,11 @@ public:
     virtual u_int16_t GetComponentSubminorVersion() = 0;
 
     virtual void SetBinariesListDigest(const vector<u_int8_t>& digest) = 0;
+    virtual void GetBinariesListDigest(vector<u_int8_t>& digest) const = 0;
 
     virtual void SetJsonParams(const Json::Value& root) = 0;
+
+    const static size_t BINARIES_LIST_DIGEST_OFFSET = 0x70;
 };
 
 class MLXFWOP_API CshMetadataNbu : public CshMetadataBase
@@ -394,7 +404,7 @@ public:
     u_int16_t GetComponentSubminorVersion() override { return _metadata_nbu.nbu_subminor; }
 
     void SetBinariesListDigest(const vector<u_int8_t>& digest) override;
-
+    void GetBinariesListDigest(vector<u_int8_t>& digest) const override;
     void SetJsonParams(const Json::Value& root) override;
 
 private:
@@ -418,6 +428,7 @@ public:
     u_int16_t GetComponentSubminorVersion() override { return 0; }
 
     void SetBinariesListDigest(const vector<u_int8_t>& digest) override;
+    void GetBinariesListDigest(vector<u_int8_t>& digest) const override;
     void SetJsonParams(const Json::Value& root) override;
 
 private:
@@ -473,6 +484,7 @@ public:
 
     void SetJsonParams(const Json::Value& root);
     void CalcDigest();
+    vector<u_int8_t> GetDigest();
 
     static size_t HeaderSize(CshStructType type);
     static CshStructType GetCshStructType(const vector<u_int8_t>& cshHeader);
@@ -481,6 +493,7 @@ public:
 
     bool isActiveChain();
     bool isBackupChain();
+    void GetStoredBinariesListDigest(vector<u_int8_t>& digest) const;
 
     static const string ROM_IMGS_NAME;
     static const string BCT_DTB_NAME;
