@@ -73,6 +73,9 @@ CshComponentID ToCshId(ComponentType compName)
         case ComponentType::Comp_Csh_Sbd_Fw:
             id = CshComponentID::SBD_FW;
             break;
+        case ComponentType::Comp_Csh_Vmod_Fw:
+            id = CshComponentID::VMOD_FW;
+            break;
         default:
             break;
     }
@@ -1311,20 +1314,6 @@ void Fs6Operations::PrintDotSection(VerifyCallBack verifyCallBackFunc)
 
         PrintSectionRange(verifyCallBackFunc, 0, sectionSize - 1, sectionSize, sectionMagicId);
     }
-}
-
-void Fs6Operations::PrintSectionRange(VerifyCallBack verifyCallBackFunc,
-                                      u_int32_t startAddr,
-                                      u_int32_t endAddr,
-                                      u_int32_t size,
-                                      const string& sectionType,
-                                      const string& suffix)
-{
-    std::stringstream ss;
-    ss << "0x" << std::hex << std::setw(8) << std::setfill('0') << startAddr << "-0x" << std::setw(8)
-       << std::setfill('0') << endAddr << " (0x" << std::setw(6) << std::setfill('0') << size << ")/ " << std::left
-       << std::setw(25) << std::setfill(' ') << sectionType << " | " << suffix << std::endl;
-    report_callback(verifyCallBackFunc, ss.str().c_str());
 }
 
 bool Fs6Operations::PartitionValidator::validateDevInfo(const PartitionTableEntry& entry,

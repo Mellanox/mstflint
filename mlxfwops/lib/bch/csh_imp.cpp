@@ -99,6 +99,8 @@ string ToString(CshComponentID cshId)
             return CSH::SWITCH_FWS_NAME;
         case CshComponentID::SBD_FW:
             return CSH::SBD_FW_NAME;
+        case CshComponentID::VMOD_FW:
+            return CSH::VMOD_FW_NAME;
         default:
             return "Unknown";
     }
@@ -130,6 +132,10 @@ CshComponentID ToCshId(string cshId)
     {
         return CshComponentID::SBD_FW;
     }
+    if (cshId == CSH::VMOD_FW_NAME)
+    {
+        return CshComponentID::VMOD_FW;
+    }
     return CshComponentID::Unknown;
 }
 
@@ -143,6 +149,7 @@ const string CSH::OEM_FWS_NAME = "OEM_FWS";
 const string CSH::NV_FWS_NAME = "NV_FWS";
 const string CSH::SWITCH_FWS_NAME = "SWITCH_FWS";
 const string CSH::SBD_FW_NAME = "SBD_FW";
+const string CSH::VMOD_FW_NAME = "VMOD_FW";
 
 vector<u_int8_t> PartitionTable::Pack()
 {
@@ -309,7 +316,10 @@ string BinarySectionMetadata::CshSectionIDToString(u_int32_t sectionId)
                                                                             {"MSQR", "MAIN_PAGES_LOCKED_HASHES"},
                                                                             {"MHSH", "MAIN_PAGES_HASHES"},
                                                                             {"MAIN", "MAIN_CODE"},
-                                                                            {"NKRL", "NANO_KERNEL"}};
+                                                                            {"NKRL", "NANO_KERNEL"},
+                                                                            {"VMOD", "VMOD_FW_IMG"},
+                                                                            {"VMDH", "VMOD_PAGES_HASHES"},
+                                                                            {"VMHS", "VMOD_PAGES_LOCKED_HASHES"}};
     static const std::vector<string> nonNcoreSectionNames = {
       "PBLT",
       "PBLD",
@@ -835,7 +845,8 @@ void CSH::UnpackSections(const vector<u_int8_t>& buffer, size_t offset)
 
 void CSH::AddBinarySectionMetadata(BinarySectionMetadata sectionMetadata, bool updateSectionsOffsets)
 {
-    if (updateSectionsOffsets && (CshComponentID)_metadata->GetComponentId() != CshComponentID::SWITCH_FWS)
+    if (updateSectionsOffsets && (CshComponentID)_metadata->GetComponentId() != CshComponentID::SWITCH_FWS &&
+        (CshComponentID)_metadata->GetComponentId() != CshComponentID::VMOD_FW)
     {
         //* for an empty CSH, first section offset must pushed back by BinarySectionMetadata size
         sectionMetadata.SetSectionOffset(GetComponentSize() + BinarySectionMetadata::Size());
@@ -1043,6 +1054,7 @@ bool CSH::IsValidCompId(u_int16_t id)
         case CshComponentID::NV_FWS:
         case CshComponentID::SWITCH_FWS:
         case CshComponentID::SBD_FW:
+        case CshComponentID::VMOD_FW:
         case CshComponentID::RECOVERY_IMAGE:
             return true;
         default:

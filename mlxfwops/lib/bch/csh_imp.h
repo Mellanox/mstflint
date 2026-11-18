@@ -125,6 +125,7 @@ enum class CshComponentID
     NV_FWS = 0x7,
     SWITCH_FWS = 0x2020,
     SBD_FW = 0x21,
+    VMOD_FW = 0x22,
     RECOVERY_IMAGE = 0x2820,
     Unknown = 0xff
 };
@@ -396,7 +397,10 @@ public:
     BinarySectionMetadata& GetSection(u_int32_t itocType);
 
     size_t GetCshSize();
+
     u_int16_t GetComponentId() const { return _metadata->GetComponentId(); }
+    CshComponentID GetComponentIdEnum() { return static_cast<CshComponentID>(_metadata->GetComponentId()); }
+
     size_t GetComponentSize();
     size_t GetNumberOfBinaries() { return _metadata->GetNumberOfBinaries(); }
     u_int8_t GetComponentMajorVersion() { return _metadata->GetComponentMajorVersion(); }
@@ -420,6 +424,7 @@ public:
     static const string NV_FWS_NAME;
     static const string SWITCH_FWS_NAME;
     static const string SBD_FW_NAME;
+    static const string VMOD_FW_NAME;
 
 private:
     void UnpackCshMetadata(const vector<u_int8_t>& cshHeader, const u_int8_t* iter);

@@ -106,6 +106,8 @@ libmlxfwops_a_SOURCES = \
     signature_manager.h \
     components/fs_comps_factory.h \
     components/fs_cert_ops.cpp \
+    components/fs_csh_ops.cpp \
+    components/fs_csh_ops.h \
     components/fs_cert_ops.h \
     components/fs_comps_ops.cpp \
     components/fs_comps_ops.h \

@@ -176,12 +176,7 @@ private:
     bool IsL2ptSection(PartitionType partitionType);
 
     void PrintDotSection(VerifyCallBack verifyCallBackFunc);
-    void PrintSectionRange(VerifyCallBack verifyCallBackFunc,
-                           u_int32_t startAddr,
-                           u_int32_t endAddr,
-                           u_int32_t size,
-                           const string& sectionType,
-                           const string& suffix = "");
+
     u_int32_t GetL2ptSectionsSize();
 
     PartitionTable _l1pt;

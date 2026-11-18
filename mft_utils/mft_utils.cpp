@@ -101,6 +101,11 @@ void splitCommaSperatedString(string str, vector<string>& strv)
     }
 }
 
+bool startsWith(const string& str, const string& prefix)
+{
+    return str.size() >= prefix.size() && str.compare(0, prefix.size(), prefix) == 0;
+}
+
 bool endsWith(const string& str, const string& suffix)
 {
     return str.size() >= suffix.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;

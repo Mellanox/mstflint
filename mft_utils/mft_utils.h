@@ -57,6 +57,7 @@ string numToStr(u_int32_t num);
 bool strToNum(const string& str, u_int32_t& num, int base = 0);
 
 void splitCommaSperatedString(string str, vector<string>& strv);
+bool startsWith(const string& str, const string& prefix);
 
 bool endsWith(const string& str, const string& suffix);
 void ltrim(string& str, const string& chars = "\t\n\v\f\r ");

@@ -34,6 +34,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <iomanip>
 #include <algorithm>
 #include <fstream>
 
@@ -2786,7 +2787,8 @@ const vector<pair<string, ComponentType>> FwOperations::GetStringToComponentEnum
       {CSH::OEM_FWS_NAME, ComponentType::Comp_Csh_Oem_Fws},
       {CSH::BCT_DTB_NAME, ComponentType::Comp_Csh_Bct_Dtb},
       {CSH::SWITCH_FWS_NAME, ComponentType::Comp_Csh_Switch_Fws},
-      {CSH::SBD_FW_NAME, ComponentType::Comp_Csh_Sbd_Fw}};
+      {CSH::SBD_FW_NAME, ComponentType::Comp_Csh_Sbd_Fw},
+      {CSH::VMOD_FW_NAME, ComponentType::Comp_Csh_Vmod_Fw}};
     return stringToComponentEnum;
 }
 
@@ -3197,6 +3199,20 @@ bool FwOperations::IsExtendedGuidNumSupported()
             break;
     }
     return isSupported;
+}
+
+void FwOperations::PrintSectionRange(VerifyCallBack verifyCallBackFunc,
+                                     u_int32_t startAddr,
+                                     u_int32_t endAddr,
+                                     u_int32_t size,
+                                     const string& sectionType,
+                                     const string& suffix)
+{
+    std::stringstream ss;
+    ss << "0x" << std::hex << std::setw(8) << std::setfill('0') << startAddr << "-0x" << std::setw(8)
+       << std::setfill('0') << endAddr << " (0x" << std::setw(6) << std::setfill('0') << size << ")/ " << std::left
+       << std::setw(25) << std::setfill(' ') << sectionType << " | " << suffix << std::endl;
+    report_callback(verifyCallBackFunc, ss.str().c_str());
 }
 
 #if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
