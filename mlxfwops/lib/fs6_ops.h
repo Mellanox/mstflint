@@ -259,6 +259,9 @@ private:
 
     u_int32_t GetL2ptSectionsSize();
     bool UpdateSectionAllowed(fs3_section_t sectionType);
+    size_t GetChainContainerMaxSize();
+    size_t GetChainContainerActualSize();
+    bool Is32MBLayout();
 
     PartitionTable _l1pt;
     PartitionTable _l2pt;

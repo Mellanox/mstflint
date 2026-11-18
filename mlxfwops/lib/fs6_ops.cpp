@@ -1368,12 +1368,46 @@ bool Fs6Operations::FwBurn(FwOperations* imageOps, u_int8_t forceVersion, Progre
     return Unsupported(__FUNCTION__);
 }
 
+bool Fs6Operations::Is32MBLayout()
+{
+    return GetChainContainerMaxSize() == 0xA00000;
+}
+
+size_t Fs6Operations::GetChainContainerMaxSize()
+{
+    auto chainContainerEntry =
+      _l1pt.GetEntry(PartitionType::PT_CHAIN_CONTAINER,
+                     _activeChain); // chain container max size is same for both active and backup chains
+    return chainContainerEntry.GetSectionSize();
+}
+
+size_t Fs6Operations::GetChainContainerActualSize()
+{
+    size_t l2ptSectionsSize = GetL2ptSectionsSize();
+    size_t l2ptSize = PartitionTable::HeaderSize() + _l2pt.GetEntries().size() * PartitionTableEntry::Size();
+
+    return l2ptSectionsSize + l2ptSize;
+}
+
 bool Fs6Operations::PreBurnChecks(FwOperations* imageOps, ExtBurnParams& burnParams)
 {
     // Verify that imageOps is actually an FS6 image
     if (imageOps->FwType() != FIT_FS6 && imageOps->FwType() != FIT_CSH_VMOD)
     {
         return errmsg("Expected FS6 or FSVMOD image but got type %d", imageOps->FwType());
+    }
+
+    if (Is32MBLayout())
+    {
+        MLXFWOPS_LOG_DEBUG("32MB layout detected");
+    }
+
+    if (!burnParams.useImgDevData && imageOps->FwType() == FIT_FS6)
+    {
+        if (((Fs6Operations*)imageOps)->GetChainContainerActualSize() > GetChainContainerMaxSize())
+        {
+            return errmsg("Chain container size in provided image is too large for device's flash layout.");
+        }
     }
     return true;
 }
