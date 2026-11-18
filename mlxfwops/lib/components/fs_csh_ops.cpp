@@ -78,19 +78,20 @@ bool FsCshOperations::GetImageInfoData(vector<u_int8_t>& data)
     {
         string sectionName = BinarySectionMetadata::CshSectionIDToString(section.GetSectionType());
 
-        if (sectionName == "IMAGE_INFO")
+        // TODO: remove IMAGE_INFO backward compatibility after full integration
+        if (sectionName == "VMOD_IMAGE_INFO" || sectionName == "IMAGE_INFO")
         {
             size_t sectionOffset = section.GetSectionOffset();
             data.resize(section.GetSectionSize());
             memset(data.data(), 0, data.size());
             if (!_ioAccess->read(sectionOffset, data.data(), data.size()))
             {
-                return errmsg("IMAGE_INFO section - read error (%s)\n", (*_ioAccess).err());
+                return errmsg("VMOD_IMAGE_INFO section - read error (%s)\n", (*_ioAccess).err());
             }
             return true;
         }
     }
-    return errmsg("IMAGE_INFO section not found");
+    return errmsg("VMOD_IMAGE_INFO section not found");
 }
 
 bool FsCshOperations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedImage, bool showItoc, bool ignoreDToc)

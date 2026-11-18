@@ -397,6 +397,7 @@ string BinarySectionMetadata::CshSectionIDToString(u_int32_t sectionId)
                                                                             {"MAIN", "MAIN_CODE"},
                                                                             {"NKRL", "NANO_KERNEL"},
                                                                             {"VMOD", "VMOD_FW_IMG"},
+                                                                            {"VMDI", "VMOD_IMAGE_INFO"},
                                                                             {"VMDH", "VMOD_PAGES_HASHES"},
                                                                             {"VMHS", "VMOD_PAGES_LOCKED_HASHES"}};
     static const std::vector<string> nonNcoreSectionNames = {
