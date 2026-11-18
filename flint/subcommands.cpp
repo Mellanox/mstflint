@@ -3474,7 +3474,7 @@ FlintStatus BurnSubCommand::executeCommand()
         }
     }
 
-    if (_imgOps->FwType() == FIT_COMPS)
+    if (_imgOps->FwType() == FIT_COMPS || _imgOps->FwType() == FIT_CSH_VMOD)
     {
         FsCompsOperations* compsOps = dynamic_cast<FsCompsOperations*>(_imgOps);
         if (_flintParams.yes)

@@ -1058,7 +1058,8 @@ bool FwOperations::imageDevOperationsCreate(fw_ops_params_t& devParams, fw_ops_p
         *imgFwOps = NULL;
         return false;
     }
-    if (imgQuery.fs3_info.security_mode == SM_NONE && ignoreSecurityAttributes == false && (*imgFwOps)->FwType() != FIT_COMPS && (*imgFwOps)->FwType() != FIT_PLDM)
+    if (imgQuery.fs3_info.security_mode == SM_NONE && ignoreSecurityAttributes == false && (*imgFwOps)->FwType() != FIT_COMPS && (*imgFwOps)->FwType() != FIT_PLDM &&
+        (*imgFwOps)->FwType() != FIT_CSH_VMOD)
     {
         devParams.noFwCtrl = true;
     }
