@@ -1143,12 +1143,10 @@ void CSH::SetSingleSectionFromJson(const Json::Value& root)
                                     }
                                     return sectionMagicId == magicIdBytes;
                                 });
-    if (section == _cshSections.end())
+    if (section != _cshSections.end())
     {
-        throw runtime_error("Magic ID not found in CSH: " + magicId);
+        section->SetJsonParams(root);
     }
-
-    section->SetJsonParams(root);
 }
 
 void CSH::SetSectionsFromJson(const Json::Value& root)
