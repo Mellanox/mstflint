@@ -186,6 +186,22 @@ int FwVersion::compare_master_version(const FwVersion& rhs) const
     return 0;
 }
 
+bool FwVersion::is_same_device_family(const FwVersion& rhs) const
+{
+    // Same device (major), and both are release versions (not dev-branch builds).
+    return is_master_branch() && rhs.is_master_branch() && _major == rhs._major;
+}
+
+unsigned short int FwVersion::get_subminor() const
+{
+    return _subminor;
+}
+
+unsigned short int FwVersion::get_minor() const
+{
+    return _minor;
+}
+
 int FwVersion::compare(const FwVersion& rhs) const
 {
     if (!are_same_branch(rhs))

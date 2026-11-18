@@ -215,6 +215,14 @@ public:
     virtual bool FwReactivateImage() { return errmsg("Operation not supported."); }
     virtual bool GetIsReducedImage() { return _isReducedImage; }
     virtual void SetIsReducedImage(bool isReducedImage) { _isReducedImage = isReducedImage; }
+
+    enum class Spc6LayoutSupport
+    {
+        NotApplicable,         // device family (major) not covered by the list -> fail
+        NewLayoutNotSupported, // version is older than its branch's transition version
+        NewLayoutSupported     // version >= transition version -> has the 64MB layout FR
+    };
+    static Spc6LayoutSupport GetSpc6LayoutSupport(const FwVersion& fwVer);
     virtual bool FwInsertSHA256(PrintCallBack printFunc = (PrintCallBack)NULL);
     virtual bool SignForFwUpdate(const char* uuid,
                                  const MlxSign::Signer& signer,

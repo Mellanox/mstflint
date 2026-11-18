@@ -245,6 +245,7 @@ private:
                         u_int16_t fw_ver0 = 0,
                         u_int16_t fw_ver1 = 0,
                         u_int16_t fw_ver2 = 0);
+    bool check64MBLayoutCompatibility();
     bool checkPSID();
     void updateBurnParams();
     bool dealWithExpRom();

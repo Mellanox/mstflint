@@ -2744,6 +2744,71 @@ bool BurnSubCommand::checkFwVersion(bool CreateFromImgInfo, u_int16_t fw_ver0, u
     return true;
 }
 
+bool BurnSubCommand::check64MBLayoutCompatibility()
+{
+    MLXFWOPS_LOG_DEBUG("BurnSubCommand::check64MBLayoutCompatibility");
+    // Need a valid device query to read the device FW version; otherwise we can't decide -> skip.
+    if (!_devQueryRes)
+    {
+        return true;
+    }
+
+    // The 64MB-layout transition is an SPC6 feature and only relevant for the non-production
+    // (mcc/recovery) flow. Skip otherwise.
+    if (_burnParams.useImgDevData || _devInfo.fw_info.chip_type != CT_SPECTRUM6 ||
+        _imgInfo.fw_info.chip_type != CT_SPECTRUM6)
+    {
+        return true;
+    }
+
+    // Build the FwVersion from the numeric fields only (ignore the dev-branch tag) so that
+    // dev-branch builds are classified by the same numeric comparison as release builds.
+    FwVersion devVer(_devInfo.fw_info.fw_ver[0], _devInfo.fw_info.fw_ver[1], _devInfo.fw_info.fw_ver[2]);
+    FwOperations::Spc6LayoutSupport devSupport = FwOperations::GetSpc6LayoutSupport(devVer);
+    MLXFWOPS_LOG_DEBUG("BurnSubCommand::check64MBLayoutCompatibility: device support: %d", static_cast<int>(devSupport));
+
+    if (devSupport == FwOperations::Spc6LayoutSupport::NotApplicable)
+    {
+        MLXFWOPS_LOG_DEBUG(
+          "BurnSubCommand::check64MBLayoutCompatibility: Device FW version %s is not covered by the 64MB layout detection logic (support: %d).",
+          devVer.get().c_str(), static_cast<int>(devSupport));
+        return true;
+    }
+
+    // Device is on a known branch but older than its transition version -> not in 64MB layout,
+    // so there is no constraint to enforce on the image.
+    if (devSupport == FwOperations::Spc6LayoutSupport::NewLayoutNotSupported)
+    {
+        MLXFWOPS_LOG_DEBUG(
+          "BurnSubCommand::check64MBLayoutCompatibility: device is older than its transition version (FW version: %s)",
+          devVer.get().c_str());
+        return true;
+    }
+
+    // From here the device IS in the 64MB layout -> the image must support it too.
+    FwVersion imgVer(_imgInfo.fw_info.fw_ver[0], _imgInfo.fw_info.fw_ver[1], _imgInfo.fw_info.fw_ver[2]);
+    FwOperations::Spc6LayoutSupport imgSupport = FwOperations::GetSpc6LayoutSupport(imgVer);
+    MLXFWOPS_LOG_DEBUG("BurnSubCommand::check64MBLayoutCompatibility: image support: %d", static_cast<int>(imgSupport));
+
+    if (imgSupport == FwOperations::Spc6LayoutSupport::NotApplicable)
+    {
+        MLXFWOPS_LOG_DEBUG(
+          "BurnSubCommand::check64MBLayoutCompatibility: Image FW version %s is not covered by the 64MB layout detection logic (support: %d).",
+          imgVer.get().c_str(), static_cast<int>(imgSupport));
+        return true;
+    }
+
+    if (imgSupport != FwOperations::Spc6LayoutSupport::NewLayoutSupported)
+    {
+        reportErr(true,
+                  "The device is in the 64MB flash layout but the image being burned does not support it. "
+                  "Aborting.\n");
+        return false;
+    }
+
+    return true;
+}
+
 bool BurnSubCommand::checkPSID()
 {
     if (strlen(_imgInfo.fw_info.psid) == 0 || strlen(_devInfo.fw_info.psid) == 0)
@@ -3582,6 +3647,12 @@ FlintStatus BurnSubCommand::executeCommand()
     {
         UnlockDevice(_fwOps);
         reportErr(true, "The \"--use_image_guids\" flag is supported only for GEN4 devices.\n");
+        return FLINT_FAILED;
+    }
+
+    if (_fwType == FIT_FS6 && _imgOps->FwType() == FIT_FS6 && !check64MBLayoutCompatibility())
+    {
+        UnlockDevice(_fwOps);
         return FLINT_FAILED;
     }
 

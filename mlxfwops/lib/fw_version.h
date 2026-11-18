@@ -90,9 +90,12 @@ public:
     virtual std::string get_primary_version(const std::string& format, bool even_subminor = false) const;
     bool is_set() const;
     bool are_same_branch(const FwVersion&) const;
+    bool is_same_device_family(const FwVersion&) const;
     int compare_master_version(const FwVersion&) const;
     int compare(const FwVersion&) const;
     virtual FwVersion* clone() const;
+    unsigned short int get_subminor() const;
+    unsigned short int get_minor() const;
 
     struct fw_version_raw
     {

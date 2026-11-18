@@ -35,6 +35,7 @@
 #include <string.h>
 #include <errno.h>
 #include <iomanip>
+#include <utility>
 #include <algorithm>
 #include <fstream>
 
@@ -3629,4 +3630,38 @@ bool FwOperations::ChangeUidsFromBase(fs3_uid_t base_uid, image_layout_guids& gu
     guids.macs.uid = base_mac_64;
     guids.macs.step = base_uid.step_size_pp[0] != DEFAULT_STEP ? base_uid.step_size_pp[0] : guids.macs.step;
     return true;
+}
+
+FwOperations::Spc6LayoutSupport FwOperations::GetSpc6LayoutSupport(const FwVersion& fwVer)
+{
+    static const std::pair<unsigned short int, unsigned short int> spc6BlockedSubminorRanges[] = {
+      {2, 298},
+      {932, 938},
+      {1900, 1908},
+    };
+
+    static const FwVersion spc6FamilyVersion(39, 0, 0);
+    if (!fwVer.is_same_device_family(spc6FamilyVersion))
+    {
+        return Spc6LayoutSupport::NotApplicable;
+    }
+
+    const unsigned short int minor = fwVer.get_minor();
+    if (minor != 2020)
+    {
+        return Spc6LayoutSupport::NotApplicable;
+    }
+
+    const unsigned short int subminor = fwVer.get_subminor();
+    for (const auto& blockedRange : spc6BlockedSubminorRanges)
+    {
+        MLXFWOPS_LOG_DEBUG("Checking blocked range: %d-%d", blockedRange.first, blockedRange.second);
+        if (subminor >= blockedRange.first && subminor <= blockedRange.second)
+        {
+            MLXFWOPS_LOG_DEBUG("Blocked range found");
+            return Spc6LayoutSupport::NewLayoutNotSupported;
+        }
+    }
+
+    return Spc6LayoutSupport::NewLayoutSupported;
 }
