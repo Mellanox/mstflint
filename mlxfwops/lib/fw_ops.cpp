@@ -3355,7 +3355,7 @@ int CRSpaceRegisters::getGlobalImageStatus()
             global_image_status_address = 0xa1844;
             break;
         case CT_SPECTRUM6:
-            global_image_status_address = 0x155004;
+            global_image_status_address = 0x157c04;
             break;
         default:
             throw logic_error("-E- global_image_status query is not implemented for the current device.");
