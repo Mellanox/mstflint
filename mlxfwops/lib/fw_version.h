@@ -94,6 +94,7 @@ public:
     int compare_master_version(const FwVersion&) const;
     int compare(const FwVersion&) const;
     virtual FwVersion* clone() const;
+    static bool is_branch_version(const char* version);
     unsigned short int get_subminor() const;
     unsigned short int get_minor() const;
 

@@ -3095,34 +3095,7 @@ u_int32_t FwOperations::GetPublicKeySecureBootPtr()
 
 bool FwOperations::VerifyBranchFormat(const char* vsdString)
 {
-    size_t length = strlen(vsdString);
-    if (length > BRANCH_LEN || length < MIN_BRANCH_LEN)
-    {
-        return false;
-    }
-    if (vsdString[length - MIN_BRANCH_LEN] == '_')
-    {
-        for (size_t i = length - MIN_BRANCH_LEN + 1; i < length; i++)
-        {
-            if (!isdigit(vsdString[i]))
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-    else if (vsdString[length - MIN_BRANCH_LEN + 1] == '-')
-    {
-        for (size_t i = length - MIN_BRANCH_LEN + 2; i < length; i++)
-        {
-            if (!isdigit(vsdString[i]))
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-    return false;
+    return FwVersion::is_branch_version(vsdString);
 }
 
 void FwOperations::getSupportedHwId(u_int32_t** supportedHwId, u_int32_t& supportedHwIdNum)

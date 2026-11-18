@@ -32,9 +32,11 @@
  */
 
 #include "fw_version.h"
+#include "mlxfwops_com.h"
 #include <sstream>
 #include <stdlib.h>
 #include <stdio.h>
+#include <cstring>
 
 const unsigned short MAX_MINOR_LENGETH = 4;
 const unsigned short FORMAT0_CIB_MAJOR = 10;
@@ -254,6 +256,38 @@ bool FwVersion::operator>=(const FwVersion& rhs) const
 FwVersion* FwVersion::clone() const
 {
     return new FwVersion(*this);
+}
+
+bool FwVersion::is_branch_version(const char* version)
+{
+    size_t length = std::strlen(version);
+    if (length > BRANCH_LEN || length < MIN_BRANCH_LEN)
+    {
+        return false;
+    }
+    if (version[length - MIN_BRANCH_LEN] == '_')
+    {
+        for (size_t i = length - MIN_BRANCH_LEN + 1; i < length; i++)
+        {
+            if (!isdigit(version[i]))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+    else if (version[length - MIN_BRANCH_LEN + 1] == '-')
+    {
+        for (size_t i = length - MIN_BRANCH_LEN + 2; i < length; i++)
+        {
+            if (!isdigit(version[i]))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
 }
 
 ComponentFwVersion::ComponentFwVersion() : _major(0), _minor(0), _subMinor(0), _format(VersionFormat::None) {}
