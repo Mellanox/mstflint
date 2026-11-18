@@ -132,85 +132,34 @@ enum MmamModuleType
     MMAM_MODULE_TYPE_NPO_16X = 29
 };
 
-/* Whether MMAM.ga names the ASIC that owns this module. The PRM marks it Reserved for the
- * backplane and chip2chip types, where a Reserved value reading back as a valid-looking address
- * would attribute a phantom cable to an ASIC that owns no such thing. Nothing else is excluded
- * here: whether a cable is plugged in and can be burned is phase 2's and phase 3's question.
+/* The name of a module type whose MMAM.ga does not name the ASIC that owns the module, or NULL for
+ * every other type. The PRM marks ga Reserved for the backplane and chip2chip types, where a
+ * Reserved value reading back as a valid-looking address would attribute a phantom cable to an ASIC
+ * that owns no such thing. Nothing else is excluded here: whether a cable is plugged in and can be
+ * burned is phase 2's and phase 3's question.
  */
-static bool isAsicDetectionSupported(u_int8_t moduleType)
+static const char* reservedGaModuleTypeName(u_int8_t moduleType)
 {
     switch (moduleType)
     {
-        case MMAM_MODULE_TYPE_BACKPLANE_1X:
-        case MMAM_MODULE_TYPE_BACKPLANE_2X:
-        case MMAM_MODULE_TYPE_BACKPLANE_4X:
-        case MMAM_MODULE_TYPE_BACKPLANE_8X:
-        case MMAM_MODULE_TYPE_CHIP2CHIP_1X:
-        case MMAM_MODULE_TYPE_CHIP2CHIP_2X:
-        case MMAM_MODULE_TYPE_CHIP2CHIP_4X:
-        case MMAM_MODULE_TYPE_CHIP2CHIP_8X:
-            return false;
-        default:
-            return true;
-    }
-}
-
-static string moduleTypeName(u_int8_t moduleType)
-{
-    switch (moduleType)
-    {
-        case MMAM_MODULE_TYPE_BACKPLANE_4X:
-            return "Backplane_with_4_lanes";
-        case MMAM_MODULE_TYPE_QSFP:
-            return "QSFP";
-        case MMAM_MODULE_TYPE_SFP:
-            return "SFP";
-        case MMAM_MODULE_TYPE_NO_CAGE:
-            return "No_Cage";
         case MMAM_MODULE_TYPE_BACKPLANE_1X:
             return "Backplane_with_single_lane";
         case MMAM_MODULE_TYPE_BACKPLANE_2X:
             return "Backplane_with_two_lanes";
-        case MMAM_MODULE_TYPE_CHIP2CHIP_4X:
-            return "Chip2Chip4x";
-        case MMAM_MODULE_TYPE_CHIP2CHIP_2X:
-            return "Chip2Chip2x";
-        case MMAM_MODULE_TYPE_CHIP2CHIP_1X:
-            return "Chip2Chip1x";
-        case MMAM_MODULE_TYPE_QSFP_DD:
-            return "QSFP_DD";
-        case MMAM_MODULE_TYPE_OSFP:
-            return "OSFP";
-        case MMAM_MODULE_TYPE_SFP_DD:
-            return "SFP_DD";
-        case MMAM_MODULE_TYPE_DSFP:
-            return "DSFP";
-        case MMAM_MODULE_TYPE_CHIP2CHIP_8X:
-            return "Chip2Chip8x";
-        case MMAM_MODULE_TYPE_TWISTED_PAIR:
-            return "Twisted_Pair";
+        case MMAM_MODULE_TYPE_BACKPLANE_4X:
+            return "Backplane_with_4_lanes";
         case MMAM_MODULE_TYPE_BACKPLANE_8X:
             return "Backplane_with_8_lanes";
-        case MMAM_MODULE_TYPE_LOOPBACK:
-            return "Loopback";
-        case MMAM_MODULE_TYPE_OE_16X:
-            return "OE_16x";
-        case MMAM_MODULE_TYPE_OSFP_ELS:
-            return "OSFP_ELS";
-        case MMAM_MODULE_TYPE_QSFP_2X:
-            return "QSFP_2x";
-        case MMAM_MODULE_TYPE_CPO_32X:
-            return "CPO_32x";
-        case MMAM_MODULE_TYPE_ELS_16:
-            return "ELS_16";
-        case MMAM_MODULE_TYPE_CPO_64X:
-            return "CPO_64x";
-        case MMAM_MODULE_TYPE_QSFP_1X:
-            return "QSFP_1x";
-        case MMAM_MODULE_TYPE_NPO_16X:
-            return "NPO_16x";
+        case MMAM_MODULE_TYPE_CHIP2CHIP_1X:
+            return "Chip2Chip1x";
+        case MMAM_MODULE_TYPE_CHIP2CHIP_2X:
+            return "Chip2Chip2x";
+        case MMAM_MODULE_TYPE_CHIP2CHIP_4X:
+            return "Chip2Chip4x";
+        case MMAM_MODULE_TYPE_CHIP2CHIP_8X:
+            return "Chip2Chip8x";
         default:
-            return "unknown type " + int_to_string((int)moduleType);
+            return NULL;
     }
 }
 
@@ -1771,9 +1720,12 @@ static const char* cableActionName(CableUpdateAction action)
             return "SKIP_NO_FW_FILE";
         case CABLE_ACTION_SKIP_CURRENT:
             return "SKIP_CURRENT";
-        default:
-            return "UNDECIDED";
+        case CABLE_ACTION_UNDECIDED:
+            break;
     }
+    // Unreachable while every cable is decided before the plan prints. Every enumerator has a case
+    // and there is no default, so -Wswitch fails the build on a new action left unnamed here.
+    return "UNDECIDED";
 }
 
 /* The device describes itself in one line of semicolon-separated clauses; the first is the part
@@ -1960,7 +1912,8 @@ int CableFwManager::walkCableMap(mfile* mf, u_int32_t total)
         cable.localIndex = ((u_int32_t)entry.local_module_msb << 8) | (u_int32_t)entry.local_module;
         cable.moduleType = entry.module_type;
 
-        if (!isAsicDetectionSupported(entry.module_type))
+        const char* reservedGaType = reservedGaModuleTypeName(entry.module_type);
+        if (reservedGaType != NULL)
         {
             // Recorded rather than dropped: the report accounts for every module the system
             // reported, and the reason a module was left alone is part of that account.
@@ -1968,7 +1921,7 @@ int CableFwManager::walkCableMap(mfile* mf, u_int32_t total)
             cable.asicGa = 0; // default, the action is what reports this port as skipped
             FWMANAGER_LOG_DEBUG("Port %s is of module type %s, which leaves MMAM.ga Reserved, so its owning ASIC "
                                 "cannot be identified",
-                                globalPort.c_str(), moduleTypeName(entry.module_type).c_str());
+                                globalPort.c_str(), reservedGaType);
             _cables.push_back(cable);
             continue;
         }
