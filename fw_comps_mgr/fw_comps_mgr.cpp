@@ -1383,7 +1383,7 @@ const char* CompNames[] = {"NO_COMPONENT 1",                      // 0x0
                            "COMPID_HBI_IMG",                      // 0x23
                            "COMPID_CALIPTRA"};                    // 0x24
 
-bool FwCompsMgr::RefreshComponentsStatus(comp_status_st* ComponentStatus)
+bool FwCompsMgr::RefreshComponentsStatus(comp_status_st* ComponentStatus, FwComponent::comps_ids_t compType)
 {
     u_int16_t compIdx = 0;
     int last_index_flag = 0;
@@ -1403,8 +1403,7 @@ bool FwCompsMgr::RefreshComponentsStatus(comp_status_st* ComponentStatus)
         if (queryComponentStatus(compIdx, &(compStatus.comp_status)))
         {
             compStatus.comp_status.component_index = compIdx;
-            if (ComponentStatus != NULL && (compStatus.comp_status.identifier == FwComponent::COMPID_LINKX ||
-                                            compStatus.comp_status.identifier == FwComponent::COMPID_LINKX_ELS))
+            if (ComponentStatus != NULL && compStatus.comp_status.identifier == compType)
             {
                 memcpy(ComponentStatus, &compStatus.comp_status, sizeof(compStatus.comp_status));
             }

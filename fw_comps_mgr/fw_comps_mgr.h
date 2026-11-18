@@ -611,7 +611,8 @@ public:
     const std::vector<burn_failure_t>& GetBurnFailures() const { return _burnFailures; }
     string GetMccErrorString(u_int8_t mccErrorCode);
     void SetActivationStep(bool activationNeeded) { _activationNeeded = activationNeeded; }
-    bool RefreshComponentsStatus(comp_status_st* ComponentStatus = NULL);
+    bool RefreshComponentsStatus(comp_status_st* ComponentStatus = NULL,
+                                 FwComponent::comps_ids_t compType = FwComponent::COMPID_UNKNOWN);
     bool GetComponentLinkxProperties(FwComponent::comps_ids_t compType, component_linkx_st* cmpLinkX);
     bool GetComponentSyncEProperties(component_synce_st& cmpSyncE);
     bool GetComponentInfo(FwComponent::comps_ids_t compType, vector<u_int8_t>& data);

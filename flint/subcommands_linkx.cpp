@@ -239,7 +239,7 @@ FlintStatus QuerySubCommand::QueryLinkX(string deviceName,
         int deviceIndex = deviceIds[i] + 1;
         fwCompsAccess.SetIndexAndSize(deviceIndex, 1);
         comp_status_st ComponentStatus;
-        if (!fwCompsAccess.RefreshComponentsStatus(&ComponentStatus))
+        if (!fwCompsAccess.RefreshComponentsStatus(&ComponentStatus, fwComponent))
         {
             printf("-E- Refresh components failed, error is %s.\n", fwCompsAccess.getLastErrMsg());
             finalResult = false;

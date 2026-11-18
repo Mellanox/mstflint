@@ -4167,6 +4167,16 @@ FlintStatus BurnSubCommand::burnMFA2()
 
 bool QuerySubCommand::verifyParams()
 {
+    if (_flintParams.vmod_control == true && _flintParams.linkx_control == true)
+    {
+        reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "--vmod", "--linkx");
+        return false;
+    }
+    if (_flintParams.vmod_control == true && _flintParams.linkx_els_control == true)
+    {
+        reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "--vmod", "--linkx_els");
+        return false;
+    }
     if (_flintParams.cmd_params.size() > 1)
     {
         reportErr(true, FLINT_CMD_ARGS_ERROR, _name.c_str(), 1, (int)_flintParams.cmd_params.size());
@@ -5050,8 +5060,14 @@ FlintStatus QuerySubCommand::executeCommand()
 {
     MLXFWOPS_LOG_DEBUG("QuerySubCommand::executeCommand");
 
-    if (_flintParams.linkx_control == true || _flintParams.linkx_els_control == true)
+    if (_flintParams.linkx_control == true || _flintParams.vmod_control == true ||
+        _flintParams.linkx_els_control == true)
     {
+        if (!verifyParams())
+        {
+            return FLINT_FAILED;
+        }
+
         if (_flintParams.device_specified == false)
         {
             reportErr(true, FLINT_NO_DEVICE_ERROR);
@@ -5062,8 +5078,15 @@ FlintStatus QuerySubCommand::executeCommand()
             reportErr(true, "Flag \"--downstream_device_ids\" with values should be provided.\n");
             return FLINT_FAILED;
         }
-        FwComponent::comps_ids_t fwComponent =
-          _flintParams.linkx_control ? FwComponent::COMPID_LINKX : FwComponent::COMPID_LINKX_ELS;
+        FwComponent::comps_ids_t fwComponent = FwComponent::COMPID_LINKX_ELS;
+        if (_flintParams.linkx_control)
+        {
+            fwComponent = FwComponent::COMPID_LINKX;
+        }
+        else if (_flintParams.vmod_control)
+        {
+            fwComponent = FwComponent::COMPID_CPO_VMOD_FW;
+        }
         return QueryLinkX(_flintParams.device, _flintParams.output_file, _flintParams.downstream_device_ids,
                           fwComponent);
     }
