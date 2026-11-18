@@ -230,7 +230,7 @@ public:
     void AddBinarySectionMetadata(BinarySectionMetadata sectionMetadata, bool updateSectionsOffsets = true);
 
     vector<BinarySectionMetadata>& GetSections() { return _cshSections; }
-    vector<u_int8_t> GetMetadata() const;
+    vector<u_int8_t> PackMetadata() const;
     size_t GetCshSize();
     u_int16_t GetComponentId() { return _metadata.component_id; }
     size_t GetComponentSize(bool withCshHeader = true);

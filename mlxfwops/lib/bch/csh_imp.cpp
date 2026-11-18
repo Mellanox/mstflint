@@ -453,10 +453,11 @@ void CSH::AddBinarySectionMetadata(BinarySectionMetadata sectionMetadata, bool u
     _cshSections.push_back(sectionMetadata);
 }
 
-vector<u_int8_t> CSH::GetMetadata() const
+vector<u_int8_t> CSH::PackMetadata() const
 {
     vector<u_int8_t> metadata(fs5_image_layout_csh_metadata_size());
     fs5_image_layout_csh_metadata_pack(&_metadata, metadata.data());
+    CPUTOn(metadata.data(), metadata.size() / 4);
     return metadata;
 }
 
@@ -507,6 +508,10 @@ void CSH::SetNvSignature(const vector<u_int8_t>& signature, SigType sigType)
             throw runtime_error("Unsupported ECDSA signature size");
         }
         memcpy(_nv_signature.ecdsa_signature.u8_r, signature.data(), signature.size());
+        //* PSC expects R and S parts reversed for authentication
+        std::reverse(_nv_signature.ecdsa_signature.u8_r, _nv_signature.ecdsa_signature.u8_r + (CSH_ECDSA_SIG_SIZE / 2));
+        std::reverse(_nv_signature.ecdsa_signature.u8_s, _nv_signature.ecdsa_signature.u8_s + (CSH_ECDSA_SIG_SIZE / 2));
+        CPUTOn(_nv_signature.ecdsa_signature.u8_r, signature.size() / 4);
     }
     else
     {
@@ -527,6 +532,12 @@ void CSH::SetOemSignature(const vector<u_int8_t>& signature, SigType sigType)
             throw runtime_error("Unsupported ECDSA signature size");
         }
         memcpy(_oem_signature.ecdsa_signature.u8_r, signature.data(), signature.size());
+        //* PSC expects R and S parts reversed for authentication
+        std::reverse(_oem_signature.ecdsa_signature.u8_r,
+                     _oem_signature.ecdsa_signature.u8_r + (CSH_ECDSA_SIG_SIZE / 2));
+        std::reverse(_oem_signature.ecdsa_signature.u8_s,
+                     _oem_signature.ecdsa_signature.u8_s + (CSH_ECDSA_SIG_SIZE / 2));
+        CPUTOn(_oem_signature.ecdsa_signature.u8_r, signature.size() / 4);
     }
     else
     {
