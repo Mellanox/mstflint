@@ -328,6 +328,7 @@ public:
     void SetSectionOffset(u_int32_t offset) { _struct.flash_offset = offset; }
 
     size_t GetSectionSize() const { return _struct.bin_length; }
+    void SetSectionSize(u_int32_t size) { _struct.bin_length = size; }
     u_int32_t GetSectionType() const;
     CshSectionType GetSectionTypeStrong() const
     {
