@@ -74,7 +74,6 @@ bool FsCshOperations::LoadImageInfo()
                                                                                  // fail the flow instead in the
                                                                                  // future
     }
-
     // copy the vsd to the branch ver only for switches. Not valid for NICs. VMOD is only for switches, so no need to
     // check it's a switch
     if (VerifyBranchFormat(image_info.vsd))

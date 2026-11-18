@@ -4573,7 +4573,7 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
         printf("Image VSD:             %s\n", imageVSD);
         printf("Device VSD:            %s\n", deviceVSD);
         printf("PSID:                  %s\n", fwInfo.fw_info.psid);
-        if (!isStripedImage && strncmp(fwInfo.fw_info.psid, fwInfo.fs3_info.orig_psid, 13) != 0)
+        if (!isStripedImage && !isCshVmod && strncmp(fwInfo.fw_info.psid, fwInfo.fs3_info.orig_psid, 13) != 0)
         {
             if (strlen(fwInfo.fs3_info.orig_psid))
             {
