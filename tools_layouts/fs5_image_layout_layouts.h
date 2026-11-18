@@ -806,6 +806,51 @@ struct fs5_image_layout_u8_stage1_res {
 };
 
 /* Description -   */
+/* Size in bytes - 940 */
+struct fs5_image_layout_u8_stage1_res_lms {
+	/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+		/* Description - Reserved for PSC use */
+		/* 0x0.0 - 0x0.31 */
+		/* access: RW */
+		u_int32_t reserved;
+	/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+		/* Description - Offset relative to load address of the starting location of the HASH table (for NCORE.FMC use) */
+		/* 0x8.0 - 0x8.31 */
+		/* access: RW */
+		u_int32_t hash_offset;
+	/*---------------- DWORD[3] (Offset 0xc) ----------------*/
+		/* Description - Version of PSC.BL1 to be bind with this NCORE.FMC version (will be compared to BL1 version as specified in PSC.BL1.BCH) */
+		/* 0xc.0 - 0xc.31 */
+		/* access: RW */
+		u_int32_t BL1_bind_version;
+	/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+		/* Description - Version of PSC.FW to be bind with this NCORE.FMC version (will be compared to FW version as specified in PSC.FW.BCH) */
+		/* 0x10.0 - 0x10.31 */
+		/* access: RW */
+		u_int32_t FW_bind_version;
+	/*---------------- DWORD[5] (Offset 0x14) ----------------*/
+		/* Description - Reserved for PSC use */
+		/* 0x14.0 - 0x14.31 */
+		/* access: RW */
+		u_int32_t BL1_updt;
+	/*---------------- DWORD[6] (Offset 0x18) ----------------*/
+		/* Description - Reserved for PSC use */
+		/* 0x18.0 - 0x18.31 */
+		/* access: RW */
+		u_int32_t FW_updt;
+	/*---------------- DWORD[7] (Offset 0x1c) ----------------*/
+		/* Description - Reserved for PSC use */
+		/* 0x1c.0 - 0x1c.31 */
+		/* access: RW */
+		u_int32_t NCORE_updt;
+	/*---------------- DWORD[8] (Offset 0x20) ----------------*/
+		/* Description - flash parameters configuration on early boot */
+		/* 0x20.0 - 0x20.31 */
+		/* access: RW */
+		struct fs5_image_layout_flash_config_params flash_config_params;
+	};
+
+/* Description -   */
 /* Size in bytes - 384 */
 struct fs5_image_layout_u8_stage1_signature {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
@@ -1084,6 +1129,19 @@ struct fs5_image_layout_binary_section_metadata {
 	/* 0x18.0 - 0x1c.31 */
 	/* access: RW */
 	u_int32_t entry_point[2];
+/*---------------- DWORD[8] (Offset 0x20) ----------------*/
+	/* Description -  */
+	/* 0x20.0 - 0x20.1 */
+	/* access: RW */
+	u_int8_t presigning;
+	/* Description -  */
+	/* 0x20.2 - 0x20.7 */
+	/* access: RW */
+	u_int8_t rsvd;
+	/* Description -  */
+	/* 0x20.8 - 0x20.15 */
+	/* access: RW */
+	u_int8_t lfa_compatibility;
 /*---------------- DWORD[12] (Offset 0x30) ----------------*/
 	/* Description - Binary-specific encryption parameters */
 	/* 0x30.0 - 0x5c.31 */
@@ -1474,9 +1532,19 @@ struct fs5_image_layout_boot_component_header_pqc {
 	u_int32_t u32_num_binaries1;
 /*---------------- DWORD[1705] (Offset 0x1aa4) ----------------*/
 	/* Description -  */
-	/* 0x1aa4.0 - 0x1ecc.31 */
+	/* 0x1aa4.0 - 0x1e4c.31 */
 	/* access: RW */
-	struct fs5_image_layout_u8_stage1_res u8_stage1_res;
+	struct fs5_image_layout_u8_stage1_res_lms u8_stage1_res;
+/*---------------- DWORD[1940] (Offset 0x1e50) ----------------*/
+	/* Description -  */
+	/* 0x1e50.0 - 0x1e8c.31 */
+	/* access: RW */
+	struct fs5_image_layout_u8_digest u8_uid_digest;
+/*---------------- DWORD[1956] (Offset 0x1e90) ----------------*/
+	/* Description -  */
+	/* 0x1e90.0 - 0x1ecc.31 */
+	/* access: RW */
+	struct fs5_image_layout_u8_digest u8_notch_digest;
 /*---------------- DWORD[1972] (Offset 0x1ed0) ----------------*/
 	/* Description -  */
 	/* 0x1ed0.0 - 0x1edc.31 */
@@ -1631,7 +1699,7 @@ struct fs5_image_layout_hw_pointers_gilboa {
 	/* Description -  */
 	/* 0x58.0 - 0x5c.31 */
 	/* access: RW */
-	struct fs5_image_layout_hw_pointer_entry image_signature_pointer;
+	struct fs5_image_layout_hw_pointer_entry issu_notch_pointer;
 /*---------------- DWORD[24] (Offset 0x60) ----------------*/
 	/* Description -  */
 	/* 0x60.0 - 0x64.31 */
@@ -1641,7 +1709,7 @@ struct fs5_image_layout_hw_pointers_gilboa {
 	/* Description -  */
 	/* 0x68.0 - 0x6c.31 */
 	/* access: RW */
-	struct fs5_image_layout_hw_pointer_entry fw_security_version_pointer;
+	struct fs5_image_layout_hw_pointer_entry issu_main_uid_pointer;
 /*---------------- DWORD[28] (Offset 0x70) ----------------*/
 	/* Description -  */
 	/* 0x70.0 - 0x74.31 */
@@ -1991,6 +2059,13 @@ void fs5_image_layout_u8_stage1_component_print(const struct fs5_image_layout_u8
 unsigned int fs5_image_layout_u8_stage1_component_size(void);
 #define FS5_IMAGE_LAYOUT_U8_STAGE1_COMPONENT_SIZE    (0x90)
 void fs5_image_layout_u8_stage1_component_dump(const struct fs5_image_layout_u8_stage1_component *ptr_struct, FILE *fd);
+/* u8_stage1_res_lms */
+void fs5_image_layout_u8_stage1_res_lms_pack(const struct fs5_image_layout_u8_stage1_res_lms *ptr_struct, u_int8_t *ptr_buff);
+void fs5_image_layout_u8_stage1_res_lms_unpack(struct fs5_image_layout_u8_stage1_res_lms *ptr_struct, const u_int8_t *ptr_buff);
+void fs5_image_layout_u8_stage1_res_lms_print(const struct fs5_image_layout_u8_stage1_res_lms *ptr_struct, FILE *fd, int indent_level);
+unsigned int fs5_image_layout_u8_stage1_res_lms_size(void);
+#define FS5_IMAGE_LAYOUT_U8_STAGE1_RES_LMS_SIZE    (0x3ac)
+void fs5_image_layout_u8_stage1_res_lms_dump(const struct fs5_image_layout_u8_stage1_res_lms *ptr_struct, FILE *fd);
 /* u8_stage1_res */
 void fs5_image_layout_u8_stage1_res_pack(const struct fs5_image_layout_u8_stage1_res *ptr_struct, u_int8_t *ptr_buff);
 void fs5_image_layout_u8_stage1_res_unpack(struct fs5_image_layout_u8_stage1_res *ptr_struct, const u_int8_t *ptr_buff);

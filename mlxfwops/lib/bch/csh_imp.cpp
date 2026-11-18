@@ -565,6 +565,17 @@ void BinarySectionMetadata::SetJsonParams(const Json::Value& root)
         SetDwordsFrom8BytesJsonField(root, "entry_point", _struct.entry_point[0], _struct.entry_point[1]);
     }
 
+    if (root.isMember("presigning"))
+    {
+        _struct.presigning = std::stoul(nbu::mft::common::GetStrValue(root["presigning"], true), nullptr, 16);
+    }
+
+    if (root.isMember("lfa_compatibility"))
+    {
+        _struct.lfa_compatibility =
+          std::stoul(nbu::mft::common::GetStrValue(root["lfa_compatibility"], true), nullptr, 16);
+    }
+
     vector<u_int8_t> buf =
       mft_utils::HexStringToBytes(root["encryption_params"]["encryption_derivation_string"].asString());
     if (buf.size() != FS5_IMAGE_LAYOUT_U8_ENCRYPTION_DERIVATION_STRING_SIZE)
