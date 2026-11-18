@@ -958,6 +958,17 @@ int dm_is_cpo(mfile* mf, u_int8_t* ptr_cpo_ind)
     return MFE_OK;
 }
 
+int dm_dev_is_vmdl(mfile* mf, dm_dev_id_t type, u_int8_t* ptr_vmdl_ind)
+{
+    if (type != DeviceSpectrum5 && type != DeviceSpectrum6)
+    {
+        *ptr_vmdl_ind = 0;
+        return MFE_OK;
+    }
+
+    return dm_is_cpo(mf, ptr_vmdl_ind);
+}
+
 int dm_is_cx7(dm_dev_id_t type)
 {
     return (type == DeviceConnectX7);

@@ -295,6 +295,8 @@ extern "C"
      */
     int dm_is_cpo(mfile* mf, u_int8_t* ptr_cpo_ind);
 
+    int dm_dev_is_vmdl(mfile* mf, dm_dev_id_t type, u_int8_t* ptr_vmdl_ind);
+
     int dm_is_qt3(dm_dev_id_t type);
 
     int dm_dev_is_fs5(dm_dev_id_t type);
