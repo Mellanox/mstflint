@@ -225,14 +225,18 @@ bool Fs6Operations::Init()
 
     if (!std::equal(PartitionTable::MagicID().begin(), PartitionTable::MagicID().end(), partitionTable.begin()))
     {
-        // Reduced image isnt contain the L1PT, it is only contain the ROM_IMGS and CHAIN_CONTAINER
+        // Reduced image doesn't have L1PT, it only contains ROM_IMGS and CHAIN_CONTAINER
         PartitionTableEntry romImgsEntry(0, ROM_IMGS_ALIGN_SIZE, static_cast<u_int32_t>(PartitionType::PT_ROM_IMGS));
 
         _activeChain = romImgsEntry.GetChainNumber();
         _l1pt.SetActiveChain(_activeChain);
 
         _l1pt.AddEntry(romImgsEntry);
-        InitCshComponent(romImgsEntry);
+        if (!InitCshComponent(romImgsEntry))
+        {
+            return errmsg(MLXFW_NO_VALID_IMAGE_ERR,
+                          "\nNo valid FS6 image found. Check the flash parameters, if specified.");
+        }
 
         u_int32_t imageSize = 0;
         GetImageSize(&imageSize);
@@ -243,7 +247,8 @@ bool Fs6Operations::Init()
         _l2ptOffset = ROM_IMGS_ALIGN_SIZE;
         if (!InitL2pt())
         {
-            return false;
+            return errmsg(MLXFW_NO_VALID_IMAGE_ERR,
+                          "\nNo valid FS6 image found. Check the flash parameters, if specified.");
         }
         // TODO: should be removed after CheckAndSetIsReducedImage is implemented
         SetIsReducedImage(true);
@@ -397,10 +402,10 @@ bool Fs6Operations::InitCshComponent(PartitionTableEntry& entry)
     catch (const CshException& e)
     {
         //* VMOD partition place holder case, so we can ignore the exception
-        if (e.GetType() == CshException::CshExceptionType::CSH_HEADER_NOT_FOUND &&
-            partitionType == PartitionType::PT_VMOD_FW)
+        if (!(e.GetType() == CshException::CshExceptionType::CSH_HEADER_NOT_FOUND &&
+              partitionType == PartitionType::PT_VMOD_FW))
         {
-            return false;
+            return errmsg("%s", e.what());
         }
     }
 
