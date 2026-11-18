@@ -50,9 +50,6 @@
 #include <iomanip>
 #include <fstream>
 
-// the ROM images section is aligned to 384KB because the PBLT and PBLD flexible
-#define ROM_IMGS_ALIGN_SIZE (384 * 1024)
-
 CshComponentID ToCshId(ComponentType compName)
 {
     CshComponentID id = CshComponentID::Unknown;
@@ -241,6 +238,8 @@ bool Fs6Operations::Init()
         {
             return false;
         }
+        // TODO: should be removed after CheckAndSetIsReducedImage is implemented
+        SetIsReducedImage(true);
     }
     else
     {
@@ -273,11 +272,6 @@ bool Fs6Operations::Init()
                 }
             }
         }
-    }
-
-    if (!CheckAndSetIsReducedImage())
-    {
-        return errmsg(MLXFW_BAD_PARAM_ERR, "%s", _ioAccess->err());
     }
     return true;
 }
@@ -1049,32 +1043,11 @@ bool Fs6Operations::IsL2ptSection(PartitionType partitionType)
 
 bool Fs6Operations::CheckAndSetIsReducedImage()
 {
-    MLXFWOPS_LOG_DEBUG("Fs6Operations::CheckAndSetIsReducedImage");
-    if (_ioAccess->is_flash())
-    {
-        SetIsReducedImage(false);
-        return true;
-    }
-
-    u_int32_t burn_image_size = 0;
-    if (!GetImageInfo())
+    if (!Init())
     {
         return false;
     }
-    burn_image_size = _fwImgInfo.ext_info.burn_image_size;
-    MLXFWOPS_LOG_DEBUG("Fs6Operations::CheckAndSetIsReducedImage burn_image_size = 0x%x", burn_image_size);
-
-    u_int32_t image_size = 0;
-    if (!GetImageSize(&image_size))
-    {
-        return false;
-    }
-    MLXFWOPS_LOG_DEBUG("Fs6Operations::CheckAndSetIsReducedImage image_size = 0x%x", image_size);
-
-    if (image_size == burn_image_size)
-    {
-        SetIsReducedImage(true);
-    }
+    // TODO: Implement logic verification that checks if this is a valid reduced image with complete content
     return true;
 }
 

@@ -768,11 +768,13 @@ u_int8_t FwOperations::IsFS6Image(FBase& f)
 
     if (fwFormat == FS_UNKNOWN_IMG)
     {
-        struct fs5_image_layout_csh_header cshHeader;
-        memset(&cshHeader, 0, sizeof(cshHeader));
-        if (f.read(0, &cshHeader, fs5_image_layout_csh_header_size()))
+        unsigned char cshRomImagesMagicPattern[4] = {0};
+        unsigned char cshL2ptMagicPattern[8] = {0};
+
+        if (f.read(ROM_IMGS_MAGIC_PATTERN_OFFSET, cshRomImagesMagicPattern, sizeof(cshRomImagesMagicPattern)) &&
+            f.read(ROM_IMGS_ALIGN_SIZE, cshL2ptMagicPattern, sizeof(cshL2ptMagicPattern)))
         {
-            if (IsFS6ReducedImage(cshHeader.magic_pattern))
+            if (IsFS6ReducedImage(cshRomImagesMagicPattern, cshL2ptMagicPattern))
             {
                 fwFormat = FS_FS6_GEN;
             }
@@ -781,15 +783,16 @@ u_int8_t FwOperations::IsFS6Image(FBase& f)
     return fwFormat;
 }
 
-bool FwOperations::IsFS6ReducedImage(unsigned char* magicPattern)
+bool FwOperations::IsFS6ReducedImage(unsigned char* romImageMagicPattern, unsigned char* l2ptMagicPattern)
 {
-    const vector<u_int8_t>& romImageMagicPattern = PartitionTable::GetRomImageMagicPattern();
-    if (std::equal(romImageMagicPattern.begin(), romImageMagicPattern.end(), magicPattern))
-    {
-        return true;
-    }
+    const auto& romExpected = PartitionTable::RomImageMagicPattern();
+    const auto& l2ptExpected = PartitionTable::MagicID();
 
-    return false;
+    bool romMatches = std::equal(romExpected.begin(), romExpected.end(), romImageMagicPattern);
+    bool l2ptMatches =
+      (l2ptMagicPattern == nullptr) || std::equal(l2ptExpected.begin(), l2ptExpected.end(), l2ptMagicPattern);
+
+    return romMatches && l2ptMatches;
 }
 
 u_int8_t FwOperations::IsFS4OrFS5Image(FBase& f, u_int32_t* found_images)

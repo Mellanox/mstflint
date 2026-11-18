@@ -155,6 +155,8 @@ enum class PartitionType
 const u_int32_t L1PT_OFFSET = 0xe000;
 const u_int32_t SHA384_DIGEST_SIZE = 48;
 const u_int32_t ROM_IMGS_MAGIC_PATTERN_OFFSET = 0xc;
+// the ROM images section is aligned to 384KB because the PBLT and PBLD flexible
+const u_int32_t ROM_IMGS_ALIGN_SIZE = 384 * 1024;
 
 bool IsCshComponent(PartitionType partitionType);
 CshComponentID ToCshId(PartitionType partitionType);
@@ -213,7 +215,7 @@ public:
         static vector<u_int8_t> magicID({0x8B, 0x8D, 0x9E, 0x8F, 0x74, 0x72, 0x61, 0x70});
         return magicID;
     }
-    static const vector<u_int8_t>& GetRomImageMagicPattern()
+    static const vector<u_int8_t>& RomImageMagicPattern()
     {
         static vector<u_int8_t> romImageMagicPattern{{0x4f, 0x3d, 0x5a, 0x27}};
         return romImageMagicPattern;
