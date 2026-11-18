@@ -205,12 +205,12 @@ bool Fs6Operations::InitL2pt()
         }
         PartitionTableEntry entry;
         entry.Unpack(entryData);
-        _l2pt.AddEntry(entry);
 
         if (IsCshComponent((PartitionType)entry.GetSectionType()))
         {
-            InitCshComponent((PartitionType)entry.GetSectionType(), _l2ptOffset + entry.GetStartOffset());
+            InitCshComponent(entry);
         }
+        _l2pt.AddEntry(entry);
     }
     return true;
 }
@@ -244,7 +244,7 @@ bool Fs6Operations::Init()
         // Reduced image isnt contain the L1PT, it is only contain the ROM_IMGS and CHAIN_CONTAINER
         PartitionTableEntry romImgsEntry(0, ROM_IMGS_ALIGN_SIZE, static_cast<u_int32_t>(PartitionType::PT_ROM_IMGS));
         _l1pt.AddEntry(romImgsEntry);
-        InitCshComponent((PartitionType)romImgsEntry.GetSectionType(), romImgsEntry.GetStartOffset());
+        InitCshComponent(romImgsEntry);
 
         u_int32_t imageSize = 0;
         GetImageSize(&imageSize);
@@ -276,12 +276,11 @@ bool Fs6Operations::Init()
             PartitionTableEntry entry;
             entry.Unpack(entryData);
             // entry.DumpStruct(); // for debug purposes
-            _l1pt.AddEntry(entry);
-
             if (IsCshComponent((PartitionType)entry.GetSectionType()))
             {
-                InitCshComponent((PartitionType)entry.GetSectionType(), entry.GetStartOffset(), entry.GetChainNumber());
+                InitCshComponent(entry);
             }
+            _l1pt.AddEntry(entry);
 
             if ((PartitionType)entry.GetSectionType() == PartitionType::PT_ROM_IMGS)
             {
@@ -289,7 +288,6 @@ bool Fs6Operations::Init()
                 {
                     return errmsg("No ROM_IMGS CSH section found");
                 }
-                entry.SetCsh(&_cshComponents.back().csh);
                 if (entry.IsCshActiveChain())
                 {
                     _activeChain = entry.GetChainNumber();
@@ -328,9 +326,19 @@ bool Fs6Operations::Init()
     return true;
 }
 
-bool Fs6Operations::InitCshComponent(PartitionType partitionType, u_int32_t offset, int currentChain)
+bool Fs6Operations::InitCshComponent(PartitionTableEntry& entry)
 {
+    PartitionType partitionType = (PartitionType)entry.GetSectionType();
+    size_t offset = entry.GetStartOffset();
+    int currentChain = entry.GetChainNumber();
+
+    if (IsL2ptSection(partitionType))
+    {
+        offset += _l2ptOffset;
+    }
+
     MLXFWOPS_LOG_DEBUG("InitCshComponent partitionType: 0x%X", static_cast<u_int32_t>(partitionType));
+
     vector<u_int8_t> cshHeader(fs5_image_layout_csh_header_size());
     if (!_ioAccess->read(offset, cshHeader.data(), fs5_image_layout_csh_header_size()))
     {
@@ -346,17 +354,19 @@ bool Fs6Operations::InitCshComponent(PartitionType partitionType, u_int32_t offs
             return errmsg(MLXFW_BAD_PARAM_ERR, "%s", _ioAccess->err());
         }
 
-        CSH csh;
-        csh.UnpackHeader(cshData);
+        std::shared_ptr<CSH> csh = std::make_shared<CSH>();
+        csh->UnpackHeader(cshData);
 
-        cshData.resize(csh.GetNumberOfBinaries() * BinarySectionMetadata::Size());
+        cshData.resize(csh->GetNumberOfBinaries() * BinarySectionMetadata::Size());
         if (!_ioAccess->read(offset + CSH::HeaderSize(cshStructType), cshData.data(), cshData.size()))
         {
             return errmsg(MLXFW_BAD_PARAM_ERR, "%s", _ioAccess->err());
         }
-        csh.UnpackSections(cshData);
+        csh->UnpackSections(cshData);
 
-        _cshComponents.push_back({partitionType, std::move(csh), currentChain});
+        _cshComponents.push_back({partitionType, csh, currentChain});
+
+        entry.SetCsh(_cshComponents.back().csh);
     }
     catch (const CshException& e)
     {
@@ -418,8 +428,7 @@ bool Fs6Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
                 {
                     continue;
                 }
-                if (!VerifyCshComponent((PartitionType)entry.GetSectionType(), entry.GetStartOffset(),
-                                        verifyCallBackFunc))
+                if (!VerifyCshComponent(entry, verifyCallBackFunc))
                 {
                     return false;
                 }
@@ -446,8 +455,7 @@ bool Fs6Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
                     {
                         if (IsCshComponent((PartitionType)l2Entry.GetSectionType()))
                         {
-                            if (!VerifyCshComponent((PartitionType)l2Entry.GetSectionType(),
-                                                    _l2ptOffset + l2Entry.GetStartOffset(), verifyCallBackFunc))
+                            if (!VerifyCshComponent(l2Entry, verifyCallBackFunc))
                             {
                                 return false;
                             }
@@ -528,24 +536,31 @@ string Fs6Operations::GetSectionNameByMagicId(u_int32_t magicId)
     return sectionName;
 }
 
-bool Fs6Operations::VerifyCshComponent(PartitionType partitionType, u_int32_t offset, VerifyCallBack verifyCallBackFunc)
+bool Fs6Operations::VerifyCshComponent(const PartitionTableEntry& entry, VerifyCallBack verifyCallBackFunc)
 {
-    MLXFWOPS_LOG_DEBUG("VerifyCshComponent partitionType: %s", ToString(partitionType).c_str());
-    auto cshComponent =
-      find_if(_cshComponents.begin(), _cshComponents.end(),
-              [partitionType](const CshComponentInfo& entry) { return entry.partitionType == partitionType; });
+    std::shared_ptr<CSH> cshComponent = entry.GetCsh();
+    PartitionType partitionType = (PartitionType)entry.GetSectionType();
+    size_t offset = entry.GetStartOffset();
 
-    if (cshComponent != _cshComponents.end())
+    if (IsL2ptSection(partitionType))
     {
-        string compName = ToString(CshComponentID(cshComponent->csh.GetComponentId()));
-        PrintSectionRange(verifyCallBackFunc, offset, offset + cshComponent->csh.GetCshSize() - 1,
-                          cshComponent->csh.GetCshSize(), compName, "CSH");
+        offset += _l2ptOffset;
+    }
 
-        u_int32_t prevSectionEnd = cshComponent->csh.GetCshSize();
+    MLXFWOPS_LOG_DEBUG("VerifyCshComponent partitionType: %s, csh exists: %d", ToString(partitionType).c_str(),
+             cshComponent != nullptr);
+
+    if (cshComponent != nullptr)
+    {
+        string compName = ToString(CshComponentID(cshComponent->GetComponentId()));
+        PrintSectionRange(verifyCallBackFunc, offset, offset + cshComponent->GetCshSize() - 1,
+                          cshComponent->GetCshSize(), compName, "CSH");
+
+        u_int32_t prevSectionEnd = cshComponent->GetCshSize();
         u_int32_t currSectionBegin = 0;
         string sectionName;
 
-        for (auto section : cshComponent->csh.GetSections())
+        for (auto section : cshComponent->GetSections())
         {
             sectionName = GetSectionNameByMagicId(section.GetSectionType());
             size_t sectionOffset = offset + section.GetSectionOffset();
@@ -560,7 +575,7 @@ bool Fs6Operations::VerifyCshComponent(PartitionType partitionType, u_int32_t of
             prevSectionEnd = section.GetSectionOffset() + section.GetSectionSize();
         }
 
-        if (prevSectionEnd > cshComponent->csh.GetComponentSize())
+        if (prevSectionEnd > cshComponent->GetComponentSize())
         {
             return errmsg("section %s is out of CSH bounds", sectionName.c_str());
         }
@@ -725,10 +740,10 @@ bool Fs6Operations::GetFwComponentsData(string path)
         }
 
         std::stringstream stream;
-        stream << "0x" << std::hex << static_cast<int>(entry->csh.GetComponentMajorVersion());
+        stream << "0x" << std::hex << static_cast<int>(entry->csh->GetComponentMajorVersion());
         root[ToString(ToCshId(partitionType))]["ver_major"] = stream.str();
         stream.str("");
-        stream << "0x" << std::hex << static_cast<int>(entry->csh.GetComponentMinorVersion());
+        stream << "0x" << std::hex << static_cast<int>(entry->csh->GetComponentMinorVersion());
         root[ToString(ToCshId(partitionType))]["ver_minor"] = stream.str();
     }
 
@@ -1012,12 +1027,12 @@ bool Fs6Operations::GetCshSectionOffset(PartitionType partitionType,
     }
 
     // Find the specific section within the CSH component
-    auto section = find_if(cshComponent->csh.GetSections().begin(),
-                           cshComponent->csh.GetSections().end(),
+    auto section = find_if(cshComponent->csh->GetSections().begin(),
+                           cshComponent->csh->GetSections().end(),
                            [sectionType](const BinarySectionMetadata& section)
                            { return (CshSectionType)section.GetSectionType() == sectionType; });
 
-    if (section == cshComponent->csh.GetSections().end())
+    if (section == cshComponent->csh->GetSections().end())
     {
         return errmsg("Section type 0x%x not found in CSH component", (int)sectionType);
     }
@@ -1377,7 +1392,7 @@ std::map<PartitionType, std::vector<Fs6Operations::BurnRegion>>
         {
             continue;
         }
-        const CSH& csh = cshComponent.csh;
+        std::shared_ptr<const CSH> csh = cshComponent.csh;
         int chainNumber = cshComponent.chainNumber;
 
         if (!useImgDevData && partType == PartitionType::PT_ROM_IMGS)
@@ -1409,8 +1424,8 @@ std::map<PartitionType, std::vector<Fs6Operations::BurnRegion>>
             }
         }
 
-        size_t fullCshSize = csh.GetComponentSize();
-        string cshName = "CSH_" + ToString(CshComponentID(csh.GetComponentId()));
+        size_t fullCshSize = csh->GetComponentSize();
+        string cshName = "CSH_" + ToString(CshComponentID(csh->GetComponentId()));
         addBurnRegion(cshSrcOffset, cshDestOffset, fullCshSize, cshName, partType, partitionTypeToBurnRegions,
                       allBurnRegions);
     }

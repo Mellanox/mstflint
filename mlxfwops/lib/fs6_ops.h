@@ -188,9 +188,9 @@ protected:
 private:
     bool Init();
     bool InitL2pt();
-    bool InitCshComponent(PartitionType partitionType, u_int32_t offset, int currentChain = 0);
+    bool InitCshComponent(PartitionTableEntry& entry);
 
-    bool VerifyCshComponent(PartitionType partitionType, u_int32_t offset, VerifyCallBack verifyCallBackFunc);
+    bool VerifyCshComponent(const PartitionTableEntry& entry, VerifyCallBack verifyCallBackFunc);
     bool VerifyCshComponent();
 
     void UpdatePartitionTable(bool l1pt);
@@ -221,7 +221,7 @@ private:
     struct CshComponentInfo
     {
         PartitionType partitionType;
-        CSH csh;
+        std::shared_ptr<CSH> csh;
         int chainNumber;
     };
     vector<CshComponentInfo> _cshComponents;

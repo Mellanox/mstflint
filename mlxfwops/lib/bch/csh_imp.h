@@ -204,8 +204,8 @@ public:
     vector<u_int8_t> Pack();
     void Unpack(const vector<u_int8_t>& data);
 
-    void SetCsh(CSH* csh) { _csh = csh; }
-    CSH* GetCsh() const { return _csh; }
+    void SetCsh(std::shared_ptr<CSH> csh) { _csh = csh; }
+    std::shared_ptr<CSH> GetCsh() const { return _csh; }
     bool IsCshActiveChain() const;
     bool IsCshBackupChain() const;
 
@@ -224,7 +224,7 @@ public:
 
 private:
     struct fs5_image_layout_partition_table_entry _struct;
-    CSH* _csh;
+    std::shared_ptr<CSH> _csh;
 };
 
 class MLXFWOP_API PartitionTable
