@@ -466,6 +466,15 @@ public:
         BurnRomOption burnRomOptions;
         bool shift8MBIfNeeded;
 
+        // VMOD downstream-device burn params (relevant only when vmodDownstreamControl == true)
+        bool vmodDownstreamControl;
+        int vmodDeviceIndex;
+        int vmodDeviceSize;
+        bool vmodAutoUpdate;
+        bool vmodActivationNeeded;
+        bool vmodDownloadTransferNeeded;
+        int vmodActivationDelaySec;
+
         // callback fun
         ProgressCallBack progressFunc;
         ProgressCallBackAdvSt ProgressFuncAdv;
@@ -498,6 +507,13 @@ public:
             useDevImgInfo(false),
             burnRomOptions(BRO_DEFAULT),
             shift8MBIfNeeded(false),
+            vmodDownstreamControl(false),
+            vmodDeviceIndex(0),
+            vmodDeviceSize(0),
+            vmodAutoUpdate(false),
+            vmodActivationNeeded(true),
+            vmodDownloadTransferNeeded(true),
+            vmodActivationDelaySec(0),
             progressFunc((ProgressCallBack)NULL),
             progressFuncEx((ProgressCallBackEx)NULL),
             progressUserData(NULL),

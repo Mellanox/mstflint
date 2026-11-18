@@ -772,6 +772,12 @@ bool FwCompsMgr::controlFsm(fsm_command_t          command,
         if (_linkXFlow && (command == FSM_CMD_DOWNSTREAM_DEVICE_TRANSFER || command == FSM_CMD_ACTIVATE_ALL))
         {
             comp_query_st compQuery = _compsQueryMap[FwComponent::COMPID_LINKX];
+            bool isVmod = _currCompType == FwComponent::COMPID_CPO_VMOD_FW;
+            if (isVmod)
+            {
+                compQuery = _compsQueryMap[FwComponent::COMPID_CPO_VMOD_FW];
+                _lastFsmCtrl.component_index = compQuery.comp_status.component_index;
+            }
             if (compQuery.comp_status.component_index == _componentIndex)
             {
                 _lastFsmCtrl.component_index =
@@ -1188,6 +1194,7 @@ void FwCompsMgr::SetIndexAndSize(int  deviceIndex,
 
 FwCompsMgr::FwCompsMgr(mfile* mf, DeviceTypeT devType, int deviceIndex)
 {
+    _currCompType = FwComponent::COMPID_UNKNOWN;
     _fwSupport = false;
     _handleGenerated = false;
     _clearSetEnv = false;
@@ -1214,6 +1221,7 @@ FwCompsMgr::FwCompsMgr(mfile* mf, DeviceTypeT devType, int deviceIndex)
 
 FwCompsMgr::FwCompsMgr(const char* devname, DeviceTypeT devType, int deviceIndex)
 {
+    _currCompType = FwComponent::COMPID_UNKNOWN;
     _mf = NULL;
     _fwSupport = false;
     _handleGenerated = false;
@@ -1612,6 +1620,7 @@ bool FwCompsMgr::burnComponents(FwComponent& comp, ProgressCallBackAdvSt* progre
         return false;
     }
     _currCompQuery = &(_compsQueryMap[component]);
+    _currCompType = component;
     if (component == FwComponent::DPA_COMPONENT)
     {
         MLXFWOPS_LOG_DEBUG("max_component_size = %d", _currCompQuery->comp_cap.max_component_size);

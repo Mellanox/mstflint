@@ -874,19 +874,32 @@ bool FsCtrlOperations::FwBurnAdvanced(FwOperations* imageOps, ExtBurnParams& bur
     }
     else if (componentId == FwComponent::comps_ids_t::COMPID_CPO_VMOD_FW)
     {
-        vector<u_int8_t> data(sizeof(_fwImgInfo.ext_info.psid));
-        memcpy(data.data(), _fwImgInfo.ext_info.psid, sizeof(_fwImgInfo.ext_info.psid));
-        if (!imageOps->IsCompatibleToDevice(data, burnParams.ignoreVersionCheck))
+        if (imageOps != NULL)
         {
-            return errmsg("%s", imageOps->err());
+            vector<u_int8_t> data(sizeof(_fwImgInfo.ext_info.psid));
+            memcpy(data.data(), _fwImgInfo.ext_info.psid, sizeof(_fwImgInfo.ext_info.psid));
+            if (!imageOps->IsCompatibleToDevice(data, burnParams.ignoreVersionCheck))
+            {
+                return errmsg("%s", imageOps->err());
+            }
         }
+        if (burnParams.vmodDownstreamControl)
+        {
+            _fwCompsAccess->SetIndexAndSize(burnParams.vmodDeviceIndex + 1, burnParams.vmodDeviceSize,
+                                            burnParams.vmodAutoUpdate, burnParams.vmodActivationNeeded,
+                                            burnParams.vmodDownloadTransferNeeded, burnParams.vmodActivationDelaySec);
+        }
+    }
+    else if (imageOps == NULL)
+    {
+        return errmsg("bad parameter is given to FwBurnAdvanced\n");
     }
 
     std::vector<u_int8_t> compData;
     u_int32_t imageSize = 0;
     if (componentId == FwComponent::comps_ids_t::COMPID_CPO_VMOD_FW)
     {
-        if (!imageOps->FwExtract4MBImage(compData, true))
+        if (imageOps != NULL && !imageOps->FwExtract4MBImage(compData, true))
         {
             return errmsg(imageOps->getErrorCode(), "Failed to Extract 4MB from the image");
         }
@@ -903,7 +916,10 @@ bool FsCtrlOperations::FwBurnAdvanced(FwOperations* imageOps, ExtBurnParams& bur
             return errmsg(imageOps->getErrorCode(), "Failed to read component from file");
         }
     }
-    printf("-I- Downloading FW ...\n");
+    if (imageOps != NULL)
+    {
+        printf("-I- Downloading FW ...\n");
+    }
     return _Burn(compData, burnParams.ProgressFuncAdv, componentId);
 }
 

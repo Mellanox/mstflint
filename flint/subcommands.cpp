@@ -790,7 +790,8 @@ bool SubCommand::basicVerifyParams()
             break;
 
         case Wtv_Dev_And_Img:
-            if (_flintParams.linkx_control == false  && _flintParams.linkx_els_control == false)
+            if (_flintParams.linkx_control == false && _flintParams.linkx_els_control == false &&
+                _flintParams.vmod_control == false)
             {
                 if ((_flintParams.image_specified == false) || (_flintParams.device_specified == false))
                 {
@@ -2439,7 +2440,8 @@ bool BurnSubCommand::verifyParams()
         reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "--linkx", "--linkx_els");
         return false;
     }
-    else if (_flintParams.linkx_control == true || _flintParams.linkx_els_control == true)
+    else if (_flintParams.linkx_control == true || _flintParams.linkx_els_control == true ||
+             _flintParams.vmod_control == true)
     {
         if (_flintParams.device_specified == false)
         {
@@ -2658,6 +2660,13 @@ void BurnSubCommand::updateBurnParams()
     _burnParams.skipCiReq = _flintParams.skip_ci_req;
     _burnParams.useImgDevData = _flintParams.ignore_dev_data;
     _burnParams.burnDevDataOnly = _flintParams.dev_data_only;
+    _burnParams.vmodDownstreamControl = _flintParams.vmod_control;
+    _burnParams.vmodDeviceIndex = _flintParams.cableDeviceIndex;
+    _burnParams.vmodDeviceSize = _flintParams.cableDeviceSize;
+    _burnParams.vmodAutoUpdate = _flintParams.linkx_auto_update;
+    _burnParams.vmodActivationNeeded = _flintParams.activate;
+    _burnParams.vmodDownloadTransferNeeded = _flintParams.download_transfer;
+    _burnParams.vmodActivationDelaySec = _flintParams.activate_delay_sec;
     if (_burnParams.userGuidsSpecified)
     {
         _burnParams.userUids = _flintParams.user_guids;
@@ -3421,11 +3430,14 @@ FlintStatus BurnSubCommand::executeCommand()
     }
 
 #ifndef NO_MSTARCHIVE
-    string mfa2file = _flintParams.image;
-    _mfa2Pkg = MFA2::LoadMFA2Package(mfa2file);
-    if (_mfa2Pkg != NULL)
+    if (_flintParams.image_specified)
     {
-        _flintParams.mfa2_specified = true;
+        string mfa2file = _flintParams.image;
+        _mfa2Pkg = MFA2::LoadMFA2Package(mfa2file);
+        if (_mfa2Pkg != NULL)
+        {
+            _flintParams.mfa2_specified = true;
+        }
     }
 #endif
     if (_flintParams.image_reactivation)
@@ -3533,7 +3545,7 @@ FlintStatus BurnSubCommand::executeCommand()
     // query both image and device (deviceQuery can fail but we save rc)
     _devQueryRes = _fwOps->FwQuery(&_devInfo, true, false, true, false, (_flintParams.silent == false));
     
-    if (_imgOps->FwType() == FIT_PLDM)
+    if (_imgOps != NULL && _imgOps->FwType() == FIT_PLDM)
     {
         FsPldmOperations* pldmOps = dynamic_cast<FsPldmOperations*>(_imgOps);
         if (pldmOps == nullptr)
@@ -3576,14 +3588,30 @@ FlintStatus BurnSubCommand::executeCommand()
         }
     }
 
-    if (_imgOps->FwType() == FIT_COMPS || (_imgOps->FwType() == FIT_CSH_VMOD && _fwOps->IsFsCtrlOperations()))
+    bool vmodActivateOnly = _flintParams.vmod_control && _imgOps == NULL;
+    if (vmodActivateOnly || (_imgOps != NULL && (_imgOps->FwType() == FIT_COMPS ||
+                                                 (_imgOps->FwType() == FIT_CSH_VMOD && _fwOps->IsFsCtrlOperations()))))
     {
-        FsCompsOperations* compsOps = dynamic_cast<FsCompsOperations*>(_imgOps);
+        if (_flintParams.vmod_control && _fwOps->IsVmodSupported() == false)
+        {
+            reportErr(true, LINKX_BURN_DEVICE_NOT_SUPPORTED, _flintParams.device.c_str());
+            return FLINT_FAILED;
+        }
+        FsCompsOperations* compsOps = _imgOps != NULL ? dynamic_cast<FsCompsOperations*>(_imgOps) : nullptr;
         if (_flintParams.yes)
         {
             _burnParams.ignoreVersionCheck = true;
         }
-        if (!_fwOps->FwBurnAdvanced(_imgOps, _burnParams, compsOps->GetComponentID()))
+        FwComponent::comps_ids_t componentId = FwComponent::COMPID_UNKNOWN;
+        if (vmodActivateOnly)
+        {
+            componentId = FwComponent::COMPID_CPO_VMOD_FW;
+        }
+        else if (compsOps != nullptr)
+        {
+            componentId = compsOps->GetComponentID();
+        }
+        if (!_fwOps->FwBurnAdvanced(_imgOps, _burnParams, componentId))
         {
             reportErr(true, FLINT_FSX_BURN_ERROR, "FIT_COMPS", _fwOps->err());
             return FLINT_FAILED;
@@ -3591,7 +3619,7 @@ FlintStatus BurnSubCommand::executeCommand()
         else
         {
             cout << "-I- Component FW burn finished successfully." << endl;
-            const char* resetRec = _imgOps->FwGetResetRecommandationStr();
+            const char* resetRec = _imgOps != NULL ? _imgOps->FwGetResetRecommandationStr() : nullptr;
             if (resetRec)
             {
                 printf("-I- %s\n", resetRec);

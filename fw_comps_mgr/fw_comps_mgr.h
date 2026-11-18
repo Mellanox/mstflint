@@ -766,6 +766,7 @@ private:
     u_int32_t _hwDevId;
     mfile* _mf;
     const char* _currComponentStr;
+    FwComponent::comps_ids_t _currCompType;
     std::vector<u_int8_t> _productVerStr;
     bool _isDmaSupported;
     AbstractComponentAccess* _accessObj;

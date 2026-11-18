@@ -231,6 +231,7 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("", "cc", 1));
     _flags.push_back(new Flag("", "linkx", 0));
     _flags.push_back(new Flag("", "linkx_els", 0));
+    _flags.push_back(new Flag("", "vmod", 0));
     _flags.push_back(new Flag("", "downstream_device_id_start_index", 1));
     _flags.push_back(new Flag("", "num_of_downstream_devices", 1));
     _flags.push_back(new Flag("", "linkx_auto_update", 0));
@@ -839,6 +840,8 @@ void Flint::initCmdParser()
 
     AddOptions("linkx", ' ', "", "Use this flag while burning to device a LinkX Component");
 
+    AddOptions("vmod", ' ', "", "Use this flag while burning to device a VMOD Component");
+
     AddOptions("linkx_els", ' ', "",
                "Use this flag while burning to device a LinkX_ELS(High Power laser​) Component");
 
@@ -1320,6 +1323,10 @@ ParseStatus Flint::HandleOption(string name, string value)
     else if (name == "linkx")
     {
         _flintParams.linkx_control = true;
+    }
+    else if (name == "vmod")
+    {
+        _flintParams.vmod_control = true;
     }
     else if (name == "linkx_els")
     {
