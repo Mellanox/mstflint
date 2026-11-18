@@ -301,6 +301,8 @@ extern "C"
 
     int dm_dev_is_fs5(dm_dev_id_t type);
 
+    int dm_dev_is_fs6(dm_dev_id_t type);
+
     int dm_is_5th_gen_hca(dm_dev_id_t type);
 
     int dm_is_cx8(dm_dev_id_t type);

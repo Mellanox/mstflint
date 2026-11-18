@@ -113,6 +113,16 @@ typedef enum
     FS5_LC_FAILURE_ANALYSIS = 7
 } LifeCycleFS5;
 
+typedef enum
+{
+    FS6_LC_BLANK_CHIP = 0,
+    FS6_LC_PRE_PRODUCTION = 1,
+    FS6_LC_PRODUCTION = 3,
+    FS6_LC_RMA_ENABLED = 7,
+    FS6_LC_RMA_DISABLED = 0xf,
+    FS6_LC_FAILURE_ANALYSIS = 0x1f
+} LifeCycleFS6;
+
 #define MAX_HTOC_ENTRIES_NUM 28
 #define MAX_HTOC_ENTRIES_NUM_VERSION_1 64
 #define HASHES_TABLE_TAIL_SIZE 8
@@ -486,7 +496,7 @@ typedef struct uids
 
 typedef struct life_cycle
 {
-    int version_field; // 0: fs4 , 1: fs5
+    int version_field; // 0: fs4 , 1: fs5, 2: fs6
     u_int8_t value;
 } life_cycle_t;
 

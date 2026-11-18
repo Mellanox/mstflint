@@ -1076,6 +1076,25 @@ bool Fs6Operations::LoadImageInfo()
     return true;
 }
 
+bool Fs6Operations::UpdateLCAndGISIfAccessible()
+{
+    try
+    {
+        if (_ioAccess->is_flash() && IsLifeCycleAccessible(_fwImgInfo.ext_info.chip_type))
+        {
+            CRSpaceRegisters crSpaceReg(getMfileObj(), _fwImgInfo.ext_info.chip_type);
+            _fsCommonInfo.ext_info.life_cycle = crSpaceReg.getLifeCycle();
+            _fsCommonInfo.ext_info.global_image_status = crSpaceReg.getGlobalImageStatus();
+        }
+    }
+    catch (const std::exception& e)
+    {
+        return errmsg("Failed to read life cycle and global image status from CR-space: %s", e.what());
+    }
+
+    return true;
+}
+
 bool Fs6Operations::FwQuery(fw_info_t* fwInfo,
                             bool readRom,
                             bool isStripedImage,
@@ -1099,7 +1118,7 @@ bool Fs6Operations::FwQuery(fw_info_t* fwInfo,
 
         if (!GetIsReducedImage() && !isStripedImage && !ignoreDToc)
         {
-            if ((!GetMfgInfo() || !GetDevInfo()))
+            if ((!GetMfgInfo() || !GetDevInfo() || !UpdateLCAndGISIfAccessible()))
             {
                 return false;
             }

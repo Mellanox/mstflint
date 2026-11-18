@@ -3280,9 +3280,10 @@ life_cycle_t CRSpaceRegisters::getLifeCycle()
         bitLen = 2;
             break;
             case CT_SPECTRUM6:
-            lifeCycleAddress = 0xf0000;
+            lifeCycleAddress = 0xf0004;
             firstBit = 16;
             bitLen = 5;
+            lifeCycle.version_field = 2;
             break;
         case CT_CONNECTX8:
         case CT_CONNECTX9:
@@ -3309,13 +3310,22 @@ life_cycle_t CRSpaceRegisters::getLifeCycle()
 
 bool CRSpaceRegisters::IsLifeCycleSecured(life_cycle_t life_cycle)
 {
-    if (life_cycle.version_field == 1)
+    if (life_cycle.version_field == 0)
+    {
+        return life_cycle.value == FS4_LC_GA_SECURED;
+    }
+    else if (life_cycle.version_field == 1)
     {
         return (life_cycle.value == FS5_LC_PRE_PRODUCTION || life_cycle.value == FS5_LC_PRODUCTION);
     }
+    else if (life_cycle.version_field == 2)
+    {
+        return life_cycle.value == FS6_LC_PRE_PRODUCTION || life_cycle.value == FS6_LC_PRODUCTION;
+    }
     else
     {
-        return life_cycle.value == FS4_LC_GA_SECURED;
+        MLXFWOPS_LOG_DEBUG("life_cycle.version_field has unexpected value: %d", life_cycle.version_field);
+        return false;
     }
 }
 

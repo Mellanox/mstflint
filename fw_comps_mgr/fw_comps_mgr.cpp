@@ -2104,6 +2104,10 @@ bool FwCompsMgr::queryFwInfo(fwInfoT* query, bool next_boot_fw_ver)
         {
             query->life_cycle.version_field = 1;
         }
+        else if (dm_dev_is_fs6(dm_device_id))
+        {
+            query->life_cycle.version_field = 2;
+        }
     } else {
         _lastError = FWCOMPS_UNSUPPORTED_DEVICE;
         return false;

@@ -143,6 +143,10 @@ static const map<LifeCycleFS5, const char*> life_cycle_fs5_strings = {{FS5_LC_BL
                                                                       {FS5_LC_PRODUCTION, "GA SECURED"},
                                                                       {FS5_LC_FAILURE_ANALYSIS, "RMA"}};
 
+static const map<LifeCycleFS6, const char*> life_cycle_fs6_strings = {
+  {FS6_LC_BLANK_CHIP, "PRODUCTION"},   {FS6_LC_PRE_PRODUCTION, "GA SECURED"}, {FS6_LC_PRODUCTION, "GA SECURED"},
+  {FS6_LC_RMA_ENABLED, "RMA ENABLED"}, {FS6_LC_RMA_DISABLED, "RMA DISABLED"}, {FS6_LC_FAILURE_ANALYSIS, "RMA"}};
+
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
 
 const char* month_2monstr(int month)
@@ -4346,14 +4350,23 @@ void QuerySubCommand::PrintLifeCycle(const life_cycle_t& lifeCycle)
 {
     try
     {
+        MLXFWOPS_LOG_DEBUG("lifeCycle.version_field: %d, lifeCycle.value: %d", lifeCycle.version_field, lifeCycle.value);
         string lifeCycleString = "";
         if (lifeCycle.version_field == 0)
         {
             lifeCycleString = life_cycle_fs4_strings.at(static_cast<LifeCycleFS4>(lifeCycle.value));
         }
-        else
+        else if (lifeCycle.version_field == 1)
         {
             lifeCycleString = life_cycle_fs5_strings.at(static_cast<LifeCycleFS5>(lifeCycle.value));
+        }
+        else if (lifeCycle.version_field == 2)
+        {
+            lifeCycleString = life_cycle_fs6_strings.at(static_cast<LifeCycleFS6>(lifeCycle.value));
+        }
+        else
+        {
+            lifeCycleString = NA_STR;
         }
         printf("Life cycle:            %s\n", lifeCycleString.c_str());
     }
