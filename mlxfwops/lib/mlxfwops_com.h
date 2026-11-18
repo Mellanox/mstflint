@@ -140,6 +140,7 @@ typedef struct
 #define DESCRIPTION_LEN 257
 #define BRANCH_LEN 28
 #define MIN_BRANCH_LEN 5
+#define VPD_MAX_SIZE 0x1000
 
 #define FREE_STR_MAX_LEN 256
 

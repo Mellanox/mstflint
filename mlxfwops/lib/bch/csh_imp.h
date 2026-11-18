@@ -371,6 +371,7 @@ public:
     virtual void SetNumberOfBinaries(size_t num) = 0;
     virtual u_int8_t GetComponentMajorVersion() = 0;
     virtual u_int16_t GetComponentMinorVersion() = 0;
+    virtual u_int16_t GetComponentSubminorVersion() = 0;
 
     virtual void SetBinariesListDigest(const vector<u_int8_t>& digest) = 0;
 
@@ -389,6 +390,7 @@ public:
     void SetNumberOfBinaries(size_t num) override { _metadata_nbu.num_of_binaries = num; }
     u_int8_t GetComponentMajorVersion() override { return _metadata_nbu.version.ver_major; }
     u_int16_t GetComponentMinorVersion() override { return _metadata_nbu.version.ver_minor; }
+    u_int16_t GetComponentSubminorVersion() override { return _metadata_nbu.nbu_subminor; }
 
     void SetBinariesListDigest(const vector<u_int8_t>& digest) override;
 
@@ -412,6 +414,7 @@ public:
     void SetNumberOfBinaries(size_t num) override { _metadata.num_of_binaries = num; }
     u_int8_t GetComponentMajorVersion() override { return _metadata.version.u8_ver_major; }
     u_int16_t GetComponentMinorVersion() override { return _metadata.version.u8_ver_minor; }
+    u_int16_t GetComponentSubminorVersion() override { return 0; }
 
     void SetBinariesListDigest(const vector<u_int8_t>& digest) override;
     void SetJsonParams(const Json::Value& root) override;
@@ -458,6 +461,7 @@ public:
     size_t GetNumberOfBinaries() { return _metadata->GetNumberOfBinaries(); }
     u_int8_t GetComponentMajorVersion() { return _metadata->GetComponentMajorVersion(); }
     u_int16_t GetComponentMinorVersion() { return _metadata->GetComponentMinorVersion(); }
+    u_int16_t GetComponentSubminorVersion() { return _metadata->GetComponentSubminorVersion(); }
 
     u_int8_t GetVmodAdmStatus();
     void SetVmodAdmStatus(fs5_image_layout_vmod_status status);

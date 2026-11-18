@@ -94,6 +94,13 @@ public:
     int compare(const FwVersion&) const;
     virtual FwVersion* clone() const;
 
+    struct fw_version_raw
+    {
+        unsigned short int major;
+        unsigned short int minor;
+        unsigned short int subminor;
+    };
+
 protected:
     unsigned short int _major;
     unsigned short int _minor;

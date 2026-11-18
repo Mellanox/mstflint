@@ -131,6 +131,7 @@ public:
     class ExtVerifyParams;
     struct fwOpsParams;
     struct sgParams;
+    struct CompInfo;
     typedef fwOpsParams fw_ops_params_t;
     typedef sgParams sg_params_t;
     // typedef std::tr1::function<void (void)> VerifyCallback;
@@ -383,6 +384,7 @@ public:
     virtual bool GetSecureHostState(u_int8_t& state);
     virtual bool ChangeSecureHostState(bool disable, u_int64_t key);
     virtual bool IsComponentSupported(FwComponent::comps_ids_t component);
+    virtual const std::vector<CompInfo>& GetCompsVersionList() const { return _compsList; }
     static bool IsPLDM(const string& pldmFile);
     virtual bool getBFBComponentsVersions(std::map<std::string, std::string>& name_to_version, bool pending);
     void getSupportedHwId(u_int32_t** supportedHwId, u_int32_t& supportedHwIdNum);
@@ -571,6 +573,12 @@ public:
         bool usePPAttr;            // if set, use the per prot attributes below (FS3 Image Only)
         u_int16_t numOfGUIDsPP[2]; // number of GUIDs to allocate for each port. keep 0xff for default. (FS3 image Only)
         u_int8_t stepSizePP[2];    // step size between GUIDs. keep 0xffff for default. (FS3 Image Only)
+    };
+
+    struct CompInfo
+    {
+        ComponentType compType;
+        FwVersion compVersion;
     };
 
 protected:
@@ -812,6 +820,7 @@ protected:
     std::vector<u_int8_t> _fwConfSect;
     std::vector<u_int8_t> _hashFileSect;
     std::vector<u_int8_t> _readSectList;
+    std::vector<CompInfo> _compsList;
     bool _sectionsToRead[H_LAST];
     bool _quickQuery;
 

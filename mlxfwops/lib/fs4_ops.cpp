@@ -3436,10 +3436,10 @@ bool Fs4Operations::Fs4UpdateVpdSection(struct fs4_toc_info* curr_toc, char* vpd
     }
 
     // corresponds to VPD max size in mlx
-    if (vpd_size > 0x1000)
+    if (vpd_size > VPD_MAX_SIZE)
     {
         delete[] vpd_data;
-        return errmsg("VPD data size exceeds max VPD size: 0x%x bytes", 0x1000);
+        return errmsg("VPD data size exceeds max VPD size: 0x%x bytes", VPD_MAX_SIZE);
     }
 
     GetSectData(newSectionData, (u_int32_t*)vpd_data, vpd_size);
@@ -4261,9 +4261,9 @@ bool Fs4Operations::UpdateSection(fs3_section_t sectionType, std::vector<u_int8_
     }
 
     // corresponds to VPD max size in mlx
-    if (sectionType == FS3_VPD_R0 && newSectionData.size() > 0x1000)
+    if (sectionType == FS3_VPD_R0 && newSectionData.size() > VPD_MAX_SIZE)
     {
-        return errmsg("VPD data size exceeds max VPD size: 0x%x bytes", 0x1000);
+        return errmsg("VPD data size exceeds max VPD size: 0x%x bytes", VPD_MAX_SIZE);
     }
 
     if (!WriteSection(sectionToc, newSectionData, msg, callBackFunc))

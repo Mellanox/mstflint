@@ -774,6 +774,19 @@ bool Fs6Operations::SetSignedFWComponent(string binPath, ComponentType compName,
     return true;
 }
 
+FwVersion::fw_version_raw Fs6Operations::GetCshComponentVersion(PartitionType partitionType)
+{
+    auto entry =
+      std::find_if(_cshComponents.begin(), _cshComponents.end(),
+                   [partitionType](const CshComponentInfo& entry) { return entry.partitionType == partitionType; });
+    if (entry == _cshComponents.end())
+    {
+        throw std::runtime_error("Partition type " + ToString(partitionType) + " not found in the image");
+    }
+    return {entry->csh->GetComponentMajorVersion(), entry->csh->GetComponentMinorVersion(),
+            entry->csh->GetComponentSubminorVersion()};
+}
+
 bool Fs6Operations::GetFwComponentsData(string path)
 {
     Json::Value root;
@@ -787,19 +800,13 @@ bool Fs6Operations::GetFwComponentsData(string path)
 
     for (auto partitionType : partitionTypes)
     {
-        auto entry =
-          std::find_if(_cshComponents.begin(), _cshComponents.end(),
-                       [partitionType](const CshComponentInfo& entry) { return entry.partitionType == partitionType; });
-        if (entry == _cshComponents.end())
-        {
-            throw runtime_error("Partition type " + ToString(partitionType) + " not found in the image");
-        }
+        auto version = GetCshComponentVersion(partitionType);
 
         std::stringstream stream;
-        stream << "0x" << std::hex << static_cast<int>(entry->csh->GetComponentMajorVersion());
+        stream << "0x" << std::hex << static_cast<int>(version.major);
         root[ToString(ToCshId(partitionType))]["ver_major"] = stream.str();
         stream.str("");
-        stream << "0x" << std::hex << static_cast<int>(entry->csh->GetComponentMinorVersion());
+        stream << "0x" << std::hex << static_cast<int>(version.minor);
         root[ToString(ToCshId(partitionType))]["ver_minor"] = stream.str();
     }
 
@@ -1088,6 +1095,11 @@ bool Fs6Operations::FwQuery(fw_info_t* fwInfo,
 
         memcpy(&(fwInfo->fw_info), &(_fwImgInfo.ext_info), sizeof(fw_info_com_t));
         memcpy(&(fwInfo->fs3_info), &(_fsCommonInfo.ext_info), sizeof(fs3_info_t));
+
+        auto sbdVersion = GetCshComponentVersion(PartitionType::PT_SBD_FW);
+
+        _compsList.push_back(
+          CompInfo{ComponentType::Comp_Csh_Sbd_Fw, FwVersion(sbdVersion.major, sbdVersion.minor, sbdVersion.subminor)});
     }
     catch (const std::exception& e)
     {
@@ -1916,9 +1928,9 @@ bool Fs6Operations::FwSetVPD(char* vpdFileStr, PrintCallBack callBackFunc)
     {
         return errmsg("Size of VPD file is not 4-byte aligned");
     }
-    if (vpdData.size() > 0x1000)
+    if (vpdData.size() > VPD_MAX_SIZE)
     {
-        return errmsg("VPD data size exceeds max VPD size: 0x1000 bytes");
+        return errmsg("VPD data size exceeds max VPD size: 0x%x bytes", VPD_MAX_SIZE);
     }
 
     UpdatePartitionData(PartitionType::PT_VPD_READ_ONLY, vpdData, callBackFunc);

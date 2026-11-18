@@ -247,6 +247,7 @@ private:
                                size_t& sectionSize,
                                int chainNumber = INVALID_CHAIN_NUMBER);
     PartitionTableEntry GetPartitionTableEntry(PartitionType partitionType, int chainNumber = INVALID_CHAIN_NUMBER);
+    FwVersion::fw_version_raw GetCshComponentVersion(PartitionType partitionType);
 
     image_layout_guids ToImageLayoutGuids(const struct fs6_image_layout_guids& fs6Guids);
     fs6_image_layout_guids ToFs6MfgInfoGuids(const struct image_layout_guids& guids);
