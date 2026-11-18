@@ -403,7 +403,21 @@ const std::unordered_map<string, string>& NcoreSectionNamesMap()
                                                                 {"VMDH", "VMOD_PAGES_HASHES"},
                                                                 {"VMHS", "VMOD_PAGES_LOCKED_HASHES"},
                                                                 {"L3PW", "L3PT_WP"},
-                                                                {"L3PR", "L3PT_RW"}};
+                                                                {"L3PR", "L3PT_RW"},
+                                                                {"PLCP", "PRE_LINK_CODE"},
+                                                                {"PLDP", "PRE_LINK_DATA"},
+                                                                {"PSLC", "POST_LINK_CODE"},
+                                                                {"PSLD", "POST_LINK_DATA"},
+                                                                {"IPCC", "IRON_PREP_CODE"},
+                                                                {"ROMC", "EXPANSION_ROM"},
+                                                                {"PGRC", "PAGER_CONFIG"},
+                                                                {"NETC", "NIC_ETC"},
+                                                                {"ETCH", "NIC_ETC_PAGES_HASHES"},
+                                                                {"EHSQ", "NIC_ETC_PAGES_LOCKED_HASHES"},
+                                                                {"DPAA", "DPA_ATOC"},
+                                                                {"DPHS", "DPA_ATOC_PAGES_HASHES"},
+                                                                {"DHSQ", "DPA_ATOC_PAGES_LOCKED_HASHES"},
+                                                                {"DMPM", "CRDUMP_MASK_DATA"}};
     return namesMap;
 }
 
