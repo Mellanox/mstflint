@@ -662,8 +662,11 @@ bool Fs6Operations::GetImageSize(u_int32_t* image_size)
 bool Fs6Operations::FwReadData(void* image, u_int32_t* image_size, bool verbose)
 {
     (void)verbose;
-    (void)image_size;
-    if (image != NULL)
+    if (image == NULL)
+    {
+        *image_size = _ioAccess->get_size();
+    }
+    else
     {
         if (!_ioAccess->read(0, (u_int32_t*)image, _ioAccess->get_size()))
         {
