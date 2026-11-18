@@ -1607,6 +1607,22 @@ bool Fs6Operations::PreBurnChecks(FwOperations* imageOps, ExtBurnParams& burnPar
         return errmsg("Expected FS6 or FSVMOD image but got type %d", imageOps->FwType());
     }
 
+    // Check Matching device ID
+    if (!burnParams.noDevidCheck && _ioAccess->is_flash())
+    {
+        u_int32_t* supportedHwId = (u_int32_t*)NULL;
+        u_int32_t supportedHwIdNum = 0;
+        imageOps->getSupportedHwId(&supportedHwId, supportedHwIdNum);
+        if (!supportedHwIdNum || !supportedHwId[0])
+        {
+            return errmsg(MLXFW_DEVICE_IMAGE_MISMATCH_ERR, "No supported devices were found in the FW image.");
+        }
+        if (!CheckMatchingHwDevId(_ioAccess->get_dev_id(), _ioAccess->get_rev_id(), supportedHwId, supportedHwIdNum))
+        {
+            return errmsg(MLXFW_DEVICE_IMAGE_MISMATCH_ERR, "Device/Image mismatch: %s\n", this->err());
+        }
+    }
+
     try
     {
         if (Is32MBLayout())
