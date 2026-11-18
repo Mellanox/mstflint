@@ -199,7 +199,7 @@ private:
     bool VerifyCshComponent(const PartitionTableEntry& entry, VerifyCallBack verifyCallBackFunc);
     bool VerifyCshComponent();
 
-    void UpdatePartitionTable(bool l1pt);
+    void UpdatePartitionTable(bool isL2pt, PrintCallBack callBackFunc = nullptr);
     void CopyMagicPattern(size_t componentOffset, vector<u_int8_t>& compData);
     bool IsL2ptSection(CshComponentID cshId);
     bool IsL2ptSection(PartitionType partitionType);
@@ -213,6 +213,7 @@ private:
                                size_t& sectionOffset,
                                size_t& sectionSize,
                                int chainNumber = INVALID_CHAIN_NUMBER);
+    PartitionTableEntry GetPartitionTableEntry(PartitionType partitionType, int chainNumber = INVALID_CHAIN_NUMBER);
 
     image_layout_guids ToImageLayoutGuids(const struct fs6_image_layout_guids& fs6Guids);
     fs6_image_layout_guids ToFs6MfgInfoGuids(const struct image_layout_guids& guids);

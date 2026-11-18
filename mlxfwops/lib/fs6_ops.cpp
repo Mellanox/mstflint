@@ -780,33 +780,43 @@ const char* Fs6Operations::FwGetResetRecommandationStr()
     return REBOOT_REQUIRED_STR;
 }
 
-void Fs6Operations::GetPartitionEntryInfo(PartitionType partitionType,
-                                          size_t& sectionOffset,
-                                          size_t& sectionSize,
-                                          int chainNumber)
+PartitionTableEntry Fs6Operations::GetPartitionTableEntry(PartitionType partitionType, int chainNumber)
 {
     ResolveChainNumber(chainNumber, _activeChain);
 
     PartitionValidator validator(partitionType);
     bool isL2pt = IsL2ptSection(partitionType);
-
     const PartitionTable* pt = isL2pt ? &_l2pt : &_l1pt;
-    size_t baseOffset = isL2pt ? _l2ptOffset : 0;
+    PartitionTableEntry* entry = nullptr;
 
-    for (auto entry : pt->GetEntries())
+    for (auto partitionTableEntry : pt->GetEntries())
     {
-        if (entry.GetPartitionTypeEnum() == partitionType)
+        if (partitionTableEntry.GetPartitionTypeEnum() == partitionType &&
+            validator.validate(partitionTableEntry, _ioAccess, chainNumber))
         {
-            if (validator.validate(entry, _ioAccess, chainNumber))
-            {
-                sectionOffset = baseOffset + entry.GetStartOffset();
-                sectionSize = entry.GetSectionSize();
-                return;
-            }
+            entry = &partitionTableEntry;
+            break;
         }
     }
 
-    throw std::runtime_error(string_format("Partition type 0x%x not found or validation failed", (int)partitionType));
+    if (entry == nullptr)
+    {
+        throw std::runtime_error(
+          string_format("Partition type 0x%x not found or validation failed", (int)partitionType));
+    }
+
+    return *entry;
+}
+
+void Fs6Operations::GetPartitionEntryInfo(PartitionType partitionType,
+                                          size_t& sectionOffset,
+                                          size_t& sectionSize,
+                                          int chainNumber)
+{
+    PartitionTableEntry entry = GetPartitionTableEntry(partitionType, chainNumber);
+    size_t baseOffset = IsL2ptSection(partitionType) ? _l2ptOffset : 0;
+    sectionOffset = baseOffset + entry.GetStartOffset();
+    sectionSize = entry.GetSectionSize();
 }
 
 void Fs6Operations::UpdatePartitionData(PartitionType partitionType,
@@ -1101,28 +1111,30 @@ bool Fs6Operations::SignForSecureBoot(const char*, const char*, const MlxSign::S
 }
 #endif // } MST_CPU_armv7l_umbriel
 
-void Fs6Operations::UpdatePartitionTable(bool l1pt)
+void Fs6Operations::UpdatePartitionTable(bool isL2pt, PrintCallBack callBackFunc)
 {
     vector<u_int8_t> partitionTable;
     u_int32_t partitionTableOffset = _l1ptOffset; // l1pt
 
-    if (l1pt)
-    {
-        _l1pt.CalcDigest();
-        partitionTable = _l1pt.Pack();
-    }
-    else
+    if (isL2pt)
     {
         _l2pt.CalcDigest();
         partitionTable = _l2pt.Pack();
         partitionTableOffset = _l2ptOffset;
     }
+    else
+    {
+        _l1pt.CalcDigest();
+        partitionTable = _l1pt.Pack();
+    }
 
+    PRINT_PROGRESS(callBackFunc, string_format("Updating partition table %s - ", isL2pt ? "L2PT" : "L1PT").c_str());
     if (!_ioAccess->write(partitionTableOffset, partitionTable.data(), partitionTable.size()))
     {
-        string err = "write error - " + string(_ioAccess->err());
-        throw runtime_error(err);
+        PRINT_PROGRESS(callBackFunc, (char*)"FAILED\n");
+        throw runtime_error(string_format("write error - %s", _ioAccess->err()));
     }
+    PRINT_PROGRESS(callBackFunc, (char*)"OK\n");
 }
 
 bool Fs6Operations::IsL2ptSection(CshComponentID cshId)
@@ -1778,15 +1790,43 @@ bool Fs6Operations::FwSetMFG(fs3_uid_t baseGuid, PrintCallBack callBackFunc)
 
     return true;
 }
+
+bool Fs6Operations::FwSetVPD(char* vpdFileStr, PrintCallBack callBackFunc)
+{
+    if (!vpdFileStr)
+    {
+        return errmsg("Please specify a valid vpd file.");
+    }
+
+    FAIL_NO_OCR("set VPD");
+
+    if (!FwVerify((VerifyCallBack) nullptr))
+    {
+        return false;
+    }
+
+    vector<u_int8_t> vpdData = mft_utils::ReadFromFile(vpdFileStr);
+    if (vpdData.size() % 4)
+    {
+        return errmsg("Size of VPD file is not 4-byte aligned");
+    }
+    if (vpdData.size() > 0x1000)
+    {
+        return errmsg("VPD data size exceeds max VPD size: 0x1000 bytes");
+    }
+
+    UpdatePartitionData(PartitionType::PT_VPD_READ_ONLY, vpdData, callBackFunc);
+    _l1pt.SetEntrySize(PartitionType::PT_VPD_READ_ONLY, vpdData.size());
+    UpdatePartitionTable(IsL2ptSection(PartitionType::PT_VPD_READ_ONLY), callBackFunc);
+
+    return true;
+}
+
 bool Fs6Operations::FwSetMFG(guid_t baseGuid, PrintCallBack callBackFunc)
 {
     return Unsupported(__FUNCTION__);
 }
 bool Fs6Operations::FwSetVSD(char* vsdStr, ProgressCallBack progressFunc, PrintCallBack printFunc)
-{
-    return Unsupported(__FUNCTION__);
-}
-bool Fs6Operations::FwSetVPD(char* vpdFileStr, PrintCallBack callBackFunc)
 {
     return Unsupported(__FUNCTION__);
 }
