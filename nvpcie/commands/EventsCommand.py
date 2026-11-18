@@ -107,9 +107,9 @@ class EventsCommand(PcieSwCommand):
         # the view is the index of a dump request, so it says nothing about a dump
         # that was already taken
         input_group = parser.add_mutually_exclusive_group()
-        input_group.add_argument("--view", choices=sorted(cls._VIEW_TO_INDEX1), default="critical",
+        input_group.add_argument("--view", choices=sorted(cls._VIEW_TO_INDEX1), default="all",
                                  help='The event view to fetch: "critical" for crash related events, '
-                                      '"all" for all the other events (default: critical)')
+                                      '"all" for all the other events (default: all)')
         input_group.add_argument("--dump-file", metavar="FILENAME", dest="dump_file", type=valid_path_arg_type,
                                  help='Present the events of a dump saved earlier instead of dumping the device')
         parser.add_argument("--format", choices=cls._FORMATS.keys(), default=list(cls._FORMATS)[0], dest="output_format",
@@ -152,7 +152,7 @@ class EventsCommand(PcieSwCommand):
         if arguments.out_file:
             cls._arg_parser.error("argument -o/--out: not allowed with argument --clear")
 
-    def __init__(self, device, view="critical", output_format=list(_FORMATS)[0], out_file=None, dump_file=None,
+    def __init__(self, device, view="all", output_format=list(_FORMATS)[0], out_file=None, dump_file=None,
                  clear=False, assume_yes=False):
         self._device = device
         self._view = view
