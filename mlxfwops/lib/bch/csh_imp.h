@@ -68,6 +68,7 @@ enum class CshComponentID
     NV_FWS = 0x7,
     SWITCH_FWS = 0x2020,
     SBD_FW = 0x21,
+    RECOVERY_IMAGE = 0x2820,
     Unknown = 0xff
 };
 
@@ -219,7 +220,7 @@ public:
     void Unpack(const vector<u_int8_t>& buffer);
     void UnpackHeader(const vector<u_int8_t>& cshHeader);
     void UnpackSections(const vector<u_int8_t>& buffer, size_t offset = 0);
-    void AddBinarySectionMetadata(BinarySectionMetadata sectionMetadata);
+    void AddBinarySectionMetadata(BinarySectionMetadata sectionMetadata, bool override_size_needed = true);
 
     const vector<BinarySectionMetadata>& GetSections() { return _cshSections; }
     vector<u_int8_t> GetMetadata() const;

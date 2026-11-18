@@ -201,7 +201,9 @@ BinarySectionMetadata::BinarySectionMetadata()
 BinarySectionMetadata::BinarySectionMetadata(size_t sectionSize, size_t flashOffset, const vector<u_int8_t>& digest)
 {
     memset(&_struct, 0, sizeof(_struct));
-    _struct.bin_length = sectionSize;
+    _struct.bin_length =
+      sectionSize; // need to fix all other calls to BinarySectionMetadata so that what is being sent is the max size of
+                   // the section, if such attr exists in .mlx field, and not the actual size of the bin
     _struct.flash_offset = flashOffset;
 
     if (digest.size() != 48 /*GetLengthFromType(MlxSign::SHAType::SHA384)*/)
@@ -373,9 +375,12 @@ void CSH::UnpackSections(const vector<u_int8_t>& buffer, size_t offset)
     }
 }
 
-void CSH::AddBinarySectionMetadata(BinarySectionMetadata sectionMetadata)
+void CSH::AddBinarySectionMetadata(BinarySectionMetadata sectionMetadata, bool override_size_needed)
 {
-    sectionMetadata.SetSectionOffset(GetComponentSize());
+    if (override_size_needed)
+    {
+        sectionMetadata.SetSectionOffset(GetComponentSize());
+    }
     _cshSections.push_back(sectionMetadata);
 }
 
@@ -388,7 +393,12 @@ vector<u_int8_t> CSH::GetMetadata() const
 
 size_t CSH::GetCshSize()
 {
-    bool isSingleSectionCSH = (CshComponentID)_metadata.component_id == CshComponentID::SWITCH_FWS ? false : true;
+    bool isSingleSectionCSH =
+      (CshComponentID)_metadata.component_id == CshComponentID::SWITCH_FWS ?
+        false :
+        true; // in some cases it's called before component_id is set with a valid value, but that alligns with the
+              // logic since then (CshComponentID)_metadata.component_id != CshComponentID::SWITCH_FWS and it's fine by
+              // us in those flows that we act as if we have one binary
     return CSH::HeaderSize() + (isSingleSectionCSH ? 1 : 32) * BinarySectionMetadata::Size();
 }
 
@@ -543,6 +553,7 @@ bool CSH::IsValidCompId(u_int16_t id)
         case CshComponentID::NV_FWS:
         case CshComponentID::SWITCH_FWS:
         case CshComponentID::SBD_FW:
+        case CshComponentID::RECOVERY_IMAGE:
             return true;
         default:
             return false;
