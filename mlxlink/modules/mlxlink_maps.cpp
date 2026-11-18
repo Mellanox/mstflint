@@ -82,6 +82,17 @@ const APSU_CONFIG_PARAM* getApsuConfigParam(const string& flagName)
     return nullptr;
 }
 
+std::string getApsuRangeHelp(const string& flagName)
+{
+    const APSU_CONFIG_PARAM* param = getApsuConfigParam(flagName);
+    if (param == nullptr)
+    {
+        return "";
+    }
+
+    return "[" + to_string(param->minValue) + "-" + to_string(param->maxValue) + "]";
+}
+
 MlxlinkMaps* MlxlinkMaps::instance = NULL;
 
 MlxlinkMaps* MlxlinkMaps::getInstance()
@@ -2260,9 +2271,10 @@ void MlxlinkMaps::initApsuMapping()
     _apsuLaneValueMaps["lane_training_status"][APSU_LANE_TRAINING_STATUS_IN_PROGRESS] = "IN_PROGRESS";
 
     map<u_int32_t, string> restartOnLos;
-    restartOnLos[APSU_RESTART_ON_LOS_NO_RESTART] = "No restart";
-    restartOnLos[APSU_RESTART_ON_LOS_RESTART] = "Restart on LoS";
-    restartOnLos[APSU_RESTART_ON_LOS_RESTART_LONG_LOS_ONLY] = "Restart on long LoS only";
+    restartOnLos[APSU_RESTART_ON_LOS_DEFAULT] = "Default";
+    restartOnLos[APSU_RESTART_ON_LOS_RESTART_ON_LINK_FAILURE] = "Restart on link failure";
+    restartOnLos[APSU_RESTART_ON_LOS_NO_RESTART_ON_LINK_FAILURE] = "No restart on link failure";
+    restartOnLos[APSU_RESTART_ON_LOS_RESTART_ON_LONG_LINK_FAILURE] = "Restart on long link failure";
 
     map<u_int32_t, string> localPatternTx;
     localPatternTx[APSU_LOCAL_PATTERN_TX_PRBS31] = "PRBS31";
@@ -2291,7 +2303,7 @@ void MlxlinkMaps::initApsuMapping()
     _apsuConfigParams.push_back(APSU_CONFIG_PARAM(APSU_PROPAGATION_TIMER_FLAG, "Propagation Timer [10ms]",
                                                   "propagation_timer", "", "", APSU_PARAM_NUMERIC, 31));
     _apsuConfigParams.push_back(
-      APSU_CONFIG_PARAM(APSU_QUIET_TIMER_FLAG, "Quiet Timer [10ms]", "quiet_timer", "", "", APSU_PARAM_NUMERIC, 15));
+      APSU_CONFIG_PARAM(APSU_QUIET_TIMER_FLAG, "Quiet Timer [10ms]", "quiet_timer", "", "", APSU_PARAM_NUMERIC, 31));
     _apsuConfigParams.push_back(
       APSU_CONFIG_PARAM(APSU_INVERT_TO_FLAG, "Invert TO [ms]", "invert_to", "", "", APSU_PARAM_NUMERIC, 15));
     _apsuConfigParams.push_back(APSU_CONFIG_PARAM(APSU_TF_DETECT_TIMER_FLAG, "TF Detect Timer [ms]", "tf_detect_timer",
@@ -2302,8 +2314,8 @@ void MlxlinkMaps::initApsuMapping()
       APSU_CONFIG_PARAM(APSU_FAIL_TIMER_FLAG, "Fail Timer [10ms]", "fail_timer", "", "", APSU_PARAM_NUMERIC, 255));
     _apsuConfigParams.push_back(APSU_CONFIG_PARAM(APSU_VALIDATION_TIMER_FLAG, "Validation Timer [10ms]",
                                                   "validation_timer", "", "", APSU_PARAM_NUMERIC, 15));
-    _apsuConfigParams.push_back(APSU_CONFIG_PARAM(APSU_RESTART_ON_LOS_FLAG, "Restart On LoS", "rx_los_recovery_ctl", "",
-                                                  "", APSU_PARAM_NUMERIC, 2, restartOnLos));
+    _apsuConfigParams.push_back(APSU_CONFIG_PARAM(APSU_RESTART_ON_LOS_FLAG, "Restart On LoS", "rx_los_recovery_ctl",
+                                                  "rx_los_recovery_cap", "", APSU_PARAM_NUMERIC, 3, restartOnLos));
     _apsuConfigParams.push_back(APSU_CONFIG_PARAM(APSU_LOCAL_PATTERN_TX_FLAG, "Local Pattern TX", "local_pattern_tx",
                                                   "", "", APSU_PARAM_NUMERIC, 1, localPatternTx));
     _apsuConfigParams.push_back(

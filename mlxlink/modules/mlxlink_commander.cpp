@@ -9472,13 +9472,21 @@ u_int32_t MlxlinkCommander::getApsuParamValue(const APSU_CONFIG_PARAM& param, co
     }
     else
     {
-        RegAccessParser::strToUint32((char*)userValue.c_str(), value);
+        // Parse as 64-bit so a value above UINT32_MAX fails the range check instead of wrapping into it.
+        char* endPtr = nullptr;
+        unsigned long long parsed = strtoull(userValue.c_str(), &endPtr, 0);
+        if (userValue.empty() || userValue[0] == '-' || *endPtr != '\0')
+        {
+            throw MlxRegException("Argument: " + userValue + " is invalid.");
+        }
 
-        if (value < param.minValue || value > maxValue)
+        if (parsed < param.minValue || parsed > maxValue)
         {
             throw MlxRegException("The --" + param.flagName + " flag accepts values in the range " + range +
                                   (param.kind == APSU_PARAM_NUMERIC ? "" : ", EN or DS"));
         }
+
+        value = (u_int32_t)parsed;
     }
 
     return value;
