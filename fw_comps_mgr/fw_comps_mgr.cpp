@@ -1278,11 +1278,12 @@ FwCompsMgr::~FwCompsMgr()
     }
 #endif
     if (_mf) {
-        if (!_isDelayedActivationCommandSent) {
-            if (_lastFsmCtrl.control_state != FSMST_IDLE) {
-                controlFsm(FSM_CMD_CANCEL, FSMST_LOCKED);
-                controlFsm(FSM_CMD_RELEASE_UPDATE_HANDLE, FSMST_IDLE);
-            }
+        const bool haveHandle = _handleGenerated && (_updateHandle != 0);
+        const bool fsmActive = (_lastFsmCtrl.control_state != FSMST_IDLE);
+        if (!_isDelayedActivationCommandSent && (fsmActive || (haveHandle && _lastError != FWCOMPS_SUCCESS)))
+        {
+            controlFsm(FSM_CMD_CANCEL, FSMST_LOCKED);
+            controlFsm(FSM_CMD_RELEASE_UPDATE_HANDLE, FSMST_IDLE);
         }
     }
     if (_openedMfile) {
