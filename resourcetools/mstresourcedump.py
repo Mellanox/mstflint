@@ -181,13 +181,14 @@ Dump Arguments:
             arg_parser.print_usage()
             arg_parser.exit(1)
 
-        if arguments.command == cs.RESOURCE_DUMP_COMMAND_TYPE_DUMP:
-            if arguments.bin:
-                resourceparse_argv += ["-d", arguments.bin]
-            else:
-                resourceparse_argv += ["--segments_provided"]
-        elif arguments.command == cs.RESOURCE_DUMP_COMMAND_TYPE_QUERY:
+        if arguments.command == cs.RESOURCE_DUMP_COMMAND_TYPE_QUERY:
             resourceparse_argv += ["-p", "menu"]
+
+        self.parse_resourceparse_args(resourceparse_argv + ["--segments_provided"])
+
+        if arguments.bin:
+            resourceparse_argv += ["-d", arguments.bin]
+        else:
             resourceparse_argv += ["--segments_provided"]
 
         return arguments, resourceparse_argv
