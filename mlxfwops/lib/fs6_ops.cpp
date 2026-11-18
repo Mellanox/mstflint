@@ -155,6 +155,10 @@ string ToString(PartitionType type)
             return "WP_AREA_PTR";
         case PartitionType::PT_RW_AREA_PTR:
             return "RW_AREA_PTR";
+        case PartitionType::PT_PQC_L4_CERTIFICATE_1:
+            return "PQC_L4_CERTIFICATE_1";
+        case PartitionType::PT_PQC_L4_CERTIFICATE_2:
+            return "PQC_L4_CERTIFICATE_2";
         default:
             return "UNKNOWN";
     }

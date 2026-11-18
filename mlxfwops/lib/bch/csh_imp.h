@@ -162,11 +162,13 @@ enum class PartitionType
     PT_DEV_INFO2 = 0xe8,
     PT_PROGRAMMABLE_HW_FW1 = 0xeb,
     PT_PROGRAMMABLE_HW_FW2 = 0xec,
-    PT_NVFILE_BUFFER = 0xf8,
     PT_FW_DEBUG_DUMP = 0xfc,
     PT_FW_DEBUG_DUMP2 = 0xd4,
+    PT_PQC_L4_CERTIFICATE_1 = 0xd6,
+    PT_PQC_L4_CERTIFICATE_2 = 0xd7,
     PT_FW_NV_LOG = 0xe5,
     PT_CPO_CALIBRATION_DATA = 0xcc,
+    PT_NVFILE_BUFFER = 0xcd,
 };
 
 const u_int32_t L1PT_OFFSET = 0xe000;
