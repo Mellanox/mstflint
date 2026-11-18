@@ -227,6 +227,10 @@ bool Fs6Operations::Init()
     {
         // Reduced image isnt contain the L1PT, it is only contain the ROM_IMGS and CHAIN_CONTAINER
         PartitionTableEntry romImgsEntry(0, ROM_IMGS_ALIGN_SIZE, static_cast<u_int32_t>(PartitionType::PT_ROM_IMGS));
+
+        _activeChain = romImgsEntry.GetChainNumber();
+        _l1pt.SetActiveChain(_activeChain);
+
         _l1pt.AddEntry(romImgsEntry);
         InitCshComponent(romImgsEntry);
 
@@ -1092,6 +1096,7 @@ bool Fs6Operations::FwQuery(fw_info_t* fwInfo,
         }
 
         fwInfo->fw_type = FwType();
+        _fwImgInfo.ext_info.is_failsafe = true;
 
         memcpy(&(fwInfo->fw_info), &(_fwImgInfo.ext_info), sizeof(fw_info_com_t));
         memcpy(&(fwInfo->fs3_info), &(_fsCommonInfo.ext_info), sizeof(fs3_info_t));
