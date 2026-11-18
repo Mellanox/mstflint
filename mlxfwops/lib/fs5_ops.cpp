@@ -601,6 +601,10 @@ bool Fs5Operations::GetLivefishIndicationAddr(uint32_t& lfIndicationAddr)
             lfIndicationAddr = 0xfc13c;
             break;
 
+        case DeviceSpectrum6_HwId:
+            lfIndicationAddr = 0xfb058;
+            break;
+
         default:
             return false;
     }
