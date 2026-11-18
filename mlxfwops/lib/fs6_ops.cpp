@@ -872,6 +872,12 @@ FwVersion::fw_version_raw Fs6Operations::GetCshComponentVersion(PartitionType pa
             entry->csh->GetComponentSubminorVersion()};
 }
 
+bool Fs6Operations::HasCshComponent(PartitionType partitionType) const
+{
+    return std::any_of(_cshComponents.begin(), _cshComponents.end(),
+                       [partitionType](const CshComponentInfo& entry) { return entry.partitionType == partitionType; });
+}
+
 bool Fs6Operations::GetFwComponentsData(string path)
 {
     Json::Value root;
@@ -881,7 +887,11 @@ bool Fs6Operations::GetFwComponentsData(string path)
     }
 
     vector<PartitionType> partitionTypes = {PartitionType::PT_ROM_IMGS, PartitionType::PT_NV_FWS,
-                                            PartitionType::PT_CALIPTRA_FW, PartitionType::PT_SBD_FW};
+                                            PartitionType::PT_CALIPTRA_FW};
+    if (HasCshComponent(PartitionType::PT_SBD_FW))
+    {
+        partitionTypes.push_back(PartitionType::PT_SBD_FW);
+    }
 
     for (auto partitionType : partitionTypes)
     {
@@ -1210,10 +1220,12 @@ bool Fs6Operations::FwQuery(fw_info_t* fwInfo,
         memcpy(&(fwInfo->fw_info), &(_fwImgInfo.ext_info), sizeof(fw_info_com_t));
         memcpy(&(fwInfo->fs3_info), &(_fsCommonInfo.ext_info), sizeof(fs3_info_t));
 
-        auto sbdVersion = GetCshComponentVersion(PartitionType::PT_SBD_FW);
-
-        _compsList.push_back(
-          CompInfo{ComponentType::Comp_Csh_Sbd_Fw, FwVersion(sbdVersion.major, sbdVersion.minor, sbdVersion.subminor)});
+        if (HasCshComponent(PartitionType::PT_SBD_FW))
+        {
+            auto sbdVersion = GetCshComponentVersion(PartitionType::PT_SBD_FW);
+            _compsList.push_back(CompInfo{ComponentType::Comp_Csh_Sbd_Fw,
+                                          FwVersion(sbdVersion.major, sbdVersion.minor, sbdVersion.subminor)});
+        }
     }
     catch (const std::exception& e)
     {
