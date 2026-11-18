@@ -188,7 +188,7 @@ PldmRecordDescriptor* PldmDevIdRecord::findVendorDefinedDescriptor(PldmRecordDes
 bool PldmDevIdRecord::getDescriptor(u_int16_t type, u_int16_t& descriptor) const
 {
     bool found = false;
-    for (u_int8_t i = 0; i < descriptorCount - 1; i++)
+    for (u_int8_t i = 0; i < descriptorCount; i++)
     {
         if (type == recordDescriptors[i]->getDescriptorType())
         {

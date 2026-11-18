@@ -278,10 +278,10 @@ void FsPldmOperations::PrintInfo()
         PrintDeviceRecord(devIdRec, devIdx);
     }
 
-    if (_pkg.isDownstreamDeviceRecordSupported())
+    u_int8_t downstreamDeviceRecordCount = _pkg.getDownstreamDeviceRecordCount();
+    if (_pkg.isDownstreamDeviceRecordSupported() && downstreamDeviceRecordCount > 0)
     {
         printf("\nDownstream Device Records:");
-        u_int8_t downstreamDeviceRecordCount = _pkg.getDownstreamDeviceRecordCount();
         for (u_int8_t devIdx = 0; devIdx < downstreamDeviceRecordCount; devIdx++)
         {
             PldmDevIdRecord* downstreamDevIdRec = _pkg.getDownstreamDeviceRecord(devIdx);

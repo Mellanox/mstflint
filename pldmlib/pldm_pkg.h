@@ -97,6 +97,8 @@ private:
                                          u_int8_t** buff,
                                          u_int32_t& buffSize);
 
+    bool isSpc6Device(u_int8_t pldmRevision) const;
+
     typedef std::map<std::string, PldmDevIdRecord*> PsidRecordMap;
     PsidRecordMap psidRecordMap;
 

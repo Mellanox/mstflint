@@ -111,6 +111,25 @@ bool PldmPkg::unpackRecords(PldmBuffer& buff,
     return true;
 }
 
+// WA: ComponentOpaqueDataLength only matters at revision >= 2, and every
+// known spc6 fwpkg carries exactly one device ID record. Only deviceIDRecords[0] is inspected;
+// if a package ever legitimately carries multiple device records with different device
+// identities, a single package-wide flag is the wrong model and this must be revisited.
+bool PldmPkg::isSpc6Device(u_int8_t pldmRevision) const
+{
+    if (pldmRevision < FIRST_REVISION_SUPPORTED_DOWNSTREAM_DEVICES)
+    {
+        return false;
+    }
+    u_int16_t pciDeviceId;
+    if (!deviceIDRecords.empty() &&
+        deviceIDRecords[0]->getDescriptor(static_cast<u_int16_t>(DescriptorType::TYPE_PCI_DEVICE_ID), pciDeviceId))
+    {
+        return IsSpc6PciDeviceId(pciDeviceId);
+    }
+    return false;
+}
+
 bool PldmPkg::unpack(PldmBuffer& buff)
 {
     reset();
@@ -127,6 +146,9 @@ bool PldmPkg::unpack(PldmBuffer& buff)
     {
         return false;
     }
+
+    const bool spc6Device = isSpc6Device(pldmRevision);
+
     // downstream device record support is added in revision 3 and above
     if (packageHeader.getPackageHeaderFormatRevision() >= FIRST_REVISION_SUPPORTED_DOWNSTREAM_DEVICES)
     {
@@ -145,7 +167,7 @@ bool PldmPkg::unpack(PldmBuffer& buff)
     for (u_int8_t i = 0; i < componentImageCount; i++)
     {
         PldmComponenetImage* componentImage = new PldmComponenetImage();
-        if (!componentImage->unpack(buff, pldmRevision))
+        if (!componentImage->unpack(buff, pldmRevision, spc6Device))
         {
             delete componentImage;
             reset();

@@ -71,7 +71,7 @@ PldmComponenetImage::~PldmComponenetImage()
     }
 }
 
-bool PldmComponenetImage::unpack(PldmBuffer& buff, u_int8_t pldmRevision)
+bool PldmComponenetImage::unpack(PldmBuffer& buff, u_int8_t pldmRevision, bool isSpc6Device)
 {
     buff.read(componentClassification);
     buff.read(componentIdentifier);
@@ -91,19 +91,25 @@ bool PldmComponenetImage::unpack(PldmBuffer& buff, u_int8_t pldmRevision)
     // check if the package header format revision is supported downstream device record support
     if (pldmRevision >= FIRST_REVISION_SUPPORTED_DOWNSTREAM_DEVICES)
     {
-        buff.read(componentOpaqueDataLength);
-        if (componentOpaqueDataLength > 0)
+        // WA : legacy spc6-device packages never wrote ComponentOpaqueDataLength
+        // for their components, even at this revision. Skip the read only for those, so the byte
+        // stream stays in sync with what was actually written.
+        if (!isSpc6Device)
         {
-            if (componentOpaqueDataLength > buff.remaining())
+            buff.read(componentOpaqueDataLength);
+            if (componentOpaqueDataLength > 0)
             {
-                return false;
+                if (componentOpaqueDataLength > buff.remaining())
+                {
+                    return false;
+                }
+                componentOpaqueData = new (std::nothrow) u_int8_t[componentOpaqueDataLength];
+                if (!componentOpaqueData)
+                {
+                    return false;
+                }
+                buff.read(componentOpaqueData, componentOpaqueDataLength);
             }
-            componentOpaqueData = new (std::nothrow) u_int8_t[componentOpaqueDataLength];
-            if (!componentOpaqueData)
-            {
-                return false;
-            }
-            buff.read(componentOpaqueData, componentOpaqueDataLength);
         }
     }
 

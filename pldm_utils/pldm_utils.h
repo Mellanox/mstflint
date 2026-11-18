@@ -87,6 +87,12 @@ enum class DescriptorType : uint16_t
     TYPE_VENDOR_DEFINED = 0xffff
 };
 
+inline bool IsSpc6PciDeviceId(u_int16_t pciDeviceId)
+{
+    const u_int16_t SPC6_PCI_DEVICE_ID = 0xCF84;
+    return pciDeviceId == SPC6_PCI_DEVICE_ID;
+}
+
 enum class ComponentIdentifier
 {
     Identifier_Not_Valid = 0x0000,
