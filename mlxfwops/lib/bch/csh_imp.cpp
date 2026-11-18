@@ -230,7 +230,11 @@ PartitionTableEntry& PartitionTable::GetEntry(PartitionType entryType, int chain
     auto entry = std::find_if(_entries.begin(), _entries.end(), compareFunc);
     if (entry == _entries.end())
     {
-        throw runtime_error("couldn't find entry");
+        {
+            std::ostringstream oss;
+            oss << "couldn't find entry 0x" << std::hex << std::uppercase << (u_int32_t)entryType;
+            throw runtime_error(oss.str());
+        }
     }
 
     return *entry;
