@@ -877,14 +877,24 @@ bool FsCtrlOperations::FwBurnAdvanced(FwOperations* imageOps, ExtBurnParams& bur
 
     std::vector<u_int8_t> compData;
     u_int32_t imageSize = 0;
-    if (!imageOps->GetImageSize(&imageSize))
+    if (componentId == FwComponent::comps_ids_t::COMPID_CPO_VMOD_FW)
     {
-        return false;
+        if (!imageOps->FwExtract4MBImage(compData, true))
+        {
+            return errmsg(imageOps->getErrorCode(), "Failed to Extract 4MB from the image");
+        }
     }
-    compData.resize(imageSize);
-    if (!imageOps->FwReadData(compData.data(), &imageSize))
+    else
     {
-        return errmsg(imageOps->getErrorCode(), "Failed to read component from file");
+        if (!imageOps->GetImageSize(&imageSize))
+        {
+            return false;
+        }
+        compData.resize(imageSize);
+        if (!imageOps->FwReadData(compData.data(), &imageSize))
+        {
+            return errmsg(imageOps->getErrorCode(), "Failed to read component from file");
+        }
     }
     printf("-I- Downloading FW ...\n");
     return _Burn(compData, burnParams.ProgressFuncAdv, componentId);

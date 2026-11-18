@@ -259,7 +259,7 @@ bool FsCshOperations::isEncrypted(bool& is_encrypted)
     return true;
 }
 
-bool FsCshOperations::FwExtract4MBImage(vector<u_int8_t>& img, bool, bool, bool, bool)
+bool FsCshOperations::FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc, bool, bool, bool)
 {
     u_int32_t imageSize = _ioAccess->get_size();
 
@@ -267,6 +267,12 @@ bool FsCshOperations::FwExtract4MBImage(vector<u_int8_t>& img, bool, bool, bool,
     if (!FwReadData(img.data(), &imageSize, false))
     {
         return false;
+    }
+
+    //* VMOD equivalent to mask magic pattern is ADM status at offset 0xc
+    if (maskMagicPatternAndDevToc && img.size() > 0x10)
+    {
+        memset(img.data() + 0xc, 0xFF, 4);
     }
 
     return true;
