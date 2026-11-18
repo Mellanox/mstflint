@@ -787,9 +787,9 @@ PartitionTableEntry Fs6Operations::GetPartitionTableEntry(PartitionType partitio
     PartitionValidator validator(partitionType);
     bool isL2pt = IsL2ptSection(partitionType);
     const PartitionTable* pt = isL2pt ? &_l2pt : &_l1pt;
-    PartitionTableEntry* entry = nullptr;
+    const PartitionTableEntry* entry = nullptr;
 
-    for (auto partitionTableEntry : pt->GetEntries())
+    for (auto& partitionTableEntry : pt->GetEntries())
     {
         if (partitionTableEntry.GetPartitionTypeEnum() == partitionType &&
             validator.validate(partitionTableEntry, _ioAccess, chainNumber))

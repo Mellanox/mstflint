@@ -208,7 +208,7 @@ bool FsCshOperations::PrintQuery()
                 printf("PRS Name:              %s\n", prs_name.c_str());
             }
 
-            u_int32_t imageSize;
+            u_int32_t imageSize = 0;
             if (!GetImageSize(&imageSize))
             {
                 return errmsg("Failed to get image size");
