@@ -418,6 +418,16 @@ bool Fs6Operations::FwInit()
     return true;
 }
 
+void Fs6Operations::PrintNonActiveChainSection(VerifyCallBack verifyCallBackFunc,
+                                               const PartitionTableEntry& entry,
+                                               const string& partitionType)
+{
+    bool backupChain = entry.GetChainNumber() == _backupChain;
+    string suffix = backupChain ? "backup" : "invalid";
+    PrintSectionRange(verifyCallBackFunc, entry.GetStartOffset(), entry.GetStartOffset() + entry.GetSectionSize() - 1,
+                      entry.GetSectionSize(), partitionType, "L1 Partition (" + suffix + " chain)");
+}
+
 bool Fs6Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedImage, bool showItoc, bool ignoreDToc)
 {
     MLXFWOPS_LOG_DEBUG("Fs6Operations::FwVerify");
@@ -466,6 +476,7 @@ bool Fs6Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
             {
                 if (entry.GetPartitionTypeEnum() == PartitionType::PT_ROM_IMGS && entry.GetChainNumber() != _activeChain)
                 {
+                    PrintNonActiveChainSection(verifyCallBackFunc, entry, partitionType);
                     continue;
                 }
                 if (!VerifyCshComponent(entry, verifyCallBackFunc))
@@ -477,6 +488,7 @@ bool Fs6Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
             {
                 if (entry.GetChainNumber() != _activeChain)
                 {
+                    PrintNonActiveChainSection(verifyCallBackFunc, entry, partitionType);
                     continue;
                 }
                 bool isKnownPartition = true;
@@ -622,7 +634,9 @@ bool Fs6Operations::VerifyCshComponent(const PartitionTableEntry& entry, VerifyC
     }
     else if (partitionType == PartitionType::PT_VMOD_FW)
     {
-        PrintSectionRange(verifyCallBackFunc, offset, offset, 0, "VMOD_FW", "CSH Placeholder");
+        PrintSectionRange(verifyCallBackFunc, entry.GetStartOffset(),
+                          entry.GetStartOffset() + entry.GetSectionSize() - 1, entry.GetSectionSize(), "VMOD_FW",
+                          "CSH Placeholder");
     }
 
     return true;

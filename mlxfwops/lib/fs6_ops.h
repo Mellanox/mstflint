@@ -69,6 +69,10 @@ public:
                   bool showItoc = false,
                   bool ignoreDToc = false) override;
 
+    void PrintNonActiveChainSection(VerifyCallBack verifyCallBackFunc,
+                                    const PartitionTableEntry& entry,
+                                    const string& partitionType);
+
     bool ReadComponent(ComponentType compName,
                        ComponentHeader compHeader,
                        string file_path,
