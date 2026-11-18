@@ -113,6 +113,7 @@ extern "C"
         DeviceSpectrum4, /* Albatross */
         DeviceSpectrum5,
         DeviceSpectrum6,
+        DeviceSpectrum6_RMA,
         DeviceSpectrum6IB,
         DeviceQuantum2, /* Blackbird */
         DeviceQuantum3, /* Sunbird */
@@ -166,6 +167,7 @@ extern "C"
         DeviceSpectrum4_HwId = 0x254,
         DeviceSpectrum5_HwId = 0x270,
         DeviceSpectrum6_HwId = 0x274,
+        DeviceSpectrum6_RMA_HwId = 0x275,
         DeviceSpectrum6IB_HwId = 0x276,
         DeviceArcusPTC_HwId = 0x7f, /* ArcusP Test Chip */
         DeviceArcusP_HwId = 0x80,

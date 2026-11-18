@@ -2754,7 +2754,7 @@ u_int8_t FwOperations::GetFwFormatFromHwDevID(u_int32_t hwDevId)
     {
         return FS_FS5_GEN;
     }
-    else if ((hwDevId == SPECTRUM6_HW_ID))
+    else if ((hwDevId == SPECTRUM6_HW_ID) || (hwDevId == SPECTRUM6_RMA_HW_ID))
     {
         return FS_FS6_GEN;
     }

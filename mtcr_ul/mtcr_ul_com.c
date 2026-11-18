@@ -3300,6 +3300,7 @@ static long live_fish_id_database[] = {0x191, 0x246, 0x249, 0x24e, 0x1F6, 0x1F8,
                                        0x254,                                                                                                          /* Spectrum4 */
                                        0x270,                                                                                                          /* Spectrum5 */
                                        0x274,                                                                                                          /* Spectrum6 */
+                                       0x275,                                                                                                          /* Spectrum6 RMA */
                                        0x257,                                                                                                          /* Quantum2 */
                                        0x25b,                                                                                                          /* Quantum3 */
                                        0x278,                                                                                                          /* Nvlink6_Switch_ASIC */
