@@ -2500,8 +2500,9 @@ bool BurnSubCommand::verifyParams()
         {
             if (_flintParams.linkx_auto_update == false)
             {
-                if (_flintParams.cable_device_index_specified == false ||
-                    _flintParams.cable_device_size_specified == false)
+                if ((_flintParams.cable_device_index_specified == false ||
+                     _flintParams.cable_device_size_specified == false) &&
+                    !(_flintParams.vmod_control && !_flintParams.activate))
                 {
                     reportErr(true, "Must supply the linkx device index and size / or autoupdate for burn cables!\n");
                     return false;

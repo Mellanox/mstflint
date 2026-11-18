@@ -883,11 +883,16 @@ bool FsCtrlOperations::FwBurnAdvanced(FwOperations* imageOps, ExtBurnParams& bur
                 return errmsg("%s", imageOps->err());
             }
         }
-        if (burnParams.vmodDownstreamControl)
+        if (burnParams.vmodDownstreamControl && (burnParams.vmodAutoUpdate || burnParams.vmodDeviceSize > 0))
         {
             _fwCompsAccess->SetIndexAndSize(burnParams.vmodDeviceIndex + 1, burnParams.vmodDeviceSize,
                                             burnParams.vmodAutoUpdate, burnParams.vmodActivationNeeded,
                                             burnParams.vmodDownloadTransferNeeded, burnParams.vmodActivationDelaySec);
+        }
+        else if (burnParams.vmodDownstreamControl && burnParams.vmodDownloadTransferNeeded &&
+                 !burnParams.vmodActivationNeeded)
+        {
+            _fwCompsAccess->SetBurnSteps(burnParams.vmodActivationNeeded, burnParams.vmodDownloadTransferNeeded);
         }
     }
     else if (imageOps == NULL)
