@@ -8,7 +8,6 @@
 %{!?enablecs: %define enablecs 0}
 %{!?nopenssl: %define nopenssl 0}
 %{!?enableremote: %define enableremote 0}
-%{!?enablexml2: %define enablexml2 0}
 %{!?enabledpa: %define enabledpa 0}
 %{!?enablepldmpkggen: %define enablepldmpkggen 0}
 %{!?enablefwmgr: %define enablefwmgr 0}
@@ -55,8 +54,9 @@ BuildRequires: pkgconfig
 BuildRequires: %{openssl_devel_lib}
 %endif
 
-%if "%{enableadbgenerictools}" == "1"
 BuildRequires: %{expat_devel_lib}
+
+%if "%{enableadbgenerictools}" == "1"
 BuildRequires: xz-devel
 %endif
 
@@ -108,10 +108,6 @@ MSTFLINT_VERSION_STR="%{name} %{version}-%{release}"
 
 %if %{enablepldmpkggen}
    config_flags="$config_flags --enable-pldm-pkg-gen"
-%endif
-
-%if %{enablexml2}
-    config_flags="$config_flags --enable-xml2"
 %endif
 
 %if %{enablefwmgr}

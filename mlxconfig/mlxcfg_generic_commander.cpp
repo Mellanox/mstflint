@@ -56,12 +56,9 @@
 #include "mlxcfg_status.h"
 #include "mlxcfg_tlv.h"
 #include "mlxcfg_utils.h"
+#include "mlxcfg_xml_reader.h"
+#include "mlxcfg_xml_tlv_builder.h"
 #include "common/tools_endianness.h"
-
-#if !defined(DISABLE_XML2)
-#include <libxml/parser.h>
-#include <libxml/tree.h>
-#endif
 
 using namespace std;
 using namespace mlxcfg;
@@ -76,42 +73,6 @@ using namespace mlxcfg;
     "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" \
     "<" XML_ROOT " xmlns=\"" XMLNS "\">"
 #define XML_DOCUMENT_END "</" XML_ROOT ">"
-#define XML_COMMENT_NODE "comment"
-
-#define IGNORE_IF_EMPTY_NODE(n) \
-    if (!n->name)               \
-    {                           \
-        continue;               \
-    }
-#define IGNORE_IF_TEXT_NODE(n) \
-    if (xmlNodeIsText(n))      \
-    {                          \
-        n = n->next;           \
-        continue;              \
-    }
-#define IGNORE_IF_COMMENT_NODE(n)                                      \
-    if (xmlStrcasecmp(n->name, (const xmlChar*)XML_COMMENT_NODE) == 0) \
-    {                                                                  \
-        n = n->next;                                                   \
-        continue;                                                      \
-    }
-#define IGNORE_UNUSEFUL_NODE(n) \
-    IGNORE_IF_EMPTY_NODE(n)     \
-    IGNORE_IF_TEXT_NODE(n)      \
-    IGNORE_IF_COMMENT_NODE(n)
-#define XMLFREE_AND_SET_NULL(p) \
-    if (p)                      \
-    {                           \
-        xmlFree(p);             \
-        p = NULL;               \
-    }
-#define GET_AND_SET_ATTR(attrVal, currTlv, attr)         \
-    attrVal = xmlGetProp(currTlv, (const xmlChar*)attr); \
-    if (attrVal)                                         \
-    {                                                    \
-        tlvConf->setAttr(attr, (const char*)attrVal);    \
-        XMLFREE_AND_SET_NULL(attrVal);                   \
-    }
 
 #define EQ_STR "=="
 #define NOT_EQ_STR "!="
@@ -1565,204 +1526,11 @@ void GenericCommander::bin2TLVConfs(const vector<u_int32_t>& tlvsBin, vector<std
 
 void GenericCommander::XML2TLVConf(const string& xmlContent, vector<std::shared_ptr<TLVConf>>& tlvs)
 {
-#if !defined(DISABLE_XML2)
-    xmlDocPtr doc;
-    xmlNodePtr root, currTlv, currParam;
-    xmlChar *portAttr = NULL, *moduleAttr = NULL, *hostAttr = NULL, *funcAttr = NULL, *rdEnAttr = NULL,
-            *priorityAttr = NULL, *ovrEnAttr = NULL, *xmlVal = NULL, *indexAttr = NULL, *writerIdAttr = NULL;
-
-    doc = xmlReadMemory(xmlContent.c_str(), xmlContent.size(), "noname.xml", NULL, 0);
-    if (!doc)
-    {
-        throw MlxcfgException("Failed to parse the XML document\n");
-    }
-
-    try
-    {
-        root = xmlDocGetRootElement(doc);
-        if (!root || xmlStrcmp(root->name, (const xmlChar*)XML_ROOT))
-        {
-            throw MlxcfgException("The XML root node must be " XML_ROOT);
-        }
-
-        // check fingerprint
-        if (!root->ns || xmlStrcmp(root->ns->href, (const xmlChar*)XMLNS))
-        {
-            throw MlxcfgException("The XML Fingerprint " XMLNS " is missing or incorrect");
-        }
-        currTlv = root->xmlChildrenNode;
-        while (currTlv)
-        {
-            IGNORE_UNUSEFUL_NODE(currTlv)
-            u_int32_t port = 0;
-            u_int32_t u_module = 0;
-            int32_t tlvModule;
-            std::shared_ptr<TLVConf> tlvConf = nullptr;
-            bool isAllPorts = false;
-            bool isAllModules = false;
-
-            // printf("-D- tlv name=%s\n", (char*)currTlv->name);
-            portAttr = xmlGetProp(currTlv, (const xmlChar*)PORT_ATTR);
-            moduleAttr = xmlGetProp(currTlv, (const xmlChar*)MODULE_ATTR);
-
-            if (!portAttr)
-            {
-                port = 0;
-            }
-            else if (!xmlStrcasecmp(portAttr, (const xmlChar*)ALL_ATTR_VAL))
-            {
-                isAllPorts = true;
-                port = 1;
-            }
-            else if (!strToNum((const char*)portAttr, port) ||
-                     !(1 <= port && (int32_t)port <= tlvConf->getMaxPort(_mf, false)))
-            {
-                throw MlxcfgException("Illegal value of port attribute %s", (const char*)portAttr);
-            }
-
-            if (!moduleAttr)
-            {
-                tlvModule = -1;
-            }
-            else if (!xmlStrcasecmp(moduleAttr, (const xmlChar*)ALL_ATTR_VAL))
-            {
-                isAllModules = true;
-                tlvModule = 0;
-            }
-            else if (!strToNum((const char*)moduleAttr, u_module) || !(u_module <= (u_int32_t)tlvConf->getMaxModule()))
-            {
-                throw MlxcfgException("Illegal value of module attribute %s", (const char*)portAttr);
-            }
-            else
-            {
-                tlvModule = u_module;
-            }
-
-            tlvConf = _dbManager->getCloneTLVByName((char*)currTlv->name, port, tlvModule);
-            try
-            {
-                if (isAllPorts)
-                {
-                    tlvConf->setAttr(PORT_ATTR, ALL_ATTR_VAL);
-                }
-                if (isAllModules)
-                {
-                    tlvConf->setAttr(MODULE_ATTR, ALL_ATTR_VAL);
-                }
-                GET_AND_SET_ATTR(writerIdAttr, currTlv, WRITER_ID_ATTR)
-                GET_AND_SET_ATTR(ovrEnAttr, currTlv, OVR_EN_ATTR)
-                GET_AND_SET_ATTR(rdEnAttr, currTlv, RD_EN_ATTR)
-                GET_AND_SET_ATTR(priorityAttr, currTlv, PRIORITY_ATTR)
-                GET_AND_SET_ATTR(hostAttr, currTlv, HOST_ATTR)
-                GET_AND_SET_ATTR(funcAttr, currTlv, FUNC_ATTR)
-
-                // loop over the parameters list
-                vector<string> collectedParams;
-                currParam = currTlv->xmlChildrenNode;
-                map<string, map<u_int32_t, string>> arrayValues;
-                while (currParam)
-                {
-                    IGNORE_UNUSEFUL_NODE(currParam)
-                    xmlVal = xmlNodeListGetString(doc, currParam->xmlChildrenNode, 1);
-                    indexAttr = xmlGetProp(currParam, (const xmlChar*)INDEX_ATTR);
-                    if (xmlVal && *xmlVal)
-                    {
-                        if (indexAttr)
-                        {
-                            string indexAttrStr = (const char*)indexAttr;
-                            vector<u_int32_t> indexes;
-                            extractIndexes(indexAttrStr, indexes);
-                            for (vector<u_int32_t>::iterator it = indexes.begin(); it != indexes.end(); ++it)
-                            {
-                                arrayValues[(char*)currParam->name][*it] = (char*)xmlVal;
-                            }
-                        }
-                        else
-                        {
-                            if (find(collectedParams.begin(), collectedParams.end(), (char*)currParam->name) !=
-                                collectedParams.end())
-                            {
-                                throw MlxcfgException("Duplicate use of same parameter: %s\n", (char*)currParam->name);
-                            }
-                            collectedParams.push_back((char*)currParam->name);
-                            tlvConf->updateParamByName((char*)currParam->name, (char*)xmlVal, QueryNext);
-                        }
-                    }
-                    else
-                    {
-                        if (tlvConf->isAStringParam((char*)currParam->name))
-                        {
-                            tlvConf->updateParamByName((char*)currParam->name, "", QueryNext);
-                        }
-                        else
-                        {
-                            throw MlxcfgException("The Parameter %s of the configuration %s "
-                                                  "does not have value",
-                                                  (char*)currParam->name,
-                                                  tlvConf->_name.c_str());
-                        }
-                    }
-                    XMLFREE_AND_SET_NULL(xmlVal);
-                    XMLFREE_AND_SET_NULL(indexAttr)
-                    currParam = currParam->next;
-                }
-                // process arrayValues
-                for (map<string, map<u_int32_t, string>>::iterator p = arrayValues.begin(); p != arrayValues.end(); ++p)
-                {
-                    // TODO check validity of indices
-                    string paramName = p->first;
-                    vector<string> vals(p->second.size());
-                    for (map<u_int32_t, string>::iterator v = p->second.begin(); v != p->second.end(); ++v)
-                    {
-                        vals[v->first] = v->second;
-                    }
-                    tlvConf->updateParamByName(paramName, vals, QueryNext);
-                }
-            }
-            catch (MlxcfgException& e)
-            {
-                throw e;
-            }
-            tlvs.push_back(tlvConf);
-            currTlv = currTlv->next;
-            XMLFREE_AND_SET_NULL(portAttr)
-            XMLFREE_AND_SET_NULL(moduleAttr)
-        }
-        if (tlvs.size() == 0)
-        {
-            throw MlxcfgException("No TLV configurations were found in the XML");
-        }
-    }
-    catch (MlxcfgException& e)
-    {
-        XMLFREE_AND_SET_NULL(writerIdAttr)
-        XMLFREE_AND_SET_NULL(portAttr)
-        XMLFREE_AND_SET_NULL(moduleAttr)
-        XMLFREE_AND_SET_NULL(ovrEnAttr)
-        XMLFREE_AND_SET_NULL(rdEnAttr)
-        XMLFREE_AND_SET_NULL(priorityAttr)
-        XMLFREE_AND_SET_NULL(hostAttr)
-        XMLFREE_AND_SET_NULL(funcAttr)
-        XMLFREE_AND_SET_NULL(xmlVal)
-        xmlFreeDoc(doc);
-        doc = NULL;
-        throw e;
-    }
-    XMLFREE_AND_SET_NULL(writerIdAttr)
-    XMLFREE_AND_SET_NULL(portAttr)
-    XMLFREE_AND_SET_NULL(moduleAttr)
-    XMLFREE_AND_SET_NULL(ovrEnAttr)
-    XMLFREE_AND_SET_NULL(rdEnAttr)
-    XMLFREE_AND_SET_NULL(priorityAttr)
-    XMLFREE_AND_SET_NULL(hostAttr)
-    XMLFREE_AND_SET_NULL(funcAttr)
-    XMLFREE_AND_SET_NULL(xmlVal)
-    xmlFreeDoc(doc);
-#else  /* if !defined(DISABLE_XML2) */
-    (void)xmlContent;
-    (void)tlvs;
-    throw MlxcfgException("Can not run the command, the tool was not compiled against libxml2");
-#endif /* if !defined(DISABLE_XML2) */
+    vector<std::shared_ptr<TLVConf>> parsedTlvs;
+    XmlTlvBuilder builder(_dbManager, TLVConf::getMaxPort(_mf, false), XML_ROOT, XMLNS, parsedTlvs);
+    parseXmlStream(xmlContent, builder);
+    builder.checkAnyTlvFound();
+    tlvs.insert(tlvs.end(), parsedTlvs.begin(), parsedTlvs.end());
 }
 
 void GenericCommander::XML2Raw(const string& xmlContent, string& raw)

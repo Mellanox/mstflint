@@ -42,7 +42,7 @@ AM_CPPFLAGS = \
     -I$(top_srcdir)/mflash \
     -I$(top_srcdir)/cmdif \
     -I$(top_srcdir)/tools_res_mgmt \
-    $(libxml2_CFLAGS) \
+    $(expat_CFLAGS) \
     $(openssl_CFLAGS)
 
 AM_CPPFLAGS += $(MUPARSER_CFLAGS) $(SQLITE_CFLAGS) $(COMPILER_FPIC)
@@ -89,16 +89,10 @@ msttokengenerator_DEPENDENCIES += \
     $(top_builddir)/ext_libs/minixz/libminixz.la
 endif
 
-msttokengenerator_LDADD = $(msttokengenerator_DEPENDENCIES) $(JSON_LIBS) ${LDL}
+msttokengenerator_LDADD = $(msttokengenerator_DEPENDENCIES) $(JSON_LIBS) ${LDL} $(expat_LIBS)
 
 if ENABLE_OPENSSL
 msttokengenerator_LDADD += $(openssl_LIBS)
-endif
-
-if DISABLE_XML2
-AM_CXXFLAGS += -DDISABLE_XML2
-else
-msttokengenerator_LDADD += -lxml2
 endif
 
 if ENABLE_CS
