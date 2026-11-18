@@ -169,6 +169,7 @@ private:
     bool IsCRDTDebugSessionActive();
 
     fs3_info_t _fsCtrlImgInfo;
+    string _vmodVsd;
     FwCompsMgr* _fwCompsAccess;
     bool _isSecured;
     u_int32_t _hwDevId;

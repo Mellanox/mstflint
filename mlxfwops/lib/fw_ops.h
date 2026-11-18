@@ -588,8 +588,13 @@ public:
 
     struct CompInfo
     {
+        CompInfo(ComponentType type, const FwVersion& version, const std::string& compLabel = "") :
+            compType(type), compVersion(version), label(compLabel)
+        {
+        }
         ComponentType compType;
         FwVersion compVersion;
+        std::string label;
     };
 
 protected:

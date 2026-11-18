@@ -335,6 +335,7 @@ bool FsCtrlOperations::FsIntQuery()
     snprintf(_fsCtrlImgInfo.name, sizeof(_fsCtrlImgInfo.name), "%s", fwQuery.name);
     snprintf(_fsCtrlImgInfo.description, sizeof(_fsCtrlImgInfo.description), "%s", fwQuery.description);
     snprintf(_fsCtrlImgInfo.deviceVsd, sizeof(_fsCtrlImgInfo.deviceVsd), "%s", fwQuery.deviceVsd);
+    _vmodVsd = fwQuery.vmodVsd;
     if (FwType() == FIT_FS3)
     {
         memcpy(_fwImgInfo.ext_info.vsd, fwQuery.deviceVsd, VSD_LEN);
@@ -475,6 +476,7 @@ bool FsCtrlOperations::FwQuery(fw_info_t* fwInfo, bool readRom, bool isStripedIm
     (void)quickQuery;
     (void)ignoreDToc;
     (void)verbose;
+    _compsList.clear();
     memcpy(&(fwInfo->fw_info), &(_fwImgInfo.ext_info), sizeof(fw_info_com_t));
     memcpy(&(fwInfo->fs3_info), &(_fsCtrlImgInfo), sizeof(fs3_info_t));
     fwInfo->fs3_info.fs3_uids_info.guid_format = IMAGE_LAYOUT_UIDS;
@@ -522,6 +524,11 @@ bool FsCtrlOperations::FwQuery(fw_info_t* fwInfo, bool readRom, bool isStripedIm
     else
     {
         MLXFWOPS_LOG_DEBUG("Failed to get HBI version - Error %d", _fwCompsAccess->getLastError());
+    }
+
+    if (!_vmodVsd.empty())
+    {
+        _compsList.push_back(CompInfo{ComponentType::Comp_Csh_Vmod_Fw, FwVersion(0, 0, 0, _vmodVsd)});
     }
 
     return true;

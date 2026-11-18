@@ -148,6 +148,8 @@ public:
     virtual bool GetNvPubKeyIdx();
     bool IsComponentFormatWithKeyId() override;
     bool GetImageInfoData(vector<u_int8_t>& data);
+    bool GetVmodBankVersion(const PartitionTableEntry& vmodEntry, FwVersion& vmodVersion);
+    void AddVmodBanksToCompsList();
     virtual bool FwExtract4MBImage(vector<u_int8_t>& img,
                                    bool maskMagicPatternAndDevToc,
                                    bool verbose = false,

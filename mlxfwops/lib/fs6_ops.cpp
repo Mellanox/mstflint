@@ -1172,6 +1172,73 @@ bool Fs6Operations::GetImageInfoData(vector<u_int8_t>& data)
     return true;
 }
 
+bool Fs6Operations::GetVmodBankVersion(const PartitionTableEntry& vmodEntry, FwVersion& vmodVersion)
+{
+    std::shared_ptr<CSH> csh = vmodEntry.GetCsh();
+    const BinarySectionMetadata* section = nullptr;
+    try
+    {
+        section = &csh->GetSection((u_int32_t)CshSectionType::VMOD_IMAGE_INFO_MAGIC_ID);
+    }
+    catch (const std::runtime_error& e)
+    {
+        return errmsg("%s", e.what());
+    }
+
+    vector<u_int8_t> data(FS6_IMAGE_LAYOUT_IMAGE_INFO_SIZE);
+    size_t vmodSectionSize = vmodEntry.GetSectionSize();
+    if (data.size() > vmodSectionSize || section->GetSectionOffset() > vmodSectionSize - data.size())
+    {
+        return errmsg("VMOD_IMAGE_INFO section (offset 0x%llx, size 0x%llx) exceeds VMOD section size (0x%llx)",
+                      static_cast<unsigned long long>(section->GetSectionOffset()),
+                      static_cast<unsigned long long>(data.size()), static_cast<unsigned long long>(vmodSectionSize));
+    }
+    if (!_ioAccess->read(vmodEntry.GetStartOffset() + section->GetSectionOffset(), data.data(), data.size()))
+    {
+        return errmsg("VMOD_IMAGE_INFO section - read error (%s)\n", (*_ioAccess).err());
+    }
+
+    struct fs6_image_layout_image_info image_info;
+    fs6_image_layout_image_info_unpack(&image_info, data.data());
+    FwImgInfo vmodImgInfo;
+    FsCommonInfo vmodCommonInfo;
+    memset(&vmodImgInfo, 0, sizeof(vmodImgInfo));
+    memset(&vmodCommonInfo, 0, sizeof(vmodCommonInfo));
+    if (!ParseFs6ImageInfo(image_info, vmodImgInfo, vmodCommonInfo))
+    {
+        return errmsg("Failed to parse VMOD_IMAGE_INFO section");
+    }
+    if (VerifyBranchFormat(image_info.vsd))
+    {
+        strncpy(vmodImgInfo.ext_info.branch_ver, image_info.vsd, BRANCH_LEN);
+        vmodImgInfo.ext_info.branch_ver[BRANCH_LEN - 1] = '\0';
+    }
+    vmodVersion = createFwVersion(&vmodImgInfo.ext_info);
+    return true;
+}
+
+void Fs6Operations::AddVmodBanksToCompsList()
+{
+    char vmodBank = 'A';
+    for (const auto& entry : _l1pt.GetEntries())
+    {
+        if (entry.GetPartitionTypeEnum() == PartitionType::PT_VMOD_FW)
+        {
+            std::shared_ptr<CSH> csh = entry.GetCsh();
+            u_int8_t admStatus = (csh != nullptr) ? csh->GetVmodAdmStatus() : CSH::VMOD_ADM_STATUS_INVALID;
+            FwVersion vmodVersion;
+            if (csh != nullptr && !GetVmodBankVersion(entry, vmodVersion))
+            {
+                MLXFWOPS_LOG_DEBUG("Failed to get VMOD bank %c version - %s", vmodBank, err());
+                err_clear();
+            }
+            string label = string(1, vmodBank) + ", " + CSH::VmodAdmStatusToString(admStatus);
+            _compsList.push_back(CompInfo(ComponentType::Comp_Csh_Vmod_Fw, vmodVersion, label));
+            vmodBank++;
+        }
+    }
+}
+
 size_t Fs6Operations::GetPartitionOffset(PartitionType partitionType, int chainNumber)
 {
     size_t partitionOffset = 0;
@@ -1287,7 +1354,9 @@ bool Fs6Operations::FwQuery(fw_info_t* fwInfo,
                             bool ignoreDToc,
                             bool verbose)
 {
-    MLXFWOPS_LOG_DEBUG("Fs6Operations::FwQuery");
+    MLXFWOPS_LOG_DEBUG("readRom=%d isStripedImage=%d quickQuery=%d", (int)readRom, (int)isStripedImage,
+                       (int)quickQuery);
+    _compsList.clear();
 
     try
     {
@@ -1326,6 +1395,8 @@ bool Fs6Operations::FwQuery(fw_info_t* fwInfo,
             _compsList.push_back(CompInfo{ComponentType::Comp_Csh_Sbd_Fw,
                                           FwVersion(sbdVersion.major, sbdVersion.minor, sbdVersion.subminor)});
         }
+
+        AddVmodBanksToCompsList();
     }
     catch (const std::exception& e)
     {

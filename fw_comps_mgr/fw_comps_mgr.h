@@ -124,6 +124,7 @@ typedef struct
     char description[DESCRIPTION_LEN];
     char deviceVsd[VSD_LEN + 1];
     char imageVsd[VSD_LEN + 1];
+    char vmodVsd[VSD_LEN + 1];
     bool sec_boot;
     life_cycle_t life_cycle;
     bool encryption;
@@ -512,7 +513,8 @@ public:
         MQIS_REGISTER_IMAGE_VSD = 3,
         MQIS_REGISTER_DEVICE_VSD = 4,
         MQIS_REGISTER_ROM_INFO = 5,
-        MQIS_REGISTER_LAST_VALUE = MQIS_REGISTER_ROM_INFO
+        MQIS_REGISTER_VMOD_VSD = 6,
+        MQIS_REGISTER_LAST_VALUE = MQIS_REGISTER_VMOD_VSD
     } MQISDeviceDescriptionT;
 
     typedef enum

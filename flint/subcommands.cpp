@@ -4615,8 +4615,13 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
             printf("Components Version:\n");
             for (const auto& comp : compsList)
             {
-                printf("%-22s %s\n", FwOperations::ComponentNameToString(comp.compType).c_str(),
-                       comp.compVersion.get_fw_version("%d.%d.%d").c_str());
+                string compName = FwOperations::ComponentNameToString(comp.compType);
+                if (!comp.label.empty())
+                {
+                    compName += " (" + comp.label + ")";
+                }
+                printf("%-22s %s\n", compName.c_str(),
+                       comp.compVersion.get_fw_version("%d.%d.%d", false, "N/A").c_str());
             }
         }
 

@@ -503,6 +503,7 @@ public:
 
     u_int8_t GetVmodAdmStatus();
     void SetVmodAdmStatus(fs5_image_layout_vmod_status status);
+    static string VmodAdmStatusToString(u_int8_t status);
 
     void SetNvSignature(const vector<u_int8_t>& signature, SigType sigType);
     void SetOemSignature(const vector<u_int8_t>& signature, SigType sigType);

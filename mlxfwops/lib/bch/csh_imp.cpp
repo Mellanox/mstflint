@@ -41,6 +41,7 @@
 #endif // } MST_CPU_armv7l_umbriel
 
 #include "../flint_base.h"
+#include "common/bit_slice.h"
 #include "common/tools_json.h"
 #include "mft_utils/mft_utils.h"
 #include <algorithm>
@@ -1333,6 +1334,26 @@ u_int8_t CSH::GetVmodAdmStatus()
 void CSH::SetVmodAdmStatus(fs5_image_layout_vmod_status status)
 {
     _header.csh_header_status.vmod_status = status;
+}
+
+string CSH::VmodAdmStatusToString(u_int8_t status)
+{
+    u_int8_t maskedStatus = EXTRACT(status, 0, 4);
+    switch (maskedStatus)
+    {
+        case VMOD_ADM_STATUS_INVALID:
+            return "INVALID";
+        case VMOD_ADM_STATUS_CANDIDATE:
+            return "CANDIDATE";
+        case VMOD_ADM_STATUS_ACTIVE:
+            return "ACTIVE";
+        case VMOD_ADM_STATUS_BACKUP:
+            return "BACKUP";
+        case VMOD_ADM_STATUS_REVOKED:
+            return "REVOKED";
+        default:
+            return "UNKNOWN";
+    }
 }
 
 PartitionType ToPartitionType(CshComponentID cshId, bool throwOnError)

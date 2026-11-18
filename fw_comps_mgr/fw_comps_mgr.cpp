@@ -2139,6 +2139,7 @@ bool FwCompsMgr::queryFwInfo(fwInfoT* query, bool next_boot_fw_ver)
     vector < u_int8_t > descriptionInfoString;
     vector < u_int8_t > imageVsd;
     vector < u_int8_t > deviceVsd;
+    vector<u_int8_t> vmodVsd;
     if (getDeviceHWInfo(FwCompsMgr::MQIS_REGISTER_DEVICE_NAME, nameInfoString)) {
         strncpy(query->name, (char*)nameInfoString.data(), NAME_LEN - 1);
     }
@@ -2150,6 +2151,10 @@ bool FwCompsMgr::queryFwInfo(fwInfoT* query, bool next_boot_fw_ver)
     }
     if (getDeviceHWInfo(FwCompsMgr::MQIS_REGISTER_DEVICE_VSD, deviceVsd)) {
         strncpy(query->deviceVsd, (char*)deviceVsd.data(), VSD_LEN);
+    }
+    if (getDeviceHWInfo(FwCompsMgr::MQIS_REGISTER_VMOD_VSD, vmodVsd))
+    {
+        strncpy(query->vmodVsd, (char*)vmodVsd.data(), VSD_LEN);
     }
 
     query->pci_switch_only_mode_valid = 0;
