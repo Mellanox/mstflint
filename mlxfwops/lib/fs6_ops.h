@@ -160,7 +160,6 @@ public:
     bool DoBeforeBurnJobs();
     bool DoAfterBurnJobs();
     bool PreBurnChecks(FwOperations* imageOps, ExtBurnParams& burnParams);
-    bool CheckFlashLayoutCompatibleForPartialBurn(FwOperations* imageOps, ExtBurnParams& burnParams);
     int GetDestChainNumber(bool failSafe);
 
     static bool ParseFs6ImageInfo(struct fs6_image_layout_image_info& image_info,
@@ -286,7 +285,6 @@ private:
     size_t GetChainContainerMaxSize();
     size_t GetChainContainerActualSize();
     bool Is32MBLayout();
-    bool Is64MBLayout();
 
     PartitionTable _l1pt;
     PartitionTable _l2pt;
