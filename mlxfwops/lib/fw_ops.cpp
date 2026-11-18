@@ -2832,9 +2832,14 @@ bool FwOperations::SetSignedFWComponent(string, ComponentType, const char*)
     return errmsg("SetSignedFWComponent is not supported");
 }
 
-bool FwOperations::ReadComponent(ComponentType, ComponentHeader, string, vector<u_int8_t>&)
+bool FwOperations::ReadComponent(string, ComponentHeader, string, vector<u_int8_t>&)
 {
     return errmsg("ReadComponent is not supported");
+}
+
+bool FwOperations::ReadComponentSection(string, string, ComponentHeader, vector<u_int8_t>&)
+{
+    return errmsg("ReadComponentSection is not supported");
 }
 
 bool FwOperations::GetRSAPublicKey(vector<u_int8_t>& key)

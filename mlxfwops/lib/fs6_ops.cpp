@@ -749,11 +749,12 @@ bool Fs6Operations::FwReadData(void* image, u_int32_t* image_size, bool verbose)
     return true;
 }
 
-bool Fs6Operations::ReadComponent(ComponentType compName,
+bool Fs6Operations::ReadComponent(string compNameStr,
                                   ComponentHeader compHeader,
                                   string,
                                   vector<u_int8_t>& componentData)
 {
+    ComponentType compName = FwOperations::StringToComponentType(compNameStr);
     u_int32_t componentOffset = 0;
     u_int32_t componentSize = 0;
     CshComponentID cshId = ToCshId(compName);
@@ -789,6 +790,62 @@ bool Fs6Operations::ReadComponent(ComponentType compName,
     if (!_ioAccess->read(componentOffset, componentData.data(), componentData.size()))
     {
         return errmsg(MLXFW_BAD_PARAM_ERR, "%s", _ioAccess->err());
+    }
+
+    return true;
+}
+
+bool Fs6Operations::ReadComponentSection(string compName,
+                                         string sectionName,
+                                         ComponentHeader compHeader,
+                                         vector<u_int8_t>& sectionData)
+{
+    ComponentType compType = FwOperations::StringToComponentType(compName);
+    u_int32_t magicId = 0; // CSH section is indetified by a 4 characters long magic ID
+    CshComponentID cshId = ToCshId(compType);
+    vector<u_int8_t> componentData;
+
+    u_int32_t convertedMagicId = BinarySectionMetadata::CshSectionStringToID(sectionName);
+
+    if (convertedMagicId == 0 && sectionName.size() != 4)
+    {
+        return errmsg("Section name must be a 4 characters long magic ID or appropriate section string.");
+    }
+    if (convertedMagicId != 0)
+    {
+        magicId = convertedMagicId;
+    }
+    else
+    {
+        memcpy(&magicId, sectionName.c_str(), 4);
+        CPUTOn(&magicId, 1);
+    }
+
+    // must be with header to read the full CSH component
+    compHeader = ComponentHeader::Header_With;
+    if (!ReadComponent(compName, compHeader, "", componentData))
+    {
+        return false;
+    }
+
+    vector<CshComponentInfo>::const_iterator entry =
+      std::find_if(_cshComponents.begin(), _cshComponents.end(),
+                   [cshId](const CshComponentInfo& entry) { return entry.csh->GetComponentIdEnum() == cshId; });
+    if (entry == _cshComponents.end())
+    {
+        return errmsg("CSH component not found");
+    }
+
+    try
+    {
+        BinarySectionMetadata section = entry->csh->GetSection(magicId);
+        sectionData.resize(section.GetSectionSize());
+        std::copy(componentData.begin() + section.GetSectionOffset(),
+                  componentData.begin() + section.GetSectionOffset() + section.GetSectionSize(), sectionData.begin());
+    }
+    catch (const std::exception& e)
+    {
+        return errmsg("Section not found: %s", e.what());
     }
 
     return true;

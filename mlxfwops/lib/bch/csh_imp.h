@@ -344,6 +344,7 @@ public:
     static size_t Size() { return fs5_image_layout_binary_section_metadata_size(); }
     static u_int32_t FromItocTypeToCshSectionType(u_int32_t itocType);
     static string CshSectionIDToString(u_int32_t sectionId);
+    static u_int32_t CshSectionStringToID(const string& sectionName);
 
     vector<u_int8_t> GetDerivationString() const;
     vector<u_int8_t> GetVersionAsVector() const;

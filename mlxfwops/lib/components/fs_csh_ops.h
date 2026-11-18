@@ -75,6 +75,10 @@ public:
     bool GetImageSize(u_int32_t* imageSize) override;
     bool isEncrypted(bool& is_encrypted) override;
     bool FwExtract4MBImage(vector<u_int8_t>& img, bool, bool, bool, bool) override;
+    bool ReadComponent(string compName,
+                       ComponentHeader compHeader,
+                       string file_path,
+                       vector<u_int8_t>& componentData) override;
 
 private:
     struct DeviceInfoCheckParams

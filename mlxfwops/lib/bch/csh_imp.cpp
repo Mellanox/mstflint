@@ -44,6 +44,7 @@
 #include "common/tools_json.h"
 #include "mft_utils/mft_utils.h"
 #include <algorithm>
+#include <iomanip>
 #include <limits.h>
 #include <unordered_map>
 
@@ -374,55 +375,101 @@ PartitionType PartitionTableEntry::GetPartitionTypeEnum() const
     return static_cast<PartitionType>(_struct.partition_type);
 }
 
-string BinarySectionMetadata::CshSectionIDToString(u_int32_t sectionId)
+const std::unordered_map<string, string>& NcoreSectionNamesMap()
 {
-    static const std::unordered_map<string, string> ncoreSectionNamesMap = {{"BOT2", "BOOT_CODE"},
-                                                                            {"IINF", "IMAGE_INFO"},
-                                                                            {"HWBI", "HW_BOOT_CFG"},
-                                                                            {"FWBI", "FW_BOOT_CFG"},
-                                                                            {"PREL", "PCIE_LINK_CODE"},
-                                                                            {"IRON", "PCI_CODE"},
-                                                                            {"HNII", "CCIR_INFRA_CODE"},
-                                                                            {"HWMI", "HW_MAIN_CFG"},
-                                                                            {"FWMI", "FW_MAIN_CFG"},
-                                                                            {"PSTI", "POST_IRON_BOOT_CODE"},
-                                                                            {"HWTI", "HW_TILE_INI"},
-                                                                            {"FWTI", "FW_TILE_INI"},
-                                                                            {"TSQR", "TILE_PAGES_LOCKED_HASHES"},
-                                                                            {"THSH", "TILE_PAGES_HASHES"},
-                                                                            {"TILE", "TILE_FW_CODE"},
-                                                                            {"PLDT", "MAIN_DATA"},
-                                                                            {"MSQR", "MAIN_PAGES_LOCKED_HASHES"},
-                                                                            {"MHSH", "MAIN_PAGES_HASHES"},
-                                                                            {"MAIN", "MAIN_CODE"},
-                                                                            {"NKRL", "NANO_KERNEL"},
-                                                                            {"CERT", "CERTIFICATES_CHAIN_L1_L3"},
-                                                                            {"VMOD", "VMOD_FW_IMG"},
-                                                                            {"VMDI", "VMOD_IMAGE_INFO"},
-                                                                            {"VMDH", "VMOD_PAGES_HASHES"},
-                                                                            {"VMHS", "VMOD_PAGES_LOCKED_HASHES"},
-                                                                            {"L3PW", "L3PT WP"},
-                                                                            {"L3PR", "L3PT RW"}};
+    static const std::unordered_map<string, string> namesMap = {{"BOT2", "BOOT_CODE"},
+                                                                {"IINF", "IMAGE_INFO"},
+                                                                {"HWBI", "HW_BOOT_CFG"},
+                                                                {"FWBI", "FW_BOOT_CFG"},
+                                                                {"PREL", "PCIE_LINK_CODE"},
+                                                                {"IRON", "PCI_CODE"},
+                                                                {"HNII", "CCIR_INFRA_CODE"},
+                                                                {"HWMI", "HW_MAIN_CFG"},
+                                                                {"FWMI", "FW_MAIN_CFG"},
+                                                                {"PSTI", "POST_IRON_BOOT_CODE"},
+                                                                {"HWTI", "HW_TILE_INI"},
+                                                                {"FWTI", "FW_TILE_INI"},
+                                                                {"TSQR", "TILE_PAGES_LOCKED_HASHES"},
+                                                                {"THSH", "TILE_PAGES_HASHES"},
+                                                                {"TILE", "TILE_FW_CODE"},
+                                                                {"PLDT", "MAIN_DATA"},
+                                                                {"MSQR", "MAIN_PAGES_LOCKED_HASHES"},
+                                                                {"MHSH", "MAIN_PAGES_HASHES"},
+                                                                {"MAIN", "MAIN_CODE"},
+                                                                {"NKRL", "NANO_KERNEL"},
+                                                                {"CERT", "CERTIFICATES_CHAIN_L1_L3"},
+                                                                {"VMOD", "VMOD_FW_IMG"},
+                                                                {"VMDI", "VMOD_IMAGE_INFO"},
+                                                                {"VMDH", "VMOD_PAGES_HASHES"},
+                                                                {"VMHS", "VMOD_PAGES_LOCKED_HASHES"},
+                                                                {"L3PW", "L3PT_WP"},
+                                                                {"L3PR", "L3PT_RW"}};
+    return namesMap;
+}
+
+const std::unordered_map<string, string>& NcoreSectionNamesReverseMap()
+{
+    static const std::unordered_map<string, string> reverseMap = []
+    {
+        std::unordered_map<string, string> reverse;
+        for (const auto& entry : NcoreSectionNamesMap())
+        {
+            // emplace keeps the first mapping if names are ever duplicated
+            reverse.emplace(entry.second, entry.first);
+        }
+        return reverse;
+    }();
+    return reverseMap;
+}
+
+const std::vector<string>& NonNcoreSectionNames()
+{
     static const std::vector<string> nonNcoreSectionNames = {
       "PBLT", "PBLD", "PFWT", "PFWD", "SBDF", "CALF",
     };
+    return nonNcoreSectionNames;
+}
 
+string BinarySectionMetadata::CshSectionIDToString(u_int32_t sectionId)
+{
     char sectionName[5] = {0};
     memcpy(sectionName, &sectionId, 4);
     CPUTOn(sectionName, 1);
     string sectionNameStr(sectionName);
 
-    if (ncoreSectionNamesMap.find(sectionNameStr) != ncoreSectionNamesMap.end())
+    const auto& namesMap = NcoreSectionNamesMap();
+    auto it = namesMap.find(sectionNameStr);
+    if (it != namesMap.end())
     {
-        sectionNameStr = ncoreSectionNamesMap.at(sectionNameStr);
+        sectionNameStr = it->second;
     }
-    else if (std::find(nonNcoreSectionNames.begin(), nonNcoreSectionNames.end(), sectionNameStr) ==
-             nonNcoreSectionNames.end())
+    else
     {
-        sectionNameStr = "UNKNOWN";
+        const auto& nonNcoreSectionNames = NonNcoreSectionNames();
+        if (std::find(nonNcoreSectionNames.begin(), nonNcoreSectionNames.end(), sectionNameStr) ==
+            nonNcoreSectionNames.end())
+        {
+            sectionNameStr = "UNKNOWN";
+        }
     }
 
     return sectionNameStr;
+}
+
+u_int32_t BinarySectionMetadata::CshSectionStringToID(const string& sectionName)
+{
+    u_int32_t sectionId = 0;
+    const auto& reverseMap = NcoreSectionNamesReverseMap();
+    auto it = reverseMap.find(sectionName);
+    if (it != reverseMap.end())
+    {
+        u_int32_t tmp = 0;
+        memcpy(&tmp, it->second.data(), 4);
+        CPUTOn(&tmp, 1);
+        sectionId = tmp;
+    }
+
+    return sectionId;
 }
 
 u_int32_t BinarySectionMetadata::FromItocTypeToCshSectionType(u_int32_t itocType)
@@ -1269,8 +1316,13 @@ BinarySectionMetadata& CSH::GetSection(u_int32_t itocType)
             return section;
         }
     }
+    u_int32_t magic = itocType;
+    CPUTOn(&magic, 1);
+    char magicStr[sizeof(magic) + 1] = {0};
+    memcpy(magicStr, &magic, sizeof(magic));
     std::stringstream ss;
-    ss << std::hex << "Section with ITOC type 0x" << itocType << " not found in CSH";
+    ss << "Section with magic ID " << magicStr << " (0x" << std::hex << std::setw(8) << std::setfill('0') << itocType
+       << ") not found in CSH.";
     throw runtime_error(ss.str());
 }
 

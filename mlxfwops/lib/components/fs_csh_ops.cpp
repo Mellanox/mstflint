@@ -44,6 +44,8 @@ u_int8_t FsCshOperations::FwType()
     {
         case FwComponent::comps_ids_t::COMPID_CPO_VMOD_FW:
             return FIT_CSH_VMOD;
+        case FwComponent::comps_ids_t::COMPID_UNKNOWN:
+            return FIT_CSH;
         default:
             throw runtime_error("Unsupported CSH component ID");
     }
@@ -197,8 +199,52 @@ bool FsCshOperations::FwInit()
                      FwComponent::comps_ids_t::COMPID_CPO_VMOD_FW);
             _componentID = FwComponent::comps_ids_t::COMPID_CPO_VMOD_FW;
             break;
+        case CshComponentID::CALIPTRA_FW:
+        case CshComponentID::NV_FWS:
+        case CshComponentID::SWITCH_FWS:
+        case CshComponentID::SBD_FW:
+            MLXFWOPS_LOG_DEBUG("FsCshOperations::FwInit() - Found known CSH component id = 0x%x", (int)_csh.GetComponentIdEnum());
+            _componentID = FwComponent::comps_ids_t::COMPID_UNKNOWN;
+            break;
         default:
             return errmsg("Provided CSH is not supported");
+    }
+
+    return true;
+}
+
+bool FsCshOperations::ReadComponent(string sectionName, ComponentHeader, string, vector<u_int8_t>& componentData)
+{
+    u_int32_t convertedMagicId = BinarySectionMetadata::CshSectionStringToID(sectionName);
+
+    if (convertedMagicId == 0 && sectionName.size() != 4)
+    {
+        return errmsg("Section name must be a 4 characters long magic ID or appropriate section string.");
+    }
+
+    u_int32_t magicId = 0; // CSH section is indetified by a 4 characters long magic ID
+    if (convertedMagicId != 0)
+    {
+        magicId = convertedMagicId;
+    }
+    else
+    {
+        memcpy(&magicId, sectionName.c_str(), 4);
+        CPUTOn(&magicId, 1);
+    }
+
+    try
+    {
+        BinarySectionMetadata section = _csh.GetSection(magicId);
+        componentData.resize(section.GetSectionSize());
+        if (!_ioAccess->read(section.GetSectionOffset(), componentData.data(), section.GetSectionSize()))
+        {
+            return errmsg("Failed to read section: %s", _ioAccess->err());
+        }
+    }
+    catch (const std::exception& e)
+    {
+        return errmsg("Section not found: %s", e.what());
     }
 
     return true;

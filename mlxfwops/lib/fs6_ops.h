@@ -73,10 +73,14 @@ public:
                                     const PartitionTableEntry& entry,
                                     const string& partitionType);
 
-    bool ReadComponent(ComponentType compName,
+    bool ReadComponent(string compName,
                        ComponentHeader compHeader,
                        string file_path,
                        vector<u_int8_t>& componentData) override;
+    bool ReadComponentSection(string compName,
+                              string sectionName,
+                              ComponentHeader compHeader,
+                              vector<u_int8_t>& sectionData) override;
     bool SetSignedFWComponent(string binPath, ComponentType compName, const char* msg) override;
     bool GetFwComponentsData(string path) override;
     void PrintSectionRange(VerifyCallBack verifyCallBackFunc,
