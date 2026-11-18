@@ -556,4 +556,38 @@ string CreateSiblingTempFile(const string& sibling)
     return string(&buf[0]);
 }
 
+std::tuple<std::string, std::string> Split16CharsHexStringToDwords(const std::string& str)
+{
+    std::string str1, str2;
+    std::string str_copy = str;
+    const size_t numOfDigits = 16;
+
+    if (str.length() > 2 && str[0] == '0' && str[1] == 'x')
+    {
+        str1 = "0x";
+        str2 = "0x";
+        str_copy.erase(0, 2);
+    }
+
+    if (str_copy.length() > numOfDigits)
+    {
+        //* ignoring characters after 16, aligned to curent mic behavior for "beg", "start", "end" attributes
+        str_copy = str_copy.substr(str_copy.length() - numOfDigits);
+    }
+
+    if (str_copy.length() > numOfDigits / 2)
+    {
+        size_t lsbStart = str_copy.length() - numOfDigits / 2;
+        str1 += str_copy.substr(lsbStart);
+        str2 += str_copy.substr(0, lsbStart);
+    }
+    else
+    {
+        str1 += str_copy;
+        str2 = "";
+    }
+
+    return std::make_tuple(str1, str2);
+}
+
 } // namespace mft_utils

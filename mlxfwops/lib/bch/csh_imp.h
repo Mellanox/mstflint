@@ -226,33 +226,32 @@ public:
         return static_cast<CshSectionType>(FromItocTypeToCshSectionType(GetSectionType()));
     }
     string GetMagicId() const;
+    vector<u_int8_t> GetMagicIdAsVector() const;
 
     void SetDigest(const vector<u_int8_t>& digest);
 
-    void SetJsonParams(const Json::Value& root, bool ignoreMagicId = false);
+    void SetJsonParams(const Json::Value& root);
 
     static size_t Size() { return fs5_image_layout_binary_section_metadata_size(); }
     static u_int32_t FromItocTypeToCshSectionType(u_int32_t itocType);
     static string CshSectionIDToString(u_int32_t sectionId);
 
-    vector<u_int8_t> GetDerivationKey() const
-    {
-        return vector<u_int8_t>(_struct.encryption_params.u8_encryption_derivation_string.u8_dummy,
-                                _struct.encryption_params.u8_encryption_derivation_string.u8_dummy +
-                                  FS5_IMAGE_LAYOUT_U8_ENCRYPTION_DERIVATION_STRING_SIZE);
-    }
-    // TODO:: check with Nael what is the derivation context
-    vector<u_int8_t> GetDerivationContext() const
-    {
-        return vector<u_int8_t>(_struct.encryption_params.u8_encryption_derivation_string.u8_dummy,
-                                _struct.encryption_params.u8_encryption_derivation_string.u8_dummy +
-                                  FS5_IMAGE_LAYOUT_U8_ENCRYPTION_DERIVATION_STRING_SIZE);
-    }
+    vector<u_int8_t> GetDerivationString() const;
+    vector<u_int8_t> GetVersionAsVector() const;
+
+    bool IsIVSet() const { return _isIVSet; }
     void SetIV(const vector<u_int8_t>& iv);
+    vector<u_int8_t> GetIV() const;
     void SetAuthenticationTag(const vector<u_int8_t>& tag);
 
 private:
+    void SetDwordsFrom8BytesJsonField(const Json::Value& root,
+                                      const string& fieldName,
+                                      u_int32_t& firstField,
+                                      u_int32_t& secondField);
+
     struct fs5_image_layout_binary_section_metadata _struct;
+    bool _isIVSet;
 };
 
 class MLXFWOP_API CshMetadataBase
@@ -373,7 +372,7 @@ private:
     void UnpackCshMetadata(const vector<u_int8_t>& cshHeader, const u_int8_t* iter);
     void SetHeaderFromJson(const Json::Value& root);
     void SetSingleSectionFromJson(const Json::Value& root);
-    void SetSectionsFromJson(const Json::Value& root, bool ignoreMagicId = false);
+    void SetSectionsFromJson(const Json::Value& root);
     void InitMembers();
 
     static const u_int16_t CSH_ECDSA_SIG_SIZE = 96;
