@@ -145,9 +145,9 @@ public:
     } table;
 
 private:
-    static const char* str;
-    static const char* initial_arg;
-    static status state;
+    const char* str;
+    const char* initial_arg;
+    status state;
     int def_radix;
 
     int GetBinaryOp(u_int64_t* val, int priority);
