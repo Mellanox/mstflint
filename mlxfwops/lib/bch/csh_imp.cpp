@@ -396,6 +396,7 @@ string BinarySectionMetadata::CshSectionIDToString(u_int32_t sectionId)
                                                                             {"MHSH", "MAIN_PAGES_HASHES"},
                                                                             {"MAIN", "MAIN_CODE"},
                                                                             {"NKRL", "NANO_KERNEL"},
+                                                                            {"CERT", "CERTIFICATES_CHAIN_L1_L3"},
                                                                             {"VMOD", "VMOD_FW_IMG"},
                                                                             {"VMDI", "VMOD_IMAGE_INFO"},
                                                                             {"VMDH", "VMOD_PAGES_HASHES"},
