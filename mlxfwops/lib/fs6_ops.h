@@ -147,6 +147,7 @@ private:
     bool VerifyCshComponent();
 
     void UpdatePartitionTable(bool l1pt);
+    void CopyMagicPattern(size_t componentOffset, vector<u_int8_t>& compData);
     bool IsL2ptSection(CshComponentID cshId);
     bool IsL2ptSection(PartitionType partitionType);
 

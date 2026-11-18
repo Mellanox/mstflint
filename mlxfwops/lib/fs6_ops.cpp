@@ -506,6 +506,19 @@ bool Fs6Operations::ReadComponent(ComponentType compName,
     return true;
 }
 
+void Fs6Operations::CopyMagicPattern(size_t componentOffset, vector<u_int8_t>& compData)
+{
+    const size_t magicPatternOffset = 0xc;
+    vector<u_int8_t> magicPattern(4);
+    if (!_ioAccess->read(componentOffset + magicPatternOffset, magicPattern.data(), magicPattern.size()))
+    {
+        throw std::runtime_error(std::string("CSH header read error at offset 0x") +
+                                 mft_utils::ToHexString(componentOffset + magicPatternOffset, 8) + " (" +
+                                 (*_ioAccess).err() + ")");
+    }
+    std::copy(magicPattern.begin(), magicPattern.end(), compData.begin() + magicPatternOffset);
+}
+
 bool Fs6Operations::SetSignedFWComponent(string binPath, ComponentType compName, const char* msg)
 {
     CshComponentID cshId = ToCshId(compName);
@@ -541,6 +554,11 @@ bool Fs6Operations::SetSignedFWComponent(string binPath, ComponentType compName,
     }
 
     UpdatePartitionTable(!isL2pt);
+
+    if (cshId == CshComponentID::ROM_IMGS)
+    {
+        CopyMagicPattern(componentOffset, compData);
+    }
 
     if (!_ioAccess->write(componentOffset, compData.data(), compData.size()))
     {
