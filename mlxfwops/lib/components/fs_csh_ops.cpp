@@ -104,7 +104,6 @@ bool FsCshOperations::FwQuery(fw_info_t* fwInfo,
         return false;
     }
 
-    memcpy(fwInfo, &_fwImgInfo, sizeof(fw_info_t));
     fwInfo->fw_type = FwType();
     memcpy(&(fwInfo->fw_info), &(_fwImgInfo.ext_info), sizeof(fw_info_com_t));
     memcpy(&(fwInfo->fs3_info), &(_fsCommonInfo.ext_info), sizeof(fs3_info_t));
