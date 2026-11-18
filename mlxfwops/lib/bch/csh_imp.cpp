@@ -211,8 +211,7 @@ void PartitionTable::CalcDigest()
 {
 #ifndef MST_CPU_armv7l_umbriel // {
     vector<u_int8_t> data = Pack();
-    data.erase(data.begin() + PARTITION_TABLE_DIGEST_OFFSET,
-               data.begin() + PARTITION_TABLE_DIGEST_OFFSET + SHA384_DIGEST_SIZE);
+    data.erase(data.begin(), data.begin() + HeaderSize());
 
     vector<u_int8_t> digest;
     MlxSignSHA384 Sha384;
