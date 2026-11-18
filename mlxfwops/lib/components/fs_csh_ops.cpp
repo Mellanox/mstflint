@@ -180,7 +180,14 @@ bool FsCshOperations::FwInit()
     {
         return errmsg("Failed to read Image: %s", _ioAccess->err());
     }
-    _csh.Unpack(cshData);
+    try
+    {
+        _csh.Unpack(cshData);
+    }
+    catch (const std::exception& e)
+    {
+        return errmsg("Failed to unpack CSH: %s", e.what());
+    }
 
     switch (_csh.GetComponentIdEnum())
     {
