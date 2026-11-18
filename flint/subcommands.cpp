@@ -3636,8 +3636,16 @@ FlintStatus BurnSubCommand::executeCommand()
     }
     else if (_fwType == FIT_FS6) // DFA flow for FS6
     {
+        // No PSID check when device query is unavailable in case of production burn.
+        if (_devQueryRes && !checkPSID())
+        {
+            UnlockDevice(_fwOps);
+            return FLINT_FAILED;
+        }
+
         if (!warnAboutBurnFailsafe())
         {
+            UnlockDevice(_fwOps);
             return FLINT_FAILED;
         }
         if (!_fwOps->FwBurnAdvanced(_imgOps, _burnParams))
