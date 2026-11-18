@@ -463,6 +463,7 @@ public:
     u_int8_t GetComponentMajorVersion() { return _metadata->GetComponentMajorVersion(); }
     u_int16_t GetComponentMinorVersion() { return _metadata->GetComponentMinorVersion(); }
     u_int16_t GetComponentSubminorVersion() { return _metadata->GetComponentSubminorVersion(); }
+    u_int8_t GetNvPubKeyIdx() { return _header.u8_nv_pub_key_idx; }
 
     u_int8_t GetVmodAdmStatus();
     void SetVmodAdmStatus(fs5_image_layout_vmod_status status);
