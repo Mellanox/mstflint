@@ -73,57 +73,55 @@ using namespace std;
 
 enum class CshSectionType
 {
-    CSH_SECTION_BOOT2 = 0x42543201,
-    CSH_SECTION_IMAGE_INFO = 0x494D4910,
-    CSH_SECTION_HW_BOOT_INI = 0x48574208,
-    CSH_SECTION_FW_BOOT_INI = 0x46574211,
-    CSH_SECTION_PRE_LINKUP = 0x50524504,
-    CSH_SECTION_POST_LINKUP = 0x49524F02,
-    CSH_SECTION_HW_NON_ISFU_INI = 0x484E490D,
-    CSH_SECTION_HW_MAIN_INI = 0x48574D09,
-    CSH_SECTION_FW_MAIN_INI = 0x46574D12,
-    CSH_SECTION_MFG_INFO = 0x4D4647E0,
-    CSH_SECTION_POST_IRON_BOOT = 0x504F5306,
-    CSH_SECTION_HW_TILE_INI = 0x48575437,
-    CSH_SECTION_FW_TILE_INI = 0x46575436,
-    CSH_SECTION_SWITCH_TILE_CODE_HASH_SQUARE = 0x54535152,
-    CSH_SECTION_SWITCH_TILE_CODE_HASH = 0x54485348,
-    CSH_SECTION_SWITCH_TILE_CODE = 0x54494C35,
-    CSH_SECTION_PLASTIC_DATA = 0x504454D3,
-    CSH_SECTION_SWITCH_MAIN_HASH_SQUARE = 0x4D5351B2,
-    CSH_SECTION_SWITCH_MAIN_HASH = 0x4D4853B1,
-    CSH_SECTION_SWITCH_MAIN = 0x4D414903,
-    CSH_SECTION_NANO_KERNEL = 0x4E4B524C,
-
     //* enum values are conversion from ASCII to hex (4-char string to 32-bit hex)
-    CSH_SECTION_BOOT2_MAGIC_ID = 0x424F5432,                        // "BOT2"
-    CSH_SECTION_IMAGE_INFO_MAGIC_ID = 0x49494E46,                   // "IINF"
-    CSH_SECTION_HW_BOOT_INI_MAGIC_ID = 0x48574249,                  // "HWBI"
-    CSH_SECTION_FW_BOOT_INI_MAGIC_ID = 0x46574249,                  // "FWBI"
-    CSH_SECTION_PRE_LINKUP_MAGIC_ID = 0x5052454C,                   // "PREL"
-    CSH_SECTION_POST_LINKUP_MAGIC_ID = 0x49524F4E,                  // "IRON"
-    CSH_SECTION_HW_NON_ISFU_INI_MAGIC_ID = 0x484E4949,              // "HNII"
-    CSH_SECTION_HW_MAIN_INI_MAGIC_ID = 0x48574D49,                  // "HWMI"
-    CSH_SECTION_FW_MAIN_INI_MAGIC_ID = 0x46574D49,                  // "FWMI"
-    CSH_SECTION_MFG_INFO_MAGIC_ID = 0x4D4647E0,                     // (no mapping - unchanged)
-    CSH_SECTION_POST_IRON_BOOT_MAGIC_ID = 0x50535449,               // "PSTI"
-    CSH_SECTION_HW_TILE_INI_MAGIC_ID = 0x48575449,                  // "HWTI"
-    CSH_SECTION_FW_TILE_INI_MAGIC_ID = 0x46575449,                  // "FWTI"
-    CSH_SECTION_SWITCH_TILE_CODE_HASH_SQUARE_MAGIC_ID = 0x54535152, // "TSQR"
-    CSH_SECTION_SWITCH_TILE_CODE_HASH_MAGIC_ID = 0x54485348,        // "THSH"
-    CSH_SECTION_SWITCH_TILE_CODE_MAGIC_ID = 0x54494C45,             // "TILE"
-    CSH_SECTION_PLASTIC_DATA_MAGIC_ID = 0x504C4454,                 // "PLDT"
-    CSH_SECTION_SWITCH_MAIN_HASH_SQUARE_MAGIC_ID = 0x4D535152,      // "MSQR"
-    CSH_SECTION_SWITCH_MAIN_HASH_MAGIC_ID = 0x4D485348,             // "MHSH"
-    CSH_SECTION_SWITCH_MAIN_MAGIC_ID = 0x4D41494E,                  // "MAIN"
-    CSH_SECTION_NANO_KERNEL_MAGIC_ID = 0x4E4B524C,                  // "NKRL"
-    CSH_SECTION_SWITCH_VMOD_CODE_HASH_SQUARE_MAGIC_ID = 0x564D4853, // "VMHS"
-    CSH_SECTION_SWITCH_VMOD_CODE_HASH_MAGIC_ID = 0x564D4448,        // "VMDH"
-    CSH_SECTION_SWITCH_VMOD_CODE_MAGIC_ID = 0x564D4F44,             // "VMOD"
-    CSH_SECTION_SWITCH_VMOD_IMAGE_INFO_MAGIC_ID = 0x564D4449,       // "VMDI"
-    CSH_SECTION_L3PW_MAGIC_ID = 0x4c335057,                         // "L3PW"
-    CSH_SECTION_L3PR_MAGIC_ID = 0x4c335052                          // "L3PR"
+    BOOT2_MAGIC_ID = 0x424F5432,                        // "BOT2"
+    IMAGE_INFO_MAGIC_ID = 0x49494E46,                   // "IINF"
+    HW_BOOT_INI_MAGIC_ID = 0x48574249,                  // "HWBI"
+    FW_BOOT_INI_MAGIC_ID = 0x46574249,                  // "FWBI"
+    PRE_LINKUP_MAGIC_ID = 0x5052454C,                   // "PREL"
+    POST_LINKUP_MAGIC_ID = 0x49524F4E,                  // "IRON"
+    HW_NON_ISFU_INI_MAGIC_ID = 0x484E4949,              // "HNII"
+    HW_MAIN_INI_MAGIC_ID = 0x48574D49,                  // "HWMI"
+    FW_MAIN_INI_MAGIC_ID = 0x46574D49,                  // "FWMI"
+    POST_IRON_BOOT_MAGIC_ID = 0x50535449,               // "PSTI"
+    HW_TILE_INI_MAGIC_ID = 0x48575449,                  // "HWTI"
+    FW_TILE_INI_MAGIC_ID = 0x46575449,                  // "FWTI"
+    TILE_CODE_HASH_SQUARE_MAGIC_ID = 0x54535152,        // "TSQR"
+    TILE_CODE_HASH_MAGIC_ID = 0x54485348,               // "THSH"
+    TILE_CODE_MAGIC_ID = 0x54494C45,                    // "TILE"
+    PLASTIC_DATA_MAGIC_ID = 0x504C4454,                 // "PLDT"
+    MAIN_HASH_SQUARE_MAGIC_ID = 0x4D535152,             // "MSQR"
+    MAIN_HASH_MAGIC_ID = 0x4D485348,                    // "MHSH"
+    MAIN_MAGIC_ID = 0x4D41494E,                         // "MAIN"
+    NANO_KERNEL_MAGIC_ID = 0x4E4B524C,                  // "NKRL"
+    VMOD_CODE_HASH_SQUARE_MAGIC_ID = 0x564D4853,        // "VMHS"
+    VMOD_CODE_HASH_MAGIC_ID = 0x564D4448,               // "VMDH"
+    VMOD_CODE_MAGIC_ID = 0x564D4F44,                    // "VMOD"
+    VMOD_IMAGE_INFO_MAGIC_ID = 0x564D4449,              // "VMDI"
+    L3PW_MAGIC_ID = 0x4c335057,                         // "L3PW"
+    L3PR_MAGIC_ID = 0x4c335052,                         // "L3PR"
+    NANO_KERNEL_1_MAGIC_ID = 0x4E4B5231,                // "NKR1"
+    CERTIFICATES_CHAIN_MAGIC_ID = 0x43455254,           // "CERT"
+    PRE_LINK_CODE_MAGIC_ID = 0x504C4350,                // "PLCP"
+    PRE_LINK_DATA_MAGIC_ID = 0x504C4450,                // "PLDP"
+    POST_LINK_CODE_MAGIC_ID = 0x50534C43,               // "PSLC"
+    POST_LINK_DATA_MAGIC_ID = 0x50534C44,               // "PSLD"
+    IRON_PREP_CODE_MAGIC_ID = 0x49504343,               // "IPCC"
+    EXPANSION_ROM_MAGIC_ID = 0x524F4D43,                // "ROMC"
+    PAGER_CONFIG_MAGIC_ID = 0x50475243,                 // "PGRC"
+    NIC_ETC_MAGIC_ID = 0x4E455443,                      // "NETC"
+    NIC_ETC_PAGES_HASHES_MAGIC_ID = 0x45544348,         // "ETCH"
+    NIC_ETC_PAGES_LOCKED_HASHES_MAGIC_ID = 0x45485351,  // "EHSQ"
+    DPA_ATOC_MAGIC_ID = 0x44504141,                     // "DPAA"
+    DPA_ATOC_PAGES_HASHES_MAGIC_ID = 0x44504853,        // "DPHS"
+    DPA_ATOC_PAGES_LOCKED_HASHES_MAGIC_ID = 0x44485351, // "DHSQ"
+    CRDUMP_MASK_DATA_MAGIC_ID = 0x444D504D              // "DMPM"
 };
+
+inline u_int32_t ToU32(CshSectionType type)
+{
+    return static_cast<u_int32_t>(type);
+}
 
 enum class CshComponentID
 {
@@ -331,10 +329,7 @@ public:
     size_t GetSectionSize() const { return _struct.bin_length; }
     void SetSectionSize(u_int32_t size) { _struct.bin_length = size; }
     u_int32_t GetSectionType() const;
-    CshSectionType GetSectionTypeStrong() const
-    {
-        return static_cast<CshSectionType>(FromItocTypeToCshSectionType(GetSectionType()));
-    }
+    CshSectionType GetSectionTypeStrong() const { return static_cast<CshSectionType>(GetSectionType()); }
     string GetMagicId() const;
     vector<u_int8_t> GetMagicIdAsVector() const;
 
@@ -343,7 +338,6 @@ public:
     void SetJsonParams(const Json::Value& root);
 
     static size_t Size() { return fs5_image_layout_binary_section_metadata_size(); }
-    static u_int32_t FromItocTypeToCshSectionType(u_int32_t itocType);
     static string CshSectionIDToString(u_int32_t sectionId);
     static u_int32_t CshSectionStringToID(const string& sectionName);
 

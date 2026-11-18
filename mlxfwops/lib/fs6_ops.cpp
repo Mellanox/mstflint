@@ -701,11 +701,11 @@ bool Fs6Operations::VerifyCshComponent(const PartitionTableEntry& entry,
             if (showItoc)
             {
                 PrintSectionMetadata(section, verifyCallBackFunc);
-                if ((CshSectionType)section.GetSectionType() == CshSectionType::CSH_SECTION_L3PW_MAGIC_ID)
+                if ((CshSectionType)section.GetSectionType() == CshSectionType::L3PW_MAGIC_ID)
                 {
                     PrintPartitionTable(verifyCallBackFunc, _l3pw, _l3pwOffset, "L3PW");
                 }
-                else if ((CshSectionType)section.GetSectionType() == CshSectionType::CSH_SECTION_L3PR_MAGIC_ID)
+                else if ((CshSectionType)section.GetSectionType() == CshSectionType::L3PR_MAGIC_ID)
                 {
                     PrintPartitionTable(verifyCallBackFunc, _l3pr, _l3prOffset, "L3PR");
                 }
@@ -1137,19 +1137,10 @@ bool Fs6Operations::ReadCshSectionInfo(PartitionType partitionType,
 bool Fs6Operations::GetImageInfoData(vector<u_int8_t>& data)
 {
     MLXFWOPS_LOG_DEBUG("Fs6Operations::GetImageInfoData");
-    if (!ReadCshSectionInfo(PartitionType::PT_SWITCH_FWS,
-                            CshSectionType::CSH_SECTION_IMAGE_INFO_MAGIC_ID,
-                            FS6_IMAGE_LAYOUT_IMAGE_INFO_SIZE,
-                            data))
+    if (!ReadCshSectionInfo(PartitionType::PT_SWITCH_FWS, CshSectionType::IMAGE_INFO_MAGIC_ID,
+                            FS6_IMAGE_LAYOUT_IMAGE_INFO_SIZE, data))
     {
-        // TODO: fallback for backward compatibility
-        if (!ReadCshSectionInfo(PartitionType::PT_SWITCH_FWS,
-                                CshSectionType::CSH_SECTION_IMAGE_INFO,
-                                FS6_IMAGE_LAYOUT_IMAGE_INFO_SIZE,
-                                data))
-        {
-            return false;
-        }
+        return false;
     }
 
     return true;
@@ -2632,12 +2623,12 @@ bool Fs6Operations::InitL3pt()
         MLXFWOPS_LOG_DEBUG("WP/RW area pointers not found in L1PT");
     }
 
-    if (!InitL3PartitionTable(_l3pw, _l3pwOffset, CshSectionType::CSH_SECTION_L3PW_MAGIC_ID))
+    if (!InitL3PartitionTable(_l3pw, _l3pwOffset, CshSectionType::L3PW_MAGIC_ID))
     {
         return false;
     }
 
-    if (!InitL3PartitionTable(_l3pr, _l3prOffset, CshSectionType::CSH_SECTION_L3PR_MAGIC_ID))
+    if (!InitL3PartitionTable(_l3pr, _l3prOffset, CshSectionType::L3PR_MAGIC_ID))
     {
         return false;
     }

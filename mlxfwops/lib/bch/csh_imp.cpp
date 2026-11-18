@@ -46,6 +46,7 @@
 #include <algorithm>
 #include <iomanip>
 #include <limits.h>
+#include <map>
 #include <unordered_map>
 
 bool IsCshComponent(PartitionType partitionType)
@@ -375,57 +376,59 @@ PartitionType PartitionTableEntry::GetPartitionTypeEnum() const
     return static_cast<PartitionType>(_struct.partition_type);
 }
 
-const std::unordered_map<string, string>& NcoreSectionNamesMap()
+const std::map<CshSectionType, string>& NcoreSectionNamesMap()
 {
-    static const std::unordered_map<string, string> namesMap = {{"BOT2", "BOOT_CODE"},
-                                                                {"IINF", "IMAGE_INFO"},
-                                                                {"HWBI", "HW_BOOT_CFG"},
-                                                                {"FWBI", "FW_BOOT_CFG"},
-                                                                {"PREL", "PCIE_LINK_CODE"},
-                                                                {"IRON", "PCI_CODE"},
-                                                                {"HNII", "CCIR_INFRA_CODE"},
-                                                                {"HWMI", "HW_MAIN_CFG"},
-                                                                {"FWMI", "FW_MAIN_CFG"},
-                                                                {"PSTI", "POST_IRON_BOOT_CODE"},
-                                                                {"HWTI", "HW_TILE_INI"},
-                                                                {"FWTI", "FW_TILE_INI"},
-                                                                {"TSQR", "TILE_PAGES_LOCKED_HASHES"},
-                                                                {"THSH", "TILE_PAGES_HASHES"},
-                                                                {"TILE", "TILE_FW_CODE"},
-                                                                {"PLDT", "MAIN_DATA"},
-                                                                {"MSQR", "MAIN_PAGES_LOCKED_HASHES"},
-                                                                {"MHSH", "MAIN_PAGES_HASHES"},
-                                                                {"MAIN", "MAIN_CODE"},
-                                                                {"NKRL", "NANO_KERNEL"},
-                                                                {"CERT", "CERTIFICATES_CHAIN_L1_L3"},
-                                                                {"VMOD", "VMOD_FW_IMG"},
-                                                                {"VMDI", "VMOD_IMAGE_INFO"},
-                                                                {"VMDH", "VMOD_PAGES_HASHES"},
-                                                                {"VMHS", "VMOD_PAGES_LOCKED_HASHES"},
-                                                                {"L3PW", "L3PT_WP"},
-                                                                {"L3PR", "L3PT_RW"},
-                                                                {"PLCP", "PRE_LINK_CODE"},
-                                                                {"PLDP", "PRE_LINK_DATA"},
-                                                                {"PSLC", "POST_LINK_CODE"},
-                                                                {"PSLD", "POST_LINK_DATA"},
-                                                                {"IPCC", "IRON_PREP_CODE"},
-                                                                {"ROMC", "EXPANSION_ROM"},
-                                                                {"PGRC", "PAGER_CONFIG"},
-                                                                {"NETC", "NIC_ETC"},
-                                                                {"ETCH", "NIC_ETC_PAGES_HASHES"},
-                                                                {"EHSQ", "NIC_ETC_PAGES_LOCKED_HASHES"},
-                                                                {"DPAA", "DPA_ATOC"},
-                                                                {"DPHS", "DPA_ATOC_PAGES_HASHES"},
-                                                                {"DHSQ", "DPA_ATOC_PAGES_LOCKED_HASHES"},
-                                                                {"DMPM", "CRDUMP_MASK_DATA"}};
+    static const std::map<CshSectionType, string> namesMap = {
+      {CshSectionType::BOOT2_MAGIC_ID, "BOOT_CODE"},
+      {CshSectionType::IMAGE_INFO_MAGIC_ID, "IMAGE_INFO"},
+      {CshSectionType::HW_BOOT_INI_MAGIC_ID, "HW_BOOT_CFG"},
+      {CshSectionType::FW_BOOT_INI_MAGIC_ID, "FW_BOOT_CFG"},
+      {CshSectionType::PRE_LINKUP_MAGIC_ID, "PCIE_LINK_CODE"},
+      {CshSectionType::POST_LINKUP_MAGIC_ID, "PCI_CODE"},
+      {CshSectionType::HW_NON_ISFU_INI_MAGIC_ID, "CCIR_INFRA_CODE"},
+      {CshSectionType::HW_MAIN_INI_MAGIC_ID, "HW_MAIN_CFG"},
+      {CshSectionType::FW_MAIN_INI_MAGIC_ID, "FW_MAIN_CFG"},
+      {CshSectionType::POST_IRON_BOOT_MAGIC_ID, "POST_IRON_BOOT_CODE"},
+      {CshSectionType::HW_TILE_INI_MAGIC_ID, "HW_TILE_INI"},
+      {CshSectionType::FW_TILE_INI_MAGIC_ID, "FW_TILE_INI"},
+      {CshSectionType::TILE_CODE_HASH_SQUARE_MAGIC_ID, "TILE_PAGES_LOCKED_HASHES"},
+      {CshSectionType::TILE_CODE_HASH_MAGIC_ID, "TILE_PAGES_HASHES"},
+      {CshSectionType::TILE_CODE_MAGIC_ID, "TILE_FW_CODE"},
+      {CshSectionType::PLASTIC_DATA_MAGIC_ID, "MAIN_DATA"},
+      {CshSectionType::MAIN_HASH_SQUARE_MAGIC_ID, "MAIN_PAGES_LOCKED_HASHES"},
+      {CshSectionType::MAIN_HASH_MAGIC_ID, "MAIN_PAGES_HASHES"},
+      {CshSectionType::MAIN_MAGIC_ID, "MAIN_CODE"},
+      {CshSectionType::NANO_KERNEL_MAGIC_ID, "NANO_KERNEL"},
+      {CshSectionType::NANO_KERNEL_1_MAGIC_ID, "NANO_KERNEL_1"},
+      {CshSectionType::CERTIFICATES_CHAIN_MAGIC_ID, "CERTIFICATES_CHAIN_L1_L3"},
+      {CshSectionType::VMOD_CODE_MAGIC_ID, "VMOD_FW_IMG"},
+      {CshSectionType::VMOD_IMAGE_INFO_MAGIC_ID, "VMOD_IMAGE_INFO"},
+      {CshSectionType::VMOD_CODE_HASH_MAGIC_ID, "VMOD_PAGES_HASHES"},
+      {CshSectionType::VMOD_CODE_HASH_SQUARE_MAGIC_ID, "VMOD_PAGES_LOCKED_HASHES"},
+      {CshSectionType::L3PW_MAGIC_ID, "L3PT_WP"},
+      {CshSectionType::L3PR_MAGIC_ID, "L3PT_RW"},
+      {CshSectionType::PRE_LINK_CODE_MAGIC_ID, "PRE_LINK_CODE"},
+      {CshSectionType::PRE_LINK_DATA_MAGIC_ID, "PRE_LINK_DATA"},
+      {CshSectionType::POST_LINK_CODE_MAGIC_ID, "POST_LINK_CODE"},
+      {CshSectionType::POST_LINK_DATA_MAGIC_ID, "POST_LINK_DATA"},
+      {CshSectionType::IRON_PREP_CODE_MAGIC_ID, "IRON_PREP_CODE"},
+      {CshSectionType::EXPANSION_ROM_MAGIC_ID, "EXPANSION_ROM"},
+      {CshSectionType::PAGER_CONFIG_MAGIC_ID, "PAGER_CONFIG"},
+      {CshSectionType::NIC_ETC_MAGIC_ID, "NIC_ETC"},
+      {CshSectionType::NIC_ETC_PAGES_HASHES_MAGIC_ID, "NIC_ETC_PAGES_HASHES"},
+      {CshSectionType::NIC_ETC_PAGES_LOCKED_HASHES_MAGIC_ID, "NIC_ETC_PAGES_LOCKED_HASHES"},
+      {CshSectionType::DPA_ATOC_MAGIC_ID, "DPA_ATOC"},
+      {CshSectionType::DPA_ATOC_PAGES_HASHES_MAGIC_ID, "DPA_ATOC_PAGES_HASHES"},
+      {CshSectionType::DPA_ATOC_PAGES_LOCKED_HASHES_MAGIC_ID, "DPA_ATOC_PAGES_LOCKED_HASHES"},
+      {CshSectionType::CRDUMP_MASK_DATA_MAGIC_ID, "CRDUMP_MASK_DATA"}};
     return namesMap;
 }
 
-const std::unordered_map<string, string>& NcoreSectionNamesReverseMap()
+const std::unordered_map<string, CshSectionType>& NcoreSectionNamesReverseMap()
 {
-    static const std::unordered_map<string, string> reverseMap = []
+    static const std::unordered_map<string, CshSectionType> reverseMap = []
     {
-        std::unordered_map<string, string> reverse;
+        std::unordered_map<string, CshSectionType> reverse;
         for (const auto& entry : NcoreSectionNamesMap())
         {
             // emplace keeps the first mapping if names are ever duplicated
@@ -446,25 +449,23 @@ const std::vector<string>& NonNcoreSectionNames()
 
 string BinarySectionMetadata::CshSectionIDToString(u_int32_t sectionId)
 {
+    const auto& namesMap = NcoreSectionNamesMap();
+    auto it = namesMap.find(static_cast<CshSectionType>(sectionId));
+    if (it != namesMap.end())
+    {
+        return it->second;
+    }
+
     char sectionName[5] = {0};
     memcpy(sectionName, &sectionId, 4);
     CPUTOn(sectionName, 1);
     string sectionNameStr(sectionName);
 
-    const auto& namesMap = NcoreSectionNamesMap();
-    auto it = namesMap.find(sectionNameStr);
-    if (it != namesMap.end())
+    const auto& nonNcoreSectionNames = NonNcoreSectionNames();
+    if (std::find(nonNcoreSectionNames.begin(), nonNcoreSectionNames.end(), sectionNameStr) ==
+        nonNcoreSectionNames.end())
     {
-        sectionNameStr = it->second;
-    }
-    else
-    {
-        const auto& nonNcoreSectionNames = NonNcoreSectionNames();
-        if (std::find(nonNcoreSectionNames.begin(), nonNcoreSectionNames.end(), sectionNameStr) ==
-            nonNcoreSectionNames.end())
-        {
-            sectionNameStr = "UNKNOWN";
-        }
+        sectionNameStr = "UNKNOWN";
     }
 
     return sectionNameStr;
@@ -472,49 +473,15 @@ string BinarySectionMetadata::CshSectionIDToString(u_int32_t sectionId)
 
 u_int32_t BinarySectionMetadata::CshSectionStringToID(const string& sectionName)
 {
-    u_int32_t sectionId = 0;
     const auto& reverseMap = NcoreSectionNamesReverseMap();
     auto it = reverseMap.find(sectionName);
     if (it != reverseMap.end())
     {
-        u_int32_t tmp = 0;
-        memcpy(&tmp, it->second.data(), 4);
-        CPUTOn(&tmp, 1);
-        sectionId = tmp;
+        return static_cast<u_int32_t>(it->second);
     }
 
-    return sectionId;
+    return 0;
 }
-
-u_int32_t BinarySectionMetadata::FromItocTypeToCshSectionType(u_int32_t itocType)
-{
-    static const std::unordered_map<u_int32_t, CshSectionType> itocTypeToCshSectionType = {
-      {FS3_BOOT_CODE, CshSectionType::CSH_SECTION_BOOT2},
-      {FS3_IMAGE_INFO, CshSectionType::CSH_SECTION_IMAGE_INFO},
-      {FS3_HW_BOOT_CFG, CshSectionType::CSH_SECTION_HW_BOOT_INI},
-      {FS3_FW_BOOT_CFG, CshSectionType::CSH_SECTION_FW_BOOT_INI},
-      {FS3_PCIE_LINK_CODE, CshSectionType::CSH_SECTION_PRE_LINKUP},
-      {FS3_PCI_CODE, CshSectionType::CSH_SECTION_POST_LINKUP},
-      {FS3_CCIR_INFRA_CODE, CshSectionType::CSH_SECTION_HW_NON_ISFU_INI},
-      {FS3_HW_MAIN_CFG, CshSectionType::CSH_SECTION_HW_MAIN_INI},
-      {FS3_FW_MAIN_CFG, CshSectionType::CSH_SECTION_FW_MAIN_INI},
-      {FS3_MFG_INFO, CshSectionType::CSH_SECTION_MFG_INFO},
-      {FS3_POST_IRON_BOOT_CODE, CshSectionType::CSH_SECTION_POST_IRON_BOOT},
-      {FS4_HW_TILE_INI, CshSectionType::CSH_SECTION_HW_TILE_INI},
-      {FS4_FW_TILE_INI, CshSectionType::CSH_SECTION_FW_TILE_INI},
-      {FS4_TILE_FW_CODE, CshSectionType::CSH_SECTION_SWITCH_TILE_CODE},
-      {FS6_TILE_PAGES_HASHES, CshSectionType::CSH_SECTION_SWITCH_TILE_CODE_HASH},
-      {FS6_TILE_PAGES_LOCKED_HASHES, CshSectionType::CSH_SECTION_SWITCH_TILE_CODE_HASH_SQUARE},
-      {FS4_MAIN_DATA, CshSectionType::CSH_SECTION_PLASTIC_DATA},
-      {FS4_MAIN_PAGES_LOCKED_HASHES, CshSectionType::CSH_SECTION_SWITCH_MAIN_HASH_SQUARE},
-      {FS4_MAIN_PAGES_HASHES, CshSectionType::CSH_SECTION_SWITCH_MAIN_HASH},
-      {FS3_MAIN_CODE, CshSectionType::CSH_SECTION_SWITCH_MAIN},
-      {FS6_NANO_KERNEL, CshSectionType::CSH_SECTION_NANO_KERNEL}};
-
-    auto it = itocTypeToCshSectionType.find(itocType);
-    return it != itocTypeToCshSectionType.end() ? static_cast<u_int32_t>(it->second) : itocType;
-}
-
 BinarySectionMetadata::BinarySectionMetadata() : _isIVSet(false)
 {
     memset(&_struct, 0, sizeof(_struct));
