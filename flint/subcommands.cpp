@@ -2440,6 +2440,16 @@ bool BurnSubCommand::verifyParams()
         reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "--linkx", "--linkx_els");
         return false;
     }
+    else if (_flintParams.vmod_control == true && _flintParams.linkx_control == true)
+    {
+        reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "--vmod", "--linkx");
+        return false;
+    }
+    else if (_flintParams.vmod_control == true && _flintParams.linkx_els_control == true)
+    {
+        reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "--vmod", "--linkx_els");
+        return false;
+    }
     else if (_flintParams.linkx_control == true || _flintParams.linkx_els_control == true ||
              _flintParams.vmod_control == true)
     {
