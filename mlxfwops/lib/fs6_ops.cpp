@@ -350,10 +350,10 @@ bool Fs6Operations::VerifyCshComponent(PartitionType partitionType, u_int32_t of
     if (cshComponent != _cshComponents.end())
     {
         string compName = ToString(CshComponentID(cshComponent->second.GetComponentId()));
-        PrintSectionRange(verifyCallBackFunc, offset, offset + cshComponent->second.Size() - 1,
-                          cshComponent->second.Size(), compName, "CSH");
+        PrintSectionRange(verifyCallBackFunc, offset, offset + cshComponent->second.GetCshSize() - 1,
+                          cshComponent->second.GetCshSize(), compName, "CSH");
 
-        u_int32_t prevSectionEnd = cshComponent->second.Size();
+        u_int32_t prevSectionEnd = cshComponent->second.GetCshSize();
         u_int32_t currSectionBegin = 0;
         string sectionName;
 
@@ -365,7 +365,7 @@ bool Fs6Operations::VerifyCshComponent(PartitionType partitionType, u_int32_t of
             }
             else
             {
-                sectionName = mft_utils::ToHexString(section.GetSectionType(), 2);
+                sectionName = CshSectionIDToString(section.GetSectionType());
             }
             size_t sectionOffset = offset + section.GetSectionOffset();
             PrintSectionRange(verifyCallBackFunc, sectionOffset, sectionOffset + section.GetSectionSize() - 1,

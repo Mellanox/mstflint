@@ -58,6 +58,14 @@
 #define MLXFWOP_API
 #endif
 
+#define CPUTOn(s, n)                                \
+    do                                              \
+    {                                               \
+        u_int32_t* p = (u_int32_t*)(s);             \
+        for (u_int32_t ii = 0; ii < (n); ii++, p++) \
+            *p = __cpu_to_be32(*p);                 \
+    } while (0)
+
 using namespace std;
 
 enum class CshComponentID
@@ -97,6 +105,7 @@ enum class PartitionType
 
 bool IsCshComponent(PartitionType partitionType);
 string ToString(CshComponentID cshId);
+string CshSectionIDToString(u_int32_t sectionId);
 
 // #ifndef MST_CPU_armv7l_umbriel // {
 
@@ -213,14 +222,13 @@ public:
     };
 
     CSH();
-
-    size_t Size() { return HeaderSize() + _cshSections.size() * BinarySectionMetadata::Size(); }
+    CSH(u_int16_t id);
 
     vector<u_int8_t> Pack();
     void Unpack(const vector<u_int8_t>& buffer);
     void UnpackHeader(const vector<u_int8_t>& cshHeader);
     void UnpackSections(const vector<u_int8_t>& buffer, size_t offset = 0);
-    void AddBinarySectionMetadata(BinarySectionMetadata sectionMetadata, bool override_size_needed = true);
+    void AddBinarySectionMetadata(BinarySectionMetadata sectionMetadata, bool updateSectionsOffsets = true);
 
     const vector<BinarySectionMetadata>& GetSections() { return _cshSections; }
     vector<u_int8_t> GetMetadata() const;
@@ -236,9 +244,9 @@ public:
     void CalcDigest();
 
     static size_t HeaderSize();
+    static bool IsValidCompId(u_int16_t id);
 
 private:
-    bool IsValidCompId(u_int16_t id);
     void SetMetadataFromJson(const Json::Value& root);
 
     static const u_int16_t CSH_ECDSA_SIG_SIZE = 96;

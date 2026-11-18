@@ -298,8 +298,7 @@ vector<u_int8_t> ReadFromFile(string filename)
     std::ifstream file(filename, std::ios::binary);
     if ((file.rdstate() & std::ifstream::failbit) != 0)
     {
-        fprintf(stderr, "Error opening '%s'\n", filename.c_str());
-        exit(1);
+        throw runtime_error("Error opening '" + filename + "'");
     }
 
     // read the data:

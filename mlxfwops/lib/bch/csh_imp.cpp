@@ -73,6 +73,21 @@ string ToString(CshComponentID cshId)
     }
 }
 
+string CshSectionIDToString(u_int32_t sectionId)
+{
+    char sectionName[5] = {0};
+    memcpy(sectionName, &sectionId, 4);
+    CPUTOn(sectionName, 1);
+    string sectionNameStr(sectionName);
+
+    if (sectionNameStr == "PBLT" || sectionNameStr == "PBLD")
+    {
+        return sectionNameStr;
+    }
+
+    return mft_utils::ToHexString(sectionId, 4);
+}
+
 const string CSH::cshMetadataName = "csh_metadata";
 const string CSH::binarySectionMetadataArrName = "binary_section_metadata_";
 
@@ -91,6 +106,7 @@ vector<u_int8_t> PartitionTable::PackHeader()
 {
     vector<u_int8_t> header(fs5_image_layout_partition_table_header_size());
     fs5_image_layout_partition_table_header_pack(&_struct, header.data());
+    CPUTOn(header.data(), header.size() / 4);
     return header;
 }
 
@@ -100,8 +116,9 @@ void PartitionTable::UnpackHeader(const vector<u_int8_t>& data)
     {
         throw runtime_error("Partition header size too small");
     }
-
-    fs5_image_layout_partition_table_header_unpack(&_struct, data.data());
+    vector<u_int8_t> headerCopy = data;
+    CPUTOn(headerCopy.data(), headerCopy.size() / 4);
+    fs5_image_layout_partition_table_header_unpack(&_struct, headerCopy.data());
 }
 
 void PartitionTable::CalcDigest()
@@ -164,9 +181,10 @@ PartitionTableEntry::PartitionTableEntry(size_t offset, size_t size, u_int32_t t
 
 vector<u_int8_t> PartitionTableEntry::Pack()
 {
-    vector<u_int8_t> metadata(fs5_image_layout_partition_table_entry_size());
-    fs5_image_layout_partition_table_entry_pack(&_struct, metadata.data());
-    return metadata;
+    vector<u_int8_t> entry(fs5_image_layout_partition_table_entry_size());
+    fs5_image_layout_partition_table_entry_pack(&_struct, entry.data());
+    CPUTOn(entry.data(), entry.size() / 4);
+    return entry;
 }
 
 void PartitionTableEntry::Unpack(const vector<u_int8_t>& data)
@@ -175,7 +193,9 @@ void PartitionTableEntry::Unpack(const vector<u_int8_t>& data)
     {
         throw runtime_error("Partition entry unexpected size");
     }
-    fs5_image_layout_partition_table_entry_unpack(&_struct, data.data());
+    vector<u_int8_t> dataCopy = data;
+    CPUTOn(dataCopy.data(), dataCopy.size() / 4);
+    fs5_image_layout_partition_table_entry_unpack(&_struct, dataCopy.data());
 }
 
 void PartitionTableEntry::SetStartOffset(size_t offset)
@@ -233,6 +253,7 @@ vector<u_int8_t> BinarySectionMetadata::Pack()
 {
     vector<u_int8_t> metadata(fs5_image_layout_binary_section_metadata_size());
     fs5_image_layout_binary_section_metadata_pack(&_struct, metadata.data());
+    CPUTOn(metadata.data(), metadata.size() / 4);
     return metadata;
 }
 
@@ -242,7 +263,9 @@ void BinarySectionMetadata::Unpack(const vector<u_int8_t>& binarySection)
     {
         throw runtime_error("Binary section unexpected size");
     }
-    fs5_image_layout_binary_section_metadata_unpack(&_struct, binarySection.data());
+    vector<u_int8_t> binarySectionCopy = binarySection;
+    CPUTOn(binarySectionCopy.data(), binarySectionCopy.size() / 4);
+    fs5_image_layout_binary_section_metadata_unpack(&_struct, binarySectionCopy.data());
 }
 
 void BinarySectionMetadata::SetJsonParams(const Json::Value& root)
@@ -250,11 +273,11 @@ void BinarySectionMetadata::SetJsonParams(const Json::Value& root)
     const size_t MAGIC_ID_LEN = 4;
     const size_t ENCRYPTION_DERIVATION_STRING_LEN = 16;
 
-    // TODO enable this check after magic ID definition is finalized
-    // if (root["magic_id"].asString().length() != MAGIC_ID_LEN)
-    // {
-    //     throw runtime_error("Invalid magic ID");
-    // }
+    // TODO validate magic ID after it's defined
+    if (root["magic_id"].asString().length() != MAGIC_ID_LEN)
+    {
+        throw runtime_error("Invalid magic ID");
+    }
     memcpy(_struct.u8_magic_id, root["magic_id"].asCString(), MAGIC_ID_LEN);
 
     _struct.version.u8_ver_major =
@@ -264,8 +287,6 @@ void BinarySectionMetadata::SetJsonParams(const Json::Value& root)
     _struct.version.u8_ratchet_level =
       std::stoul(nbu::mft::common::GetStrValue(root["version"]["ratchet_level"], true), nullptr, 16);
 
-    _struct.bin_length = std::stoul(nbu::mft::common::GetStrValue(root["bin_length"], true), nullptr, 16);
-    _struct.flash_offset = std::stoul(nbu::mft::common::GetStrValue(root["flash_offset"], true), nullptr, 16);
     _struct.load_dest[0] = std::stoul(nbu::mft::common::GetStrValue(root["load_dest"], true), nullptr, 16);
     _struct.entry_point[0] = std::stoul(nbu::mft::common::GetStrValue(root["entry_point"], true), nullptr, 16);
 
@@ -296,15 +317,25 @@ CSH::CSH() : _isUnpacked(false)
     memset(&_nv_signature, 0, sizeof(_nv_signature));
     memset(&_oem_signature, 0, sizeof(_nv_signature));
     memset(&_metadata, 0, sizeof(_metadata));
-    memcpy(&_header.u8_header_magic, "NVDA", 4);
+    memcpy(&_header.u8_header_magic, "ADVN", 4);
+}
+
+CSH::CSH(u_int16_t id) : _isUnpacked(false)
+{
+    memset(&_header, 0, sizeof(_header));
+    memset(&_nv_signature, 0, sizeof(_nv_signature));
+    memset(&_oem_signature, 0, sizeof(_nv_signature));
+    memset(&_metadata, 0, sizeof(_metadata));
+    memcpy(&_header.u8_header_magic, "ADVN", 4);
+    _metadata.component_id = id;
 }
 
 vector<u_int8_t> CSH::Pack()
 {
     _metadata.num_of_binaries = _cshSections.size();
 
-    vector<u_int8_t> cshHeader(CSH::HeaderSize());
-    auto cshIter = cshHeader.data();
+    vector<u_int8_t> cshData(CSH::HeaderSize());
+    auto cshIter = cshData.data();
     fs5_image_layout_csh_header_pack(&_header, cshIter);
     cshIter += fs5_image_layout_csh_header_size();
     fs5_image_layout_csh_signature_pack(&_nv_signature, cshIter);
@@ -313,13 +344,15 @@ vector<u_int8_t> CSH::Pack()
     cshIter += fs5_image_layout_csh_signature_size();
     fs5_image_layout_csh_metadata_pack(&_metadata, cshIter);
 
+    CPUTOn(cshData.data(), cshData.size() / 4);
+
     for (auto section : _cshSections)
     {
         vector<u_int8_t> metadata = section.Pack();
-        cshHeader.insert(cshHeader.end(), metadata.begin(), metadata.end());
+        cshData.insert(cshData.end(), metadata.begin(), metadata.end());
     }
 
-    return cshHeader;
+    return cshData;
 }
 
 void CSH::Unpack(const vector<u_int8_t>& csh)
@@ -331,11 +364,14 @@ void CSH::Unpack(const vector<u_int8_t>& csh)
 
 void CSH::UnpackHeader(const vector<u_int8_t>& cshHeader)
 {
-    if (cshHeader.size() < CSH::HeaderSize())
+    if (cshHeader.size() < CSH::HeaderSize() || cshHeader.size() % 4 != 0)
     {
         throw runtime_error("CSH header unexpected size");
     }
-    auto iter = cshHeader.data();
+    vector<u_int8_t> cshHeaderCopy = cshHeader;
+    CPUTOn(cshHeaderCopy.data(), cshHeaderCopy.size() / 4);
+
+    auto iter = cshHeaderCopy.data();
     fs5_image_layout_csh_header_unpack(&_header, iter);
     iter += fs5_image_layout_csh_header_size();
     fs5_image_layout_csh_signature_unpack(&_nv_signature, iter);
@@ -343,7 +379,7 @@ void CSH::UnpackHeader(const vector<u_int8_t>& cshHeader)
     fs5_image_layout_csh_signature_unpack(&_oem_signature, iter);
     iter += fs5_image_layout_csh_signature_size();
     fs5_image_layout_csh_metadata_unpack(&_metadata, iter);
-    memcpy(&_header.u8_header_magic, "NVDA", 4);
+    memcpy(&_header.u8_header_magic, "ADVN", 4);
 
     if (!IsValidCompId(_metadata.component_id))
     {
@@ -375,11 +411,23 @@ void CSH::UnpackSections(const vector<u_int8_t>& buffer, size_t offset)
     }
 }
 
-void CSH::AddBinarySectionMetadata(BinarySectionMetadata sectionMetadata, bool override_size_needed)
+void CSH::AddBinarySectionMetadata(BinarySectionMetadata sectionMetadata, bool updateSectionsOffsets)
 {
-    if (override_size_needed)
+    if (updateSectionsOffsets)
     {
-        sectionMetadata.SetSectionOffset(GetComponentSize());
+        if ((CshComponentID)_metadata.component_id == CshComponentID::SWITCH_FWS)
+        {
+            //* Switch FWs is fixed as 32 sections
+            sectionMetadata.SetSectionOffset(GetComponentSize());
+        }
+        else
+        {
+            for (auto& section : _cshSections)
+            {
+                section.SetSectionOffset(section.GetSectionOffset() + BinarySectionMetadata::Size());
+            }
+            sectionMetadata.SetSectionOffset(GetComponentSize() + BinarySectionMetadata::Size());
+        }
     }
     _cshSections.push_back(sectionMetadata);
 }
@@ -393,13 +441,12 @@ vector<u_int8_t> CSH::GetMetadata() const
 
 size_t CSH::GetCshSize()
 {
-    bool isSingleSectionCSH =
-      (CshComponentID)_metadata.component_id == CshComponentID::SWITCH_FWS ?
-        false :
-        true; // in some cases it's called before component_id is set with a valid value, but that alligns with the
-              // logic since then (CshComponentID)_metadata.component_id != CshComponentID::SWITCH_FWS and it's fine by
-              // us in those flows that we act as if we have one binary
-    return CSH::HeaderSize() + (isSingleSectionCSH ? 1 : 32) * BinarySectionMetadata::Size();
+    if (_metadata.component_id == 0x0)
+    {
+        throw runtime_error("CSH component ID is not set");
+    }
+    bool isSwitchFws = (CshComponentID)_metadata.component_id == CshComponentID::SWITCH_FWS;
+    return CSH::HeaderSize() + (isSwitchFws ? 32 : _cshSections.size()) * BinarySectionMetadata::Size();
 }
 
 size_t CSH::GetComponentSize(bool withCshHeader)

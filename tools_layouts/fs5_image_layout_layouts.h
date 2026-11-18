@@ -1885,7 +1885,7 @@ void fs5_image_layout_csh_metadata_pack(const struct fs5_image_layout_csh_metada
 void fs5_image_layout_csh_metadata_unpack(struct fs5_image_layout_csh_metadata *ptr_struct, const u_int8_t *ptr_buff);
 void fs5_image_layout_csh_metadata_print(const struct fs5_image_layout_csh_metadata *ptr_struct, FILE *fd, int indent_level);
 unsigned int fs5_image_layout_csh_metadata_size(void);
-#define FS5_IMAGE_LAYOUT_CSH_METADATA_SIZE    (0x100)
+#define FS5_IMAGE_LAYOUT_CSH_METADATA_SIZE    (0xA0)
 void fs5_image_layout_csh_metadata_dump(const struct fs5_image_layout_csh_metadata *ptr_struct, FILE *fd);
 /* csh_signature */
 void fs5_image_layout_csh_signature_pack(const struct fs5_image_layout_csh_signature *ptr_struct, u_int8_t *ptr_buff);
