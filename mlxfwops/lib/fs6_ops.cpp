@@ -152,10 +152,20 @@ string ToString(PartitionType type)
     }
 }
 
+Fs6Operations::Fs6Operations(FBase* ioAccess) : FwOperations(ioAccess), _l1ptOffset(L1PT_OFFSET), _l2ptOffset(0)
+{
+    memset(_dotMagicId, 0, sizeof(_dotMagicId));
+}
+
 bool Fs6Operations::Init()
 {
     vector<u_int8_t> partitionTable(PartitionTable::HeaderSize());
     vector<u_int8_t> entryData(PartitionTableEntry::Size());
+
+    if (!_ioAccess->read(0, _dotMagicId, sizeof(_dotMagicId)))
+    {
+        return errmsg(MLXFW_BAD_PARAM_ERR, "%s", _ioAccess->err());
+    }
 
     if (!_ioAccess->read(_l1ptOffset, partitionTable.data(), PartitionTable::HeaderSize()))
     {
@@ -269,6 +279,8 @@ bool Fs6Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
     }
 
     report_callback(verifyCallBackFunc, "\nFS6 failsafe image\n\n");
+
+    PrintDotSection(verifyCallBackFunc);
 
     PrintSectionRange(verifyCallBackFunc, _l1ptOffset, _l1ptOffset + _l1pt.Size() - 1, _l1pt.Size(),
                       "L1 Partition Table");
@@ -674,6 +686,25 @@ bool Fs6Operations::FwShiftDevData(PrintCallBack progressFunc)
 bool Fs6Operations::FwCalcMD5(u_int8_t md5sum[16])
 {
     return Unsupported(__FUNCTION__);
+}
+
+void Fs6Operations::PrintDotSection(VerifyCallBack verifyCallBackFunc)
+{
+    const string dotMagicId = "DOTB";
+    const string s2aMagicId = "S2AB";
+    const size_t sectionSize = 0x400;
+
+    if (!std::all_of(begin(_dotMagicId), end(_dotMagicId), [](u_int8_t val) { return val == 0 || val == 0xff; }))
+    {
+        string sectionMagicId = string(reinterpret_cast<char*>(_dotMagicId), 4);
+
+        if (sectionMagicId != dotMagicId && sectionMagicId != s2aMagicId)
+        {
+            sectionMagicId = "UNKNOWN";
+        }
+
+        PrintSectionRange(verifyCallBackFunc, 0, sectionSize - 1, sectionSize, sectionMagicId);
+    }
 }
 
 void Fs6Operations::PrintSectionRange(VerifyCallBack verifyCallBackFunc,

@@ -194,6 +194,25 @@ bool FwOperations::readBufAux(FBase& f, u_int32_t o, void* d, int l, const char*
     return rc;
 }
 
+bool FwOperations::IsFileSignatureTb50x(FILE* fin)
+{
+    unsigned char l1pt_bytes[8] = {0};
+    // Check that file is large enough and read 8 bytes from L1PT_OFFSET if so
+    fseek(fin, 0, SEEK_END);
+    long file_size = ftell(fin);
+    if (file_size > 0 && (u_int32_t)file_size > L1PT_OFFSET + 8)
+    {
+        fseek(fin, L1PT_OFFSET, SEEK_SET);
+        fread(l1pt_bytes, 1, 8, fin);
+    }
+    fseek(fin, 0, SEEK_SET);
+    if (std::equal(PartitionTable::MagicID().begin(), PartitionTable::MagicID().end(), l1pt_bytes))
+    {
+        return true;
+    }
+    return false;
+}
+
 int FwOperations::getFileSignature(const char* fname)
 {
     FILE* fin;
@@ -218,8 +237,7 @@ int FwOperations::getFileSignature(const char* fname)
         return res;
     }
 
-    if (!strncmp((char*)tmpb, "MTFW", 4) || FsCompsFactory::IsFsCompsFingerPrint(tmpb) ||
-        !strncmp((char*)tmpb, "DOTB", 4))
+    if (!strncmp((char*)tmpb, "MTFW", 4) || FsCompsFactory::IsFsCompsFingerPrint(tmpb) || IsFileSignatureTb50x(fin))
     {
         res = IMG_SIG_TYPE_BIN;
     }
