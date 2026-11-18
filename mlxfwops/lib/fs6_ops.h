@@ -122,7 +122,7 @@ public:
 
     virtual bool GetMfgInfo(u_int8_t* buff = nullptr) override;
     virtual bool GetDevInfo(u_int8_t* buff = nullptr) override;
-    virtual bool GetImageInfo();
+    bool GetImageInfoData(vector<u_int8_t>& data);
     virtual bool FwExtract4MBImage(vector<u_int8_t>& img,
                                    bool maskMagicPatternAndDevToc,
                                    bool verbose = false,
@@ -137,6 +137,11 @@ public:
     bool DoAfterBurnJobs();
     bool PreBurnChecks(FwOperations* imageOps, ExtBurnParams& burnParams);
     int GetDestChainNumber(bool failSafe);
+
+    static bool ParseFs6ImageInfo(struct fs6_image_layout_image_info& image_info,
+                                  FwImgInfo& fwImgInfo,
+                                  FsCommonInfo& fsCommonInfo);
+    bool LoadImageInfo();
 
     class PartitionValidator
     {

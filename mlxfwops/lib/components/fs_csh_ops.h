@@ -67,8 +67,7 @@ public:
                   bool showItoc = false,
                   bool ignoreDToc = false) override;
     bool FwInit() override;
-    u_int8_t FwType() override { return FIT_CSH_VMOD; }
-    bool PrintQuery() override;
+    u_int8_t FwType() override;
     bool IsCompatibleToDevice(vector<u_int8_t>& data, u_int8_t forceVersion) override;
     bool FwReadData(void* image, u_int32_t* image_size, bool verbose) override;
     const char* FwGetResetRecommandationStr() override;
@@ -83,7 +82,7 @@ private:
     };
 
     bool GetImageInfoData(vector<u_int8_t>& data);
-    bool GetImageInfo(struct fs6_image_layout_image_info* imageInfo);
+    bool LoadImageInfo();
 
     CSH _csh;
     FwComponent::comps_ids_t _componentID;

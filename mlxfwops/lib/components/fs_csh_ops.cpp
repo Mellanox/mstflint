@@ -34,7 +34,57 @@
  */
 #include "fs_csh_ops.h"
 #include "nvtoolslogger/NvToolsLogger.h"
+#include "../fs6_ops.h"
 #include <iomanip>
+
+u_int8_t FsCshOperations::FwType()
+{
+    switch (_componentID)
+    {
+        case FwComponent::comps_ids_t::COMPID_CPO_VMOD_FW:
+            return FIT_CSH_VMOD;
+        default:
+            throw runtime_error("Unsupported CSH component ID");
+    }
+}
+
+bool FsCshOperations::LoadImageInfo()
+{
+    MLXFWOPS_LOG_DEBUG("FsCshOperations::LoadImageInfo");
+    vector<u_int8_t> data;
+    if (!GetImageInfoData(data))
+    {
+        return false;
+    }
+
+    struct fs6_image_layout_image_info image_info;
+    fs6_image_layout_image_info_unpack(&image_info, data.data());
+    if (!Fs6Operations::ParseFs6ImageInfo(image_info, _fwImgInfo, _fsCommonInfo))
+    {
+        return errmsg("Failed to parse IMAGE_INFO section - %s", err());
+    }
+
+    const u_int32_t* swId = (u_int32_t*)NULL;
+    MLXFWOPS_LOG_DEBUG("FsCshOperations::LoadImageInfo fwImgInfo.supportedHwId[0]=0x%x", _fwImgInfo.supportedHwId[0]);
+    if (!getInfoFromHwDevid(_fwImgInfo.supportedHwId[0], _fwImgInfo.ext_info.chip_type, &swId))
+    {
+        MLXFWOPS_LOG_DEBUG("FsCshOperations::LoadImageInfo getInfoFromHwDevid failed"); // for backwards compatibility
+                                                                                 // instead of failing I'll
+                                                                                 // issue a debug print. TODO:
+                                                                                 // fail the flow instead in the
+                                                                                 // future
+    }
+
+    // copy the vsd to the branch ver only for switches. Not valid for NICs. VMOD is only for switches, so no need to
+    // check it's a switch
+    if (VerifyBranchFormat(image_info.vsd))
+    {
+        strncpy(_fwImgInfo.ext_info.branch_ver, image_info.vsd, BRANCH_LEN);
+        _fwImgInfo.ext_info.branch_ver[BRANCH_LEN - 1] = '\0';
+    }
+
+    return true;
+}
 
 bool FsCshOperations::FwQuery(fw_info_t* fwInfo,
                               bool readRom,
@@ -50,30 +100,22 @@ bool FsCshOperations::FwQuery(fw_info_t* fwInfo,
     (void)ignoreDToc;
     (void)verbose;
 
-    return true;
-}
-
-bool FsCshOperations::GetImageInfo(struct fs6_image_layout_image_info* imageInfo)
-{
-    MLXFWOPS_LOG_DEBUG("FsCshOperations::GetImageInfo");
-    if (imageInfo == nullptr)
+    if (!LoadImageInfo())
     {
-        return errmsg("imageInfo is nullptr");
+        return false;
     }
 
-    memset(imageInfo, 0, sizeof(fs6_image_layout_image_info));
-    vector<u_int8_t> data;
-    if (!GetImageInfoData(data))
-    {
-        return errmsg("Failed to get image info data");
-    }
-    fs6_image_layout_image_info_unpack(imageInfo, data.data());
+    memcpy(fwInfo, &_fwImgInfo, sizeof(fw_info_t));
+    fwInfo->fw_type = FwType();
+    memcpy(&(fwInfo->fw_info), &(_fwImgInfo.ext_info), sizeof(fw_info_com_t));
+    memcpy(&(fwInfo->fs3_info), &(_fsCommonInfo.ext_info), sizeof(fs3_info_t));
 
     return true;
 }
 
 bool FsCshOperations::GetImageInfoData(vector<u_int8_t>& data)
 {
+    MLXFWOPS_LOG_DEBUG("FsCshOperations::GetImageInfoData");
     for (auto section : _csh.GetSections())
     {
         string sectionName = BinarySectionMetadata::CshSectionIDToString(section.GetSectionType());
@@ -154,86 +196,9 @@ bool FsCshOperations::FwInit()
     return true;
 }
 
-bool FsCshOperations::PrintQuery()
-{
-    struct fs6_image_layout_image_info imageInfo;
-    if (!GetImageInfo(&imageInfo))
-    {
-        return errmsg("Failed to get image info");
-    }
-
-    switch (_componentID)
-    {
-        case FwComponent::comps_ids_t::COMPID_CPO_VMOD_FW:
-        {
-            printf("Image type:            FSVMOD\n");
-
-            if (imageInfo.FW_VERSION.MAJOR || imageInfo.FW_VERSION.MINOR || imageInfo.FW_VERSION.SUBMINOR)
-            {
-                printf("FW Version:            %u.%u.%u\n",
-                       imageInfo.FW_VERSION.MAJOR,
-                       imageInfo.FW_VERSION.MINOR,
-                       imageInfo.FW_VERSION.SUBMINOR);
-            }
-
-            if (imageInfo.FW_VERSION.Day || imageInfo.FW_VERSION.Month || imageInfo.FW_VERSION.Year)
-            {
-                printf("FW Release Date:       %x.%x.%x\n", imageInfo.FW_VERSION.Day, imageInfo.FW_VERSION.Month,
-                       imageInfo.FW_VERSION.Year);
-            }
-
-            if (strlen(imageInfo.psid) > 0)
-            {
-                printf("PSID:                  %s\n", imageInfo.psid);
-            }
-
-            if (imageInfo.minor_version != 3)
-            {
-                MLXFWOPS_LOG_DEBUG("FsCshOperations::PrintQuery() - Minor version is %d, yet it should be 3", imageInfo.minor_version);
-            }
-            string part_number = imageInfo.name;
-            if (!part_number.empty())
-            {
-                printf("Part Number:           %s\n", part_number.c_str());
-            }
-
-            string description = imageInfo.description;
-            if (!description.empty())
-            {
-                printf("Description:           %s\n", description.c_str());
-            }
-
-            string prs_name = imageInfo.prs_name;
-            if (!prs_name.empty())
-            {
-                printf("PRS Name:              %s\n", prs_name.c_str());
-            }
-
-            u_int32_t imageSize = 0;
-            if (!GetImageSize(&imageSize))
-            {
-                return errmsg("Failed to get image size");
-            }
-            printf("Image size:            0x%08x\n", imageSize);
-
-            break;
-        }
-        default:
-            return errmsg("Provided CSH is not supported");
-    }
-
-    return true;
-}
-
 bool FsCshOperations::IsCompatibleToDevice(vector<u_int8_t>& data, u_int8_t forceVersion)
 {
     (void)forceVersion;
-
-    struct fs6_image_layout_image_info imageInfo;
-    if (!GetImageInfo(&imageInfo))
-    {
-        return errmsg("Failed to get image info");
-    }
 
     struct DeviceInfoCheckParams deviceInfoCheckParams;
     if (data.size() < sizeof(deviceInfoCheckParams.psid))
@@ -242,9 +207,10 @@ bool FsCshOperations::IsCompatibleToDevice(vector<u_int8_t>& data, u_int8_t forc
                       (u_int32_t)sizeof(deviceInfoCheckParams.psid));
     }
     memcpy(deviceInfoCheckParams.psid, data.data(), sizeof(deviceInfoCheckParams.psid));
-    if (strcmp(deviceInfoCheckParams.psid, imageInfo.psid) != 0)
+    if (strcmp(deviceInfoCheckParams.psid, _fwImgInfo.ext_info.psid) != 0)
     {
-        return errmsg("PSID mismatch: device PSID = %s, image PSID = %s", deviceInfoCheckParams.psid, imageInfo.psid);
+        return errmsg("PSID mismatch: device PSID = %s, image PSID = %s", deviceInfoCheckParams.psid,
+                      _fwImgInfo.ext_info.psid);
     }
 
     return true;

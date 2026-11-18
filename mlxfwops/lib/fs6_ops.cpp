@@ -950,111 +950,23 @@ bool Fs6Operations::ReadCshSectionInfo(PartitionType partitionType,
     return true;
 }
 
-bool Fs6Operations::GetImageInfo()
+bool Fs6Operations::GetImageInfoData(vector<u_int8_t>& data)
 {
-    MLXFWOPS_LOG_DEBUG("Fs6Operations::GetImageInfo");
-
-    vector<u_int8_t> image_info_data;
+    MLXFWOPS_LOG_DEBUG("Fs6Operations::GetImageInfoData");
     if (!ReadCshSectionInfo(PartitionType::PT_SWITCH_FWS,
                             CshSectionType::CSH_SECTION_IMAGE_INFO_MAGIC_ID,
                             FS6_IMAGE_LAYOUT_IMAGE_INFO_SIZE,
-                            image_info_data))
+                            data))
     {
         // TODO: fallback for backward compatibility
         if (!ReadCshSectionInfo(PartitionType::PT_SWITCH_FWS,
                                 CshSectionType::CSH_SECTION_IMAGE_INFO,
                                 FS6_IMAGE_LAYOUT_IMAGE_INFO_SIZE,
-                                image_info_data))
+                                data))
         {
             return false;
         }
     }
-
-    struct fs6_image_layout_image_info image_info;
-    fs6_image_layout_image_info_unpack(&image_info, image_info_data.data());
-
-    if (image_info.major_version != 0)
-    {
-        return errmsg(MLXFW_UNKNOWN_SECT_VER_ERR, "Unknown IMAGE_INFO format version (%d.%d).",
-                      image_info.major_version, image_info.minor_version);
-    }
-
-    _fwImgInfo.ext_info.image_info_minor_version = image_info.minor_version;
-    _fwImgInfo.ext_info.image_info_major_version = image_info.major_version;
-
-    _fwImgInfo.ext_info.fw_ver[0] = image_info.FW_VERSION.MAJOR;
-    _fwImgInfo.ext_info.fw_ver[1] = image_info.FW_VERSION.MINOR;
-    _fwImgInfo.ext_info.fw_ver[2] = image_info.FW_VERSION.SUBMINOR;
-
-    // _fwImgInfo.ext_info.isfu_major = image_info.module_versions.mad.major; // this field doesn't exist in
-    // fs6_image_layout_image_info
-
-    _fwImgInfo.ext_info.mic_ver[0] = image_info.mic_version.MAJOR;
-    _fwImgInfo.ext_info.mic_ver[1] = image_info.mic_version.MINOR;
-    _fwImgInfo.ext_info.mic_ver[2] = image_info.mic_version.SUBMINOR;
-
-    _fwImgInfo.ext_info.fw_rel_date[0] = (u_int16_t)image_info.FW_VERSION.Day;
-    _fwImgInfo.ext_info.fw_rel_date[1] = (u_int16_t)image_info.FW_VERSION.Month;
-    _fwImgInfo.ext_info.fw_rel_date[2] = (u_int16_t)image_info.FW_VERSION.Year;
-
-    _fwImgInfo.ext_info.fw_rel_time[0] = (u_int16_t)image_info.FW_VERSION.Hour;
-    _fwImgInfo.ext_info.fw_rel_time[1] = (u_int16_t)image_info.FW_VERSION.Minutes;
-    _fwImgInfo.ext_info.fw_rel_time[2] = (u_int16_t)image_info.FW_VERSION.Seconds;
-
-    _fwImgInfo.ext_info.burn_image_size = image_info.burn_image_size;
-    _fwImgInfo.ext_info.dtoc_offset = image_info.dtoc_offset;
-    // _fwImgInfo.ext_info.sku = (device_sku)image_info.psc_sku; // this field doesn't exist in
-    // fs6_image_layout_image_info
-
-    // assuming number of supported_hw_id < MAX_NUM_SUPP_HW_IDS
-    memcpy(_fwImgInfo.supportedHwId, image_info.supported_hw_id, sizeof(image_info.supported_hw_id));
-    _fwImgInfo.supportedHwIdNum = (sizeof(image_info.supported_hw_id)) / sizeof(image_info.supported_hw_id[0]);
-
-    // _fwImgInfo.ext_info.pci_device_id = image_info.pci_device_id; // this field doesn't exist in
-    // fs6_image_layout_image_info
-
-    strcpy(_fsCommonInfo.ext_info.image_vsd, image_info.vsd);
-    strcpy(_fwImgInfo.ext_info.psid, image_info.psid);
-    strcpy(_fwImgInfo.ext_info.product_ver, image_info.prod_ver);
-
-    // get name, prs name and description
-    if (image_info.minor_version != 3)
-    {
-        MLXFWOPS_LOG_DEBUG("Fs6Operations::GetImageInfo - Minor version is %d, yet it should be 3", image_info.minor_version);
-    }
-
-    strncpy(_fsCommonInfo.ext_info.name, image_info.name, strlen(image_info.name));
-    strncpy(_fsCommonInfo.ext_info.description, image_info.description, strlen(image_info.description));
-    strncpy(_fsCommonInfo.ext_info.prs_name, image_info.prs_name, strlen(image_info.prs_name));
-
-    _fsCommonInfo.ext_info.mcc_en = image_info.mcc_en;
-    _fsCommonInfo.ext_info.security_mode =
-      (_fsCommonInfo.ext_info.security_mode | ((image_info.mcc_en == 1) ? SMM_MCC_EN : 0) |
-       ((image_info.debug_fw == 1) ? SMM_DEBUG_FW : 0) | ((image_info.signed_fw == 1) ? SMM_SIGNED_FW : 0) |
-       ((image_info.secure_fw == 1) ? SMM_SECURE_FW : 0));
-
-    _fsCommonInfo.runFromAny = image_info.image_size.run_from_any;
-    _fsCommonInfo.logStep = image_info.image_size.log_step;
-    _fsCommonInfo.ext_info.ini_file_version = image_info.ini_file_num;
-
-    const u_int32_t* swId = (u_int32_t*)NULL;
-    MLXFWOPS_LOG_DEBUG("Fs6Operations::GetImageInfo _fwImgInfo.supportedHwId[0]=0x%x", _fwImgInfo.supportedHwId[0]);
-    if (!getInfoFromHwDevid(_fwImgInfo.supportedHwId[0], _fwImgInfo.ext_info.chip_type, &swId))
-    {
-        return false;
-    }
-
-    // copy the vsd to the branch ver only for switches. Not valid for NICs.
-    if (!IS_HCA(_fwImgInfo.ext_info.chip_type))
-    {
-        if (VerifyBranchFormat(image_info.vsd))
-        {
-            strncpy(_fwImgInfo.ext_info.branch_ver, image_info.vsd, BRANCH_LEN);
-            _fwImgInfo.ext_info.branch_ver[BRANCH_LEN - 1] = '\0';
-        }
-    }
-
-    _fwImgInfo.ext_info.encrypted_fw = image_info.encrypted_fw;
 
     return true;
 }
@@ -1106,6 +1018,41 @@ bool Fs6Operations::GetCshSectionOffset(PartitionType partitionType,
     return true;
 }
 
+bool Fs6Operations::LoadImageInfo()
+{
+    MLXFWOPS_LOG_DEBUG("Fs6Operations::LoadImageInfo");
+    vector<u_int8_t> data;
+    if (!GetImageInfoData(data))
+    {
+        return false;
+    }
+
+    struct fs6_image_layout_image_info image_info;
+    fs6_image_layout_image_info_unpack(&image_info, data.data());
+    if (!ParseFs6ImageInfo(image_info, _fwImgInfo, _fsCommonInfo))
+    {
+        return errmsg("Failed to parse IMAGE_INFO section - %s", err());
+    }
+
+    const u_int32_t* swId = (u_int32_t*)NULL;
+    MLXFWOPS_LOG_DEBUG("Fs6Operations::LoadImageInfo fwImgInfo.supportedHwId[0]=0x%x", _fwImgInfo.supportedHwId[0]);
+    if (!getInfoFromHwDevid(_fwImgInfo.supportedHwId[0], _fwImgInfo.ext_info.chip_type, &swId))
+    {
+        return false;
+    }
+
+    // copy the vsd to the branch ver only for switches. Not valid for NICs.
+    if (!IS_HCA(_fwImgInfo.ext_info.chip_type))
+    {
+        if (VerifyBranchFormat(image_info.vsd))
+        {
+            strncpy(_fwImgInfo.ext_info.branch_ver, image_info.vsd, BRANCH_LEN);
+            _fwImgInfo.ext_info.branch_ver[BRANCH_LEN - 1] = '\0';
+        }
+    }
+    return true;
+}
+
 bool Fs6Operations::FwQuery(fw_info_t* fwInfo,
                             bool readRom,
                             bool isStripedImage,
@@ -1122,7 +1069,7 @@ bool Fs6Operations::FwQuery(fw_info_t* fwInfo,
             return false;
         }
 
-        if (!GetImageInfo())
+        if (!LoadImageInfo())
         {
             return false;
         }
@@ -2125,4 +2072,76 @@ bool Fs6Operations::WriteImageExDefaultParams(const ExtBurnParams& burnParams,
 {
     return writeImageEx(burnParams.progressFuncEx, burnParams.progressUserData, burnParams.progressFunc, addr, data,
                         cnt, true, true, totalSz, alreadyWrittenSz);
+}
+
+bool Fs6Operations::ParseFs6ImageInfo(struct fs6_image_layout_image_info& image_info,
+                                      FwOperations::FwImgInfo& fwImgInfo,
+                                      FwOperations::FsCommonInfo& fsCommonInfo)
+{
+    if (image_info.major_version != 0)
+    {
+        return false; // unknown image info version
+    }
+
+    fwImgInfo.ext_info.image_info_minor_version =
+      image_info.minor_version; // in older generations this field told us if to parse name, prs name and description
+                                // using tools_open_image_info (minor_version == 2) layout or fsX-specific layout
+                                // (minor_version == 3). this is legacy behavior and we now always use the fsX-specific
+                                // image_info layout.
+    fwImgInfo.ext_info.image_info_major_version = image_info.major_version;
+
+    fwImgInfo.ext_info.fw_ver[0] = image_info.FW_VERSION.MAJOR;
+    fwImgInfo.ext_info.fw_ver[1] = image_info.FW_VERSION.MINOR;
+    fwImgInfo.ext_info.fw_ver[2] = image_info.FW_VERSION.SUBMINOR;
+
+    // _fwImgInfo.ext_info.isfu_major = image_info.module_versions.mad.major; // this field doesn't exist in
+    // fs6_image_layout_image_info
+
+    fwImgInfo.ext_info.mic_ver[0] = image_info.mic_version.MAJOR;
+    fwImgInfo.ext_info.mic_ver[1] = image_info.mic_version.MINOR;
+    fwImgInfo.ext_info.mic_ver[2] = image_info.mic_version.SUBMINOR;
+
+    fwImgInfo.ext_info.fw_rel_date[0] = (u_int16_t)image_info.FW_VERSION.Day;
+    fwImgInfo.ext_info.fw_rel_date[1] = (u_int16_t)image_info.FW_VERSION.Month;
+    fwImgInfo.ext_info.fw_rel_date[2] = (u_int16_t)image_info.FW_VERSION.Year;
+
+    fwImgInfo.ext_info.fw_rel_time[0] = (u_int16_t)image_info.FW_VERSION.Hour;
+    fwImgInfo.ext_info.fw_rel_time[1] = (u_int16_t)image_info.FW_VERSION.Minutes;
+    fwImgInfo.ext_info.fw_rel_time[2] = (u_int16_t)image_info.FW_VERSION.Seconds;
+
+    fwImgInfo.ext_info.burn_image_size = image_info.burn_image_size;
+    fwImgInfo.ext_info.dtoc_offset = image_info.dtoc_offset;
+    // _fwImgInfo.ext_info.sku = (device_sku)image_info.psc_sku; // this field doesn't exist in
+    // fs6_image_layout_image_info
+
+    // assuming number of supported_hw_id < MAX_NUM_SUPP_HW_IDS
+    memcpy(fwImgInfo.supportedHwId, image_info.supported_hw_id, sizeof(image_info.supported_hw_id));
+    fwImgInfo.supportedHwIdNum = (sizeof(image_info.supported_hw_id)) / sizeof(image_info.supported_hw_id[0]);
+
+    // _fwImgInfo.ext_info.pci_device_id = image_info.pci_device_id; // this field doesn't exist in
+    // fs6_image_layout_image_info
+
+    strcpy(fsCommonInfo.ext_info.image_vsd, image_info.vsd);
+    strcpy(fwImgInfo.ext_info.psid, image_info.psid);
+    strcpy(fwImgInfo.ext_info.product_ver, image_info.prod_ver);
+
+    // get name, prs name and description
+    // Legacy behavior checked minor_version to select layout. (3 -> fsX-specific layout, else -> tools_open_image_info
+    // layout) We now always use the fsX-specific image_info layout.
+    strncpy(fsCommonInfo.ext_info.name, image_info.name, strlen(image_info.name));
+    strncpy(fsCommonInfo.ext_info.description, image_info.description, strlen(image_info.description));
+    strncpy(fsCommonInfo.ext_info.prs_name, image_info.prs_name, strlen(image_info.prs_name));
+
+    fsCommonInfo.ext_info.mcc_en = image_info.mcc_en;
+    fsCommonInfo.ext_info.security_mode =
+      (fsCommonInfo.ext_info.security_mode | ((image_info.mcc_en == 1) ? SMM_MCC_EN : 0) |
+       ((image_info.debug_fw == 1) ? SMM_DEBUG_FW : 0) | ((image_info.signed_fw == 1) ? SMM_SIGNED_FW : 0) |
+       ((image_info.secure_fw == 1) ? SMM_SECURE_FW : 0));
+
+    fsCommonInfo.runFromAny = image_info.image_size.run_from_any;
+    fsCommonInfo.logStep = image_info.image_size.log_step;
+    fsCommonInfo.ext_info.ini_file_version = image_info.ini_file_num;
+    fwImgInfo.ext_info.encrypted_fw = image_info.encrypted_fw;
+
+    return true;
 }

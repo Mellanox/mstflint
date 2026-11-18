@@ -1652,6 +1652,10 @@ const char* SubCommand::fwImgTypeToStr(u_int8_t fwImgType)
             return "PLDM_1_0";
             break;
 
+        case FIT_CSH_VMOD:
+            return "FSVMOD";
+            break;
+
         default:
             return "Unknown";
             break;
@@ -4417,6 +4421,7 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
     bool isFs3 = (fwInfo.fw_type == FIT_FS3) ? true : false;
     bool isFs4 = (fwInfo.fw_type == FIT_FS4 || fwInfo.fw_type == FIT_FS5) ? true : false;
     bool isFs6 = (fwInfo.fw_type == FIT_FS6) ? true : false;
+    bool isCshVmod = (fwInfo.fw_type == FIT_CSH_VMOD) ? true : false;
     bool isFsCtrl = (fwInfo.fw_type == FIT_FSCTRL) ? true : false;
     FwOperations* ops = (_flintParams.device_specified) ? _fwOps : _imgOps;
     FwVersion image_version = FwOperations::createFwVersion(&fwInfo.fw_info);
@@ -4515,10 +4520,13 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
         printf("                       type=PXE  version=skipped devid=skipped cpu=skipped\n");
         printf("                       type=NVMe version=skipped devid=skipped cpu=skipped\n");
     }
-    /*i.e its fs3/fs4*/
-    if (!displayFs3Uids(fwInfo, isStripedImage))
+    if (!isCshVmod)
     {
-        return FLINT_FAILED;
+        /*i.e its fs3/fs4*/
+        if (!displayFs3Uids(fwInfo, isStripedImage))
+        {
+            return FLINT_FAILED;
+        }
     }
 
     // VSD, PSID
@@ -4568,7 +4576,7 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
         printf(FLINT_NOT_MLNX_FW_WARNING, fwInfo.fw_info.vsd_vendor_id);
     }
 
-    if (isFs3 || isFs4 || isFs6 || isFsCtrl)
+    if (isFs3 || isFs4 || isFs6 || isFsCtrl || isCshVmod)
     {
         u_int32_t security_mode = fwInfo.fs3_info.security_mode;
         if (_flintParams.device_specified && ops->IsCRDTDebugSessionActive())
@@ -4579,12 +4587,12 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
         printf("Security Attributes:   %s\n", securityAttrInfo.c_str());
     }
 
-    if (isFs4 && _flintParams.image_specified)
+    if ((isFs4 || isFs6 || isCshVmod) && _flintParams.image_specified)
     { // Security Version is supported in Connectx-6dx and up
         printf("Security Ver:          %d\n", fwInfo.fs3_info.image_security_version);
     }
 
-    if ((isFs3 || isFs4 || isFs6 || isFsCtrl) && fullQuery)
+    if ((isFs3 || isFs4 || isFs6 || isFsCtrl || isCshVmod) && fullQuery)
     {
         string updateMethod = "Legacy";
         if (fwInfo.fs3_info.security_mode & SMM_MCC_EN)
