@@ -34,6 +34,8 @@
  */
 
 #pragma once
+#ifndef CSH_IMP_H
+#define CSH_IMP_H
 
 #include <vector>
 #include <algorithm>
@@ -510,3 +512,5 @@ private:
     bool _isUnpacked;
     CshStructType _cshStructType;
 };
+
+#endif
