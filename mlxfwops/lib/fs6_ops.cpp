@@ -863,6 +863,10 @@ void Fs6Operations::CopyMagicPattern(size_t componentOffset, vector<u_int8_t>& c
 {
     const size_t magicPatternOffset = 0xc;
     vector<u_int8_t> magicPattern(4);
+    if (compData.size() < magicPatternOffset + magicPattern.size())
+    {
+        throw std::runtime_error("ROM_IMGS component is smaller than the CSH header it must carry");
+    }
     if (!_ioAccess->read(componentOffset + magicPatternOffset, magicPattern.data(), magicPattern.size()))
     {
         throw std::runtime_error(std::string("CSH header read error at offset 0x") +
@@ -890,6 +894,11 @@ bool Fs6Operations::SetSignedFWComponent(string binPath, ComponentType compName,
     if (!ReadBinFile(binPath.c_str(), compData))
     {
         return false;
+    }
+
+    if (compData.empty())
+    {
+        return errmsg(MLXFW_BAD_PARAM_ERR, "Component file %s is empty", binPath.c_str());
     }
 
     bool isL2pt = IsL2ptSection(cshId);
