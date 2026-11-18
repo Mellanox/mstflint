@@ -473,7 +473,8 @@ void Fs6Operations::PrintNonActiveChainSection(VerifyCallBack verifyCallBackFunc
 
 bool Fs6Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedImage, bool showItoc, bool ignoreDToc)
 {
-    MLXFWOPS_LOG_DEBUG("Fs6Operations::FwVerify");
+    MLXFWOPS_LOG_DEBUG("isStripedImage=%d showItoc=%d ignoreDToc=%d", (int)isStripedImage, (int)showItoc,
+                       (int)ignoreDToc);
     if (!Init())
     {
         return false;
@@ -1594,7 +1595,8 @@ bool Fs6Operations::FwExtract4MBImage(vector<u_int8_t>& img,
                                       bool ignoreImageStart,
                                       bool imageSizeOnly)
 {
-    MLXFWOPS_LOG_DEBUG("Fs6Operations::FwExtract4MBImage");
+    MLXFWOPS_LOG_DEBUG("maskMagicPatternAndDevToc=%d ignoreImageStart=%d imageSizeOnly=%d",
+                       (int)maskMagicPatternAndDevToc, (int)ignoreImageStart, (int)imageSizeOnly);
     if (!Init())
     {
         return false;
@@ -1961,7 +1963,7 @@ bool Fs6Operations::HandleRomImgsMagicPatternsPostBurn(ExtBurnParams& burnParams
                                                        uint32_t& alreadyWrittenSize,
                                                        uint32_t totalSize)
 {
-    MLXFWOPS_LOG_DEBUG("Fs6Operations::HandleRomImgsMagicPatternsPostBurn");
+    MLXFWOPS_LOG_DEBUG("alreadyWrittenSize=0x%x totalSize=0x%x", alreadyWrittenSize, totalSize);
     int nextActiveChain = GetDestChainNumber(burnParams.burnFailsafe);
 
     if (_activeChain != INVALID_CHAIN_NUMBER && nextActiveChain != _activeChain &&
