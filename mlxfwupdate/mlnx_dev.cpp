@@ -950,7 +950,8 @@ int MlnxDev::queryFwops()
     }
 
     // attempt to take some fields from image info
-    if (fw_query.fw_type == FIT_FS3 || fw_query.fw_type == FIT_FS4 || fw_query.fw_type == FIT_FS5)
+    if (fw_query.fw_type == FIT_FS3 || fw_query.fw_type == FIT_FS4 || fw_query.fw_type == FIT_FS5 ||
+        fw_query.fw_type == FIT_FS6)
     {
         if (strlen(fw_query.fs3_info.description))
         {
