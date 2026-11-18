@@ -706,6 +706,11 @@ void BinarySectionMetadata::SetAuthenticationTag(const vector<u_int8_t>& tag)
     CPUTOn(_struct.encryption_params.u8_auth_tag.u8_dummy, FS5_IMAGE_LAYOUT_U8_AUTH_TAG_SIZE / 4);
 }
 
+CshMetadataNbu::CshMetadataNbu()
+{
+    memset(&_metadata_nbu, 0, sizeof(_metadata_nbu));
+}
+
 vector<u_int8_t> CshMetadataNbu::Pack()
 {
     vector<u_int8_t> metadata(fs5_image_layout_csh_metadata_nbu_size());
@@ -795,13 +800,19 @@ void CshMetadataNbu::SetJsonParams(const Json::Value& root)
       std::stoul(nbu::mft::common::GetStrValue(root["version"]["ver_subminor"], true), nullptr, 16);
     _metadata_nbu.version.ratchet_level =
       std::stoul(nbu::mft::common::GetStrValue(root["version"]["ratchet_level"], true), nullptr, 16);
-    _metadata_nbu.issu_ver_major = std::stoul(nbu::mft::common::GetStrValue(root["issu_ver_major"], true), nullptr, 16);
-    _metadata_nbu.issu_ver_minor = std::stoul(nbu::mft::common::GetStrValue(root["issu_ver_minor"], true), nullptr, 16);
-    _metadata_nbu.issu_notch = std::stoul(nbu::mft::common::GetStrValue(root["issu_notch"], true), nullptr, 16);
-    _metadata_nbu.issuable = std::stoul(nbu::mft::common::GetStrValue(root["issuable"], true), nullptr, 16);
-    if (root.isMember("fw_lifecycle"))
+    nbu::mft::common::SetUIntIfPresent(root, "issu_ver_major", _metadata_nbu.issu_ver_major);
+    nbu::mft::common::SetUIntIfPresent(root, "issu_ver_minor", _metadata_nbu.issu_ver_minor);
+    nbu::mft::common::SetUIntIfPresent(root, "issu_notch", _metadata_nbu.issu_notch);
+    nbu::mft::common::SetUIntIfPresent(root, "issuable", _metadata_nbu.issuable);
+    nbu::mft::common::SetUIntIfPresent(root, "fw_lifecycle", _metadata_nbu.fw_lifecycle);
+    if (GetComponentId() == (u_int16_t)CshComponentID::VMOD_FW ||
+        GetComponentId() == (u_int16_t)CshComponentID::SWITCH_FWS)
     {
-        _metadata_nbu.fw_lifecycle = std::stoul(nbu::mft::common::GetStrValue(root["fw_lifecycle"], true), nullptr, 16);
+        if (root.isMember("api_version"))
+        {
+            nbu::mft::common::SetUIntIfPresent(root["api_version"], "ver_major", _metadata_nbu.api_version.ver_major);
+            nbu::mft::common::SetUIntIfPresent(root["api_version"], "ver_minor", _metadata_nbu.api_version.ver_minor);
+        }
     }
     if (root.isMember("dependency_list"))
     {

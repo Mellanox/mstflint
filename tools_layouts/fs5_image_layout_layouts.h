@@ -1196,6 +1196,19 @@ union fs5_image_layout_csh_header_status {
 	struct fs5_image_layout_vmod_status vmod_status;
 };
 
+/* Description -   */
+/* Size in bytes - 3 */
+struct fs5_image_layout_api_version {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.0 - 0x0.7 */
+	/* access: RW */
+	u_int8_t ver_major;
+	/* Description -  */
+	/* 0x0.8 - 0x0.23 */
+	/* access: RW */
+	u_int16_t ver_minor;
+};
 
 /* Description -   */
 /* Size in bytes - 16 */
@@ -1318,7 +1331,7 @@ struct fs5_image_layout_csh_metadata_nbu {
 	/* Description -  */
 	/* 0x6c.0 - 0x6c.23 */
 	/* access: RW */
-	u_int32_t reserved1;
+	struct fs5_image_layout_api_version api_version;
 	/* Description - Number of binaries in the component. I.e. number of binary metadata objects */
 	/* 0x6c.24 - 0x6c.31 */
 	/* access: RW */
@@ -2164,6 +2177,13 @@ void fs5_image_layout_csh_header_status_print(const union fs5_image_layout_csh_h
 unsigned int fs5_image_layout_csh_header_status_size(void);
 #define FS5_IMAGE_LAYOUT_CSH_HEADER_STATUS_SIZE    (0x4)
 void fs5_image_layout_csh_header_status_dump(const union fs5_image_layout_csh_header_status *ptr_struct, FILE *fd);
+/* api_version */
+void fs5_image_layout_api_version_pack(const struct fs5_image_layout_api_version *ptr_struct, u_int8_t *ptr_buff);
+void fs5_image_layout_api_version_unpack(struct fs5_image_layout_api_version *ptr_struct, const u_int8_t *ptr_buff);
+void fs5_image_layout_api_version_print(const struct fs5_image_layout_api_version *ptr_struct, FILE *fd, int indent_level);
+unsigned int fs5_image_layout_api_version_size(void);
+#define FS5_IMAGE_LAYOUT_API_VERSION_SIZE    (0x3)
+void fs5_image_layout_api_version_dump(const struct fs5_image_layout_api_version *ptr_struct, FILE *fd);
 /* csh_header */
 void fs5_image_layout_csh_header_pack(const struct fs5_image_layout_csh_header *ptr_struct, u_int8_t *ptr_buff);
 void fs5_image_layout_csh_header_unpack(struct fs5_image_layout_csh_header *ptr_struct, const u_int8_t *ptr_buff);

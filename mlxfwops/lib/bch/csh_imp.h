@@ -402,6 +402,8 @@ public:
 class MLXFWOP_API CshMetadataNbu : public CshMetadataBase
 {
 public:
+    CshMetadataNbu();
+
     vector<u_int8_t> Pack() override;
     void Unpack(const vector<u_int8_t>& buffer) override;
 

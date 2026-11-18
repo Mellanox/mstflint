@@ -64,6 +64,9 @@
  std::string GetStrValue(const Json::Value& value, const std::string& fieldName, bool isMandatory, bool isNumber);
  u_int32_t GetUIntFromStrValue(const Json::Value& value, const std::string& fieldName, bool isMandatory);
  u_int32_t GetUIntValue(const Json::Value& value, const std::string& fieldName, bool isMandatory);
+ void SetUIntIfPresent(const Json::Value& root, const std::string& fieldName, u_int8_t& out);
+ void SetUIntIfPresent(const Json::Value& root, const std::string& fieldName, u_int16_t& out);
+ void SetUIntIfPresent(const Json::Value& root, const std::string& fieldName, u_int32_t& out);
  
  } // namespace common
  } // namespace mft
