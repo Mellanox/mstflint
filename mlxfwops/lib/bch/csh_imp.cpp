@@ -503,6 +503,28 @@ void CshMetadataNbu::SetDependencyList(const Json::Value& root)
     }
 }
 
+void CshMetadataNbu::SetEcid(const Json::Value& root)
+{
+    const size_t NUM_OF_ECID_VALUES = 4;
+    if (root.size() > NUM_OF_ECID_VALUES)
+    {
+        throw runtime_error("Invalid ECID array length");
+    }
+
+    size_t i = 0;
+    for (auto jsonField = root.begin(); jsonField != root.end(); jsonField++)
+    {
+        vector<u_int8_t> buf = mft_utils::HexStringToBytes(jsonField->asString());
+        if (buf.size() != FS5_IMAGE_LAYOUT_U8_ECID_SIZE)
+        {
+            throw runtime_error("Invalid ECID value length for index " + std::to_string(i));
+        }
+        memcpy(&_metadata_nbu.ecid[i], buf.data(), buf.size());
+        CPUTOn(&_metadata_nbu.ecid[i], buf.size() / 4);
+        i++;
+    }
+}
+
 void CshMetadataNbu::SetJsonParams(const Json::Value& root)
 {
     _metadata_nbu.version.ver_major =
@@ -520,6 +542,10 @@ void CshMetadataNbu::SetJsonParams(const Json::Value& root)
     if (root.isMember("dependency_list"))
     {
         SetDependencyList(root["dependency_list"]);
+    }
+    if (root.isMember("ecid"))
+    {
+        SetEcid(root["ecid"]);
     }
 }
 

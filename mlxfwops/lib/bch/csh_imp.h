@@ -288,6 +288,7 @@ public:
 
 private:
     void SetDependencyList(const Json::Value& root);
+    void SetEcid(const Json::Value& root);
     struct fs5_image_layout_csh_metadata_nbu _metadata_nbu;
 };
 
