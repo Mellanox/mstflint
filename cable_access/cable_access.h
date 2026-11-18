@@ -289,6 +289,8 @@
     void setBurnFlow(bool isBurnFlow);
     bool resetCable();
     bool isSecondary();
+    bool isVirtualModuleDevice(bool& isVmdl);
+    bool lockVmdlElsSemaphore(bool useEls);
  
  private:
     bool resetCableModule(bool verbose);

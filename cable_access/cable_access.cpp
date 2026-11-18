@@ -18,7 +18,11 @@ dm_dev_id_t mcables_get_connected_device_type(mfile* mf)
     u_int32_t hwid = 0;
     u_int32_t revid = 0;
     cable_ctx* ctx = (cable_ctx*)(mf->cable_ctx);
-    if (!ctx)
+    if (!ctx
+#ifdef ENABLE_MST_DEV_I2C
+        || mcables_is_i2c_vmdl(mf)
+#endif
+    )
     {
         return devid;
     }
@@ -109,6 +113,13 @@ int is_secondary(mfile* mf, bool* isSecondary)
     {
         return MCABLES_ACCESS_ERROR;
     }
+#ifdef ENABLE_MST_DEV_I2C
+    if (mcables_is_i2c_vmdl(mf))
+    {
+        *isSecondary = false;
+        return ret;
+    }
+#endif
     MType tmp_tp = mf->tp;
     mf->tp = ctx->src_tp;
     switch_access_funcs(mf);
@@ -284,7 +295,7 @@ bool cableAccess::rw(u_int32_t addr, u_int32_t len, u_int8_t* data, int _rw)
     if (rc)
     {
         ostringstream ss;
-        if (_mf->cable_ctx && ((cable_ctx*)(_mf->cable_ctx))->internal_error_msg[0] != '\0')
+        if (_mf && _mf->cable_ctx && ((cable_ctx*)(_mf->cable_ctx))->internal_error_msg[0] != '\0')
         {
             ss << ((cable_ctx*)(_mf->cable_ctx))->internal_error_msg;
         }
@@ -361,5 +372,30 @@ bool cableAccess::isSecondary()
         throw std::runtime_error("Failed to get the module state from the cable");
     }
     return isSecondary;
+}
+
+bool cableAccess::isVirtualModuleDevice(bool& isVirtualModule)
+{
+    isVirtualModule = _mf->vmdl_info.is_vmdl_device ? true : false;
+    return true;
+}
+
+bool cableAccess::lockVmdlElsSemaphore(bool useEls)
+{
+    int result = mcables_lock_vmdl_els_sempahore(_mf, useEls);
+    if (result)
+    {
+        // MCABLES_BAD_PARAMS
+        if (result == 1)
+        {
+            _errMsg = "Device is not a VMOD";
+        }
+        else
+        {
+            _errMsg = "Failed to set VMOD use_els!";
+        }
+        return false;
+    }
+    return true;
 }
 
