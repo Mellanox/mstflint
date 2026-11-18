@@ -174,6 +174,8 @@ inline void ResolveChainNumber(int& chainNumber, int activeChain)
 bool IsCshComponent(PartitionType partitionType);
 CshComponentID ToCshId(PartitionType partitionType);
 string ToString(CshComponentID cshId);
+MLXFWOP_API PartitionType ToPartitionType(CshComponentID cshId, bool throwOnError = true);
+MLXFWOP_API bool IsPartitionTypeMaxSize(PartitionType partitionType);
 
 class CshException : public exception
 {
@@ -456,6 +458,7 @@ public:
 
     static size_t HeaderSize(CshStructType type);
     static CshStructType GetCshStructType(const vector<u_int8_t>& cshHeader);
+    CshComponentID GetComponentType() const;
     static bool IsValidCompId(u_int16_t id);
 
     bool isActiveChain();

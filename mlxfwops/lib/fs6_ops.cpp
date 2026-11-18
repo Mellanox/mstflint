@@ -84,39 +84,6 @@ CshComponentID ToCshId(ComponentType compName)
     }
     return id;
 }
-
-PartitionType ToPartitionType(CshComponentID cshId)
-{
-    PartitionType type = PartitionType::PT_ROM_IMGS;
-    switch (cshId)
-    {
-        case CshComponentID::ROM_IMGS:
-            type = PartitionType::PT_ROM_IMGS;
-            break;
-        case CshComponentID::NV_FWS:
-            type = PartitionType::PT_NV_FWS;
-            break;
-        case CshComponentID::OEM_FWS:
-            type = PartitionType::PT_OEM_FWS;
-            break;
-        case CshComponentID::BCT_DTB:
-            type = PartitionType::PT_BCT_DTB;
-            break;
-        case CshComponentID::SWITCH_FWS:
-            type = PartitionType::PT_SWITCH_FWS;
-            break;
-        case CshComponentID::SBD_FW:
-            type = PartitionType::PT_SBD_FW;
-            break;
-        case CshComponentID::VMOD_FW:
-            type = PartitionType::PT_VMOD_FW;
-            break;
-        default:
-            throw runtime_error("Unknown CSH id");
-    }
-    return type;
-}
-
 string ToString(PartitionType type)
 {
     switch (type)
@@ -696,7 +663,7 @@ bool Fs6Operations::SetSignedFWComponent(string binPath, ComponentType compName,
     }
     else
     {
-        if (cshId != CshComponentID::ROM_IMGS)
+        if (!IsPartitionTypeMaxSize(ToPartitionType(cshId, false)))
         {
             _l1pt.SetEntrySize(ToPartitionType(cshId), compData.size());
         }

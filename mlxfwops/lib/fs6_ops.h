@@ -45,7 +45,6 @@
 #endif
 
 CshComponentID ToCshId(ComponentType compName);
-PartitionType ToPartitionType(CshComponentID cshId);
 string ToString(PartitionType type);
 
 class Fs6Operations : public FwOperations

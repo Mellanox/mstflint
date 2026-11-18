@@ -55,6 +55,12 @@ bool IsCshComponent(PartitionType partitionType)
            partitionType == PartitionType::PT_VMOD_FW;
 }
 
+bool IsPartitionTypeMaxSize(PartitionType partitionType)
+{
+    return partitionType == PartitionType::PT_ROM_IMGS || partitionType == PartitionType::PT_CHAIN_CONTAINER ||
+           partitionType == PartitionType::PT_VMOD_FW;
+}
+
 CshComponentID ToCshId(PartitionType partitionType)
 {
     CshComponentID cshId = CshComponentID::Unknown;
@@ -1152,6 +1158,11 @@ CSH::CshStructType CSH::GetCshStructType(const vector<u_int8_t>& cshHeader)
     return type;
 }
 
+CshComponentID CSH::GetComponentType() const
+{
+    return (CshComponentID)_metadata->GetComponentId();
+}
+
 size_t CSH::HeaderSize(CshStructType type)
 {
     size_t size = fs5_image_layout_csh_header_size() + fs5_image_layout_csh_signature_size() +
@@ -1184,4 +1195,41 @@ BinarySectionMetadata& CSH::GetSection(u_int32_t itocType)
     std::stringstream ss;
     ss << std::hex << "Section with ITOC type 0x" << itocType << " not found in CSH";
     throw runtime_error(ss.str());
+}
+
+PartitionType ToPartitionType(CshComponentID cshId, bool throwOnError)
+{
+    PartitionType type = PartitionType::PT_ROM_IMGS;
+    switch (cshId)
+    {
+        case CshComponentID::ROM_IMGS:
+            type = PartitionType::PT_ROM_IMGS;
+            break;
+        case CshComponentID::NV_FWS:
+            type = PartitionType::PT_NV_FWS;
+            break;
+        case CshComponentID::OEM_FWS:
+            type = PartitionType::PT_OEM_FWS;
+            break;
+        case CshComponentID::BCT_DTB:
+            type = PartitionType::PT_BCT_DTB;
+            break;
+        case CshComponentID::SWITCH_FWS:
+            type = PartitionType::PT_SWITCH_FWS;
+            break;
+        case CshComponentID::SBD_FW:
+            type = PartitionType::PT_SBD_FW;
+            break;
+        case CshComponentID::VMOD_FW:
+            type = PartitionType::PT_VMOD_FW;
+            break;
+        default:
+            if (throwOnError)
+            {
+                throw runtime_error("Unknown CSH id");
+            }
+            type = PartitionType::PT_UNKNOWN;
+            break;
+    }
+    return type;
 }
