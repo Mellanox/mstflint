@@ -89,7 +89,7 @@ string CshSectionIDToString(u_int32_t sectionId)
 }
 
 const string CSH::cshMetadataName = "csh_metadata";
-const string CSH::binarySectionMetadataArrName = "binary_section_metadata_";
+const string CSH::binarySectionMetadataName = "binary_section_metadata";
 
 vector<u_int8_t> PartitionTable::Pack()
 {
@@ -248,7 +248,7 @@ BinarySectionMetadata::BinarySectionMetadata(u_int32_t itoc_type,
     memcpy(_struct.bin_digest.digest, digest.data(), digest.size());
 };
 
-vector<u_int8_t> BinarySectionMetadata::Pack()
+vector<u_int8_t> BinarySectionMetadata::Pack() const
 {
     vector<u_int8_t> metadata(fs5_image_layout_binary_section_metadata_size());
     fs5_image_layout_binary_section_metadata_pack(&_struct, metadata.data());
@@ -267,6 +267,20 @@ void BinarySectionMetadata::Unpack(const vector<u_int8_t>& binarySection)
     fs5_image_layout_binary_section_metadata_unpack(&_struct, binarySectionCopy.data());
 }
 
+u_int32_t BinarySectionMetadata::GetSectionType() const
+{
+    u_int32_t magic;
+    memcpy(&magic, _struct.u8_magic_id, sizeof(magic));
+    return magic;
+}
+
+string BinarySectionMetadata::GetMagicId() const
+{
+    string magic(_struct.u8_magic_id, _struct.u8_magic_id + 4);
+    std::reverse(magic.begin(), magic.end());
+    return magic;
+}
+
 void BinarySectionMetadata::SetDigest(const vector<u_int8_t>& digest)
 {
     if (digest.size() != 48)
@@ -276,18 +290,21 @@ void BinarySectionMetadata::SetDigest(const vector<u_int8_t>& digest)
     memcpy(_struct.bin_digest.digest, digest.data(), 48);
 }
 
-void BinarySectionMetadata::SetJsonParams(const Json::Value& root)
+void BinarySectionMetadata::SetJsonParams(const Json::Value& root, bool ignoreMagicId)
 {
     const size_t MAGIC_ID_LEN = 4;
     const size_t ENCRYPTION_DERIVATION_STRING_LEN = 16;
 
-    // TODO validate magic ID after it's defined
-    if (root["magic_id"].asString().length() != MAGIC_ID_LEN)
+    if (!ignoreMagicId)
     {
-        throw runtime_error("Invalid magic ID");
+        // TODO validate magic ID after it's defined
+        if (root["magic_id"].asString().length() != MAGIC_ID_LEN)
+        {
+            throw runtime_error("Invalid magic ID");
+        }
+        memcpy(_struct.u8_magic_id, root["magic_id"].asCString(), MAGIC_ID_LEN);
+        CPUTOn(_struct.u8_magic_id, 1);
     }
-    memcpy(_struct.u8_magic_id, root["magic_id"].asCString(), MAGIC_ID_LEN);
-    CPUTOn(_struct.u8_magic_id, 1);
 
     _struct.version.u8_ver_major =
       std::stoul(nbu::mft::common::GetStrValue(root["version"]["ver_major"], true), nullptr, 16);
@@ -364,13 +381,19 @@ vector<u_int8_t> CSH::Pack()
     fs5_image_layout_csh_signature_pack(&_oem_signature, cshIter);
     cshIter += fs5_image_layout_csh_signature_size();
     fs5_image_layout_csh_metadata_pack(&_metadata, cshIter);
-
     CPUTOn(cshData.data(), cshData.size() / 4);
 
     for (auto section : _cshSections)
     {
         vector<u_int8_t> metadata = section.Pack();
         cshData.insert(cshData.end(), metadata.begin(), metadata.end());
+    }
+
+    //* switch_fws is fixed as 32 sections, must keep the reserved space
+    // TODO remove this once switch_fws isn't fixed as 32 sections
+    if (cshData.size() < GetCshSize())
+    {
+        cshData.resize(GetCshSize());
     }
 
     return cshData;
@@ -404,9 +427,7 @@ void CSH::UnpackHeader(const vector<u_int8_t>& cshHeader)
 
     if (!IsValidCompId(_metadata.component_id))
     {
-        std::stringstream ss;
-        ss << "Unknown CSH Component ID 0x" << std::hex << _metadata.component_id;
-        throw runtime_error(ss.str());
+        throw runtime_error("Unknown CSH Component ID 0x" + std::to_string(_metadata.component_id));
     }
 }
 
@@ -549,58 +570,85 @@ void CSH::SetOemSignature(const vector<u_int8_t>& signature, SigType sigType)
     }
 }
 
+void CSH::SetSingleSectionFromJson(const Json::Value& root)
+{
+    if (!root.isMember("magic_id"))
+    {
+        throw runtime_error("Missing magic_id in binary_section_metadata");
+    }
+    string magicId = root["magic_id"].asString();
+    if (magicId.empty() || magicId.length() != 4)
+    {
+        throw runtime_error("Invalid section Magic ID");
+    }
+
+    auto section =
+      std::find_if(_cshSections.begin(),
+                   _cshSections.end(),
+                   [&magicId](const BinarySectionMetadata& section) { return section.GetMagicId() == magicId; });
+    if (section == _cshSections.end())
+    {
+        throw runtime_error("Magic ID not found in CSH");
+    }
+
+    section->SetJsonParams(root);
+}
+
+void CSH::SetSectionsFromJson(const Json::Value& root, bool ignoreMagicId)
+{
+    for (auto section : _cshSections)
+    {
+        section.SetJsonParams(root, ignoreMagicId);
+    }
+}
+
 void CSH::SetJsonParams(const Json::Value& root)
 {
-    vector<string> binarySectionMetadataNames;
-
     if (root[cshMetadataName].empty())
     {
         throw runtime_error("Couldn't find csh_metadata field in JSON file.");
     }
+    if (root[binarySectionMetadataName].empty())
+    {
+        throw runtime_error("Couldn't find binary_section_metadata field in JSON file.");
+    }
 
-    size_t expectedIndex = 0;
+    bool isSwitchCsh = (CshComponentID)_metadata.component_id == CshComponentID::SWITCH_FWS;
+
     for (auto jsonField = root.begin(); jsonField != root.end(); jsonField++)
     {
-        string name = jsonField.name();
-        if (name == cshMetadataName)
+        string jsonFieldName = jsonField.name();
+        if (jsonFieldName == binarySectionMetadataName)
+        {
+            if (root[binarySectionMetadataName].isArray())
+            {
+                if (isSwitchCsh)
+                {
+                    throw runtime_error("SWITCH_FWS component supports only single section JSON");
+                }
+                if (root[binarySectionMetadataName].size() != _cshSections.size())
+                {
+                    throw runtime_error("Number of sections in JSON doesn't match number of sections in CSH");
+                }
+                for (Json::ArrayIndex i = 0; i < root[binarySectionMetadataName].size(); i++)
+                {
+                    SetSingleSectionFromJson(root[binarySectionMetadataName][i]);
+                }
+            }
+            else
+            {
+                SetSectionsFromJson(root[binarySectionMetadataName], isSwitchCsh);
+            }
+        }
+        else if (jsonFieldName == cshMetadataName)
         {
             SetMetadataFromJson(root[cshMetadataName]);
-            continue;
-        }
-
-        // binary section metadata field name is expected to be in the format of binary_section_matadata_<index>
-        if (name.find(binarySectionMetadataArrName) != 0 || name.length() <= binarySectionMetadataArrName.length() ||
-            !all_of(name.begin() + binarySectionMetadataArrName.length(), name.end(), ::isdigit) ||
-            name[binarySectionMetadataArrName.length()] == '-')
-        {
-            throw runtime_error("Invalid field name: " + name);
-        }
-
-        // JSON lib is getting fields in alphabetical order, so we check if the index is sequential
-        size_t index = stoi(name.substr(binarySectionMetadataArrName.length()));
-        if (index != expectedIndex)
-        {
-            throw runtime_error("Non-sequential index for binary section metadata: " + to_string(index));
-        }
-
-        if (index < _cshSections.size())
-        {
-            _cshSections[index].SetJsonParams(root[name]);
         }
         else
         {
-            throw runtime_error("Index for binary section metadata is out of range: " + to_string(index));
+            throw runtime_error("Invalid field name: " + jsonFieldName);
         }
-
-        expectedIndex++;
     }
-
-    if (expectedIndex != _cshSections.size())
-    {
-        throw runtime_error("Number of binary_section_metadata fields in JSON is not equal to the number of binaries");
-    }
-
-    // TODO verify that the binary section metadata offsets are sequential
 }
 
 void CSH::CalcDigest()

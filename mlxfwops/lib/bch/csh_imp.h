@@ -36,6 +36,7 @@
 #pragma once
 
 #include <vector>
+#include <algorithm>
 
 #include "common/compatibility.h"
 #include "json/reader.h"
@@ -171,34 +172,30 @@ public:
     BinarySectionMetadata(size_t sectionSize, size_t flashOffset, const vector<u_int8_t>& digest);
     BinarySectionMetadata(u_int32_t itoc_type, size_t sectionSize, size_t flashOffset, const vector<u_int8_t>& digest);
 
-    vector<u_int8_t> Pack();
+    vector<u_int8_t> Pack() const;
     void Unpack(const vector<u_int8_t>& binarySection);
 
-    size_t GetSectionOffset() { return _struct.flash_offset; }
+    size_t GetSectionOffset() const { return _struct.flash_offset; }
     void SetSectionOffset(u_int32_t offset) { _struct.flash_offset = offset; }
 
-    size_t GetSectionSize() { return _struct.bin_length; }
-    u_int32_t GetSectionType() const
-    {
-        u_int32_t magic;
-        memcpy(&magic, _struct.u8_magic_id, sizeof(magic));
-        return magic;
-    }
+    size_t GetSectionSize() const { return _struct.bin_length; }
+    u_int32_t GetSectionType() const;
+    string GetMagicId() const;
 
     void SetDigest(const vector<u_int8_t>& digest);
 
-    void SetJsonParams(const Json::Value& root);
+    void SetJsonParams(const Json::Value& root, bool ignoreMagicId = false);
 
     static size_t Size() { return fs5_image_layout_binary_section_metadata_size(); }
 
-    vector<u_int8_t> GetDerivationKey()
+    vector<u_int8_t> GetDerivationKey() const
     {
         return vector<u_int8_t>(_struct.encryption_params.u8_encryption_derivation_string.u8_dummy,
                                 _struct.encryption_params.u8_encryption_derivation_string.u8_dummy +
                                   FS5_IMAGE_LAYOUT_U8_ENCRYPTION_DERIVATION_STRING_SIZE);
     }
     // TODO:: check with Nael what is the derivation context
-    vector<u_int8_t> GetDerivationContext()
+    vector<u_int8_t> GetDerivationContext() const
     {
         return vector<u_int8_t>(_struct.encryption_params.u8_encryption_derivation_string.u8_dummy,
                                 _struct.encryption_params.u8_encryption_derivation_string.u8_dummy +
@@ -224,13 +221,13 @@ public:
     CSH(u_int16_t id);
 
     vector<u_int8_t> Pack();
+    vector<u_int8_t> PackMetadata() const;
     void Unpack(const vector<u_int8_t>& buffer);
     void UnpackHeader(const vector<u_int8_t>& cshHeader);
     void UnpackSections(const vector<u_int8_t>& buffer, size_t offset = 0);
     void AddBinarySectionMetadata(BinarySectionMetadata sectionMetadata, bool updateSectionsOffsets = true);
 
     vector<BinarySectionMetadata>& GetSections() { return _cshSections; }
-    vector<u_int8_t> PackMetadata() const;
     size_t GetCshSize();
     u_int16_t GetComponentId() { return _metadata.component_id; }
     size_t GetComponentSize(bool withCshHeader = true);
@@ -247,11 +244,13 @@ public:
 
 private:
     void SetMetadataFromJson(const Json::Value& root);
+    void SetSingleSectionFromJson(const Json::Value& root);
+    void SetSectionsFromJson(const Json::Value& root, bool ignoreMagicId = false);
 
     static const u_int16_t CSH_ECDSA_SIG_SIZE = 96;
     static const u_int16_t CSH_LMS_SIG_SIZE = 1740;
     static const string cshMetadataName;
-    static const string binarySectionMetadataArrName;
+    static const string binarySectionMetadataName;
 
     struct fs5_image_layout_csh_header _header;
     struct fs5_image_layout_csh_signature _nv_signature;
