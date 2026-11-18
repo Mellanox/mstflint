@@ -1015,12 +1015,18 @@ bool Fs6Operations::FwBurnAdvanced(FwOperations* imageOps, ExtBurnParams& burnPa
         return errmsg("Expected FS6 image but got type %d", imageOps->FwType());
     }
 
+    if (!checkAndDisableFlashWpIfRequired())
+    {
+        return errmsg("Failed to check and disable flash write protection if from bottom.\n");
+    }
+
     // Cast to FImage to access the image buffer
     FImage* fim = (FImage*)(imageOps->GetIoAccess());
     u_int8_t* imageData = (u_int8_t*)fim->getBuf();
 
     if (imageData == NULL)
     {
+        restoreWriteProtectInfo();
         return errmsg("Failed to get image buffer");
     }
 
@@ -1040,6 +1046,7 @@ bool Fs6Operations::FwBurnAdvanced(FwOperations* imageOps, ExtBurnParams& burnPa
     if (!writeImageEx(burnParams.progressFuncEx, burnParams.progressUserData, burnParams.progressFunc, imageStart,
                       imageData, l2ptEnd - imageStart, true, true, totalSize, 0))
     {
+        restoreWriteProtectInfo();
         return errmsg("Failed to burn image until end of L2PT - %s\n", this->err());
     }
     MLXFWOPS_LOG_DEBUG("finished writing data from address 0x%x to 0x%x", imageStart, l2ptEnd);
@@ -1047,9 +1054,15 @@ bool Fs6Operations::FwBurnAdvanced(FwOperations* imageOps, ExtBurnParams& burnPa
     if (!writeImageEx(burnParams.progressFuncEx, burnParams.progressUserData, burnParams.progressFunc, dtocStart,
                       imageData, dtocEnd - dtocStart, true, true, totalSize, l2ptEnd - imageStart))
     {
+        restoreWriteProtectInfo();
         return errmsg("Failed to burn DTOC area - %s\n", this->err());
     }
     MLXFWOPS_LOG_DEBUG("finished writing data from address 0x%x to 0x%x", dtocStart, dtocEnd);
+
+    if (!restoreWriteProtectInfo())
+    {
+        return errmsg("Post-burn operation failed: Failed to restore flash write protection if from bottom.\n");
+    }
 
     return true;
 }

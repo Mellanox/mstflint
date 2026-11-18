@@ -2563,7 +2563,7 @@ bool FwOperations::FwBurnAdvanced(FwOperations* imageOps, ExtBurnParams& burnPar
 bool FwOperations::checkAndDisableFlashWpIfRequired()
 {
     u_int8_t fwType = this->FwType();
-    if (fwType != FIT_FS5)
+    if (fwType != FIT_FS5 && fwType != FIT_FS6)
     {
         MLXFWOPS_LOG_DEBUG("not supported for fw type %d", fwType);
         return true; // only supported for FS5 and FS6
@@ -2592,7 +2592,7 @@ bool FwOperations::restoreWriteProtectInfo()
 {
     MLXFWOPS_LOG_DEBUG("FwOperations::restoreWriteProtectInfo");
     u_int8_t fwType = this->FwType();
-    if (fwType != FIT_FS5)
+    if (fwType != FIT_FS5 && fwType != FIT_FS6)
     {
         MLXFWOPS_LOG_DEBUG("not supported for fw type %d", fwType);
         return true; // only supported for FS5 and FS6
