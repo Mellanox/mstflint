@@ -5421,7 +5421,7 @@ static int check_zf_through_memory(mfile* mf)
             break;
 
         case DeviceSpectrum6_HwId:
-            gis_address = 0x155004;
+            gis_address = 0x157c04;
             break;
 
         default:
