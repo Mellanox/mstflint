@@ -142,6 +142,8 @@ string ToString(PartitionType type)
             return "FW_DEBUG_DUMP2";
         case PartitionType::PT_FW_NV_LOG:
             return "FW_NV_LOG";
+        case PartitionType::PT_CPO_CALIBRATION_DATA:
+            return "CPO_CALIBRATION_DATA";
         default:
             return "UNKNOWN";
     }
@@ -1922,6 +1924,95 @@ bool Fs6Operations::FwSetVPD(char* vpdFileStr, PrintCallBack callBackFunc)
     UpdatePartitionData(PartitionType::PT_VPD_READ_ONLY, vpdData, callBackFunc);
     _l1pt.SetEntrySize(PartitionType::PT_VPD_READ_ONLY, vpdData.size());
     UpdatePartitionTable(IsL2ptSection(PartitionType::PT_VPD_READ_ONLY), callBackFunc);
+
+    return true;
+}
+
+bool Fs6Operations::IsSectionExists(fs3_section_t sectionType)
+{
+    auto entries = IsL2ptSection(PartitionType(sectionType)) ? _l2pt.GetEntries() : _l1pt.GetEntries();
+    for (const auto& entry : entries)
+    {
+        if (entry.GetPartitionType() == sectionType)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Fs6Operations::UpdateSectionAllowed(fs3_section_t sectionType)
+{
+    return sectionType == FS4_CPO_CALIBRATION_DATA;
+}
+
+bool Fs6Operations::UpdateSection(fs3_section_t sectionType,
+                                  std::vector<u_int8_t>& newSectionData,
+                                  const char* msg,
+                                  PrintCallBack callBackFunc)
+{
+    MLXFWOPS_LOG_DEBUG("Fs6Operations::UpdateSection sectionType: 0x%x, msg: %s", sectionType, msg);
+    if (!UpdateSectionAllowed(sectionType))
+    {
+        return errmsg("updating section type 0x%x is not supported for FS6\n", sectionType);
+    }
+    FAIL_NO_OCR(string_format("update %s", ToString(PartitionType(sectionType)).c_str()).c_str());
+
+    if (!FwVerify((VerifyCallBack) nullptr))
+    {
+        return false;
+    }
+
+    if (!IsSectionExists(sectionType))
+    {
+        string io_mode = (_ioAccess && _ioAccess->is_flash()) ? "device" : "image";
+        return errmsg("section type 0x%x does not exist in %s\n", sectionType, io_mode.c_str());
+    }
+
+    size_t partitionSize = 0, partitionOffset = 0;
+    GetPartitionEntryInfo(PartitionType(sectionType), partitionOffset, partitionSize);
+    if (IsPartitionTypeMaxSize(PartitionType(sectionType))) // TODO: If adding a partition that is not max-sized,
+                                                            // clarify the expected behavior when the new content
+                                                            // overlaps with the following section. Should the flow
+                                                            // fail,
+                                                            // or should the subsequent sections be shifted accordingly?
+    {
+        if (newSectionData.size() > partitionSize)
+        {
+            if (getenv("ALLOW_OVERSIZED_SECTION") != NULL)
+            {
+                MLXFWOPS_LOG_DEBUG("new section data size = 0x%x, partition size = 0x%x. resizing to partition size",
+                         (u_int32_t)newSectionData.size(), (u_int32_t)partitionSize);
+                newSectionData.resize(partitionSize); // allow legacy behaviour if ALLOW_OVERSIZED_SECTION was used
+            }
+            else
+            {
+                return errmsg("new section data size (0x%x) exceeds original section size (0x%x bytes). ",
+                              (u_int32_t)newSectionData.size(), (u_int32_t)partitionSize);
+            }
+        }
+    }
+
+    if (partitionSize > newSectionData.size())
+    {
+        newSectionData.resize(partitionSize);
+    }
+
+    UpdatePartitionData(PartitionType(sectionType), newSectionData, callBackFunc);
+
+    if (!IsPartitionTypeMaxSize(PartitionType(sectionType))) // updating size is needed
+    {
+        bool isl2pt = IsL2ptSection(PartitionType(sectionType));
+        if (isl2pt)
+        {
+            _l2pt.SetEntrySize(PartitionType(sectionType), newSectionData.size());
+        }
+        else // l1pt
+        {
+            _l1pt.SetEntrySize(PartitionType(sectionType), newSectionData.size());
+        }
+        UpdatePartitionTable(isl2pt, callBackFunc);
+    }
 
     return true;
 }

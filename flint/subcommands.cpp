@@ -6127,9 +6127,9 @@ FlintStatus SetCpoCalibrationDataSubCommand::executeCommand()
     }
     FwOperations* ops = _flintParams.device_specified ? _fwOps : _imgOps;
 
-    if (ops->FwType() != FIT_FS4 && ops->FwType() != FIT_FS5)
+    if (ops->FwType() != FIT_FS4 && ops->FwType() != FIT_FS5 && ops->FwType() != FIT_FS6)
     {
-        reportErr(true, "Setting CPO calibration data is applicable only for FS4/FS5 FW.\n");
+        reportErr(true, "Setting CPO calibration data is applicable only for FS4/FS5/FS6 FW.\n");
         return FLINT_FAILED;
     }
 

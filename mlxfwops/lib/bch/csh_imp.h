@@ -161,6 +161,7 @@ enum class PartitionType
     PT_FW_DEBUG_DUMP = 0xfc,
     PT_FW_DEBUG_DUMP2 = 0xd4,
     PT_FW_NV_LOG = 0xe5,
+    PT_CPO_CALIBRATION_DATA = 0xcc,
 };
 
 const u_int32_t L1PT_OFFSET = 0xe000;

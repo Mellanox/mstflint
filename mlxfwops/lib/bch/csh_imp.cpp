@@ -58,7 +58,7 @@ bool IsCshComponent(PartitionType partitionType)
 bool IsPartitionTypeMaxSize(PartitionType partitionType)
 {
     return partitionType == PartitionType::PT_ROM_IMGS || partitionType == PartitionType::PT_CHAIN_CONTAINER ||
-           partitionType == PartitionType::PT_VMOD_FW;
+           partitionType == PartitionType::PT_VMOD_FW || partitionType == PartitionType::PT_CPO_CALIBRATION_DATA;
 }
 
 CshComponentID ToCshId(PartitionType partitionType)

@@ -103,6 +103,10 @@ public:
                   ProgressCallBack progressFunc = (ProgressCallBack)NULL,
                   PrintCallBack printFunc = (PrintCallBack)NULL) override;
     bool FwSetVPD(char* vpdFileStr, PrintCallBack callBackFunc = (PrintCallBack)NULL) override;
+    bool UpdateSection(fs3_section_t sectionType,
+                       std::vector<u_int8_t>& newSectionData,
+                       const char* msg,
+                       PrintCallBack callBackFunc = (PrintCallBack)NULL) override;
     bool FwSetAccessKey(hw_key_t userKey, ProgressCallBack progressFunc = (ProgressCallBack)NULL) override;
     bool FwGetSection(u_int32_t sectType, std::vector<u_int8_t>& sectInfo, bool stripedImage = false) override;
     bool FwResetNvData() override;
@@ -230,6 +234,7 @@ private:
     bool IsL2ptSection(CshComponentID cshId);
     bool IsL2ptSection(PartitionType partitionType);
     bool IsDtocEntry(PartitionType partitionType);
+    bool IsSectionExists(fs3_section_t sectionType);
     bool CollectDtocForProductionBurn(PartitionType partitionType, FwOperations* imageOps);
     vector<u_int8_t> ReadPartitionData(PartitionType partitionType, int chainNumber = INVALID_CHAIN_NUMBER);
     void UpdatePartitionData(PartitionType partitionType,
@@ -249,6 +254,7 @@ private:
     void PrintDotSection(VerifyCallBack verifyCallBackFunc);
 
     u_int32_t GetL2ptSectionsSize();
+    bool UpdateSectionAllowed(fs3_section_t sectionType);
 
     PartitionTable _l1pt;
     PartitionTable _l2pt;
