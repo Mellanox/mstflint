@@ -74,6 +74,9 @@ using namespace std;
 
 enum class CshSectionType
 {
+    RESET_INFO = 0x20,
+    DBG_FW_INI = 0x30,
+
     //* enum values are conversion from ASCII to hex (4-char string to 32-bit hex)
     BOOT2_MAGIC_ID = 0x424F5432,                        // "BOT2"
     IMAGE_INFO_MAGIC_ID = 0x49494E46,                   // "IINF"
