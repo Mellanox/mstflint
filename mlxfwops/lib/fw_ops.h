@@ -141,7 +141,8 @@ public:
         IMG_SIG_TYPE_CF = 3,
         IMG_SIG_TYPE_CC = 4,
         IMG_SIG_TYPE_PLDM = 5,
-        IMG_SIG_OPEN_FILE_FAILED = 6
+        IMG_SIG_TYPE_CSH = 6,
+        IMG_SIG_OPEN_FILE_FAILED = 7
     };
     FwOperations(FBase* ioAccess) :
         _ioAccess(ioAccess),

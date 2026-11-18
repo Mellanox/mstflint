@@ -281,6 +281,10 @@ int FwOperations::getBufferSignature(u_int8_t* buf, u_int32_t size)
         res = IMG_SIG_TYPE_MFA;
     }
 
+    if (!strncmp((char*)buf, "NVDA", 4))
+    {
+        res = IMG_SIG_TYPE_CSH;
+    }
     return res;
 }
 
@@ -658,7 +662,7 @@ bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase** ioAccessP, 
         u_int32_t numInfo = fwParams.buffSize;
 #ifndef NO_MFA_SUPPORT
         int sig = getBufferSignature((u_int8_t*)fwParams.buffHndl, numInfo);
-        if (sig == IMG_SIG_TYPE_BIN || swDevId != 0)
+        if (sig == IMG_SIG_TYPE_BIN || sig == IMG_SIG_TYPE_CSH || swDevId != 0)
         {
             *ioAccessP = new FImage;
             if (!((FImage*)*ioAccessP)->open(fwParams.buffHndl, (u_int32_t)numInfo, !fwParams.shortErrors))
