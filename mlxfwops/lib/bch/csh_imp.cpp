@@ -54,6 +54,35 @@ bool IsCshComponent(PartitionType partitionType)
            partitionType == PartitionType::PT_SWITCH_FWS || partitionType == PartitionType::PT_SBD_FW;
 }
 
+CshComponentID ToCshId(PartitionType partitionType)
+{
+    CshComponentID cshId = CshComponentID::Unknown;
+    switch (partitionType)
+    {
+        case PartitionType::PT_ROM_IMGS:
+            cshId = CshComponentID::ROM_IMGS;
+            break;
+        case PartitionType::PT_BCT_DTB:
+            cshId = CshComponentID::BCT_DTB;
+            break;
+        case PartitionType::PT_OEM_FWS:
+            cshId = CshComponentID::OEM_FWS;
+            break;
+        case PartitionType::PT_NV_FWS:
+            cshId = CshComponentID::NV_FWS;
+            break;
+        case PartitionType::PT_SWITCH_FWS:
+            cshId = CshComponentID::SWITCH_FWS;
+            break;
+        case PartitionType::PT_SBD_FW:
+            cshId = CshComponentID::SBD_FW;
+            break;
+        default:
+            throw runtime_error("Partition type " + to_string((u_int32_t)partitionType) + " is not a CSH component");
+    }
+    return cshId;
+}
+
 string ToString(CshComponentID cshId)
 {
     switch (cshId)
@@ -82,7 +111,7 @@ string CshSectionIDToString(u_int32_t sectionId)
     CPUTOn(sectionName, 1);
     string sectionNameStr(sectionName);
 
-    if (sectionNameStr == "PBLT" || sectionNameStr == "PBLD" || sectionNameStr == "SBDF")
+    if (sectionNameStr == "PBLT" || sectionNameStr == "PBLD" || sectionNameStr == "SBDF" || sectionNameStr == "CALF")
     {
         return sectionNameStr;
     }

@@ -133,6 +133,7 @@ const u_int32_t L1PT_OFFSET = 0xe000;
 const u_int32_t SHA384_DIGEST_SIZE = 48;
 
 bool IsCshComponent(PartitionType partitionType);
+CshComponentID ToCshId(PartitionType partitionType);
 string ToString(CshComponentID cshId);
 string CshSectionIDToString(u_int32_t sectionId);
 
@@ -260,6 +261,8 @@ public:
     virtual void SetComponentId(u_int16_t id) = 0;
     virtual size_t GetNumberOfBinaries() = 0;
     virtual void SetNumberOfBinaries(size_t num) = 0;
+    virtual u_int8_t GetComponentMajorVersion() = 0;
+    virtual u_int16_t GetComponentMinorVersion() = 0;
 
     virtual void SetBinariesListDigest(const vector<u_int8_t>& digest) = 0;
 
@@ -276,6 +279,8 @@ public:
     void SetComponentId(u_int16_t id) override { _metadata_nbu.component_id = id; }
     size_t GetNumberOfBinaries() override { return _metadata_nbu.num_of_binaries; }
     void SetNumberOfBinaries(size_t num) override { _metadata_nbu.num_of_binaries = num; }
+    u_int8_t GetComponentMajorVersion() override { return _metadata_nbu.version.ver_major; }
+    u_int16_t GetComponentMinorVersion() override { return _metadata_nbu.version.ver_minor; }
 
     void SetBinariesListDigest(const vector<u_int8_t>& digest) override;
 
@@ -295,6 +300,8 @@ public:
     void SetComponentId(u_int16_t id) override { _metadata.component_id = id; }
     size_t GetNumberOfBinaries() override { return _metadata.num_of_binaries; }
     void SetNumberOfBinaries(size_t num) override { _metadata.num_of_binaries = num; }
+    u_int8_t GetComponentMajorVersion() override { return _metadata.version.u8_ver_major; }
+    u_int16_t GetComponentMinorVersion() override { return _metadata.version.u8_ver_minor; }
 
     void SetBinariesListDigest(const vector<u_int8_t>& digest) override;
     void SetJsonParams(const Json::Value& root) override;
@@ -333,6 +340,8 @@ public:
     u_int16_t GetComponentId() { return _metadata->GetComponentId(); }
     size_t GetComponentSize();
     size_t GetNumberOfBinaries() { return _metadata->GetNumberOfBinaries(); }
+    u_int8_t GetComponentMajorVersion() { return _metadata->GetComponentMajorVersion(); }
+    u_int16_t GetComponentMinorVersion() { return _metadata->GetComponentMinorVersion(); }
 
     void SetNvSignature(const vector<u_int8_t>& signature, SigType sigType);
     void SetOemSignature(const vector<u_int8_t>& signature, SigType sigType);

@@ -220,6 +220,7 @@ public:
     virtual bool FwSetPublicKeys(char* fname, PrintCallBack callBackFunc = (PrintCallBack)NULL);
     virtual bool FwSetForbiddenVersions(char* fname, PrintCallBack callBackFunc = (PrintCallBack)NULL);
     virtual bool SetSignedFWComponent(string bin_path, ComponentType compName, const char* msg);
+    virtual bool GetFwComponentsData(string path);
     virtual bool ReadComponent(ComponentType compName,
                                ComponentHeader compHeader,
                                string file_path,

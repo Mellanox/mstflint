@@ -69,6 +69,7 @@ public:
                        string file_path,
                        vector<u_int8_t>& componentData) override;
     bool SetSignedFWComponent(string binPath, ComponentType compName, const char* msg) override;
+    bool GetFwComponentsData(string path) override;
 
 #ifndef MST_CPU_armv7l_umbriel // {
     bool SignForSecureBoot(const char*, const char*, const MlxSign::Signer&) override;

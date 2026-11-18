@@ -35,6 +35,7 @@
 
 #include "fs6_ops.h"
 #include "bch/csh_imp.h"
+#include "json/writer.h"
 
 #ifdef MFT_LEGACY_BUILD
 #include <mft_utils.h>
@@ -44,6 +45,7 @@
 
 #include <algorithm>
 #include <iomanip>
+#include <fstream>
 
 CshComponentID ToCshId(ComponentType compName)
 {
@@ -497,6 +499,48 @@ bool Fs6Operations::SetSignedFWComponent(string binPath, ComponentType compName,
     if (!_ioAccess->write(componentOffset, compData.data(), compData.size()))
     {
         return errmsg("%s - write error (%s)\n", msg, _ioAccess->err());
+    }
+
+    return true;
+}
+
+bool Fs6Operations::GetFwComponentsData(string path)
+{
+    Json::Value root;
+    if (!Init())
+    {
+        return false;
+    }
+
+    vector<PartitionType> partitionTypes = {PartitionType::PT_ROM_IMGS, PartitionType::PT_NV_FWS,
+                                            PartitionType::PT_OEM_FWS, PartitionType::PT_SBD_FW};
+
+    for (auto partitionType : partitionTypes)
+    {
+        auto entry =
+          std::find_if(_cshComponents.begin(), _cshComponents.end(),
+                       [partitionType](const pair<PartitionType, CSH>& entry) { return entry.first == partitionType; });
+        if (entry == _cshComponents.end())
+        {
+            throw runtime_error("Partition type " + ToString(partitionType) + " not found in the image");
+        }
+
+        std::stringstream stream;
+        stream << "0x" << std::hex << static_cast<int>(entry->second.GetComponentMajorVersion());
+        root[ToString(ToCshId(partitionType))]["ver_major"] = stream.str();
+        stream.str("");
+        stream << "0x" << std::hex << static_cast<int>(entry->second.GetComponentMinorVersion());
+        root[ToString(ToCshId(partitionType))]["ver_minor"] = stream.str();
+    }
+
+    if (!path.empty())
+    {
+        std::ofstream outputFileStream(path);
+        outputFileStream << root;
+    }
+    else
+    {
+        cout << root << endl;
     }
 
     return true;

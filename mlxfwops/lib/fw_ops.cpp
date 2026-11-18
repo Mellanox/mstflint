@@ -2708,6 +2708,11 @@ bool FwOperations::FwSetForbiddenVersions(char* fname, PrintCallBack callBackFun
     return errmsg("FwSetForbiddenVersions not supported");
 }
 
+bool FwOperations::GetFwComponentsData(string)
+{
+    return errmsg("GetFwComponentsData is not supported");
+}
+
 bool FwOperations::SetSignedFWComponent(string, ComponentType, const char*)
 {
     return errmsg("SetSignedFWComponent is not supported");
