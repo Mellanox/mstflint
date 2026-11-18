@@ -5050,7 +5050,7 @@ FlintStatus QuerySubCommand::executeCommand()
 {
     MLXFWOPS_LOG_DEBUG("QuerySubCommand::executeCommand");
 
-    if (_flintParams.linkx_control == true)
+    if (_flintParams.linkx_control == true || _flintParams.linkx_els_control == true)
     {
         if (_flintParams.device_specified == false)
         {
@@ -5062,7 +5062,10 @@ FlintStatus QuerySubCommand::executeCommand()
             reportErr(true, "Flag \"--downstream_device_ids\" with values should be provided.\n");
             return FLINT_FAILED;
         }
-        return QueryLinkX(_flintParams.device, _flintParams.output_file, _flintParams.downstream_device_ids);
+        FwComponent::comps_ids_t fwComponent =
+          _flintParams.linkx_control ? FwComponent::COMPID_LINKX : FwComponent::COMPID_LINKX_ELS;
+        return QueryLinkX(_flintParams.device, _flintParams.output_file, _flintParams.downstream_device_ids,
+                          fwComponent);
     }
     if (_flintParams.device.find("_cable") != string::npos && _flintParams.device.find("_rt") == string::npos)
     {

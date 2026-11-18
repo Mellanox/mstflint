@@ -324,7 +324,10 @@ private:
                          const component_linkx_st& linkx_data,
                          char* delimeter,
                          bool isCSV);
-    FlintStatus QueryLinkX(string deviceName, string outputFile, std::vector<int> deviceIds);
+    FlintStatus QueryLinkX(string deviceName,
+                           string outputFile,
+                           std::vector<int> deviceIds,
+                           FwComponent::comps_ids_t fwComponent);
     FlintStatus QueryCableAttributes();
     void PrintLifeCycle(const life_cycle_t& lifeCycle);
 
