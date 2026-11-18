@@ -155,7 +155,8 @@ string ToString(PartitionType type)
     }
 }
 
-Fs6Operations::Fs6Operations(FBase* ioAccess) : FwOperations(ioAccess), _l1ptOffset(L1PT_OFFSET), _l2ptOffset(0)
+Fs6Operations::Fs6Operations(FBase* ioAccess) :
+    FwOperations(ioAccess), _l1ptOffset(L1PT_OFFSET), _l2ptOffset(0), _activeChain(INVALID_CHAIN_NUMBER)
 {
     memset(_dotMagicId, 0, sizeof(_dotMagicId));
 }
@@ -256,14 +257,32 @@ bool Fs6Operations::Init()
 
             PartitionTableEntry entry;
             entry.Unpack(entryData);
+            // entry.DumpStruct(); // for debug purposes
             _l1pt.AddEntry(entry);
 
             if (IsCshComponent((PartitionType)entry.GetSectionType()))
             {
-                InitCshComponent((PartitionType)entry.GetSectionType(), entry.GetStartOffset());
+                InitCshComponent((PartitionType)entry.GetSectionType(), entry.GetStartOffset(), entry.GetChainNumber());
             }
 
-            if (PartitionType(entry.GetSectionType()) == PartitionType::PT_CHAIN_CONTAINER)
+            if ((PartitionType)entry.GetSectionType() == PartitionType::PT_ROM_IMGS)
+            {
+                if (_cshComponents.empty())
+                {
+                    return errmsg("No ROM_IMGS CSH section found");
+                }
+                bool isActiveChain = _cshComponents.back().csh.isActiveChain();
+                if (isActiveChain)
+                {
+                    MLXFWOPS_LOG_DEBUG("Fs6Operations::Init() - Setting activeChain to 0x%x", entry.GetChainNumber());
+                    _activeChain = entry.GetChainNumber();
+                    _l1pt.SetActiveChain(_activeChain);
+                }
+            }
+
+            if (PartitionType(entry.GetSectionType()) == PartitionType::PT_CHAIN_CONTAINER &&
+                entry.GetChainNumber() == _activeChain) // we assume that chain container follows rom_imgs and therefore
+                                                        // we can trust that the active chain number was for sure set
             {
                 _l2ptOffset = entry.GetStartOffset();
                 if (!InitL2pt())
@@ -276,7 +295,7 @@ bool Fs6Operations::Init()
     return true;
 }
 
-bool Fs6Operations::InitCshComponent(PartitionType partitionType, u_int32_t offset)
+bool Fs6Operations::InitCshComponent(PartitionType partitionType, u_int32_t offset, int currentChain)
 {
     vector<u_int8_t> cshHeader(fs5_image_layout_csh_header_size());
     if (!_ioAccess->read(offset, cshHeader.data(), fs5_image_layout_csh_header_size()))
@@ -301,7 +320,7 @@ bool Fs6Operations::InitCshComponent(PartitionType partitionType, u_int32_t offs
     }
     csh.UnpackSections(cshData);
 
-    _cshComponents.push_back(make_pair(partitionType, std::move(csh)));
+    _cshComponents.push_back({partitionType, std::move(csh), currentChain});
     return true;
 }
 
@@ -347,13 +366,19 @@ bool Fs6Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
         {
             if (IsCshComponent((PartitionType)entry.GetSectionType()))
             {
+                if ((PartitionType)entry.GetSectionType() == PartitionType::PT_ROM_IMGS &&
+                    entry.GetChainNumber() != _activeChain)
+                {
+                    continue;
+                }
                 if (!VerifyCshComponent((PartitionType)entry.GetSectionType(), entry.GetStartOffset(),
                                         verifyCallBackFunc))
                 {
                     return false;
                 }
             }
-            else if (PartitionType(entry.GetSectionType()) == PartitionType::PT_CHAIN_CONTAINER)
+            else if (PartitionType(entry.GetSectionType()) == PartitionType::PT_CHAIN_CONTAINER &&
+                     entry.GetChainNumber() == _activeChain)
             {
                 bool isKnownPartition = true;
                 PrintSectionRange(verifyCallBackFunc, _l2ptOffset, _l2ptOffset + _l2pt.Size() - 1, _l2pt.Size(),
@@ -432,6 +457,12 @@ bool Fs6Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
         return errmsg("No DEV_INFO section found with valid signature");
     }
 
+    if (_activeChain == INVALID_CHAIN_NUMBER)
+    {
+        return errmsg("No active chain found"); // no valid use case in which the flash/image will only have a
+                                                // backup/invalid chain without an active one
+    }
+
     return true;
 }
 
@@ -449,19 +480,19 @@ bool Fs6Operations::VerifyCshComponent(PartitionType partitionType, u_int32_t of
 {
     auto cshComponent =
       find_if(_cshComponents.begin(), _cshComponents.end(),
-              [partitionType](const pair<PartitionType, CSH>& entry) { return entry.first == partitionType; });
+              [partitionType](const CshComponentInfo& entry) { return entry.partitionType == partitionType; });
 
     if (cshComponent != _cshComponents.end())
     {
-        string compName = ToString(CshComponentID(cshComponent->second.GetComponentId()));
-        PrintSectionRange(verifyCallBackFunc, offset, offset + cshComponent->second.GetCshSize() - 1,
-                          cshComponent->second.GetCshSize(), compName, "CSH");
+        string compName = ToString(CshComponentID(cshComponent->csh.GetComponentId()));
+        PrintSectionRange(verifyCallBackFunc, offset, offset + cshComponent->csh.GetCshSize() - 1,
+                          cshComponent->csh.GetCshSize(), compName, "CSH");
 
-        u_int32_t prevSectionEnd = cshComponent->second.GetCshSize();
+        u_int32_t prevSectionEnd = cshComponent->csh.GetCshSize();
         u_int32_t currSectionBegin = 0;
         string sectionName;
 
-        for (auto section : cshComponent->second.GetSections())
+        for (auto section : cshComponent->csh.GetSections())
         {
             sectionName = GetSectionNameByMagicId(section.GetSectionType());
             size_t sectionOffset = offset + section.GetSectionOffset();
@@ -476,7 +507,7 @@ bool Fs6Operations::VerifyCshComponent(PartitionType partitionType, u_int32_t of
             prevSectionEnd = section.GetSectionOffset() + section.GetSectionSize();
         }
 
-        if (prevSectionEnd > cshComponent->second.GetComponentSize())
+        if (prevSectionEnd > cshComponent->csh.GetComponentSize())
         {
             return errmsg("section %s is out of CSH bounds", sectionName.c_str());
         }
@@ -594,6 +625,10 @@ bool Fs6Operations::SetSignedFWComponent(string binPath, ComponentType compName,
     else
     {
         _l1pt.SetEntrySize(ToPartitionType(cshId), compData.size());
+        if (cshId == CshComponentID::ROM_IMGS)
+        {
+            _l1pt.SetEntrySize(ToPartitionType(cshId), compData.size(), _activeChain == 0 ? 1 : 0);
+        }
         componentOffset = _l1pt.GetEntryOffset(ToPartitionType(cshId));
     }
 
@@ -627,17 +662,17 @@ bool Fs6Operations::GetFwComponentsData(string path)
     {
         auto entry =
           std::find_if(_cshComponents.begin(), _cshComponents.end(),
-                       [partitionType](const pair<PartitionType, CSH>& entry) { return entry.first == partitionType; });
+                       [partitionType](const CshComponentInfo& entry) { return entry.partitionType == partitionType; });
         if (entry == _cshComponents.end())
         {
             throw runtime_error("Partition type " + ToString(partitionType) + " not found in the image");
         }
 
         std::stringstream stream;
-        stream << "0x" << std::hex << static_cast<int>(entry->second.GetComponentMajorVersion());
+        stream << "0x" << std::hex << static_cast<int>(entry->csh.GetComponentMajorVersion());
         root[ToString(ToCshId(partitionType))]["ver_major"] = stream.str();
         stream.str("");
-        stream << "0x" << std::hex << static_cast<int>(entry->second.GetComponentMinorVersion());
+        stream << "0x" << std::hex << static_cast<int>(entry->csh.GetComponentMinorVersion());
         root[ToString(ToCshId(partitionType))]["ver_minor"] = stream.str();
     }
 
@@ -664,8 +699,13 @@ const char* Fs6Operations::FwGetResetRecommandationStr()
     return REBOOT_REQUIRED_STR;
 }
 
-bool Fs6Operations::GetPartrionEntryInfo(PartitionType partitionType, size_t& sectionOffset, size_t& sectionSize)
+bool Fs6Operations::GetPartitionEntryInfo(PartitionType partitionType,
+                                          size_t& sectionOffset,
+                                          size_t& sectionSize,
+                                          int chainNumber)
 {
+    ResolveChainNumber(chainNumber, _activeChain);
+
     PartitionValidator validator(partitionType);
     bool isL2pt = IsL2ptSection(partitionType);
 
@@ -676,7 +716,7 @@ bool Fs6Operations::GetPartrionEntryInfo(PartitionType partitionType, size_t& se
     {
         if ((PartitionType)entry.GetSectionType() == partitionType)
         {
-            if (validator.validate(entry, _ioAccess))
+            if (validator.validate(entry, _ioAccess, chainNumber))
             {
                 sectionOffset = baseOffset + entry.GetStartOffset();
                 sectionSize = entry.GetSectionSize();
@@ -685,15 +725,14 @@ bool Fs6Operations::GetPartrionEntryInfo(PartitionType partitionType, size_t& se
         }
     }
 
-    MLXFWOPS_LOG_DEBUG("Fs6Operations::GetPartrionEntryInfo partitionType %d not found or validation failed", (int)partitionType);
     return errmsg("Partition type 0x%x not found or validation failed", (int)partitionType);
 }
 
-bool Fs6Operations::ReadPartitionInfo(PartitionType partitionType, vector<u_int8_t>& data)
+bool Fs6Operations::ReadPartitionInfo(PartitionType partitionType, vector<u_int8_t>& data, int chainNumber)
 {
     size_t section_offset;
     size_t section_size;
-    if (!GetPartrionEntryInfo(partitionType, section_offset, section_size))
+    if (!GetPartitionEntryInfo(partitionType, section_offset, section_size, chainNumber))
     {
         return false;
     }
@@ -751,10 +790,11 @@ bool Fs6Operations::GetMfgInfo(u_int8_t* buff)
 bool Fs6Operations::ReadCshSectionInfo(PartitionType partitionType,
                                        CshSectionType sectionType,
                                        size_t sectionSize,
-                                       vector<u_int8_t>& data)
+                                       vector<u_int8_t>& data,
+                                       int chainNumber)
 {
     size_t section_addr;
-    if (!GetCshSectionOffset(partitionType, sectionType, section_addr))
+    if (!GetCshSectionOffset(partitionType, sectionType, section_addr, chainNumber))
     {
         return false; // Error already set by GetCshSectionOffset
     }
@@ -889,11 +929,14 @@ bool Fs6Operations::GetImageInfo()
 
 bool Fs6Operations::GetCshSectionOffset(PartitionType partitionType,
                                         CshSectionType sectionType,
-                                        size_t& CshSectionOffset)
+                                        size_t& CshSectionOffset,
+                                        int chainNumber)
 {
     // Find the partition table entry
     MLXFWOPS_LOG_DEBUG("Fs6Operations::GetCshSectionOffset partitionType = 0x%x, sectionType = 0x%x", (int)partitionType,
              (int)sectionType);
+
+    ResolveChainNumber(chainNumber, _activeChain);
     size_t partitionOffset = 0;
 
     bool isL2pt = IsL2ptSection(ToCshId(partitionType));
@@ -916,9 +959,28 @@ bool Fs6Operations::GetCshSectionOffset(PartitionType partitionType,
     {
         MLXFWOPS_LOG_DEBUG("Fs6Operations::GetCshSectionOffset isL1pt");
         std::vector<PartitionTableEntry> l1Entries = _l1pt.GetEntries();
-        auto l1Entry = find_if(l1Entries.begin(), l1Entries.end(),
-                               [partitionType](const PartitionTableEntry& entry)
-                               { return (PartitionType)entry.GetSectionType() == partitionType; });
+        auto l1Entry = l1Entries.end();
+        for (auto it = l1Entries.begin(); it != l1Entries.end(); ++it)
+        {
+            PartitionType entryPartitionType = PartitionType(it->GetSectionType());
+            if (entryPartitionType == partitionType)
+            {
+                if (entryPartitionType == PartitionType::PT_ROM_IMGS ||
+                    entryPartitionType == PartitionType::PT_CHAIN_CONTAINER)
+                {
+                    if (it->GetChainNumber() == chainNumber)
+                    {
+                        l1Entry = it;
+                        break;
+                    }
+                }
+                else
+                {
+                    l1Entry = it;
+                    break;
+                }
+            }
+        }
 
         if (l1Entry == l1Entries.end())
         {
@@ -932,7 +994,7 @@ bool Fs6Operations::GetCshSectionOffset(PartitionType partitionType,
     // Find the CSH component
     auto cshComponent =
       find_if(_cshComponents.begin(), _cshComponents.end(),
-              [partitionType](const pair<PartitionType, CSH>& entry) { return entry.first == partitionType; });
+              [partitionType](const CshComponentInfo& entry) { return entry.partitionType == partitionType; });
 
     if (cshComponent == _cshComponents.end())
     {
@@ -940,12 +1002,12 @@ bool Fs6Operations::GetCshSectionOffset(PartitionType partitionType,
     }
 
     // Find the specific section within the CSH component
-    auto section = find_if(cshComponent->second.GetSections().begin(),
-                           cshComponent->second.GetSections().end(),
+    auto section = find_if(cshComponent->csh.GetSections().begin(),
+                           cshComponent->csh.GetSections().end(),
                            [sectionType](const BinarySectionMetadata& section)
                            { return (CshSectionType)section.GetSectionType() == sectionType; });
 
-    if (section == cshComponent->second.GetSections().end())
+    if (section == cshComponent->csh.GetSections().end())
     {
         return errmsg("Section type 0x%x not found in CSH component", (int)sectionType);
     }
@@ -1266,7 +1328,9 @@ void Fs6Operations::PrintSectionRange(VerifyCallBack verifyCallBackFunc,
     report_callback(verifyCallBackFunc, ss.str().c_str());
 }
 
-bool Fs6Operations::PartitionValidator::validateDevInfo(const PartitionTableEntry& entry, FBase* ioAccess)
+bool Fs6Operations::PartitionValidator::validateDevInfo(const PartitionTableEntry& entry,
+                                                        FBase* ioAccess,
+                                                        int activeChain)
 {
     vector<u_int8_t> dev_info_data;
     dev_info_data.resize(entry.GetSectionSize());
@@ -1275,6 +1339,17 @@ bool Fs6Operations::PartitionValidator::validateDevInfo(const PartitionTableEntr
         return false;
     }
     return FwOperations::CheckDevInfoSignature((u_int32_t*)dev_info_data.data());
+}
+
+bool Fs6Operations::PartitionValidator::validateRomImgsAndChainContainer(const PartitionTableEntry& entry,
+                                                                         FBase* ioAccess,
+                                                                         int activeChain)
+{
+    if (entry.GetChainNumber() == activeChain)
+    {
+        return true;
+    }
+    return false;
 }
 
 Fs6Operations::PartitionValidator::PartitionValidator(PartitionType partitionType)
@@ -1287,6 +1362,14 @@ Fs6Operations::PartitionValidator::PartitionValidator(PartitionType partitionTyp
             _validator = &validateDevInfo;
             break;
 
+        case PartitionType::PT_ROM_IMGS:
+            _validator = &validateRomImgsAndChainContainer;
+            break;
+
+        case PartitionType::PT_CHAIN_CONTAINER:
+            _validator = &validateRomImgsAndChainContainer;
+            break;
+
             // Add more partition-specific validations here
 
         default:
@@ -1295,7 +1378,9 @@ Fs6Operations::PartitionValidator::PartitionValidator(PartitionType partitionTyp
     }
 }
 
-bool Fs6Operations::PartitionValidator::validate(const PartitionTableEntry& entry, FBase* ioAccess) const
+bool Fs6Operations::PartitionValidator::validate(const PartitionTableEntry& entry,
+                                                 FBase* ioAccess,
+                                                 int activeChain) const
 {
-    return _validator(entry, ioAccess);
+    return _validator(entry, ioAccess, activeChain);
 }

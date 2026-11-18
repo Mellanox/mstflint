@@ -158,6 +158,15 @@ const u_int32_t ROM_IMGS_MAGIC_PATTERN_OFFSET = 0xc;
 // the ROM images section is aligned to 384KB because the PBLT and PBLD flexible
 const u_int32_t ROM_IMGS_ALIGN_SIZE = 384 * 1024;
 
+const int INVALID_CHAIN_NUMBER = 0XFF;
+inline void ResolveChainNumber(int& chainNumber, int activeChain)
+{
+    if (chainNumber == INVALID_CHAIN_NUMBER)
+    {
+        chainNumber = activeChain;
+    }
+}
+
 bool IsCshComponent(PartitionType partitionType);
 CshComponentID ToCshId(PartitionType partitionType);
 string ToString(CshComponentID cshId);
@@ -181,6 +190,9 @@ public:
     CshSectionType GetSectionTypeStrong() const { return static_cast<CshSectionType>(GetSectionType()); }
 
     static size_t Size() { return fs5_image_layout_partition_table_entry_size(); }
+    void DumpStruct() const { fs5_image_layout_partition_table_entry_print(&_struct, stdout, 0); }
+
+    int GetChainNumber() const;
 
 private:
     struct fs5_image_layout_partition_table_entry _struct;
@@ -203,10 +215,10 @@ public:
 
     void AddEntry(const PartitionTableEntry& entry);
 
-    void SetEntrySize(PartitionType entryType, u_int32_t size);
-    u_int32_t GetEntryOffset(PartitionType entryType);
-    u_int32_t GetEntrySize(PartitionType entryType);
-    PartitionTableEntry& GetEntry(PartitionType entryType);
+    void SetEntrySize(PartitionType entryType, u_int32_t size, int chainNumber = INVALID_CHAIN_NUMBER);
+    u_int32_t GetEntryOffset(PartitionType entryType, int chainNumber = INVALID_CHAIN_NUMBER);
+    u_int32_t GetEntrySize(PartitionType entryType, int chainNumber = INVALID_CHAIN_NUMBER);
+    PartitionTableEntry& GetEntry(PartitionType entryType, int chainNumber = INVALID_CHAIN_NUMBER);
     const vector<PartitionTableEntry>& GetEntries() const { return _entries; }
 
     static size_t HeaderSize() { return fs5_image_layout_partition_table_header_size(); }
@@ -220,12 +232,21 @@ public:
         static vector<u_int8_t> romImageMagicPattern{{0x4f, 0x3d, 0x5a, 0x27}};
         return romImageMagicPattern;
     }
+    static const vector<u_int8_t>& RomImgsCandidateMagicPatternBE()
+    {
+        static vector<u_int8_t> romImgsCandidateMagicPatternBE{{0x27, 0x5a, 0x3d, 0x4f}};
+        return romImgsCandidateMagicPatternBE;
+    }
+
+    void SetActiveChain(int chain) { _activeChain = chain; }
+    int GetActiveChain() const { return _activeChain; }
 
 private:
     static const u_int16_t PARTITION_TABLE_DIGEST_OFFSET = 0x40;
 
     vector<PartitionTableEntry> _entries;
     struct fs5_image_layout_partition_table_header _struct;
+    int _activeChain = INVALID_CHAIN_NUMBER;
 };
 
 class MLXFWOP_API BinarySectionMetadata
@@ -291,7 +312,7 @@ public:
     virtual vector<u_int8_t> Pack() = 0;
     virtual void Unpack(const vector<u_int8_t>& buffer) = 0;
 
-    virtual u_int16_t GetComponentId() = 0;
+    virtual u_int16_t GetComponentId() const = 0;
     virtual void SetComponentId(u_int16_t id) = 0;
     virtual size_t GetNumberOfBinaries() = 0;
     virtual void SetNumberOfBinaries(size_t num) = 0;
@@ -309,7 +330,7 @@ public:
     vector<u_int8_t> Pack() override;
     void Unpack(const vector<u_int8_t>& buffer) override;
 
-    u_int16_t GetComponentId() override { return _metadata_nbu.component_id; }
+    u_int16_t GetComponentId() const override { return _metadata_nbu.component_id; }
     void SetComponentId(u_int16_t id) override { _metadata_nbu.component_id = id; }
     size_t GetNumberOfBinaries() override { return _metadata_nbu.num_of_binaries; }
     void SetNumberOfBinaries(size_t num) override { _metadata_nbu.num_of_binaries = num; }
@@ -332,7 +353,7 @@ public:
     vector<u_int8_t> Pack() override;
     void Unpack(const vector<u_int8_t>& buffer) override;
 
-    u_int16_t GetComponentId() override { return _metadata.component_id; }
+    u_int16_t GetComponentId() const override { return _metadata.component_id; }
     void SetComponentId(u_int16_t id) override { _metadata.component_id = id; }
     size_t GetNumberOfBinaries() override { return _metadata.num_of_binaries; }
     void SetNumberOfBinaries(size_t num) override { _metadata.num_of_binaries = num; }
@@ -375,7 +396,7 @@ public:
     BinarySectionMetadata& GetSection(u_int32_t itocType);
 
     size_t GetCshSize();
-    u_int16_t GetComponentId() { return _metadata->GetComponentId(); }
+    u_int16_t GetComponentId() const { return _metadata->GetComponentId(); }
     size_t GetComponentSize();
     size_t GetNumberOfBinaries() { return _metadata->GetNumberOfBinaries(); }
     u_int8_t GetComponentMajorVersion() { return _metadata->GetComponentMajorVersion(); }
@@ -390,6 +411,8 @@ public:
     static size_t HeaderSize(CshStructType type);
     static CshStructType GetCshStructType(const vector<u_int8_t>& cshHeader);
     static bool IsValidCompId(u_int16_t id);
+
+    bool isActiveChain();
 
     static const string ROM_IMGS_NAME;
     static const string BCT_DTB_NAME;

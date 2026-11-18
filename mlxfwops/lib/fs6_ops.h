@@ -106,13 +106,20 @@ public:
     bool FwShiftDevData(PrintCallBack progressFunc = (PrintCallBack)NULL) override;
     bool FwCalcMD5(u_int8_t md5sum[16]) override;
     const char* FwGetResetRecommandationStr() override;
-    bool GetCshSectionOffset(PartitionType partitionType, CshSectionType sectionType, size_t& CshSectionOffset);
-    bool GetPartrionEntryInfo(PartitionType partitionType, size_t& sectionOffset, size_t& sectionSize);
-    bool ReadPartitionInfo(PartitionType partitionType, vector<u_int8_t>& data);
+    bool GetCshSectionOffset(PartitionType partitionType,
+                             CshSectionType sectionType,
+                             size_t& CshSectionOffset,
+                             int chainNumber = INVALID_CHAIN_NUMBER);
+    bool GetPartitionEntryInfo(PartitionType partitionType,
+                               size_t& sectionOffset,
+                               size_t& sectionSize,
+                               int chainNumber = INVALID_CHAIN_NUMBER);
+    bool ReadPartitionInfo(PartitionType partitionType, vector<u_int8_t>& data, int chainNumber = INVALID_CHAIN_NUMBER);
     bool ReadCshSectionInfo(PartitionType partitionType,
                             CshSectionType sectionType,
                             size_t sectionSize,
-                            vector<u_int8_t>& data);
+                            vector<u_int8_t>& data,
+                            int chainNumber = INVALID_CHAIN_NUMBER);
     bool CheckAndSetIsReducedImage() override;
 
     virtual bool GetMfgInfo(u_int8_t* buff = nullptr) override;
@@ -133,17 +140,18 @@ public:
 
         explicit PartitionValidator(PartitionType partitionType);
 
-        bool validate(const PartitionTableEntry& entry, FBase* ioAccess) const;
+        bool validate(const PartitionTableEntry& entry, FBase* ioAccess, int activeChain) const;
 
     private:
-        std::function<bool(const PartitionTableEntry&, FBase*)> _validator;
+        std::function<bool(const PartitionTableEntry&, FBase*, int)> _validator;
 
-        static bool defaultValidator(const PartitionTableEntry& entry, FBase* ioAccess)
+        static bool defaultValidator(const PartitionTableEntry& entry, FBase* ioAccess, int activeChain)
         {
             return true;
         } // static because it's used as a function pointer
 
-        static bool validateDevInfo(const PartitionTableEntry& entry, FBase* ioAccess);
+        static bool validateDevInfo(const PartitionTableEntry& entry, FBase* ioAccess, int activeChain);
+        static bool validateRomImgsAndChainContainer(const PartitionTableEntry& entry, FBase* ioAccess, int activeChain);
     };
 
 protected:
@@ -157,7 +165,7 @@ protected:
 private:
     bool Init();
     bool InitL2pt();
-    bool InitCshComponent(PartitionType partitionType, u_int32_t offset);
+    bool InitCshComponent(PartitionType partitionType, u_int32_t offset, int currentChain = 0);
 
     bool VerifyCshComponent(PartitionType partitionType, u_int32_t offset, VerifyCallBack verifyCallBackFunc);
     bool VerifyCshComponent();
@@ -175,11 +183,21 @@ private:
                            const string& sectionType,
                            const string& suffix = "");
     u_int32_t GetL2ptSectionsSize();
+
     PartitionTable _l1pt;
     PartitionTable _l2pt;
-    vector<pair<PartitionType, CSH>> _cshComponents;
+
+    struct CshComponentInfo
+    {
+        PartitionType partitionType;
+        CSH csh;
+        int chainNumber;
+    };
+    vector<CshComponentInfo> _cshComponents;
+
     const u_int32_t _l1ptOffset;
     u_int32_t _l2ptOffset;
     u_int8_t _dotMagicId[4];
     u_int32_t _l2ptEnd;
+    int _activeChain;
 };

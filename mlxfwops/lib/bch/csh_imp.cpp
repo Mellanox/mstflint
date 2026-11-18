@@ -195,25 +195,37 @@ void PartitionTable::AddEntry(const PartitionTableEntry& entry)
     _entries.push_back(entry);
 }
 
-void PartitionTable::SetEntrySize(PartitionType entryType, u_int32_t size)
+void PartitionTable::SetEntrySize(PartitionType entryType, u_int32_t size, int chainNumber)
 {
-    GetEntry(entryType).SetSectionSize(size);
+    ResolveChainNumber(chainNumber, _activeChain);
+    GetEntry(entryType, chainNumber).SetSectionSize(size);
 }
 
-u_int32_t PartitionTable::GetEntryOffset(PartitionType entryType)
+u_int32_t PartitionTable::GetEntryOffset(PartitionType entryType, int chainNumber)
 {
-    return GetEntry(entryType).GetStartOffset();
+    ResolveChainNumber(chainNumber, _activeChain);
+    return GetEntry(entryType, chainNumber).GetStartOffset();
 }
 
-u_int32_t PartitionTable::GetEntrySize(PartitionType entryType)
+u_int32_t PartitionTable::GetEntrySize(PartitionType entryType, int chainNumber)
 {
-    return GetEntry(entryType).GetSectionSize();
+    ResolveChainNumber(chainNumber, _activeChain);
+    return GetEntry(entryType, chainNumber).GetSectionSize();
 }
 
-PartitionTableEntry& PartitionTable::GetEntry(PartitionType entryType)
+PartitionTableEntry& PartitionTable::GetEntry(PartitionType entryType, int chainNumber)
 {
-    const auto compareFunc = [entryType](const PartitionTableEntry& entry)
-    { return (PartitionType)entry.GetSectionType() == entryType; };
+    bool useChainFilter = (entryType == PartitionType::PT_ROM_IMGS || entryType == PartitionType::PT_CHAIN_CONTAINER);
+    ResolveChainNumber(chainNumber, _activeChain);
+
+    const auto compareFunc = [entryType, useChainFilter, chainNumber](const PartitionTableEntry& entry)
+    {
+        if ((PartitionType)entry.GetSectionType() != entryType)
+            return false;
+        if (useChainFilter)
+            return entry.GetChainNumber() == chainNumber;
+        return true;
+    };
 
     auto entry = std::find_if(_entries.begin(), _entries.end(), compareFunc);
     if (entry == _entries.end())
@@ -249,6 +261,12 @@ void PartitionTableEntry::Unpack(const vector<u_int8_t>& data)
     vector<u_int8_t> dataCopy = data;
     CPUTOn(dataCopy.data(), dataCopy.size() / 4);
     fs5_image_layout_partition_table_entry_unpack(&_struct, dataCopy.data());
+}
+
+int PartitionTableEntry::GetChainNumber() const
+{
+    return (_struct.partition_attr[0] & 0x0E) >> 1; // bits 1-3: boot-chain to which this partition belongs (valid only
+                                                    // for ROM_IMGS and CHAIN_CONTAINER in L1PT).
 }
 
 void PartitionTableEntry::SetStartOffset(size_t offset)
@@ -763,6 +781,16 @@ void CSH::UnpackHeader(const vector<u_int8_t>& cshHeader)
     {
         throw runtime_error("Unknown CSH Component ID 0x" + std::to_string(_metadata->GetComponentId()));
     }
+}
+
+bool CSH::isActiveChain()
+{
+    const auto& romImgsCandidateMagicPatternBE = PartitionTable::RomImgsCandidateMagicPatternBE();
+    if (std::equal(romImgsCandidateMagicPatternBE.begin(), romImgsCandidateMagicPatternBE.end(), _header.magic_pattern))
+    {
+        return true;
+    }
+    return false;
 }
 
 void CSH::UnpackCshMetadata(const vector<u_int8_t>& cshHeader, const u_int8_t* iter)
