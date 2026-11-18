@@ -9054,16 +9054,19 @@ void MlxlinkCommander::prepareJsonOut()
 u_int32_t MlxlinkCommander::getNumberOfPorts()
 {
     int numOfPorts = 0;
-    if (dm_is_gpu(static_cast<dm_dev_id_t>(_devID)) || _devID == DeviceSpectrum3 || _devID == DeviceQuantum3 || _devID == DeviceNVLink6_Switch || _isHCA || _isCpo)
+
+    try
     {
         sendPrmReg(ACCESS_REG_MGIR, REG_GET);
         numOfPorts = getFieldValue("num_ports");
     }
-    else
+    catch (MlxRegException& exc)
     {
+        // if MGIR is not supported, we need to use MGPIR to get the number of ports - to be deprecated in the future.
         sendPrmReg(ACCESS_REG_MGPIR, REG_GET);
         numOfPorts = getFieldValue("num_of_modules");
     }
+
     return numOfPorts;
 }
 
