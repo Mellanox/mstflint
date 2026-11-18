@@ -40,10 +40,12 @@
 #include "mlxsign_lib/mlxsign_signer_interface.h"
 #endif // } MST_CPU_armv7l_umbriel
 
+#include "../flint_base.h"
 #include "common/tools_json.h"
 #include "mft_utils/mft_utils.h"
 #include <algorithm>
 #include <limits.h>
+#include <unordered_map>
 
 bool IsCshComponent(PartitionType partitionType)
 {
@@ -210,6 +212,32 @@ void PartitionTableEntry::SetSectionSize(size_t size)
 void PartitionTableEntry::SetSectionType(u_int32_t type)
 {
     _struct.partition_type = type;
+}
+
+u_int32_t BinarySectionMetadata::FromItocTypeToCshSectionType(u_int32_t itocType)
+{
+    static const std::unordered_map<u_int32_t, CshSectionType> itocTypeToCshSectionType = {
+      {FS3_BOOT_CODE, CshSectionType::CSH_SECTION_BOOT2},
+      {FS3_IMAGE_INFO, CshSectionType::CSH_SECTION_IMAGE_INFO},
+      {FS3_HW_BOOT_CFG, CshSectionType::CSH_SECTION_HW_BOOT_INI},
+      {FS3_FW_BOOT_CFG, CshSectionType::CSH_SECTION_FW_BOOT_INI},
+      {FS3_PCIE_LINK_CODE, CshSectionType::CSH_SECTION_PRE_LINKUP},
+      {FS3_PCI_CODE, CshSectionType::CSH_SECTION_POST_LINKUP},
+      {FS3_CCIR_INFRA_CODE, CshSectionType::CSH_SECTION_HW_NON_ISFU_INI},
+      {FS3_HW_MAIN_CFG, CshSectionType::CSH_SECTION_HW_MAIN_INI},
+      {FS3_FW_MAIN_CFG, CshSectionType::CSH_SECTION_FW_MAIN_INI},
+      {FS3_MFG_INFO, CshSectionType::CSH_SECTION_MFG_INFO},
+      {FS3_POST_IRON_BOOT_CODE, CshSectionType::CSH_SECTION_POST_IRON_BOOT},
+      {FS4_HW_TILE_INI, CshSectionType::CSH_SECTION_HW_TILE_INI},
+      {FS4_FW_TILE_INI, CshSectionType::CSH_SECTION_FW_TILE_INI},
+      {FS4_TILE_FW_CODE, CshSectionType::CSH_SECTION_SWITCH_TILE_CODE},
+      {FS4_MAIN_DATA, CshSectionType::CSH_SECTION_PLASTIC_DATA},
+      {FS4_MAIN_PAGES_LOCKED_HASHES, CshSectionType::CSH_SECTION_SWITCH_MAIN_HASH_SQUARE},
+      {FS4_MAIN_PAGES_HASHES, CshSectionType::CSH_SECTION_SWITCH_MAIN_HASH},
+      {FS3_MAIN_CODE, CshSectionType::CSH_SECTION_SWITCH_MAIN}};
+
+    auto it = itocTypeToCshSectionType.find(itocType);
+    return it != itocTypeToCshSectionType.end() ? static_cast<u_int32_t>(it->second) : itocType;
 }
 
 BinarySectionMetadata::BinarySectionMetadata()

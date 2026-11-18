@@ -69,6 +69,31 @@
 
 using namespace std;
 
+//* enum values are conversion from ASCII to hex with itoc_type byte appeneded to the end
+enum class CshSectionType
+{
+    CSH_SECTION_BOOT2 = 0x42543201,
+    CSH_SECTION_IMAGE_INFO = 0x494D4910,
+    CSH_SECTION_HW_BOOT_INI = 0x48574208,
+    CSH_SECTION_FW_BOOT_INI = 0x46574211,
+    CSH_SECTION_PRE_LINKUP = 0x50524504,
+    CSH_SECTION_POST_LINKUP = 0x49524F02,
+    CSH_SECTION_HW_NON_ISFU_INI = 0x484E490D,
+    CSH_SECTION_HW_MAIN_INI = 0x48574D09,
+    CSH_SECTION_FW_MAIN_INI = 0x46574D12,
+    CSH_SECTION_MFG_INFO = 0x4D4647E0,
+    CSH_SECTION_POST_IRON_BOOT = 0x504F5306,
+    CSH_SECTION_HW_TILE_INI = 0x48575437,
+    CSH_SECTION_FW_TILE_INI = 0x46575436,
+    CSH_SECTION_SWITCH_TILE_CODE_HASH_SQUARE = 0x54535152,
+    CSH_SECTION_SWITCH_TILE_CODE_HASH = 0x54485348,
+    CSH_SECTION_SWITCH_TILE_CODE = 0x54494C35,
+    CSH_SECTION_PLASTIC_DATA = 0x504454D3,
+    CSH_SECTION_SWITCH_MAIN_HASH_SQUARE = 0x4D5351B2,
+    CSH_SECTION_SWITCH_MAIN_HASH = 0x4D4853B1,
+    CSH_SECTION_SWITCH_MAIN = 0x4D414903
+};
+
 enum class CshComponentID
 {
     ROM_IMGS = 0x2,
@@ -187,6 +212,7 @@ public:
     void SetJsonParams(const Json::Value& root, bool ignoreMagicId = false);
 
     static size_t Size() { return fs5_image_layout_binary_section_metadata_size(); }
+    static u_int32_t FromItocTypeToCshSectionType(u_int32_t itocType);
 
     vector<u_int8_t> GetDerivationKey() const
     {
