@@ -74,6 +74,7 @@ public:
     FwComponent::comps_ids_t GetComponentID() override { return _componentID; }
     bool GetImageSize(u_int32_t* imageSize) override;
     bool isEncrypted(bool& is_encrypted) override;
+    bool FwExtract4MBImage(vector<u_int8_t>& img, bool, bool, bool, bool) override;
 
 private:
     struct DeviceInfoCheckParams

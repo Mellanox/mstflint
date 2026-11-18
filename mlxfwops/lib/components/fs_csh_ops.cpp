@@ -259,3 +259,16 @@ bool FsCshOperations::isEncrypted(bool& is_encrypted)
     is_encrypted = true;
     return true;
 }
+
+bool FsCshOperations::FwExtract4MBImage(vector<u_int8_t>& img, bool, bool, bool, bool)
+{
+    u_int32_t imageSize = _ioAccess->get_size();
+
+    img.resize(imageSize);
+    if (!FwReadData(img.data(), &imageSize, false))
+    {
+        return false;
+    }
+
+    return true;
+}
