@@ -41,6 +41,7 @@
 #include <algorithm>
 
 #include "common/compatibility.h"
+#include "common/tools_endianness.h"
 #include "json/reader.h"
 
 #ifdef MFT_LEGACY_BUILD
@@ -66,7 +67,7 @@
     {                                               \
         u_int32_t* p = (u_int32_t*)(s);             \
         for (u_int32_t ii = 0; ii < (n); ii++, p++) \
-            *p = __cpu_to_be32(*p);                 \
+            *p = mft_cpu_to_be32(*p);               \
     } while (0)
 
 using namespace std;
