@@ -2251,9 +2251,12 @@ bool Fs6Operations::ParseFs6ImageInfo(struct fs6_image_layout_image_info& image_
     // _fwImgInfo.ext_info.sku = (device_sku)image_info.psc_sku; // this field doesn't exist in
     // fs6_image_layout_image_info
 
-    // assuming number of supported_hw_id < MAX_NUM_SUPP_HW_IDS
+    // assuming number of supported_hw_id + supported_hw_id_extended < MAX_NUM_SUPP_HW_IDS
     memcpy(fwImgInfo.supportedHwId, image_info.supported_hw_id, sizeof(image_info.supported_hw_id));
-    fwImgInfo.supportedHwIdNum = (sizeof(image_info.supported_hw_id)) / sizeof(image_info.supported_hw_id[0]);
+    memcpy(fwImgInfo.supportedHwId + sizeof(image_info.supported_hw_id) / sizeof(image_info.supported_hw_id[0]),
+           image_info.supported_hw_id_extended, sizeof(image_info.supported_hw_id_extended));
+    fwImgInfo.supportedHwIdNum = (sizeof(image_info.supported_hw_id) + sizeof(image_info.supported_hw_id_extended)) /
+                                 sizeof(image_info.supported_hw_id[0]);
 
     // _fwImgInfo.ext_info.pci_device_id = image_info.pci_device_id; // this field doesn't exist in
     // fs6_image_layout_image_info

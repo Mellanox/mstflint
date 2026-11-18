@@ -445,6 +445,12 @@ For Golan A0, first entry should be 0x1ff
         /* 0x130.8 - 0x130.15 */
         /* access: RW */
         u_int8_t dtoc_offset;
+        /*---------------- DWORD[77] (Offset 0x134) ----------------*/
+        /* Description - Extended HW device(s) supported by this FW image.0 means invalid entry.For Golan A0, first
+         * entry should be 0x1ff*/
+        /* 0x134.0 - 0x140.31 */
+        /* access: RW */
+        u_int32_t supported_hw_id_extended[4];
         /*---------------- DWORD[100] (Offset 0x190) ----------------*/
         /* Description -  */
         /* 0x190.0 - 0x1bc.31 */

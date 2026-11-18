@@ -696,6 +696,11 @@ void fs6_image_layout_image_info_pack(const struct fs6_image_layout_image_info* 
     adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->burn_image_size);
     offset = 2448;
     adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->dtoc_offset);
+    for (i = 0; i < 4; ++i)
+    {
+        offset = adb2c_calc_array_field_address(2464, 32, i, 8192, 1);
+        adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->supported_hw_id_extended[i]);
+    }
     offset = 3200;
     fs6_image_layout_version_vector_pack(&(ptr_struct->version_vector), ptr_buff + offset / 8);
     for (i = 0; i < 16; ++i)
@@ -797,6 +802,11 @@ void fs6_image_layout_image_info_unpack(struct fs6_image_layout_image_info* ptr_
     ptr_struct->burn_image_size = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
     offset = 2448;
     ptr_struct->dtoc_offset = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+    for (i = 0; i < 4; ++i)
+    {
+        offset = adb2c_calc_array_field_address(2464, 32, i, 8192, 1);
+        ptr_struct->supported_hw_id_extended[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+    }
     offset = 3200;
     fs6_image_layout_version_vector_unpack(&(ptr_struct->version_vector), ptr_buff + offset / 8);
     for (i = 0; i < 16; ++i)
@@ -898,6 +908,11 @@ void fs6_image_layout_image_info_print(const struct fs6_image_layout_image_info*
     fprintf(fd, "burn_image_size      : " U32H_FMT "\n", ptr_struct->burn_image_size);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "dtoc_offset          : " UH_FMT "\n", ptr_struct->dtoc_offset);
+    for (i = 0; i < 4; ++i)
+    {
+        adb2c_add_indentation(fd, indent_level);
+        fprintf(fd, "supported_hw_id_extended_%03d : " U32H_FMT "\n", i, ptr_struct->supported_hw_id_extended[i]);
+    }
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "version_vector:\n");
     fs6_image_layout_version_vector_print(&(ptr_struct->version_vector), fd, indent_level + 1);
