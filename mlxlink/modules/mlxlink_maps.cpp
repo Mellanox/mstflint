@@ -2282,10 +2282,10 @@ void MlxlinkMaps::initApsuMapping()
                                                   "", APSU_PARAM_EN_BOOL, 0));
     _apsuConfigParams.push_back(
       APSU_CONFIG_PARAM(APSU_RESTART_FLAG, "Restart Training", "restart_training", "", "", APSU_PARAM_TRIGGER, 0));
-    _apsuConfigParams.push_back(APSU_CONFIG_PARAM(APSU_RECOVERY_TIMER_FLAG, "Recovery Timer [ms]", "recovery_timer", "",
-                                                  "", APSU_PARAM_NUMERIC, 255));
+    _apsuConfigParams.push_back(APSU_CONFIG_PARAM(APSU_RECOVERY_TIMER_FLAG, "Recovery Timer [ms]",
+                                                  "apsu_recovery_timer", "", "", APSU_PARAM_NUMERIC, 255));
     _apsuConfigParams.push_back(APSU_CONFIG_PARAM(APSU_MAX_RECOVERY_EVENTS_FLAG, "Max Recovery Events",
-                                                  "max_recovery_events", "", "", APSU_PARAM_NUMERIC, 255));
+                                                  "apsu_max_recovery_events", "", "", APSU_PARAM_NUMERIC, 255));
     _apsuConfigParams.push_back(APSU_CONFIG_PARAM(APSU_MAX_WAIT_TIMER_FLAG, "Max Wait Timer [s]", "max_wait_timer", "",
                                                   "", APSU_PARAM_NUMERIC, 65535));
     _apsuConfigParams.push_back(APSU_CONFIG_PARAM(APSU_PROPAGATION_TIMER_FLAG, "Propagation Timer [10ms]",
@@ -2302,8 +2302,8 @@ void MlxlinkMaps::initApsuMapping()
       APSU_CONFIG_PARAM(APSU_FAIL_TIMER_FLAG, "Fail Timer [10ms]", "fail_timer", "", "", APSU_PARAM_NUMERIC, 255));
     _apsuConfigParams.push_back(APSU_CONFIG_PARAM(APSU_VALIDATION_TIMER_FLAG, "Validation Timer [10ms]",
                                                   "validation_timer", "", "", APSU_PARAM_NUMERIC, 15));
-    _apsuConfigParams.push_back(APSU_CONFIG_PARAM(APSU_RESTART_ON_LOS_FLAG, "Restart On LoS", "restart_on_los", "", "",
-                                                  APSU_PARAM_NUMERIC, 2, restartOnLos));
+    _apsuConfigParams.push_back(APSU_CONFIG_PARAM(APSU_RESTART_ON_LOS_FLAG, "Restart On LoS", "rx_los_recovery_ctl", "",
+                                                  "", APSU_PARAM_NUMERIC, 2, restartOnLos));
     _apsuConfigParams.push_back(APSU_CONFIG_PARAM(APSU_LOCAL_PATTERN_TX_FLAG, "Local Pattern TX", "local_pattern_tx",
                                                   "", "", APSU_PARAM_NUMERIC, 1, localPatternTx));
     _apsuConfigParams.push_back(
