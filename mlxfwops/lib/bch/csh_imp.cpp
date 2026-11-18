@@ -268,8 +268,8 @@ void PartitionTableEntry::SetSectionType(u_int32_t type)
 
 string BinarySectionMetadata::CshSectionIDToString(u_int32_t sectionId)
 {
-    static const std::unordered_map<string, string> ncoreSectionNamesMap = {{"THSH", "TILE_PAGES_HASHES"},
-                                                                            {"TSQR", "TILE_PAGES_LOCKED_HASHES"}};
+    static const std::unordered_map<string, string> ncoreSectionNamesMap = {
+      {"THSH", "TILE_PAGES_HASHES"}, {"TSQR", "TILE_PAGES_LOCKED_HASHES"}, {"NKRL", "NANO_KERNEL"}};
     static const std::vector<string> nonNcoreSectionNames = {
       "PBLT",
       "PBLD",
@@ -317,7 +317,8 @@ u_int32_t BinarySectionMetadata::FromItocTypeToCshSectionType(u_int32_t itocType
       {FS4_MAIN_DATA, CshSectionType::CSH_SECTION_PLASTIC_DATA},
       {FS4_MAIN_PAGES_LOCKED_HASHES, CshSectionType::CSH_SECTION_SWITCH_MAIN_HASH_SQUARE},
       {FS4_MAIN_PAGES_HASHES, CshSectionType::CSH_SECTION_SWITCH_MAIN_HASH},
-      {FS3_MAIN_CODE, CshSectionType::CSH_SECTION_SWITCH_MAIN}};
+      {FS3_MAIN_CODE, CshSectionType::CSH_SECTION_SWITCH_MAIN},
+      {FS6_NANO_KERNEL, CshSectionType::CSH_SECTION_NANO_KERNEL}};
 
     auto it = itocTypeToCshSectionType.find(itocType);
     return it != itocTypeToCshSectionType.end() ? static_cast<u_int32_t>(it->second) : itocType;
