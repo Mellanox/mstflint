@@ -401,6 +401,16 @@ bool Fs6Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
     return true;
 }
 
+string Fs6Operations::GetSectionNameByMagicId(u_int32_t magicId)
+{
+    string sectionName = BinarySectionMetadata::CshSectionIDToString(magicId);
+    if (sectionName == "UNKNOWN")
+    {
+        sectionName = FwOperations::GetSectionNameByType(magicId);
+    }
+    return sectionName;
+}
+
 bool Fs6Operations::VerifyCshComponent(PartitionType partitionType, u_int32_t offset, VerifyCallBack verifyCallBackFunc)
 {
     auto cshComponent =
@@ -419,14 +429,7 @@ bool Fs6Operations::VerifyCshComponent(PartitionType partitionType, u_int32_t of
 
         for (auto section : cshComponent->second.GetSections())
         {
-            if (partitionType == PartitionType::PT_SWITCH_FWS)
-            {
-                sectionName = GetSectionNameByType(section.GetSectionType());
-            }
-            else
-            {
-                sectionName = CshSectionIDToString(section.GetSectionType());
-            }
+            sectionName = GetSectionNameByMagicId(section.GetSectionType());
             size_t sectionOffset = offset + section.GetSectionOffset();
             PrintSectionRange(verifyCallBackFunc, sectionOffset, sectionOffset + section.GetSectionSize() - 1,
                               section.GetSectionSize(), sectionName, "CSH Section");

@@ -133,21 +133,6 @@ CshComponentID ToCshId(string cshId)
     return CshComponentID::Unknown;
 }
 
-string CshSectionIDToString(u_int32_t sectionId)
-{
-    char sectionName[5] = {0};
-    memcpy(sectionName, &sectionId, 4);
-    CPUTOn(sectionName, 1);
-    string sectionNameStr(sectionName);
-
-    if (sectionNameStr == "PBLT" || sectionNameStr == "PBLD" || sectionNameStr == "SBDF" || sectionNameStr == "CALF")
-    {
-        return sectionNameStr;
-    }
-
-    return mft_utils::ToHexString(sectionId, 4);
-}
-
 const string CSH::cshHeaderName = "csh_header";
 const string CSH::cshMetadataName = "csh_metadata";
 const string CSH::binarySectionMetadataName = "binary_section_metadata";
@@ -281,6 +266,35 @@ void PartitionTableEntry::SetSectionType(u_int32_t type)
     _struct.partition_type = type;
 }
 
+string BinarySectionMetadata::CshSectionIDToString(u_int32_t sectionId)
+{
+    static const std::unordered_map<string, string> ncoreSectionNamesMap = {{"THSH", "TILE_PAGES_HASHES"},
+                                                                            {"TSQR", "TILE_PAGES_LOCKED_HASHES"}};
+    static const std::vector<string> nonNcoreSectionNames = {
+      "PBLT",
+      "PBLD",
+      "SBDF",
+      "CALF",
+    };
+
+    char sectionName[5] = {0};
+    memcpy(sectionName, &sectionId, 4);
+    CPUTOn(sectionName, 1);
+    string sectionNameStr(sectionName);
+
+    if (ncoreSectionNamesMap.find(sectionNameStr) != ncoreSectionNamesMap.end())
+    {
+        sectionNameStr = ncoreSectionNamesMap.at(sectionNameStr);
+    }
+    else if (std::find(nonNcoreSectionNames.begin(), nonNcoreSectionNames.end(), sectionNameStr) ==
+             nonNcoreSectionNames.end())
+    {
+        sectionNameStr = "UNKNOWN";
+    }
+
+    return sectionNameStr;
+}
+
 u_int32_t BinarySectionMetadata::FromItocTypeToCshSectionType(u_int32_t itocType)
 {
     static const std::unordered_map<u_int32_t, CshSectionType> itocTypeToCshSectionType = {
@@ -298,6 +312,8 @@ u_int32_t BinarySectionMetadata::FromItocTypeToCshSectionType(u_int32_t itocType
       {FS4_HW_TILE_INI, CshSectionType::CSH_SECTION_HW_TILE_INI},
       {FS4_FW_TILE_INI, CshSectionType::CSH_SECTION_FW_TILE_INI},
       {FS4_TILE_FW_CODE, CshSectionType::CSH_SECTION_SWITCH_TILE_CODE},
+      {FS6_TILE_PAGES_HASHES, CshSectionType::CSH_SECTION_SWITCH_TILE_CODE_HASH},
+      {FS6_TILE_PAGES_LOCKED_HASHES, CshSectionType::CSH_SECTION_SWITCH_TILE_CODE_HASH_SQUARE},
       {FS4_MAIN_DATA, CshSectionType::CSH_SECTION_PLASTIC_DATA},
       {FS4_MAIN_PAGES_LOCKED_HASHES, CshSectionType::CSH_SECTION_SWITCH_MAIN_HASH_SQUARE},
       {FS4_MAIN_PAGES_HASHES, CshSectionType::CSH_SECTION_SWITCH_MAIN_HASH},
@@ -980,4 +996,16 @@ size_t CSH::HeaderSize(CshStructType type)
 void CSH::SetHeaderFromJson(const Json::Value& root)
 {
     _header.u8_nv_pub_key_idx = std::stoul(nbu::mft::common::GetStrValue(root["u8_nv_pub_key_idx"], true), nullptr, 16);
+}
+
+BinarySectionMetadata& CSH::GetSection(u_int32_t itocType)
+{
+    for (auto& section : _cshSections)
+    {
+        if (section.GetSectionType() == itocType)
+        {
+            return section;
+        }
+    }
+    throw runtime_error("Section with ITOC type " + std::to_string(itocType) + " not found in CSH");
 }

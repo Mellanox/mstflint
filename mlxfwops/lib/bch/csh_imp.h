@@ -135,7 +135,6 @@ const u_int32_t SHA384_DIGEST_SIZE = 48;
 bool IsCshComponent(PartitionType partitionType);
 CshComponentID ToCshId(PartitionType partitionType);
 string ToString(CshComponentID cshId);
-string CshSectionIDToString(u_int32_t sectionId);
 
 // #ifndef MST_CPU_armv7l_umbriel // {
 
@@ -153,6 +152,7 @@ public:
     u_int32_t GetSectionSize() const { return _struct.partition_size[0]; }
     void SetSectionType(u_int32_t type);
     u_int32_t GetSectionType() const { return _struct.partition_type; }
+    CshSectionType GetSectionTypeStrong() const { return static_cast<CshSectionType>(GetSectionType()); }
 
     static size_t Size() { return fs5_image_layout_partition_table_entry_size(); }
 
@@ -221,6 +221,10 @@ public:
 
     size_t GetSectionSize() const { return _struct.bin_length; }
     u_int32_t GetSectionType() const;
+    CshSectionType GetSectionTypeStrong() const
+    {
+        return static_cast<CshSectionType>(FromItocTypeToCshSectionType(GetSectionType()));
+    }
     string GetMagicId() const;
 
     void SetDigest(const vector<u_int8_t>& digest);
@@ -229,6 +233,7 @@ public:
 
     static size_t Size() { return fs5_image_layout_binary_section_metadata_size(); }
     static u_int32_t FromItocTypeToCshSectionType(u_int32_t itocType);
+    static string CshSectionIDToString(u_int32_t sectionId);
 
     vector<u_int8_t> GetDerivationKey() const
     {
@@ -338,6 +343,8 @@ public:
     void AddBinarySectionMetadata(BinarySectionMetadata sectionMetadata, bool updateSectionsOffsets = true);
 
     vector<BinarySectionMetadata>& GetSections() { return _cshSections; }
+    BinarySectionMetadata& GetSection(u_int32_t itocType);
+
     size_t GetCshSize();
     u_int16_t GetComponentId() { return _metadata->GetComponentId(); }
     size_t GetComponentSize();

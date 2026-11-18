@@ -134,6 +134,8 @@ public:
     };
 
 protected:
+    string GetSectionNameByMagicId(u_int32_t magicId);
+
     bool Unsupported(const string& msg)
     {
         return errmsg("Comps operations - unsupported functionality: %s\n", msg.data());
