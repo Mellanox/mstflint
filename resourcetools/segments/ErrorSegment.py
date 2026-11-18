@@ -68,7 +68,7 @@ class ErrorSegment(Segment):
             syndrome_id = fields[0]
             error_message = reverse_string_endian(fields[4])
         # syndrome_id, error_message = fields[1], fields[4]
-        error_message = error_message.decode('utf-8')
+        error_message = error_message.decode('utf-8', errors='replace').replace('\x00', '')
         return syndrome_id, error_message
 
 
