@@ -39,33 +39,62 @@
 #include <algorithm>
 #include <iomanip>
 
-CshComponentID ToCshId(ComponentName compName)
+CshComponentID ToCshId(ComponentType compName)
 {
     CshComponentID id = CshComponentID::Unknown;
     switch (compName)
     {
-        case ComponentName::Comp_Csh_Rom_Imgs:
+        case ComponentType::Comp_Csh_Rom_Imgs:
             id = CshComponentID::ROM_IMGS;
             break;
-        case ComponentName::Comp_Csh_Nv_Fws:
+        case ComponentType::Comp_Csh_Nv_Fws:
             id = CshComponentID::NV_FWS;
             break;
-        case ComponentName::Comp_Csh_Oem_Fws:
+        case ComponentType::Comp_Csh_Oem_Fws:
             id = CshComponentID::OEM_FWS;
             break;
-        case ComponentName::Comp_Csh_Bct_Dtb:
+        case ComponentType::Comp_Csh_Bct_Dtb:
             id = CshComponentID::BCT_DTB;
             break;
-        case ComponentName::Comp_Csh_Switch_Fws:
+        case ComponentType::Comp_Csh_Switch_Fws:
             id = CshComponentID::SWITCH_FWS;
             break;
-        case ComponentName::Comp_Csh_Sbd_Fw:
+        case ComponentType::Comp_Csh_Sbd_Fw:
             id = CshComponentID::SBD_FW;
             break;
         default:
             break;
     }
     return id;
+}
+
+PartitionType ToPartitionType(CshComponentID cshId)
+{
+    PartitionType type = PartitionType::PT_ROM_IMGS;
+    switch (cshId)
+    {
+        case CshComponentID::ROM_IMGS:
+            type = PartitionType::PT_ROM_IMGS;
+            break;
+        case CshComponentID::NV_FWS:
+            type = PartitionType::PT_NV_FWS;
+            break;
+        case CshComponentID::OEM_FWS:
+            type = PartitionType::PT_OEM_FWS;
+            break;
+        case CshComponentID::BCT_DTB:
+            type = PartitionType::PT_BCT_DTB;
+            break;
+        case CshComponentID::SWITCH_FWS:
+            type = PartitionType::PT_SWITCH_FWS;
+            break;
+        case CshComponentID::SBD_FW:
+            type = PartitionType::PT_SBD_FW;
+            break;
+        default:
+            throw runtime_error("Unknown CSH id");
+    }
+    return type;
 }
 
 bool Fs6Operations::FwInit()
@@ -95,7 +124,7 @@ bool Fs6Operations::FwInit()
 
         PartitionTableEntry entry;
         entry.Unpack(entryData);
-        _l1ptEntries.push_back(entry);
+        _l1pt.AddEntry(entry);
 
         if (entry.GetSectionType() == 0x3)
         {
@@ -121,7 +150,7 @@ bool Fs6Operations::FwInit()
                 }
                 PartitionTableEntry entry;
                 entry.Unpack(entryData);
-                _l2ptEntries.push_back(entry);
+                _l2pt.AddEntry(entry);
             }
         }
     }
@@ -149,35 +178,80 @@ bool Fs6Operations::FwReadData(void* image, u_int32_t* image_size, bool verbose)
     return true;
 }
 
-bool Fs6Operations::ReadComponent(ComponentName compName,
+bool Fs6Operations::ReadComponent(ComponentType compName,
                                   ComponentHeader compHeader,
                                   string,
                                   vector<u_int8_t>& componentData)
 {
-    CshComponentID id = ToCshId(compName);
-    if (id == CshComponentID::Unknown)
+    u_int32_t componentOffset = 0;
+    u_int32_t componentSize = 0;
+    CshComponentID cshId = ToCshId(compName);
+    PartitionType partitionType = ToPartitionType(cshId);
+    if (cshId == CshComponentID::Unknown)
     {
-        // TODO
         return errmsg("Unknown component");
     }
 
     if (compHeader != ComponentHeader::Header_With)
     {
-        // TODO
         return errmsg("Only header with component supported at the moment");
     }
 
-    auto cshComponent = GetCshEntry(id);
-    u_int32_t componentOffset = cshComponent.GetStartOffset();
-    if (IsL2ptSection(id))
+    if (IsL2ptSection(cshId))
     {
+        componentSize = _l2pt.GetEntrySize(partitionType);
+        componentOffset = _l2pt.GetEntryOffset(partitionType);
         componentOffset += _l2ptOffset;
     }
+    else
+    {
+        componentSize = _l1pt.GetEntrySize(partitionType);
+        componentOffset = _l1pt.GetEntryOffset(partitionType);
+    }
 
-    componentData.resize(cshComponent.GetSectionsize());
+    componentData.resize(componentSize);
     if (!_ioAccess->read(componentOffset, componentData.data(), componentData.size()))
     {
         return errmsg(MLXFW_BAD_PARAM_ERR, "%s", _ioAccess->err());
+    }
+
+    return true;
+}
+
+bool Fs6Operations::SetSignedFWComponent(string binPath, ComponentType compName, const char* msg)
+{
+    CshComponentID cshId = ToCshId(compName);
+    u_int32_t componentOffset = 0;
+    if (cshId == CshComponentID::Unknown)
+    {
+        return errmsg(MLXFW_BAD_PARAM_ERR, "Unknown component");
+    }
+
+    vector<u_int8_t> compData;
+    if (!ReadBinFile(binPath.c_str(), compData))
+    {
+        return false;
+    }
+
+    bool isL2pt = IsL2ptSection(cshId);
+
+    if (isL2pt)
+    {
+        _l2pt.SetEntrySize(ToPartitionType(cshId), compData.size());
+        componentOffset = _l2pt.GetEntryOffset(ToPartitionType(cshId));
+        componentOffset += _l2ptOffset;
+    }
+    else
+    {
+        _l1pt.SetEntrySize(ToPartitionType(cshId), compData.size());
+        componentOffset = _l1pt.GetEntryOffset(ToPartitionType(cshId));
+    }
+
+    UpdatePartitionTable(!isL2pt);
+
+    if (!_ioAccess->write(componentOffset, compData.data(), compData.size()))
+    {
+        return errmsg("%s - write error (%s)\n", msg, _ioAccess->err());
     }
 
     return true;
@@ -210,35 +284,46 @@ bool Fs6Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
     cout << left << setw(22) << "Partition Table" << setw(22) << "Partition Type" << setw(22) << "Start Address"
          << setw(22) << "Partition Size" << endl;
 
-    for (auto entry : _l1ptEntries)
+    for (auto entry : _l1pt.GetEntries())
     {
         cout << left << setw(22) << "L1PT" << std::hex << "0x" << setw(20) << entry.GetSectionType() << "0x" << setw(20)
              << entry.GetStartOffset() << "0x" << setw(20) << entry.GetSectionsize() << endl;
-    }
-    for (auto entry : _l2ptEntries)
-    {
-        cout << left << setw(22) << "L2PT" << std::hex << "0x" << setw(20) << entry.GetSectionType() << "0x" << setw(20)
-             << entry.GetStartOffset() << "0x" << setw(20) << entry.GetSectionsize() << endl;
+        if (entry.GetSectionType() == 0x3)
+        {
+            for (auto i2Entry : _l2pt.GetEntries())
+            {
+                cout << left << setw(22) << "L2PT" << std::hex << "0x" << setw(20) << i2Entry.GetSectionType() << "0x"
+                     << setw(20) << _l2ptOffset + i2Entry.GetStartOffset() << "0x" << setw(20)
+                     << i2Entry.GetSectionsize() << endl;
+            }
+        }
     }
 
     return true;
 }
 
-const PartitionTableEntry& Fs6Operations::GetCshEntry(CshComponentID cshId)
+void Fs6Operations::UpdatePartitionTable(bool l1pt)
 {
-    const auto compareFunc = [cshId](const PartitionTableEntry& entry)
-    { return (CshComponentID)entry.GetSectionType() == cshId; };
-    auto component = std::find_if(_l1ptEntries.begin(), _l1ptEntries.end(), compareFunc);
-    if (component == _l1ptEntries.end())
+    vector<u_int8_t> partitionTable;
+    u_int32_t partitionTableOffset = 0x2000; // l1pt
+
+    if (l1pt)
     {
-        component = std::find_if(_l2ptEntries.begin(), _l2ptEntries.end(), compareFunc);
-        if (component == _l2ptEntries.end())
-        {
-            // TODO
-            throw exception();
-        }
+        _l1pt.CalcDigest();
+        partitionTable = _l1pt.Pack();
     }
-    return *component;
+    else
+    {
+        _l2pt.CalcDigest();
+        partitionTable = _l2pt.Pack();
+        partitionTableOffset = _l2ptOffset;
+    }
+
+    if (!_ioAccess->write(partitionTableOffset, partitionTable.data(), partitionTable.size()))
+    {
+        string err = "write error - " + string(_ioAccess->err());
+        throw runtime_error(err);
+    }
 }
 
 bool Fs6Operations::IsL2ptSection(CshComponentID cshId)
@@ -248,6 +333,20 @@ bool Fs6Operations::IsL2ptSection(CshComponentID cshId)
         return true;
     }
     return false;
+}
+
+bool Fs6Operations::IsL2ptSection(PartitionType partitionType)
+{
+    if (partitionType == PartitionType::PT_BCT_DTB || partitionType == PartitionType::PT_OEM_FWS ||
+        partitionType == PartitionType::PT_NV_FWS || partitionType == PartitionType::PT_SWITCH_FWS ||
+        partitionType == PartitionType::PT_SBD_FW)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 
 bool Fs6Operations::FwReadRom(std::vector<u_int8_t>& romSect)

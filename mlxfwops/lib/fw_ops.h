@@ -67,7 +67,7 @@ MLXFWOP_API extern bool nextBootFwVer;
 #define UUID_LEN 16
 #define BAD_CRC_MSG "Bad CRC."
 
-enum class ComponentName
+enum class ComponentType
 {
     Comp_Psc_Not_Valid = 0,
     // Psc components
@@ -219,7 +219,8 @@ public:
     virtual bool burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& burnParams);
     virtual bool FwSetPublicKeys(char* fname, PrintCallBack callBackFunc = (PrintCallBack)NULL);
     virtual bool FwSetForbiddenVersions(char* fname, PrintCallBack callBackFunc = (PrintCallBack)NULL);
-    virtual bool ReadComponent(ComponentName compName,
+    virtual bool SetSignedFWComponent(string bin_path, ComponentType compName, const char* msg);
+    virtual bool ReadComponent(ComponentType compName,
                                ComponentHeader compHeader,
                                string file_path,
                                vector<u_int8_t>& componentData);
@@ -735,6 +736,7 @@ protected:
     HwDevData getInfoFromChipType(chip_type_t chipT) const;
 
     bool ReadBinFile(const char* fimage, u_int8_t*& file_data, int& file_size);
+    bool ReadBinFile(const char* fimage, vector<u_int8_t>& file_data);
     bool FwBurnData(u_int32_t* data, u_int32_t dataSize, ProgressCallBack progressFunc);
     bool FwBurnData(burnDataParamsT& burnDataParams);
     static bool FwAccessCreate(fw_ops_params_t& fwParams, FBase** ioAccessP, u_int16_t swDevId = 0);

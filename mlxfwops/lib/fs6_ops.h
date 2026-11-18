@@ -43,7 +43,8 @@
 #include "bch/csh_imp.h"
 #endif
 
-CshComponentID ToCshId(ComponentName compName);
+CshComponentID ToCshId(ComponentType compName);
+PartitionType ToPartitionType(CshComponentID cshId);
 
 class Fs6Operations : public FwOperations
 {
@@ -63,10 +64,11 @@ public:
                   bool showItoc = false,
                   bool ignoreDToc = false) override;
 
-    bool ReadComponent(ComponentName compName,
+    bool ReadComponent(ComponentType compName,
                        ComponentHeader compHeader,
                        string file_path,
                        vector<u_int8_t>& componentData) override;
+    bool SetSignedFWComponent(string binPath, ComponentType compName, const char* msg) override;
 
 #ifndef MST_CPU_armv7l_umbriel // {
     bool SignForSecureBoot(const char*, const char*, const MlxSign::Signer&) override;
@@ -99,7 +101,7 @@ public:
     const char* FwGetResetRecommandationStr() override;
 
 protected:
-    const PartitionTableEntry& GetCshEntry(CshComponentID cshId);
+    void UpdatePartitionTable(bool l1pt);
 
     bool Unsupported(const string& msg)
     {
@@ -108,6 +110,7 @@ protected:
 
 private:
     bool IsL2ptSection(CshComponentID cshId);
+    bool IsL2ptSection(PartitionType partitionType);
 
     PartitionTable _l1pt;
     PartitionTable _l2pt;

@@ -2100,6 +2100,22 @@ bool FwOperations::RomInfo::GetExpRomVerForOneRom(u_int32_t verOffset)
     return true;
 }
 
+bool FwOperations::ReadBinFile(const char* fimage, vector<u_int8_t>& file_data)
+{
+    u_int8_t* buffer = nullptr;
+    int buffer_size = 0;
+
+    // Read from file
+    if (!ReadBinFile(fimage, buffer, buffer_size))
+    {
+        delete[] buffer;
+        return false;
+    }
+    file_data.insert(file_data.end(), buffer, buffer + buffer_size);
+    delete[] buffer;
+    return true;
+}
+
 bool FwOperations::ReadBinFile(const char* fimage, u_int8_t*& file_data, int& file_size)
 {
 #ifndef UEFI_BUILD
@@ -2582,7 +2598,12 @@ bool FwOperations::FwSetForbiddenVersions(char* fname, PrintCallBack callBackFun
     return errmsg("FwSetForbiddenVersions not supported");
 }
 
-bool FwOperations::ReadComponent(ComponentName, ComponentHeader, string, vector<u_int8_t>&)
+bool FwOperations::SetSignedFWComponent(string, ComponentType, const char*)
+{
+    return errmsg("SetSignedFWComponent is not supported");
+}
+
+bool FwOperations::ReadComponent(ComponentType, ComponentHeader, string, vector<u_int8_t>&)
 {
     return errmsg("ReadComponent is not supported");
 }

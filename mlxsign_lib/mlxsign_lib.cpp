@@ -138,6 +138,27 @@ int MlxSignSHA512::getDigest(std::vector<u_int8_t>& digest)
     return MlxSign::MLX_SIGN_SUCCESS;
 }
 
+/*
+ * MlxSignSHA384
+ *
+ */
+MlxSignSHA384::MlxSignSHA384() : MlxSignSHA(SHA384_DIGEST_LENGTH) {}
+
+int MlxSignSHA384::getDigest(std::vector<u_int8_t>& digest)
+{
+    int rc;
+    SHA512_CTX ctx;
+    digest.resize(_digestLength);
+    memset(&digest[0], 0, digest.size());
+    rc = SHA384_Init(&ctx);
+    CHECK_RC(rc, 1, MlxSign::MLX_SIGN_SHA_INIT_ERROR);
+    rc = SHA384_Update(&ctx, (void*)(&_buff[0]), _buff.size());
+    CHECK_RC(rc, 1, MlxSign::MLX_SIGN_SHA_CALCULATION_ERROR);
+    rc = SHA384_Final(&digest[0], &ctx);
+    CHECK_RC(rc, 1, MlxSign::MLX_SIGN_SHA_CALCULATION_ERROR);
+    return MlxSign::MLX_SIGN_SUCCESS;
+}
+
 MlxSignRSA::MlxSignRSA() : _privCtx(NULL), _pubCtx(NULL) {}
 
 MlxSignRSA::~MlxSignRSA()
