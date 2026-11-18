@@ -496,6 +496,8 @@ public:
     static const u_int8_t VMOD_ADM_STATUS_BACKUP = 0x01;    // 0001b
     static const u_int8_t VMOD_ADM_STATUS_REVOKED = 0x00;   // 0000b
     static const u_int8_t VMOD_ADM_STATUS_UNKNOWN = 0xff;
+    static const u_int8_t ALL_TILES_COMMITTED = 0x00;
+    static const u_int8_t ALL_TILES_NOT_COMMITTED = 0xff;
     static const string cshHeaderName;
     static const string cshMetadataName;
     static const string binarySectionMetadataName;

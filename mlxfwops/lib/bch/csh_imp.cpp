@@ -875,10 +875,6 @@ void CSH::UnpackHeader(const vector<u_int8_t>& cshHeader)
         ss << "Unknown CSH Component ID 0x" << std::hex << std::uppercase << _metadata->GetComponentId();
         throw runtime_error(ss.str());
     }
-    if (_metadata->GetComponentId() == (u_int16_t)CshComponentID::VMOD_FW)
-    {
-        CPUTOn(&_header.csh_header_status.vmod_status, sizeof(_header.csh_header_status.vmod_status));
-    }
 }
 
 bool CSH::isActiveChain()
@@ -1231,6 +1227,11 @@ u_int8_t CSH::GetVmodAdmStatus()
         throw runtime_error("CSH component is not a VMOD FW");
     }
     return _header.csh_header_status.vmod_status.image_administrative_status;
+}
+
+void CSH::SetVmodAdmStatus(fs5_image_layout_vmod_status status)
+{
+    _header.csh_header_status.vmod_status = status;
 }
 
 PartitionType ToPartitionType(CshComponentID cshId, bool throwOnError)

@@ -1682,7 +1682,7 @@ bool Fs6Operations::ExecuteVmodBurn(FwOperations* imageOps, ExtBurnParams& burnP
     }
 
     u_int32_t writtenSize = 0;
-    u_int32_t totalSize = imageSize + 2 * sizeof(fs5_image_layout_vmod_status);
+    u_int32_t totalSize = imageSize + 2 * sizeof(fs5_image_layout_vmod_status); //* 2 for active and invalid statuses
 
     if (!WriteImageExDefaultParams(burnParams, vmodAOffset, vmodData.data(), vmodData.size(), totalSize, writtenSize))
     {
@@ -1691,7 +1691,7 @@ bool Fs6Operations::ExecuteVmodBurn(FwOperations* imageOps, ExtBurnParams& burnP
     writtenSize += vmodData.size();
 
     fs5_image_layout_vmod_status vmodActiveStatus = {.image_administrative_status = CSH::VMOD_ADM_STATUS_ACTIVE,
-                                                     .tile_administrative_status = 0x00,
+                                                     .tile_administrative_status = CSH::ALL_TILES_COMMITTED,
                                                      .reserved = 0xffff};
     size_t vmodActiveStatusOffset =
       vmodAOffset + sizeof(fs5_image_layout_csh_header) - sizeof(fs5_image_layout_vmod_status);
@@ -1703,7 +1703,7 @@ bool Fs6Operations::ExecuteVmodBurn(FwOperations* imageOps, ExtBurnParams& burnP
     writtenSize += sizeof(vmodActiveStatus);
 
     fs5_image_layout_vmod_status vmodInvalidStatus = {.image_administrative_status = CSH::VMOD_ADM_STATUS_INVALID,
-                                                      .tile_administrative_status = 0xff,
+                                                      .tile_administrative_status = CSH::ALL_TILES_NOT_COMMITTED,
                                                       .reserved = 0xffff};
     size_t vmodInvalidStatusOffset =
       vmodAOffset + vmodASize + sizeof(fs5_image_layout_csh_header) - sizeof(fs5_image_layout_vmod_status);
