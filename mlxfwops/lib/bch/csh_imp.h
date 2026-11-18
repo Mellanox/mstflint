@@ -175,6 +175,8 @@ public:
     void Unpack(const vector<u_int8_t>& binarySection);
 
     size_t GetSectionOffset() { return _struct.flash_offset; }
+    void SetSectionOffset(u_int32_t offset) { _struct.flash_offset = offset; }
+
     size_t GetSectionSize() { return _struct.bin_length; }
     u_int32_t GetSectionType() const
     {
@@ -183,7 +185,7 @@ public:
         return magic;
     }
 
-    void SetSectionOffset(u_int32_t offset) { _struct.flash_offset = offset; }
+    void SetDigest(const vector<u_int8_t>& digest);
 
     void SetJsonParams(const Json::Value& root);
 
@@ -202,10 +204,7 @@ public:
                                 _struct.encryption_params.u8_encryption_derivation_string.u8_dummy +
                                   FS5_IMAGE_LAYOUT_U8_ENCRYPTION_DERIVATION_STRING_SIZE);
     }
-    void SetIV(const vector<u_int8_t>& iv)
-    {
-        memcpy(_struct.encryption_params.u8_iv.u8_dummy, iv.data(), FS5_IMAGE_LAYOUT_U8_IV_SIZE);
-    }
+    void SetIV(const vector<u_int8_t>& iv);
     void SetAuthenticationTag(const vector<u_int8_t>& tag);
 
 private:
@@ -230,7 +229,7 @@ public:
     void UnpackSections(const vector<u_int8_t>& buffer, size_t offset = 0);
     void AddBinarySectionMetadata(BinarySectionMetadata sectionMetadata, bool updateSectionsOffsets = true);
 
-    const vector<BinarySectionMetadata>& GetSections() { return _cshSections; }
+    vector<BinarySectionMetadata>& GetSections() { return _cshSections; }
     vector<u_int8_t> GetMetadata() const;
     size_t GetCshSize();
     u_int16_t GetComponentId() { return _metadata.component_id; }

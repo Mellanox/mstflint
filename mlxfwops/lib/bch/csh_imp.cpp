@@ -125,8 +125,7 @@ void PartitionTable::CalcDigest()
 {
 #ifndef MST_CPU_armv7l_umbriel // {
     vector<u_int8_t> data = Pack();
-    data.erase(data.begin() + PARTITION_TABLE_DIGEST_OFFSET,
-               data.begin() + PARTITION_TABLE_DIGEST_OFFSET + SHA384_DIGEST_LENGTH);
+    data.erase(data.begin() + PARTITION_TABLE_DIGEST_OFFSET, data.begin() + PARTITION_TABLE_DIGEST_OFFSET + 48);
 
     vector<u_int8_t> digest;
     MlxSignSHA384 Sha384;
@@ -226,7 +225,7 @@ BinarySectionMetadata::BinarySectionMetadata(size_t sectionSize, size_t flashOff
                    // the section, if such attr exists in .mlx field, and not the actual size of the bin
     _struct.flash_offset = flashOffset;
 
-    if (digest.size() != 48 /*GetLengthFromType(MlxSign::SHAType::SHA384)*/)
+    if (digest.size() != 48)
     {
         throw runtime_error("Binary section digest unexpected size");
     }
@@ -242,7 +241,7 @@ BinarySectionMetadata::BinarySectionMetadata(u_int32_t itoc_type,
     memcpy(_struct.u8_magic_id, &itoc_type, sizeof(itoc_type));
     _struct.bin_length = sectionSize;
     _struct.flash_offset = flashOffset;
-    if (digest.size() != 48 /*GetLengthFromType(MlxSign::SHAType::SHA384)*/)
+    if (digest.size() != 48)
     {
         throw runtime_error("Binary section digest unexpected size");
     }
@@ -268,6 +267,15 @@ void BinarySectionMetadata::Unpack(const vector<u_int8_t>& binarySection)
     fs5_image_layout_binary_section_metadata_unpack(&_struct, binarySectionCopy.data());
 }
 
+void BinarySectionMetadata::SetDigest(const vector<u_int8_t>& digest)
+{
+    if (digest.size() != 48)
+    {
+        throw runtime_error("Binary section digest unexpected size");
+    }
+    memcpy(_struct.bin_digest.digest, digest.data(), 48);
+}
+
 void BinarySectionMetadata::SetJsonParams(const Json::Value& root)
 {
     const size_t MAGIC_ID_LEN = 4;
@@ -279,6 +287,7 @@ void BinarySectionMetadata::SetJsonParams(const Json::Value& root)
         throw runtime_error("Invalid magic ID");
     }
     memcpy(_struct.u8_magic_id, root["magic_id"].asCString(), MAGIC_ID_LEN);
+    CPUTOn(_struct.u8_magic_id, 1);
 
     _struct.version.u8_ver_major =
       std::stoul(nbu::mft::common::GetStrValue(root["version"]["ver_major"], true), nullptr, 16);
@@ -297,9 +306,20 @@ void BinarySectionMetadata::SetJsonParams(const Json::Value& root)
         throw runtime_error("Invalid encryption derivation string");
     }
     memcpy(_struct.encryption_params.u8_encryption_derivation_string.u8_dummy, buf.data(), buf.size());
+    CPUTOn(_struct.encryption_params.u8_encryption_derivation_string.u8_dummy, ENCRYPTION_DERIVATION_STRING_LEN / 4);
 
     _struct.encryption_params.u8_data_encryption_key_version = std::stoul(
       nbu::mft::common::GetStrValue(root["encryption_params"]["data_encryption_key_version"], true), nullptr, 16);
+}
+
+void BinarySectionMetadata::SetIV(const vector<u_int8_t>& iv)
+{
+    if (iv.size() != FS5_IMAGE_LAYOUT_U8_IV_SIZE)
+    {
+        throw runtime_error("Binary section IV unexpected size");
+    }
+    memcpy(_struct.encryption_params.u8_iv.u8_dummy, iv.data(), FS5_IMAGE_LAYOUT_U8_IV_SIZE);
+    CPUTOn(_struct.encryption_params.u8_iv.u8_dummy, FS5_IMAGE_LAYOUT_U8_IV_SIZE / 4);
 }
 
 void BinarySectionMetadata::SetAuthenticationTag(const vector<u_int8_t>& tag)
@@ -308,7 +328,8 @@ void BinarySectionMetadata::SetAuthenticationTag(const vector<u_int8_t>& tag)
     {
         throw runtime_error("Binary section authentication tag unexpected size");
     }
-    memcpy(_struct.encryption_params.u8_auth_tag.u8_dummy, tag.data(), tag.size());
+    memcpy(_struct.encryption_params.u8_auth_tag.u8_dummy, tag.data(), FS5_IMAGE_LAYOUT_U8_AUTH_TAG_SIZE);
+    CPUTOn(_struct.encryption_params.u8_auth_tag.u8_dummy, FS5_IMAGE_LAYOUT_U8_AUTH_TAG_SIZE / 4);
 }
 
 CSH::CSH() : _isUnpacked(false)
