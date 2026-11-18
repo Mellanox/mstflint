@@ -89,6 +89,8 @@ void WriteToBinFile(string filePath, const std::vector<u_int8_t>& buff);
 void WriteNamedFilesToDirectory(const string& dirPath, const vector<pair<string, string>>& files);
 
 bool ToVector(string& str, vector<u_int8_t>& vec);
+u_int32_t BytesToUint32(const vector<u_int8_t>& bytes, bool swapEndianness = false);
+vector<u_int8_t> Uint32ToBytes(u_int32_t value, bool swapEndianness = false);
 
 int IsDirectory(const string& path);
 int IsRegularFile(const string& path);

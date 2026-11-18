@@ -69,7 +69,6 @@
 
 using namespace std;
 
-//* enum values are conversion from ASCII to hex with itoc_type byte appeneded to the end
 enum class CshSectionType
 {
     CSH_SECTION_BOOT2 = 0x42543201,
@@ -92,7 +91,30 @@ enum class CshSectionType
     CSH_SECTION_SWITCH_MAIN_HASH_SQUARE = 0x4D5351B2,
     CSH_SECTION_SWITCH_MAIN_HASH = 0x4D4853B1,
     CSH_SECTION_SWITCH_MAIN = 0x4D414903,
-    CSH_SECTION_NANO_KERNEL = 0x4E4B524C
+    CSH_SECTION_NANO_KERNEL = 0x4E4B524C,
+
+    //* enum values are conversion from ASCII to hex (4-char string to 32-bit hex)
+    CSH_SECTION_BOOT2_MAGIC_ID = 0x424F5432,                        // "BOT2"
+    CSH_SECTION_IMAGE_INFO_MAGIC_ID = 0x49494E46,                   // "IINF"
+    CSH_SECTION_HW_BOOT_INI_MAGIC_ID = 0x48574249,                  // "HWBI"
+    CSH_SECTION_FW_BOOT_INI_MAGIC_ID = 0x46574249,                  // "FWBI"
+    CSH_SECTION_PRE_LINKUP_MAGIC_ID = 0x5052454C,                   // "PREL"
+    CSH_SECTION_POST_LINKUP_MAGIC_ID = 0x49524F4E,                  // "IRON"
+    CSH_SECTION_HW_NON_ISFU_INI_MAGIC_ID = 0x484E4949,              // "HNII"
+    CSH_SECTION_HW_MAIN_INI_MAGIC_ID = 0x48574D49,                  // "HWMI"
+    CSH_SECTION_FW_MAIN_INI_MAGIC_ID = 0x46574D49,                  // "FWMI"
+    CSH_SECTION_MFG_INFO_MAGIC_ID = 0x4D4647E0,                     // (no mapping - unchanged)
+    CSH_SECTION_POST_IRON_BOOT_MAGIC_ID = 0x50535449,               // "PSTI"
+    CSH_SECTION_HW_TILE_INI_MAGIC_ID = 0x48575449,                  // "HWTI"
+    CSH_SECTION_FW_TILE_INI_MAGIC_ID = 0x46575449,                  // "FWTI"
+    CSH_SECTION_SWITCH_TILE_CODE_HASH_SQUARE_MAGIC_ID = 0x54535152, // "TSQR"
+    CSH_SECTION_SWITCH_TILE_CODE_HASH_MAGIC_ID = 0x54485348,        // "THSH"
+    CSH_SECTION_SWITCH_TILE_CODE_MAGIC_ID = 0x54494C45,             // "TILE"
+    CSH_SECTION_PLASTIC_DATA_MAGIC_ID = 0x504C4454,                 // "PLDT"
+    CSH_SECTION_SWITCH_MAIN_HASH_SQUARE_MAGIC_ID = 0x4D535152,      // "MSQR"
+    CSH_SECTION_SWITCH_MAIN_HASH_MAGIC_ID = 0x4D485348,             // "MHSH"
+    CSH_SECTION_SWITCH_MAIN_MAGIC_ID = 0x4D41494E,                  // "MAIN"
+    CSH_SECTION_NANO_KERNEL_MAGIC_ID = 0x4E4B524C                   // "NKRL"
 };
 
 enum class CshComponentID

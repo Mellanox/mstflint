@@ -36,6 +36,7 @@
  */
 
 #include "mft_utils.h"
+#include "common/tools_endianness.h"
 #include <cstring>
 #include <errno.h>
 #include <fstream>
@@ -433,6 +434,33 @@ bool ToVector(string& str, vector<u_int8_t>& vec)
         out.push_back(ReadBinFile(path));
     }
     return out;
+}
+
+u_int32_t BytesToUint32(const vector<u_int8_t>& bytes, bool swapEndianness)
+{
+    if (bytes.size() != 4)
+    {
+        throw runtime_error("Bytes vector must be 4 bytes long for conversion");
+    }
+    u_int32_t value =
+      (bytes[3] & 0xFF) | ((bytes[2] & 0xFF) << 8) | ((bytes[1] & 0xFF) << 16) | ((bytes[0] & 0xFF) << 24);
+    if (swapEndianness)
+    {
+        value = mft_be32_to_cpu(value);
+    }
+    return value;
+}
+
+vector<u_int8_t> Uint32ToBytes(u_int32_t value, bool swapEndianness)
+{
+    vector<u_int8_t> bytes = {static_cast<u_int8_t>((value >> 24) & 0xFF), static_cast<u_int8_t>((value >> 16) & 0xFF),
+                              static_cast<u_int8_t>((value >> 8) & 0xFF), static_cast<u_int8_t>(value & 0xFF)};
+    if (swapEndianness)
+    {
+        u_int32_t* p = (u_int32_t*)&bytes[0];
+        *p = mft_be32_to_cpu(*p);
+    }
+    return bytes;
 }
  
  std::vector<u_int32_t> Uuid2Dword(const std::string& uuid_str)

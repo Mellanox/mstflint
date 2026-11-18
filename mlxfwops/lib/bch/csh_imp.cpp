@@ -268,8 +268,26 @@ void PartitionTableEntry::SetSectionType(u_int32_t type)
 
 string BinarySectionMetadata::CshSectionIDToString(u_int32_t sectionId)
 {
-    static const std::unordered_map<string, string> ncoreSectionNamesMap = {
-      {"THSH", "TILE_PAGES_HASHES"}, {"TSQR", "TILE_PAGES_LOCKED_HASHES"}, {"NKRL", "NANO_KERNEL"}};
+    static const std::unordered_map<string, string> ncoreSectionNamesMap = {{"BOT2", "BOOT_CODE"},
+                                                                            {"IINF", "IMAGE_INFO"},
+                                                                            {"HWBI", "HW_BOOT_CFG"},
+                                                                            {"FWBI", "FW_BOOT_CFG"},
+                                                                            {"PREL", "PCIE_LINK_CODE"},
+                                                                            {"IRON", "PCI_CODE"},
+                                                                            {"HNII", "CCIR_INFRA_CODE"},
+                                                                            {"HWMI", "HW_MAIN_CFG"},
+                                                                            {"FWMI", "FW_MAIN_CFG"},
+                                                                            {"PSTI", "POST_IRON_BOOT_CODE"},
+                                                                            {"HWTI", "HW_TILE_INI"},
+                                                                            {"FWTI", "FW_TILE_INI"},
+                                                                            {"TSQR", "TILE_PAGES_LOCKED_HASHES"},
+                                                                            {"THSH", "TILE_PAGES_HASHES"},
+                                                                            {"TILE", "TILE_FW_CODE"},
+                                                                            {"PLDT", "MAIN_DATA"},
+                                                                            {"MSQR", "MAIN_PAGES_LOCKED_HASHES"},
+                                                                            {"MHSH", "MAIN_PAGES_HASHES"},
+                                                                            {"MAIN", "MAIN_CODE"},
+                                                                            {"NKRL", "NANO_KERNEL"}};
     static const std::vector<string> nonNcoreSectionNames = {
       "PBLT",
       "PBLD",
@@ -1055,5 +1073,7 @@ BinarySectionMetadata& CSH::GetSection(u_int32_t itocType)
             return section;
         }
     }
-    throw runtime_error("Section with ITOC type " + std::to_string(itocType) + " not found in CSH");
+    std::stringstream ss;
+    ss << std::hex << "Section with ITOC type 0x" << itocType << " not found in CSH";
+    throw runtime_error(ss.str());
 }

@@ -782,11 +782,18 @@ bool Fs6Operations::GetImageInfo()
 
     vector<u_int8_t> image_info_data;
     if (!ReadCshSectionInfo(PartitionType::PT_SWITCH_FWS,
-                            CshSectionType::CSH_SECTION_IMAGE_INFO,
+                            CshSectionType::CSH_SECTION_IMAGE_INFO_MAGIC_ID,
                             FS6_IMAGE_LAYOUT_IMAGE_INFO_SIZE,
                             image_info_data))
     {
-        return false;
+        // TODO: fallback for backward compatibility
+        if (!ReadCshSectionInfo(PartitionType::PT_SWITCH_FWS,
+                                CshSectionType::CSH_SECTION_IMAGE_INFO,
+                                FS6_IMAGE_LAYOUT_IMAGE_INFO_SIZE,
+                                image_info_data))
+        {
+            return false;
+        }
     }
 
     struct fs6_image_layout_image_info image_info;
