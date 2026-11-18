@@ -1410,28 +1410,26 @@ bool Fs6Operations::IsDtocEntry(PartitionType partitionType)
 {
     bool isl1ptSection = !IsL2ptSection(partitionType);
     return isl1ptSection && partitionType != PartitionType::PT_CHAIN_CONTAINER &&
-           partitionType != PartitionType::PT_ROM_IMGS;
+           partitionType != PartitionType::PT_ROM_IMGS && partitionType != PartitionType::PT_WP_AREA_PTR &&
+           partitionType != PartitionType::PT_RW_AREA_PTR;
 }
 
-bool Fs6Operations::CollectDtocForProductionBurn(PartitionType partitionType, FwOperations* imageOps)
+bool Fs6Operations::CollectDtocForProductionBurn(const PartitionTableEntry& entry)
 {
-    bool toCollect = false;
-    if (IsDtocEntry(partitionType))
+    PartitionType partitionType = entry.GetPartitionTypeEnum();
+
+    if (!IsDtocEntry(partitionType))
     {
-        if (partitionType == PartitionType::PT_VMOD_FW)
-        {
-            if (IsValidCshSection(imageOps, partitionType))
-            {
-                toCollect = true;
-            }
-        }
-        else
-        {
-            toCollect = true;
-        }
+        return false;
     }
 
-    return toCollect;
+    if (partitionType == PartitionType::PT_VMOD_FW)
+    {
+        MLXFWOPS_LOG_DEBUG("%sCollecting DTOC for VMOD_FW", entry.GetCsh() == nullptr ? "Not " : "");
+        return entry.GetCsh() != nullptr;
+    }
+
+    return true;
 }
 
 bool Fs6Operations::IsL2ptSection(CshComponentID cshId)
@@ -1663,8 +1661,7 @@ void Fs6Operations::addBurnRegion(u_int32_t srcOffset,
     allRegions.push_back(BurnRegion{srcOffset, destOffset, size, name, pt});
 }
 
-bool Fs6Operations::ProcessL1pt(FwOperations* imageOps,
-                                const vector<PartitionTableEntry>& l1Entries,
+bool Fs6Operations::ProcessL1pt(const vector<PartitionTableEntry>& l1Entries,
                                 Fs6Operations* fs6ImageOps, // source image ops
                                 L1ptInstance instance,
                                 map<PartitionType, vector<BurnRegion>>& partitionTypeToBurnRegions,
@@ -1708,7 +1705,7 @@ bool Fs6Operations::ProcessL1pt(FwOperations* imageOps,
                       partitionTypeToBurnRegions, allBurnRegions);
 
         // collect dtocs only for first l1pt (no need to collect twice, they both point to the same dtocs)
-        if (collectDtocs && instance == L1ptInstance::First && CollectDtocForProductionBurn(partType, imageOps))
+        if (collectDtocs && instance == L1ptInstance::First && CollectDtocForProductionBurn(l1Entries[i]))
         {
             size_t dtocOffset = l1Entries[i].GetStartOffset();
             size_t dtocSize = l1Entries[i].GetSectionSize();
@@ -1737,12 +1734,12 @@ std::map<PartitionType, std::vector<Fs6Operations::BurnRegion>>
 
     if (useImgDevData)
     {
-        ProcessL1pt(imageOps, fs6ImageOps->_l1pt.GetEntries(), fs6ImageOps, L1ptInstance::First,
-                    partitionTypeToBurnRegions, allBurnRegions,
+        ProcessL1pt(fs6ImageOps->_l1pt.GetEntries(), fs6ImageOps, L1ptInstance::First, partitionTypeToBurnRegions,
+                    allBurnRegions,
                     useImgDevData); // for first dotl1pt, we'll collect dtoc as well if it's production burn
-        ProcessL1pt(imageOps, fs6ImageOps->_l1pt.GetEntries(), fs6ImageOps, L1ptInstance::Second,
-                    partitionTypeToBurnRegions, allBurnRegions); // for second dotl1pt. we'll not collect dtocs (if
-                                                                 // needed, it was collected in the first dotl1pt)
+        ProcessL1pt(fs6ImageOps->_l1pt.GetEntries(), fs6ImageOps, L1ptInstance::Second, partitionTypeToBurnRegions,
+                    allBurnRegions); // for second dotl1pt. we'll not collect dtocs (if
+                                     // needed, it was collected in the first dotl1pt)
     }
 
     // collect l2pt entries
@@ -2023,9 +2020,9 @@ bool Fs6Operations::ExecuteBurn(FwOperations* imageOps, ExtBurnParams& burnParam
                 alreadyWrittenSizeForRegion = ROM_IMGS_MAGIC_PATTERN_OFFSET + zeroes.size();
             }
 
-            MLXFWOPS_LOG_DEBUG("Writing %zx bytes to address 0x%zx (from address 0x%zx in image)",
+            MLXFWOPS_LOG_DEBUG("Writing %zx bytes to address 0x%zx (from address 0x%zx in image). Region %s, partitionType 0x%x",
                      region.size - alreadyWrittenSizeForRegion, region.dest_offset + alreadyWrittenSizeForRegion,
-                     srcOffset);
+                     srcOffset, region.name.c_str(), static_cast<u_int32_t>(region.partitionType));
             if (!writeImageEx(burnParams.progressFuncEx, burnParams.progressUserData, burnParams.progressFunc,
                               region.dest_offset + alreadyWrittenSizeForRegion, imageData + srcOffset,
                               region.size - alreadyWrittenSizeForRegion, true, true, totalSize, alreadyWrittenSize))

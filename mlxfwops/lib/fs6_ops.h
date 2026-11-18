@@ -230,8 +230,7 @@ protected:
         First,
         Second
     };
-    bool ProcessL1pt(FwOperations* imageOps,
-                     const vector<PartitionTableEntry>& l1Entries,
+    bool ProcessL1pt(const vector<PartitionTableEntry>& l1Entries,
                      Fs6Operations* fs6ImageOps,
                      L1ptInstance instance,
                      map<PartitionType, vector<BurnRegion>>& partitionTypeToBurnRegions,
@@ -260,7 +259,7 @@ private:
     bool IsL2ptSection(PartitionType partitionType);
     bool IsDtocEntry(PartitionType partitionType);
     bool IsSectionExists(fs3_section_t sectionType);
-    bool CollectDtocForProductionBurn(PartitionType partitionType, FwOperations* imageOps);
+    bool CollectDtocForProductionBurn(const PartitionTableEntry& entry);
     vector<u_int8_t> ReadPartitionData(PartitionType partitionType, int chainNumber = INVALID_CHAIN_NUMBER);
     void UpdatePartitionData(PartitionType partitionType,
                              const vector<u_int8_t>& data,
