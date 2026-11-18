@@ -224,7 +224,7 @@ bool Fs6Operations::Init()
     // Guard against re-initialization
     if (!_l1pt.GetEntries().empty())
     {
-        MLXFWOPS_LOG_DEBUG("Fs6Operations::Init() - already initialized, skipping");
+        MLXFWOPS_LOG_DEBUG("already initialized, skipping");
         return true;
     }
 
@@ -382,10 +382,10 @@ bool Fs6Operations::Init()
         }
     }
 
-    MLXFWOPS_LOG_DEBUG("Fs6Operations::Init() - _activeChain: %s, _backupChain: %s, invalid chains count: %zu",
-             _activeChain == INVALID_CHAIN_NUMBER ? "none" : std::to_string(_activeChain).c_str(),
-             _backupChain == INVALID_CHAIN_NUMBER ? "none" : std::to_string(_backupChain).c_str(),
-             invalidChains.size());
+    MLXFWOPS_LOG_DEBUG("_activeChain: %s, _backupChain: %s, invalid chains count: %d",
+                       _activeChain == INVALID_CHAIN_NUMBER ? "none" : std::to_string(_activeChain).c_str(),
+                       _backupChain == INVALID_CHAIN_NUMBER ? "none" : std::to_string(_backupChain).c_str(),
+                       (int)invalidChains.size());
     return true;
 }
 
@@ -673,7 +673,7 @@ bool Fs6Operations::VerifyCshComponent(const PartitionTableEntry& entry,
     }
 
     MLXFWOPS_LOG_DEBUG("VerifyCshComponent partitionType: %s, csh exists: %d", ToString(partitionType).c_str(),
-             cshComponent != nullptr);
+                       cshComponent != nullptr);
 
     if (cshComponent != nullptr)
     {
@@ -1076,8 +1076,8 @@ vector<u_int8_t> Fs6Operations::ReadPartitionData(PartitionType partitionType, i
     GetPartitionEntryInfo(partitionType, section_offset, section_size, chainNumber);
 
     string partitionName = ToString(partitionType);
-    MLXFWOPS_LOG_DEBUG("Fs6Operations::ReadPartitionData %s_section_offset=0x%zx, %s_section_size=0x%zx", partitionName.c_str(),
-             section_offset, partitionName.c_str(), section_size);
+    MLXFWOPS_LOG_DEBUG("%s_section_offset=0x%x, %s_section_size=0x%x", partitionName.c_str(),
+                       (unsigned int)section_offset, partitionName.c_str(), (unsigned int)section_size);
 
     vector<u_int8_t> data(section_size);
     if (!_ioAccess->read(section_offset, data.data(), section_size))
@@ -1133,7 +1133,7 @@ bool Fs6Operations::GetSecurityVersion()
         return errmsg("CSH component for PT_SWITCH_FWS not found");
     }
     _fsCommonInfo.ext_info.image_security_version = entry->csh->GetRatchetLevel();
-    MLXFWOPS_LOG_DEBUG("Fs6Operations::GetSecurityVersion image_security_version=%u", _fsCommonInfo.ext_info.image_security_version);
+    MLXFWOPS_LOG_DEBUG("image_security_version=%u", _fsCommonInfo.ext_info.image_security_version);
     return true;
 }
 
@@ -1149,7 +1149,8 @@ bool Fs6Operations::ReadCshSectionInfo(PartitionType partitionType,
         return false; // Error already set by GetCshSectionOffset
     }
 
-    MLXFWOPS_LOG_DEBUG("Fs6Operations::ReadCshSectionInfo section_addr = 0x%zx, section_size = 0x%zx", section_addr, sectionSize);
+    MLXFWOPS_LOG_DEBUG("section_addr = 0x%x, section_size = 0x%x", (unsigned int)section_addr,
+                       (unsigned int)sectionSize);
 
     data.resize(sectionSize);
     if (!_ioAccess->read(section_addr, data.data(), sectionSize))
@@ -1254,12 +1255,12 @@ bool Fs6Operations::GetCshSectionOffset(PartitionType partitionType,
                                         int chainNumber)
 {
     // Find the partition table entry
-    MLXFWOPS_LOG_DEBUG("Fs6Operations::GetCshSectionOffset partitionType = 0x%x, sectionType = 0x%x, setErrMsg = %d",
-             (int)partitionType, (int)sectionType, reportError);
+    MLXFWOPS_LOG_DEBUG("partitionType = 0x%x, sectionType = 0x%x, setErrMsg = %d", (int)partitionType, (int)sectionType,
+                       reportError);
 
     size_t partitionOffset = GetPartitionOffset(partitionType, chainNumber);
 
-    MLXFWOPS_LOG_DEBUG("Fs6Operations::GetCshSectionOffset partitionOffset = 0x%zx", partitionOffset);
+    MLXFWOPS_LOG_DEBUG("partitionOffset = 0x%x", (unsigned int)partitionOffset);
 
     // Find the CSH component
     const CshComponentInfo* cshComponent = FindCshComponent(partitionType);
@@ -1310,7 +1311,7 @@ bool Fs6Operations::LoadImageInfo()
     }
 
     const u_int32_t* swId = (u_int32_t*)NULL;
-    MLXFWOPS_LOG_DEBUG("Fs6Operations::LoadImageInfo fwImgInfo.supportedHwId[0]=0x%x", _fwImgInfo.supportedHwId[0]);
+    MLXFWOPS_LOG_DEBUG("fwImgInfo.supportedHwId[0]=0x%x", _fwImgInfo.supportedHwId[0]);
     if (!getInfoFromHwDevid(_fwImgInfo.supportedHwId[0], _fwImgInfo.ext_info.chip_type, &swId))
     {
         return false;
@@ -1528,7 +1529,8 @@ void Fs6Operations::CollectDtocForProductionBurn(const PartitionTableEntry& entr
         //* copying whatever the image holds there for a placeholder bank. Use the canonical packed-layout
         //* size accessor rather than sizeof(), so this stays correct if the generated layout changes.
         const size_t headerSize = fs5_image_layout_csh_header_size();
-        MLXFWOPS_LOG_DEBUG("Collecting placeholder VMOD_FW header (%zu bytes) at 0x%zx", headerSize, dtocOffset);
+        MLXFWOPS_LOG_DEBUG("Collecting placeholder VMOD_FW header (%d bytes) at 0x%x", (int)headerSize,
+                           (unsigned int)dtocOffset);
         addBurnRegion(dtocOffset, dtocOffset, headerSize, "DTOC_VMOD_PLACEHOLDER", partitionType,
                       partitionTypeToBurnRegions, allBurnRegions);
         return;
@@ -1666,7 +1668,7 @@ size_t Fs6Operations::GetChainContainerActualSize()
 {
     size_t l2ptSectionsSize = GetL2ptSectionsSize();
     size_t l2ptSize = PartitionTable::HeaderSize() + _l2pt.GetEntries().size() * PartitionTableEntry::Size();
-    MLXFWOPS_LOG_DEBUG("chain container actual size: 0x%zx", l2ptSectionsSize + l2ptSize);
+    MLXFWOPS_LOG_DEBUG("chain container actual size: 0x%x", (unsigned int)(l2ptSectionsSize + l2ptSize));
     return l2ptSectionsSize + l2ptSize;
 }
 
@@ -1971,8 +1973,11 @@ bool Fs6Operations::HandleRomImgsMagicPatternsPostBurn(ExtBurnParams& burnParams
         GetPartitionEntryInfo(PartitionType::PT_ROM_IMGS, romImgsPrevActiveChainOffset, partitionSize, prevChain);
         size_t romImgsPrevActiveChainMagicPatternOffset = romImgsPrevActiveChainOffset + ROM_IMGS_MAGIC_PATTERN_OFFSET;
         auto& magicPattern = PartitionTable::RomImgsBackupMagicPattern();
-        MLXFWOPS_LOG_DEBUG("Writing ROM_IMGS backup magic pattern %s to address 0x%zx (chain %d is now for backup)",
-                 magicPattern.data(), romImgsPrevActiveChainMagicPatternOffset, prevChain);
+        MLXFWOPS_LOG_DEBUG("Writing ROM_IMGS backup magic pattern %02x%02x%02x%02x to address 0x%x "
+                           "(chain %d is now for backup)",
+                           (unsigned int)magicPattern[0], (unsigned int)magicPattern[1], (unsigned int)magicPattern[2],
+                           (unsigned int)magicPattern[3], (unsigned int)romImgsPrevActiveChainMagicPatternOffset,
+                           prevChain);
         if (!writeImageEx(burnParams.progressFuncEx, burnParams.progressUserData, burnParams.progressFunc,
                           romImgsPrevActiveChainMagicPatternOffset, (void*)magicPattern.data(), magicPattern.size(),
                           true, true, totalSize, alreadyWrittenSize))
@@ -1988,8 +1993,10 @@ bool Fs6Operations::HandleRomImgsMagicPatternsPostBurn(ExtBurnParams& burnParams
         GetPartitionEntryInfo(PartitionType::PT_ROM_IMGS, romImgsDestOffset, partitionSize, nextActiveChain);
         size_t romImgsMagicPatternOffset = romImgsDestOffset + ROM_IMGS_MAGIC_PATTERN_OFFSET;
         auto& magicPattern = PartitionTable::RomImageMagicPattern();
-        MLXFWOPS_LOG_DEBUG("Writing ROM_IMGS candidate magic pattern %s to address 0x%zx (validating chain %d)",
-                 magicPattern.data(), romImgsMagicPatternOffset, nextActiveChain);
+        MLXFWOPS_LOG_DEBUG("Writing ROM_IMGS candidate magic pattern %02x%02x%02x%02x to address 0x%x "
+                           "(validating chain %d)",
+                           (unsigned int)magicPattern[0], (unsigned int)magicPattern[1], (unsigned int)magicPattern[2],
+                           (unsigned int)magicPattern[3], (unsigned int)romImgsMagicPatternOffset, nextActiveChain);
         if (!writeImageEx(burnParams.progressFuncEx, burnParams.progressUserData, burnParams.progressFunc,
                           romImgsMagicPatternOffset, (void*)magicPattern.data(), magicPattern.size(), true, true,
                           totalSize, alreadyWrittenSize))
@@ -2114,8 +2121,9 @@ bool Fs6Operations::ExecuteBurn(FwOperations* imageOps, ExtBurnParams& burnParam
                 region.partitionType == PartitionType::PT_ROM_IMGS) // avoid writing magic pattern at this tsage, needs
                                                                     // to happen post burn in case of fail safe
             {
-                MLXFWOPS_LOG_DEBUG("Writing %x bytes to address 0x%zx (from address 0x%zx in image)",
-                         ROM_IMGS_MAGIC_PATTERN_OFFSET, region.dest_offset, region.src_offset);
+                MLXFWOPS_LOG_DEBUG("Writing %x bytes to address 0x%x (from address 0x%x in image)",
+                                   ROM_IMGS_MAGIC_PATTERN_OFFSET, (unsigned int)region.dest_offset,
+                                   (unsigned int)region.src_offset);
                 if (!writeImageEx(burnParams.progressFuncEx, burnParams.progressUserData, burnParams.progressFunc,
                                   region.dest_offset, imageData + region.src_offset, ROM_IMGS_MAGIC_PATTERN_OFFSET,
                                   true, true, totalSize, alreadyWrittenSize))
@@ -2125,9 +2133,10 @@ bool Fs6Operations::ExecuteBurn(FwOperations* imageOps, ExtBurnParams& burnParam
                 alreadyWrittenSize += ROM_IMGS_MAGIC_PATTERN_OFFSET;
 
                 vector<u_int8_t> zeroes = vector<u_int8_t>(PartitionTable::RomImageMagicPattern().size(), 0);
-                MLXFWOPS_LOG_DEBUG("Writing %zx bytes to address 0x%zx (from address 0x%zx in image)", zeroes.size(),
-                         region.dest_offset + ROM_IMGS_MAGIC_PATTERN_OFFSET,
-                         region.src_offset + ROM_IMGS_MAGIC_PATTERN_OFFSET);
+                MLXFWOPS_LOG_DEBUG("Writing %x bytes to address 0x%x (from address 0x%x in image)",
+                                   (unsigned int)zeroes.size(),
+                                   (unsigned int)(region.dest_offset + ROM_IMGS_MAGIC_PATTERN_OFFSET),
+                                   (unsigned int)(region.src_offset + ROM_IMGS_MAGIC_PATTERN_OFFSET));
                 if (!writeImageEx(burnParams.progressFuncEx, burnParams.progressUserData, burnParams.progressFunc,
                                   region.dest_offset + ROM_IMGS_MAGIC_PATTERN_OFFSET, (void*)zeroes.data(),
                                   zeroes.size(), true, true, totalSize, alreadyWrittenSize))
@@ -2140,9 +2149,11 @@ bool Fs6Operations::ExecuteBurn(FwOperations* imageOps, ExtBurnParams& burnParam
                 alreadyWrittenSizeForRegion = ROM_IMGS_MAGIC_PATTERN_OFFSET + zeroes.size();
             }
 
-            MLXFWOPS_LOG_DEBUG("Writing %zx bytes to address 0x%zx (from address 0x%zx in image). Region %s, partitionType 0x%x",
-                     region.size - alreadyWrittenSizeForRegion, region.dest_offset + alreadyWrittenSizeForRegion,
-                     srcOffset, region.name.c_str(), static_cast<u_int32_t>(region.partitionType));
+            MLXFWOPS_LOG_DEBUG(
+              "Writing %x bytes to address 0x%x (from address 0x%x in image). Region %s, partitionType 0x%x",
+              (unsigned int)(region.size - alreadyWrittenSizeForRegion),
+              (unsigned int)(region.dest_offset + alreadyWrittenSizeForRegion), (unsigned int)srcOffset,
+              region.name.c_str(), static_cast<u_int32_t>(region.partitionType));
             if (!writeImageEx(burnParams.progressFuncEx, burnParams.progressUserData, burnParams.progressFunc,
                               region.dest_offset + alreadyWrittenSizeForRegion, imageData + srcOffset,
                               region.size - alreadyWrittenSizeForRegion, true, true, totalSize, alreadyWrittenSize))
@@ -2203,7 +2214,7 @@ bool Fs6Operations::isEncrypted(bool& is_encrypted) // in FS6 device and image a
 {
     // TODO: implement isEncrypted
     is_encrypted = true;
-    MLXFWOPS_LOG_DEBUG("Fs6Operations::isEncrypted res = TRUE");
+    MLXFWOPS_LOG_DEBUG("res = TRUE");
     return true;
 }
 
@@ -2344,7 +2355,7 @@ bool Fs6Operations::UpdateSection(fs3_section_t sectionType,
                                   const char* msg,
                                   PrintCallBack callBackFunc)
 {
-    MLXFWOPS_LOG_DEBUG("Fs6Operations::UpdateSection sectionType: 0x%x, msg: %s", sectionType, msg);
+    MLXFWOPS_LOG_DEBUG("sectionType: 0x%x, msg: %s", sectionType, msg);
     if (!UpdateSectionAllowed(sectionType))
     {
         return errmsg("updating section type 0x%x is not supported for FS6\n", sectionType);
@@ -2375,7 +2386,7 @@ bool Fs6Operations::UpdateSection(fs3_section_t sectionType,
             if (getenv("ALLOW_OVERSIZED_SECTION") != NULL)
             {
                 MLXFWOPS_LOG_DEBUG("new section data size = 0x%x, partition size = 0x%x. resizing to partition size",
-                         (u_int32_t)newSectionData.size(), (u_int32_t)partitionSize);
+                                   (u_int32_t)newSectionData.size(), (u_int32_t)partitionSize);
                 newSectionData.resize(partitionSize); // allow legacy behaviour if ALLOW_OVERSIZED_SECTION was used
             }
             else
@@ -2728,8 +2739,8 @@ void Fs6Operations::PrintPartitionTable(VerifyCallBack verifyCallBackFunc,
                                         size_t ptOffset,
                                         const string& tablePrefix)
 {
-    MLXFWOPS_LOG_DEBUG("number of entries = %zu, max entries = %zu", partitionTable.GetNumberOfEntries(),
-             partitionTable.GetMaxNumberOfEntries());
+    MLXFWOPS_LOG_DEBUG("number of entries = %d, max entries = %d", (int)partitionTable.GetNumberOfEntries(),
+                       (int)partitionTable.GetMaxNumberOfEntries());
 
     // Print entries
     const vector<PartitionTableEntry>& entries = partitionTable.GetEntries();
