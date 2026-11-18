@@ -259,7 +259,10 @@ private:
     bool IsL2ptSection(PartitionType partitionType);
     bool IsDtocEntry(PartitionType partitionType);
     bool IsSectionExists(fs3_section_t sectionType);
-    bool CollectDtocForProductionBurn(const PartitionTableEntry& entry);
+    void CollectDtocForProductionBurn(const PartitionTableEntry& entry,
+                                      const std::string& ptEntryName,
+                                      map<PartitionType, vector<BurnRegion>>& partitionTypeToBurnRegions,
+                                      vector<BurnRegion>& allBurnRegions);
     vector<u_int8_t> ReadPartitionData(PartitionType partitionType, int chainNumber = INVALID_CHAIN_NUMBER);
     void UpdatePartitionData(PartitionType partitionType,
                              const vector<u_int8_t>& data,

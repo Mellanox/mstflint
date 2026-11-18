@@ -1416,22 +1416,37 @@ bool Fs6Operations::IsDtocEntry(PartitionType partitionType)
            partitionType != PartitionType::PT_RW_AREA_PTR;
 }
 
-bool Fs6Operations::CollectDtocForProductionBurn(const PartitionTableEntry& entry)
+void Fs6Operations::CollectDtocForProductionBurn(const PartitionTableEntry& entry,
+                                                 const string& ptEntryName,
+                                                 map<PartitionType, vector<BurnRegion>>& partitionTypeToBurnRegions,
+                                                 vector<BurnRegion>& allBurnRegions)
 {
     PartitionType partitionType = entry.GetPartitionTypeEnum();
 
     if (!IsDtocEntry(partitionType))
     {
-        return false;
+        return;
     }
 
-    if (partitionType == PartitionType::PT_VMOD_FW)
+    size_t dtocOffset = entry.GetStartOffset();
+
+    if (partitionType == PartitionType::PT_VMOD_FW && entry.GetCsh() == nullptr)
     {
-        MLXFWOPS_LOG_DEBUG("%sCollecting DTOC for VMOD_FW", entry.GetCsh() == nullptr ? "Not " : "");
-        return entry.GetCsh() != nullptr;
+        //* Placeholder VMOD (no CSH): don't copy the whole DTOC. Only burn the CSH header from the partition
+        //* start up to and including vmod_status (its trailing field, the last DWORD of the header),
+        //* copying whatever the image holds there for a placeholder bank. Use the canonical packed-layout
+        //* size accessor rather than sizeof(), so this stays correct if the generated layout changes.
+        const size_t headerSize = fs5_image_layout_csh_header_size();
+        MLXFWOPS_LOG_DEBUG("Collecting placeholder VMOD_FW header (%zu bytes) at 0x%zx", headerSize, dtocOffset);
+        addBurnRegion(dtocOffset, dtocOffset, headerSize, "DTOC_VMOD_PLACEHOLDER", partitionType,
+                      partitionTypeToBurnRegions, allBurnRegions);
+        return;
     }
 
-    return true;
+    //* Normal case (including a real VMOD that has a CSH): copy the whole DTOC section from the image.
+    size_t dtocSize = entry.GetSectionSize();
+    addBurnRegion(dtocOffset, dtocOffset, dtocSize, "DTOC_" + ptEntryName, partitionType, partitionTypeToBurnRegions,
+                  allBurnRegions);
 }
 
 bool Fs6Operations::IsL2ptSection(CshComponentID cshId)
@@ -1707,13 +1722,9 @@ bool Fs6Operations::ProcessL1pt(const vector<PartitionTableEntry>& l1Entries,
                       partitionTypeToBurnRegions, allBurnRegions);
 
         // collect dtocs only for first l1pt (no need to collect twice, they both point to the same dtocs)
-        if (collectDtocs && instance == L1ptInstance::First && CollectDtocForProductionBurn(l1Entries[i]))
+        if (collectDtocs && instance == L1ptInstance::First)
         {
-            size_t dtocOffset = l1Entries[i].GetStartOffset();
-            size_t dtocSize = l1Entries[i].GetSectionSize();
-            string dtocName = "DTOC_" + ptEntryName;
-            addBurnRegion(dtocOffset, dtocOffset, dtocSize, dtocName, partType, partitionTypeToBurnRegions,
-                          allBurnRegions);
+            CollectDtocForProductionBurn(l1Entries[i], ptEntryName, partitionTypeToBurnRegions, allBurnRegions);
         }
     }
 
