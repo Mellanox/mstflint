@@ -4489,7 +4489,7 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
     }
     if (fullQuery)
     {
-        vector<FwOperations::CompInfo> compsList = _imgOps->GetCompsVersionList();
+        vector<FwOperations::CompInfo> compsList = ops->GetCompsVersionList();
         if (compsList.size() > 0)
         {
             printf("Components Version:\n");

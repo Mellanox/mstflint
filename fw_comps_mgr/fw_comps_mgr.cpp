@@ -1346,7 +1346,9 @@ const char* CompNames[] = {"NO_COMPONENT 1",                      // 0x0
                            "COMPID_DPA_COMPONENT",                // 0x1C
                            "COMPID_DPA_COMPONENT_REMOVAL",        // 0x1D
                            "COMPID_MTDT_TOKEN",                   // 0x1E
-                           "COMPID_CPO_VMOD_FW"};                 // 0x1F
+                           "COMPID_CPO_VMOD_FW",                  // 0x1F
+                           "COMPID_PSC_TOKEN",                    // 0x20
+                           "COMPID_HBI_IMG"};                     // 0x21
 
 bool FwCompsMgr::RefreshComponentsStatus(comp_status_st* ComponentStatus)
 {
@@ -2438,6 +2440,22 @@ void FwCompsMgr::deal_with_signal()
     mft_signal_set_handling(0);
 #endif
     return;
+}
+
+bool FwCompsMgr::GetHBIVersion(component_version_st& hbiVersion)
+{
+    if (!_compsQueryMap[FwComponent::COMPID_HBI_IMG].valid)
+    {
+        _lastError = FWCOMPS_COMP_NOT_SUPPORTED;
+        return false;
+    }
+
+    if (!getComponentVersion(FwComponent::COMPID_HBI_IMG, false, &hbiVersion))
+    {
+        return false;
+    }
+
+    return true;
 }
 
 bool FwCompsMgr::getComponentVersion(FwComponent::comps_ids_t compType, bool pending, component_version_st* cmpVer)

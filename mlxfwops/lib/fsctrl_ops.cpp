@@ -505,6 +505,21 @@ bool FsCtrlOperations::FwQuery(fw_info_t* fwInfo, bool readRom, bool isStripedIm
     {
         fwInfo->fs3_info.geo_address_valid = false;
     }
+
+    component_version_st hbiVersion;
+    if (_fwCompsAccess->GetHBIVersion(hbiVersion))
+    {
+        u_int16_t hbiVersionArray[2];
+        hbiVersionArray[0] = EXTRACT(hbiVersion.version, 8, 8);
+        hbiVersionArray[1] = EXTRACT(hbiVersion.version, 0, 8);
+        _compsList.push_back(
+          CompInfo{ComponentType::Comp_Csh_Sbd_Fw, FwVersion(hbiVersionArray[0], hbiVersionArray[1], 0)});
+    }
+    else
+    {
+        MLXFWOPS_LOG_DEBUG("Failed to get HBI version - Error %d", _fwCompsAccess->getLastError());
+    }
+
     return true;
 }
 
