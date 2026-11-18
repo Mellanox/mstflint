@@ -141,61 +141,6 @@ bool Fs3Operations::CheckTocSignature(struct cibfw_itoc_header* itoc_header, u_i
     return true;
 }
 
-#define CHECK_UID_STRUCTS_SIZE(uids_context, cibfw_guids_context)                                             \
-    {                                                                                                         \
-        if (sizeof(uids_context) != sizeof(cibfw_guids_context))                                              \
-        {                                                                                                     \
-            return errmsg(                                                                                    \
-              "Internal error: Size of uids_t (%d) is not equal to size of  struct cibfw_guids guids (%d)\n", \
-              (int)sizeof(uids_context), (int)sizeof(cibfw_guids_context));                                   \
-        }                                                                                                     \
-    }
-
-#define CHECK_MFG_NEW_FORMAT(mfg_st) (mfg_st.major_version == 1)
-#define CHECK_MFG_OLD_FORMAT(mfg_st) (mfg_st.major_version == 0)
-bool Fs3Operations::GetMfgInfo(u_int8_t* buff)
-{
-    // structs of the same size we can unpack either way
-    struct cibfw_mfg_info cib_mfg_info;
-    image_layout_mfg_info mfg_info;
-
-    cibfw_mfg_info_unpack(&cib_mfg_info, buff);
-    // cibfw_mfg_info_dump(&mfg_info, stdout);
-    if (IsExtendedGuidNumSupported() || CHECK_MFG_NEW_FORMAT(cib_mfg_info))
-    {
-        image_layout_mfg_info_unpack(&mfg_info, buff);
-        CHECK_UID_STRUCTS_SIZE(_fs3ImgInfo.ext_info.orig_fs3_uids_info.image_layout_uids, mfg_info.guids);
-        memcpy(&_fs3ImgInfo.ext_info.orig_fs3_uids_info.image_layout_uids, &mfg_info.guids, sizeof(mfg_info.guids));
-        strcpy(_fs3ImgInfo.ext_info.orig_psid, mfg_info.psid);
-        _fs3ImgInfo.ext_info.guids_override_en = mfg_info.guids_override_en;
-        _fs3ImgInfo.ext_info.orig_fs3_uids_info.guid_format = IMAGE_LAYOUT_UIDS;
-    }
-    else if (CHECK_MFG_OLD_FORMAT(cib_mfg_info))
-    {
-        CHECK_UID_STRUCTS_SIZE(_fs3ImgInfo.ext_info.orig_fs3_uids_info.cib_uids, cib_mfg_info.guids);
-        memcpy(&_fs3ImgInfo.ext_info.orig_fs3_uids_info.cib_uids, &cib_mfg_info.guids, sizeof(cib_mfg_info.guids));
-        strcpy(_fs3ImgInfo.ext_info.orig_psid, cib_mfg_info.psid);
-        _fs3ImgInfo.ext_info.guids_override_en = cib_mfg_info.guids_override_en;
-        _fs3ImgInfo.ext_info.orig_fs3_uids_info.guid_format = CIB_UIDS;
-    }
-    else
-    {
-        return errmsg(MLXFW_UNKNOWN_SECT_VER_ERR, "Unknown MFG_INFO format version (%d.%d).",
-                      cib_mfg_info.major_version, cib_mfg_info.minor_version);
-    }
-
-    if (cib_mfg_info.minor_version == 1)
-    {
-        // get orig_prs name
-        struct tools_open_mfg_info tools_mfg_info;
-        memset(&tools_mfg_info, 0, sizeof(tools_mfg_info));
-        tools_open_mfg_info_unpack(&tools_mfg_info, buff);
-        strncpy(_fs3ImgInfo.ext_info.orig_prs_name, tools_mfg_info.orig_prs_name, FS3_PRS_NAME_LEN);
-        _fs3ImgInfo.ext_info.orig_prs_name[FS3_PRS_NAME_LEN - 1] = '\0';
-    }
-    return true;
-}
-
 bool Fs3Operations::GetImageInfo(u_int8_t* buff)
 {
     MLXFWOPS_LOG_DEBUG("Fs3Operations::GetImageInfo");
@@ -240,7 +185,7 @@ bool Fs3Operations::GetImageInfo(u_int8_t* buff)
 
     _fwImgInfo.ext_info.pci_device_id = image_info.pci_device_id;
 
-    strcpy(_fs3ImgInfo.ext_info.image_vsd, image_info.vsd);
+    strcpy(_fsCommonInfo.ext_info.image_vsd, image_info.vsd);
     strcpy(_fwImgInfo.ext_info.psid, image_info.psid);
     strcpy(_fwImgInfo.ext_info.product_ver, image_info.prod_ver);
 
@@ -250,27 +195,27 @@ bool Fs3Operations::GetImageInfo(u_int8_t* buff)
         struct tools_open_image_info tools_image_info;
         memset(&tools_image_info, 0, sizeof(tools_image_info));
         tools_open_image_info_unpack(&tools_image_info, buff);
-        snprintf(_fs3ImgInfo.ext_info.name, sizeof(_fs3ImgInfo.ext_info.name), "%s", tools_image_info.name);
-        snprintf(_fs3ImgInfo.ext_info.description, sizeof(_fs3ImgInfo.ext_info.description), "%s",
+        snprintf(_fsCommonInfo.ext_info.name, sizeof(_fsCommonInfo.ext_info.name), "%s", tools_image_info.name);
+        snprintf(_fsCommonInfo.ext_info.description, sizeof(_fsCommonInfo.ext_info.description), "%s",
                  tools_image_info.description);
-        snprintf(_fs3ImgInfo.ext_info.prs_name, sizeof(_fs3ImgInfo.ext_info.prs_name), "%s", tools_image_info.prs_name);
+        snprintf(_fsCommonInfo.ext_info.prs_name, sizeof(_fsCommonInfo.ext_info.prs_name), "%s", tools_image_info.prs_name);
     }
     else if (image_info.minor_version == 3)
     {
-        snprintf(_fs3ImgInfo.ext_info.name, sizeof(_fs3ImgInfo.ext_info.name), "%s", image_info.name);
-        snprintf(_fs3ImgInfo.ext_info.description, sizeof(_fs3ImgInfo.ext_info.description), "%s",
+        snprintf(_fsCommonInfo.ext_info.name, sizeof(_fsCommonInfo.ext_info.name), "%s", image_info.name);
+        snprintf(_fsCommonInfo.ext_info.description, sizeof(_fsCommonInfo.ext_info.description), "%s",
                  image_info.description);
-        snprintf(_fs3ImgInfo.ext_info.prs_name, sizeof(_fs3ImgInfo.ext_info.prs_name), "%s", image_info.prs_name);
+        snprintf(_fsCommonInfo.ext_info.prs_name, sizeof(_fsCommonInfo.ext_info.prs_name), "%s", image_info.prs_name);
     }
 
-    _fs3ImgInfo.ext_info.mcc_en = image_info.mcc_en;
-    _fs3ImgInfo.ext_info.security_mode =
-      (_fs3ImgInfo.ext_info.security_mode | ((image_info.mcc_en == 1) ? SMM_MCC_EN : 0) |
+    _fsCommonInfo.ext_info.mcc_en = image_info.mcc_en;
+    _fsCommonInfo.ext_info.security_mode =
+      (_fsCommonInfo.ext_info.security_mode | ((image_info.mcc_en == 1) ? SMM_MCC_EN : 0) |
        ((image_info.debug_fw == 1) ? SMM_DEBUG_FW : 0) | ((image_info.signed_fw == 1) ? SMM_SIGNED_FW : 0) |
        ((image_info.secure_fw == 1) ? SMM_SECURE_FW : 0));
 
-    _fs3ImgInfo.runFromAny = image_info.image_size.run_from_any;
-    _fs3ImgInfo.logStep = image_info.image_size.log_step;
+    _fsCommonInfo.runFromAny = image_info.image_size.run_from_any;
+    _fsCommonInfo.logStep = image_info.image_size.log_step;
 
     const u_int32_t* swId = (u_int32_t*)NULL;
     MLXFWOPS_LOG_DEBUG("_fwImgInfo.supportedHwId[0]=0x%x", _fwImgInfo.supportedHwId[0]);
@@ -288,7 +233,7 @@ bool Fs3Operations::GetImageInfo(u_int8_t* buff)
         }
     }
     _fwImgInfo.ext_info.encrypted_fw = image_info.encrypted_fw;
-    _fs3ImgInfo.ext_info.dev_sec_boot =
+    _fsCommonInfo.ext_info.dev_sec_boot =
       image_info.secure_boot; /* This field is set to '1' only for DK (dev keys) IPNs */
     return true;
 }
@@ -299,7 +244,7 @@ bool Fs3Operations::GetImgSigInfo(u_int32_t keypair_uuid[4])
     if (((keypair_uuid[0] != 0) || (keypair_uuid[1] != 0) || (keypair_uuid[2] != 0)) && (keypair_uuid[3] == 0) &&
         ((EXTRACT(keypair_uuid[2], 0, 16)) == 0))
     {
-        _fs3ImgInfo.ext_info.security_mode = (_fs3ImgInfo.ext_info.security_mode | SMM_DEV_FW);
+        _fsCommonInfo.ext_info.security_mode = (_fsCommonInfo.ext_info.security_mode | SMM_DEV_FW);
     }
     return true;
 }
@@ -319,40 +264,6 @@ bool Fs3Operations::GetImgSigInfo512(u_int8_t* buff)
 
     image_layout_image_signature_2_unpack(&fwSignature, buff);
     return GetImgSigInfo(fwSignature.keypair_uuid);
-}
-
-#define CHECK_DEV_INFO_NEW_FORMAT(info_st) (info_st.major_version == 2)
-#define CHECK_DEV_INFO_OLD_FORMAT(info_st) (info_st.major_version == 1)
-bool Fs3Operations::GetDevInfo(u_int8_t* buff)
-{
-    struct cibfw_device_info cib_dev_info;
-    image_layout_device_info device_info;
-    // same size, we can unpack to check version
-    cibfw_device_info_unpack(&cib_dev_info, buff);
-    // cibfw_device_info_dump(&dev_info, stdout);
-    if (IsExtendedGuidNumSupported() || CHECK_DEV_INFO_NEW_FORMAT(cib_dev_info))
-    {
-        image_layout_device_info_unpack(&device_info, buff);
-        CHECK_UID_STRUCTS_SIZE(_fs3ImgInfo.ext_info.fs3_uids_info.image_layout_uids, device_info.guids);
-        memcpy(&_fs3ImgInfo.ext_info.fs3_uids_info.image_layout_uids, &device_info.guids, sizeof(device_info.guids));
-        strcpy(_fwImgInfo.ext_info.vsd, device_info.vsd);
-        _fs3ImgInfo.ext_info.fs3_uids_info.guid_format = IMAGE_LAYOUT_UIDS;
-        _fwImgInfo.ext_info.vsd_sect_found = true;
-    }
-    else if (CHECK_DEV_INFO_OLD_FORMAT(cib_dev_info))
-    {
-        CHECK_UID_STRUCTS_SIZE(_fs3ImgInfo.ext_info.fs3_uids_info.cib_uids, cib_dev_info.guids);
-        memcpy(&_fs3ImgInfo.ext_info.fs3_uids_info.cib_uids, &cib_dev_info.guids, sizeof(cib_dev_info.guids));
-        strcpy(_fwImgInfo.ext_info.vsd, cib_dev_info.vsd);
-        _fs3ImgInfo.ext_info.fs3_uids_info.guid_format = CIB_UIDS;
-        _fwImgInfo.ext_info.vsd_sect_found = true;
-    }
-    else
-    {
-        return errmsg(MLXFW_UNKNOWN_SECT_VER_ERR, "Unknown DEV_INFO format version (%d.%d).",
-                      cib_dev_info.major_version, cib_dev_info.minor_version);
-    }
-    return true;
 }
 
 bool Fs3Operations::GetRomInfo(u_int8_t* buff, u_int32_t size)
@@ -798,9 +709,9 @@ bool Fs3Operations::FsIntQueryAux(bool readRom, bool quickQuery, bool ignoreDToc
     {
         _fwImgInfo.ext_info.dev_type = _fwImgInfo.ext_info.pci_device_id;
     }
-    if ((_signatureExists == 0) || (_publicKeysExists == 0) || (_fs3ImgInfo.ext_info.mcc_en == 0))
+    if ((_signatureExists == 0) || (_publicKeysExists == 0) || (_fsCommonInfo.ext_info.mcc_en == 0))
     {
-        _fs3ImgInfo.ext_info.security_mode = SM_NONE;
+        _fsCommonInfo.ext_info.security_mode = SM_NONE;
     }
     _internalQueryPerformed = true;
     return true;
@@ -918,7 +829,7 @@ bool Fs3Operations::FwQuery(fw_info_t* fwInfo,
     reg_access_status_t rc = ME_ERROR;
     struct reg_access_hca_mgir_ext mgir;
 
-    /* FsIntQueryAux will update _fwImgInfo.ext_info & _fs3ImgInfo.ext_info */
+    /* FsIntQueryAux will update _fwImgInfo.ext_info & _fsCommonInfo.ext_info */
     if (!FsIntQueryAux(readRom, quickQuery, ignoreDToc, verbose))
     {
         return false;
@@ -939,7 +850,7 @@ bool Fs3Operations::FwQuery(fw_info_t* fwInfo,
     mfile* mf = getMfileObj();
 
     memcpy(&(fwInfo->fw_info), &(_fwImgInfo.ext_info), sizeof(fw_info_com_t));
-    memcpy(&(fwInfo->fs3_info), &(_fs3ImgInfo.ext_info), sizeof(fs3_info_t));
+    memcpy(&(fwInfo->fs3_info), &(_fsCommonInfo.ext_info), sizeof(fs3_info_t));
     fwInfo->fw_type = FwType();
     if ((rc == ME_OK) && (mf != NULL) && mf->flags & MDEVS_IB)
     { /* for IB devices only */
@@ -958,7 +869,7 @@ u_int8_t Fs3Operations::FwType()
 bool Fs3Operations::FwInit()
 {
     FwInitCom();
-    memset(&_fs3ImgInfo.ext_info, 0, sizeof(_fs3ImgInfo.ext_info));
+    memset(&_fsCommonInfo.ext_info, 0, sizeof(_fsCommonInfo.ext_info));
     _fs3ImgInfo.numOfItocs = 0;
     for (int i = 0; i < MAX_TOCS_NUM; i++)
     {
@@ -1436,8 +1347,8 @@ bool Fs3Operations::FsBurnAux(FwOperations* imgops, ExtBurnParams& burnParams)
                 struct tools_open_image_info tools_image_info;
                 tools_open_image_info_unpack(&tools_image_info, &imageInfoSect[0]);
                 strncpy(tools_image_info.psid, _fwImgInfo.ext_info.psid, PSID_LEN + 1);
-                strncpy(tools_image_info.name, _fs3ImgInfo.ext_info.name, NAME_LEN);
-                strncpy(tools_image_info.description, _fs3ImgInfo.ext_info.description, DESCRIPTION_LEN);
+                strncpy(tools_image_info.name, _fsCommonInfo.ext_info.name, NAME_LEN);
+                strncpy(tools_image_info.description, _fsCommonInfo.ext_info.description, DESCRIPTION_LEN);
                 tools_open_image_info_pack(&tools_image_info, &imageInfoSect[0]);
             }
             /* re-insert it into the image: */
@@ -1686,7 +1597,7 @@ bool Fs3Operations::FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc,
         return false;
     }
 
-    if (!_fs3ImgInfo.ext_info.guids_override_en)
+    if (!_fsCommonInfo.ext_info.guids_override_en)
     {
         return errmsg("guids override is not set, cannot set device guids");
     }
@@ -1749,7 +1660,7 @@ bool Fs3Operations::FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc,
 
 bool Fs3Operations::isOld4MBImage(FwOperations* imageOps)
 {
-    return (!(*(Fs3Operations*)imageOps)._fs3ImgInfo.runFromAny &&
+    return (!(*(Fs3Operations*)imageOps)._fsCommonInfo.runFromAny &&
             ((*(Fs3Operations*)imageOps)._fwImgInfo.cntxLog2ChunkSize == 0x16));
 }
 
@@ -1777,11 +1688,11 @@ bool Fs3Operations::FwCheckIfWeCanBurnWithFwControl(FwOperations* imageOps)
         }
     }
 
-    bool result = ((_fs3ImgInfo.runFromAny && (_fwImgInfo.imgStart == 0x0 || _fwImgInfo.imgStart == 0x400000)) &&
+    bool result = ((_fsCommonInfo.runFromAny && (_fwImgInfo.imgStart == 0x0 || _fwImgInfo.imgStart == 0x400000)) &&
                    isOld4MBImage(imageOps)) ||
-                  (!_fs3ImgInfo.runFromAny && ((Fs3Operations*)imageOps)->_fwImgInfo.cntxLog2ChunkSize == 0x17) ||
+                  (!_fsCommonInfo.runFromAny && ((Fs3Operations*)imageOps)->_fwImgInfo.cntxLog2ChunkSize == 0x17) ||
                   (_fwParams.hndlType == FHT_UEFI_DEV && (!(dev_info_img.fs3_info.security_mode & SMM_SIGNED_FW)) &&
-                   (_fs3ImgInfo.ext_info.security_mode & SMM_SIGNED_FW));
+                   (_fsCommonInfo.ext_info.security_mode & SMM_SIGNED_FW));
 
     /* printf("-D- result=%d\n", result); */
     return result;
@@ -1802,7 +1713,7 @@ bool Fs3Operations::FwCheckIf8MBShiftingNeeded(FwOperations* imageOps, const Ext
      * From above we can conclude that if the running FW is old (runFromAny==0) then
      * no need for shifting.
      */
-    if (!_fs3ImgInfo.runFromAny)
+    if (!_fsCommonInfo.runFromAny)
     {
         return false;
     }
@@ -3920,7 +3831,7 @@ const char* Fs3Operations::FwGetResetRecommandationStr()
 
 const char* Fs3Operations::FwGetReSignMsgStr()
 {
-    if (!_ioAccess->is_flash() && (_fs3ImgInfo.ext_info.security_mode & SMM_SIGNED_FW))
+    if (!_ioAccess->is_flash() && (_fsCommonInfo.ext_info.security_mode & SMM_SIGNED_FW))
     {
         return RESIGN_MSG;
     }

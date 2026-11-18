@@ -35,6 +35,7 @@
 
 #pragma once
 
+#include <functional>
 #ifdef MFT_LEGACY_BUILD
 #include "mlxfwops/lib/fw_ops.h"
 #include "mlxfwops/lib/bch/csh_imp.h"
@@ -100,6 +101,37 @@ public:
     bool FwShiftDevData(PrintCallBack progressFunc = (PrintCallBack)NULL) override;
     bool FwCalcMD5(u_int8_t md5sum[16]) override;
     const char* FwGetResetRecommandationStr() override;
+    bool GetCshSectionOffset(PartitionType partitionType, CshSectionType sectionType, size_t& CshSectionOffset);
+    bool GetPartrionEntryInfo(PartitionType partitionType, size_t& sectionOffset, size_t& sectionSize);
+    bool ReadPartitionInfo(PartitionType partitionType, vector<u_int8_t>& data);
+    bool ReadCshSectionInfo(PartitionType partitionType,
+                            CshSectionType sectionType,
+                            size_t sectionSize,
+                            vector<u_int8_t>& data);
+
+    virtual bool GetMfgInfo(u_int8_t* buff = nullptr) override;
+    virtual bool GetDevInfo(u_int8_t* buff = nullptr) override;
+    virtual bool GetImageInfo();
+
+    class PartitionValidator
+    {
+    public:
+        PartitionValidator() : _validator(&defaultValidator) {}
+
+        explicit PartitionValidator(PartitionType partitionType);
+
+        bool validate(const PartitionTableEntry& entry, FBase* ioAccess) const;
+
+    private:
+        std::function<bool(const PartitionTableEntry&, FBase*)> _validator;
+
+        static bool defaultValidator(const PartitionTableEntry& entry, FBase* ioAccess)
+        {
+            return true;
+        } // static because it's used as a function pointer
+
+        static bool validateDevInfo(const PartitionTableEntry& entry, FBase* ioAccess);
+    };
 
 protected:
     bool Unsupported(const string& msg)
@@ -116,6 +148,7 @@ private:
 
     void UpdatePartitionTable(bool l1pt);
     bool IsL2ptSection(CshComponentID cshId);
+    bool IsL2ptSection(PartitionType partitionType);
 
     void PrintDotSection(VerifyCallBack verifyCallBackFunc);
     void PrintSectionRange(VerifyCallBack verifyCallBackFunc,

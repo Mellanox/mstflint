@@ -85,7 +85,7 @@
     {                                                                             \
         if (!_ioAccess->is_flash())                                               \
         {                                                                         \
-            if (!(_fs3ImgInfo.ext_info.security_mode & SMM_SIGNED_FW))            \
+            if (!(_fsCommonInfo.ext_info.security_mode & SMM_SIGNED_FW))            \
             {                                                                     \
                 PRINT_PROGRESS(callBackF, (char*)"-I- Updating image digest.\n"); \
                 if (!FwInsertSHA256((PrintCallBack)NULL))                         \
@@ -253,8 +253,6 @@ protected:
       GetImageInfoFromSection(u_int8_t* buff, u_int8_t sect_type, u_int32_t sect_size, u_int8_t check_support_only = 0);
     bool IsGetInfoSupported(u_int8_t sect_type);
     bool IsFs3SectionReadable(u_int8_t type, QueryOptions queryOptions);
-    virtual bool GetMfgInfo(u_int8_t* buff);
-    bool GetDevInfo(u_int8_t* buff);
     virtual bool GetImageInfo(u_int8_t* buff);
     bool GetRomInfo(u_int8_t* buff, u_int32_t size);
     bool GetImgSigInfo(u_int32_t keypair_uuid[4]);
@@ -321,7 +319,6 @@ protected:
 
     struct Fs3ImgInfo
     {
-        fs3_info_t ext_info;
         int numOfItocs;
         struct toc_info tocArr[MAX_TOCS_NUM];
         u_int8_t itocHeader[CIBFW_ITOC_HEADER_SIZE];
@@ -329,8 +326,6 @@ protected:
         u_int32_t itocAddr;
         u_int32_t smallestAbsAddr;
         u_int32_t sizeOfImgData;
-        bool runFromAny;
-        u_int8_t logStep;
     };
 
     static const u_int32_t _itocSignature[4];

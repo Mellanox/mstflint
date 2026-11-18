@@ -34,7 +34,10 @@
  */
 
 #include "fs6_ops.h"
+#include "nvtoolslogger/NvToolsLogger.h"
+#include "fs3_ops.h"
 #include "bch/csh_imp.h"
+#include "tools_layouts/fs6_image_layout_layouts.h"
 #include "json/writer.h"
 
 #ifdef MFT_LEGACY_BUILD
@@ -285,6 +288,7 @@ bool Fs6Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
     PrintSectionRange(verifyCallBackFunc, _l1ptOffset, _l1ptOffset + _l1pt.Size() - 1, _l1pt.Size(),
                       "L1 Partition Table");
 
+    int devInfoVaildAmount = 0;
     for (auto entry : _l1pt.GetEntries())
     {
         bool isKnownPartition = true;
@@ -342,6 +346,31 @@ bool Fs6Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
                     }
                 }
             }
+            else if (PartitionType(entry.GetSectionType()) == PartitionType::PT_DEV_INFO)
+            {
+                vector<u_int8_t> dev_info_data;
+                dev_info_data.resize(entry.GetSectionSize());
+                if (!_ioAccess->read(entry.GetStartOffset(), dev_info_data.data(), entry.GetSectionSize()))
+                {
+                    return errmsg("%s - read error (%s)\n", "DEV_INFO", (*_ioAccess).err());
+                }
+
+                bool isDevInfoValid = FwOperations::CheckDevInfoSignature((u_int32_t*)dev_info_data.data());
+                if (isDevInfoValid)
+                {
+                    devInfoVaildAmount++;
+                    if (devInfoVaildAmount == 1)
+                    {
+                        PrintSectionRange(verifyCallBackFunc, entry.GetStartOffset(),
+                                          entry.GetStartOffset() + entry.GetSectionSize() - 1, entry.GetSectionSize(),
+                                          partitionType, "L1 Partition");
+                    }
+                }
+                if (devInfoVaildAmount > 1)
+                {
+                    return errmsg("Multiple DEV_INFO sections found with valid signatures");
+                }
+            }
             else
             {
                 PrintSectionRange(verifyCallBackFunc, entry.GetStartOffset(),
@@ -355,6 +384,11 @@ bool Fs6Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
                               entry.GetStartOffset() + entry.GetSectionSize() - 1, entry.GetSectionSize(),
                               partitionType, "L1 Partition");
         }
+    }
+
+    if (devInfoVaildAmount == 0)
+    {
+        return errmsg("No DEV_INFO section found with valid signature");
     }
 
     return true;
@@ -568,6 +602,290 @@ const char* Fs6Operations::FwGetResetRecommandationStr()
     return REBOOT_REQUIRED_STR;
 }
 
+bool Fs6Operations::GetPartrionEntryInfo(PartitionType partitionType, size_t& sectionOffset, size_t& sectionSize)
+{
+    PartitionValidator validator(partitionType);
+    bool isL2pt = IsL2ptSection(partitionType);
+
+    const PartitionTable* pt = isL2pt ? &_l2pt : &_l1pt;
+    size_t baseOffset = isL2pt ? _l2ptOffset : 0;
+
+    for (auto entry : pt->GetEntries())
+    {
+        if ((PartitionType)entry.GetSectionType() == partitionType)
+        {
+            if (validator.validate(entry, _ioAccess))
+            {
+                sectionOffset = baseOffset + entry.GetStartOffset();
+                sectionSize = entry.GetSectionSize();
+                return true;
+            }
+        }
+    }
+
+    MLXFWOPS_LOG_DEBUG("Fs6Operations::GetPartrionEntryInfo partitionType %d not found or validation failed", (int)partitionType);
+    return errmsg("Partition type 0x%x not found or validation failed", (int)partitionType);
+}
+
+bool Fs6Operations::ReadPartitionInfo(PartitionType partitionType, vector<u_int8_t>& data)
+{
+    size_t section_offset;
+    size_t section_size;
+    if (!GetPartrionEntryInfo(partitionType, section_offset, section_size))
+    {
+        return false;
+    }
+
+    string partitionName = ToString(partitionType);
+    MLXFWOPS_LOG_DEBUG("Fs6Operations::ReadPartitionInfo %s_section_offset=0x%zx, %s_section_size=0x%zx", partitionName.c_str(),
+             section_offset, partitionName.c_str(), section_size);
+
+    data.resize(section_size);
+    if (!_ioAccess->read(section_offset, data.data(), section_size))
+    {
+        return errmsg("%s - read error (%s)\n", partitionName.c_str(), (*_ioAccess).err());
+    }
+
+    return true;
+}
+
+bool Fs6Operations::GetDevInfo(u_int8_t* buff)
+{
+    vector<u_int8_t> devInfoData;
+    if (!ReadPartitionInfo(PartitionType::PT_DEV_INFO, devInfoData))
+    {
+        return false;
+    }
+
+    return FwOperations::GetDevInfo(devInfoData.data());
+}
+
+bool Fs6Operations::GetMfgInfo(u_int8_t* buff)
+{
+    vector<u_int8_t> mfg_info_data;
+    if (!ReadPartitionInfo(PartitionType::PT_MFG_INFO, mfg_info_data))
+    {
+        return false;
+    }
+
+    if (!FwOperations::GetMfgInfo(mfg_info_data.data()))
+    {
+        return false;
+    }
+
+    // Convert from FS6 hi/lo format to FS3 64-bit format
+    fs6_image_layout_mfg_info fs6_mfg_info;
+    fs6_image_layout_mfg_info_unpack(&fs6_mfg_info, mfg_info_data.data());
+
+    _fsCommonInfo.ext_info.orig_fs3_uids_info.image_layout_uids.base_guid.uid =
+      ((u_int64_t)fs6_mfg_info.guids.guids.uid.hi << 32) | fs6_mfg_info.guids.guids.uid.lo;
+
+    _fsCommonInfo.ext_info.orig_fs3_uids_info.image_layout_uids.base_mac.uid =
+      ((u_int64_t)fs6_mfg_info.guids.macs.uid.hi << 32) | fs6_mfg_info.guids.macs.uid.lo;
+
+    return true;
+}
+
+bool Fs6Operations::ReadCshSectionInfo(PartitionType partitionType,
+                                       CshSectionType sectionType,
+                                       size_t sectionSize,
+                                       vector<u_int8_t>& data)
+{
+    size_t section_addr;
+    if (!GetCshSectionOffset(partitionType, sectionType, section_addr))
+    {
+        return false; // Error already set by GetCshSectionOffset
+    }
+
+    MLXFWOPS_LOG_DEBUG("Fs6Operations::ReadCshSectionInfo section_addr = 0x%zx, section_size = 0x%zx", section_addr, sectionSize);
+
+    data.resize(sectionSize);
+    if (!_ioAccess->read(section_addr, data.data(), sectionSize))
+    {
+        return errmsg("CSH_SECTION - read error (%s)\n", (*_ioAccess).err());
+    }
+
+    return true;
+}
+
+bool Fs6Operations::GetImageInfo()
+{
+    MLXFWOPS_LOG_DEBUG("Fs6Operations::GetImageInfo");
+
+    vector<u_int8_t> image_info_data;
+    if (!ReadCshSectionInfo(PartitionType::PT_SWITCH_FWS,
+                            CshSectionType::CSH_SECTION_IMAGE_INFO,
+                            FS6_IMAGE_LAYOUT_IMAGE_INFO_SIZE,
+                            image_info_data))
+    {
+        return false;
+    }
+
+    struct fs6_image_layout_image_info image_info;
+    fs6_image_layout_image_info_unpack(&image_info, image_info_data.data());
+
+    if (image_info.major_version != 0)
+    {
+        return errmsg(MLXFW_UNKNOWN_SECT_VER_ERR, "Unknown IMAGE_INFO format version (%d.%d).",
+                      image_info.major_version, image_info.minor_version);
+    }
+
+    _fwImgInfo.ext_info.image_info_minor_version = image_info.minor_version;
+    _fwImgInfo.ext_info.image_info_major_version = image_info.major_version;
+
+    _fwImgInfo.ext_info.fw_ver[0] = image_info.FW_VERSION.MAJOR;
+    _fwImgInfo.ext_info.fw_ver[1] = image_info.FW_VERSION.MINOR;
+    _fwImgInfo.ext_info.fw_ver[2] = image_info.FW_VERSION.SUBMINOR;
+
+    // _fwImgInfo.ext_info.isfu_major = image_info.module_versions.mad.major; // this field doesn't exist in
+    // fs6_image_layout_image_info
+
+    _fwImgInfo.ext_info.mic_ver[0] = image_info.mic_version.MAJOR;
+    _fwImgInfo.ext_info.mic_ver[1] = image_info.mic_version.MINOR;
+    _fwImgInfo.ext_info.mic_ver[2] = image_info.mic_version.SUBMINOR;
+
+    _fwImgInfo.ext_info.fw_rel_date[0] = (u_int16_t)image_info.FW_VERSION.Day;
+    _fwImgInfo.ext_info.fw_rel_date[1] = (u_int16_t)image_info.FW_VERSION.Month;
+    _fwImgInfo.ext_info.fw_rel_date[2] = (u_int16_t)image_info.FW_VERSION.Year;
+
+    _fwImgInfo.ext_info.fw_rel_time[0] = (u_int16_t)image_info.FW_VERSION.Hour;
+    _fwImgInfo.ext_info.fw_rel_time[1] = (u_int16_t)image_info.FW_VERSION.Minutes;
+    _fwImgInfo.ext_info.fw_rel_time[2] = (u_int16_t)image_info.FW_VERSION.Seconds;
+
+    _fwImgInfo.ext_info.burn_image_size = image_info.burn_image_size;
+    _fwImgInfo.ext_info.dtoc_offset = image_info.dtoc_offset;
+    // _fwImgInfo.ext_info.sku = (device_sku)image_info.psc_sku; // this field doesn't exist in
+    // fs6_image_layout_image_info
+
+    // assuming number of supported_hw_id < MAX_NUM_SUPP_HW_IDS
+    memcpy(_fwImgInfo.supportedHwId, image_info.supported_hw_id, sizeof(image_info.supported_hw_id));
+    _fwImgInfo.supportedHwIdNum = (sizeof(image_info.supported_hw_id)) / sizeof(image_info.supported_hw_id[0]);
+
+    // _fwImgInfo.ext_info.pci_device_id = image_info.pci_device_id; // this field doesn't exist in
+    // fs6_image_layout_image_info
+
+    strcpy(_fsCommonInfo.ext_info.image_vsd, image_info.vsd);
+    strcpy(_fwImgInfo.ext_info.psid, image_info.psid);
+    strcpy(_fwImgInfo.ext_info.product_ver, image_info.prod_ver);
+
+    // get name, prs name and description
+    if (image_info.minor_version == 2) // TODO: took it from original getImageInfo - do we need it here too? same
+                                       // offsets as in fs6's layout so seems redundent
+    {
+        struct tools_open_image_info tools_image_info;
+        memset(&tools_image_info, 0, sizeof(tools_image_info));
+        tools_open_image_info_unpack(&tools_image_info, image_info_data.data());
+        strncpy(_fsCommonInfo.ext_info.name, tools_image_info.name, strlen(tools_image_info.name));
+        strncpy(_fsCommonInfo.ext_info.description, tools_image_info.description, strlen(tools_image_info.description));
+        strncpy(_fsCommonInfo.ext_info.prs_name, tools_image_info.prs_name, strlen(tools_image_info.prs_name));
+    }
+    else if (image_info.minor_version == 3)
+    {
+        strncpy(_fsCommonInfo.ext_info.name, image_info.name, strlen(image_info.name));
+        strncpy(_fsCommonInfo.ext_info.description, image_info.description, strlen(image_info.description));
+        strncpy(_fsCommonInfo.ext_info.prs_name, image_info.prs_name, strlen(image_info.prs_name));
+    }
+
+    _fsCommonInfo.ext_info.mcc_en = image_info.mcc_en;
+    _fsCommonInfo.ext_info.security_mode =
+      (_fsCommonInfo.ext_info.security_mode | ((image_info.mcc_en == 1) ? SMM_MCC_EN : 0) |
+       ((image_info.debug_fw == 1) ? SMM_DEBUG_FW : 0) | ((image_info.signed_fw == 1) ? SMM_SIGNED_FW : 0) |
+       ((image_info.secure_fw == 1) ? SMM_SECURE_FW : 0));
+
+    _fsCommonInfo.runFromAny = image_info.image_size.run_from_any;
+    _fsCommonInfo.logStep = image_info.image_size.log_step;
+    _fsCommonInfo.ext_info.ini_file_version = image_info.ini_file_num;
+
+    const u_int32_t* swId = (u_int32_t*)NULL;
+    MLXFWOPS_LOG_DEBUG("Fs6Operations::GetImageInfo _fwImgInfo.supportedHwId[0]=0x%x", _fwImgInfo.supportedHwId[0]);
+    if (!getInfoFromHwDevid(_fwImgInfo.supportedHwId[0], _fwImgInfo.ext_info.chip_type, &swId))
+    {
+        return false;
+    }
+
+    // copy the vsd to the branch ver only for switches. Not valid for NICs.
+    if (!IS_HCA(_fwImgInfo.ext_info.chip_type))
+    {
+        if (VerifyBranchFormat(image_info.vsd))
+        {
+            strncpy(_fwImgInfo.ext_info.branch_ver, image_info.vsd, BRANCH_LEN);
+            _fwImgInfo.ext_info.branch_ver[BRANCH_LEN - 1] = '\0';
+        }
+    }
+
+    _fwImgInfo.ext_info.encrypted_fw = image_info.encrypted_fw;
+
+    return true;
+}
+
+bool Fs6Operations::GetCshSectionOffset(PartitionType partitionType,
+                                        CshSectionType sectionType,
+                                        size_t& CshSectionOffset)
+{
+    // Find the partition table entry
+    MLXFWOPS_LOG_DEBUG("Fs6Operations::GetCshSectionOffset partitionType = 0x%x, sectionType = 0x%x", (int)partitionType,
+             (int)sectionType);
+    size_t partitionOffset = 0;
+
+    bool isL2pt = IsL2ptSection(ToCshId(partitionType));
+    if (isL2pt)
+    {
+        MLXFWOPS_LOG_DEBUG("Fs6Operations::GetCshSectionOffset isL2pt");
+        std::vector<PartitionTableEntry> l2Entries = _l2pt.GetEntries();
+        auto l2Entry = find_if(l2Entries.begin(), l2Entries.end(),
+                               [partitionType](const PartitionTableEntry& entry)
+                               { return (PartitionType)entry.GetSectionType() == partitionType; });
+
+        if (l2Entry == l2Entries.end())
+        {
+            return errmsg("Partition Table Entry for type 0x%x not found", (int)partitionType);
+        }
+        partitionOffset =
+          _l2ptOffset + l2Entry->GetStartOffset(); // in L2PT the offfset is relative to the start of L2PT
+    }
+    else
+    {
+        MLXFWOPS_LOG_DEBUG("Fs6Operations::GetCshSectionOffset isL1pt");
+        std::vector<PartitionTableEntry> l1Entries = _l1pt.GetEntries();
+        auto l1Entry = find_if(l1Entries.begin(), l1Entries.end(),
+                               [partitionType](const PartitionTableEntry& entry)
+                               { return (PartitionType)entry.GetSectionType() == partitionType; });
+
+        if (l1Entry == l1Entries.end())
+        {
+            return errmsg("Partition Table Entry for type 0x%x not found", (int)partitionType);
+        }
+        partitionOffset = l1Entry->GetStartOffset(); // in L1PT the offfset is absolute
+    }
+
+    MLXFWOPS_LOG_DEBUG("Fs6Operations::GetCshSectionOffset partitionOffset = 0x%zx", partitionOffset);
+
+    // Find the CSH component
+    auto cshComponent =
+      find_if(_cshComponents.begin(), _cshComponents.end(),
+              [partitionType](const pair<PartitionType, CSH>& entry) { return entry.first == partitionType; });
+
+    if (cshComponent == _cshComponents.end())
+    {
+        return errmsg("CSH component for partition type 0x%x not found", (int)partitionType);
+    }
+
+    // Find the specific section within the CSH component
+    auto section = find_if(cshComponent->second.GetSections().begin(),
+                           cshComponent->second.GetSections().end(),
+                           [sectionType](const BinarySectionMetadata& section)
+                           { return (CshSectionType)section.GetSectionType() == sectionType; });
+
+    if (section == cshComponent->second.GetSections().end())
+    {
+        return errmsg("Section type 0x%x not found in CSH component", (int)sectionType);
+    }
+
+    // Calculate the final section offset
+    CshSectionOffset = partitionOffset + section->GetSectionOffset();
+    return true;
+}
+
 bool Fs6Operations::FwQuery(fw_info_t* fwInfo, bool, bool, bool, bool, bool)
 {
     if (!FwVerify((VerifyCallBack) nullptr))
@@ -575,7 +893,15 @@ bool Fs6Operations::FwQuery(fw_info_t* fwInfo, bool, bool, bool, bool, bool)
         return false;
     }
 
+    if (!GetImageInfo() || !GetMfgInfo() || !GetDevInfo())
+    {
+        return false;
+    }
+
     fwInfo->fw_type = FwType();
+
+    memcpy(&(fwInfo->fw_info), &(_fwImgInfo.ext_info), sizeof(fw_info_com_t));
+    memcpy(&(fwInfo->fs3_info), &(_fsCommonInfo.ext_info), sizeof(fs3_info_t));
 
     return true;
 }
@@ -614,6 +940,17 @@ void Fs6Operations::UpdatePartitionTable(bool l1pt)
 bool Fs6Operations::IsL2ptSection(CshComponentID cshId)
 {
     if (cshId != CshComponentID::ROM_IMGS && cshId != CshComponentID::Unknown)
+    {
+        return true;
+    }
+    return false;
+}
+
+bool Fs6Operations::IsL2ptSection(PartitionType partitionType)
+{
+    if (partitionType == PartitionType::PT_NV_FWS || partitionType == PartitionType::PT_OEM_FWS ||
+        partitionType == PartitionType::PT_BCT_DTB || partitionType == PartitionType::PT_SWITCH_FWS ||
+        partitionType == PartitionType::PT_SBD_FW)
     {
         return true;
     }
@@ -719,4 +1056,38 @@ void Fs6Operations::PrintSectionRange(VerifyCallBack verifyCallBackFunc,
        << std::setfill('0') << endAddr << " (0x" << std::setw(6) << std::setfill('0') << size << ")/ " << std::left
        << std::setw(25) << std::setfill(' ') << sectionType << " | " << suffix << std::endl;
     report_callback(verifyCallBackFunc, ss.str().c_str());
+}
+
+bool Fs6Operations::PartitionValidator::validateDevInfo(const PartitionTableEntry& entry, FBase* ioAccess)
+{
+    vector<u_int8_t> dev_info_data;
+    dev_info_data.resize(entry.GetSectionSize());
+    if (!ioAccess->read(entry.GetStartOffset(), dev_info_data.data(), entry.GetSectionSize()))
+    {
+        return false;
+    }
+    return FwOperations::CheckDevInfoSignature((u_int32_t*)dev_info_data.data());
+}
+
+Fs6Operations::PartitionValidator::PartitionValidator(PartitionType partitionType)
+{
+    MLXFWOPS_LOG_DEBUG("Fs6Operations::PartitionValidator, partitionType 0x%x", (int)partitionType);
+
+    switch (partitionType)
+    {
+        case PartitionType::PT_DEV_INFO:
+            _validator = &validateDevInfo;
+            break;
+
+            // Add more partition-specific validations here
+
+        default:
+            _validator = &defaultValidator;
+            break;
+    }
+}
+
+bool Fs6Operations::PartitionValidator::validate(const PartitionTableEntry& entry, FBase* ioAccess) const
+{
+    return _validator(entry, ioAccess);
 }

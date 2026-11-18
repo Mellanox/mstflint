@@ -4402,12 +4402,6 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
     bool isStripedImage = ops->GetIsReducedImage();
 
     printf("Image type:            %s\n", fwImgTypeToStr(fwInfo.fw_type));
-
-    // TODO: remove this once query is supported for fs6
-    if (isFs6)
-    {
-        return FLINT_SUCCESS;
-    }
     if (fwInfo.fw_info.isfu_major)
     {
         printf("FW ISSU Version:       %d\n", fwInfo.fw_info.isfu_major);
@@ -4552,7 +4546,7 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
         printf(FLINT_NOT_MLNX_FW_WARNING, fwInfo.fw_info.vsd_vendor_id);
     }
 
-    if (isFs3 || isFs4 || isFsCtrl)
+    if (isFs3 || isFs4 || isFs6 || isFsCtrl)
     {
         u_int32_t security_mode = fwInfo.fs3_info.security_mode;
         if (_flintParams.device_specified && ops->IsCRDTDebugSessionActive())
@@ -4568,7 +4562,7 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
         printf("Security Ver:          %d\n", fwInfo.fs3_info.image_security_version);
     }
 
-    if ((isFs3 || isFs4 || isFsCtrl) && fullQuery)
+    if ((isFs3 || isFs4 || isFs6 || isFsCtrl) && fullQuery)
     {
         string updateMethod = "Legacy";
         if (fwInfo.fs3_info.security_mode & SMM_MCC_EN)

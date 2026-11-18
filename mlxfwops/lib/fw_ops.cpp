@@ -50,6 +50,7 @@ const char* file_handle_type_to_str(fw_hndl_type_t type);
 #include "nvtoolslogger/nvtoolslogger_c.h"
 #include "fs_pldm.h"
 #include "fs6_ops.h"
+#include "mft_utils/mft_utils.h"
 #include "fsctrl_ops.h"
 #include "fs_comps_factory.h"
 #include "dev_mgt/tools_dev_types.h"
@@ -401,6 +402,7 @@ bool FwOperations::FwVerifyAdv(ExtVerifyParams& verifyParams)
 void FwOperations::FwInitCom()
 {
     memset(&_fwImgInfo, 0, sizeof(_fwImgInfo));
+    memset(&_fsCommonInfo.ext_info, 0, sizeof(_fsCommonInfo.ext_info));
 }
 
 void FwOperations::GetFwParams(fw_ops_params_t& fwParams)
@@ -2726,6 +2728,19 @@ bool FwOperations::FwSetForbiddenVersions(char* fname, PrintCallBack callBackFun
     return errmsg("FwSetForbiddenVersions not supported");
 }
 
+bool FwOperations::CheckDevInfoSignature(u_int32_t* buff)
+{
+    MLXFWOPS_LOG_DEBUG("FwOperations::CheckDevInfoSignature");
+    u_int32_t sig0 = buff[0], sig1 = buff[1], sig2 = buff[2], sig3 = buff[3];
+    TOCPU1(sig0);
+    TOCPU1(sig1);
+    TOCPU1(sig2);
+    TOCPU1(sig3);
+    std::vector<u_int32_t> a = {sig0, sig1, sig2, sig3};
+    std::vector<u_int32_t> b = {DEV_INFO_SIG0, DEV_INFO_SIG1, DEV_INFO_SIG2, DEV_INFO_SIG3};
+    return mft_utils::CompareNElements(a, b, 4);
+}
+
 const vector<pair<string, ComponentType>> FwOperations::GetStringToComponentEnum()
 {
     static const vector<pair<string, ComponentType>> stringToComponentEnum = {
@@ -3372,4 +3387,79 @@ u_int32_t CRSpaceRegisters::getRegister(u_int32_t address)
 bool FwOperations::getBFBComponentsVersions(std::map<std::string, std::string>&, bool)
 {
     return errmsg("getBFBComponentsVersions is not supported");
+}
+
+bool FwOperations::GetMfgInfo(u_int8_t* buff)
+{
+    // structs of the same size we can unpack either way
+    struct cibfw_mfg_info cib_mfg_info;
+    image_layout_mfg_info mfg_info;
+
+    cibfw_mfg_info_unpack(&cib_mfg_info, buff);
+    // cibfw_mfg_info_dump(&mfg_info, stdout);
+    if (IsExtendedGuidNumSupported() || CHECK_MFG_NEW_FORMAT(cib_mfg_info))
+    {
+        image_layout_mfg_info_unpack(&mfg_info, buff);
+        CHECK_UID_STRUCTS_SIZE(_fsCommonInfo.ext_info.orig_fs3_uids_info.image_layout_uids, mfg_info.guids);
+        memcpy(&_fsCommonInfo.ext_info.orig_fs3_uids_info.image_layout_uids, &mfg_info.guids, sizeof(mfg_info.guids));
+        strcpy(_fsCommonInfo.ext_info.orig_psid, mfg_info.psid);
+        _fsCommonInfo.ext_info.guids_override_en = mfg_info.guids_override_en;
+        _fsCommonInfo.ext_info.orig_fs3_uids_info.guid_format = IMAGE_LAYOUT_UIDS;
+    }
+    else if (CHECK_MFG_OLD_FORMAT(cib_mfg_info))
+    {
+        CHECK_UID_STRUCTS_SIZE(_fsCommonInfo.ext_info.orig_fs3_uids_info.cib_uids, cib_mfg_info.guids);
+        memcpy(&_fsCommonInfo.ext_info.orig_fs3_uids_info.cib_uids, &cib_mfg_info.guids, sizeof(cib_mfg_info.guids));
+        strcpy(_fsCommonInfo.ext_info.orig_psid, cib_mfg_info.psid);
+        _fsCommonInfo.ext_info.guids_override_en = cib_mfg_info.guids_override_en;
+        _fsCommonInfo.ext_info.orig_fs3_uids_info.guid_format = CIB_UIDS;
+    }
+    else
+    {
+        return errmsg(MLXFW_UNKNOWN_SECT_VER_ERR, "Unknown MFG_INFO format version (%d.%d).",
+                      cib_mfg_info.major_version, cib_mfg_info.minor_version);
+    }
+
+    if (cib_mfg_info.minor_version == 1)
+    {
+        // get orig_prs name
+        struct tools_open_mfg_info tools_mfg_info;
+        memset(&tools_mfg_info, 0, sizeof(tools_mfg_info));
+        tools_open_mfg_info_unpack(&tools_mfg_info, buff);
+        strncpy(_fsCommonInfo.ext_info.orig_prs_name, tools_mfg_info.orig_prs_name, FS3_PRS_NAME_LEN);
+        _fsCommonInfo.ext_info.orig_prs_name[FS3_PRS_NAME_LEN - 1] = '\0';
+    }
+    return true;
+}
+
+bool FwOperations::GetDevInfo(u_int8_t* buff)
+{
+    struct cibfw_device_info cib_dev_info;
+    image_layout_device_info device_info;
+    // same size, we can unpack to check version
+    cibfw_device_info_unpack(&cib_dev_info, buff);
+    // cibfw_device_info_dump(&dev_info, stdout);
+    if (IsExtendedGuidNumSupported() || CHECK_DEV_INFO_NEW_FORMAT(cib_dev_info))
+    {
+        image_layout_device_info_unpack(&device_info, buff);
+        CHECK_UID_STRUCTS_SIZE(_fsCommonInfo.ext_info.fs3_uids_info.image_layout_uids, device_info.guids);
+        memcpy(&_fsCommonInfo.ext_info.fs3_uids_info.image_layout_uids, &device_info.guids, sizeof(device_info.guids));
+        strcpy(_fwImgInfo.ext_info.vsd, device_info.vsd);
+        _fsCommonInfo.ext_info.fs3_uids_info.guid_format = IMAGE_LAYOUT_UIDS;
+        _fwImgInfo.ext_info.vsd_sect_found = true;
+    }
+    else if (CHECK_DEV_INFO_OLD_FORMAT(cib_dev_info))
+    {
+        CHECK_UID_STRUCTS_SIZE(_fsCommonInfo.ext_info.fs3_uids_info.cib_uids, cib_dev_info.guids);
+        memcpy(&_fsCommonInfo.ext_info.fs3_uids_info.cib_uids, &cib_dev_info.guids, sizeof(cib_dev_info.guids));
+        strcpy(_fwImgInfo.ext_info.vsd, cib_dev_info.vsd);
+        _fsCommonInfo.ext_info.fs3_uids_info.guid_format = CIB_UIDS;
+        _fwImgInfo.ext_info.vsd_sect_found = true;
+    }
+    else
+    {
+        return errmsg(MLXFW_UNKNOWN_SECT_VER_ERR, "Unknown DEV_INFO format version (%d.%d).",
+                      cib_dev_info.major_version, cib_dev_info.minor_version);
+    }
+    return true;
 }

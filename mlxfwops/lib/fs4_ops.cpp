@@ -65,14 +65,11 @@
 #endif // UEFI_BUILD
 
 #include "fs4_ops.h"
+#include "mft_utils/mft_utils.h"
 #include "fs3_ops.h"
 
 #define FS4_ENCRYPTED_LOG_CHUNK_SIZE 24
 
-#define DEV_INFO_SIG0 0x6d446576
-#define DEV_INFO_SIG1 0x496e666f
-#define DEV_INFO_SIG2 0x2342cafa
-#define DEV_INFO_SIG3 0xbacafe00
 
 #define GUID_TO_64(guid_st) (guid_st.l | (u_int64_t)guid_st.h << 32)
 
@@ -93,19 +90,6 @@ void Fs4Operations::FwCleanUp()
         delete _encrypted_image_io_access;
         _encrypted_image_io_access = (FImage*)NULL;
     }
-}
-
-bool Fs4Operations::CheckSignatures(u_int32_t a[], u_int32_t b[], int n)
-{
-    for (int i = 0; i < n; i++)
-    {
-        if (a[i] != b[i])
-        {
-            // printf("-D- a[%d]=%d b[%d]=%d", i, a[i], i, b[i]);
-            return false;
-        }
-    }
-    return true;
 }
 
 bool Fs4Operations::IsEncryptedDevice(bool& is_encrypted)
@@ -191,22 +175,10 @@ bool Fs4Operations::isEncrypted(bool& is_encrypted)
 
 bool Fs4Operations::CheckTocSignature(struct image_layout_itoc_header* itoc_header, u_int32_t first_signature)
 {
-    u_int32_t a[4] = {itoc_header->signature0, itoc_header->signature1, itoc_header->signature2, itoc_header->signature3};
-    u_int32_t b[4] = {first_signature, TOC_RAND1, TOC_RAND2, TOC_RAND3};
-    return CheckSignatures(a, b, 4);
-}
-
-bool Fs4Operations::CheckDevInfoSignature(u_int32_t* buff)
-{
-    u_int32_t sig0 = buff[0], sig1 = buff[1], sig2 = buff[2], sig3 = buff[3];
-    TOCPU1(sig0);
-    TOCPU1(sig1);
-    TOCPU1(sig2);
-    TOCPU1(sig3);
-    u_int32_t a[4] = {sig0, sig1, sig2, sig3};
-    u_int32_t b[4] = {DEV_INFO_SIG0, DEV_INFO_SIG1, DEV_INFO_SIG2, DEV_INFO_SIG3};
-    // printf("sig0=%x sig1=%x sig2=%x sig3=%x\n", sig0, sig1, sig2, sig3);
-    return CheckSignatures(a, b, 4);
+    std::vector<u_int32_t> a = {itoc_header->signature0, itoc_header->signature1, itoc_header->signature2,
+                                itoc_header->signature3};
+    std::vector<u_int32_t> b = {first_signature, TOC_RAND1, TOC_RAND2, TOC_RAND3};
+    return mft_utils::CompareNElements(a, b, 4);
 }
 
 // CodeView: move it to Base class
@@ -783,7 +755,7 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
                         // printf("-D-INSECTION sect_act_crc=%d sect_exp_crc=%d\n", sect_act_crc, sect_exp_crc);
                     }
 
-                    if (tocEntry.type != FS3_DEV_INFO || CheckDevInfoSignature((u_int32_t*)buff))
+                    if (tocEntry.type != FS3_DEV_INFO || FwOperations::CheckDevInfoSignature((u_int32_t*)buff))
                     {
                         // Check if a cache_line_crc section (Ex. MAIN_CODE) is encrypted (has 4B AUTH-TAG) or not (has
                         // 2B CRC)
@@ -813,7 +785,7 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
                             // printf("-D- toc type : 0x%.8x\n" , toc_entry.type);
                             GetSectData(tocArray->tocArr[section_index].section_data, (u_int32_t*)buff, tocEntry.size * 4);
                             bool isDevInfoSection = (tocEntry.type == FS3_DEV_INFO);
-                            bool isDevInfoValid = isDevInfoSection && CheckDevInfoSignature((u_int32_t*)buff);
+                            bool isDevInfoValid = isDevInfoSection && FwOperations::CheckDevInfoSignature((u_int32_t*)buff);
                             if (isDevInfoValid)
                             {
                                 validDevInfoCount++;
@@ -1328,7 +1300,7 @@ bool Fs4Operations::encryptedFwQuery(fw_info_t* fwInfo, bool quickQuery, bool ig
 
     _fwImgInfo.ext_info.is_failsafe = true;
     memcpy(&(fwInfo->fw_info), &(_fwImgInfo.ext_info), sizeof(fw_info_com_t));
-    memcpy(&(fwInfo->fs3_info), &(_fs3ImgInfo.ext_info), sizeof(fs3_info_t));
+    memcpy(&(fwInfo->fs3_info), &(_fsCommonInfo.ext_info), sizeof(fs3_info_t));
     fwInfo->fw_type = FwType();
 
     return true;
@@ -1365,7 +1337,7 @@ bool Fs4Operations::FwQuery(fw_info_t* fwInfo, bool readRom, bool isStripedImage
     }
 
     memcpy(&(fwInfo->fw_info), &(_fwImgInfo.ext_info), sizeof(fw_info_com_t));
-    memcpy(&(fwInfo->fs3_info), &(_fs3ImgInfo.ext_info), sizeof(fs3_info_t));
+    memcpy(&(fwInfo->fs3_info), &(_fsCommonInfo.ext_info), sizeof(fs3_info_t));
 
     return true;
 }
@@ -1437,8 +1409,8 @@ bool Fs4Operations::IsSecurityVersionAccessible(chip_type_t chip_type)
 bool Fs4Operations::QuerySecurityFeatures()
 {
     MLXFWOPS_LOG_DEBUG("_fwImgInfo.ext_info.chip_type = %d", _fwImgInfo.ext_info.chip_type);
-    _fs3ImgInfo.ext_info.image_security_version = _security_version;
-    _fs3ImgInfo.ext_info.device_security_version_access_method = NOT_VALID;
+    _fsCommonInfo.ext_info.image_security_version = _security_version;
+    _fsCommonInfo.ext_info.device_security_version_access_method = NOT_VALID;
     if (_ioAccess->is_flash())
     {
         try
@@ -1446,15 +1418,15 @@ bool Fs4Operations::QuerySecurityFeatures()
             if (IsLifeCycleAccessible(_fwImgInfo.ext_info.chip_type))
             {
                 CRSpaceRegisters crSpaceReg(getMfileObj(), _fwImgInfo.ext_info.chip_type);
-                _fs3ImgInfo.ext_info.life_cycle = crSpaceReg.getLifeCycle();
-                _fs3ImgInfo.ext_info.global_image_status = crSpaceReg.getGlobalImageStatus();
+                _fsCommonInfo.ext_info.life_cycle = crSpaceReg.getLifeCycle();
+                _fsCommonInfo.ext_info.global_image_status = crSpaceReg.getGlobalImageStatus();
 
-                if (CRSpaceRegisters::IsLifeCycleSecured(_fs3ImgInfo.ext_info.life_cycle))
+                if (CRSpaceRegisters::IsLifeCycleSecured(_fsCommonInfo.ext_info.life_cycle))
                 {
                     if (IsSecurityVersionAccessible(_fwImgInfo.ext_info.chip_type))
                     {
-                        _fs3ImgInfo.ext_info.device_security_version_gw = crSpaceReg.getSecurityVersion();
-                        _fs3ImgInfo.ext_info.device_security_version_access_method = DIRECT_ACCESS;
+                        _fsCommonInfo.ext_info.device_security_version_gw = crSpaceReg.getSecurityVersion();
+                        _fsCommonInfo.ext_info.device_security_version_access_method = DIRECT_ACCESS;
                     }
                 }
             }
@@ -2548,7 +2520,7 @@ bool Fs4Operations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& bu
     //* Read chunk (=half-flash) size from image
     // ((Fs4Operations*)imageOps)->readFS4Log2ChunkSizeFromImage(log2_chunk_size); // TODO - use this function once it's
     // fixed
-    log2_chunk_size = _fs3ImgInfo.logStep;
+    log2_chunk_size = _fsCommonInfo.logStep;
 
     //* Assign new image start addr and current image partition
     is_curr_image_on_second_partition = 0;
@@ -3040,8 +3012,8 @@ bool Fs4Operations::FsBurnAux(FwOperations* imgops, ExtBurnParams& burnParams)
                 struct tools_open_image_info tools_image_info;
                 tools_open_image_info_unpack(&tools_image_info, &imageInfoSect[0]);
                 strncpy(tools_image_info.psid, _fwImgInfo.ext_info.psid, PSID_LEN + 1);
-                strncpy(tools_image_info.name, _fs3ImgInfo.ext_info.name, NAME_LEN);
-                strncpy(tools_image_info.description, _fs3ImgInfo.ext_info.description, DESCRIPTION_LEN);
+                strncpy(tools_image_info.name, _fsCommonInfo.ext_info.name, NAME_LEN);
+                strncpy(tools_image_info.description, _fsCommonInfo.ext_info.description, DESCRIPTION_LEN);
                 tools_open_image_info_pack(&tools_image_info, &imageInfoSect[0]);
             }
 
@@ -3968,7 +3940,7 @@ bool Fs4Operations::UpdateSection(void* new_info, fs3_section_t sect_type, bool,
         }
         for (size_t i = 0; i < tocs.size(); i++)
         {
-            if (CheckDevInfoSignature((u_int32_t*)(tocs[i]->section_data.data())))
+            if (FwOperations::CheckDevInfoSignature((u_int32_t*)(tocs[i]->section_data.data())))
             {
                 old_toc = tocs[i];
                 // find the second section (valid or not valid, does not matter)
@@ -5755,13 +5727,13 @@ bool Fs4Operations::IsSecurityVersionViolated(u_int32_t image_security_version)
     }
 
     // Set device security-version (from EFUSEs)
-    if (_fs3ImgInfo.ext_info.device_security_version_access_method == MFSV)
+    if (_fsCommonInfo.ext_info.device_security_version_access_method == MFSV)
     {
-        deviceEfuseSecurityVersion = _fs3ImgInfo.ext_info.device_security_version_mfsv.efuses_sec_ver;
+        deviceEfuseSecurityVersion = _fsCommonInfo.ext_info.device_security_version_mfsv.efuses_sec_ver;
     }
-    else if (_fs3ImgInfo.ext_info.device_security_version_access_method == DIRECT_ACCESS)
+    else if (_fsCommonInfo.ext_info.device_security_version_access_method == DIRECT_ACCESS)
     {
-        deviceEfuseSecurityVersion = _fs3ImgInfo.ext_info.device_security_version_gw;
+        deviceEfuseSecurityVersion = _fsCommonInfo.ext_info.device_security_version_gw;
     }
     else
     {

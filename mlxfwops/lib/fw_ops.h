@@ -67,6 +67,27 @@ MLXFWOP_API extern bool nextBootFwVer;
 #define UUID_LEN 16
 #define BAD_CRC_MSG "Bad CRC."
 
+#define CHECK_UID_STRUCTS_SIZE(uids_context, cibfw_guids_context)                                             \
+    {                                                                                                         \
+        if (sizeof(uids_context) != sizeof(cibfw_guids_context))                                              \
+        {                                                                                                     \
+            return errmsg(                                                                                    \
+              "Internal error: Size of uids_t (%d) is not equal to size of  struct cibfw_guids guids (%d)\n", \
+              (int)sizeof(uids_context),                                                                      \
+              (int)sizeof(cibfw_guids_context));                                                              \
+        }                                                                                                     \
+    }
+
+#define DEV_INFO_SIG0 0x6d446576
+#define DEV_INFO_SIG1 0x496e666f
+#define DEV_INFO_SIG2 0x2342cafa
+#define DEV_INFO_SIG3 0xbacafe00
+#define CHECK_DEV_INFO_NEW_FORMAT(info_st) (info_st.major_version == 2)
+#define CHECK_DEV_INFO_OLD_FORMAT(info_st) (info_st.major_version == 1)
+
+#define CHECK_MFG_NEW_FORMAT(mfg_st) (mfg_st.major_version == 1)
+#define CHECK_MFG_OLD_FORMAT(mfg_st) (mfg_st.major_version == 0)
+
 enum class ComponentType
 {
     Comp_Psc_Not_Valid = 0,
@@ -135,6 +156,7 @@ public:
     {
         memset(_sectionsToRead, 0, sizeof(_sectionsToRead));
         memset(&_fwImgInfo, 0, sizeof(_fwImgInfo));
+        memset(&_fsCommonInfo, 0, sizeof(_fsCommonInfo));
         memset(&_fwParams, 0, sizeof(_fwParams));
         memset(&_protect_info_backup, 0x0, sizeof(_protect_info_backup));
     };
@@ -650,6 +672,13 @@ protected:
         burnDataParamsT() : data((u_int32_t*)NULL), dataSize(0), progressFunc((ProgressCallBack)NULL), calcSha(false){};
     };
 
+    struct FsCommonInfo
+    {
+        fs3_info_t ext_info;
+        bool runFromAny;
+        u_int8_t logStep;
+    };
+
     typedef int (*print2log_func)(const char* format, ...);
 
     // Protected Methods
@@ -755,9 +784,15 @@ protected:
     virtual bool IsVmodSupported();
     const char* GetSectionNameByType(u_int8_t section_type);
 
+    static bool CheckDevInfoSignature(u_int32_t* buff);
+
+    virtual bool GetDevInfo(u_int8_t* buff = nullptr);
+    virtual bool GetMfgInfo(u_int8_t* buff = nullptr);
+
     // Protected Members
     FBase* _ioAccess;
     FwImgInfo _fwImgInfo;
+    FsCommonInfo _fsCommonInfo;
     fw_ops_params_t _fwParams;
     std::vector<u_int8_t> _romSect;
     std::vector<u_int8_t> _fwConfSect;
