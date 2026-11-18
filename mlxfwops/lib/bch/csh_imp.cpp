@@ -74,7 +74,7 @@ string ToString(CshComponentID cshId)
 }
 
 const string CSH::cshMetadataName = "csh_metadata";
-const string CSH::binarySectionMetadataArrName = "binary_section_matadata_";
+const string CSH::binarySectionMetadataArrName = "binary_section_metadata_";
 
 vector<u_int8_t> PartitionTable::Pack()
 {
@@ -248,10 +248,11 @@ void BinarySectionMetadata::SetJsonParams(const Json::Value& root)
     const size_t MAGIC_ID_LEN = 4;
     const size_t ENCRYPTION_DERIVATION_STRING_LEN = 16;
 
-    if (root["magic_id"].asString().length() != MAGIC_ID_LEN)
-    {
-        throw runtime_error("Invalid magic ID");
-    }
+    // TODO enable this check after magic ID definition is finalized
+    // if (root["magic_id"].asString().length() != MAGIC_ID_LEN)
+    // {
+    //     throw runtime_error("Invalid magic ID");
+    // }
     memcpy(_struct.u8_magic_id, root["magic_id"].asCString(), MAGIC_ID_LEN);
 
     _struct.version.u8_ver_major =

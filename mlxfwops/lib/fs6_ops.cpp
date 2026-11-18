@@ -427,6 +427,11 @@ bool Fs6Operations::ReadComponent(ComponentType compName,
         return errmsg("Only header with component supported at the moment");
     }
 
+    if (!FwVerify((VerifyCallBack) nullptr))
+    {
+        return false;
+    }
+
     if (IsL2ptSection(cshId))
     {
         componentSize = _l2pt.GetEntrySize(partitionType);
@@ -455,6 +460,11 @@ bool Fs6Operations::SetSignedFWComponent(string binPath, ComponentType compName,
     if (cshId == CshComponentID::Unknown)
     {
         return errmsg(MLXFW_BAD_PARAM_ERR, "Unknown component");
+    }
+
+    if (!FwVerify((VerifyCallBack) nullptr))
+    {
+        return false;
     }
 
     vector<u_int8_t> compData;
