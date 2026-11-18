@@ -669,6 +669,26 @@ int MlnxDev::preBurn(string mfa_file,
         goto clean_up_on_error;
     }
 
+    if (_devFwOps->FwType() == FIT_FS6 && _imgFwOps->FwType() == FIT_FS6)
+    {
+        FwVersion devVer(dev_fw_query.fw_info.fw_ver[0], dev_fw_query.fw_info.fw_ver[1],
+                         dev_fw_query.fw_info.fw_ver[2]);
+        FwVersion imgVer(img_fw_query.fw_info.fw_ver[0], img_fw_query.fw_info.fw_ver[1],
+                         img_fw_query.fw_info.fw_ver[2]);
+
+        auto devSupport = FwOperations::GetSpc6LayoutSupport(devVer);
+        auto imgSupport = FwOperations::GetSpc6LayoutSupport(imgVer);
+
+        if (devSupport == FwOperations::Spc6LayoutSupport::NewLayoutSupported &&
+            imgSupport == FwOperations::Spc6LayoutSupport::NewLayoutNotSupported)
+        {
+            _errMsg =
+              "The device is in the 64MB flash layout but the image being burned does not support it. Aborting.";
+            _log += _errMsg;
+            goto clean_up_on_error;
+        }
+    }
+
     _burnParams.burnFailsafe = burnFailsafe;
     if (_burnParams.burnFailsafe)
     {
