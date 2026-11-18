@@ -41,6 +41,14 @@
 #include "json/writer.h"
 #include "common/tools_string.h"
 
+#ifndef MST_CPU_armv7l_umbriel // {
+#ifdef MFT_LEGACY_BUILD
+#include "fs_csh_ops.h"
+#else
+#include "components/fs_csh_ops.h"
+#endif
+#endif // } MST_CPU_armv7l_umbriel
+
 #ifdef MFT_LEGACY_BUILD
 #include <mft_utils.h>
 #else
@@ -144,7 +152,9 @@ Fs6Operations::Fs6Operations(FBase* ioAccess) :
     _l1ptOffset(L1PT_OFFSET),
     _l2ptOffset(0),
     _activeChain(INVALID_CHAIN_NUMBER),
-    _backupChain(INVALID_CHAIN_NUMBER)
+    _backupChain(INVALID_CHAIN_NUMBER),
+    _vmodAdmStatusA(CSH::VMOD_ADM_STATUS_UNKNOWN),
+    _vmodAdmStatusB(CSH::VMOD_ADM_STATUS_UNKNOWN)
 {
     memset(_dotMagicId, 0, sizeof(_dotMagicId));
 }
@@ -177,7 +187,7 @@ bool Fs6Operations::InitL2pt()
         PartitionTableEntry entry;
         entry.Unpack(entryData);
 
-        if (IsCshComponent((PartitionType)entry.GetSectionType()))
+        if (IsCshComponent(entry.GetPartitionTypeEnum()))
         {
             InitCshComponent(entry);
         }
@@ -247,13 +257,13 @@ bool Fs6Operations::Init()
             PartitionTableEntry entry;
             entry.Unpack(entryData);
             // entry.DumpStruct(); // for debug purposes
-            if (IsCshComponent((PartitionType)entry.GetSectionType()))
+            if (IsCshComponent(entry.GetPartitionTypeEnum()))
             {
                 InitCshComponent(entry);
             }
             _l1pt.AddEntry(entry);
 
-            if ((PartitionType)entry.GetSectionType() == PartitionType::PT_ROM_IMGS)
+            if (entry.GetPartitionTypeEnum() == PartitionType::PT_ROM_IMGS)
             {
                 if (_cshComponents.empty())
                 {
@@ -277,7 +287,37 @@ bool Fs6Operations::Init()
                 }
             }
 
-            if (PartitionType(entry.GetSectionType()) == PartitionType::PT_CHAIN_CONTAINER &&
+            if (entry.GetPartitionTypeEnum() == PartitionType::PT_VMOD_FW)
+            {
+                if (_vmodAdmStatusA == CSH::VMOD_ADM_STATUS_UNKNOWN)
+                {
+                    if (entry.GetCsh() != nullptr)
+                    {
+                        _vmodAdmStatusA = entry.GetCsh()->GetVmodAdmStatus();
+                    }
+                    else
+                    {
+                        _vmodAdmStatusA = CSH::VMOD_ADM_STATUS_INVALID;
+                    }
+                }
+                else if (_vmodAdmStatusB == CSH::VMOD_ADM_STATUS_UNKNOWN)
+                {
+                    if (entry.GetCsh() != nullptr)
+                    {
+                        _vmodAdmStatusB = entry.GetCsh()->GetVmodAdmStatus();
+                    }
+                    else
+                    {
+                        _vmodAdmStatusB = CSH::VMOD_ADM_STATUS_INVALID;
+                    }
+                }
+                else
+                {
+                    return errmsg("More than two VMOD_FW sections found");
+                }
+            }
+
+            if (entry.GetPartitionTypeEnum() == PartitionType::PT_CHAIN_CONTAINER &&
                 entry.GetChainNumber() == _activeChain) // we assume that chain container follows rom_imgs and therefore
                                                         // we can trust that the active chain number was for sure set
             {
@@ -299,7 +339,7 @@ bool Fs6Operations::Init()
 
 bool Fs6Operations::InitCshComponent(PartitionTableEntry& entry)
 {
-    PartitionType partitionType = (PartitionType)entry.GetSectionType();
+    PartitionType partitionType = entry.GetPartitionTypeEnum();
     size_t offset = entry.GetStartOffset();
     int currentChain = entry.GetChainNumber();
 
@@ -379,23 +419,22 @@ bool Fs6Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
     {
         // TODO:: check if the image is reduced, and if so, skip DTOCs
         bool isKnownPartition = true;
-        string partitionType = ToString((PartitionType)entry.GetSectionType());
+        string partitionType = ToString(entry.GetPartitionTypeEnum());
         if (partitionType == "UNKNOWN")
         {
-            partitionType = GetSectionNameByType(entry.GetSectionType());
+            partitionType = GetSectionNameByType(entry.GetPartitionType());
             if (partitionType == "UNKNOWN")
             {
-                partitionType = mft_utils::ToHexString(entry.GetSectionType(), 2);
+                partitionType = mft_utils::ToHexString(entry.GetPartitionType(), 2);
                 isKnownPartition = false;
             }
         }
 
         if (isKnownPartition)
         {
-            if (IsCshComponent((PartitionType)entry.GetSectionType()))
+            if (IsCshComponent(entry.GetPartitionTypeEnum()))
             {
-                if ((PartitionType)entry.GetSectionType() == PartitionType::PT_ROM_IMGS &&
-                    entry.GetChainNumber() != _activeChain)
+                if (entry.GetPartitionTypeEnum() == PartitionType::PT_ROM_IMGS && entry.GetChainNumber() != _activeChain)
                 {
                     continue;
                 }
@@ -404,7 +443,7 @@ bool Fs6Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
                     return false;
                 }
             }
-            else if (PartitionType(entry.GetSectionType()) == PartitionType::PT_CHAIN_CONTAINER)
+            else if (entry.GetPartitionTypeEnum() == PartitionType::PT_CHAIN_CONTAINER)
             {
                 if (entry.GetChainNumber() != _activeChain)
                 {
@@ -415,16 +454,16 @@ bool Fs6Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
                                   "L2 Partition Table");
                 for (auto l2Entry : _l2pt.GetEntries())
                 {
-                    partitionType = ToString((PartitionType)l2Entry.GetSectionType());
+                    partitionType = ToString(l2Entry.GetPartitionTypeEnum());
                     if (partitionType == "UNKNOWN")
                     {
-                        partitionType = mft_utils::ToHexString(l2Entry.GetSectionType(), 2);
+                        partitionType = mft_utils::ToHexString(l2Entry.GetPartitionType(), 2);
                         isKnownPartition = false;
                     }
 
                     if (isKnownPartition)
                     {
-                        if (IsCshComponent((PartitionType)l2Entry.GetSectionType()))
+                        if (IsCshComponent(l2Entry.GetPartitionTypeEnum()))
                         {
                             if (!VerifyCshComponent(l2Entry, verifyCallBackFunc))
                             {
@@ -440,7 +479,7 @@ bool Fs6Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
                     }
                 }
             }
-            else if (PartitionType(entry.GetSectionType()) == PartitionType::PT_DEV_INFO)
+            else if (entry.GetPartitionTypeEnum() == PartitionType::PT_DEV_INFO)
             {
                 vector<u_int8_t> dev_info_data;
                 dev_info_data.resize(entry.GetSectionSize());
@@ -510,7 +549,7 @@ string Fs6Operations::GetSectionNameByMagicId(u_int32_t magicId)
 bool Fs6Operations::VerifyCshComponent(const PartitionTableEntry& entry, VerifyCallBack verifyCallBackFunc)
 {
     std::shared_ptr<CSH> cshComponent = entry.GetCsh();
-    PartitionType partitionType = (PartitionType)entry.GetSectionType();
+    PartitionType partitionType = entry.GetPartitionTypeEnum();
     size_t offset = entry.GetStartOffset();
 
     if (IsL2ptSection(partitionType))
@@ -756,7 +795,7 @@ void Fs6Operations::GetPartitionEntryInfo(PartitionType partitionType,
 
     for (auto entry : pt->GetEntries())
     {
-        if ((PartitionType)entry.GetSectionType() == partitionType)
+        if (entry.GetPartitionTypeEnum() == partitionType)
         {
             if (validator.validate(entry, _ioAccess, chainNumber))
             {
@@ -1198,11 +1237,10 @@ bool Fs6Operations::FwBurn(FwOperations* imageOps, u_int8_t forceVersion, Progre
 bool Fs6Operations::PreBurnChecks(FwOperations* imageOps, ExtBurnParams& burnParams)
 {
     // Verify that imageOps is actually an FS6 image
-    if (imageOps->FwType() != FIT_FS6)
+    if (imageOps->FwType() != FIT_FS6 && imageOps->FwType() != FIT_CSH_VMOD)
     {
-        return errmsg("Expected FS6 image but got type %d", imageOps->FwType());
+        return errmsg("Expected FS6 or FSVMOD image but got type %d", imageOps->FwType());
     }
-
     return true;
 }
 
@@ -1303,7 +1341,7 @@ std::map<PartitionType, std::vector<Fs6Operations::BurnRegion>>
     {
         for (size_t i = 0; i < l1Entries.size(); i++)
         {
-            PartitionType partType = (PartitionType)l1Entries[i].GetSectionType();
+            PartitionType partType = l1Entries[i].GetPartitionTypeEnum();
             bool isCshComponent = IsCshComponent(partType);
             size_t ptEntryOffset = l1ptSrcOffset + i * PartitionTableEntry::Size();
             size_t ptEntrySize = PartitionTableEntry::Size();
@@ -1339,7 +1377,7 @@ std::map<PartitionType, std::vector<Fs6Operations::BurnRegion>>
     const auto& l2Entries = fs6ImageOps->_l2pt.GetEntries();
     for (size_t i = 0; i < l2Entries.size(); i++)
     {
-        PartitionType partType = (PartitionType)l2Entries[i].GetSectionType();
+        PartitionType partType = l2Entries[i].GetPartitionTypeEnum();
         size_t sectionSrcOffset = l2ptSrcOffset + i * PartitionTableEntry::Size();
         size_t sectionDestOffset = l2ptDestOffset + i * PartitionTableEntry::Size();
         size_t sectionSize = PartitionTableEntry::Size();
@@ -1464,6 +1502,76 @@ bool Fs6Operations::HandleRomImgsMagicPatternsPostBurn(ExtBurnParams& burnParams
     return true;
 }
 
+bool Fs6Operations::ExecuteVmodBurn(FwOperations* imageOps, ExtBurnParams& burnParams)
+{
+#ifdef MST_CPU_armv7l_umbriel
+    (void)imageOps;
+    (void)burnParams;
+    return Unsupported(__FUNCTION__);
+#else
+
+    FsCshOperations* cshOps = dynamic_cast<FsCshOperations*>(imageOps);
+    if (!cshOps)
+    {
+        throw std::runtime_error("Failed to cast imageOps to FsCshOperations");
+    }
+
+    if (burnParams.burnFailsafe &&
+        (_vmodAdmStatusA != CSH::VMOD_ADM_STATUS_INVALID || _vmodAdmStatusB != CSH::VMOD_ADM_STATUS_INVALID))
+    {
+        return errmsg("Found VMOD bank in a state other than INVALID.");
+    }
+
+    size_t vmodAOffset = 0, vmodASize = 0;
+    GetPartitionEntryInfo(PartitionType::PT_VMOD_FW, vmodAOffset, vmodASize, 0);
+
+    u_int32_t imageSize = 0;
+    if (!cshOps->GetImageSize(&imageSize))
+    {
+        return false;
+    }
+    vector<u_int8_t> vmodData(imageSize);
+    if (!cshOps->FwReadData(vmodData.data(), &imageSize, false))
+    {
+        return false;
+    }
+
+    u_int32_t writtenSize = 0;
+    u_int32_t totalSize = imageSize + 2 * sizeof(fs5_image_layout_vmod_status);
+
+    if (!WriteImageExDefaultParams(burnParams, vmodAOffset, vmodData.data(), vmodData.size(), totalSize, writtenSize))
+    {
+        return false;
+    }
+    writtenSize += vmodData.size();
+
+    fs5_image_layout_vmod_status vmodActiveStatus = {.image_administrative_status = CSH::VMOD_ADM_STATUS_ACTIVE,
+                                                     .tile_administrative_status = 0x00,
+                                                     .reserved = 0xffff};
+    size_t vmodActiveStatusOffset =
+      vmodAOffset + sizeof(fs5_image_layout_csh_header) - sizeof(fs5_image_layout_vmod_status);
+    if (!WriteImageExDefaultParams(burnParams, vmodActiveStatusOffset, &vmodActiveStatus, sizeof(vmodActiveStatus),
+                                   totalSize, writtenSize))
+    {
+        return false;
+    }
+    writtenSize += sizeof(vmodActiveStatus);
+
+    fs5_image_layout_vmod_status vmodInvalidStatus = {.image_administrative_status = CSH::VMOD_ADM_STATUS_INVALID,
+                                                      .tile_administrative_status = 0xff,
+                                                      .reserved = 0xffff};
+    size_t vmodInvalidStatusOffset =
+      vmodAOffset + vmodASize + sizeof(fs5_image_layout_csh_header) - sizeof(fs5_image_layout_vmod_status);
+    if (!WriteImageExDefaultParams(burnParams, vmodInvalidStatusOffset, &vmodInvalidStatus, sizeof(vmodInvalidStatus),
+                                   totalSize, writtenSize))
+    {
+        return false;
+    }
+
+    return true;
+#endif // } MST_CPU_armv7l_umbriel
+}
+
 bool Fs6Operations::ExecuteBurn(FwOperations* imageOps, ExtBurnParams& burnParams)
 {
     map<PartitionType, vector<BurnRegion>> partitionTypeToBurnRegions;
@@ -1565,9 +1673,19 @@ bool Fs6Operations::FwBurnAdvanced(FwOperations* imageOps, ExtBurnParams& burnPa
         return false;
     }
 
-    if (!ExecuteBurn(imageOps, burnParams))
+    if (imageOps->FwType() == FIT_CSH_VMOD)
     {
-        return false;
+        if (!ExecuteVmodBurn(imageOps, burnParams))
+        {
+            return false;
+        }
+    }
+    else
+    {
+        if (!ExecuteBurn(imageOps, burnParams))
+        {
+            return false;
+        }
     }
 
     if (!DoAfterBurnJobs())
@@ -1583,6 +1701,7 @@ bool Fs6Operations::isEncrypted(bool& is_encrypted) // in FS6 device and image a
                                                     // determine the enc type. until the mapping for it is determined we
                                                     // always return true.
 {
+    // TODO: implement isEncrypted
     is_encrypted = true;
     MLXFWOPS_LOG_DEBUG("Fs6Operations::isEncrypted res = TRUE");
     return true;
@@ -1798,4 +1917,15 @@ fs6_image_layout_guids Fs6Operations::ToFs6MfgInfoGuids(const struct image_layou
     fs6Guids.macs.uid.hi = (u_int32_t)(guids.macs.uid >> 32);
     fs6Guids.macs.uid.lo = (u_int32_t)(guids.macs.uid & 0xFFFFFFFF);
     return fs6Guids;
+}
+
+bool Fs6Operations::WriteImageExDefaultParams(const ExtBurnParams& burnParams,
+                                              u_int32_t addr,
+                                              void* data,
+                                              int cnt,
+                                              int totalSz,
+                                              int alreadyWrittenSz)
+{
+    return writeImageEx(burnParams.progressFuncEx, burnParams.progressUserData, burnParams.progressFunc, addr, data,
+                        cnt, true, true, totalSz, alreadyWrittenSz);
 }

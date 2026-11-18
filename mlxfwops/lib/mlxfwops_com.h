@@ -633,7 +633,8 @@ typedef enum fw_img_type
     FIT_FS5 = 5,
     FIT_COMPS = 6,
     FIT_PLDM = 7,
-    FIT_FS6 = 12
+    FIT_FS6 = 12,
+    FIT_CSH_VMOD = 13
 } fw_img_type_t;
 
 enum ExpRomProto

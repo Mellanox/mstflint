@@ -128,6 +128,7 @@ public:
     bool isEncrypted(bool& is_encrypted) override;
     string GetL1ptEntryName(PartitionType partType, bool isCshComponent);
     bool ExecuteBurn(FwOperations* imageOps, ExtBurnParams& burnParams);
+    bool ExecuteVmodBurn(FwOperations* imageOps, ExtBurnParams& burnParams);
     bool DoBeforeBurnJobs();
     bool DoAfterBurnJobs();
     bool PreBurnChecks(FwOperations* imageOps, ExtBurnParams& burnParams);
@@ -183,6 +184,12 @@ protected:
                        PartitionType pt,
                        map<PartitionType, vector<BurnRegion>>& partitionMap,
                        vector<BurnRegion>& allRegions);
+    bool WriteImageExDefaultParams(const ExtBurnParams& burnParams,
+                                   u_int32_t addr,
+                                   void* data,
+                                   int cnt,
+                                   int totalSz = -1,
+                                   int alreadyWrittenSz = 0);
 
 private:
     bool Init();
@@ -230,4 +237,6 @@ private:
     u_int8_t _dotMagicId[4];
     int _activeChain;
     int _backupChain;
+    u_int8_t _vmodAdmStatusA;
+    u_int8_t _vmodAdmStatusB;
 };

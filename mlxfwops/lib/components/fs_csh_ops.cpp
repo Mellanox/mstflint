@@ -286,3 +286,10 @@ bool FsCshOperations::GetImageSize(u_int32_t* imageSize)
     *imageSize = _csh.GetComponentSize();
     return true;
 }
+
+bool FsCshOperations::isEncrypted(bool& is_encrypted)
+{
+    // TODO: implement isEncrypted
+    is_encrypted = true;
+    return true;
+}

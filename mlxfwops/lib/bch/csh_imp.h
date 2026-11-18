@@ -216,9 +216,9 @@ public:
     size_t GetStartOffset() const { return _struct.start_address[0]; }
     void SetSectionSize(size_t size);
     u_int32_t GetSectionSize() const { return _struct.partition_size[0]; }
-    void SetSectionType(u_int32_t type);
-    u_int32_t GetSectionType() const { return _struct.partition_type; }
-    CshSectionType GetSectionTypeStrong() const { return static_cast<CshSectionType>(GetSectionType()); }
+    void SetPartitionType(u_int32_t type);
+    u_int32_t GetPartitionType() const;
+    PartitionType GetPartitionTypeEnum() const;
 
     static size_t Size() { return fs5_image_layout_partition_table_entry_size(); }
     void DumpStruct() const { fs5_image_layout_partition_table_entry_print(&_struct, stdout, 0); }
@@ -451,6 +451,9 @@ public:
     u_int8_t GetComponentMajorVersion() { return _metadata->GetComponentMajorVersion(); }
     u_int16_t GetComponentMinorVersion() { return _metadata->GetComponentMinorVersion(); }
 
+    u_int8_t GetVmodAdmStatus();
+    void SetVmodAdmStatus(fs5_image_layout_vmod_status status);
+
     void SetNvSignature(const vector<u_int8_t>& signature, SigType sigType);
     void SetOemSignature(const vector<u_int8_t>& signature, SigType sigType);
 
@@ -473,6 +476,13 @@ public:
     static const string SBD_FW_NAME;
     static const string VMOD_FW_NAME;
     static const string CALIPTRA_FW_NAME;
+
+    static const u_int8_t VMOD_ADM_STATUS_INVALID = 0x0f;   // 1111b
+    static const u_int8_t VMOD_ADM_STATUS_CANDIDATE = 0x07; // 0111b
+    static const u_int8_t VMOD_ADM_STATUS_ACTIVE = 0x03;    // 0011b
+    static const u_int8_t VMOD_ADM_STATUS_BACKUP = 0x01;    // 0001b
+    static const u_int8_t VMOD_ADM_STATUS_REVOKED = 0x00;   // 0000b
+    static const u_int8_t VMOD_ADM_STATUS_UNKNOWN = 0xff;
 
 private:
     void UnpackCshMetadata(const vector<u_int8_t>& cshHeader, const u_int8_t* iter);

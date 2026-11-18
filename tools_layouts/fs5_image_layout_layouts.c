@@ -2994,6 +2994,132 @@ void fs5_image_layout_binary_section_metadata_dump(const struct fs5_image_layout
 	fs5_image_layout_binary_section_metadata_print(ptr_struct, fd, 0);
 }
 
+
+void fs5_image_layout_csh_magic_pattern_pack(const struct fs5_image_layout_csh_magic_pattern *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	int i;
+
+	for (i = 0; i < 4; ++i) {
+		offset = adb2c_calc_array_field_address(24, 8, i, 32, 1);
+		adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->magic_pattern[i]);
+	}
+}
+
+void fs5_image_layout_csh_magic_pattern_unpack(struct fs5_image_layout_csh_magic_pattern *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	int i;
+
+	for (i = 0; i < 4; ++i) {
+		offset = adb2c_calc_array_field_address(24, 8, i, 32, 1);
+		ptr_struct->magic_pattern[i] = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	}
+}
+
+void fs5_image_layout_csh_magic_pattern_print(const struct fs5_image_layout_csh_magic_pattern *ptr_struct, FILE *fd, int indent_level)
+{
+	int i;
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== fs5_image_layout_csh_magic_pattern ========\n");
+
+	for (i = 0; i < 4; ++i) {
+		adb2c_add_indentation(fd, indent_level);
+		fprintf(fd, "magic_pattern_%03d   : " UH_FMT "\n", i, ptr_struct->magic_pattern[i]);
+	}
+}
+
+unsigned int fs5_image_layout_csh_magic_pattern_size(void)
+{
+	return FS5_IMAGE_LAYOUT_CSH_MAGIC_PATTERN_SIZE;
+}
+
+void fs5_image_layout_csh_magic_pattern_dump(const struct fs5_image_layout_csh_magic_pattern *ptr_struct, FILE *fd)
+{
+	fs5_image_layout_csh_magic_pattern_print(ptr_struct, fd, 0);
+}
+
+void fs5_image_layout_vmod_status_pack(const struct fs5_image_layout_vmod_status *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 24;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->image_administrative_status);
+	offset = 16;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->tile_administrative_status);
+	offset = 0;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->reserved);
+}
+
+void fs5_image_layout_vmod_status_unpack(struct fs5_image_layout_vmod_status *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 24;
+	ptr_struct->image_administrative_status = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 16;
+	ptr_struct->tile_administrative_status = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 0;
+	ptr_struct->reserved = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+}
+
+void fs5_image_layout_vmod_status_print(const struct fs5_image_layout_vmod_status *ptr_struct, FILE *fd, int indent_level)
+{
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== fs5_image_layout_vmod_status ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "image_administrative_status : " UH_FMT "\n", ptr_struct->image_administrative_status);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "tile_administrative_status : " UH_FMT "\n", ptr_struct->tile_administrative_status);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "reserved             : " UH_FMT "\n", ptr_struct->reserved);
+}
+
+unsigned int fs5_image_layout_vmod_status_size(void)
+{
+	return FS5_IMAGE_LAYOUT_VMOD_STATUS_SIZE;
+}
+
+void fs5_image_layout_vmod_status_dump(const struct fs5_image_layout_vmod_status *ptr_struct, FILE *fd)
+{
+	fs5_image_layout_vmod_status_print(ptr_struct, fd, 0);
+}
+
+void fs5_image_layout_csh_header_status_pack(const union fs5_image_layout_csh_header_status *ptr_struct, u_int8_t *ptr_buff)
+{
+	fs5_image_layout_csh_magic_pattern_pack(&(ptr_struct->magic_pattern), ptr_buff);
+}
+
+void fs5_image_layout_csh_header_status_unpack(union fs5_image_layout_csh_header_status *ptr_struct, const u_int8_t *ptr_buff)
+{
+	fs5_image_layout_csh_magic_pattern_unpack(&(ptr_struct->magic_pattern), ptr_buff);
+}
+
+void fs5_image_layout_csh_header_status_print(const union fs5_image_layout_csh_header_status *ptr_struct, FILE *fd, int indent_level)
+{
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== fs5_image_layout_csh_header_status ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "magic_pattern:\n");
+	fs5_image_layout_csh_magic_pattern_print(&(ptr_struct->magic_pattern), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "vmod_status:\n");
+	fs5_image_layout_vmod_status_print(&(ptr_struct->vmod_status), fd, indent_level + 1);
+}
+
+unsigned int fs5_image_layout_csh_header_status_size(void)
+{
+	return FS5_IMAGE_LAYOUT_CSH_HEADER_STATUS_SIZE;
+}
+
+void fs5_image_layout_csh_header_status_dump(const union fs5_image_layout_csh_header_status *ptr_struct, FILE *fd)
+{
+	fs5_image_layout_csh_header_status_print(ptr_struct, fd, 0);
+}
+
 void fs5_image_layout_csh_header_pack(const struct fs5_image_layout_csh_header *ptr_struct, u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
@@ -3013,10 +3139,8 @@ void fs5_image_layout_csh_header_pack(const struct fs5_image_layout_csh_header *
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->reserved);
 	offset = 64;
 	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->reserved1);
-	for (i = 0; i < 4; ++i) {
-		offset = adb2c_calc_array_field_address(120, 8, i, 128, 1);
-		adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->magic_pattern[i]);
-	}
+	offset = 96;
+	fs5_image_layout_csh_header_status_pack(&(ptr_struct->csh_header_status), ptr_buff + offset / 8);
 }
 
 void fs5_image_layout_csh_header_unpack(struct fs5_image_layout_csh_header *ptr_struct, const u_int8_t *ptr_buff)
@@ -3038,10 +3162,8 @@ void fs5_image_layout_csh_header_unpack(struct fs5_image_layout_csh_header *ptr_
 	ptr_struct->reserved = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 	offset = 64;
 	ptr_struct->reserved1 = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-	for (i = 0; i < 4; ++i) {
-		offset = adb2c_calc_array_field_address(120, 8, i, 128, 1);
-		ptr_struct->magic_pattern[i] = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
-	}
+	offset = 96;
+	fs5_image_layout_csh_header_status_unpack(&(ptr_struct->csh_header_status), ptr_buff + offset / 8);
 }
 
 void fs5_image_layout_csh_header_print(const struct fs5_image_layout_csh_header *ptr_struct, FILE *fd, int indent_level)
@@ -3065,10 +3187,9 @@ void fs5_image_layout_csh_header_print(const struct fs5_image_layout_csh_header 
 	fprintf(fd, "reserved             : " UH_FMT "\n", ptr_struct->reserved);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "reserved1            : " U32H_FMT "\n", ptr_struct->reserved1);
-	for (i = 0; i < 4; ++i) {
-		adb2c_add_indentation(fd, indent_level);
-		fprintf(fd, "magic_pattern_%03d   : " UH_FMT "\n", i, ptr_struct->magic_pattern[i]);
-	}
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "csh_header_status:\n");
+	fs5_image_layout_csh_header_status_print(&(ptr_struct->csh_header_status), fd, indent_level + 1);
 }
 
 unsigned int fs5_image_layout_csh_header_size(void)

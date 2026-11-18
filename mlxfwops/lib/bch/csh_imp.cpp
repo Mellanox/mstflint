@@ -253,7 +253,7 @@ PartitionTableEntry& PartitionTable::GetEntry(PartitionType entryType, int chain
 
     const auto compareFunc = [entryType, useChainFilter, chainNumber](const PartitionTableEntry& entry)
     {
-        if ((PartitionType)entry.GetSectionType() != entryType)
+        if (entry.GetPartitionTypeEnum() != entryType)
             return false;
         if (useChainFilter)
             return entry.GetChainNumber() == chainNumber;
@@ -280,7 +280,7 @@ int PartitionTable::GetEntryIndex(PartitionType entryType, int chainNumber)
 
     const auto compareFunc = [entryType, useChainFilter, chainNumber](const PartitionTableEntry& entry)
     {
-        if ((PartitionType)entry.GetSectionType() != entryType)
+        if (entry.GetPartitionTypeEnum() != entryType)
             return false;
         if (useChainFilter)
             return entry.GetChainNumber() == chainNumber;
@@ -360,9 +360,19 @@ void PartitionTableEntry::SetSectionSize(size_t size)
     _struct.partition_size[0] = size;
 }
 
-void PartitionTableEntry::SetSectionType(u_int32_t type)
+void PartitionTableEntry::SetPartitionType(u_int32_t type)
 {
     _struct.partition_type = type;
+}
+
+u_int32_t PartitionTableEntry::GetPartitionType() const
+{
+    return _struct.partition_type;
+}
+
+PartitionType PartitionTableEntry::GetPartitionTypeEnum() const
+{
+    return static_cast<PartitionType>(_struct.partition_type);
 }
 
 string BinarySectionMetadata::CshSectionIDToString(u_int32_t sectionId)
@@ -864,12 +874,17 @@ void CSH::UnpackHeader(const vector<u_int8_t>& cshHeader)
         ss << "Unknown CSH Component ID 0x" << std::hex << std::uppercase << _metadata->GetComponentId();
         throw runtime_error(ss.str());
     }
+    if (_metadata->GetComponentId() == (u_int16_t)CshComponentID::VMOD_FW)
+    {
+        CPUTOn(&_header.csh_header_status.vmod_status, sizeof(_header.csh_header_status.vmod_status));
+    }
 }
 
 bool CSH::isActiveChain()
 {
     const auto& romImgsCandidateMagicPatternBE = PartitionTable::RomImgsCandidateMagicPatternBE();
-    if (std::equal(romImgsCandidateMagicPatternBE.begin(), romImgsCandidateMagicPatternBE.end(), _header.magic_pattern))
+    if (std::equal(romImgsCandidateMagicPatternBE.begin(), romImgsCandidateMagicPatternBE.end(),
+                   _header.csh_header_status.magic_pattern.magic_pattern))
     {
         return true;
     }
@@ -879,7 +894,8 @@ bool CSH::isActiveChain()
 bool CSH::isBackupChain()
 {
     const auto& romImgsBackupMagicPatternBE = PartitionTable::RomImgsBackupMagicPatternBE();
-    if (std::equal(romImgsBackupMagicPatternBE.begin(), romImgsBackupMagicPatternBE.end(), _header.magic_pattern))
+    if (std::equal(romImgsBackupMagicPatternBE.begin(), romImgsBackupMagicPatternBE.end(),
+                   _header.csh_header_status.magic_pattern.magic_pattern))
     {
         return true;
     }
@@ -1205,6 +1221,15 @@ BinarySectionMetadata& CSH::GetSection(u_int32_t itocType)
     std::stringstream ss;
     ss << std::hex << "Section with ITOC type 0x" << itocType << " not found in CSH";
     throw runtime_error(ss.str());
+}
+
+u_int8_t CSH::GetVmodAdmStatus()
+{
+    if (GetComponentIdEnum() != CshComponentID::VMOD_FW)
+    {
+        throw runtime_error("CSH component is not a VMOD FW");
+    }
+    return _header.csh_header_status.vmod_status.image_administrative_status;
 }
 
 PartitionType ToPartitionType(CshComponentID cshId, bool throwOnError)

@@ -1097,6 +1097,49 @@ struct fs5_image_layout_binary_section_metadata {
 };
 
 /* Description -   */
+/* Size in bytes - 4 */
+struct fs5_image_layout_csh_magic_pattern {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.24 - 0x4.23 */
+	/* access: RW */
+	u_int8_t magic_pattern[4];
+};
+
+/* Description -   */
+/* Size in bytes - 4 */
+struct fs5_image_layout_vmod_status {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.0 - 0x0.7 */
+	/* access: RW */
+	u_int8_t image_administrative_status;
+	/* Description -  */
+	/* 0x0.8 - 0x0.15 */
+	/* access: RW */
+	u_int8_t tile_administrative_status;
+	/* Description -  */
+	/* 0x0.16 - 0x0.31 */
+	/* access: RW */
+	u_int16_t reserved;
+};
+
+/* Description -   */
+/* Size in bytes - 4 */
+union fs5_image_layout_csh_header_status {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.0 - 0x0.31 */
+	/* access: RW */
+	struct fs5_image_layout_csh_magic_pattern magic_pattern;
+	/* Description -  */
+	/* 0x0.0 - 0x0.31 */
+	/* access: RW */
+	struct fs5_image_layout_vmod_status vmod_status;
+};
+
+
+/* Description -   */
 /* Size in bytes - 16 */
 struct fs5_image_layout_csh_header {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
@@ -1128,9 +1171,9 @@ struct fs5_image_layout_csh_header {
 	u_int32_t reserved1;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description -  */
-	/* 0xc.24 - 0x10.23 */
+	/* 0xc.0 - 0xc.31 */
 	/* access: RW */
-	u_int8_t magic_pattern[4];
+	union fs5_image_layout_csh_header_status csh_header_status;
 };
 
 /* Description -   */
@@ -2025,6 +2068,27 @@ void fs5_image_layout_binary_section_metadata_print(const struct fs5_image_layou
 unsigned int fs5_image_layout_binary_section_metadata_size(void);
 #define FS5_IMAGE_LAYOUT_BINARY_SECTION_METADATA_SIZE    (0x90)
 void fs5_image_layout_binary_section_metadata_dump(const struct fs5_image_layout_binary_section_metadata *ptr_struct, FILE *fd);
+/* csh_magic_pattern */
+void fs5_image_layout_csh_magic_pattern_pack(const struct fs5_image_layout_csh_magic_pattern *ptr_struct, u_int8_t *ptr_buff);
+void fs5_image_layout_csh_magic_pattern_unpack(struct fs5_image_layout_csh_magic_pattern *ptr_struct, const u_int8_t *ptr_buff);
+void fs5_image_layout_csh_magic_pattern_print(const struct fs5_image_layout_csh_magic_pattern *ptr_struct, FILE *fd, int indent_level);
+unsigned int fs5_image_layout_csh_magic_pattern_size(void);
+#define FS5_IMAGE_LAYOUT_CSH_MAGIC_PATTERN_SIZE    (0x4)
+void fs5_image_layout_csh_magic_pattern_dump(const struct fs5_image_layout_csh_magic_pattern *ptr_struct, FILE *fd);
+/* vmod_status */
+void fs5_image_layout_vmod_status_pack(const struct fs5_image_layout_vmod_status *ptr_struct, u_int8_t *ptr_buff);
+void fs5_image_layout_vmod_status_unpack(struct fs5_image_layout_vmod_status *ptr_struct, const u_int8_t *ptr_buff);
+void fs5_image_layout_vmod_status_print(const struct fs5_image_layout_vmod_status *ptr_struct, FILE *fd, int indent_level);
+unsigned int fs5_image_layout_vmod_status_size(void);
+#define FS5_IMAGE_LAYOUT_VMOD_STATUS_SIZE    (0x4)
+void fs5_image_layout_vmod_status_dump(const struct fs5_image_layout_vmod_status *ptr_struct, FILE *fd);
+/* csh_header_status */
+void fs5_image_layout_csh_header_status_pack(const union fs5_image_layout_csh_header_status *ptr_struct, u_int8_t *ptr_buff);
+void fs5_image_layout_csh_header_status_unpack(union fs5_image_layout_csh_header_status *ptr_struct, const u_int8_t *ptr_buff);
+void fs5_image_layout_csh_header_status_print(const union fs5_image_layout_csh_header_status *ptr_struct, FILE *fd, int indent_level);
+unsigned int fs5_image_layout_csh_header_status_size(void);
+#define FS5_IMAGE_LAYOUT_CSH_HEADER_STATUS_SIZE    (0x4)
+void fs5_image_layout_csh_header_status_dump(const union fs5_image_layout_csh_header_status *ptr_struct, FILE *fd);
 /* csh_header */
 void fs5_image_layout_csh_header_pack(const struct fs5_image_layout_csh_header *ptr_struct, u_int8_t *ptr_buff);
 void fs5_image_layout_csh_header_unpack(struct fs5_image_layout_csh_header *ptr_struct, const u_int8_t *ptr_buff);
