@@ -482,15 +482,18 @@ bool Fs6Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
         }
     }
 
-    if (devInfoVaildAmount == 0 && !GetIsReducedImage())
+    if (!GetIsReducedImage())
     {
-        return errmsg("No DEV_INFO section found with valid signature");
-    }
+        if (devInfoVaildAmount == 0)
+        {
+            return errmsg("No DEV_INFO section found with valid signature");
+        }
 
-    if (_activeChain == INVALID_CHAIN_NUMBER)
-    {
-        return errmsg("No active chain found"); // no valid use case in which the flash/image will only have a
-                                                // backup/invalid chain without an active one
+        if (_activeChain == INVALID_CHAIN_NUMBER)
+        {
+            return errmsg("No active chain found"); // no valid use case in which the flash/image will only have a
+                                                    // backup/invalid chain without an active one
+        }
     }
 
     return true;
