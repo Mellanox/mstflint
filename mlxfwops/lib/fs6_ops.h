@@ -303,6 +303,9 @@ private:
     };
     vector<CshComponentInfo> _cshComponents;
 
+    const CshComponentInfo* FindCshComponent(PartitionType partitionType) const;
+    bool GetSecurityVersion();
+
     const u_int32_t _l1ptOffset;
     u_int32_t _l2ptOffset;
     size_t _l3pwOffset;

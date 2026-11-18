@@ -937,10 +937,17 @@ FwVersion::fw_version_raw Fs6Operations::GetCshComponentVersion(PartitionType pa
             entry->csh->GetComponentSubminorVersion()};
 }
 
+const Fs6Operations::CshComponentInfo* Fs6Operations::FindCshComponent(PartitionType partitionType) const
+{
+    auto entry =
+      std::find_if(_cshComponents.begin(), _cshComponents.end(),
+                   [partitionType](const CshComponentInfo& entry) { return entry.partitionType == partitionType; });
+    return entry == _cshComponents.end() ? nullptr : &(*entry);
+}
+
 bool Fs6Operations::HasCshComponent(PartitionType partitionType) const
 {
-    return std::any_of(_cshComponents.begin(), _cshComponents.end(),
-                       [partitionType](const CshComponentInfo& entry) { return entry.partitionType == partitionType; });
+    return FindCshComponent(partitionType) != nullptr;
 }
 
 bool Fs6Operations::GetFwComponentsData(string path)
@@ -1100,14 +1107,24 @@ bool Fs6Operations::GetMfgInfo(u_int8_t* buff)
 
 bool Fs6Operations::GetNvPubKeyIdx()
 {
-    auto entry =
-      std::find_if(_cshComponents.begin(), _cshComponents.end(),
-                   [](const CshComponentInfo& entry) { return entry.partitionType == PartitionType::PT_SWITCH_FWS; });
-    if (entry == _cshComponents.end())
+    const CshComponentInfo* entry = FindCshComponent(PartitionType::PT_SWITCH_FWS);
+    if (entry == nullptr)
     {
         return errmsg("CSH component for PT_SWITCH_FWS not found");
     }
     _fsCommonInfo.ext_info.nv_pub_key_idx = entry->csh->GetNvPubKeyIdx();
+    return true;
+}
+
+bool Fs6Operations::GetSecurityVersion()
+{
+    const CshComponentInfo* entry = FindCshComponent(PartitionType::PT_SWITCH_FWS);
+    if (entry == nullptr)
+    {
+        return errmsg("CSH component for PT_SWITCH_FWS not found");
+    }
+    _fsCommonInfo.ext_info.image_security_version = entry->csh->GetRatchetLevel();
+    MLXFWOPS_LOG_DEBUG("Fs6Operations::GetSecurityVersion image_security_version=%u", _fsCommonInfo.ext_info.image_security_version);
     return true;
 }
 
@@ -1169,11 +1186,9 @@ bool Fs6Operations::GetCshSectionOffset(PartitionType partitionType,
     MLXFWOPS_LOG_DEBUG("Fs6Operations::GetCshSectionOffset partitionOffset = 0x%zx", partitionOffset);
 
     // Find the CSH component
-    auto cshComponent =
-      find_if(_cshComponents.begin(), _cshComponents.end(),
-              [partitionType](const CshComponentInfo& entry) { return entry.partitionType == partitionType; });
+    const CshComponentInfo* cshComponent = FindCshComponent(partitionType);
 
-    if (cshComponent == _cshComponents.end())
+    if (cshComponent == nullptr)
     {
         if (reportError)
         {
@@ -1273,6 +1288,11 @@ bool Fs6Operations::FwQuery(fw_info_t* fwInfo,
         }
 
         if (!LoadImageInfo())
+        {
+            return false;
+        }
+
+        if (!GetSecurityVersion())
         {
             return false;
         }
