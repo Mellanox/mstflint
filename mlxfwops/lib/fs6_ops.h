@@ -191,6 +191,21 @@ protected:
                                    int totalSz = -1,
                                    int alreadyWrittenSz = 0);
 
+    enum class L1ptInstance
+    {
+        First,
+        Second
+    };
+    bool ProcessL1pt(FwOperations* imageOps,
+                     const vector<PartitionTableEntry>& l1Entries,
+                     Fs6Operations* fs6ImageOps,
+                     L1ptInstance instance,
+                     map<PartitionType, vector<BurnRegion>>& partitionTypeToBurnRegions,
+                     vector<BurnRegion>& allBurnRegions,
+                     bool collectDtocs = false);
+
+    bool IsValidCshSection(FwOperations* imageOps, PartitionType partitionType);
+
 private:
     bool Init();
     bool InitL2pt();
@@ -205,6 +220,8 @@ private:
     void CopyMagicPattern(size_t componentOffset, vector<u_int8_t>& compData);
     bool IsL2ptSection(CshComponentID cshId);
     bool IsL2ptSection(PartitionType partitionType);
+    bool IsDtocEntry(PartitionType partitionType);
+    bool CollectDtocForProductionBurn(PartitionType partitionType, FwOperations* imageOps);
     vector<u_int8_t> ReadPartitionData(PartitionType partitionType, int chainNumber = INVALID_CHAIN_NUMBER);
     void UpdatePartitionData(PartitionType partitionType,
                              const vector<u_int8_t>& data,

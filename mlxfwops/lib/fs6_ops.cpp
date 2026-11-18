@@ -401,6 +401,16 @@ bool Fs6Operations::InitCshComponent(PartitionTableEntry& entry)
     return true;
 }
 
+bool Fs6Operations::IsValidCshSection(FwOperations* imageOps, PartitionType partitionType)
+{
+    Fs6Operations* fs6Ops = dynamic_cast<Fs6Operations*>(imageOps);
+    if (fs6Ops == nullptr)
+    {
+        throw std::invalid_argument("imageOps is not a Fs6Operations");
+    }
+    return fs6Ops->_l1pt.GetEntry(partitionType).GetCsh() != nullptr;
+}
+
 bool Fs6Operations::FwInit()
 {
     FwInitCom();
@@ -1212,6 +1222,34 @@ void Fs6Operations::UpdatePartitionTable(bool isL2pt, PrintCallBack callBackFunc
     }
 }
 
+bool Fs6Operations::IsDtocEntry(PartitionType partitionType)
+{
+    bool isl1ptSection = !IsL2ptSection(partitionType);
+    return isl1ptSection && partitionType != PartitionType::PT_CHAIN_CONTAINER &&
+           partitionType != PartitionType::PT_ROM_IMGS;
+}
+
+bool Fs6Operations::CollectDtocForProductionBurn(PartitionType partitionType, FwOperations* imageOps)
+{
+    bool toCollect = false;
+    if (IsDtocEntry(partitionType))
+    {
+        if (partitionType == PartitionType::PT_VMOD_FW)
+        {
+            if (IsValidCshSection(imageOps, partitionType))
+            {
+                toCollect = true;
+            }
+        }
+        else
+        {
+            toCollect = true;
+        }
+    }
+
+    return toCollect;
+}
+
 bool Fs6Operations::IsL2ptSection(CshComponentID cshId)
 {
     if (cshId == CshComponentID::NV_FWS || cshId == CshComponentID::OEM_FWS || cshId == CshComponentID::BCT_DTB ||
@@ -1397,6 +1435,64 @@ void Fs6Operations::addBurnRegion(u_int32_t srcOffset,
     allRegions.push_back(BurnRegion{srcOffset, destOffset, size, name, pt});
 }
 
+bool Fs6Operations::ProcessL1pt(FwOperations* imageOps,
+                                const vector<PartitionTableEntry>& l1Entries,
+                                Fs6Operations* fs6ImageOps, // source image ops
+                                L1ptInstance instance,
+                                map<PartitionType, vector<BurnRegion>>& partitionTypeToBurnRegions,
+                                vector<BurnRegion>& allBurnRegions,
+                                bool collectDtocs)
+{
+    size_t l1ptSrcOffset = fs6ImageOps->_l1ptOffset;
+    size_t l1ptDestOffset = (instance == L1ptInstance::First) ? l1ptSrcOffset : SECOND_L1PT_OFFSET;
+    if (instance == L1ptInstance::Second)
+    {
+        if (!CheckSecondL1ptExists())
+        {
+            return false;
+        }
+        if (_secondL1ptExists)
+        {
+            l1ptSrcOffset = SECOND_L1PT_OFFSET; // if second l1pt exists in image, we'll copy it. else - we'll duplicate
+                                                // the existing l1pt to the second dot_l1pt
+        }
+    }
+
+    string prefix = (instance == L1ptInstance::First) ? "L1PT" : "SECOND_L1PT";
+
+    // Add header burn region
+    addBurnRegion(l1ptSrcOffset, l1ptDestOffset, PartitionTable::HeaderSize(), prefix + "_HEADER",
+                  PartitionType::PT_UNKNOWN, partitionTypeToBurnRegions, allBurnRegions);
+    l1ptSrcOffset += PartitionTable::HeaderSize();
+    l1ptDestOffset += PartitionTable::HeaderSize();
+
+    // Add entry burn regions
+    for (size_t i = 0; i < l1Entries.size(); i++)
+    {
+        PartitionType partType = (PartitionType)l1Entries[i].GetPartitionTypeEnum();
+        bool isCshComponent = IsCshComponent(partType);
+        size_t ptEntrySrcOffset = l1ptSrcOffset + i * PartitionTableEntry::Size();
+        size_t ptEntryDestOffset = l1ptDestOffset + i * PartitionTableEntry::Size();
+        size_t ptEntrySize = PartitionTableEntry::Size();
+        string ptEntryName = prefix + "_ENTRY_" + GetL1ptEntryName(partType, isCshComponent);
+
+        addBurnRegion(ptEntrySrcOffset, ptEntryDestOffset, ptEntrySize, ptEntryName, partType,
+                      partitionTypeToBurnRegions, allBurnRegions);
+
+        // collect dtocs only for first l1pt (no need to collect twice, they both point to the same dtocs)
+        if (collectDtocs && instance == L1ptInstance::First && CollectDtocForProductionBurn(partType, imageOps))
+        {
+            size_t dtocOffset = l1Entries[i].GetStartOffset();
+            size_t dtocSize = l1Entries[i].GetSectionSize();
+            string dtocName = "DTOC_" + ptEntryName;
+            addBurnRegion(dtocOffset, dtocOffset, dtocSize, dtocName, partType, partitionTypeToBurnRegions,
+                          allBurnRegions);
+        }
+    }
+
+    return true;
+}
+
 std::map<PartitionType, std::vector<Fs6Operations::BurnRegion>>
   Fs6Operations::GetBurnRegions(FwOperations* imageOps, bool useImgDevData, bool failSafe)
 {
@@ -1411,42 +1507,14 @@ std::map<PartitionType, std::vector<Fs6Operations::BurnRegion>>
     int destChainNumber = GetDestChainNumber(failSafe);
     MLXFWOPS_LOG_DEBUG("Burning to chain: %d", destChainNumber);
 
-    size_t l1ptSrcOffset = fs6ImageOps->_l1ptOffset;
-    size_t l1ptDestOffset = _l1ptOffset;
-
     if (useImgDevData)
     {
-        l1ptDestOffset = l1ptSrcOffset;
-        addBurnRegion(l1ptSrcOffset, l1ptDestOffset, PartitionTable::HeaderSize(), "L1PT_HEADER",
-                      PartitionType::PT_UNKNOWN, partitionTypeToBurnRegions, allBurnRegions);
-    }
-    l1ptSrcOffset += PartitionTable::HeaderSize();
-    const auto& l1Entries = fs6ImageOps->_l1pt.GetEntries();
-
-    // collect l1pt entries
-    if (useImgDevData)
-    {
-        for (size_t i = 0; i < l1Entries.size(); i++)
-        {
-            PartitionType partType = l1Entries[i].GetPartitionTypeEnum();
-            bool isCshComponent = IsCshComponent(partType);
-            size_t ptEntryOffset = l1ptSrcOffset + i * PartitionTableEntry::Size();
-            size_t ptEntrySize = PartitionTableEntry::Size();
-            string ptEntryName = "L1PT_ENTRY_" + GetL1ptEntryName(partType, isCshComponent);
-
-            addBurnRegion(ptEntryOffset, ptEntryOffset, ptEntrySize, ptEntryName, partType, partitionTypeToBurnRegions,
-                          allBurnRegions);
-
-            // collect dtocs
-            if (!IsCshComponent(partType) && partType != PartitionType::PT_CHAIN_CONTAINER)
-            {
-                size_t dtocOffset = l1Entries[i].GetStartOffset();
-                size_t dtocSize = l1Entries[i].GetSectionSize();
-                string dtocName = "DTOC_" + ptEntryName;
-                addBurnRegion(dtocOffset, dtocOffset, dtocSize, dtocName, partType, partitionTypeToBurnRegions,
-                              allBurnRegions);
-            }
-        }
+        ProcessL1pt(imageOps, fs6ImageOps->_l1pt.GetEntries(), fs6ImageOps, L1ptInstance::First,
+                    partitionTypeToBurnRegions, allBurnRegions,
+                    useImgDevData); // for first dotl1pt, we'll collect dtoc as well if it's production burn
+        ProcessL1pt(imageOps, fs6ImageOps->_l1pt.GetEntries(), fs6ImageOps, L1ptInstance::Second,
+                    partitionTypeToBurnRegions, allBurnRegions); // for second dotl1pt. we'll not collect dtocs (if
+                                                                 // needed, it was collected in the first dotl1pt)
     }
 
     // collect l2pt entries
