@@ -960,10 +960,6 @@ void CSH::SetJsonParams(const Json::Value& root)
         {
             SetHeaderFromJson(root[cshHeaderName]);
         }
-        else
-        {
-            throw runtime_error("Invalid field name: " + jsonFieldName);
-        }
     }
 }
 
