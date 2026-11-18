@@ -1348,7 +1348,10 @@ const char* CompNames[] = {"NO_COMPONENT 1",                      // 0x0
                            "COMPID_MTDT_TOKEN",                   // 0x1E
                            "COMPID_CPO_VMOD_FW",                  // 0x1F
                            "COMPID_PSC_TOKEN",                    // 0x20
-                           "COMPID_HBI_IMG"};                     // 0x21
+                           "COMPID_OE_CALIBRATION_PARAMS",        // 0x21
+                           "COMPID_CPLD_IMG",                     // 0x22
+                           "COMPID_HBI_IMG",                      // 0x23
+                           "COMPID_CALIPTRA"};                    // 0x24
 
 bool FwCompsMgr::RefreshComponentsStatus(comp_status_st* ComponentStatus)
 {
