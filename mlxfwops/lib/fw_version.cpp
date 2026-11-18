@@ -127,6 +127,7 @@ bool FwVersion::operator!=(const FwVersion& rhs) const
 // 41 is NVLink6_Switch
 // 37 is Spectrum5
 // 39 is Spectrum6
+// 95 is VMOD
 bool FwVersion::is_switch_or_gb() const
 {
     if (_major == 0 && _minor == 0 && _subminor == 0 && !_devBranchTag.empty())
@@ -135,6 +136,10 @@ bool FwVersion::is_switch_or_gb() const
     }
     if (_major == 13 || _major == 29 || _major == 30 || _major == 31 || _major == 34 || _major == 19 || _major == 21 || _major == 35 || _major == 36 ||
         _major == 37 || _major == 41)
+    {
+        return true;
+    }
+    if (_major == 95)
     {
         return true;
     }
