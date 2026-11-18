@@ -195,7 +195,12 @@ class MLXFWOP_API BinarySectionMetadata
 public:
     BinarySectionMetadata();
     BinarySectionMetadata(size_t sectionSize, size_t flashOffset, const vector<u_int8_t>& digest);
-    BinarySectionMetadata(u_int32_t itoc_type, size_t sectionSize, size_t flashOffset, const vector<u_int8_t>& digest);
+    BinarySectionMetadata(u_int32_t itocType,
+                          u_int32_t loadDestinationIdx0,
+                          u_int32_t loadDestinationIdx1,
+                          size_t sectionSize,
+                          size_t flashOffset,
+                          const vector<u_int8_t>& digest);
 
     vector<u_int8_t> Pack() const;
     void Unpack(const vector<u_int8_t>& binarySection);
@@ -256,7 +261,7 @@ public:
     vector<BinarySectionMetadata>& GetSections() { return _cshSections; }
     size_t GetCshSize();
     u_int16_t GetComponentId() { return _metadata.component_id; }
-    size_t GetComponentSize(bool withCshHeader = true);
+    size_t GetComponentSize();
     size_t GetNumberOfBinaries() { return _metadata.num_of_binaries; }
 
     void SetNvSignature(const vector<u_int8_t>& signature, SigType sigType);

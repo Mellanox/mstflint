@@ -260,13 +260,17 @@ BinarySectionMetadata::BinarySectionMetadata(size_t sectionSize, size_t flashOff
     memcpy(_struct.bin_digest.digest, digest.data(), digest.size());
 }
 
-BinarySectionMetadata::BinarySectionMetadata(u_int32_t itoc_type,
+BinarySectionMetadata::BinarySectionMetadata(u_int32_t itocType,
+                                             u_int32_t loadDestinationLSB,
+                                             u_int32_t loadDestinationMSB,
                                              size_t sectionSize,
                                              size_t flashOffset,
                                              const vector<u_int8_t>& digest)
 {
     memset(&_struct, 0, sizeof(_struct));
-    memcpy(_struct.u8_magic_id, &itoc_type, sizeof(itoc_type));
+    memcpy(_struct.u8_magic_id, &itocType, sizeof(itocType));
+    _struct.load_dest[0] = loadDestinationLSB;
+    _struct.load_dest[1] = loadDestinationMSB;
     _struct.bin_length = sectionSize;
     _struct.flash_offset = flashOffset;
     if (digest.size() != 48)
@@ -483,15 +487,13 @@ void CSH::UnpackSections(const vector<u_int8_t>& buffer, size_t offset)
 
 void CSH::AddBinarySectionMetadata(BinarySectionMetadata sectionMetadata, bool updateSectionsOffsets)
 {
-    if (updateSectionsOffsets)
+    if (updateSectionsOffsets && (CshComponentID)_metadata.component_id != CshComponentID::SWITCH_FWS)
     {
-        if ((CshComponentID)_metadata.component_id != CshComponentID::SWITCH_FWS)
+        //* for an empty CSH, first section offset must pushed back by BinarySectionMetadata size
+        sectionMetadata.SetSectionOffset(GetComponentSize() + BinarySectionMetadata::Size());
+        for (auto& section : _cshSections)
         {
-            for (auto& section : _cshSections)
-            {
-                section.SetSectionOffset(section.GetSectionOffset() + BinarySectionMetadata::Size());
-            }
-            sectionMetadata.SetSectionOffset(GetComponentSize() + BinarySectionMetadata::Size());
+            section.SetSectionOffset(section.GetSectionOffset() + BinarySectionMetadata::Size());
         }
     }
     _cshSections.push_back(sectionMetadata);
@@ -515,30 +517,21 @@ size_t CSH::GetCshSize()
     return CSH::HeaderSize() + (isSwitchFws ? 32 : _cshSections.size()) * BinarySectionMetadata::Size();
 }
 
-size_t CSH::GetComponentSize(bool withCshHeader)
+size_t CSH::GetComponentSize()
 {
-    size_t componentSize = 0;
-    size_t firstSectionOffset = SIZE_MAX;
-    size_t lastSectionOffset = 0, lastSectionSize = 0;
-    for (auto section : _cshSections)
-    {
-        if (section.GetSectionOffset() < firstSectionOffset)
-        {
-            firstSectionOffset = section.GetSectionOffset();
-        }
-        if (section.GetSectionOffset() > lastSectionOffset)
-        {
-            lastSectionOffset = section.GetSectionOffset();
-            lastSectionSize = section.GetSectionSize();
-        }
-    }
-    if (withCshHeader)
-    {
-        componentSize += GetCshSize();
-    }
+    size_t componentSize = GetCshSize();
     if (!_cshSections.empty())
     {
-        componentSize += lastSectionSize + lastSectionOffset - firstSectionOffset;
+        size_t lastSectionOffset = 0, lastSectionSize = 0;
+        for (auto section : _cshSections)
+        {
+            if (section.GetSectionOffset() > lastSectionOffset)
+            {
+                lastSectionOffset = section.GetSectionOffset();
+                lastSectionSize = section.GetSectionSize();
+            }
+        }
+        componentSize = lastSectionSize + lastSectionOffset;
     }
     return componentSize;
 }
