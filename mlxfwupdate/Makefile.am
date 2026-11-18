@@ -48,7 +48,6 @@ AM_CPPFLAGS = \
     -I$(top_srcdir)/mlxarchive \
     -I$(top_srcdir)/mlxfwops/lib \
     -I$(top_srcdir)/pldmlib \
-    $(libxml2_CFLAGS) \
     $(libcurl_CFLAGS) \
     $(openssl_CFLAGS) \
     -isystem $(top_srcdir)/ext_libs/fkYAML
@@ -56,7 +55,6 @@ AM_CPPFLAGS = \
 bin_PROGRAMS = mstfwmanager
 
 mstfwmanager_CXXFLAGS = -g -MP -MD -Wall -W -DMSTFLINT $(INIPARSER_CFLAGS) $(JSON_CFLAGS)
-mstfwmanager_CXXFLAGS += -DUSE_XML -DLIBXML_STATIC
 mstfwmanager_CXXFLAGS += -DUSE_CURL -DCURL_STATICLIB
 
 mstfwmanager_SOURCES = \
@@ -117,7 +115,7 @@ mstfwmanager_DEPENDENCIES = \
     $(MUPARSER_LIBS) \
     $(SQLITE_LIBS)
 
-LDADD_mstfwmanager = $(libcurl_LIBS) $(libz_LIBS) $(liblzma_LIBS) $(libxml2_LIBS)
+LDADD_mstfwmanager = $(libcurl_LIBS) $(libz_LIBS) $(liblzma_LIBS)
 
 if ENABLE_OPENSSL
 mstfwmanager_DEPENDENCIES += $(top_builddir)/mlxsign_lib/libmlxsign.la

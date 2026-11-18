@@ -76,7 +76,8 @@ u_int32_t least_common_multiple(u_int32_t a, u_int32_t b);
 bool askUser(const char* question, bool force);
 std::vector<uint8_t> HexStringToBytes(const std::vector<uint8_t>& keyBytes);
 vector<u_int8_t> HexStringToBytes(const string& str);
-string ToHexString(u_int32_t value, u_int8_t width = 8);
+// Hex string of value, zero-padded to width digits. When withPrefix is true, "0x" is added at the start of the string.
+string ToHexString(u_int32_t value, u_int8_t width = 8, bool withPrefix = true);
 string ToHexString(const vector<u_int8_t>& vec);
 std::string ToString(const uint32_t* data, size_t wordCount, bool stayInHex);
 vector<u_int8_t> ToVector(const u_int32_t* arr, size_t size);

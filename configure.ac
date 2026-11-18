@@ -192,42 +192,13 @@ fi
 # mstfwmanager
 AC_MSG_CHECKING(--enable-fw-mgr argument)
 AC_ARG_ENABLE(fw-mgr,
-    AS_HELP_STRING([--enable-fw-mgr], [enable compilation of the mstfwmanager tool, requires curl/zlib/lzma/libxml2 [default=disabled]]),
+    AS_HELP_STRING([--enable-fw-mgr], [enable compilation of the mstfwmanager tool, requires curl/zlib/lzma [default=disabled]]),
     [enable_fw_mgr="$enableval"],
     [enable_fw_mgr="no"]
 )
 AC_MSG_RESULT($enable_fw_mgr)
 
 if test "x$enable_fw_mgr" = "xyes"; then
-    # libxml2
-    AC_ARG_WITH([libxml2], AS_HELP_STRING([--with-libxml2=PATH], [use libxml2 from the specified PATH]),
-        [
-            libxml2_dir="$withval"
-            AC_MSG_NOTICE([Using libxml2 from $libxml2_dir])
-            libxml2_CFLAGS="-I$libxml2_dir/include"
-            libxml2_LIBS="-L$libxml2_dir/lib -lz"
-        ],
-        [
-            AC_MSG_NOTICE([Looking for libxml2 headers and libraries])
-            PKG_CHECK_MODULES([libxml2], [libxml-2.0], [],
-                [
-                    AC_MSG_NOTICE([Looking for libxml2 headers and libraries manually])
-                    CPPFLAGS_ORIG="$CPPFLAGS"
-                    CPPFLAGS="$CPPFLAGS -I/usr/include/libxml2"
-                    AC_CHECK_HEADERS([libxml/parser.h],
-                        [libxml2_CFLAGS="-I/usr/include/libxml2"],
-                        [AC_MSG_ERROR([missed libxml2 headers])]
-                    )
-                    CPPFLAGS="$CPPFLAGS_ORIG"
-                    AC_CHECK_LIB([xml2], [xmlInitParser], [], [AC_MSG_ERROR([libxml2 not found])])
-                    libxml2_LIBS="-lxml2"
-                ]
-            )
-        ]
-    )
-    AC_MSG_NOTICE([libxml2 CFLAGS:'$libxml2_CFLAGS' LIBS:'$libxml2_LIBS'])
-    AC_SUBST(libxml2_CFLAGS)
-    AC_SUBST(libxml2_LIBS)
     # curl
     AC_ARG_WITH([libcurl], AS_HELP_STRING([--with-libcurl=PATH], [use libcurl from the specified PATH]),
         [
