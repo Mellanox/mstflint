@@ -130,6 +130,7 @@ enum class PartitionType
 };
 
 const u_int32_t L1PT_OFFSET = 0xe000;
+const u_int32_t SHA384_DIGEST_SIZE = 48;
 
 bool IsCshComponent(PartitionType partitionType);
 string ToString(CshComponentID cshId);
@@ -248,6 +249,60 @@ private:
     struct fs5_image_layout_binary_section_metadata _struct;
 };
 
+class MLXFWOP_API CshMetadataBase
+{
+public:
+    virtual ~CshMetadataBase(){};
+    virtual vector<u_int8_t> Pack() = 0;
+    virtual void Unpack(const vector<u_int8_t>& buffer) = 0;
+
+    virtual u_int16_t GetComponentId() = 0;
+    virtual void SetComponentId(u_int16_t id) = 0;
+    virtual size_t GetNumberOfBinaries() = 0;
+    virtual void SetNumberOfBinaries(size_t num) = 0;
+
+    virtual void SetBinariesListDigest(const vector<u_int8_t>& digest) = 0;
+
+    virtual void SetJsonParams(const Json::Value& root) = 0;
+};
+
+class MLXFWOP_API CshMetadataNbu : public CshMetadataBase
+{
+public:
+    vector<u_int8_t> Pack() override;
+    void Unpack(const vector<u_int8_t>& buffer) override;
+
+    u_int16_t GetComponentId() override { return _metadata_nbu.component_id; }
+    void SetComponentId(u_int16_t id) override { _metadata_nbu.component_id = id; }
+    size_t GetNumberOfBinaries() override { return _metadata_nbu.num_of_binaries; }
+    void SetNumberOfBinaries(size_t num) override { _metadata_nbu.num_of_binaries = num; }
+
+    void SetBinariesListDigest(const vector<u_int8_t>& digest) override;
+
+    void SetJsonParams(const Json::Value& root) override;
+
+private:
+    struct fs5_image_layout_csh_metadata_nbu _metadata_nbu;
+};
+
+class MLXFWOP_API CshMetadata : public CshMetadataBase
+{
+public:
+    vector<u_int8_t> Pack() override;
+    void Unpack(const vector<u_int8_t>& buffer) override;
+
+    u_int16_t GetComponentId() override { return _metadata.component_id; }
+    void SetComponentId(u_int16_t id) override { _metadata.component_id = id; }
+    size_t GetNumberOfBinaries() override { return _metadata.num_of_binaries; }
+    void SetNumberOfBinaries(size_t num) override { _metadata.num_of_binaries = num; }
+
+    void SetBinariesListDigest(const vector<u_int8_t>& digest) override;
+    void SetJsonParams(const Json::Value& root) override;
+
+private:
+    struct fs5_image_layout_csh_metadata _metadata;
+};
+
 class MLXFWOP_API CSH
 {
 public:
@@ -257,8 +312,14 @@ public:
         LMS
     };
 
+    enum class CshStructType : u_int8_t
+    {
+        CSH_TB50X = 0x0,
+        CSH_NBU = 0x1
+    };
+
     CSH();
-    CSH(u_int16_t id);
+    CSH(u_int16_t id, CshStructType type);
 
     vector<u_int8_t> Pack();
     vector<u_int8_t> PackMetadata() const;
@@ -269,9 +330,9 @@ public:
 
     vector<BinarySectionMetadata>& GetSections() { return _cshSections; }
     size_t GetCshSize();
-    u_int16_t GetComponentId() { return _metadata.component_id; }
+    u_int16_t GetComponentId() { return _metadata->GetComponentId(); }
     size_t GetComponentSize();
-    size_t GetNumberOfBinaries() { return _metadata.num_of_binaries; }
+    size_t GetNumberOfBinaries() { return _metadata->GetNumberOfBinaries(); }
 
     void SetNvSignature(const vector<u_int8_t>& signature, SigType sigType);
     void SetOemSignature(const vector<u_int8_t>& signature, SigType sigType);
@@ -279,14 +340,16 @@ public:
     void SetJsonParams(const Json::Value& root);
     void CalcDigest();
 
-    static size_t HeaderSize();
+    static size_t HeaderSize(CshStructType type);
+    static CshStructType GetCshStructType(const vector<u_int8_t>& cshHeader);
     static bool IsValidCompId(u_int16_t id);
 
 private:
+    void UnpackCshMetadata(const vector<u_int8_t>& cshHeader, const u_int8_t* iter);
     void SetHeaderFromJson(const Json::Value& root);
-    void SetMetadataFromJson(const Json::Value& root);
     void SetSingleSectionFromJson(const Json::Value& root);
     void SetSectionsFromJson(const Json::Value& root, bool ignoreMagicId = false);
+    void InitMembers();
 
     static const u_int16_t CSH_ECDSA_SIG_SIZE = 96;
     static const u_int16_t CSH_LMS_SIG_SIZE = 1740;
@@ -297,9 +360,10 @@ private:
     struct fs5_image_layout_csh_header _header;
     struct fs5_image_layout_csh_signature _nv_signature;
     struct fs5_image_layout_csh_signature _oem_signature;
-    struct fs5_image_layout_csh_metadata _metadata;
+    unique_ptr<CshMetadataBase> _metadata;
     vector<BinarySectionMetadata> _cshSections;
     bool _isUnpacked;
+    CshStructType _cshStructType;
 };
 
 // #endif // } MST_CPU_armv7l_umbriel

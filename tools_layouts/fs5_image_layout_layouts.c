@@ -31,7 +31,7 @@
  */
 
 /***
-         *** This file was generated at "2024-11-04 15:08:38"
+         *** This file was generated at "2025-07-29 22:06:43"
          *** by:
          ***    > [REDACTED]/adb2pack.py --input adb/fs5_image_layout/fs5_image_layout.adb --file-prefix fs5_image_layout --prefix fs5_image_layout_ --no-adb-utils
          ***/
@@ -633,6 +633,53 @@ unsigned int fs5_image_layout_boot_component_ver_size(void)
 void fs5_image_layout_boot_component_ver_dump(const struct fs5_image_layout_boot_component_ver *ptr_struct, FILE *fd)
 {
 	fs5_image_layout_boot_component_ver_print(ptr_struct, fd, 0);
+}
+
+void fs5_image_layout_boot_component_ver_nbu_pack(const struct fs5_image_layout_boot_component_ver_nbu *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 16;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->ver_minor);
+	offset = 8;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->ratchet_level);
+	offset = 0;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->ver_major);
+}
+
+void fs5_image_layout_boot_component_ver_nbu_unpack(struct fs5_image_layout_boot_component_ver_nbu *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 16;
+	ptr_struct->ver_minor = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 8;
+	ptr_struct->ratchet_level = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 0;
+	ptr_struct->ver_major = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+}
+
+void fs5_image_layout_boot_component_ver_nbu_print(const struct fs5_image_layout_boot_component_ver_nbu *ptr_struct, FILE *fd, int indent_level)
+{
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== fs5_image_layout_boot_component_ver_nbu ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "ver_minor            : " UH_FMT "\n", ptr_struct->ver_minor);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "ratchet_level        : " UH_FMT "\n", ptr_struct->ratchet_level);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "ver_major            : " UH_FMT "\n", ptr_struct->ver_major);
+}
+
+unsigned int fs5_image_layout_boot_component_ver_nbu_size(void)
+{
+	return FS5_IMAGE_LAYOUT_BOOT_COMPONENT_VER_NBU_SIZE;
+}
+
+void fs5_image_layout_boot_component_ver_nbu_dump(const struct fs5_image_layout_boot_component_ver_nbu *ptr_struct, FILE *fd)
+{
+	fs5_image_layout_boot_component_ver_nbu_print(ptr_struct, fd, 0);
 }
 
 void fs5_image_layout_crypto_ecdsa256_pub_params_pack(const struct fs5_image_layout_crypto_ecdsa256_pub_params *ptr_struct, u_int8_t *ptr_buff)
@@ -1960,8 +2007,8 @@ void fs5_image_layout_u8_gen_padding_pqc_pack(const struct fs5_image_layout_u8_g
 	u_int32_t offset;
 	int i;
 
-	for (i = 0; i < 48; ++i) {
-		offset = adb2c_calc_array_field_address(24, 8, i, 384, 1);
+	for (i = 0; i < 44; ++i) {
+		offset = adb2c_calc_array_field_address(24, 8, i, 352, 1);
 		adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->u8_dummy[i]);
 	}
 }
@@ -1971,8 +2018,8 @@ void fs5_image_layout_u8_gen_padding_pqc_unpack(struct fs5_image_layout_u8_gen_p
 	u_int32_t offset;
 	int i;
 
-	for (i = 0; i < 48; ++i) {
-		offset = adb2c_calc_array_field_address(24, 8, i, 384, 1);
+	for (i = 0; i < 44; ++i) {
+		offset = adb2c_calc_array_field_address(24, 8, i, 352, 1);
 		ptr_struct->u8_dummy[i] = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 	}
 }
@@ -1984,7 +2031,7 @@ void fs5_image_layout_u8_gen_padding_pqc_print(const struct fs5_image_layout_u8_
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "======== fs5_image_layout_u8_gen_padding_pqc ========\n");
 
-	for (i = 0; i < 48; ++i) {
+	for (i = 0; i < 44; ++i) {
 		adb2c_add_indentation(fd, indent_level);
 		fprintf(fd, "u8_dummy_%03d        : " UH_FMT "\n", i, ptr_struct->u8_dummy[i]);
 	}
@@ -2958,8 +3005,16 @@ void fs5_image_layout_csh_header_pack(const struct fs5_image_layout_csh_header *
 	}
 	offset = 56;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->u8_nv_pub_key_idx);
+	offset = 48;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->struct_version_major);
+	offset = 40;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->struct_version_minor);
+	offset = 32;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->reserved);
+	offset = 64;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->reserved1);
 	for (i = 0; i < 4; ++i) {
-		offset = adb2c_calc_array_field_address(64, 8, i, 128, 1);
+		offset = adb2c_calc_array_field_address(120, 8, i, 128, 1);
 		adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->magic_pattern[i]);
 	}
 }
@@ -2975,8 +3030,16 @@ void fs5_image_layout_csh_header_unpack(struct fs5_image_layout_csh_header *ptr_
 	}
 	offset = 56;
 	ptr_struct->u8_nv_pub_key_idx = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 48;
+	ptr_struct->struct_version_major = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 40;
+	ptr_struct->struct_version_minor = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 32;
+	ptr_struct->reserved = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 64;
+	ptr_struct->reserved1 = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 	for (i = 0; i < 4; ++i) {
-		offset = adb2c_calc_array_field_address(64, 8, i, 128, 1);
+		offset = adb2c_calc_array_field_address(120, 8, i, 128, 1);
 		ptr_struct->magic_pattern[i] = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 	}
 }
@@ -2986,7 +3049,7 @@ void fs5_image_layout_csh_header_print(const struct fs5_image_layout_csh_header 
 	int i;
 
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "======== image_layout_csh_header ========\n");
+	fprintf(fd, "======== fs5_image_layout_csh_header ========\n");
 
 	for (i = 0; i < 4; ++i) {
 		adb2c_add_indentation(fd, indent_level);
@@ -2994,6 +3057,14 @@ void fs5_image_layout_csh_header_print(const struct fs5_image_layout_csh_header 
 	}
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "u8_nv_pub_key_idx    : " UH_FMT "\n", ptr_struct->u8_nv_pub_key_idx);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "struct_version_major : " UH_FMT "\n", ptr_struct->struct_version_major);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "struct_version_minor : " UH_FMT "\n", ptr_struct->struct_version_minor);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "reserved             : " UH_FMT "\n", ptr_struct->reserved);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "reserved1            : " U32H_FMT "\n", ptr_struct->reserved1);
 	for (i = 0; i < 4; ++i) {
 		adb2c_add_indentation(fd, indent_level);
 		fprintf(fd, "magic_pattern_%03d   : " UH_FMT "\n", i, ptr_struct->magic_pattern[i]);
@@ -3111,6 +3182,152 @@ unsigned int fs5_image_layout_csh_metadata_size(void)
 void fs5_image_layout_csh_metadata_dump(const struct fs5_image_layout_csh_metadata *ptr_struct, FILE *fd)
 {
 	fs5_image_layout_csh_metadata_print(ptr_struct, fd, 0);
+}
+
+
+void fs5_image_layout_csh_metadata_nbu_pack(const struct fs5_image_layout_csh_metadata_nbu *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	int i;
+
+	offset = 16;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->component_id);
+	offset = 0;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->nbu_subminor);
+	offset = 32;
+	fs5_image_layout_boot_component_ver_nbu_pack(&(ptr_struct->version), ptr_buff + offset / 8);
+	for (i = 0; i < 8; ++i) {
+		offset = adb2c_calc_array_field_address(64, 32, i, 1408, 1);
+		fs5_image_layout_csh_component_dependency_list_pack(&(ptr_struct->dependency_list[i]), ptr_buff + offset / 8);
+	}
+	offset = 320;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->fw_lifecycle);
+	for (i = 0; i < 4; ++i) {
+		offset = adb2c_calc_array_field_address(352, 128, i, 1408, 1);
+		fs5_image_layout_u8_ecid_pack(&(ptr_struct->ecid[i]), ptr_buff + offset / 8);
+	}
+	offset = 872;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 24, (u_int32_t)ptr_struct->reserved1);
+	offset = 864;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->num_of_binaries);
+	offset = 896;
+	fs5_image_layout_u8_sha2_384_digest_pack(&(ptr_struct->binaries_list_digest), ptr_buff + offset / 8);
+	offset = 1296;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->issu_ver_major);
+	offset = 1280;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->issu_ver_minor);
+	offset = 1328;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->issu_notch);
+	offset = 1320;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->issuable);
+	offset = 1312;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->res);
+	for (i = 0; i < 8; ++i) {
+		offset = adb2c_calc_array_field_address(1368, 8, i, 1408, 1);
+		adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->reserved2[i]);
+	}
+}
+
+void fs5_image_layout_csh_metadata_nbu_unpack(struct fs5_image_layout_csh_metadata_nbu *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	int i;
+
+	offset = 16;
+	ptr_struct->component_id = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 0;
+	ptr_struct->nbu_subminor = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 32;
+	fs5_image_layout_boot_component_ver_nbu_unpack(&(ptr_struct->version), ptr_buff + offset / 8);
+	for (i = 0; i < 8; ++i) {
+		offset = adb2c_calc_array_field_address(64, 32, i, 1408, 1);
+		fs5_image_layout_csh_component_dependency_list_unpack(&(ptr_struct->dependency_list[i]), ptr_buff + offset / 8);
+	}
+	offset = 320;
+	ptr_struct->fw_lifecycle = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	for (i = 0; i < 4; ++i) {
+		offset = adb2c_calc_array_field_address(352, 128, i, 1408, 1);
+		fs5_image_layout_u8_ecid_unpack(&(ptr_struct->ecid[i]), ptr_buff + offset / 8);
+	}
+	offset = 872;
+	ptr_struct->reserved1 = (u_int32_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 24);
+	offset = 864;
+	ptr_struct->num_of_binaries = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 896;
+	fs5_image_layout_u8_sha2_384_digest_unpack(&(ptr_struct->binaries_list_digest), ptr_buff + offset / 8);
+	offset = 1296;
+	ptr_struct->issu_ver_major = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 1280;
+	ptr_struct->issu_ver_minor = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 1328;
+	ptr_struct->issu_notch = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 1320;
+	ptr_struct->issuable = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 1312;
+	ptr_struct->res = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	for (i = 0; i < 8; ++i) {
+		offset = adb2c_calc_array_field_address(1368, 8, i, 1408, 1);
+		ptr_struct->reserved2[i] = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	}
+}
+
+void fs5_image_layout_csh_metadata_nbu_print(const struct fs5_image_layout_csh_metadata_nbu *ptr_struct, FILE *fd, int indent_level)
+{
+	int i;
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== fs5_image_layout_csh_metadata_nbu ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "component_id         : " UH_FMT "\n", ptr_struct->component_id);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "nbu_subminor         : " UH_FMT "\n", ptr_struct->nbu_subminor);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "version:\n");
+	fs5_image_layout_boot_component_ver_nbu_print(&(ptr_struct->version), fd, indent_level + 1);
+	for (i = 0; i < 8; ++i) {
+		adb2c_add_indentation(fd, indent_level);
+		fprintf(fd, "dependency_list_%03d:\n", i);
+		fs5_image_layout_csh_component_dependency_list_print(&(ptr_struct->dependency_list[i]), fd, indent_level + 1);
+	}
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "fw_lifecycle         : " U32H_FMT "\n", ptr_struct->fw_lifecycle);
+	for (i = 0; i < 4; ++i) {
+		adb2c_add_indentation(fd, indent_level);
+		fprintf(fd, "ecid_%03d:\n", i);
+		fs5_image_layout_u8_ecid_print(&(ptr_struct->ecid[i]), fd, indent_level + 1);
+	}
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "reserved1            : " UH_FMT "\n", ptr_struct->reserved1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "num_of_binaries      : " UH_FMT "\n", ptr_struct->num_of_binaries);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "binaries_list_digest:\n");
+	fs5_image_layout_u8_sha2_384_digest_print(&(ptr_struct->binaries_list_digest), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "issu_ver_major       : " UH_FMT "\n", ptr_struct->issu_ver_major);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "issu_ver_minor       : " UH_FMT "\n", ptr_struct->issu_ver_minor);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "issu_notch           : " UH_FMT "\n", ptr_struct->issu_notch);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "issuable             : " UH_FMT "\n", ptr_struct->issuable);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "res                  : " UH_FMT "\n", ptr_struct->res);
+	for (i = 0; i < 8; ++i) {
+		adb2c_add_indentation(fd, indent_level);
+		fprintf(fd, "reserved2_%03d       : " UH_FMT "\n", i, ptr_struct->reserved2[i]);
+	}
+}
+
+unsigned int fs5_image_layout_csh_metadata_nbu_size(void)
+{
+	return FS5_IMAGE_LAYOUT_CSH_METADATA_NBU_SIZE;
+}
+
+void fs5_image_layout_csh_metadata_nbu_dump(const struct fs5_image_layout_csh_metadata_nbu *ptr_struct, FILE *fd)
+{
+	fs5_image_layout_csh_metadata_nbu_print(ptr_struct, fd, 0);
 }
 
 void fs5_image_layout_csh_signature_pack(const struct fs5_image_layout_csh_signature *ptr_struct, u_int8_t *ptr_buff)
@@ -3245,6 +3462,81 @@ void fs5_image_layout_component_signature_header_dump(const struct fs5_image_lay
 	fs5_image_layout_component_signature_header_print(ptr_struct, fd, 0);
 }
 
+
+void fs5_image_layout_component_signature_header_nbu_pack(const struct fs5_image_layout_component_signature_header_nbu *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	int i;
+
+	offset = 0;
+	fs5_image_layout_csh_header_pack(&(ptr_struct->header), ptr_buff + offset / 8);
+	offset = 128;
+	fs5_image_layout_csh_signature_pack(&(ptr_struct->nv_signature), ptr_buff + offset / 8);
+	offset = 14848;
+	fs5_image_layout_csh_signature_pack(&(ptr_struct->oem_signature), ptr_buff + offset / 8);
+	offset = 29568;
+	fs5_image_layout_csh_metadata_nbu_pack(&(ptr_struct->metadata), ptr_buff + offset / 8);
+	for (i = 0; i < 32; ++i) {
+		offset = adb2c_calc_array_field_address(30976, 1152, i, 67840, 1);
+		fs5_image_layout_binary_section_metadata_pack(&(ptr_struct->binaries[i]), ptr_buff + offset / 8);
+	}
+}
+
+void fs5_image_layout_component_signature_header_nbu_unpack(struct fs5_image_layout_component_signature_header_nbu *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	int i;
+
+	offset = 0;
+	fs5_image_layout_csh_header_unpack(&(ptr_struct->header), ptr_buff + offset / 8);
+	offset = 128;
+	fs5_image_layout_csh_signature_unpack(&(ptr_struct->nv_signature), ptr_buff + offset / 8);
+	offset = 14848;
+	fs5_image_layout_csh_signature_unpack(&(ptr_struct->oem_signature), ptr_buff + offset / 8);
+	offset = 29568;
+	fs5_image_layout_csh_metadata_nbu_unpack(&(ptr_struct->metadata), ptr_buff + offset / 8);
+	for (i = 0; i < 32; ++i) {
+		offset = adb2c_calc_array_field_address(30976, 1152, i, 67840, 1);
+		fs5_image_layout_binary_section_metadata_unpack(&(ptr_struct->binaries[i]), ptr_buff + offset / 8);
+	}
+}
+
+void fs5_image_layout_component_signature_header_nbu_print(const struct fs5_image_layout_component_signature_header_nbu *ptr_struct, FILE *fd, int indent_level)
+{
+	int i;
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== fs5_image_layout_component_signature_header_nbu ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "header:\n");
+	fs5_image_layout_csh_header_print(&(ptr_struct->header), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "nv_signature:\n");
+	fs5_image_layout_csh_signature_print(&(ptr_struct->nv_signature), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "oem_signature:\n");
+	fs5_image_layout_csh_signature_print(&(ptr_struct->oem_signature), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "metadata:\n");
+	fs5_image_layout_csh_metadata_nbu_print(&(ptr_struct->metadata), fd, indent_level + 1);
+	for (i = 0; i < 32; ++i) {
+		adb2c_add_indentation(fd, indent_level);
+		fprintf(fd, "binaries_%03d:\n", i);
+		fs5_image_layout_binary_section_metadata_print(&(ptr_struct->binaries[i]), fd, indent_level + 1);
+	}
+}
+
+unsigned int fs5_image_layout_component_signature_header_nbu_size(void)
+{
+	return FS5_IMAGE_LAYOUT_COMPONENT_SIGNATURE_HEADER_NBU_SIZE;
+}
+
+void fs5_image_layout_component_signature_header_nbu_dump(const struct fs5_image_layout_component_signature_header_nbu *ptr_struct, FILE *fd)
+{
+	fs5_image_layout_component_signature_header_nbu_print(ptr_struct, fd, 0);
+}
+
 void fs5_image_layout_boot_component_header_pqc_pack(const struct fs5_image_layout_boot_component_header_pqc *ptr_struct, u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
@@ -3263,6 +3555,8 @@ void fs5_image_layout_boot_component_header_pqc_pack(const struct fs5_image_layo
 	offset = 4224;
 	fs5_image_layout_crypto_public_crypto_params_pack(&(ptr_struct->pcp), ptr_buff + offset / 8);
 	offset = 7296;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->u32_key_id);
+	offset = 7328;
 	fs5_image_layout_u8_gen_padding_pqc_pack(&(ptr_struct->u8_gen_padding), ptr_buff + offset / 8);
 	offset = 7680;
 	fs5_image_layout_u8_salt_pack(&(ptr_struct->u8_salt2), ptr_buff + offset / 8);
@@ -3316,6 +3610,8 @@ void fs5_image_layout_boot_component_header_pqc_unpack(struct fs5_image_layout_b
 	offset = 4224;
 	fs5_image_layout_crypto_public_crypto_params_unpack(&(ptr_struct->pcp), ptr_buff + offset / 8);
 	offset = 7296;
+	ptr_struct->u32_key_id = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	offset = 7328;
 	fs5_image_layout_u8_gen_padding_pqc_unpack(&(ptr_struct->u8_gen_padding), ptr_buff + offset / 8);
 	offset = 7680;
 	fs5_image_layout_u8_salt_unpack(&(ptr_struct->u8_salt2), ptr_buff + offset / 8);
@@ -3374,6 +3670,8 @@ void fs5_image_layout_boot_component_header_pqc_print(const struct fs5_image_lay
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "pcp:\n");
 	fs5_image_layout_crypto_public_crypto_params_print(&(ptr_struct->pcp), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "u32_key_id           : " U32H_FMT "\n", ptr_struct->u32_key_id);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "u8_gen_padding:\n");
 	fs5_image_layout_u8_gen_padding_pqc_print(&(ptr_struct->u8_gen_padding), fd, indent_level + 1);

@@ -128,7 +128,8 @@ void PartitionTable::CalcDigest()
 {
 #ifndef MST_CPU_armv7l_umbriel // {
     vector<u_int8_t> data = Pack();
-    data.erase(data.begin() + PARTITION_TABLE_DIGEST_OFFSET, data.begin() + PARTITION_TABLE_DIGEST_OFFSET + 48);
+    data.erase(data.begin() + PARTITION_TABLE_DIGEST_OFFSET,
+               data.begin() + PARTITION_TABLE_DIGEST_OFFSET + SHA384_DIGEST_SIZE);
 
     vector<u_int8_t> digest;
     MlxSignSHA384 Sha384;
@@ -254,7 +255,7 @@ BinarySectionMetadata::BinarySectionMetadata(size_t sectionSize, size_t flashOff
                    // the section, if such attr exists in .mlx field, and not the actual size of the bin
     _struct.flash_offset = flashOffset;
 
-    if (digest.size() != 48)
+    if (digest.size() != SHA384_DIGEST_SIZE)
     {
         throw runtime_error("Binary section digest unexpected size");
     }
@@ -278,7 +279,7 @@ BinarySectionMetadata::BinarySectionMetadata(u_int32_t itocType,
     _struct.entry_point[1] = entryPointMSB;
     _struct.bin_length = sectionSize;
     _struct.flash_offset = flashOffset;
-    if (digest.size() != 48)
+    if (digest.size() != SHA384_DIGEST_SIZE)
     {
         throw runtime_error("Binary section digest unexpected size");
     }
@@ -320,11 +321,11 @@ string BinarySectionMetadata::GetMagicId() const
 
 void BinarySectionMetadata::SetDigest(const vector<u_int8_t>& digest)
 {
-    if (digest.size() != 48)
+    if (digest.size() != SHA384_DIGEST_SIZE)
     {
         throw runtime_error("Binary section digest unexpected size");
     }
-    memcpy(_struct.bin_digest.digest, digest.data(), 48);
+    memcpy(_struct.bin_digest.digest, digest.data(), SHA384_DIGEST_SIZE);
 }
 
 void BinarySectionMetadata::SetJsonParams(const Json::Value& root, bool ignoreMagicId)
@@ -386,39 +387,127 @@ void BinarySectionMetadata::SetAuthenticationTag(const vector<u_int8_t>& tag)
     CPUTOn(_struct.encryption_params.u8_auth_tag.u8_dummy, FS5_IMAGE_LAYOUT_U8_AUTH_TAG_SIZE / 4);
 }
 
-CSH::CSH() : _isUnpacked(false)
+vector<u_int8_t> CshMetadataNbu::Pack()
 {
-    memset(&_header, 0, sizeof(_header));
-    memset(&_nv_signature, 0, sizeof(_nv_signature));
-    memset(&_oem_signature, 0, sizeof(_nv_signature));
-    memset(&_metadata, 0, sizeof(_metadata));
-    memcpy(&_header.u8_header_magic, "ADVN", 4);
+    vector<u_int8_t> metadata(fs5_image_layout_csh_metadata_nbu_size());
+    fs5_image_layout_csh_metadata_nbu_pack(&_metadata_nbu, metadata.data());
+    CPUTOn(metadata.data(), metadata.size() / 4);
+    return metadata;
 }
 
-CSH::CSH(u_int16_t id) : _isUnpacked(false)
+void CshMetadataNbu::Unpack(const vector<u_int8_t>& buffer)
+{
+    if (buffer.size() != fs5_image_layout_csh_metadata_nbu_size())
+    {
+        throw runtime_error("CSH metadata unexpected size");
+    }
+    fs5_image_layout_csh_metadata_nbu_unpack(&_metadata_nbu, buffer.data());
+}
+
+void CshMetadataNbu::SetBinariesListDigest(const vector<u_int8_t>& digest)
+{
+    if (digest.size() != SHA384_DIGEST_SIZE)
+    {
+        throw runtime_error("Binaries list digest unexpected size");
+    }
+    memcpy(_metadata_nbu.binaries_list_digest.digest, digest.data(), SHA384_DIGEST_SIZE);
+}
+
+void CshMetadataNbu::SetJsonParams(const Json::Value& root)
+{
+    _metadata_nbu.version.ver_major =
+      std::stoul(nbu::mft::common::GetStrValue(root["version"]["ver_major"], true), nullptr, 16);
+    _metadata_nbu.version.ver_minor =
+      std::stoul(nbu::mft::common::GetStrValue(root["version"]["ver_minor"], true), nullptr, 16);
+    _metadata_nbu.nbu_subminor =
+      std::stoul(nbu::mft::common::GetStrValue(root["version"]["ver_subminor"], true), nullptr, 16);
+    _metadata_nbu.version.ratchet_level =
+      std::stoul(nbu::mft::common::GetStrValue(root["version"]["ratchet_level"], true), nullptr, 16);
+    _metadata_nbu.issu_ver_major = std::stoul(nbu::mft::common::GetStrValue(root["issu_ver_major"], true), nullptr, 16);
+    _metadata_nbu.issu_ver_minor = std::stoul(nbu::mft::common::GetStrValue(root["issu_ver_minor"], true), nullptr, 16);
+    _metadata_nbu.issu_notch = std::stoul(nbu::mft::common::GetStrValue(root["issu_notch"], true), nullptr, 16);
+    _metadata_nbu.issuable = std::stoul(nbu::mft::common::GetStrValue(root["issuable"], true), nullptr, 16);
+}
+
+vector<u_int8_t> CshMetadata::Pack()
+{
+    vector<u_int8_t> metadata(fs5_image_layout_csh_metadata_size());
+    fs5_image_layout_csh_metadata_pack(&_metadata, metadata.data());
+    CPUTOn(metadata.data(), metadata.size() / 4);
+    return metadata;
+}
+
+void CshMetadata::Unpack(const vector<u_int8_t>& buffer)
+{
+    if (buffer.size() != fs5_image_layout_csh_metadata_size())
+    {
+        throw runtime_error("CSH metadata unexpected size");
+    }
+    fs5_image_layout_csh_metadata_unpack(&_metadata, buffer.data());
+}
+
+void CshMetadata::SetBinariesListDigest(const vector<u_int8_t>& digest)
+{
+    if (digest.size() != SHA384_DIGEST_SIZE)
+    {
+        throw runtime_error("Binaries list digest unexpected size");
+    }
+    memcpy(_metadata.binaries_list_digest.digest, digest.data(), SHA384_DIGEST_SIZE);
+}
+
+void CshMetadata::SetJsonParams(const Json::Value& root)
+{
+    _metadata.version.u8_ver_major =
+      std::stoul(nbu::mft::common::GetStrValue(root["version"]["ver_major"], true), nullptr, 16);
+    _metadata.version.u8_ver_minor =
+      std::stoul(nbu::mft::common::GetStrValue(root["version"]["ver_minor"], true), nullptr, 16);
+    _metadata.version.u8_ratchet_level =
+      std::stoul(nbu::mft::common::GetStrValue(root["version"]["ratchet_level"], true), nullptr, 16);
+}
+
+CSH::CSH() : _isUnpacked(false), _cshStructType(CshStructType::CSH_TB50X)
+{
+    InitMembers();
+}
+
+CSH::CSH(u_int16_t id, CshStructType type) : _isUnpacked(false), _cshStructType(type)
+{
+    InitMembers();
+    _metadata->SetComponentId(id);
+}
+
+void CSH::InitMembers()
 {
     memset(&_header, 0, sizeof(_header));
     memset(&_nv_signature, 0, sizeof(_nv_signature));
     memset(&_oem_signature, 0, sizeof(_nv_signature));
-    memset(&_metadata, 0, sizeof(_metadata));
+    if (_cshStructType == CshStructType::CSH_NBU)
+    {
+        _header.struct_version_major = 0x01;
+        _metadata = unique_ptr<CshMetadataBase>(new CshMetadataNbu());
+    }
+    else
+    {
+        _metadata = unique_ptr<CshMetadataBase>(new CshMetadata());
+    }
     memcpy(&_header.u8_header_magic, "ADVN", 4);
-    _metadata.component_id = id;
 }
 
 vector<u_int8_t> CSH::Pack()
 {
-    _metadata.num_of_binaries = _cshSections.size();
+    _metadata->SetNumberOfBinaries(_cshSections.size());
 
-    vector<u_int8_t> cshData(CSH::HeaderSize());
+    vector<u_int8_t> cshData(fs5_image_layout_csh_header_size() + 2 * fs5_image_layout_csh_signature_size());
     auto cshIter = cshData.data();
     fs5_image_layout_csh_header_pack(&_header, cshIter);
     cshIter += fs5_image_layout_csh_header_size();
     fs5_image_layout_csh_signature_pack(&_nv_signature, cshIter);
     cshIter += fs5_image_layout_csh_signature_size();
     fs5_image_layout_csh_signature_pack(&_oem_signature, cshIter);
-    cshIter += fs5_image_layout_csh_signature_size();
-    fs5_image_layout_csh_metadata_pack(&_metadata, cshIter);
     CPUTOn(cshData.data(), cshData.size() / 4);
+
+    vector<u_int8_t> metadata = _metadata->Pack();
+    cshData.insert(cshData.end(), metadata.begin(), metadata.end());
 
     for (auto section : _cshSections)
     {
@@ -439,13 +528,15 @@ vector<u_int8_t> CSH::Pack()
 void CSH::Unpack(const vector<u_int8_t>& csh)
 {
     UnpackHeader(csh);
-    UnpackSections(csh, CSH::HeaderSize());
+    UnpackSections(csh, CSH::HeaderSize(_cshStructType));
     _isUnpacked = true;
 }
 
 void CSH::UnpackHeader(const vector<u_int8_t>& cshHeader)
 {
-    if (cshHeader.size() < CSH::HeaderSize() || cshHeader.size() % 4 != 0)
+    _cshStructType = GetCshStructType(cshHeader);
+
+    if (cshHeader.size() < CSH::HeaderSize(_cshStructType) || cshHeader.size() % 4 != 0)
     {
         throw runtime_error("CSH header unexpected size");
     }
@@ -459,12 +550,28 @@ void CSH::UnpackHeader(const vector<u_int8_t>& cshHeader)
     iter += fs5_image_layout_csh_signature_size();
     fs5_image_layout_csh_signature_unpack(&_oem_signature, iter);
     iter += fs5_image_layout_csh_signature_size();
-    fs5_image_layout_csh_metadata_unpack(&_metadata, iter);
+
+    UnpackCshMetadata(cshHeaderCopy, iter);
+
     memcpy(&_header.u8_header_magic, "ADVN", 4);
 
-    if (!IsValidCompId(_metadata.component_id))
+    if (!IsValidCompId(_metadata->GetComponentId()))
     {
-        throw runtime_error("Unknown CSH Component ID 0x" + std::to_string(_metadata.component_id));
+        throw runtime_error("Unknown CSH Component ID 0x" + std::to_string(_metadata->GetComponentId()));
+    }
+}
+
+void CSH::UnpackCshMetadata(const vector<u_int8_t>& cshHeader, const u_int8_t* iter)
+{
+    if (_cshStructType == CshStructType::CSH_NBU)
+    {
+        _metadata = unique_ptr<CshMetadataBase>(new CshMetadataNbu());
+        _metadata->Unpack(vector<u_int8_t>(iter, iter + fs5_image_layout_csh_metadata_nbu_size()));
+    }
+    else
+    {
+        _metadata = unique_ptr<CshMetadataBase>(new CshMetadata());
+        _metadata->Unpack(vector<u_int8_t>(iter, iter + fs5_image_layout_csh_metadata_size()));
     }
 }
 
@@ -492,7 +599,7 @@ void CSH::UnpackSections(const vector<u_int8_t>& buffer, size_t offset)
 
 void CSH::AddBinarySectionMetadata(BinarySectionMetadata sectionMetadata, bool updateSectionsOffsets)
 {
-    if (updateSectionsOffsets && (CshComponentID)_metadata.component_id != CshComponentID::SWITCH_FWS)
+    if (updateSectionsOffsets && (CshComponentID)_metadata->GetComponentId() != CshComponentID::SWITCH_FWS)
     {
         //* for an empty CSH, first section offset must pushed back by BinarySectionMetadata size
         sectionMetadata.SetSectionOffset(GetComponentSize() + BinarySectionMetadata::Size());
@@ -506,20 +613,17 @@ void CSH::AddBinarySectionMetadata(BinarySectionMetadata sectionMetadata, bool u
 
 vector<u_int8_t> CSH::PackMetadata() const
 {
-    vector<u_int8_t> metadata(fs5_image_layout_csh_metadata_size());
-    fs5_image_layout_csh_metadata_pack(&_metadata, metadata.data());
-    CPUTOn(metadata.data(), metadata.size() / 4);
-    return metadata;
+    return _metadata->Pack();
 }
 
 size_t CSH::GetCshSize()
 {
-    if (_metadata.component_id == 0x0)
+    if (_metadata->GetComponentId() == 0x0)
     {
         throw runtime_error("CSH component ID is not set");
     }
-    bool isSwitchFws = (CshComponentID)_metadata.component_id == CshComponentID::SWITCH_FWS;
-    return CSH::HeaderSize() + (isSwitchFws ? 32 : _cshSections.size()) * BinarySectionMetadata::Size();
+    bool isSwitchFws = (CshComponentID)_metadata->GetComponentId() == CshComponentID::SWITCH_FWS;
+    return CSH::HeaderSize(_cshStructType) + (isSwitchFws ? 32 : _cshSections.size()) * BinarySectionMetadata::Size();
 }
 
 size_t CSH::GetComponentSize()
@@ -609,7 +713,7 @@ void CSH::SetSingleSectionFromJson(const Json::Value& root)
                    [&magicId](const BinarySectionMetadata& section) { return section.GetMagicId() == magicId; });
     if (section == _cshSections.end())
     {
-        throw runtime_error("Magic ID not found in CSH");
+        throw runtime_error("Magic ID not found in CSH: " + magicId);
     }
 
     section->SetJsonParams(root);
@@ -634,7 +738,7 @@ void CSH::SetJsonParams(const Json::Value& root)
         throw runtime_error("Couldn't find binary_section_metadata field in JSON file.");
     }
 
-    bool isSwitchCsh = (CshComponentID)_metadata.component_id == CshComponentID::SWITCH_FWS;
+    bool isSwitchCsh = (CshComponentID)_metadata->GetComponentId() == CshComponentID::SWITCH_FWS;
 
     for (auto jsonField = root.begin(); jsonField != root.end(); jsonField++)
     {
@@ -663,7 +767,7 @@ void CSH::SetJsonParams(const Json::Value& root)
         }
         else if (jsonFieldName == cshMetadataName)
         {
-            SetMetadataFromJson(root[cshMetadataName]);
+            _metadata->SetJsonParams(root[cshMetadataName]);
         }
         else if (jsonFieldName == cshHeaderName)
         {
@@ -691,7 +795,7 @@ void CSH::CalcDigest()
     Sha384 << data;
     Sha384.getDigest(digest);
 
-    memcpy(_metadata.binaries_list_digest.digest, digest.data(), digest.size());
+    _metadata->SetBinariesListDigest(digest);
 #endif // } MST_CPU_armv7l_umbriel
 }
 
@@ -712,33 +816,48 @@ bool CSH::IsValidCompId(u_int16_t id)
     }
 }
 
-size_t CSH::HeaderSize()
+CSH::CshStructType CSH::GetCshStructType(const vector<u_int8_t>& cshHeader)
 {
-    return fs5_image_layout_csh_header_size() + fs5_image_layout_csh_signature_size() +
-           fs5_image_layout_csh_signature_size() + fs5_image_layout_csh_metadata_size();
+    const string cshMagic = "NVDA";
+    if (cshHeader.size() < fs5_image_layout_csh_header_size())
+    {
+        throw runtime_error("CSH header unexpected size");
+    }
+    if (string(cshHeader.begin(), cshHeader.begin() + 4) != cshMagic)
+    {
+        throw runtime_error("CSH header magic is not NVDA");
+    }
+
+    CshStructType type = CshStructType::CSH_TB50X;
+    struct fs5_image_layout_csh_header header;
+    memset(&header, 0, sizeof(header));
+    vector<u_int8_t> headerCopy = cshHeader;
+    CPUTOn(headerCopy.data(), headerCopy.size() / 4);
+
+    fs5_image_layout_csh_header_unpack(&header, headerCopy.data());
+    if (header.struct_version_major == 0x1 && header.struct_version_minor == 0x0)
+    {
+        type = CshStructType::CSH_NBU;
+    }
+    return type;
+}
+
+size_t CSH::HeaderSize(CshStructType type)
+{
+    size_t size = fs5_image_layout_csh_header_size() + fs5_image_layout_csh_signature_size() +
+                  fs5_image_layout_csh_signature_size();
+    if (type == CshStructType::CSH_TB50X)
+    {
+        size += fs5_image_layout_csh_metadata_size();
+    }
+    else
+    {
+        size += fs5_image_layout_csh_metadata_nbu_size();
+    }
+    return size;
 }
 
 void CSH::SetHeaderFromJson(const Json::Value& root)
 {
     _header.u8_nv_pub_key_idx = std::stoul(nbu::mft::common::GetStrValue(root["u8_nv_pub_key_idx"], true), nullptr, 16);
-}
-
-void CSH::SetMetadataFromJson(const Json::Value& root)
-{
-    if (!_isUnpacked)
-    {
-        _metadata.component_id = std::stoul(nbu::mft::common::GetStrValue(root["component_id"], true), nullptr, 16);
-        if (!IsValidCompId(_metadata.component_id))
-        {
-            throw runtime_error("Unknown CSH Component ID in JSON file: " + std::to_string(_metadata.component_id));
-        }
-        // _metadata.num_of_binaries = 1;
-    }
-
-    _metadata.version.u8_ver_major =
-      std::stoul(nbu::mft::common::GetStrValue(root["version"]["ver_major"], true), nullptr, 16);
-    _metadata.version.u8_ver_minor =
-      std::stoul(nbu::mft::common::GetStrValue(root["version"]["ver_minor"], true), nullptr, 16);
-    _metadata.version.u8_ratchet_level =
-      std::stoul(nbu::mft::common::GetStrValue(root["version"]["ratchet_level"], true), nullptr, 16);
 }

@@ -225,9 +225,15 @@ bool Fs6Operations::Init()
 
 bool Fs6Operations::InitCshComponent(PartitionType partitionType, u_int32_t offset)
 {
-    vector<u_int8_t> cshData(CSH::HeaderSize());
+    vector<u_int8_t> cshHeader(fs5_image_layout_csh_header_size());
+    if (!_ioAccess->read(offset, cshHeader.data(), fs5_image_layout_csh_header_size()))
+    {
+        return errmsg(MLXFW_BAD_PARAM_ERR, "%s", _ioAccess->err());
+    }
 
-    if (!_ioAccess->read(offset, cshData.data(), CSH::HeaderSize()))
+    CSH::CshStructType cshStructType = CSH::GetCshStructType(cshHeader);
+    vector<u_int8_t> cshData(CSH::HeaderSize(cshStructType));
+    if (!_ioAccess->read(offset, cshData.data(), CSH::HeaderSize(cshStructType)))
     {
         return errmsg(MLXFW_BAD_PARAM_ERR, "%s", _ioAccess->err());
     }
@@ -236,13 +242,13 @@ bool Fs6Operations::InitCshComponent(PartitionType partitionType, u_int32_t offs
     csh.UnpackHeader(cshData);
 
     cshData.resize(csh.GetNumberOfBinaries() * BinarySectionMetadata::Size());
-    if (!_ioAccess->read(offset + CSH::HeaderSize(), cshData.data(), cshData.size()))
+    if (!_ioAccess->read(offset + CSH::HeaderSize(cshStructType), cshData.data(), cshData.size()))
     {
         return errmsg(MLXFW_BAD_PARAM_ERR, "%s", _ioAccess->err());
     }
     csh.UnpackSections(cshData);
 
-    _cshComponents.push_back(make_pair(partitionType, csh));
+    _cshComponents.push_back(make_pair(partitionType, std::move(csh)));
     return true;
 }
 

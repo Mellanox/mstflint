@@ -31,7 +31,7 @@
  */
 
 /***
-         *** This file was generated at "2024-11-04 15:08:38"
+         *** This file was generated at "2025-07-29 22:06:43"
          *** by:
          ***    > [REDACTED]/adb2pack.py --input adb/fs5_image_layout/fs5_image_layout.adb --file-prefix fs5_image_layout --prefix fs5_image_layout_ --no-adb-utils
          ***/
@@ -187,6 +187,24 @@ struct fs5_image_layout_boot_component_ver {
 	/* 0x0.24 - 0x0.31 */
 	/* access: RW */
 	u_int8_t u8_res;
+};
+
+/* Description -   */
+/* Size in bytes - 4 */
+struct fs5_image_layout_boot_component_ver_nbu {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.0 - 0x0.15 */
+	/* access: RW */
+	u_int16_t ver_minor;
+	/* Description -  */
+	/* 0x0.16 - 0x0.23 */
+	/* access: RW */
+	u_int8_t ratchet_level;
+	/* Description -  */
+	/* 0x0.24 - 0x0.31 */
+	/* access: RW */
+	u_int8_t ver_major;
 };
 
 /* Description -   */
@@ -663,13 +681,13 @@ struct fs5_image_layout_u8_gen_padding {
 };
 
 /* Description -   */
-/* Size in bytes - 48 */
+/* Size in bytes - 44 */
 struct fs5_image_layout_u8_gen_padding_pqc {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
-	/* 0x0.24 - 0x30.23 */
+	/* 0x0.24 - 0x2c.23 */
 	/* access: RW */
-	u_int8_t u8_dummy[48];
+	u_int8_t u8_dummy[44];
 };
 
 /* Description -   */
@@ -1091,9 +1109,26 @@ struct fs5_image_layout_csh_header {
 	/* 0x4.0 - 0x4.7 */
 	/* access: RW */
 	u_int8_t u8_nv_pub_key_idx;
+	/* Description - Initial TB500 version is 0, extensions use +1 */
+	/* 0x4.8 - 0x4.15 */
+	/* access: RW */
+	u_int8_t struct_version_major;
+	/* Description - Initial TB500 version is 0, extensions use +1 */
+	/* 0x4.16 - 0x4.23 */
+	/* access: RW */
+	u_int8_t struct_version_minor;
+	/* Description -  */
+	/* 0x4.24 - 0x4.31 */
+	/* access: RW */
+	u_int8_t reserved;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description -  */
 	/* 0x8.0 - 0x8.31 */
+	/* access: RW */
+	u_int32_t reserved1;
+/*---------------- DWORD[3] (Offset 0xc) ----------------*/
+	/* Description -  */
+	/* 0xc.24 - 0x10.23 */
 	/* access: RW */
 	u_int8_t magic_pattern[4];
 };
@@ -1147,6 +1182,81 @@ struct fs5_image_layout_csh_metadata {
 };
 
 /* Description -   */
+/* Size in bytes - 176 */
+struct fs5_image_layout_csh_metadata_nbu {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - PLDM/CSH ID */
+	/* 0x0.0 - 0x0.15 */
+	/* access: RW */
+	u_int16_t component_id;
+	/* Description - FW version subminor */
+	/* 0x0.16 - 0x0.31 */
+	/* access: RW */
+	u_int16_t nbu_subminor;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description -  */
+	/* 0x4.0 - 0x4.31 */
+	/* access: RW */
+	struct fs5_image_layout_boot_component_ver_nbu version;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description -  */
+	/* 0x8.0 - 0x24.31 */
+	/* access: RW */
+	struct fs5_image_layout_csh_component_dependency_list dependency_list[8];
+/*---------------- DWORD[10] (Offset 0x28) ----------------*/
+	/* Description -  */
+	/* 0x28.0 - 0x28.31 */
+	/* access: RW */
+	u_int32_t fw_lifecycle;
+/*---------------- DWORD[11] (Offset 0x2c) ----------------*/
+	/* Description -  */
+	/* 0x2c.0 - 0x68.31 */
+	/* access: RW */
+	struct fs5_image_layout_u8_ecid ecid[4];
+/*---------------- DWORD[27] (Offset 0x6c) ----------------*/
+	/* Description -  */
+	/* 0x6c.0 - 0x6c.23 */
+	/* access: RW */
+	u_int32_t reserved1;
+	/* Description - Number of binaries in the component. I.e. number of binary metadata objects */
+	/* 0x6c.24 - 0x6c.31 */
+	/* access: RW */
+	u_int8_t num_of_binaries;
+/*---------------- DWORD[28] (Offset 0x70) ----------------*/
+	/* Description - SHA2-384 of Binary Metadata List */
+	/* 0x70.0 - 0x9c.31 */
+	/* access: RW */
+	struct fs5_image_layout_u8_sha2_384_digest binaries_list_digest;
+/*---------------- DWORD[40] (Offset 0xa0) ----------------*/
+	/* Description -  */
+	/* 0xa0.0 - 0xa0.15 */
+	/* access: RW */
+	u_int16_t issu_ver_major;
+	/* Description -  */
+	/* 0xa0.16 - 0xa0.31 */
+	/* access: RW */
+	u_int16_t issu_ver_minor;
+/*---------------- DWORD[41] (Offset 0xa4) ----------------*/
+	/* Description -  */
+	/* 0xa4.0 - 0xa4.15 */
+	/* access: RW */
+	u_int16_t issu_notch;
+	/* Description - 1: ISSU-able, 0: Not ISSU-able */
+	/* 0xa4.16 - 0xa4.23 */
+	/* access: RW */
+	u_int8_t issuable;
+	/* Description - 1: ISSU-able, 0: Not ISSU-able */
+	/* 0xa4.24 - 0xa4.31 */
+	/* access: RW */
+	u_int8_t res;
+/*---------------- DWORD[42] (Offset 0xa8) ----------------*/
+	/* Description -  */
+	/* 0xa8.24 - 0xb0.23 */
+	/* access: RW */
+	u_int8_t reserved2[8];
+};
+
+/* Description -   */
 /* Size in bytes - 1840 */
 struct fs5_image_layout_csh_signature {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
@@ -1196,6 +1306,36 @@ struct fs5_image_layout_component_signature_header {
 	struct fs5_image_layout_binary_section_metadata binaries[32];
 };
 
+/* Description -  CSH - component signature header */
+/* Size in bytes - 8480 */
+struct fs5_image_layout_component_signature_header_nbu {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.0 - 0xc.31 */
+	/* access: RW */
+	struct fs5_image_layout_csh_header header;
+/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+	/* Description -  */
+	/* 0x10.0 - 0x73c.31 */
+	/* access: RW */
+	struct fs5_image_layout_csh_signature nv_signature;
+/*---------------- DWORD[464] (Offset 0x740) ----------------*/
+	/* Description -  */
+	/* 0x740.0 - 0xe6c.31 */
+	/* access: RW */
+	struct fs5_image_layout_csh_signature oem_signature;
+/*---------------- DWORD[924] (Offset 0xe70) ----------------*/
+	/* Description -  */
+	/* 0xe70.0 - 0xf1c.31 */
+	/* access: RW */
+	struct fs5_image_layout_csh_metadata_nbu metadata;
+/*---------------- DWORD[968] (Offset 0xf20) ----------------*/
+	/* Description -  */
+	/* 0xf20.0 - 0x211c.31 */
+	/* access: RW */
+	struct fs5_image_layout_binary_section_metadata binaries[32];
+};
+
 /* Description -  BCH - boot component header */
 /* Size in bytes - 8192 */
 struct fs5_image_layout_boot_component_header_pqc {
@@ -1226,7 +1366,12 @@ struct fs5_image_layout_boot_component_header_pqc {
 	union fs5_image_layout_crypto_public_crypto_params pcp;
 /*---------------- DWORD[228] (Offset 0x390) ----------------*/
 	/* Description -  */
-	/* 0x390.0 - 0x3bc.31 */
+	/* 0x390.0 - 0x390.31 */
+	/* access: RW */
+	u_int32_t u32_key_id;
+/*---------------- DWORD[229] (Offset 0x394) ----------------*/
+	/* Description -  */
+	/* 0x394.0 - 0x3bc.31 */
 	/* access: RW */
 	struct fs5_image_layout_u8_gen_padding_pqc u8_gen_padding;
 /*---------------- DWORD[240] (Offset 0x3c0) ----------------*/
@@ -1586,6 +1731,13 @@ void fs5_image_layout_boot_component_ver_print(const struct fs5_image_layout_boo
 unsigned int fs5_image_layout_boot_component_ver_size(void);
 #define FS5_IMAGE_LAYOUT_BOOT_COMPONENT_VER_SIZE    (0x4)
 void fs5_image_layout_boot_component_ver_dump(const struct fs5_image_layout_boot_component_ver *ptr_struct, FILE *fd);
+/* boot_component_ver_nbu */
+void fs5_image_layout_boot_component_ver_nbu_pack(const struct fs5_image_layout_boot_component_ver_nbu *ptr_struct, u_int8_t *ptr_buff);
+void fs5_image_layout_boot_component_ver_nbu_unpack(struct fs5_image_layout_boot_component_ver_nbu *ptr_struct, const u_int8_t *ptr_buff);
+void fs5_image_layout_boot_component_ver_nbu_print(const struct fs5_image_layout_boot_component_ver_nbu *ptr_struct, FILE *fd, int indent_level);
+unsigned int fs5_image_layout_boot_component_ver_nbu_size(void);
+#define FS5_IMAGE_LAYOUT_BOOT_COMPONENT_VER_NBU_SIZE    (0x4)
+void fs5_image_layout_boot_component_ver_nbu_dump(const struct fs5_image_layout_boot_component_ver_nbu *ptr_struct, FILE *fd);
 /* crypto_ecdsa256_pub_params */
 void fs5_image_layout_crypto_ecdsa256_pub_params_pack(const struct fs5_image_layout_crypto_ecdsa256_pub_params *ptr_struct, u_int8_t *ptr_buff);
 void fs5_image_layout_crypto_ecdsa256_pub_params_unpack(struct fs5_image_layout_crypto_ecdsa256_pub_params *ptr_struct, const u_int8_t *ptr_buff);
@@ -1773,7 +1925,7 @@ void fs5_image_layout_u8_gen_padding_pqc_pack(const struct fs5_image_layout_u8_g
 void fs5_image_layout_u8_gen_padding_pqc_unpack(struct fs5_image_layout_u8_gen_padding_pqc *ptr_struct, const u_int8_t *ptr_buff);
 void fs5_image_layout_u8_gen_padding_pqc_print(const struct fs5_image_layout_u8_gen_padding_pqc *ptr_struct, FILE *fd, int indent_level);
 unsigned int fs5_image_layout_u8_gen_padding_pqc_size(void);
-#define FS5_IMAGE_LAYOUT_U8_GEN_PADDING_PQC_SIZE    (0x30)
+#define FS5_IMAGE_LAYOUT_U8_GEN_PADDING_PQC_SIZE    (0x2c)
 void fs5_image_layout_u8_gen_padding_pqc_dump(const struct fs5_image_layout_u8_gen_padding_pqc *ptr_struct, FILE *fd);
 /* u8_salt */
 void fs5_image_layout_u8_salt_pack(const struct fs5_image_layout_u8_salt *ptr_struct, u_int8_t *ptr_buff);
@@ -1887,6 +2039,13 @@ void fs5_image_layout_csh_metadata_print(const struct fs5_image_layout_csh_metad
 unsigned int fs5_image_layout_csh_metadata_size(void);
 #define FS5_IMAGE_LAYOUT_CSH_METADATA_SIZE    (0xA0)
 void fs5_image_layout_csh_metadata_dump(const struct fs5_image_layout_csh_metadata *ptr_struct, FILE *fd);
+/* csh_metadata_nbu */
+void fs5_image_layout_csh_metadata_nbu_pack(const struct fs5_image_layout_csh_metadata_nbu *ptr_struct, u_int8_t *ptr_buff);
+void fs5_image_layout_csh_metadata_nbu_unpack(struct fs5_image_layout_csh_metadata_nbu *ptr_struct, const u_int8_t *ptr_buff);
+void fs5_image_layout_csh_metadata_nbu_print(const struct fs5_image_layout_csh_metadata_nbu *ptr_struct, FILE *fd, int indent_level);
+unsigned int fs5_image_layout_csh_metadata_nbu_size(void);
+#define FS5_IMAGE_LAYOUT_CSH_METADATA_NBU_SIZE    (0xb0)
+void fs5_image_layout_csh_metadata_nbu_dump(const struct fs5_image_layout_csh_metadata_nbu *ptr_struct, FILE *fd);
 /* csh_signature */
 void fs5_image_layout_csh_signature_pack(const struct fs5_image_layout_csh_signature *ptr_struct, u_int8_t *ptr_buff);
 void fs5_image_layout_csh_signature_unpack(struct fs5_image_layout_csh_signature *ptr_struct, const u_int8_t *ptr_buff);
@@ -1901,6 +2060,13 @@ void fs5_image_layout_component_signature_header_print(const struct fs5_image_la
 unsigned int fs5_image_layout_component_signature_header_size(void);
 #define FS5_IMAGE_LAYOUT_COMPONENT_SIGNATURE_HEADER_SIZE    (0x2170)
 void fs5_image_layout_component_signature_header_dump(const struct fs5_image_layout_component_signature_header *ptr_struct, FILE *fd);
+/* component_signature_header_nbu */
+void fs5_image_layout_component_signature_header_nbu_pack(const struct fs5_image_layout_component_signature_header_nbu *ptr_struct, u_int8_t *ptr_buff);
+void fs5_image_layout_component_signature_header_nbu_unpack(struct fs5_image_layout_component_signature_header_nbu *ptr_struct, const u_int8_t *ptr_buff);
+void fs5_image_layout_component_signature_header_nbu_print(const struct fs5_image_layout_component_signature_header_nbu *ptr_struct, FILE *fd, int indent_level);
+unsigned int fs5_image_layout_component_signature_header_nbu_size(void);
+#define FS5_IMAGE_LAYOUT_COMPONENT_SIGNATURE_HEADER_NBU_SIZE    (0x2120)
+void fs5_image_layout_component_signature_header_nbu_dump(const struct fs5_image_layout_component_signature_header_nbu *ptr_struct, FILE *fd);
 /* boot_component_header */
 void fs5_image_layout_boot_component_header_pack(const struct fs5_image_layout_boot_component_header *ptr_struct, u_int8_t *ptr_buff);
 void fs5_image_layout_boot_component_header_unpack(struct fs5_image_layout_boot_component_header *ptr_struct, const u_int8_t *ptr_buff);
