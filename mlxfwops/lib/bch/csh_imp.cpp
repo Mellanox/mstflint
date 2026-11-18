@@ -783,7 +783,7 @@ void CSH::SetNvSignature(const vector<u_int8_t>& signature, SigType sigType)
     {
         if (signature.size() != CSH_LMS_SIG_SIZE)
         {
-            throw runtime_error("Unsupported LMS signature size");
+            throw runtime_error("Unsupported LMS signature size: " + std::to_string(signature.size()));
         }
         memcpy(_nv_signature.crypto_lms_sha192_h20_w4_signature, signature.data(), signature.size());
     }
@@ -809,7 +809,7 @@ void CSH::SetOemSignature(const vector<u_int8_t>& signature, SigType sigType)
     {
         if (signature.size() != CSH_LMS_SIG_SIZE)
         {
-            throw runtime_error("Unsupported LMS signature size");
+            throw runtime_error("Unsupported LMS signature size: " + std::to_string(signature.size()));
         }
         memcpy(_oem_signature.crypto_lms_sha192_h20_w4_signature, signature.data(), signature.size());
     }
