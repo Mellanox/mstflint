@@ -1630,11 +1630,10 @@ void AdbParser<e, T_OFFSET>::startFieldElement(const XML_Char** atts,
                                                 ExceptionHolder::FATAL_EXCEPTION, adbParser->_fileName, lineNumber);
         }
 
-        if (!expFound && adbParser->_checkDsAlign)
+        if (!expFound && (adbParser->_checkDsAlign || adbParser->_currentNode->is_ds_align_forced()))
         {
-            T_OFFSET esize = adbParser->_currentField->eSize();
-            if ((adbParser->_currentField->isLeaf() || adbParser->_currentField->subNode == "uint64") &&
-                (esize == 16 || esize == 32 || esize == 64) && adbParser->_currentField->offset % esize != 0)
+            T_OFFSET esize = adbParser->_currentField->ds_align_size();
+            if (esize != 0 && adbParser->_currentField->offset % esize != 0)
             {
                 error_message = "Field: " + adbParser->_currentField->name +
                                 " in Node: " + adbParser->_currentNode->name + " offset(" +
@@ -2099,7 +2098,7 @@ void AdbParser<e, T_OFFSET>::endElement(void* _adbParser, const XML_Char* name)
             }
 
             auto max_leaf_size = adbParser->_currentNode->get_max_leaf_size();
-            if (adbParser->_checkDsAlign && max_leaf_size != 0 &&
+            if ((adbParser->_checkDsAlign || adbParser->_currentNode->is_ds_align_forced()) && max_leaf_size != 0 &&
                 adbParser->_currentNode->get_size() % max_leaf_size != 0)
             {
                 error_message = "Node: " + adbParser->_currentNode->name + " size(" +

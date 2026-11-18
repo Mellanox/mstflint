@@ -100,6 +100,7 @@ public:
     virtual void set_size(short_address_t size);
 
     address_t eSize();
+    address_t ds_align_size();
     string toXml(const string& addPrefix);
 
     // Operator overloading - useful for sorting
@@ -107,6 +108,9 @@ public:
 
     // FOR DEBUG
     void print(int indent = 0);
+
+private:
+    static const string SUB_NODE_UINT64;
 
 protected:
     short_address_t _size{0};

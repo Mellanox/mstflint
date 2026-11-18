@@ -186,6 +186,20 @@ typename AdbField_impl<T_OFFSET>::address_t AdbField_impl<T_OFFSET>::eSize()
 }
 
 /**
+ * Function: AdbField_impl::ds_align_size
+ **/
+template<typename T_OFFSET>
+typename AdbField_impl<T_OFFSET>::address_t AdbField_impl<T_OFFSET>::ds_align_size()
+{
+    address_t esize = eSize();
+    if ((isLeaf() || subNode == SUB_NODE_UINT64) && (esize == 16 || esize == 32 || esize == 64))
+    {
+        return esize;
+    }
+    return 0;
+}
+
+/**
  * Function: AdbField_impl::isEnum
  **/
 template<typename T_OFFSET>
@@ -467,6 +481,10 @@ bool AdbField_impl<T_OFFSET>::compareFieldsForXmlOutput(AdbField_impl<T_OFFSET>*
     }
     return false;
 }
+
+// Constants
+template<typename T_OFFSET>
+const string AdbField_impl<T_OFFSET>::SUB_NODE_UINT64 = "uint64";
 
 // Explicit instantiations
 template class AdbField_impl<u_int32_t>;
