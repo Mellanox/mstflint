@@ -35,6 +35,7 @@
 #include "fs_csh_ops.h"
 #include "nvtoolslogger/NvToolsLogger.h"
 #include "../fs6_ops.h"
+#include <cstring>
 #include <iomanip>
 
 u_int8_t FsCshOperations::FwType()
