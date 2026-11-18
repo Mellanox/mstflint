@@ -94,7 +94,6 @@ public:
                              size_t ptOffset,
                              const string& tablePrefix);
     bool PrintCrcInfoLayout(VerifyCallBack verifyCallBackFunc, const PartitionTableEntry& entry, bool showitoc = true);
-    void PrintCshBinDigestsAndLoadDestinations(VerifyCallBack verifyCallBackFunc, CSH& csh);
 
 #ifndef MST_CPU_armv7l_umbriel // {
     bool SignForSecureBoot(const char*, const char*, const MlxSign::Signer&) override;
@@ -240,6 +239,7 @@ protected:
                      bool collectDtocs = false);
 
     bool IsValidCshSection(FwOperations* imageOps, PartitionType partitionType);
+    void PrintSectionMetadata(const BinarySectionMetadata& section, VerifyCallBack verifyCallBackFunc);
 
 private:
     bool Init();

@@ -234,7 +234,6 @@ public:
     PartitionType GetPartitionTypeEnum() const;
 
     static size_t Size() { return fs5_image_layout_partition_table_entry_size(); }
-    void DumpStruct() const { fs5_image_layout_partition_table_entry_print(&_struct, stdout, 0); }
 
     int GetChainNumber() const;
 
@@ -355,8 +354,15 @@ public:
     void SetAuthenticationTag(const vector<u_int8_t>& tag);
     static const size_t DIGEST_OFFSET_IN_ENTRY = 0x60;
     vector<u_int8_t> GetDigest() const;
-    u_int32_t GetLoadDestinationLSB() const { return _struct.load_dest[0]; }
-    u_int32_t GetLoadDestinationMSB() const { return _struct.load_dest[1]; }
+
+    u_int64_t GetLoadDestination() const
+    {
+        return (static_cast<u_int64_t>(_struct.load_dest[1]) << 32) | _struct.load_dest[0];
+    }
+    u_int64_t GetEntryPoint() const
+    {
+        return (static_cast<u_int64_t>(_struct.entry_point[1]) << 32) | _struct.entry_point[0];
+    }
 
 private:
     void SetDwordsFrom8BytesJsonField(const Json::Value& root,

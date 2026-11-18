@@ -596,6 +596,9 @@ bool Fs6Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
             }
             else if (entry.GetPartitionTypeEnum() == PartitionType::PT_CRC_INFO)
             {
+                PrintSectionRange(verifyCallBackFunc, entry.GetStartOffset(),
+                                  entry.GetStartOffset() + entry.GetSectionSize() - 1, entry.GetSectionSize(),
+                                  partitionType, "L1 Partition");
                 if (!PrintCrcInfoLayout(verifyCallBackFunc, entry, showItoc))
                 {
                     return false;
@@ -678,11 +681,11 @@ bool Fs6Operations::VerifyCshComponent(const PartitionTableEntry& entry,
         u_int32_t currSectionBegin = 0;
         string sectionName;
 
-        if (showItoc && IsL2ptSection(partitionType))
-        {
-            report_callback(verifyCallBackFunc, "CSH bin digests and load destinations (%s):\n", compName.c_str());
-            PrintCshBinDigestsAndLoadDestinations(verifyCallBackFunc, *cshComponent);
-        }
+        // if (showItoc && IsL2ptSection(partitionType))
+        // {
+        //     report_callback(verifyCallBackFunc, "CSH bin digests and load destinations (%s):\n", compName.c_str());
+        //     PrintSectionMetadata(verifyCallBackFunc, *cshComponent);
+        // }
 
         for (auto section : cshComponent->GetSections())
         {
@@ -693,6 +696,7 @@ bool Fs6Operations::VerifyCshComponent(const PartitionTableEntry& entry,
 
             if (showItoc)
             {
+                PrintSectionMetadata(section, verifyCallBackFunc);
                 if ((CshSectionType)section.GetSectionType() == CshSectionType::CSH_SECTION_L3PW_MAGIC_ID)
                 {
                     PrintPartitionTable(verifyCallBackFunc, _l3pw, _l3pwOffset, "L3PW");
@@ -2550,44 +2554,21 @@ void Fs6Operations::PrintPartitionTable(VerifyCallBack verifyCallBackFunc,
                                         size_t ptOffset,
                                         const string& tablePrefix)
 {
-    // Print header
-    report_callback(
-      verifyCallBackFunc,
-      "=========================================== partition table layout ===========================================\n",
-      tablePrefix.c_str());
-    PrintSectionRange(verifyCallBackFunc, ptOffset, ptOffset + PartitionTable::HeaderSize() - 1,
-                      PartitionTable::HeaderSize(), tablePrefix + " Partition Table Header");
     MLXFWOPS_LOG_DEBUG("number of entries = %zu, max entries = %zu", partitionTable.GetNumberOfEntries(),
              partitionTable.GetMaxNumberOfEntries());
 
     // Print entries
     const vector<PartitionTableEntry>& entries = partitionTable.GetEntries();
-    for (size_t i = 0; i < entries.size(); i++)
+    for (const auto& entry : entries)
     {
-        PartitionType partType = (PartitionType)entries[i].GetPartitionTypeEnum();
-        bool isCshComponent = IsCshComponent(partType);
-        size_t entryOffset = ptOffset + PartitionTable::HeaderSize() + i * PartitionTableEntry::Size();
-        string entryName = tablePrefix + " " + GetL1ptEntryName(partType, isCshComponent) + " entry";
+        PartitionType partitionType = entry.GetPartitionTypeEnum();
+        bool isCshComponent = IsCshComponent(partitionType);
+        string entryName = GetL1ptEntryName(partitionType, isCshComponent) + " entry";
 
-        PrintSectionRange(verifyCallBackFunc, entryOffset, entryOffset + PartitionTableEntry::Size() - 1,
-                          PartitionTableEntry::Size(), entryName);
-
-        // let's read the offset then dump the entry
-        vector<u_int8_t> entryData(PartitionTableEntry::Size());
-        if (!_ioAccess->read(entryOffset, entryData.data(), PartitionTableEntry::Size()))
-        {
-            report_callback(verifyCallBackFunc, "-E- Failed to read %s partition table entry: %s\n", entryName.c_str(),
-                            _ioAccess->err());
-            return;
-        }
-        PartitionTableEntry entry;
-        entry.Unpack(entryData);
-        entry.DumpStruct();
+        report_callback(verifyCallBackFunc, "   %-21s: 0x%x (%s)\n", "section type", partitionType, entryName.c_str());
+        report_callback(verifyCallBackFunc, "   %-21s: 0x%016zx\n", "section offset", entry.GetStartOffset());
+        report_callback(verifyCallBackFunc, "   %-21s: 0x%016zx\n", "section size", entry.GetSectionSize());
     }
-    report_callback(
-      verifyCallBackFunc,
-      "=========================================== end of partition table ===========================================\n\n",
-      tablePrefix.c_str());
 }
 
 bool Fs6Operations::InitL3PartitionTable(PartitionTable& pt, size_t& ptOffset, CshSectionType sectionMagic)
@@ -2805,10 +2786,6 @@ bool Fs6Operations::PrintCrcInfoLayout(VerifyCallBack verifyCallBackFunc,
     fs6_image_layout_dev_area_crc_info_legacy info_legacy;
     fs6_image_layout_dev_area_crc_info_legacy_unpack(&info_legacy, buf.data());
     const bool v1 = (info_legacy.version == 1);
-    const size_t entrySize =
-      v1 ? FS6_IMAGE_LAYOUT_DEV_AREA_CRC_ENTRY_SIZE : FS6_IMAGE_LAYOUT_DEV_AREA_CRC_ENTRY_LEGACY_SIZE;
-    const size_t crcSquareOff = v1 ? offsetof(fs6_image_layout_dev_area_crc_info, crc_square) :
-                                     offsetof(fs6_image_layout_dev_area_crc_info_legacy, crc_square);
     u_int32_t numEntries = info_legacy.num_entries;
     const u_int32_t maxEntries = v1 ? GetCrcInfoV1MaxEntries() : GetCrcInfoV0MaxEntries();
     if (numEntries > maxEntries)
@@ -2826,14 +2803,6 @@ bool Fs6Operations::PrintCrcInfoLayout(VerifyCallBack verifyCallBackFunc,
     {
         fs6_image_layout_dev_area_crc_info_unpack(&info, buf.data());
     }
-    report_callback(
-      verifyCallBackFunc,
-      "================================= CRC_INFO layout (version=%u, num_entries=%u) =================================\n",
-      info_legacy.version, numEntries);
-    PrintSectionRange(verifyCallBackFunc, base + 0, base + 3, 4, "CRC_INFO version",
-                      string_format("0x%x", info_legacy.version));
-    PrintSectionRange(verifyCallBackFunc, base + 4, base + 7, 4, "CRC_INFO num_entries",
-                      string_format("0x%x", numEntries));
     for (u_int32_t i = 0; i < numEntries; ++i)
     {
         const u_int32_t ptype = v1 ? info.crc_entry[i].partition_type : info_legacy.crc_entry[i].partition_type;
@@ -2841,50 +2810,31 @@ bool Fs6Operations::PrintCrcInfoLayout(VerifyCallBack verifyCallBackFunc,
         {
             throw runtime_error("CRC_INFO unexpected partition type for CRC_INFO entry #" + to_string(i));
         }
-        const size_t off = base + 8 + static_cast<size_t>(i) * entrySize;
-        const string name = string_format("CRC_INFO crc_entry[%u]", i);
+        PartitionType partitionType = static_cast<PartitionType>(ptype);
+        bool isCshComponent = IsCshComponent(partitionType);
+        const string entryName = GetL1ptEntryName(partitionType, isCshComponent) + " entry";
+        report_callback(verifyCallBackFunc, "   %-21s: 0x%x (%s)\n", "section type", ptype, entryName.c_str());
         if (v1)
         {
-            PrintSectionRange(verifyCallBackFunc, off, off + entrySize - 1, entrySize, name,
-                              string_format("type=0x%x size=0x%x crc=0x%x", ptype, info.crc_entry[i].partition_size,
-                                            info.crc_entry[i].crc));
+            report_callback(verifyCallBackFunc, "   %-21s: 0x%016x\n", "section size",
+                            info.crc_entry[i].partition_size);
         }
-        else
-        {
-            PrintSectionRange(verifyCallBackFunc, off, off + entrySize - 1, entrySize, name,
-                              string_format("type=0x%x crc=0x%x", ptype, info_legacy.crc_entry[i].crc));
-        }
+        report_callback(verifyCallBackFunc, "   %-21s: 0x%08x\n", "crc",
+                        v1 ? info.crc_entry[i].crc : info_legacy.crc_entry[i].crc);
     }
     const u_int32_t crcSquare = v1 ? info.crc_square : info_legacy.crc_square;
-    PrintSectionRange(verifyCallBackFunc, base + crcSquareOff, base + crcSquareOff + 3, 4, "CRC_INFO crc_square",
-                      string_format("0x%x", crcSquare));
-    if (crcSquareOff + 4 < sectionSize)
-    {
-        PrintSectionRange(verifyCallBackFunc, base + crcSquareOff + 4, base + sectionSize - 1,
-                          sectionSize - (crcSquareOff + 4), "CRC_INFO padding");
-    }
-    report_callback(
-      verifyCallBackFunc,
-      "============================================ end CRC_INFO layout ============================================\n\n");
+    report_callback(verifyCallBackFunc, "   %-21s: 0x%08x\n", "crc_square", crcSquare);
 
     return true;
 }
 
-void Fs6Operations::PrintCshBinDigestsAndLoadDestinations(VerifyCallBack verifyCallBackFunc, CSH& csh)
+void Fs6Operations::PrintSectionMetadata(const BinarySectionMetadata& section, VerifyCallBack verifyCallBackFunc)
 {
-    vector<u_int8_t> listDigest;
-    csh.GetStoredBinariesListDigest(listDigest);
-    report_callback(verifyCallBackFunc, "  binaries_list_digest: %s\n", mft_utils::ToHexString(listDigest).c_str());
-
-    for (const auto& section : csh.GetSections())
-    {
-        const string name = GetSectionNameByMagicId(section.GetSectionType());
-        const u_int64_t loadDest =
-          (static_cast<u_int64_t>(section.GetLoadDestinationMSB()) << 32) | section.GetLoadDestinationLSB();
-
-        report_callback(verifyCallBackFunc, "  %s load_dest: 0x%016llx\n", name.c_str(),
-                        static_cast<unsigned long long>(loadDest));
-        report_callback(verifyCallBackFunc, "  %s bin_digest: %s\n", name.c_str(),
-                        mft_utils::ToHexString(section.GetDigest()).c_str());
-    }
+    const u_int32_t magicId = (u_int32_t)section.GetSectionType();
+    report_callback(verifyCallBackFunc, "   %-21s: 0x%x (%s)\n", "magic id", magicId,
+                    mft_utils::ToString(&magicId, 1, false).c_str());
+    report_callback(verifyCallBackFunc, "   %-21s: 0x%016llx\n", "load destination",
+                    (unsigned long long)section.GetLoadDestination());
+    report_callback(verifyCallBackFunc, "   %-21s: 0x%016llx\n", "entry point",
+                    (unsigned long long)section.GetEntryPoint());
 }
