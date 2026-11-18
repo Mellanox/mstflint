@@ -240,6 +240,7 @@ private:
     int _unknownProgress; // used to trace the progress of unknown progress.
     FwCompsMgr* fwCompsAccess;
     FlintStatus burnFs3();
+    bool warnAboutBurnFailsafe();
     bool checkFwVersion(bool CreateFromImgInfo = true,
                         u_int16_t fw_ver0 = 0,
                         u_int16_t fw_ver1 = 0,

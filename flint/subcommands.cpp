@@ -2784,6 +2784,31 @@ bool BurnSubCommand::checkPSID()
     return true;
 }
 
+bool BurnSubCommand::warnAboutBurnFailsafe()
+{
+    if (!_burnParams.burnFailsafe)
+    {
+        printf("Burn process will not be failsafe. No checks will be performed.\n");
+        if (_burnParams.useImgDevData)
+        {
+            if (_burnParams.burnDevDataOnly)
+            {
+                printf("All device data sections will be overwritten.\n");
+            }
+            else
+            {
+                printf("ALL flash, including the device data sections will be overwritten.\n");
+            }
+        }
+        printf("If this process fails, computer may remain in an inoperable state.\n");
+        if (!askUser())
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 FlintStatus BurnSubCommand::burnFs3() // supports FS3/FS4/FS5/FSCTRL
 {
     _shouldSkip = false;
@@ -2865,25 +2890,10 @@ FlintStatus BurnSubCommand::burnFs3() // supports FS3/FS4/FS5/FSCTRL
             return FLINT_FAILED;
         }
     }
-    if (!_burnParams.burnFailsafe)
+
+    if (!warnAboutBurnFailsafe())
     {
-        printf("Burn process will not be failsafe. No checks will be performed.\n");
-        if (_burnParams.useImgDevData)
-        {
-            if (_burnParams.burnDevDataOnly)
-            {
-                printf("All device data sections will be overwritten.\n");
-            }
-            else
-            {
-                printf("ALL flash, including the device data sections will be overwritten.\n");
-            }
-        }
-        printf("If this process fails, computer may remain in an inoperable state.\n");
-        if (!askUser())
-        {
-            return FLINT_FAILED;
-        }
+        return FLINT_FAILED;
     }
 
     if (printPreparing)
@@ -3617,6 +3627,10 @@ FlintStatus BurnSubCommand::executeCommand()
     }
     else if (_fwType == FIT_FS6) // DFA flow for FS6
     {
+        if (!warnAboutBurnFailsafe())
+        {
+            return FLINT_FAILED;
+        }
         if (!_fwOps->FwBurnAdvanced(_imgOps, _burnParams))
         {
             reportErr(true, FLINT_FSX_BURN_ERROR, "FIT_FS6", _fwOps->err());
