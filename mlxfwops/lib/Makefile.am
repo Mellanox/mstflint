@@ -84,6 +84,10 @@ libmlxfwops_a_SOURCES = \
     fs4_ops.h \
     fs5_ops.cpp \
     fs5_ops.h \
+    fs6_ops.cpp \
+    fs6_ops.h \
+    bch/csh_imp.cpp \
+    bch/csh_imp.h \
     fsctrl_ops.cpp \
     fsctrl_ops.h \
     fs_pldm.cpp \

@@ -66,6 +66,37 @@ MLXFWOP_API extern bool nextBootFwVer;
 #define GLOBAL_ALIGNMENT 0x80
 #define UUID_LEN 16
 #define BAD_CRC_MSG "Bad CRC."
+
+enum class ComponentName
+{
+    Comp_Psc_Not_Valid = 0,
+    // Psc components
+    Comp_Psc_Bl1,
+    Comp_Psc_Fw,
+    Comp_Psc_Ncore,
+    Comp_Psc_Bct,
+    Comp_Psc_End = 100,
+    // iToc components
+    Comp_IToc_Start = 101,
+    Comp_IToc_Image_Info,
+    Comp_IToc_End = 200,
+    Comp_Csh_Start = 301,
+    Comp_Csh_Rom_Imgs,
+    Comp_Csh_Nv_Fws,
+    Comp_Csh_Oem_Fws,
+    Comp_Csh_Bct_Dtb,
+    Comp_Csh_Switch_Fws,
+    Comp_Csh_Sbd_Fw,
+};
+
+enum class ComponentHeader
+{
+    Header_Non_Valid = 0,
+    Header_Only,
+    Header_With,
+    Header_Without,
+};
+
 class MLXFWOP_API FwOperations : public FlintErrMsg
 {
 public:
@@ -188,6 +219,10 @@ public:
     virtual bool burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& burnParams);
     virtual bool FwSetPublicKeys(char* fname, PrintCallBack callBackFunc = (PrintCallBack)NULL);
     virtual bool FwSetForbiddenVersions(char* fname, PrintCallBack callBackFunc = (PrintCallBack)NULL);
+    virtual bool ReadComponent(ComponentName compName,
+                               ComponentHeader compHeader,
+                               string file_path,
+                               vector<u_int8_t>& componentData);
     virtual bool FwReadRom(std::vector<u_int8_t>& romSect) = 0;
     virtual bool FwBurnRom(FImage* romImg,
                            bool ignoreProdIdCheck = false,
@@ -756,6 +791,7 @@ private:
     static bool GetImageFormatVersion(FBase& f, u_int32_t boot_version_offset, u_int8_t& image_format_version);
     static u_int8_t IsPLDM(FBase& f);
     static bool IsPLDMHeader(const u_int8_t* data);
+    static u_int8_t IsFS6Image(FBase& f, u_int32_t* found_images);
     static u_int8_t IsFS4OrFS5Image(FBase& f, u_int32_t* found_images);
     static u_int8_t IsFS3OrFS2Image(FBase& f, u_int32_t* found_images);
     static u_int8_t IsCableImage(FBase& f);

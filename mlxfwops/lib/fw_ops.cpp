@@ -49,6 +49,7 @@
 const char* file_handle_type_to_str(fw_hndl_type_t type);
 #include "nvtoolslogger/nvtoolslogger_c.h"
 #include "fs_pldm.h"
+#include "fs6_ops.h"
 #include "fsctrl_ops.h"
 #include "fs_comps_factory.h"
 #include "dev_mgt/tools_dev_types.h"
@@ -110,7 +111,8 @@ int FwOperations::getFileSignature(const char* fname)
         return res;
     }
 
-    if (!strncmp((char*)tmpb, "MTFW", 4) || FsCompsFactory::IsFsCompsFingerPrint(tmpb))
+    if (!strncmp((char*)tmpb, "MTFW", 4) || FsCompsFactory::IsFsCompsFingerPrint(tmpb) ||
+        !strncmp((char*)tmpb, "DOTB", 4))
     {
         res = IMG_SIG_TYPE_BIN;
     }
@@ -617,6 +619,20 @@ bool FwOperations::GetImageFormatVersion(FBase& f, u_int32_t boot_version_offset
     return true;
 }
 
+u_int8_t FwOperations::IsFS6Image(FBase& f, u_int32_t* found_images)
+{
+    MLXFWOPS_LOG_DEBUG("FwOperations::IsFS6Image");
+    u_int32_t w = 0;
+    READ4_NOERRMSG(f, 0, &w);
+    TOCPU1(w);
+    if (w == 0x444f5442)
+    {
+        *found_images = 1;
+        return FS_FS6_GEN;
+    }
+    return FS_UNKNOWN_IMG;
+}
+
 u_int8_t FwOperations::IsFS4OrFS5Image(FBase& f, u_int32_t* found_images)
 {
     MLXFWOPS_LOG_DEBUG("FwOperations::IsFS4OrFS5Image");
@@ -769,6 +785,13 @@ u_int8_t FwOperations::CheckFwFormat(FBase& f, bool getFwFormatFromImg, u_int16_
         {
             return v;
         }
+
+        v = IsFS6Image(f, &found_images);
+        if (found_images)
+        {
+            return v;
+        }
+
         // If not FS4 then check if it is FS3 or FS2
         return IsFS3OrFS2Image(f, &found_images);
     }
@@ -1124,6 +1147,13 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
             {
                 MLXFWOPS_LOG_DEBUG("FS5 ops created for %s", file_handle_type_to_str(fwParams.hndlType));
                 fwops = new Fs5Operations(ioAccess);
+                break;
+            }
+
+            case FS_FS6_GEN:
+            {
+                MLXFWOPS_LOG_DEBUG("FS6 ops created for %s", file_handle_type_to_str(fwParams.hndlType));
+                fwops = new Fs6Operations(ioAccess);
                 break;
             }
 
@@ -2550,6 +2580,11 @@ bool FwOperations::FwSetForbiddenVersions(char* fname, PrintCallBack callBackFun
     (void)fname;
     (void)callBackFunc;
     return errmsg("FwSetForbiddenVersions not supported");
+}
+
+bool FwOperations::ReadComponent(ComponentName, ComponentHeader, string, vector<u_int8_t>&)
+{
+    return errmsg("ReadComponent is not supported");
 }
 
 bool FwOperations::GetRSAPublicKey(vector<u_int8_t>& key)
