@@ -880,22 +880,14 @@ bool Fs6Operations::GetImageInfo()
     strcpy(_fwImgInfo.ext_info.product_ver, image_info.prod_ver);
 
     // get name, prs name and description
-    if (image_info.minor_version == 2) // TODO: took it from original getImageInfo - do we need it here too? same
-                                       // offsets as in fs6's layout so seems redundent
+    if (image_info.minor_version != 3)
     {
-        struct tools_open_image_info tools_image_info;
-        memset(&tools_image_info, 0, sizeof(tools_image_info));
-        tools_open_image_info_unpack(&tools_image_info, image_info_data.data());
-        strncpy(_fsCommonInfo.ext_info.name, tools_image_info.name, strlen(tools_image_info.name));
-        strncpy(_fsCommonInfo.ext_info.description, tools_image_info.description, strlen(tools_image_info.description));
-        strncpy(_fsCommonInfo.ext_info.prs_name, tools_image_info.prs_name, strlen(tools_image_info.prs_name));
+        MLXFWOPS_LOG_DEBUG("Fs6Operations::GetImageInfo - Minor version is %d, yet it should be 3", image_info.minor_version);
     }
-    else if (image_info.minor_version == 3)
-    {
-        strncpy(_fsCommonInfo.ext_info.name, image_info.name, strlen(image_info.name));
-        strncpy(_fsCommonInfo.ext_info.description, image_info.description, strlen(image_info.description));
-        strncpy(_fsCommonInfo.ext_info.prs_name, image_info.prs_name, strlen(image_info.prs_name));
-    }
+
+    strncpy(_fsCommonInfo.ext_info.name, image_info.name, strlen(image_info.name));
+    strncpy(_fsCommonInfo.ext_info.description, image_info.description, strlen(image_info.description));
+    strncpy(_fsCommonInfo.ext_info.prs_name, image_info.prs_name, strlen(image_info.prs_name));
 
     _fsCommonInfo.ext_info.mcc_en = image_info.mcc_en;
     _fsCommonInfo.ext_info.security_mode =

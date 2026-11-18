@@ -37,6 +37,7 @@
 
 #include "fs_comps_ops.h"
 #include "mlxfwops/lib/bch/csh_imp.h"
+#include "tools_layouts/fs6_image_layout_layouts.h"
 
 #ifdef __WIN__
 
@@ -68,9 +69,20 @@ public:
     bool FwInit() override;
     bool PrintQuery() override;
     bool IsCompatibleToDevice(vector<u_int8_t>& data, u_int8_t forceVersion) override;
+    bool FwReadData(void* image, u_int32_t* image_size, bool verbose) override;
     const char* FwGetResetRecommandationStr() override;
-    FwComponent::comps_ids_t GetComponentID() override { return FwComponent::comps_ids_t::COMPID_UNKNOWN; }
+    FwComponent::comps_ids_t GetComponentID() override { return _componentID; }
+    bool GetImageSize(u_int32_t* imageSize) override;
 
 private:
+    struct DeviceInfoCheckParams
+    {
+        char psid[17];
+    };
+
+    bool GetImageInfoData(vector<u_int8_t>& data);
+    bool GetImageInfo(struct fs6_image_layout_image_info* imageInfo);
+
     CSH _csh;
+    FwComponent::comps_ids_t _componentID;
 };

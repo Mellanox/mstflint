@@ -2779,7 +2779,7 @@ bool BurnSubCommand::checkPSID()
     return true;
 }
 
-FlintStatus BurnSubCommand::burnFs3()
+FlintStatus BurnSubCommand::burnFs3() // supports FS3/FS4/FS5/FSCTRL
 {
     _shouldSkip = false;
     bool printPreparing = false;
@@ -2826,7 +2826,7 @@ FlintStatus BurnSubCommand::burnFs3()
         reportErr(true, FLINT_FSX_BURN_ERROR, imgTypeStr, _fwOps->err());
         return FLINT_FAILED;
     }
-    if (_burnParams.burnDevDataOnly && (_fwType != FIT_FS6 && _fwType != FIT_FS5 && _fwType != FIT_FS4))
+    if (_burnParams.burnDevDataOnly && (_fwType != FIT_FS5 && _fwType != FIT_FS4))
     {
         reportErr(true, "--dev_data_only flag can be provided with FS5 or FS4 device only.");
         return FLINT_FAILED;
@@ -3618,7 +3618,7 @@ FlintStatus BurnSubCommand::executeCommand()
         UnlockDevice(_fwOps);
         return res;
     }
-    else if (_fwType == FIT_FS6)
+    else if (_fwType == FIT_FS6) // DFA flow for FS6
     {
         if (!_fwOps->FwBurnAdvanced(_imgOps, _burnParams))
         {

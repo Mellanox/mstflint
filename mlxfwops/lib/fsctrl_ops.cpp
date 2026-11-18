@@ -846,6 +846,15 @@ bool FsCtrlOperations::FwBurnAdvanced(FwOperations* imageOps, ExtBurnParams& bur
     {
         _fwCompsAccess->SetActivationStep(false);
     }
+    else if (componentId == FwComponent::comps_ids_t::COMPID_CPO_VMOD_FW)
+    {
+        vector<u_int8_t> data(sizeof(_fwImgInfo.ext_info.psid));
+        memcpy(data.data(), _fwImgInfo.ext_info.psid, sizeof(_fwImgInfo.ext_info.psid));
+        if (!imageOps->IsCompatibleToDevice(data, burnParams.ignoreVersionCheck))
+        {
+            return errmsg("%s", imageOps->err());
+        }
+    }
 
     std::vector<u_int8_t> compData;
     u_int32_t imageSize = 0;
