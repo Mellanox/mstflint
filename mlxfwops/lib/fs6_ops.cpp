@@ -50,6 +50,9 @@
 #include <iomanip>
 #include <fstream>
 
+// the ROM images section is aligned to 384KB because the PBLT and PBLD flexible
+#define ROM_IMGS_ALIGN_SIZE (384 * 1024)
+
 CshComponentID ToCshId(ComponentType compName)
 {
     CshComponentID id = CshComponentID::Unknown;
@@ -160,8 +163,46 @@ Fs6Operations::Fs6Operations(FBase* ioAccess) : FwOperations(ioAccess), _l1ptOff
     memset(_dotMagicId, 0, sizeof(_dotMagicId));
 }
 
+bool Fs6Operations::InitL2pt()
+{
+    MLXFWOPS_LOG_DEBUG("Fs6Operations::InitL2pt");
+    vector<u_int8_t> partitionTable(PartitionTable::HeaderSize());
+    vector<u_int8_t> entryData(PartitionTableEntry::Size());
+
+    if (!_ioAccess->read(_l2ptOffset, partitionTable.data(), PartitionTable::HeaderSize()))
+    {
+        return errmsg(MLXFW_BAD_PARAM_ERR, "%s", _ioAccess->err());
+    }
+    _l2pt.UnpackHeader(partitionTable);
+
+    if (!std::equal(PartitionTable::MagicID().begin(), PartitionTable::MagicID().end(), partitionTable.begin()))
+    {
+        return errmsg("Couldn't find L2PT.");
+    }
+
+    for (size_t i = 0; i < _l2pt.GetNumberOfEntries(); i++)
+    {
+        size_t l2PartitionsOffset = _l2ptOffset + PartitionTable::HeaderSize();
+        if (!_ioAccess->read(l2PartitionsOffset + i * PartitionTableEntry::Size(), entryData.data(),
+                             PartitionTableEntry::Size()))
+        {
+            return errmsg(MLXFW_BAD_PARAM_ERR, "%s", _ioAccess->err());
+        }
+        PartitionTableEntry entry;
+        entry.Unpack(entryData);
+        _l2pt.AddEntry(entry);
+
+        if (IsCshComponent((PartitionType)entry.GetSectionType()))
+        {
+            InitCshComponent((PartitionType)entry.GetSectionType(), _l2ptOffset + entry.GetStartOffset());
+        }
+    }
+    return true;
+}
+
 bool Fs6Operations::Init()
 {
+    MLXFWOPS_LOG_DEBUG("Fs6Operations::Init");
     // Guard against re-initialization
     if (!_l1pt.GetEntries().empty())
     {
@@ -184,64 +225,60 @@ bool Fs6Operations::Init()
 
     if (!std::equal(PartitionTable::MagicID().begin(), PartitionTable::MagicID().end(), partitionTable.begin()))
     {
-        return errmsg("Couldn't find L1PT.");
+        // Reduced image isnt contain the L1PT, it is only contain the ROM_IMGS and CHAIN_CONTAINER
+        PartitionTableEntry romImgsEntry(0, ROM_IMGS_ALIGN_SIZE, static_cast<u_int32_t>(PartitionType::PT_ROM_IMGS));
+        _l1pt.AddEntry(romImgsEntry);
+        InitCshComponent((PartitionType)romImgsEntry.GetSectionType(), romImgsEntry.GetStartOffset());
+
+        u_int32_t imageSize = 0;
+        GetImageSize(&imageSize);
+        PartitionTableEntry chainContainerEntry(ROM_IMGS_ALIGN_SIZE, imageSize - ROM_IMGS_ALIGN_SIZE,
+                                                static_cast<u_int32_t>(PartitionType::PT_CHAIN_CONTAINER));
+        _l1pt.AddEntry(chainContainerEntry);
+
+        _l2ptOffset = ROM_IMGS_ALIGN_SIZE;
+        if (!InitL2pt())
+        {
+            return false;
+        }
     }
-
-    _l1pt.UnpackHeader(partitionTable);
-
-    for (size_t i = 0; i < _l1pt.GetNumberOfEntries(); i++)
+    else
     {
-        size_t l1PartitionsOffset = _l1ptOffset + PartitionTable::HeaderSize();
-        if (!_ioAccess->read(l1PartitionsOffset + i * PartitionTableEntry::Size(), entryData.data(),
-                             PartitionTableEntry::Size()))
-        {
-            return errmsg(MLXFW_BAD_PARAM_ERR, "%s", _ioAccess->err());
-        }
+        _l1pt.UnpackHeader(partitionTable);
 
-        PartitionTableEntry entry;
-        entry.Unpack(entryData);
-        _l1pt.AddEntry(entry);
-
-        if (IsCshComponent((PartitionType)entry.GetSectionType()))
+        for (size_t i = 0; i < _l1pt.GetNumberOfEntries(); i++)
         {
-            InitCshComponent((PartitionType)entry.GetSectionType(), entry.GetStartOffset());
-        }
-
-        if (PartitionType(entry.GetSectionType()) == PartitionType::PT_CHAIN_CONTAINER)
-        {
-            _l2ptOffset = entry.GetStartOffset();
-            if (!_ioAccess->read(_l2ptOffset, partitionTable.data(), PartitionTable::HeaderSize()))
+            size_t l1PartitionsOffset = _l1ptOffset + PartitionTable::HeaderSize();
+            if (!_ioAccess->read(l1PartitionsOffset + i * PartitionTableEntry::Size(), entryData.data(),
+                                 PartitionTableEntry::Size()))
             {
                 return errmsg(MLXFW_BAD_PARAM_ERR, "%s", _ioAccess->err());
             }
-            _l2pt.UnpackHeader(partitionTable);
 
-            if (!std::equal(PartitionTable::MagicID().begin(), PartitionTable::MagicID().end(), partitionTable.begin()))
+            PartitionTableEntry entry;
+            entry.Unpack(entryData);
+            _l1pt.AddEntry(entry);
+
+            if (IsCshComponent((PartitionType)entry.GetSectionType()))
             {
-                return errmsg("Couldn't find L2PT.");
+                InitCshComponent((PartitionType)entry.GetSectionType(), entry.GetStartOffset());
             }
 
-            for (size_t i = 0; i < _l2pt.GetNumberOfEntries(); i++)
+            if (PartitionType(entry.GetSectionType()) == PartitionType::PT_CHAIN_CONTAINER)
             {
-                size_t l2PartitionsOffset = _l2ptOffset + PartitionTable::HeaderSize();
-                if (!_ioAccess->read(l2PartitionsOffset + i * PartitionTableEntry::Size(),
-                                     entryData.data(),
-                                     PartitionTableEntry::Size()))
+                _l2ptOffset = entry.GetStartOffset();
+                if (!InitL2pt())
                 {
-                    return errmsg(MLXFW_BAD_PARAM_ERR, "%s", _ioAccess->err());
-                }
-                PartitionTableEntry entry;
-                entry.Unpack(entryData);
-                _l2pt.AddEntry(entry);
-
-                if (IsCshComponent((PartitionType)entry.GetSectionType()))
-                {
-                    InitCshComponent((PartitionType)entry.GetSectionType(), _l2ptOffset + entry.GetStartOffset());
+                    return false;
                 }
             }
         }
     }
 
+    if (!CheckAndSetIsReducedImage())
+    {
+        return errmsg(MLXFW_BAD_PARAM_ERR, "%s", _ioAccess->err());
+    }
     return true;
 }
 
@@ -299,6 +336,7 @@ bool Fs6Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
     int devInfoVaildAmount = 0;
     for (auto entry : _l1pt.GetEntries())
     {
+        // TODO:: check if the image is reduced, and if so, skip DTOCs
         bool isKnownPartition = true;
         string partitionType = ToString((PartitionType)entry.GetSectionType());
         if (partitionType == "UNKNOWN")
@@ -395,7 +433,7 @@ bool Fs6Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
         }
     }
 
-    if (devInfoVaildAmount == 0)
+    if (devInfoVaildAmount == 0 && !GetIsReducedImage())
     {
         return errmsg("No DEV_INFO section found with valid signature");
     }
@@ -916,17 +954,31 @@ bool Fs6Operations::GetCshSectionOffset(PartitionType partitionType,
     return true;
 }
 
-bool Fs6Operations::FwQuery(fw_info_t* fwInfo, bool, bool, bool, bool, bool)
+bool Fs6Operations::FwQuery(fw_info_t* fwInfo,
+                            bool readRom,
+                            bool isStripedImage,
+                            bool quickQuery,
+                            bool ignoreDToc,
+                            bool verbose)
 {
     MLXFWOPS_LOG_DEBUG("Fs6Operations::FwQuery");
+
     if (!FwVerify((VerifyCallBack) nullptr))
     {
         return false;
     }
 
-    if (!GetImageInfo() || !GetMfgInfo() || !GetDevInfo())
+    if (!GetImageInfo())
     {
         return false;
+    }
+
+    if (!GetIsReducedImage() && !isStripedImage && !ignoreDToc)
+    {
+        if ((!GetMfgInfo() && !GetDevInfo()))
+        {
+            return false;
+        }
     }
 
     fwInfo->fw_type = FwType();
@@ -986,6 +1038,95 @@ bool Fs6Operations::IsL2ptSection(PartitionType partitionType)
         return true;
     }
     return false;
+}
+
+bool Fs6Operations::CheckAndSetIsReducedImage()
+{
+    MLXFWOPS_LOG_DEBUG("Fs6Operations::CheckAndSetIsReducedImage");
+    if (_ioAccess->is_flash())
+    {
+        SetIsReducedImage(false);
+        return true;
+    }
+
+    u_int32_t burn_image_size = 0;
+    if (!GetImageInfo())
+    {
+        return false;
+    }
+    burn_image_size = _fwImgInfo.ext_info.burn_image_size;
+    MLXFWOPS_LOG_DEBUG("Fs6Operations::CheckAndSetIsReducedImage burn_image_size = 0x%x", burn_image_size);
+
+    u_int32_t image_size = 0;
+    if (!GetImageSize(&image_size))
+    {
+        return false;
+    }
+    MLXFWOPS_LOG_DEBUG("Fs6Operations::CheckAndSetIsReducedImage image_size = 0x%x", image_size);
+
+    if (image_size == burn_image_size)
+    {
+        SetIsReducedImage(true);
+    }
+    return true;
+}
+
+u_int32_t Fs6Operations::GetL2ptSectionsSize()
+{
+    MLXFWOPS_LOG_DEBUG("Fs6Operations::GetL2ptSectionsSize");
+
+    if (_l2pt.GetEntries().empty())
+    {
+        return errmsg("L2PT is empty");
+    }
+    // Get last entry in L2PT (the partition that holds CSH sections)
+    vector<PartitionTableEntry> l2entries = _l2pt.GetEntries();
+    const PartitionTableEntry& lastL2Entry = l2entries.back();
+
+    return lastL2Entry.GetStartOffset() + lastL2Entry.GetSectionSize();
+}
+
+bool Fs6Operations::FwExtract4MBImage(vector<u_int8_t>& img,
+                                      bool maskMagicPatternAndDevToc,
+                                      bool verbose,
+                                      bool ignoreImageStart,
+                                      bool imageSizeOnly)
+{
+    MLXFWOPS_LOG_DEBUG("Fs6Operations::FwExtract4MBImage");
+    if (!Init())
+    {
+        return false;
+    }
+
+    PartitionTableEntry RomImagesEntry = _l1pt.GetEntry(PartitionType::PT_ROM_IMGS);
+    size_t startRomImages = RomImagesEntry.GetStartOffset();
+    u_int32_t l2ptSectionsSize = GetL2ptSectionsSize();
+
+    if (l2ptSectionsSize == 0)
+    {
+        return false;
+    }
+
+    img.resize(ROM_IMGS_ALIGN_SIZE + l2ptSectionsSize);
+
+    // Read ROM images
+    if (!_ioAccess->read(startRomImages, img.data(), ROM_IMGS_ALIGN_SIZE))
+    {
+        return false;
+    }
+
+    // Read CSH sections
+    if (!_ioAccess->read(_l2ptOffset, img.data() + ROM_IMGS_ALIGN_SIZE, l2ptSectionsSize))
+    {
+        return false;
+    }
+
+    if (maskMagicPatternAndDevToc)
+    {
+        memset(img.data() + ROM_IMGS_MAGIC_PATTERN_OFFSET, 0xFF, 4);
+    }
+
+    return true;
 }
 
 bool Fs6Operations::FwReadRom(std::vector<u_int8_t>& romSect)

@@ -59,7 +59,12 @@ public:
     bool CheckFwVersion(ComponentFwVersion currentVersion, u_int8_t forceVersion);
 
     // Unsupported functionality
-    bool FwQuery(fw_info_t* fwInfo, bool, bool, bool, bool, bool) override;
+    bool FwQuery(fw_info_t* fwInfo,
+                 bool readRom = false,
+                 bool isStripedImage = false,
+                 bool quickQuery = true,
+                 bool ignoreDToc = false,
+                 bool verbose = false) override;
     bool FwVerify(VerifyCallBack verifyCallBackFunc,
                   bool isStripedImage = false,
                   bool showItoc = false,
@@ -108,10 +113,16 @@ public:
                             CshSectionType sectionType,
                             size_t sectionSize,
                             vector<u_int8_t>& data);
+    bool CheckAndSetIsReducedImage() override;
 
     virtual bool GetMfgInfo(u_int8_t* buff = nullptr) override;
     virtual bool GetDevInfo(u_int8_t* buff = nullptr) override;
     virtual bool GetImageInfo();
+    virtual bool FwExtract4MBImage(vector<u_int8_t>& img,
+                                   bool maskMagicPatternAndDevToc,
+                                   bool verbose = false,
+                                   bool ignoreImageStart = false,
+                                   bool imageSizeOnly = false) override;
 
     uint32_t GetL2ptEnd() { return _l2ptEnd; }
 
@@ -145,6 +156,7 @@ protected:
 
 private:
     bool Init();
+    bool InitL2pt();
     bool InitCshComponent(PartitionType partitionType, u_int32_t offset);
 
     bool VerifyCshComponent(PartitionType partitionType, u_int32_t offset, VerifyCallBack verifyCallBackFunc);
@@ -162,7 +174,7 @@ private:
                            u_int32_t size,
                            const string& sectionType,
                            const string& suffix = "");
-
+    u_int32_t GetL2ptSectionsSize();
     PartitionTable _l1pt;
     PartitionTable _l2pt;
     vector<pair<PartitionType, CSH>> _cshComponents;

@@ -2813,7 +2813,8 @@ FlintStatus BurnSubCommand::burnFs3()
     }
 
     // Here we want to burn FS3 device so we check if the image is indeed FS3 image
-    if (_imgInfo.fw_type != FIT_FS3 && _imgInfo.fw_type != FIT_FS4 && _imgInfo.fw_type != FIT_FS5)
+    if (_imgInfo.fw_type != FIT_FS3 && _imgInfo.fw_type != FIT_FS4 && _imgInfo.fw_type != FIT_FS5 &&
+        _imgInfo.fw_type != FIT_FS6)
     {
         reportErr(true, FLINT_IMG_DEV_COMPAT_ERROR, "FS3", "FS3");
         return FLINT_FAILED;
@@ -2825,7 +2826,7 @@ FlintStatus BurnSubCommand::burnFs3()
         reportErr(true, FLINT_FSX_BURN_ERROR, imgTypeStr, _fwOps->err());
         return FLINT_FAILED;
     }
-    if (_burnParams.burnDevDataOnly && (_fwType != FIT_FS5 && _fwType != FIT_FS4))
+    if (_burnParams.burnDevDataOnly && (_fwType != FIT_FS6 && _fwType != FIT_FS5 && _fwType != FIT_FS4))
     {
         reportErr(true, "--dev_data_only flag can be provided with FS5 or FS4 device only.");
         return FLINT_FAILED;

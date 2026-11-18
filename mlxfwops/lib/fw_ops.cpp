@@ -240,7 +240,8 @@ int FwOperations::getFileSignature(const char* fname)
         return res;
     }
 
-    if (!strncmp((char*)tmpb, "MTFW", 4) || FsCompsFactory::IsFsCompsFingerPrint(tmpb) || IsFileSignatureTb50x(fin))
+    if (!strncmp((char*)tmpb, "MTFW", 4) || FsCompsFactory::IsFsCompsFingerPrint(tmpb) || IsFileSignatureTb50x(fin) ||
+        FwOperations::IsFS6ReducedImage(&tmpb[ROM_IMGS_MAGIC_PATTERN_OFFSET]))
     {
         res = IMG_SIG_TYPE_BIN;
     }
@@ -751,18 +752,44 @@ bool FwOperations::GetImageFormatVersion(FBase& f, u_int32_t boot_version_offset
 u_int8_t FwOperations::IsFS6Image(FBase& f)
 {
     MLXFWOPS_LOG_DEBUG("FwOperations::IsFS6Image");
+    u_int8_t fwFormat = FS_UNKNOWN_IMG;
+    vector<u_int8_t> magicPattern;
     if (f.get_effective_size() >= L1PT_OFFSET + PartitionTable::MagicID().size())
     {
-        vector<u_int8_t> magicPattern(PartitionTable::MagicID().size());
+        magicPattern.resize(PartitionTable::MagicID().size());
         if (f.read(L1PT_OFFSET, magicPattern.data(), PartitionTable::MagicID().size()))
         {
             if (std::equal(PartitionTable::MagicID().begin(), PartitionTable::MagicID().end(), magicPattern.begin()))
             {
-                return FS_FS6_GEN;
+                fwFormat = FS_FS6_GEN;
             }
         }
     }
-    return FS_UNKNOWN_IMG;
+
+    if (fwFormat == FS_UNKNOWN_IMG)
+    {
+        struct fs5_image_layout_csh_header cshHeader;
+        memset(&cshHeader, 0, sizeof(cshHeader));
+        if (f.read(0, &cshHeader, fs5_image_layout_csh_header_size()))
+        {
+            if (IsFS6ReducedImage(cshHeader.magic_pattern))
+            {
+                fwFormat = FS_FS6_GEN;
+            }
+        }
+    }
+    return fwFormat;
+}
+
+bool FwOperations::IsFS6ReducedImage(unsigned char* magicPattern)
+{
+    const vector<u_int8_t>& romImageMagicPattern = PartitionTable::GetRomImageMagicPattern();
+    if (std::equal(romImageMagicPattern.begin(), romImageMagicPattern.end(), magicPattern))
+    {
+        return true;
+    }
+
+    return false;
 }
 
 u_int8_t FwOperations::IsFS4OrFS5Image(FBase& f, u_int32_t* found_images)

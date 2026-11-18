@@ -132,6 +132,7 @@ enum class PartitionType
 
 const u_int32_t L1PT_OFFSET = 0xe000;
 const u_int32_t SHA384_DIGEST_SIZE = 48;
+const u_int32_t ROM_IMGS_MAGIC_PATTERN_OFFSET = 0xc;
 
 bool IsCshComponent(PartitionType partitionType);
 CshComponentID ToCshId(PartitionType partitionType);
@@ -181,7 +182,7 @@ public:
     void SetEntrySize(PartitionType entryType, u_int32_t size);
     u_int32_t GetEntryOffset(PartitionType entryType);
     u_int32_t GetEntrySize(PartitionType entryType);
-
+    PartitionTableEntry& GetEntry(PartitionType entryType);
     const vector<PartitionTableEntry>& GetEntries() const { return _entries; }
 
     static size_t HeaderSize() { return fs5_image_layout_partition_table_header_size(); }
@@ -190,11 +191,14 @@ public:
         static vector<u_int8_t> magicID({0x8B, 0x8D, 0x9E, 0x8F, 0x74, 0x72, 0x61, 0x70});
         return magicID;
     }
+    static const vector<u_int8_t>& GetRomImageMagicPattern()
+    {
+        static vector<u_int8_t> romImageMagicPattern{{0x4f, 0x3d, 0x5a, 0x27}};
+        return romImageMagicPattern;
+    }
 
 private:
     static const u_int16_t PARTITION_TABLE_DIGEST_OFFSET = 0x40;
-
-    PartitionTableEntry& GetEntry(PartitionType entryType);
 
     vector<PartitionTableEntry> _entries;
     struct fs5_image_layout_partition_table_header _struct;
@@ -244,6 +248,7 @@ public:
     void SetIV(const vector<u_int8_t>& iv);
     vector<u_int8_t> GetIV() const;
     void SetAuthenticationTag(const vector<u_int8_t>& tag);
+    static const size_t DIGEST_OFFSET_IN_ENTRY = 0x60;
 
 private:
     void SetDwordsFrom8BytesJsonField(const Json::Value& root,

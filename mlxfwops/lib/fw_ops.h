@@ -788,6 +788,7 @@ protected:
 
     virtual bool GetDevInfo(u_int8_t* buff = nullptr);
     virtual bool GetMfgInfo(u_int8_t* buff = nullptr);
+    static bool IsFS6ReducedImage(unsigned char* magicPattern);
 
     // Protected Members
     FBase* _ioAccess;
