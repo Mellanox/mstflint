@@ -84,6 +84,10 @@ u_int8_t FsCtrlOperations::FwType()
     {
         return FIT_FS5;
     }
+    else if (fwFormat == FS_FS6_GEN)
+    {
+        return FIT_FS6;
+    }
     return FIT_FSCTRL;
 }
 
