@@ -624,10 +624,9 @@ bool Fs6Operations::SetSignedFWComponent(string binPath, ComponentType compName,
     }
     else
     {
-        _l1pt.SetEntrySize(ToPartitionType(cshId), compData.size());
-        if (cshId == CshComponentID::ROM_IMGS)
+        if (cshId != CshComponentID::ROM_IMGS)
         {
-            _l1pt.SetEntrySize(ToPartitionType(cshId), compData.size(), _activeChain == 0 ? 1 : 0);
+            _l1pt.SetEntrySize(ToPartitionType(cshId), compData.size());
         }
         componentOffset = _l1pt.GetEntryOffset(ToPartitionType(cshId));
     }
