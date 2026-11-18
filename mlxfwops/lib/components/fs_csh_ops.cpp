@@ -201,6 +201,7 @@ bool FsCshOperations::FwInit()
                      FwComponent::comps_ids_t::COMPID_CPO_VMOD_FW);
             _componentID = FwComponent::comps_ids_t::COMPID_CPO_VMOD_FW;
             break;
+        case CshComponentID::ROM_IMGS:
         case CshComponentID::CALIPTRA_FW:
         case CshComponentID::NV_FWS:
         case CshComponentID::SWITCH_FWS:
