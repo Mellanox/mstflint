@@ -1088,6 +1088,19 @@ bool Fs6Operations::GetMfgInfo(u_int8_t* buff)
     return true;
 }
 
+bool Fs6Operations::GetNvPubKeyIdx()
+{
+    auto entry =
+      std::find_if(_cshComponents.begin(), _cshComponents.end(),
+                   [](const CshComponentInfo& entry) { return entry.partitionType == PartitionType::PT_SWITCH_FWS; });
+    if (entry == _cshComponents.end())
+    {
+        return errmsg("CSH component for PT_SWITCH_FWS not found");
+    }
+    _fsCommonInfo.ext_info.nv_pub_key_idx = entry->csh->GetNvPubKeyIdx();
+    return true;
+}
+
 bool Fs6Operations::ReadCshSectionInfo(PartitionType partitionType,
                                        CshSectionType sectionType,
                                        size_t sectionSize,
@@ -1265,7 +1278,7 @@ bool Fs6Operations::FwQuery(fw_info_t* fwInfo,
 
         if (!GetIsReducedImage() && !isStripedImage && !ignoreDToc)
         {
-            if ((!GetMfgInfo() || !GetDevInfo() || !UpdateLCAndGISIfAccessible()))
+            if ((!GetMfgInfo() || !GetDevInfo() || !GetNvPubKeyIdx() || !UpdateLCAndGISIfAccessible()))
             {
                 return false;
             }
@@ -1289,6 +1302,11 @@ bool Fs6Operations::FwQuery(fw_info_t* fwInfo,
         return errmsg("Fs6Operations::FwQuery failed: %s", e.what());
     }
 
+    return true;
+}
+
+bool Fs6Operations::IsComponentFormatWithKeyId()
+{
     return true;
 }
 

@@ -521,6 +521,7 @@ typedef struct fs3_info_ext
     char name[NAME_LEN];
     char description[DESCRIPTION_LEN];
     u_int32_t security_mode;
+    u_int8_t nv_pub_key_idx;
     u_int8_t mcc_en;
     char deviceVsd[VSD_LEN + 1];
     bool sec_boot;

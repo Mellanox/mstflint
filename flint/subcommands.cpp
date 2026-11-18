@@ -4231,7 +4231,7 @@ bool QuerySubCommand::displayFs3Uids(const fw_info_t& fwInfo, bool isStripedImag
     return true;
 }
 
-string QuerySubCommand::printSecurityAttrInfo(u_int32_t m)
+string QuerySubCommand::printSecurityAttrInfo(u_int32_t m, u_int32_t image_type_by_key_id)
 {
     string attr = "";
     if (m & SMM_SECURE_FW)
@@ -4255,7 +4255,14 @@ string QuerySubCommand::printSecurityAttrInfo(u_int32_t m)
     {
         attr += ", debug";
     }
-    if (m & SMM_DEV_FW)
+    if (_flintParams.image_specified && _imgOps->IsComponentFormatWithKeyId())
+    {
+        if (image_type_by_key_id == 0 || image_type_by_key_id == 1)
+        {
+            attr += (image_type_by_key_id == 0) ? ", image_prod" : ", image_dev";
+        }
+    }
+    else if (m & SMM_DEV_FW)
     {
         attr += ", dev";
     }
@@ -4646,7 +4653,20 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
         {
             security_mode |= SMM_CRDT_TOKEN;
         }
-        std::string securityAttrInfo = printSecurityAttrInfo(security_mode);
+        u_int32_t imageTypeByKeyId = 0;
+        if (isFs6)
+        {
+            imageTypeByKeyId = fwInfo.fs3_info.nv_pub_key_idx;
+            if (imageTypeByKeyId == 4)
+            {
+                imageTypeByKeyId = 1;
+            }
+            else if (imageTypeByKeyId < 4)
+            {
+                imageTypeByKeyId = 0;
+            }
+        }
+        std::string securityAttrInfo = printSecurityAttrInfo(security_mode, imageTypeByKeyId);
         printf("Security Attributes:   %s\n", securityAttrInfo.c_str());
     }
 

@@ -2575,6 +2575,11 @@ bool FwOperations::IsEncryptionSupported()
     return errmsg("IsEncryptionSupported not supported.");
 }
 
+bool FwOperations::IsComponentFormatWithKeyId()
+{
+    return errmsg("IsComponentFormatWithKeyId is not supported");
+}
+
 bool FwOperations::IsCRDTDebugSessionActive()
 {
     return errmsg("IsCRDTDebugSessionActive is not supported");

@@ -309,7 +309,7 @@ class QuerySubCommand : public SubCommand
 private:
     fw_info_t _imgInfo;
     FlintStatus printImageInfo(const fw_info_t& fwInfo);
-    string printSecurityAttrInfo(u_int32_t m);
+    string printSecurityAttrInfo(u_int32_t m, u_int32_t image_type_by_key_id = 0);
     FlintStatus printInfo(const fw_info_t& fwInfo, bool fullQuery);
     bool displayFs4Uids(const fw_info_t& fwInfo);
     bool displayFs3Uids(const fw_info_t& fwInfo, bool isStripedImage);
