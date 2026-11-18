@@ -109,7 +109,9 @@ bool FsCshOperations::FwQuery(fw_info_t* fwInfo,
 
     _fwImgInfo.ext_info.is_failsafe = true;
     _fsCommonInfo.ext_info.nv_pub_key_idx = _csh.GetNvPubKeyIdx();
-    MLXFWOPS_LOG_DEBUG("FsCshOperations::FwQuery nv_pub_key_idx = %u", _fsCommonInfo.ext_info.nv_pub_key_idx);
+    _fsCommonInfo.ext_info.image_security_version = _csh.GetRatchetLevel();
+    MLXFWOPS_LOG_DEBUG("FsCshOperations::FwQuery nv_pub_key_idx = %u image_security_version = %u",
+             _fsCommonInfo.ext_info.nv_pub_key_idx, _fsCommonInfo.ext_info.image_security_version);
 
     fwInfo->fw_type = FwType();
     memcpy(&(fwInfo->fw_info), &(_fwImgInfo.ext_info), sizeof(fw_info_com_t));
