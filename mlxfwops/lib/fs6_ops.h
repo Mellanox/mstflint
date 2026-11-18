@@ -50,7 +50,7 @@ string ToString(PartitionType type);
 class Fs6Operations : public FwOperations
 {
 public:
-    Fs6Operations(FBase* ioAccess) : FwOperations(ioAccess), _l1ptOffset(0xe000), _l2ptOffset(0) {}
+    Fs6Operations(FBase* ioAccess) : FwOperations(ioAccess), _l1ptOffset(L1PT_OFFSET), _l2ptOffset(0) {}
     u_int8_t FwType() override { return FIT_FS6; }
     bool FwInit() override;
     bool GetImageSize(u_int32_t* image_size) override;

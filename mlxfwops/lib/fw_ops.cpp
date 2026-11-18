@@ -726,16 +726,19 @@ bool FwOperations::GetImageFormatVersion(FBase& f, u_int32_t boot_version_offset
     return true;
 }
 
-u_int8_t FwOperations::IsFS6Image(FBase& f, u_int32_t* found_images)
+u_int8_t FwOperations::IsFS6Image(FBase& f)
 {
     MLXFWOPS_LOG_DEBUG("FwOperations::IsFS6Image");
-    u_int32_t w = 0;
-    READ4_NOERRMSG(f, 0, &w);
-    TOCPU1(w);
-    if (w == 0x444f5442)
+    if (f.get_effective_size() >= L1PT_OFFSET + PartitionTable::MagicID().size())
     {
-        *found_images = 1;
-        return FS_FS6_GEN;
+        vector<u_int8_t> magicPattern(PartitionTable::MagicID().size());
+        if (f.read(L1PT_OFFSET, magicPattern.data(), PartitionTable::MagicID().size()))
+        {
+            if (std::equal(PartitionTable::MagicID().begin(), PartitionTable::MagicID().end(), magicPattern.begin()))
+            {
+                return FS_FS6_GEN;
+            }
+        }
     }
     return FS_UNKNOWN_IMG;
 }
@@ -893,8 +896,8 @@ u_int8_t FwOperations::CheckFwFormat(FBase& f, bool getFwFormatFromImg, u_int16_
             return v;
         }
 
-        v = IsFS6Image(f, &found_images);
-        if (found_images)
+        v = IsFS6Image(f);
+        if (v != FS_UNKNOWN_IMG)
         {
             return v;
         }

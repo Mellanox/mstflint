@@ -129,6 +129,8 @@ enum class PartitionType
     PT_FW_DEBUG_DUMP2 = 0xd4,
 };
 
+const u_int32_t L1PT_OFFSET = 0xe000;
+
 bool IsCshComponent(PartitionType partitionType);
 string ToString(CshComponentID cshId);
 string CshSectionIDToString(u_int32_t sectionId);
@@ -180,6 +182,11 @@ public:
     const vector<PartitionTableEntry>& GetEntries() const { return _entries; }
 
     static size_t HeaderSize() { return fs5_image_layout_partition_table_header_size(); }
+    static const vector<u_int8_t>& MagicID()
+    {
+        static vector<u_int8_t> magicID({0x8B, 0x8D, 0x9E, 0x8F, 0x74, 0x72, 0x61, 0x70});
+        return magicID;
+    }
 
 private:
     static const u_int16_t PARTITION_TABLE_DIGEST_OFFSET = 0x40;

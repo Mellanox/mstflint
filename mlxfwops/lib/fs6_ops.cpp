@@ -152,7 +152,6 @@ string ToString(PartitionType type)
 
 bool Fs6Operations::Init()
 {
-    const vector<u_int8_t> magicID({0x8B, 0x8D, 0x9E, 0x8F, 0x74, 0x72, 0x61, 0x70});
     vector<u_int8_t> partitionTable(PartitionTable::HeaderSize());
     vector<u_int8_t> entryData(PartitionTableEntry::Size());
 
@@ -161,7 +160,7 @@ bool Fs6Operations::Init()
         return errmsg(MLXFW_BAD_PARAM_ERR, "%s", _ioAccess->err());
     }
 
-    if (!std::equal(magicID.begin(), magicID.end(), partitionTable.begin()))
+    if (!std::equal(PartitionTable::MagicID().begin(), PartitionTable::MagicID().end(), partitionTable.begin()))
     {
         return errmsg("Couldn't find L1PT.");
     }
@@ -195,7 +194,7 @@ bool Fs6Operations::Init()
             }
             _l2pt.UnpackHeader(partitionTable);
 
-            if (!std::equal(magicID.begin(), magicID.end(), partitionTable.begin()))
+            if (!std::equal(PartitionTable::MagicID().begin(), PartitionTable::MagicID().end(), partitionTable.begin()))
             {
                 return errmsg("Couldn't find L2PT.");
             }
