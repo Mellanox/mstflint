@@ -126,6 +126,7 @@ enum class CshComponentID
     SWITCH_FWS = 0x2020,
     SBD_FW = 0x21,
     VMOD_FW = 0x22,
+    CALIPTRA_FW = 0x23,
     RECOVERY_IMAGE = 0x2820,
     Unknown = 0xff
 };
@@ -136,7 +137,7 @@ enum class PartitionType
     PT_ROM_IMGS = 0x2,
     PT_CHAIN_CONTAINER = 0x3,
     PT_BCT_DTB = 0x4,
-    PT_OEM_FWS = 0x5,
+    PT_CALIPTRA_FW = 0x5,
     PT_NV_FWS = 0x6,
     PT_SWITCH_FWS = 0x7,
     PT_SBD_FW = 0x8,
@@ -471,6 +472,7 @@ public:
     static const string SWITCH_FWS_NAME;
     static const string SBD_FW_NAME;
     static const string VMOD_FW_NAME;
+    static const string CALIPTRA_FW_NAME;
 
 private:
     void UnpackCshMetadata(const vector<u_int8_t>& cshHeader, const u_int8_t* iter);

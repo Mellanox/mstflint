@@ -50,7 +50,7 @@
 bool IsCshComponent(PartitionType partitionType)
 {
     return partitionType == PartitionType::PT_ROM_IMGS || partitionType == PartitionType::PT_BCT_DTB ||
-           partitionType == PartitionType::PT_OEM_FWS || partitionType == PartitionType::PT_NV_FWS ||
+           partitionType == PartitionType::PT_CALIPTRA_FW || partitionType == PartitionType::PT_NV_FWS ||
            partitionType == PartitionType::PT_SWITCH_FWS || partitionType == PartitionType::PT_SBD_FW ||
            partitionType == PartitionType::PT_VMOD_FW;
 }
@@ -72,8 +72,8 @@ CshComponentID ToCshId(PartitionType partitionType)
         case PartitionType::PT_BCT_DTB:
             cshId = CshComponentID::BCT_DTB;
             break;
-        case PartitionType::PT_OEM_FWS:
-            cshId = CshComponentID::OEM_FWS;
+        case PartitionType::PT_CALIPTRA_FW:
+            cshId = CshComponentID::CALIPTRA_FW;
             break;
         case PartitionType::PT_NV_FWS:
             cshId = CshComponentID::NV_FWS;
@@ -98,7 +98,7 @@ string ToString(CshComponentID cshId)
             return CSH::ROM_IMGS_NAME;
         case CshComponentID::BCT_DTB:
             return CSH::BCT_DTB_NAME;
-        case CshComponentID::OEM_FWS:
+        case CshComponentID::OEM_FWS: // TODO backwards compatibility - remove after FS6 is fully adopted
             return CSH::OEM_FWS_NAME;
         case CshComponentID::NV_FWS:
             return CSH::NV_FWS_NAME;
@@ -108,6 +108,8 @@ string ToString(CshComponentID cshId)
             return CSH::SBD_FW_NAME;
         case CshComponentID::VMOD_FW:
             return CSH::VMOD_FW_NAME;
+        case CshComponentID::CALIPTRA_FW:
+            return CSH::CALIPTRA_FW_NAME;
         default:
             return "Unknown";
     }
@@ -125,7 +127,7 @@ CshComponentID ToCshId(string cshId)
     }
     if (cshId == CSH::OEM_FWS_NAME)
     {
-        return CshComponentID::OEM_FWS;
+        return CshComponentID::OEM_FWS; // TODO backwards compatibility - remove after FS6 is fully adopted
     }
     if (cshId == CSH::NV_FWS_NAME)
     {
@@ -143,6 +145,10 @@ CshComponentID ToCshId(string cshId)
     {
         return CshComponentID::VMOD_FW;
     }
+    if (cshId == CSH::CALIPTRA_FW_NAME)
+    {
+        return CshComponentID::CALIPTRA_FW;
+    }
     return CshComponentID::Unknown;
 }
 
@@ -157,6 +163,7 @@ const string CSH::NV_FWS_NAME = "NV_FWS";
 const string CSH::SWITCH_FWS_NAME = "SWITCH_FWS";
 const string CSH::SBD_FW_NAME = "SBD_FW";
 const string CSH::VMOD_FW_NAME = "VMOD_FW";
+const string CSH::CALIPTRA_FW_NAME = "CALIPTRA_FW";
 
 CshException::CshException(CshExceptionType type, const char* fmt, ...) : _type(type)
 {
@@ -853,7 +860,9 @@ void CSH::UnpackHeader(const vector<u_int8_t>& cshHeader)
 
     if (!IsValidCompId(_metadata->GetComponentId()))
     {
-        throw runtime_error("Unknown CSH Component ID 0x" + std::to_string(_metadata->GetComponentId()));
+        std::stringstream ss;
+        ss << "Unknown CSH Component ID 0x" << std::hex << std::uppercase << _metadata->GetComponentId();
+        throw runtime_error(ss.str());
     }
 }
 
@@ -1120,7 +1129,8 @@ bool CSH::IsValidCompId(u_int16_t id)
     {
         case CshComponentID::ROM_IMGS:
         case CshComponentID::BCT_DTB:
-        case CshComponentID::OEM_FWS:
+        case CshComponentID::CALIPTRA_FW:
+        case CshComponentID::OEM_FWS: // TODO backwards compatibility - remove after FS6 is fully adopted
         case CshComponentID::NV_FWS:
         case CshComponentID::SWITCH_FWS:
         case CshComponentID::SBD_FW:
@@ -1208,8 +1218,11 @@ PartitionType ToPartitionType(CshComponentID cshId, bool throwOnError)
         case CshComponentID::NV_FWS:
             type = PartitionType::PT_NV_FWS;
             break;
-        case CshComponentID::OEM_FWS:
-            type = PartitionType::PT_OEM_FWS;
+        case CshComponentID::OEM_FWS: // TODO backwards compatibility - remove after FS6 is fully adopted
+            type = PartitionType::PT_CALIPTRA_FW;
+            break;
+        case CshComponentID::CALIPTRA_FW:
+            type = PartitionType::PT_CALIPTRA_FW;
             break;
         case CshComponentID::BCT_DTB:
             type = PartitionType::PT_BCT_DTB;

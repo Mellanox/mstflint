@@ -64,8 +64,11 @@ CshComponentID ToCshId(ComponentType compName)
         case ComponentType::Comp_Csh_Nv_Fws:
             id = CshComponentID::NV_FWS;
             break;
-        case ComponentType::Comp_Csh_Oem_Fws:
+        case ComponentType::Comp_Csh_Oem_Fws: // TODO backwards compatibility - remove after FS6 is fully adopted
             id = CshComponentID::OEM_FWS;
+            break;
+        case ComponentType::Comp_Csh_Caliptra_Fw:
+            id = CshComponentID::CALIPTRA_FW;
             break;
         case ComponentType::Comp_Csh_Bct_Dtb:
             id = CshComponentID::BCT_DTB;
@@ -84,6 +87,7 @@ CshComponentID ToCshId(ComponentType compName)
     }
     return id;
 }
+
 string ToString(PartitionType type)
 {
     switch (type)
@@ -94,8 +98,8 @@ string ToString(PartitionType type)
             return "CHAIN_CONTAINER";
         case PartitionType::PT_BCT_DTB:
             return CSH::BCT_DTB_NAME;
-        case PartitionType::PT_OEM_FWS:
-            return CSH::OEM_FWS_NAME;
+        case PartitionType::PT_CALIPTRA_FW:
+            return CSH::CALIPTRA_FW_NAME;
         case PartitionType::PT_NV_FWS:
             return CSH::NV_FWS_NAME;
         case PartitionType::PT_SWITCH_FWS:
@@ -172,6 +176,8 @@ bool Fs6Operations::InitL2pt()
         }
         PartitionTableEntry entry;
         entry.Unpack(entryData);
+
+        printf("entry.GetSectionType(): %s\n", ToString((PartitionType)entry.GetSectionType()).c_str());
 
         if (IsCshComponent((PartitionType)entry.GetSectionType()))
         {
@@ -694,7 +700,7 @@ bool Fs6Operations::GetFwComponentsData(string path)
     }
 
     vector<PartitionType> partitionTypes = {PartitionType::PT_ROM_IMGS, PartitionType::PT_NV_FWS,
-                                            PartitionType::PT_OEM_FWS, PartitionType::PT_SBD_FW};
+                                            PartitionType::PT_CALIPTRA_FW, PartitionType::PT_SBD_FW};
 
     for (auto partitionType : partitionTypes)
     {
@@ -1085,7 +1091,7 @@ void Fs6Operations::UpdatePartitionTable(bool l1pt)
 bool Fs6Operations::IsL2ptSection(CshComponentID cshId)
 {
     if (cshId == CshComponentID::NV_FWS || cshId == CshComponentID::OEM_FWS || cshId == CshComponentID::BCT_DTB ||
-        cshId == CshComponentID::SWITCH_FWS || cshId == CshComponentID::SBD_FW)
+        cshId == CshComponentID::SWITCH_FWS || cshId == CshComponentID::SBD_FW || cshId == CshComponentID::CALIPTRA_FW)
     {
         return true;
     }
@@ -1094,7 +1100,7 @@ bool Fs6Operations::IsL2ptSection(CshComponentID cshId)
 
 bool Fs6Operations::IsL2ptSection(PartitionType partitionType)
 {
-    if (partitionType == PartitionType::PT_NV_FWS || partitionType == PartitionType::PT_OEM_FWS ||
+    if (partitionType == PartitionType::PT_NV_FWS || partitionType == PartitionType::PT_CALIPTRA_FW ||
         partitionType == PartitionType::PT_BCT_DTB || partitionType == PartitionType::PT_SWITCH_FWS ||
         partitionType == PartitionType::PT_SBD_FW)
     {

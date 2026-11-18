@@ -2792,7 +2792,8 @@ const vector<pair<string, ComponentType>> FwOperations::GetStringToComponentEnum
       {CSH::BCT_DTB_NAME, ComponentType::Comp_Csh_Bct_Dtb},
       {CSH::SWITCH_FWS_NAME, ComponentType::Comp_Csh_Switch_Fws},
       {CSH::SBD_FW_NAME, ComponentType::Comp_Csh_Sbd_Fw},
-      {CSH::VMOD_FW_NAME, ComponentType::Comp_Csh_Vmod_Fw}};
+      {CSH::VMOD_FW_NAME, ComponentType::Comp_Csh_Vmod_Fw},
+      {CSH::CALIPTRA_FW_NAME, ComponentType::Comp_Csh_Caliptra_Fw}};
     return stringToComponentEnum;
 }
 

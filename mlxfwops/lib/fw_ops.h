@@ -111,6 +111,7 @@ enum class ComponentType
     Comp_Csh_Switch_Fws,
     Comp_Csh_Sbd_Fw,
     Comp_Csh_Vmod_Fw,
+    Comp_Csh_Caliptra_Fw,
 };
 
 enum class ComponentHeader
