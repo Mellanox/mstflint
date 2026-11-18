@@ -177,8 +177,6 @@ bool Fs6Operations::InitL2pt()
         PartitionTableEntry entry;
         entry.Unpack(entryData);
 
-        printf("entry.GetSectionType(): %s\n", ToString((PartitionType)entry.GetSectionType()).c_str());
-
         if (IsCshComponent((PartitionType)entry.GetSectionType()))
         {
             InitCshComponent(entry);
