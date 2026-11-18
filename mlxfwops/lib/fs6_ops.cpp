@@ -1042,11 +1042,13 @@ void Fs6Operations::UpdatePartitionData(PartitionType partitionType,
     GetPartitionEntryInfo(partitionType, section_offset, section_size, chainNumber);
 
     PRINT_PROGRESS(callBackFunc, string_format("Updating %-4s section - ", ToString(partitionType).c_str()).c_str());
-    if (!_ioAccess->write(section_offset, const_cast<u_int8_t*>(data.data()), data.size()))
+    // readModifyWrite=true preserves neighbouring sections sharing this section's erase sector
+    // a plain write() would erase the whole sector and only reprograms this section's bytes, wiping its neighbours.
+    if (!writeImage((ProgressCallBack)NULL, section_offset, const_cast<u_int8_t*>(data.data()), (int)data.size(),
+                    /*isPhysAddr=*/false, /*readModifyWrite=*/true))
     {
         PRINT_PROGRESS(callBackFunc, (char*)"FAILED\n");
-        throw std::runtime_error(
-          string_format("Partition type 0x%x - write error (%s)", (int)partitionType, (*_ioAccess).err()));
+        throw std::runtime_error(string_format("Partition type 0x%x - write error (%s)", (int)partitionType, err()));
     }
     PRINT_PROGRESS(callBackFunc, (char*)"OK\n");
 }
@@ -2765,9 +2767,10 @@ bool Fs6Operations::UpdateCrcInfoForPartition(PartitionType partitionType, const
         UpdateCrcSquareLegacy(info_legacy, buf);
     }
 
-    if (!_ioAccess->write(crcInfoOffset, buf.data(), buf.size()))
+    if (!writeImage((ProgressCallBack)NULL, crcInfoOffset, buf.data(), (int)buf.size(),
+                    /*isPhysAddr=*/false, /*readModifyWrite=*/true))
     {
-        return errmsg("%s", _ioAccess->err());
+        return false; // writeImage already set the error message
     }
 
     return true;
