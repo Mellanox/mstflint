@@ -108,6 +108,9 @@ PartitionType ToPartitionType(CshComponentID cshId)
         case CshComponentID::SBD_FW:
             type = PartitionType::PT_SBD_FW;
             break;
+        case CshComponentID::VMOD_FW:
+            type = PartitionType::PT_VMOD_FW;
+            break;
         default:
             throw runtime_error("Unknown CSH id");
     }
@@ -132,6 +135,8 @@ string ToString(PartitionType type)
             return CSH::SWITCH_FWS_NAME;
         case PartitionType::PT_SBD_FW:
             return CSH::SBD_FW_NAME;
+        case PartitionType::PT_VMOD_FW:
+            return CSH::VMOD_FW_NAME;
         case PartitionType::PT_NV_DATA1:
             return "NV_DATA1";
         case PartitionType::PT_NV_DATA2:
@@ -325,30 +330,44 @@ bool Fs6Operations::Init()
 
 bool Fs6Operations::InitCshComponent(PartitionType partitionType, u_int32_t offset, int currentChain)
 {
+    MLXFWOPS_LOG_DEBUG("InitCshComponent partitionType: 0x%X", static_cast<u_int32_t>(partitionType));
     vector<u_int8_t> cshHeader(fs5_image_layout_csh_header_size());
     if (!_ioAccess->read(offset, cshHeader.data(), fs5_image_layout_csh_header_size()))
     {
         return errmsg(MLXFW_BAD_PARAM_ERR, "%s", _ioAccess->err());
     }
 
-    CSH::CshStructType cshStructType = CSH::GetCshStructType(cshHeader);
-    vector<u_int8_t> cshData(CSH::HeaderSize(cshStructType));
-    if (!_ioAccess->read(offset, cshData.data(), CSH::HeaderSize(cshStructType)))
+    try
     {
-        return errmsg(MLXFW_BAD_PARAM_ERR, "%s", _ioAccess->err());
+        CSH::CshStructType cshStructType = CSH::GetCshStructType(cshHeader);
+        vector<u_int8_t> cshData(CSH::HeaderSize(cshStructType));
+        if (!_ioAccess->read(offset, cshData.data(), CSH::HeaderSize(cshStructType)))
+        {
+            return errmsg(MLXFW_BAD_PARAM_ERR, "%s", _ioAccess->err());
+        }
+
+        CSH csh;
+        csh.UnpackHeader(cshData);
+
+        cshData.resize(csh.GetNumberOfBinaries() * BinarySectionMetadata::Size());
+        if (!_ioAccess->read(offset + CSH::HeaderSize(cshStructType), cshData.data(), cshData.size()))
+        {
+            return errmsg(MLXFW_BAD_PARAM_ERR, "%s", _ioAccess->err());
+        }
+        csh.UnpackSections(cshData);
+
+        _cshComponents.push_back({partitionType, std::move(csh), currentChain});
+    }
+    catch (const CshException& e)
+    {
+        //* VMOD partition place holder case, so we can ignore the exception
+        if (e.GetType() == CshException::CshExceptionType::CSH_HEADER_NOT_FOUND &&
+            partitionType == PartitionType::PT_VMOD_FW)
+        {
+            return false;
+        }
     }
 
-    CSH csh;
-    csh.UnpackHeader(cshData);
-
-    cshData.resize(csh.GetNumberOfBinaries() * BinarySectionMetadata::Size());
-    if (!_ioAccess->read(offset + CSH::HeaderSize(cshStructType), cshData.data(), cshData.size()))
-    {
-        return errmsg(MLXFW_BAD_PARAM_ERR, "%s", _ioAccess->err());
-    }
-    csh.UnpackSections(cshData);
-
-    _cshComponents.push_back({partitionType, std::move(csh), currentChain});
     return true;
 }
 
@@ -511,6 +530,7 @@ string Fs6Operations::GetSectionNameByMagicId(u_int32_t magicId)
 
 bool Fs6Operations::VerifyCshComponent(PartitionType partitionType, u_int32_t offset, VerifyCallBack verifyCallBackFunc)
 {
+    MLXFWOPS_LOG_DEBUG("VerifyCshComponent partitionType: %s", ToString(partitionType).c_str());
     auto cshComponent =
       find_if(_cshComponents.begin(), _cshComponents.end(),
               [partitionType](const CshComponentInfo& entry) { return entry.partitionType == partitionType; });
@@ -544,6 +564,10 @@ bool Fs6Operations::VerifyCshComponent(PartitionType partitionType, u_int32_t of
         {
             return errmsg("section %s is out of CSH bounds", sectionName.c_str());
         }
+    }
+    else if (partitionType == PartitionType::PT_VMOD_FW)
+    {
+        PrintSectionRange(verifyCallBackFunc, offset, offset, 0, "VMOD_FW", "CSH Placeholder");
     }
 
     return true;
@@ -1078,7 +1102,8 @@ void Fs6Operations::UpdatePartitionTable(bool l1pt)
 
 bool Fs6Operations::IsL2ptSection(CshComponentID cshId)
 {
-    if (cshId != CshComponentID::ROM_IMGS && cshId != CshComponentID::Unknown)
+    if (cshId == CshComponentID::NV_FWS || cshId == CshComponentID::OEM_FWS || cshId == CshComponentID::BCT_DTB ||
+        cshId == CshComponentID::SWITCH_FWS || cshId == CshComponentID::SBD_FW)
     {
         return true;
     }

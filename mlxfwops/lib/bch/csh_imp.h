@@ -175,7 +175,24 @@ bool IsCshComponent(PartitionType partitionType);
 CshComponentID ToCshId(PartitionType partitionType);
 string ToString(CshComponentID cshId);
 
-// #ifndef MST_CPU_armv7l_umbriel // {
+class CshException : public exception
+{
+public:
+    enum class CshExceptionType
+    {
+        CSH_HEADER_NOT_FOUND,
+        UNEXPECTED_ERROR
+    };
+
+    CshException(CshExceptionType type, const char* fmt, ...);
+    ~CshException() throw(){};
+    virtual const char* what() const throw() { return _msg.c_str(); }
+    CshExceptionType GetType() const { return _type; }
+
+private:
+    CshExceptionType _type;
+    std::string _msg;
+};
 
 class CSH; // forward declaration
 
@@ -473,5 +490,3 @@ private:
     bool _isUnpacked;
     CshStructType _cshStructType;
 };
-
-// #endif // } MST_CPU_armv7l_umbriel

@@ -51,7 +51,8 @@ bool IsCshComponent(PartitionType partitionType)
 {
     return partitionType == PartitionType::PT_ROM_IMGS || partitionType == PartitionType::PT_BCT_DTB ||
            partitionType == PartitionType::PT_OEM_FWS || partitionType == PartitionType::PT_NV_FWS ||
-           partitionType == PartitionType::PT_SWITCH_FWS || partitionType == PartitionType::PT_SBD_FW;
+           partitionType == PartitionType::PT_SWITCH_FWS || partitionType == PartitionType::PT_SBD_FW ||
+           partitionType == PartitionType::PT_VMOD_FW;
 }
 
 CshComponentID ToCshId(PartitionType partitionType)
@@ -150,6 +151,18 @@ const string CSH::NV_FWS_NAME = "NV_FWS";
 const string CSH::SWITCH_FWS_NAME = "SWITCH_FWS";
 const string CSH::SBD_FW_NAME = "SBD_FW";
 const string CSH::VMOD_FW_NAME = "VMOD_FW";
+
+CshException::CshException(CshExceptionType type, const char* fmt, ...) : _type(type)
+{
+    const unsigned int max = 1024;
+    char tmp[max];
+    va_list args;
+
+    va_start(args, fmt);
+    vsnprintf(tmp, max, fmt, args);
+    va_end(args);
+    _msg = tmp;
+}
 
 vector<u_int8_t> PartitionTable::Pack()
 {
@@ -1125,7 +1138,7 @@ CSH::CshStructType CSH::GetCshStructType(const vector<u_int8_t>& cshHeader)
     }
     if (string(cshHeader.begin(), cshHeader.begin() + 4) != cshMagic)
     {
-        throw runtime_error("CSH header magic is not NVDA");
+        throw CshException(CshException::CshExceptionType::CSH_HEADER_NOT_FOUND, "CSH header magic is not NVDA");
     }
 
     CshStructType type = CshStructType::CSH_TB50X;
