@@ -1639,7 +1639,8 @@ bool FwCompsMgr::burnComponents(FwComponent& comp, ProgressCallBackAdvSt* progre
             return false;
         }
         if (comp.getType() == FwComponent::COMPID_LINKX || comp.getType() == FwComponent::COMPID_LINKX_ELS || 
-            comp.getType() == FwComponent::COMPID_CLOCK_SYNC_EEPROM) 
+            comp.getType() == FwComponent::COMPID_CLOCK_SYNC_EEPROM ||
+            comp.getType() == FwComponent::COMPID_CPO_VMOD_FW)
             {
                 if (!controlFsm(FSM_CMD_DOWNSTREAM_DEVICE_TRANSFER, FSMST_DOWNSTREAM_DEVICE_TRANSFER, 0, FSMST_LOCKED,
                                 progressFuncAdv)) {
