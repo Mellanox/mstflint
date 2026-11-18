@@ -144,6 +144,8 @@ string ToString(PartitionType type)
             return "FW_NV_LOG";
         case PartitionType::PT_CPO_CALIBRATION_DATA:
             return "CPO_CALIBRATION_DATA";
+        case PartitionType::PT_CRC_INFO:
+            return "CRC_INFO";
         default:
             return "UNKNOWN";
     }

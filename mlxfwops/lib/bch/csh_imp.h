@@ -148,6 +148,7 @@ enum class PartitionType
     PT_SWITCH_FWS = 0x7,
     PT_SBD_FW = 0x8,
     PT_VMOD_FW = 0x9,
+    PT_CRC_INFO = 0xa,
     PT_NV_DATA1 = 0xe4,
     PT_NV_DATA2 = 0xe6,
     PT_VPD_READ_ONLY = 0xe3,
@@ -180,7 +181,7 @@ inline void ResolveChainNumber(int& chainNumber, int activeChain)
     }
 }
 
-bool IsCshComponent(PartitionType partitionType);
+bool MLXFWOP_API IsCshComponent(PartitionType partitionType);
 CshComponentID ToCshId(PartitionType partitionType);
 string ToString(CshComponentID cshId);
 MLXFWOP_API PartitionType ToPartitionType(CshComponentID cshId, bool throwOnError = true);
