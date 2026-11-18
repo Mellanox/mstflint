@@ -495,6 +495,9 @@ public:
     static const u_int8_t VMOD_ADM_STATUS_BACKUP = 0x01;    // 0001b
     static const u_int8_t VMOD_ADM_STATUS_REVOKED = 0x00;   // 0000b
     static const u_int8_t VMOD_ADM_STATUS_UNKNOWN = 0xff;
+    static const string cshHeaderName;
+    static const string cshMetadataName;
+    static const string binarySectionMetadataName;
 
 private:
     void UnpackCshMetadata(const vector<u_int8_t>& cshHeader, const u_int8_t* iter);
@@ -505,9 +508,6 @@ private:
 
     static const u_int16_t CSH_ECDSA_SIG_SIZE = 96;
     static const u_int16_t CSH_LMS_SIG_SIZE = 1740;
-    static const string cshHeaderName;
-    static const string cshMetadataName;
-    static const string binarySectionMetadataName;
 
     struct fs5_image_layout_csh_header _header;
     struct fs5_image_layout_csh_signature _nv_signature;
