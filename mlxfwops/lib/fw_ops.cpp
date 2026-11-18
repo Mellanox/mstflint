@@ -3304,6 +3304,11 @@ life_cycle_t CRSpaceRegisters::getLifeCycle()
     }
 
     lifeCycle.value = getConsecutiveBits(getRegister(lifeCycleAddress), firstBit, bitLen);
+    if (_chip_type == CT_SPECTRUM6 && lifeCycle.value == FS6_LC_FAILURE_ANALYSIS_MGIR)
+    {
+        MLXFWOPS_LOG_DEBUG("lifeCycle.value (0x%x) is not a supported value through CR-Space.", lifeCycle.value);
+        lifeCycle.value = FS6_LC_INVALID;
+    }
 
     return lifeCycle;
 }
@@ -3320,7 +3325,8 @@ bool CRSpaceRegisters::IsLifeCycleSecured(life_cycle_t life_cycle)
     }
     else if (life_cycle.version_field == 2)
     {
-        return life_cycle.value == FS6_LC_PRE_PRODUCTION || life_cycle.value == FS6_LC_PRODUCTION;
+        return life_cycle.value == FS6_LC_PRE_PRODUCTION || life_cycle.value == FS6_LC_PRODUCTION ||
+               life_cycle.value == FS6_LC_RMA_ENABLED || life_cycle.value == FS6_LC_RMA_DISABLED;
     }
     else
     {

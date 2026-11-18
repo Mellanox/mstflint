@@ -2104,9 +2104,16 @@ bool FwCompsMgr::queryFwInfo(fwInfoT* query, bool next_boot_fw_ver)
         {
             query->life_cycle.version_field = 1;
         }
-        else if (dm_dev_is_fs6(dm_device_id))
+        else if (dm_dev_is_fs6(dm_device_id)) // see in PRM the mapping of LC values (from CR-Space to MGIR)
         {
-            query->life_cycle.version_field = 2;
+            if (query->life_cycle.value == FS6_LC_FAILURE_ANALYSIS_MGIR)
+            {
+                query->life_cycle.version_field = 2;
+            }
+            else if (query->life_cycle.value == FS5_LC_PRE_PRODUCTION)
+            {
+                query->life_cycle.version_field = 1;
+            }
         }
     } else {
         _lastError = FWCOMPS_UNSUPPORTED_DEVICE;
