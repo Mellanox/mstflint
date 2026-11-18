@@ -44,6 +44,33 @@
 #include <algorithm>
 #include <limits.h>
 
+bool IsCshComponent(PartitionType partitionType)
+{
+    return partitionType == PartitionType::PT_ROM_IMGS || partitionType == PartitionType::PT_BCT_DTB ||
+           partitionType == PartitionType::PT_OEM_FWS || partitionType == PartitionType::PT_NV_FWS ||
+           partitionType == PartitionType::PT_SWITCH_FWS || partitionType == PartitionType::PT_SBD_FW;
+}
+
+string ToString(CshComponentID cshId)
+{
+    switch (cshId)
+    {
+        case CshComponentID::ROM_IMGS:
+            return "ROM_IMGS";
+        case CshComponentID::BCT_DTB:
+            return "BCT_DTB";
+        case CshComponentID::OEM_FWS:
+            return "OEM_FWS";
+        case CshComponentID::NV_FWS:
+            return "NV_FWS";
+        case CshComponentID::SWITCH_FWS:
+            return "SWITCH_FWS";
+        case CshComponentID::SBD_FW:
+            return "SBD_FW";
+        default:
+            return "Unknown";
+    }
+}
 vector<u_int8_t> PartitionTable::Pack()
 {
     vector<u_int8_t> data = PackHeader();
@@ -105,7 +132,7 @@ u_int32_t PartitionTable::GetEntryOffset(PartitionType entryType)
 
 u_int32_t PartitionTable::GetEntrySize(PartitionType entryType)
 {
-    return GetEntry(entryType).GetSectionsize();
+    return GetEntry(entryType).GetSectionSize();
 }
 
 PartitionTableEntry& PartitionTable::GetEntry(PartitionType entryType)
@@ -273,7 +300,7 @@ void CSH::UnpackHeader(const vector<u_int8_t>& cshHeader)
 
     if (!IsValidCompId(_metadata.component_id))
     {
-        throw runtime_error("Unknown CSH Component ID.");
+        throw runtime_error("Unknown CSH Component ID " + std::to_string(_metadata.component_id));
     }
 }
 
@@ -362,6 +389,7 @@ void CSH::SetNvSignature(const vector<u_int8_t>& signature, SigType sigType)
         {
             throw runtime_error("Unsupported LMS signature size");
         }
+        memcpy(_nv_signature.crypto_lms_sha192_h20_w4_signature, signature.data(), signature.size());
     }
 }
 
@@ -381,6 +409,7 @@ void CSH::SetOemSignature(const vector<u_int8_t>& signature, SigType sigType)
         {
             throw runtime_error("Unsupported LMS signature size");
         }
+        memcpy(_oem_signature.crypto_lms_sha192_h20_w4_signature, signature.data(), signature.size());
     }
 }
 
@@ -394,6 +423,10 @@ void CSH::SetJsonParams(const Json::Value& root)
     {
         _metadata.component_id =
           std::stoul(nbu::mft::common::GetStrValue(root["csh_metadata"]["component_id"], true), nullptr, 16);
+        if (!IsValidCompId(_metadata.component_id))
+        {
+            throw runtime_error("Unknown CSH Component ID in JSON file: " + std::to_string(_metadata.component_id));
+        }
         _metadata.num_of_binaries = 1;
     }
 

@@ -249,7 +249,6 @@ protected:
                              bool verbose = false);
     virtual bool
       FsIntQueryAux(bool readRom = true, bool quickQuery = true, bool ignoreDToc = false, bool verbose = false);
-    const char* GetSectionNameByType(u_int8_t section_type);
     bool
       GetImageInfoFromSection(u_int8_t* buff, u_int8_t sect_type, u_int32_t sect_size, u_int8_t check_support_only = 0);
     bool IsGetInfoSupported(u_int8_t sect_type);
@@ -334,7 +333,6 @@ protected:
         u_int8_t logStep;
     };
 
-    static const SectionInfo _fs3SectionsInfoArr[];
     static const u_int32_t _itocSignature[4];
     Fs3ImgInfo _fs3ImgInfo;
     MlargeBuffer _imageCache;

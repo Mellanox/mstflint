@@ -1091,6 +1091,11 @@ struct fs5_image_layout_csh_header {
 	/* 0x4.0 - 0x4.7 */
 	/* access: RW */
 	u_int8_t u8_nv_pub_key_idx;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description -  */
+	/* 0x8.0 - 0x8.31 */
+	/* access: RW */
+	u_int8_t magic_pattern[4];
 };
 
 /* Description -   */
@@ -1149,6 +1154,11 @@ struct fs5_image_layout_csh_signature {
 	/* 0x0.0 - 0x5c.31 */
 	/* access: RW */
 	struct fs5_image_layout_crypto_ecdsa384_signature ecdsa_signature;
+/*---------------- DWORD[24] (Offset 0x60) ----------------*/
+	/* Description - This is index to PSC-BL NV public key in ROM */
+	/* 0x60.0 - 0x728.31 */
+	/* access: RW */
+	u_int32_t crypto_lms_sha192_h20_w4_signature[435];
 /*---------------- DWORD[459] (Offset 0x72c) ----------------*/
 	/* Description -  */
 	/* 0x72c.0 - 0x72c.31 */

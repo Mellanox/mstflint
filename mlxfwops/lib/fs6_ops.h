@@ -45,17 +45,17 @@
 
 CshComponentID ToCshId(ComponentType compName);
 PartitionType ToPartitionType(CshComponentID cshId);
+string ToString(PartitionType type);
 
 class Fs6Operations : public FwOperations
 {
 public:
-    Fs6Operations(FBase* ioAccess) : FwOperations(ioAccess), _l2ptOffset(0) {}
+    Fs6Operations(FBase* ioAccess) : FwOperations(ioAccess), _l1ptOffset(0x2000), _l2ptOffset(0) {}
     u_int8_t FwType() override { return FIT_FS6; }
     bool FwInit() override;
     bool GetImageSize(u_int32_t* image_size) override;
     bool FwReadData(void* image, u_int32_t* image_size, bool verbose = false) override;
     bool CheckFwVersion(ComponentFwVersion currentVersion, u_int8_t forceVersion);
-    virtual FwComponent::comps_ids_t GetComponentID() { return FwComponent::comps_ids_t::COMPID_UNKNOWN; }
 
     // Unsupported functionality
     bool FwQuery(fw_info_t* fwInfo, bool, bool, bool, bool, bool) override;
@@ -101,20 +101,26 @@ public:
     const char* FwGetResetRecommandationStr() override;
 
 protected:
-    void UpdatePartitionTable(bool l1pt);
-
     bool Unsupported(const string& msg)
     {
         return errmsg("Comps operations - unsupported functionality: %s\n", msg.data());
     }
 
 private:
+    bool Init();
+    bool InitCshComponent(PartitionType partitionType, u_int32_t offset);
+    bool VerifyCshComponent(PartitionType partitionType, u_int32_t offset);
+    bool VerifyCshComponent();
+
+    void UpdatePartitionTable(bool l1pt);
     bool IsL2ptSection(CshComponentID cshId);
-    bool IsL2ptSection(PartitionType partitionType);
+
+    string
+      FormatAddressRange(u_int32_t startAddr, u_int32_t endAddr, u_int32_t size, string sectionType, string suffix = "");
 
     PartitionTable _l1pt;
     PartitionTable _l2pt;
+    vector<pair<PartitionType, CSH>> _cshComponents;
+    const u_int32_t _l1ptOffset;
     u_int32_t _l2ptOffset;
-    vector<PartitionTableEntry> _l1ptEntries;
-    vector<PartitionTableEntry> _l2ptEntries;
 };

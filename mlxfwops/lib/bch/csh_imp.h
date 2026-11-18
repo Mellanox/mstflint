@@ -94,6 +94,9 @@ enum class PartitionType
     PT_FW_DEBUG_DUMP2 = 0xd4,
 };
 
+bool IsCshComponent(PartitionType partitionType);
+string ToString(CshComponentID cshId);
+
 // #ifndef MST_CPU_armv7l_umbriel // {
 
 class MLXFWOP_API PartitionTableEntry
@@ -107,7 +110,7 @@ public:
     void SetStartOffset(size_t offset);
     size_t GetStartOffset() const { return _struct.start_address[0]; }
     void SetSectionSize(size_t size);
-    u_int32_t GetSectionsize() const { return _struct.partition_size[0]; }
+    u_int32_t GetSectionSize() const { return _struct.partition_size[0]; }
     void SetSectionType(u_int32_t type);
     u_int32_t GetSectionType() const { return _struct.partition_type; }
 
@@ -124,6 +127,7 @@ public:
     vector<u_int8_t> PackHeader();
     void UnpackHeader(const vector<u_int8_t>& data);
 
+    size_t Size() { return HeaderSize() + _entries.size() * PartitionTableEntry::Size(); }
     void CalcDigest();
 
     void SetMaxNumberOfEntries(size_t num) { _struct.max_entires = num; };
@@ -132,8 +136,8 @@ public:
     size_t GetNumberOfEntries() const { return _struct.num_entires; }
 
     void AddEntry(const PartitionTableEntry& entry);
-    void SetEntrySize(PartitionType entryType, u_int32_t size);
 
+    void SetEntrySize(PartitionType entryType, u_int32_t size);
     u_int32_t GetEntryOffset(PartitionType entryType);
     u_int32_t GetEntrySize(PartitionType entryType);
 
@@ -162,6 +166,12 @@ public:
 
     size_t GetSectionOffset() { return _struct.flash_offset; }
     size_t GetSectionSize() { return _struct.bin_length; }
+    u_int32_t GetSectionType()
+    {
+        u_int32_t magic;
+        memcpy(&magic, _struct.u8_magic_id, sizeof(magic));
+        return magic;
+    }
 
     void SetSectionOffset(u_int32_t offset) { _struct.flash_offset = offset; }
 
@@ -184,6 +194,8 @@ public:
 
     CSH();
 
+    size_t Size() { return HeaderSize() + _cshSections.size() * BinarySectionMetadata::Size(); }
+
     vector<u_int8_t> Pack();
     void Unpack(const vector<u_int8_t>& buffer);
     void UnpackHeader(const vector<u_int8_t>& cshHeader);
@@ -193,6 +205,7 @@ public:
     const vector<BinarySectionMetadata>& GetSections() { return _cshSections; }
     vector<u_int8_t> GetMetadata() const;
     size_t GetCshSize();
+    u_int16_t GetComponentId() { return _metadata.component_id; }
     size_t GetComponentSize(bool withCshHeader = true);
     size_t GetNumberOfBinaries() { return _metadata.num_of_binaries; }
 

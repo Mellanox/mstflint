@@ -626,7 +626,7 @@ protected:
     struct SectionInfo
     {
         u_int8_t type;
-        const char* name;
+        string name;
     };
 
     struct QueryOptions
@@ -749,6 +749,7 @@ protected:
     virtual bool VerifyBranchFormat(const char* vsdString);
     virtual bool GetDtocAddress(u_int32_t& dTocAddress);
     virtual bool IsVmodSupported();
+    const char* GetSectionNameByType(u_int8_t section_type);
 
     // Protected Members
     FBase* _ioAccess;
@@ -773,6 +774,8 @@ protected:
     ISignatureManager* _signatureMngr;
     bool _internalQueryPerformed;
     bool _isReducedImage;
+
+    static const SectionInfo _fs3SectionsInfoArr[];
 
 private:
     // Static Methods
