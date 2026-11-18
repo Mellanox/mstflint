@@ -125,7 +125,7 @@ protected:
     string getRomProtocolStr(u_int8_t proto);
     string getRomSuppCpuStr(u_int8_t suppCpu);
     u_int32_t getUserChoice(u_int32_t maximumValue);
-    static int verifyCbFunc(char* str);
+    static int verifyCbFunc(const char* str);
     static int CbCommon(int completion, char* preStr, char* endStr = NULL);
     static int burnCbFs3Func(int completion);
     static int advProgressFunc(int completion, const char* stage, prog_t type, int* unknownProgress);

@@ -471,7 +471,7 @@ void SubCommand::openLog()
     }
 }
 
-int SubCommand::verifyCbFunc(char* str)
+int SubCommand::verifyCbFunc(const char* str)
 {
     printf("%s", str);
     return 0;
@@ -1439,9 +1439,10 @@ bool SubCommand::checkGuidsFlags(u_int16_t devType,
     (void)ibDev;
     if (guidsSpecified || macsSpecified || uidSpecified)
     {
-        if (uidSpecified && fwType != FIT_FS3 && fwType != FIT_FS4 && fwType != FIT_FS5 && fwType != FIT_FSCTRL)
+        if (uidSpecified && fwType != FIT_FS3 && fwType != FIT_FS4 && fwType != FIT_FS5 && fwType != FIT_FS6 &&
+            fwType != FIT_FSCTRL)
         {
-            reportErr(true, "-uid flag is applicable only for FS3/FS4/FS5 FW Only.\n");
+            reportErr(true, "-uid flag is applicable only for FS3/FS4/FS5/FS6 FW Only.\n");
             return false;
         }
         else if (!ethDev && macsSpecified)

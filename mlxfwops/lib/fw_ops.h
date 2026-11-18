@@ -88,6 +88,8 @@ MLXFWOP_API extern bool nextBootFwVer;
 #define CHECK_MFG_NEW_FORMAT(mfg_st) (mfg_st.major_version == 1)
 #define CHECK_MFG_OLD_FORMAT(mfg_st) (mfg_st.major_version == 0)
 
+#define GUID_TO_64(guid_st) (guid_st.l | (u_int64_t)guid_st.h << 32)
+
 enum class ComponentType
 {
     Comp_Psc_Not_Valid = 0,
@@ -786,6 +788,8 @@ protected:
     const char* GetSectionNameByType(u_int8_t section_type);
 
     static bool CheckDevInfoSignature(u_int32_t* buff);
+    bool ChangeUidsFromBase(fs3_uid_t baseUid, image_layout_guids& guids);
+    bool ChangeDeviceInfoUidsFromBase(fs3_uid_t& usrGuid, const sg_params_t& sgParam);
 
     virtual bool GetDevInfo(u_int8_t* buff = nullptr);
     virtual bool GetMfgInfo(u_int8_t* buff = nullptr);

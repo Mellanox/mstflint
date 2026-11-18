@@ -39,6 +39,7 @@
 #include "bch/csh_imp.h"
 #include "tools_layouts/fs6_image_layout_layouts.h"
 #include "json/writer.h"
+#include "common/tools_string.h"
 
 #ifdef MFT_LEGACY_BUILD
 #include <mft_utils.h>
@@ -49,6 +50,8 @@
 #include <algorithm>
 #include <iomanip>
 #include <fstream>
+
+using nbu::mft::common::string_format;
 
 CshComponentID ToCshId(ComponentType compName)
 {
@@ -701,7 +704,7 @@ const char* Fs6Operations::FwGetResetRecommandationStr()
     return REBOOT_REQUIRED_STR;
 }
 
-bool Fs6Operations::GetPartitionEntryInfo(PartitionType partitionType,
+void Fs6Operations::GetPartitionEntryInfo(PartitionType partitionType,
                                           size_t& sectionOffset,
                                           size_t& sectionSize,
                                           int chainNumber)
@@ -722,58 +725,63 @@ bool Fs6Operations::GetPartitionEntryInfo(PartitionType partitionType,
             {
                 sectionOffset = baseOffset + entry.GetStartOffset();
                 sectionSize = entry.GetSectionSize();
-                return true;
+                return;
             }
         }
     }
 
-    return errmsg("Partition type 0x%x not found or validation failed", (int)partitionType);
+    throw std::runtime_error(string_format("Partition type 0x%x not found or validation failed", (int)partitionType));
 }
 
-bool Fs6Operations::ReadPartitionInfo(PartitionType partitionType, vector<u_int8_t>& data, int chainNumber)
+void Fs6Operations::UpdatePartitionData(PartitionType partitionType,
+                                        const vector<u_int8_t>& data,
+                                        PrintCallBack callBackFunc,
+                                        int chainNumber)
 {
-    size_t section_offset;
-    size_t section_size;
-    if (!GetPartitionEntryInfo(partitionType, section_offset, section_size, chainNumber))
+    size_t section_offset = 0;
+    size_t section_size = 0;
+    GetPartitionEntryInfo(partitionType, section_offset, section_size, chainNumber);
+
+    PRINT_PROGRESS(callBackFunc, string_format("Updating %-4s section - ", ToString(partitionType).c_str()).c_str());
+    if (!_ioAccess->write(section_offset, const_cast<u_int8_t*>(data.data()), data.size()))
     {
-        return false;
+        PRINT_PROGRESS(callBackFunc, (char*)"FAILED\n");
+        throw std::runtime_error(
+          string_format("Partition type 0x%x - write error (%s)", (int)partitionType, (*_ioAccess).err()));
     }
+    PRINT_PROGRESS(callBackFunc, (char*)"OK\n");
+}
+
+vector<u_int8_t> Fs6Operations::ReadPartitionData(PartitionType partitionType, int chainNumber)
+{
+    size_t section_offset = 0;
+    size_t section_size = 0;
+    GetPartitionEntryInfo(partitionType, section_offset, section_size, chainNumber);
 
     string partitionName = ToString(partitionType);
-    MLXFWOPS_LOG_DEBUG("Fs6Operations::ReadPartitionInfo %s_section_offset=0x%zx, %s_section_size=0x%zx", partitionName.c_str(),
+    MLXFWOPS_LOG_DEBUG("Fs6Operations::ReadPartitionData %s_section_offset=0x%zx, %s_section_size=0x%zx", partitionName.c_str(),
              section_offset, partitionName.c_str(), section_size);
 
-    data.resize(section_size);
+    vector<u_int8_t> data(section_size);
     if (!_ioAccess->read(section_offset, data.data(), section_size))
     {
-        return errmsg("%s - read error (%s)\n", partitionName.c_str(), (*_ioAccess).err());
+        throw std::runtime_error(std::string(partitionName) + " - read error (" + (*_ioAccess).err() + ")");
     }
-
-    return true;
+    return data;
 }
 
 bool Fs6Operations::GetDevInfo(u_int8_t* buff)
 {
-    vector<u_int8_t> devInfoData;
-    if (!ReadPartitionInfo(PartitionType::PT_DEV_INFO, devInfoData))
-    {
-        return false;
-    }
-
+    vector<u_int8_t> devInfoData = ReadPartitionData(PartitionType::PT_DEV_INFO);
     return FwOperations::GetDevInfo(devInfoData.data());
 }
 
 bool Fs6Operations::GetMfgInfo(u_int8_t* buff)
 {
-    vector<u_int8_t> mfg_info_data;
-    if (!ReadPartitionInfo(PartitionType::PT_MFG_INFO, mfg_info_data))
-    {
-        return false;
-    }
-
+    vector<u_int8_t> mfg_info_data = ReadPartitionData(PartitionType::PT_MFG_INFO);
     if (!FwOperations::GetMfgInfo(mfg_info_data.data()))
     {
-        return false;
+        throw std::runtime_error("Failed to get MFG info");
     }
 
     // Convert from FS6 hi/lo format to FS3 64-bit format
@@ -921,6 +929,14 @@ bool Fs6Operations::GetImageInfo()
     return true;
 }
 
+size_t Fs6Operations::GetPartitionOffset(PartitionType partitionType, int chainNumber)
+{
+    size_t partitionOffset = 0;
+    size_t partitionSize = 0;
+    GetPartitionEntryInfo(partitionType, partitionOffset, partitionSize, chainNumber);
+    return partitionOffset;
+}
+
 bool Fs6Operations::GetCshSectionOffset(PartitionType partitionType,
                                         CshSectionType sectionType,
                                         size_t& CshSectionOffset,
@@ -930,58 +946,7 @@ bool Fs6Operations::GetCshSectionOffset(PartitionType partitionType,
     MLXFWOPS_LOG_DEBUG("Fs6Operations::GetCshSectionOffset partitionType = 0x%x, sectionType = 0x%x", (int)partitionType,
              (int)sectionType);
 
-    ResolveChainNumber(chainNumber, _activeChain);
-    size_t partitionOffset = 0;
-
-    bool isL2pt = IsL2ptSection(ToCshId(partitionType));
-    if (isL2pt)
-    {
-        MLXFWOPS_LOG_DEBUG("Fs6Operations::GetCshSectionOffset isL2pt");
-        std::vector<PartitionTableEntry> l2Entries = _l2pt.GetEntries();
-        auto l2Entry = find_if(l2Entries.begin(), l2Entries.end(),
-                               [partitionType](const PartitionTableEntry& entry)
-                               { return (PartitionType)entry.GetSectionType() == partitionType; });
-
-        if (l2Entry == l2Entries.end())
-        {
-            return errmsg("Partition Table Entry for type 0x%x not found", (int)partitionType);
-        }
-        partitionOffset =
-          _l2ptOffset + l2Entry->GetStartOffset(); // in L2PT the offfset is relative to the start of L2PT
-    }
-    else
-    {
-        MLXFWOPS_LOG_DEBUG("Fs6Operations::GetCshSectionOffset isL1pt");
-        std::vector<PartitionTableEntry> l1Entries = _l1pt.GetEntries();
-        auto l1Entry = l1Entries.end();
-        for (auto it = l1Entries.begin(); it != l1Entries.end(); ++it)
-        {
-            PartitionType entryPartitionType = PartitionType(it->GetSectionType());
-            if (entryPartitionType == partitionType)
-            {
-                if (entryPartitionType == PartitionType::PT_ROM_IMGS ||
-                    entryPartitionType == PartitionType::PT_CHAIN_CONTAINER)
-                {
-                    if (it->GetChainNumber() == chainNumber)
-                    {
-                        l1Entry = it;
-                        break;
-                    }
-                }
-                else
-                {
-                    l1Entry = it;
-                    break;
-                }
-            }
-        }
-
-        if (l1Entry == l1Entries.end())
-        {
-            return errmsg("Partition Table Entry for type 0x%x not found", (int)partitionType);
-        }
-        partitionOffset = l1Entry->GetStartOffset(); // in L1PT the offfset is absolute
-    }
+    size_t partitionOffset = GetPartitionOffset(partitionType, chainNumber);
 
     MLXFWOPS_LOG_DEBUG("Fs6Operations::GetCshSectionOffset partitionOffset = 0x%zx", partitionOffset);
 
@@ -1032,7 +997,7 @@ bool Fs6Operations::FwQuery(fw_info_t* fwInfo,
 
     if (!GetIsReducedImage() && !isStripedImage && !ignoreDToc)
     {
-        if ((!GetMfgInfo() && !GetDevInfo()))
+        if ((!GetMfgInfo() || !GetDevInfo()))
         {
             return false;
         }
@@ -1250,11 +1215,70 @@ bool Fs6Operations::FwBurnBlock(FwOperations* imageOps, ProgressCallBack progres
 }
 bool Fs6Operations::FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc, ProgressCallBack progressFunc)
 {
-    return Unsupported(__FUNCTION__);
+    vector<u_int8_t> devInfoData = ReadPartitionData(PartitionType::PT_DEV_INFO);
+    struct image_layout_device_info devInfo;
+    fs3_uid_t usrGuid;
+    image_layout_device_info_unpack(&devInfo, devInfoData.data());
+    memset(&usrGuid, 0, sizeof(usrGuid));
+
+    if (!ChangeDeviceInfoUidsFromBase(usrGuid, sgParam))
+    {
+        return false;
+    }
+
+    if (!ChangeUidsFromBase(usrGuid, devInfo.guids))
+    {
+        return false;
+    }
+
+    devInfo.signature0 = DEV_INFO_SIG0;
+    devInfo.signature1 = DEV_INFO_SIG1;
+    devInfo.signature2 = DEV_INFO_SIG2;
+    devInfo.signature3 = DEV_INFO_SIG3;
+
+    image_layout_device_info_pack(&devInfo, devInfoData.data());
+    UpdatePartitionData(PartitionType::PT_DEV_INFO, devInfoData, callBackFunc);
+
+    return true;
 }
+
 bool Fs6Operations::FwSetMFG(fs3_uid_t baseGuid, PrintCallBack callBackFunc)
 {
-    return Unsupported(__FUNCTION__);
+    FAIL_NO_OCR("set manufacture GUIDs/MACs");
+
+    if (!baseGuid.base_guid_specified && !baseGuid.base_mac_specified)
+    {
+        return errmsg("base GUID/MAC were not specified.");
+    }
+    if (baseGuid.base_mac_specified && !CheckMac(baseGuid.base_mac))
+    {
+        return errmsg("Bad MAC (" MAC_FORMAT ") given: %s. Please specify a valid MAC value", baseGuid.base_mac.h,
+                      baseGuid.base_mac.l, err());
+    }
+    if (!baseGuid.use_pp_attr)
+    {
+        baseGuid.num_of_guids_pp[0] = baseGuid.num_of_guids ? baseGuid.num_of_guids : DEFAULT_GUID_NUM;
+        baseGuid.step_size_pp[0] = baseGuid.step_size ? baseGuid.step_size : DEFAULT_STEP;
+        baseGuid.num_of_guids_pp[1] = baseGuid.num_of_guids ? baseGuid.num_of_guids : DEFAULT_GUID_NUM;
+        baseGuid.step_size_pp[1] = baseGuid.step_size ? baseGuid.step_size : DEFAULT_STEP;
+        baseGuid.use_pp_attr = 1;
+    }
+
+    vector<u_int8_t> mfgInfoData = ReadPartitionData(PartitionType::PT_MFG_INFO);
+
+    fs6_image_layout_mfg_info fs6MfgInfo;
+    fs6_image_layout_mfg_info_unpack(&fs6MfgInfo, mfgInfoData.data());
+    struct image_layout_guids guids = ToImageLayoutGuids(fs6MfgInfo.guids);
+    if (!ChangeUidsFromBase(baseGuid, guids))
+    {
+        return false;
+    }
+    fs6MfgInfo.guids = ToFs6MfgInfoGuids(guids);
+    fs6_image_layout_mfg_info_pack(&fs6MfgInfo, mfgInfoData.data());
+
+    UpdatePartitionData(PartitionType::PT_MFG_INFO, mfgInfoData, callBackFunc);
+
+    return true;
 }
 bool Fs6Operations::FwSetMFG(guid_t baseGuid, PrintCallBack callBackFunc)
 {
@@ -1363,4 +1387,36 @@ bool Fs6Operations::PartitionValidator::validate(const PartitionTableEntry& entr
                                                  int activeChain) const
 {
     return _validator(entry, ioAccess, activeChain);
+}
+
+image_layout_guids Fs6Operations::ToImageLayoutGuids(const struct fs6_image_layout_guids& fs6Guids)
+{
+    image_layout_guids imageLayoutGuids;
+    imageLayoutGuids.guids.num_allocated = fs6Guids.guids.num_allocated;
+    imageLayoutGuids.guids.num_allocated_msb = fs6Guids.guids.num_allocated_msb;
+    imageLayoutGuids.guids.step = fs6Guids.guids.step;
+    imageLayoutGuids.guids.uid = ((u_int64_t)fs6Guids.guids.uid.hi << 32) | fs6Guids.guids.uid.lo;
+
+    imageLayoutGuids.macs.num_allocated = fs6Guids.macs.num_allocated;
+    imageLayoutGuids.macs.num_allocated_msb = fs6Guids.macs.num_allocated_msb;
+    imageLayoutGuids.macs.step = fs6Guids.macs.step;
+    imageLayoutGuids.macs.uid = ((u_int64_t)fs6Guids.macs.uid.hi << 32) | fs6Guids.macs.uid.lo;
+    return imageLayoutGuids;
+}
+
+fs6_image_layout_guids Fs6Operations::ToFs6MfgInfoGuids(const struct image_layout_guids& guids)
+{
+    fs6_image_layout_guids fs6Guids;
+    fs6Guids.guids.num_allocated = guids.guids.num_allocated;
+    fs6Guids.guids.num_allocated_msb = guids.guids.num_allocated_msb;
+    fs6Guids.guids.step = guids.guids.step;
+    fs6Guids.guids.uid.hi = (u_int32_t)(guids.guids.uid >> 32);
+    fs6Guids.guids.uid.lo = (u_int32_t)(guids.guids.uid & 0xFFFFFFFF);
+
+    fs6Guids.macs.num_allocated = guids.macs.num_allocated;
+    fs6Guids.macs.num_allocated_msb = guids.macs.num_allocated_msb;
+    fs6Guids.macs.step = guids.macs.step;
+    fs6Guids.macs.uid.hi = (u_int32_t)(guids.macs.uid >> 32);
+    fs6Guids.macs.uid.lo = (u_int32_t)(guids.macs.uid & 0xFFFFFFFF);
+    return fs6Guids;
 }

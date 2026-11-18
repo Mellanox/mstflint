@@ -3511,3 +3511,90 @@ bool FwOperations::GetDevInfo(u_int8_t* buff)
     }
     return true;
 }
+
+bool FwOperations::ChangeDeviceInfoUidsFromBase(fs3_uid_t& usrGuid, const sg_params_t& sgParam)
+{
+    if (!_fsCommonInfo.ext_info.guids_override_en)
+    {
+        return errmsg("guids override is not set, cannot set device guids");
+    }
+
+    usrGuid.num_of_guids_pp[0] = sgParam.usePPAttr  ? sgParam.numOfGUIDsPP[0] :
+                                 sgParam.numOfGUIDs ? sgParam.numOfGUIDs :
+                                                      DEFAULT_GUID_NUM;
+    usrGuid.step_size_pp[0] = sgParam.usePPAttr ? sgParam.stepSizePP[0] :
+                              sgParam.stepSize  ? sgParam.stepSize :
+                                                  DEFAULT_STEP;
+    usrGuid.num_of_guids_pp[1] = sgParam.usePPAttr  ? sgParam.numOfGUIDsPP[1] :
+                                 sgParam.numOfGUIDs ? sgParam.numOfGUIDs :
+                                                      DEFAULT_GUID_NUM;
+    usrGuid.step_size_pp[1] = sgParam.usePPAttr ? sgParam.stepSizePP[1] :
+                              sgParam.stepSize  ? sgParam.stepSize :
+                                                  DEFAULT_STEP;
+    usrGuid.use_pp_attr = 1;
+
+    usrGuid.base_guid_specified = false;
+    usrGuid.base_mac_specified = false;
+    usrGuid.set_mac_from_guid = false;
+
+    if (sgParam.guidsSpecified || sgParam.uidSpecified)
+    {
+        usrGuid.base_guid_specified = true;
+        usrGuid.base_guid = sgParam.userGuids[0];
+        usrGuid.set_mac_from_guid = sgParam.uidSpecified ? true : false;
+    }
+    if (sgParam.macsSpecified)
+    {
+        /* check base mac */
+        if (!CheckMac(sgParam.userGuids[1]))
+        {
+            return errmsg("Bad MAC (" MAC_FORMAT ") given: %s. Please specify a valid MAC value",
+                          sgParam.userGuids[1].h, sgParam.userGuids[1].l, err());
+        }
+        usrGuid.base_mac_specified = true;
+        usrGuid.base_mac = sgParam.userGuids[1];
+    }
+
+    if (!usrGuid.base_guid_specified && !usrGuid.base_mac_specified)
+    {
+        return errmsg("base GUID/MAC were not specified.");
+    }
+    return true;
+}
+
+bool FwOperations::ChangeUidsFromBase(fs3_uid_t base_uid, image_layout_guids& guids)
+{
+    /*
+     * on ConnectX4 we derrive guids from base_guid and macs from base_mac
+     */
+    u_int64_t base_guid_64;
+    u_int64_t base_mac_64;
+    if (!base_uid.use_pp_attr)
+    {
+        return errmsg("Expected per port attributes to be specified");
+    }
+
+    base_guid_64 = base_uid.base_guid_specified ? GUID_TO_64(base_uid.base_guid) : guids.guids.uid;
+    base_mac_64 = base_uid.base_mac_specified ? GUID_TO_64(base_uid.base_mac) : guids.macs.uid;
+    if (base_uid.set_mac_from_guid && base_uid.base_guid_specified)
+    {
+        // in case we derrive mac from guid
+        base_mac_64 =
+          (((u_int64_t)base_uid.base_guid.l & 0xffffff) | (((u_int64_t)base_uid.base_guid.h & 0xffffff00) << 16));
+    }
+
+    if (base_uid.num_of_guids_pp[0] != DEFAULT_GUID_NUM)
+    {
+        guids.guids.num_allocated = (u_int8_t)(base_uid.num_of_guids_pp[0] & 0xff);
+        guids.guids.num_allocated_msb = (u_int8_t)((base_uid.num_of_guids_pp[0] >> 8) & 0xff);
+        guids.macs.num_allocated = guids.guids.num_allocated;
+        guids.macs.num_allocated_msb = guids.guids.num_allocated_msb;
+    }
+
+    guids.guids.uid = base_guid_64;
+    guids.guids.step = base_uid.step_size_pp[0] != DEFAULT_STEP ? base_uid.step_size_pp[0] : guids.guids.step;
+
+    guids.macs.uid = base_mac_64;
+    guids.macs.step = base_uid.step_size_pp[0] != DEFAULT_STEP ? base_uid.step_size_pp[0] : guids.macs.step;
+    return true;
+}

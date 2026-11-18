@@ -121,7 +121,7 @@ typedef enum
 typedef int EFIAPI (*f_prog_func)(int completion);
 typedef int EFIAPI (*f_prog_func_ex)(int completion, void* opaque);
 typedef int EFIAPI (*f_prog_func_adv)(int completion, const char* str, prog_t, void* opaque);
-typedef int (*f_prog_func_str)(char* str);
+typedef int (*f_prog_func_str)(const char* str);
 
 typedef struct
 {

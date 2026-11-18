@@ -71,8 +71,6 @@
 #define FS4_ENCRYPTED_LOG_CHUNK_SIZE 24
 
 
-#define GUID_TO_64(guid_st) (guid_st.l | (u_int64_t)guid_st.h << 32)
-
 #define CHECK_IF_FS4_FILE_FOR_TIMESTAMP_OP()                                          \
     if (!_ioAccess->is_flash())                                                       \
     {                                                                                 \

@@ -110,11 +110,6 @@ public:
                              CshSectionType sectionType,
                              size_t& CshSectionOffset,
                              int chainNumber = INVALID_CHAIN_NUMBER);
-    bool GetPartitionEntryInfo(PartitionType partitionType,
-                               size_t& sectionOffset,
-                               size_t& sectionSize,
-                               int chainNumber = INVALID_CHAIN_NUMBER);
-    bool ReadPartitionInfo(PartitionType partitionType, vector<u_int8_t>& data, int chainNumber = INVALID_CHAIN_NUMBER);
     bool ReadCshSectionInfo(PartitionType partitionType,
                             CshSectionType sectionType,
                             size_t sectionSize,
@@ -174,6 +169,19 @@ private:
     void CopyMagicPattern(size_t componentOffset, vector<u_int8_t>& compData);
     bool IsL2ptSection(CshComponentID cshId);
     bool IsL2ptSection(PartitionType partitionType);
+    vector<u_int8_t> ReadPartitionData(PartitionType partitionType, int chainNumber = INVALID_CHAIN_NUMBER);
+    void UpdatePartitionData(PartitionType partitionType,
+                             const vector<u_int8_t>& data,
+                             PrintCallBack callBackFunc,
+                             int chainNumber = INVALID_CHAIN_NUMBER);
+    size_t GetPartitionOffset(PartitionType partitionType, int chainNumber = INVALID_CHAIN_NUMBER);
+    void GetPartitionEntryInfo(PartitionType partitionType,
+                               size_t& sectionOffset,
+                               size_t& sectionSize,
+                               int chainNumber = INVALID_CHAIN_NUMBER);
+
+    image_layout_guids ToImageLayoutGuids(const struct fs6_image_layout_guids& fs6Guids);
+    fs6_image_layout_guids ToFs6MfgInfoGuids(const struct image_layout_guids& guids);
 
     void PrintDotSection(VerifyCallBack verifyCallBackFunc);
 
