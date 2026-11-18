@@ -2219,9 +2219,10 @@ bool Fs6Operations::ParseFs6ImageInfo(struct fs6_image_layout_image_info& image_
     // get name, prs name and description
     // Legacy behavior checked minor_version to select layout. (3 -> fsX-specific layout, else -> tools_open_image_info
     // layout) We now always use the fsX-specific image_info layout.
-    strncpy(fsCommonInfo.ext_info.name, image_info.name, strlen(image_info.name));
-    strncpy(fsCommonInfo.ext_info.description, image_info.description, strlen(image_info.description));
-    strncpy(fsCommonInfo.ext_info.prs_name, image_info.prs_name, strlen(image_info.prs_name));
+    snprintf(fsCommonInfo.ext_info.name, sizeof(fsCommonInfo.ext_info.name), "%s", image_info.name);
+    snprintf(fsCommonInfo.ext_info.description, sizeof(fsCommonInfo.ext_info.description), "%s",
+             image_info.description);
+    snprintf(fsCommonInfo.ext_info.prs_name, sizeof(fsCommonInfo.ext_info.prs_name), "%s", image_info.prs_name);
 
     fsCommonInfo.ext_info.mcc_en = image_info.mcc_en;
     fsCommonInfo.ext_info.security_mode =
