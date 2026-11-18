@@ -1722,7 +1722,10 @@ bool checkCmdParams(CmdLineParams& cmd_params, config_t& config)
         cmd_params.cable_activation_wait = CABLE_ACTIVATION_WAIT_DEFAULT;
     }
 
-    if (cmd_params.onlineQueryPsids.length() || cmd_params.download || cmd_params.update_online)
+    // An empty certificate means libcurl's default CA bundle (the system
+    // trust store) is used - there is nothing to validate then.
+    if (!cmd_params.certificate.empty() &&
+        (cmd_params.onlineQueryPsids.length() || cmd_params.download || cmd_params.update_online))
     {
         cmd_params.certificate = adjustRelPath(cmd_params.certificate, config.adjuster_path);
         Filesystem::path p(cmd_params.certificate);
