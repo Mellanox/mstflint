@@ -1516,9 +1516,19 @@ bool Fs6Operations::PreBurnChecks(FwOperations* imageOps, ExtBurnParams& burnPar
         return errmsg("Expected FS6 or FSVMOD image but got type %d", imageOps->FwType());
     }
 
-    if (Is32MBLayout())
+    try
     {
-        MLXFWOPS_LOG_DEBUG("32MB layout detected");
+        if (Is32MBLayout())
+        {
+            MLXFWOPS_LOG_DEBUG("32MB layout detected");
+        }
+    }
+    catch (const std::exception& e)
+    {
+        if (!burnParams.useImgDevData)
+        {
+            return errmsg("%s", e.what());
+        }
     }
 
     if (!burnParams.useImgDevData && imageOps->FwType() == FIT_FS6)
