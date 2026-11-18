@@ -732,6 +732,7 @@ void CshMetadataNbu::SetJsonParams(const Json::Value& root)
     _metadata_nbu.issu_ver_minor = std::stoul(nbu::mft::common::GetStrValue(root["issu_ver_minor"], true), nullptr, 16);
     _metadata_nbu.issu_notch = std::stoul(nbu::mft::common::GetStrValue(root["issu_notch"], true), nullptr, 16);
     _metadata_nbu.issuable = std::stoul(nbu::mft::common::GetStrValue(root["issuable"], true), nullptr, 16);
+    _metadata_nbu.fw_lifecycle = std::stoul(nbu::mft::common::GetStrValue(root["fw_lifecycle"], true), nullptr, 16);
     if (root.isMember("dependency_list"))
     {
         SetDependencyList(root["dependency_list"]);
