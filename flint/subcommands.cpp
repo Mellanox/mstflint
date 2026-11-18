@@ -1665,6 +1665,10 @@ const char* SubCommand::fwImgTypeToStr(u_int8_t fwImgType)
             return "FSVMOD";
             break;
 
+        case FIT_CSH:
+            return "CSH";
+            break;
+
         default:
             return "Unknown";
             break;
