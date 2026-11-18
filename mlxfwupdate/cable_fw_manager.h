@@ -216,6 +216,10 @@ struct CableInfo
     string serialNumber;
     u_int32_t vendorOui = 0;
     string vendorRev; // two ASCII characters, for example "B1"
+    // The identity fields above that the cable filled with something other than text, as
+    // CableTextField bits. Such a field is kept empty, so it is never matched as if it were text,
+    // and the report names it Invalid.
+    u_int8_t invalidText = 0;
     // Cage form factor. PDDR names it with a firmware enum; the EEPROM fallback names it from the
     // SFF-8024 identifier byte, which is a different number space carrying the same meaning.
     string identifier;
