@@ -2339,10 +2339,63 @@ bool Fs6Operations::FwSetAccessKey(hw_key_t userKey, ProgressCallBack progressFu
 {
     return Unsupported(__FUNCTION__);
 }
+// FS6 keeps what FS3/FS4 held in iTOC sections inside the CSH components. The section's owning
+// partition and size come from the CSH metadata; ReadCshSectionInfo does the addressing.
 bool Fs6Operations::FwGetSection(u_int32_t sectType, std::vector<u_int8_t>& sectInfo, bool stripedImage)
 {
-    return Unsupported(__FUNCTION__);
+    (void)stripedImage;
+    if (!Init())
+    {
+        return false;
+    }
+
+    for (vector<CshComponentInfo>::iterator comp = _cshComponents.begin(); comp != _cshComponents.end(); ++comp)
+    {
+        if (comp->csh == nullptr)
+        {
+            continue;
+        }
+        if ((comp->partitionType == PartitionType::PT_ROM_IMGS ||
+             comp->partitionType == PartitionType::PT_CHAIN_CONTAINER) &&
+            comp->chainNumber != _activeChain)
+        {
+            continue;
+        }
+
+        vector<BinarySectionMetadata>& sections = comp->csh->GetSections();
+        for (vector<BinarySectionMetadata>::iterator section = sections.begin(); section != sections.end(); ++section)
+        {
+            if (section->GetSectionType() != sectType)
+            {
+                continue;
+            }
+            size_t partitionOffset = 0, partitionSize = 0;
+            GetPartitionEntryInfo(comp->partitionType, partitionOffset, partitionSize, comp->chainNumber);
+            if (section->GetSectionSize() > partitionSize ||
+                section->GetSectionOffset() > partitionSize - section->GetSectionSize())
+            {
+                return errmsg("%s section size (0x%x) exceeds partition size (0x%x)",
+                              GetSectionNameByMagicId(sectType).c_str(),
+                              static_cast<u_int32_t>(section->GetSectionSize()),
+                              static_cast<u_int32_t>(partitionSize));
+            }
+            if (!ReadCshSectionInfo(comp->partitionType, static_cast<CshSectionType>(sectType),
+                                    section->GetSectionSize(), sectInfo, comp->chainNumber))
+            {
+                return false;
+            }
+            if (sectType == FS3_DBG_FW_INI)
+            {
+                // Same host dword order Fs4Operations stores it in; unzipDataFile swaps it back.
+                TOCPUn(sectInfo.data(), sectInfo.size() / 4);
+            }
+            return true;
+        }
+    }
+
+    return errmsg("%s section was not found in the image", GetSectionNameByMagicId(sectType).c_str());
 }
+
 bool Fs6Operations::FwResetNvData()
 {
     return Unsupported(__FUNCTION__);

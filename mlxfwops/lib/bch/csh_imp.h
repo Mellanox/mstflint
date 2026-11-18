@@ -388,13 +388,15 @@ public:
     virtual u_int8_t GetComponentMajorVersion() = 0;
     virtual u_int16_t GetComponentMinorVersion() = 0;
     virtual u_int16_t GetComponentSubminorVersion() = 0;
+    // The SVN and lifecycle attestation reports per CSH.
+    virtual u_int32_t GetFwLifecycle() const { return 0; }
 
     virtual void SetBinariesListDigest(const vector<u_int8_t>& digest) = 0;
     virtual void GetBinariesListDigest(vector<u_int8_t>& digest) const = 0;
 
     virtual void SetJsonParams(const Json::Value& root) = 0;
 
-    virtual u_int8_t GetRatchetLevel() = 0;
+    virtual u_int8_t GetRatchetLevel() const = 0;
 
     const static size_t BINARIES_LIST_DIGEST_OFFSET = 0x70;
 };
@@ -414,7 +416,8 @@ public:
     u_int8_t GetComponentMajorVersion() override { return _metadata_nbu.version.ver_major; }
     u_int16_t GetComponentMinorVersion() override { return _metadata_nbu.version.ver_minor; }
     u_int16_t GetComponentSubminorVersion() override { return _metadata_nbu.nbu_subminor; }
-    u_int8_t GetRatchetLevel() override { return _metadata_nbu.version.ratchet_level; }
+    u_int8_t GetRatchetLevel() const override { return _metadata_nbu.version.ratchet_level; }
+    u_int32_t GetFwLifecycle() const override { return _metadata_nbu.fw_lifecycle; }
 
     void SetBinariesListDigest(const vector<u_int8_t>& digest) override;
     void GetBinariesListDigest(vector<u_int8_t>& digest) const override;
@@ -439,7 +442,8 @@ public:
     u_int8_t GetComponentMajorVersion() override { return _metadata.version.u8_ver_major; }
     u_int16_t GetComponentMinorVersion() override { return _metadata.version.u8_ver_minor; }
     u_int16_t GetComponentSubminorVersion() override { return 0; }
-    u_int8_t GetRatchetLevel() override { return _metadata.version.u8_ratchet_level; }
+    u_int8_t GetRatchetLevel() const override { return _metadata.version.u8_ratchet_level; }
+    u_int32_t GetFwLifecycle() const override { return _metadata.fw_lifecycle; }
 
     void SetBinariesListDigest(const vector<u_int8_t>& digest) override;
     void GetBinariesListDigest(vector<u_int8_t>& digest) const override;
@@ -488,7 +492,8 @@ public:
     u_int8_t GetComponentMajorVersion() { return _metadata->GetComponentMajorVersion(); }
     u_int16_t GetComponentMinorVersion() { return _metadata->GetComponentMinorVersion(); }
     u_int16_t GetComponentSubminorVersion() { return _metadata->GetComponentSubminorVersion(); }
-    u_int8_t GetRatchetLevel() { return _metadata->GetRatchetLevel(); }
+    u_int8_t GetRatchetLevel() const { return _metadata->GetRatchetLevel(); }
+    u_int32_t GetFwLifecycle() const { return _metadata->GetFwLifecycle(); }
     u_int8_t GetNvPubKeyIdx() { return _header.u8_nv_pub_key_idx; }
 
     u_int8_t GetVmodAdmStatus();
