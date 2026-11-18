@@ -46,6 +46,7 @@
 #include "image_access.h"
 #include "mvpd/mvpd.h"
 #include "pldm_utils/pldm_utils.h"
+#include "mft_utils/mft_utils.h"
 
 #if !defined(__WIN__) && !defined(__FreeBSD__)
 #include <sys/socket.h>
@@ -56,6 +57,10 @@
 #define ETHTOOL_GDRVINFO 0x00000003 /* Get driver info. */
 #define ETHTOOL_FWVERS_LEN 32
 #define ETHTOOL_BUSINFO_LEN 32
+
+#ifdef ENABLE_REDFISH // Redfish is not part of mstflint
+#include "redfish/RedfishNameHandler.h"
+#endif
 
 struct ethtool_drvinfo
 {
@@ -79,6 +84,15 @@ using namespace std;
 
 void MlnxDev::initUniqueId()
 {
+#ifndef MST_CPU_armv7l_umbriel // {
+#ifdef ENABLE_REDFISH // Redfish is not part of mstflint
+    if (RedfishNameHandler::CheckIfRedfishDevice(getDevName().c_str()))
+    {
+        return;
+    }
+#endif
+#endif // } MST_CPU_armv7l_umbriel
+
     mfile* mf = mopen(getDevName().c_str());
     if (!mf)
     {
@@ -135,11 +149,14 @@ void MlnxDev::_MlnxDevInit(int compare_ffv)
     isOnlyBase = false;
     _commander = NULL;
     _noFwCtrl = false;
+    _forceCleanup = false;
     _mccSupport = true;
     _preBurnInit = false;
     _uniqueId = "NA";
     _unknowProgress = 0;
+    _isRedfishDevice = false;
     _bfbSupported = false;
+    _pldmComponentType = "";
     initUniqueId();
     setDeviceType();
 }
@@ -160,6 +177,8 @@ MlnxDev::MlnxDev(const char* devname, int compare_ffv)
     _init_type = INIT_DEVNAME;
     _devname = devname;
     _MlnxDevInit(compare_ffv);
+    _imageEncrypted = false;
+    _deviceEncrypted = false;
 }
 
 void MlnxDev::setGuidMac(fw_info_t& fw_query)
@@ -272,6 +291,12 @@ MlnxDev::~MlnxDev()
         delete _imgFwOps;
         _imgFwOps = NULL;
     }
+
+    if (_devFwParams.mstHndl)
+    {
+        delete[] _devFwParams.mstHndl;
+        _devFwParams.mstHndl = NULL;
+    }
 }
 
 bool MlnxDev::doesDevNeedUpdate()
@@ -320,18 +345,31 @@ void MlnxDev::setDeviceType(void)
     u_int32_t ptr_hw_rev = 0;
     mfile* mf = NULL;
 
-    mf = mopen(getDevName().c_str());
-    if (!mf)
+#ifndef MST_CPU_armv7l_umbriel // {
+#ifdef ENABLE_REDFISH // Redfish is not part of mstflint
+    if (RedfishNameHandler::CheckIfRedfishDevice(getDevName().c_str()))
     {
-        return;
+        ptr_dm_dev_id = DeviceQuantum3;
+        _isRedfishDevice = true;
     }
+    else
+#endif
+#endif // } MST_CPU_armv7l_umbriel
 
-    if (dm_get_device_id(mf, &ptr_dm_dev_id, &ptr_hw_dev_id, &ptr_hw_rev))
-    {
-        mclose(mf);
-        return;
-    }
+        if (ptr_dm_dev_id != DeviceQuantum3)
+        {
+            mf = mopen(getDevName().c_str());
+            if (!mf)
+            {
+                return;
+            }
 
+            if (dm_get_device_id(mf, &ptr_dm_dev_id, &ptr_hw_dev_id, &ptr_hw_rev))
+            {
+                mclose(mf);
+                return;
+            }
+        }
     if (dm_dev_is_eth_switch(ptr_dm_dev_id))
     {
         portOneType = PORT_ETH;
@@ -492,7 +530,6 @@ int MlnxDev::preBurn(string mfa_file,
     string cmd;
     int rc;
     u_int8_t* filebuf = NULL;
-    u_int16_t swDevId = 0;
     int sza;
     ImageAccess imgacc(_compareFFV);
     fw_info_t dev_fw_query;
@@ -501,62 +538,22 @@ int MlnxDev::preBurn(string mfa_file,
     memset(&img_fw_query, 0, sizeof(img_fw_query));
     _burnSuccess = 0;
     bool isStripedImage = false;
-    bool pldmFlow = false;
     string selectorTag;
-    int fileSig = ImageAccess::getFileSignature(mfa_file);
 
-    int mfaPldm = 0;
-    u_int32_t mfaPldmSize = 0;
-
-    if (fileSig == IMG_SIG_TYPE_PLDM)
+    if (_isRedfishDevice)
     {
-        pldmFlow = true;
-        isStripedImage = true;
-    }
-    else if (fileSig == IMG_SIG_TYPE_MFA)
-    {
-        // an MFA entry may hold an MFT fwpkg (PLDM) instead of a binary image
-        mfaPldm = imgacc.getMfaPldmNicImage(mfa_file, _psid, &filebuf, mfaPldmSize, swDevId);
-        if (mfaPldm < 0)
-        {
-            _errMsg = imgacc.getLastErrMsg();
-            _log += imgacc.getLog();
-            return -1;
-        }
-        if (mfaPldm > 0)
-        {
-            pldmFlow = true;
-            isStripedImage = true;
-        }
+        _preBurnInit = true;
+        return 0;
     }
 
-    if (mfaPldm > 0)
+    int flowType = imgacc.DetermineFlow(mfa_file, _psid);
+
+    if (!OpenDev())
     {
-        sza = static_cast<int>(mfaPldmSize);
+        goto clean_up_on_error;
     }
-    else if (pldmFlow)
-    {
-        if (_psid.empty())
-        {
-            _errMsg = "-E- Can't extract Image from PLDM package, PSID missing in the device.\n";
-            return -1;
-        }
-        if (!imgacc.loadPldmPkg(mfa_file))
-        {
-            return -1;
-        }
-        if (!imgacc.getPldmDescriptorByPsid(_psid, DEV_ID_TYPE, swDevId))
-        {
-            _errMsg = "-E- Can't extract DEVICE ID from PLDM package.\n";
-        }
-        u_int32_t buffSize;
-        if (!imgacc.getPldmComponentByPsid(_psid, ComponentIdentifier::Identifier_NIC_FW_Comp, &filebuf, buffSize))
-        {
-            _errMsg = "-E- The component was not found in the PLDM.\n";
-        }
-        sza = static_cast<int>(buffSize);
-    }
-    else if (fileSig == IMG_SIG_TYPE_MFA2)
+
+    if (flowType == MFA2_FLOW)
     {
         sza = imgacc.getImage(mfa_file, _psid, selectorTag, 1, &filebuf);
     }
@@ -564,7 +561,6 @@ int MlnxDev::preBurn(string mfa_file,
     {
         sza = imgacc.getImage(mfa_file, &filebuf);
     }
-
     if (sza < 0)
     {
         _errMsg = imgacc.getLastErrMsg();
@@ -572,16 +568,31 @@ int MlnxDev::preBurn(string mfa_file,
         return -1;
     }
 
-    if (!openImg((u_int32_t*)filebuf, (u_int32_t)sza, swDevId))
+    if (!openImg((u_int32_t*)filebuf, (u_int32_t)sza))
     {
         goto clean_up_on_error;
+    }
+
+    if (flowType == PLDM_TYPE_1_IN_MFA_FLOW || flowType == PLDM_FLOW)
+    {
+        FwOperations* newImageOps = nullptr;
+        if (!ImageAccess::PldmOpsToFwOps(_psid, _pldmComponentType, _imgFwOps, &newImageOps, _devFwOps->getMfileObj()))
+        {
+            _errMsg = "-E- Failed to convert PLDM fwpkg to fwops";
+            _log += _errMsg;
+        }
+        if (_imgFwOps != nullptr)
+        {
+            _imgFwOps->FwCleanUp();
+            delete _imgFwOps;
+        }
+        _imgFwOps = newImageOps;
     }
 
     if (isStripedImage)
     {
         _imgFwOps->SetIsReducedImage(true);
     }
-
     if (!_imgFwOps->isEncrypted(_imageEncrypted))
     {
         _errMsg = "Failed to identify if image is encrypted.";
@@ -600,35 +611,6 @@ int MlnxDev::preBurn(string mfa_file,
     if (img_fw_query.fs3_info.security_mode == SM_NONE)
     {
         setNoFwCtrl();
-    }
-    if (!OpenDev())
-    {
-        goto clean_up_on_error;
-    }
-
-    if (pldmFlow)
-    {
-        if (!_devFwOps->IsFsCtrlOperations())
-        {
-            _errMsg = "FW doesn't support update using PLDM.\n";
-            rc = -1;
-            goto clean_up_on_error;
-        }
-        else
-        {
-            if (_devFwOps->IsComponentSupported(FwComponent::comps_ids_t::COMPID_BFB))
-            {
-                _bfbSupported = true;
-            }
-        }
-        
-        dm_dev_id_t imageType = dm_dev_sw_id2type(swDevId);
-        if (_deviceType != imageType)
-        {
-            _errMsg = "PCI Device ID in PLDM is not compatible with the Device ID on the device.\n";
-            rc = -1;
-            goto clean_up_on_error;
-        }
     }
 
     if (!_devFwOps->isEncrypted(_deviceEncrypted))
@@ -660,6 +642,10 @@ int MlnxDev::preBurn(string mfa_file,
         _log += _errMsg;
         goto clean_up_on_error;
     }
+    if (_mccSupport && !_devFwOps->IsVmodSupported() && _imgFwOps->FwType() == FIT_CSH_VMOD)
+    {
+        return SKIP_AND_DO_NOT_REPORT_ERROR;
+    }
 
     // Abort if the image is restricted according to the Security-Version
     if (_devFwOps->IsSecurityVersionViolated(img_fw_query.fs3_info.image_security_version))
@@ -669,6 +655,8 @@ int MlnxDev::preBurn(string mfa_file,
         goto clean_up_on_error;
     }
 
+    // this check is relevant only for SPC6 devices and will be removed in OctGA 26 release, long before any other FS6
+    // devices will have burn flows (meaning it's ok to check for FS6 and not explicitly SPC6)
     if (_devFwOps->FwType() == FIT_FS6 && _imgFwOps->FwType() == FIT_FS6)
     {
         FwVersion devVer(dev_fw_query.fw_info.fw_ver[0], dev_fw_query.fw_info.fw_ver[1],
@@ -760,6 +748,33 @@ clean_up_on_error:
     return -1;
 }
 
+bool MlnxDev::burnPLDMComponent(FwComponent::comps_ids_t compId, u_int8_t* buff, u_int32_t buffSize)
+{
+    bool rc, res = true;
+    if (!_devFwOps->IsFsCtrlOperations())
+    {
+        _errMsg = "FW doesn't support Burning PLDM components using MCC.";
+        return false;
+    }
+    vector<u_int8_t> compData(*buff, *buff + buffSize);
+    rc = _devFwOps->FwBurnAdvanced(compData, _burnParams, compId);
+    if (!rc)
+    {
+        if (_devFwOps->err() != NULL)
+        {
+            _errMsg = _devFwOps->err();
+        }
+        else
+        {
+            _errMsg = "Failed to burn, unknown reason";
+        }
+        _log += _errMsg;
+        res = false;
+        UnlockDevice(_devFwOps);
+    }
+    return res;
+}
+
 int MlnxDev::burn(bool& imageWasCached)
 {
     int res = 0, rc = 0;
@@ -777,13 +792,20 @@ int MlnxDev::burn(bool& imageWasCached)
     }
 #endif
     //* Burn encrypted image using MCC flow or direct-access
-    if (_deviceEncrypted && _imageEncrypted)
+    if (_pldmComponentType == FsPldmOperations::PLDM_COMPONENT_VMOD)
     {
-        rc = _devFwOps->burnEncryptedImage(_imgFwOps, _burnParams);
+        rc = _devFwOps->FwBurnAdvanced(_imgFwOps, _burnParams, FwComponent::comps_ids_t::COMPID_CPO_VMOD_FW);
     }
     else
     {
-        rc = _devFwOps->FwBurnAdvanced(_imgFwOps, _burnParams);
+        if (_deviceEncrypted && _imageEncrypted)
+        {
+            rc = _devFwOps->burnEncryptedImage(_imgFwOps, _burnParams);
+        }
+        else
+        {
+            rc = _devFwOps->FwBurnAdvanced(_imgFwOps, _burnParams);
+        }
     }
     if (!rc)
     {
@@ -821,33 +843,6 @@ clean_up:
     return res;
 }
 
-bool MlnxDev::burnPLDMComponent(FwComponent::comps_ids_t compId, u_int8_t* buff, u_int32_t buffSize)
-{
-    bool rc, res = true;
-    if (!_devFwOps->IsFsCtrlOperations())
-    {
-        _errMsg = "FW doesn't support Burning PLDM components using MCC.";
-        return false;
-    }
-    vector<u_int8_t> compData(*buff, *buff + buffSize);
-    rc = _devFwOps->FwBurnAdvanced(compData, _burnParams, compId);
-    if (!rc)
-    {
-        if (_devFwOps->err() != NULL)
-        {
-            _errMsg = _devFwOps->err();
-        }
-        else
-        {
-            _errMsg = "Failed to burn, unknown reason";
-        }
-        _log += _errMsg;
-        res = false;
-        UnlockDevice(_devFwOps);
-    }
-    return res;
-}
-
 bool MlnxDev::InitDevFWParams(FwOperations::fw_ops_params_t& devFwParams)
 {
     string devName = getDevName();
@@ -879,6 +874,7 @@ bool MlnxDev::InitDevFWParams(FwOperations::fw_ops_params_t& devFwParams)
     devFwParams.psid = (char*)_psid.c_str();
     devFwParams.shortErrors = true;
     devFwParams.noFwCtrl = _noFwCtrl;
+    devFwParams.forceCleanup = _forceCleanup;
     devFwParams.mccUnsupported = !(_mccSupport);
     return true;
 }
@@ -897,7 +893,7 @@ bool MlnxDev::OpenDev()
         _devFwOps = NULL;
     }
     _devFwOps = FwOperations::FwOperationsCreate(_devFwParams);
-    
+
     if (_devFwOps == NULL)
     {
         _errMsg = _errBuff;
@@ -924,12 +920,10 @@ int MlnxDev::queryFwops()
     vector<u_int8_t> dest;
 
     int versionFields = 3; /*TODO: set variable length*/
-
     if (!OpenDev())
     {
         return -1;
     }
-
     memset(&fw_query, 0, sizeof(fw_info_t));
     if (!_devFwOps->FwQuery(&fw_query, true))
     {
@@ -946,7 +940,7 @@ int MlnxDev::queryFwops()
     }
     setGuidMac(fw_query);
 
-    if (fw_query.fs3_info.fs3_uids_info.guid_format == MULTI_ASIC_GUIDS)
+    if (fw_query.fs3_info.fs3_uids_info.guid_format == MULTI_ASIC_GUIDS && fw_query.fs3_info.geo_address_valid)
     {
         if (!systemGuid.empty())
         {
@@ -964,6 +958,10 @@ int MlnxDev::queryFwops()
         {
             _uniqueId += "_" + guidPortTwo;
         }
+        if (fw_query.fs3_info.geo_address_valid)
+        {
+            _uniqueId += "_" + to_string(fw_query.fs3_info.geo_address);
+        }
     }
 
     // attempt to take some fields from image info
@@ -979,19 +977,30 @@ int MlnxDev::queryFwops()
             _partNumber = fw_query.fs3_info.name;
         }
     }
-
     if (!_description.size() || !_partNumber.size())
     { // take missing from ini
-        setMccSupport(false);
-        if (!OpenDev())
+        FwOperations* metadataFwOps = _devFwOps;
+        FwOperations* fallbackFwOps = NULL;
+
+        // Keep the successful FW-control query alive while trying the optional
+        // direct-flash metadata lookup with a temporary operations object.
+        if (_devFwOps->IsFsCtrlOperations())
         {
-            return -1;
+            char fallbackErrBuff[MLNX_ERR_BUFF_SIZE] = {0};
+            FwOperations::fw_ops_params_t fallbackFwParams = _devFwParams;
+            fallbackFwParams.errBuff = fallbackErrBuff;
+            fallbackFwParams.mccUnsupported = true;
+            fallbackFwOps = FwOperations::FwOperationsCreate(fallbackFwParams);
+            metadataFwOps = fallbackFwOps;
         }
-        setMccSupport(true);
-        if (_devFwOps->FwGetSection((_devFwOps->FwType() == FIT_FS2) ? (int)H_FW_CONF : (int)FS3_DBG_FW_INI, sect))
+
+        if (metadataFwOps &&
+            metadataFwOps->FwGetSection((metadataFwOps->FwType() == FIT_FS2) ? (int)H_FW_CONF : (int)FS3_DBG_FW_INI,
+                                        sect) &&
+            !sect.empty())
         {
             // Take from ini
-            if (unzipDataFile(sect, dest, "Fw Configuration"))
+            if (unzipDataFile(sect, dest) && !dest.empty())
             {
                 char* ptr;
                 int counter;
@@ -1026,6 +1035,11 @@ int MlnxDev::queryFwops()
                     }
                 }
             }
+        }
+        if (fallbackFwOps)
+        {
+            fallbackFwOps->FwCleanUp();
+            delete fallbackFwOps;
         }
     }
     if (!_compareFFV)
@@ -1062,7 +1076,6 @@ int MlnxDev::queryFwops()
                          fw_query.fw_info.running_branch_ver);
         _imageVers.push_back(imgrv);
     }
-
     for (i = 0; i < fw_query.fw_info.roms_info.num_of_exp_rom; i++)
     {
         ImgVersion imgVer;
@@ -1076,7 +1089,6 @@ int MlnxDev::queryFwops()
         imgVer.setVersion(tpc, sz, fw_query.fw_info.roms_info.rom_info[i].exp_rom_ver);
         _imageVers.push_back(imgVer);
     }
-
     _productVer = fw_query.fw_info.product_ver;
     _psid = fw_query.fw_info.psid;
 
@@ -1084,9 +1096,6 @@ int MlnxDev::queryFwops()
     res = 0;
 
 clean_up:
-    _devFwOps->FwCleanUp();
-    delete _devFwOps;
-    _devFwOps = NULL;
     return res;
 }
 
@@ -1471,7 +1480,8 @@ int MlnxDev::LockDevice(FwOperations* fwOps)
 {
 #ifdef __WIN__
     // relevant only on devices
-    if (fwOps->FwType() == FIT_FS3 || fwOps->FwType() == FIT_FS4 || fwOps->FwType() == FIT_FSCTRL)
+    if (fwOps->FwType() == FIT_FS3 || fwOps->FwType() == FIT_FS4 || fwOps->FwType() == FIT_FS5 ||
+        fwOps->FwType() == FIT_FSCTRL)
     {
         mfile* mFile = fwOps->getMfileObj();
         if (m_ToolsSync.init(mFile) != TOOLS_SYNC_OK)
@@ -1490,7 +1500,8 @@ int MlnxDev::UnlockDevice(FwOperations* fwOps)
 {
 #ifdef __WIN__
     // relevant only on devices
-    if (fwOps->FwType() == FIT_FS3 || fwOps->FwType() == FIT_FS4 || fwOps->FwType() == FIT_FSCTRL)
+    if (fwOps->FwType() == FIT_FS3 || fwOps->FwType() == FIT_FS4 || fwOps->FwType() == FIT_FS5 ||
+        fwOps->FwType() == FIT_FSCTRL)
     {
         if (m_ToolsSync.close() != NAMED_SYNC_OK)
         {
@@ -1502,4 +1513,9 @@ int MlnxDev::UnlockDevice(FwOperations* fwOps)
     (void)fwOps;
 #endif
     return 0;
+}
+
+FwOperations* MlnxDev::getDeviceFwOps()
+{
+    return _devFwOps;
 }

@@ -39,7 +39,7 @@
  */
 
 #include <string>
-#include <cmdparser.h>
+#include "cmdparser/cmdparser.h"
 #include "cmd_line_params.h"
 
 class CmdLineParser : public CommandLineRequester

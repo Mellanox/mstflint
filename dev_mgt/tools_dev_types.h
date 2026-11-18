@@ -289,6 +289,11 @@ extern "C"
     int dm_is_gpu(dm_dev_id_t type);
 
     /**
+     * A predicate returning if the device is a cpu device
+     */
+    int dm_is_cpu(dm_dev_id_t type);
+
+    /**
      * Reads MGIR.cpo_indication into *ptr_cpo_ind (1 = CPO system).
      * Returns MFE_OK on success, MFE_ERROR on register-access failure
      * (in which case *ptr_cpo_ind is left untouched).

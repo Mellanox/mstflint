@@ -34,13 +34,13 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <fw_ops.h>
+#include "mlxfwops/lib/fw_ops.h"
 
 #include "img_version.h"
 #include "fw_version_old_clp.h"
 #include "fw_version_with_sub_build.h"
 
-const string MASTER_ARGUMENTS = "Unknown number of master arguments";
+const string primary_ARGUMENTS = "Unknown number of primary arguments";
 const string SUBMINOR_VALUE = "Invalid subminor value";
 const string NOT_SET = "FW version isn't set";
 const string ALREADY_SET = "Trying to set an already set FW version";
@@ -113,13 +113,13 @@ void ImgVersion::setVersion(const std::string& imgType, u_int8_t verSz, const u_
         case 1:
             if (imgType != "CLP")
             {
-                throw SetVersionException(MASTER_ARGUMENTS);
+                throw SetVersionException(primary_ARGUMENTS);
             }
             _fwVer = new FwVersionOldClp(0, ver[0], 0, verBranch);
             _isSubBuild = false;
             break;
         default:
-            throw SetVersionException(MASTER_ARGUMENTS);
+            throw SetVersionException(primary_ARGUMENTS);
     }
     _type = imgType;
     _isOldMinor = (ver[1] <= 99);

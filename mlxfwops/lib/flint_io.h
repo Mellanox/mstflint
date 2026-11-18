@@ -292,7 +292,7 @@ public:
     u_int32_t getBufLength() { return _len; }
     virtual bool open(const char* fname, bool read_only = false, bool advErr = true);
     using FBase::open;
-    bool open(u_int32_t* buf, u_int32_t len, bool advErr = true);
+    virtual bool open(u_int32_t* buf, u_int32_t len, bool advErr = true);
     virtual void close();
     virtual bool read(u_int32_t addr, u_int32_t* data);
     virtual bool read(u_int32_t addr, void* data, int len, bool verbose = false, const char* message = "");

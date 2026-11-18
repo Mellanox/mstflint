@@ -55,6 +55,7 @@ constexpr u_int16_t DEV_ID_TYPE = 0x0100;
 // Bit 0 of DownstreamDeviceUpdateOptionFlags - when set, the SelfContainedActivationMinVersionString
 // is present and the SelfContainedActivationMinVersionComparisonStamp follows it
 constexpr u_int32_t DOWNSTREAM_SELF_CONTAINED_ACTIVATION_BIT = 0x1;
+constexpr u_int32_t NVIDIA_IANA_ENTERPRISE_ID = 0x1647;
 
 enum class ComponentField : u_int16_t
 {

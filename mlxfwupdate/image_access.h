@@ -36,15 +36,15 @@
 #ifndef __IMAGE_ACCESS_H__
 #define __IMAGE_ACCESS_H__
 
-#include <mlxfwops_com.h>
-#include <fw_ops.h>
-#include <mfa.h>
-#include <compatibility.h>
+#include "mlxfwops/lib/mlxfwops_com.h"
+#include "mlxfwops/lib/fs_pldm.h"
+#include "common/compatibility.h"
 #include "psid_query_item.h"
 #include "mlxfwmanager_common.h"
 #include "mlnx_dev.h"
 #include "pldm_utils/pldm_utils.h"
 #include "pldmlib/pldm_pkg.h"
+#include "libmfa/mfa.h"
 
 using namespace std;
 #define MLNX_ERR_BUFF_SIZE 1024
@@ -74,32 +74,53 @@ public:
     ImageAccess(int compareFFV);
     ~ImageAccess();
     int queryDirPsid(string& path, string& psid, string& selector_tag, int image_type, vector<PsidQueryItem>& riv);
-    int queryPsid(const string& fname,
-                const string& psid,
-                string& selector_tag,
-                int image_type,
-                PsidQueryItem& ri);
+    int queryPsid(const string& fname, const string& psid, string& selector_tag, int image_type, PsidQueryItem& ri);
     int getImage(const string& fname, u_int8_t** filebuf);
     int getImage(const string& fname, const string& psid, string& selector_tag, int image_type, u_int8_t** filebuf);
-    int get_file_content(const string& fname, vector<PsidQueryItem>& riv, const vector<string>& psid_list);
+    int get_file_content(const string& fname, vector<PsidQueryItem>& riv, vector<string>& psid_list);
+
+    // MFA
+    image_flow_type_t DetermineFlow(const string& fname, const string& psid);
+    bool GetDataFromDataSection(mfa_desc* mfa_d,
+                                map_entry_hdr* map_entry_hdr,
+                                u_int8_t** buff,
+                                u_int32_t& buffSize,
+                                u_int16_t& swDevId,
+                                const string& psid = "");
 
     // PLDM functions
-    bool loadPldmPkg(const string& fname);
+    static bool PldmOpsToFwOps(const string& psid,
+                               const string& component,
+                               FwOperations* imgFwOps,
+                               FwOperations** newImageOps,
+                               mfile* devMfile = nullptr);
+    bool UnpackPldmPkg();
+    bool loadPldmPkgFile(const string& fname);
     bool loadPldmPkgBuffer(u_int8_t* buffer, u_int32_t size);
-    // Returns 1 and a malloc'd NIC FW image (+ its sw device id) if psid's MFA entry holds an MFT fwpkg (map type 1),
-    // 0 if the entry is a plain binary image (or not found), -1 on error.
-    int getMfaPldmNicImage(const string& fname,
-                           const string& psid,
-                           u_int8_t** buff,
-                           u_int32_t& buffSize,
-                           u_int16_t& swDevId);
-    int getPldmImage(const string& fname, const string& psid);
-    bool getPldmDescriptorByPsid(string psid, u_int16_t type, u_int16_t& descriptor);
-    int getPldmComponentByPsid(string psid, ComponentIdentifier compIdentifier, u_int8_t** buff, u_int32_t& buffSize);
+    bool getPldmDescriptorByPsid(const string& psid, u_int16_t type, u_int16_t& descriptor);
+    bool getPldmImage(u_int8_t** buff, u_int32_t& buffSize, u_int16_t& swDevId, const string& psid);
+    bool getMainComponent(const string& fname, const string& psid, string& mainComponent);
+    // compIdentifier == Identifier_Not_Valid resolves the main component for psid
+    int getPldmComponentByPsid(const string& psid,
+                               ComponentIdentifier compIdentifier,
+                               u_int8_t** buff,
+                               u_int32_t& buffSize);
+    bool getBurnSupportedComponents(const string& fname, const string& psid, vector<string>& supportedComponents);
     int getPldmContent(vector<PsidQueryItem>& riv,
                        ComponentIdentifier compIdentifier = ComponentIdentifier::Identifier_General);
-                       bool isPsidInPldm(string psid);
+    bool isPsidInPldm(const string& psid);
     FwComponent::comps_ids_t ToCompId(ComponentIdentifier compIdentifier);
+
+    // Decryption functions
+    bool
+      decrypt_aes_ctr(const char* ct, u_int8_t ct_size, const u_int8_t* keySource, u_int8_t keySourceSize, string& pt);
+    bool decrypt_metadata_section(string& key, map_entry_hdr* me, string& psid, string& value);
+    bool get_metadata_section_till_following_key(map_entry_hdr* me,
+                                                 const char* first_key,
+                                                 const char* second_key,
+                                                 char** section,
+                                                 int& section_len);
+    bool decrypt_psid(map_entry_hdr* me, vector<string>& psid_list, PsidQueryItem& item);
 
     static int getFileSignature(const string& fname);
     static bool isMfaEncrypted(const string& fname);
@@ -107,12 +128,12 @@ public:
     string getLastErrMsg();
     string getlastWarning();
     string getLog();
-
-    image_flow_type_t DetermineFlow(const string& fname, const string& psid);
-
-    // Decryption functions
-    bool decrypt_psid(map_entry_hdr* me, const vector<string>& psid_list, PsidQueryItem& item);
-    bool decrypt_metadata_section(const string& key, map_entry_hdr* me, const string& psid, string& value);
+    bool openImg(fw_hndl_type_t hndlType,
+                 char* psid,
+                 char* fileHndl,
+                 u_int16_t swDevId = 0,
+                 u_int32_t* data = nullptr,
+                 u_int32_t dataSize = 0);
 
 private:
     int queryPsidMfa(const string& fname, const string& psid, string& selector_tag, int image_type, PsidQueryItem& ri);
@@ -121,10 +142,9 @@ private:
     int getImageBin(const string& fname, u_int8_t** filebuf);
     int getImageMfa(const string& fname, const string& psid, string& selector_tag, int image_type, u_int8_t** filebuf);
     int checkImgSignature(const char* fname);
-    static bool decrypt_aes_ctr(const char* ct, u_int8_t ct_size, const string& keySource, string& pt);
 
-    int get_mfa_content(const string& fname, vector<PsidQueryItem>& riv, const vector<string>& psid_list);
     int get_mfa2_content(const string& fname, vector<PsidQueryItem>& riv);
+    int get_mfa_content(const string& fname, vector<PsidQueryItem>& riv, vector<string>& psid_list);
     int get_bin_content(const string& fname, vector<PsidQueryItem>& riv);
     int fillQueryItemFromBuffer(const string& fname,
                                 const string& psid,
@@ -134,12 +154,9 @@ private:
     bool extract_pldm_image_info(const u_int8_t* buff, u_int32_t size, PsidQueryItem& ri);
     void parse_image_info_data(u_int8_t* image_info_data, PsidQueryItem& query_item);
     static int getBufferSignature(u_int8_t* buf, u_int32_t size);
-    bool openImg(fw_hndl_type_t hndlType,
-                char* psid,
-                char* fileHndl,
-                u_int16_t swDevId = 0,
-                u_int32_t* data = nullptr,
-                u_int32_t dataSize = 0);
+    mfa_desc* ensureMfaOpen(const string& fname);
+    void closeCachedMfa();
+
     char _errBuff[MLNX_ERR_BUFF_SIZE];
     int _compareFFV;
     string _log;
@@ -149,6 +166,8 @@ private:
     FwOperations* _imgFwOps;
     PldmBuffer _pldm_buff;
     PldmPkg _pldmPkg;
+    mfa_desc* _cachedMfa;
+    string _cachedMfaFname;
 };
 
 #endif

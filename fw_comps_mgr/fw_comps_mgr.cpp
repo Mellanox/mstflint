@@ -70,6 +70,7 @@ static void mft_signal_set_handling(int isOn)
 #include "mft_utils.h"
 
 static FILE* g_fwcomps_log_file = NULL;
+static bool g_fwcomps_suppress_stdout = false;
 static thread_local std::string g_fwcomps_device_context;
 static std::recursive_mutex g_fwcomps_print_mutex;
 
@@ -87,6 +88,13 @@ extern "C" void fwcomps_output_unlock()
 extern "C" void fwcomps_set_log_file(FILE* log_file)
 {
     g_fwcomps_log_file = log_file;
+}
+
+// Suppress stdout messages when the caller emits machine-readable output.
+extern "C" void fwcomps_set_suppress_stdout(int suppress)
+{
+    std::lock_guard<std::recursive_mutex> lock(g_fwcomps_print_mutex);
+    g_fwcomps_suppress_stdout = (suppress != 0);
 }
 
 extern "C" void fwcomps_set_device_context(const char* ctx)
@@ -110,16 +118,25 @@ static void fwcomps_print_msg(const char* fmt, ...)
     {
         while (*fmt == '\n')
         {
-            printf("\n");
+            if (!g_fwcomps_suppress_stdout)
+            {
+                printf("\n");
+            }
             fmt++;
         }
-        printf("%s: ", prefix);
     }
-    va_list args;
-    va_start(args, fmt);
-    vprintf(fmt, args);
-    va_end(args);
-    fflush(stdout);
+    if (!g_fwcomps_suppress_stdout)
+    {
+        if (prefix)
+        {
+            printf("%s: ", prefix);
+        }
+        va_list args;
+        va_start(args, fmt);
+        vprintf(fmt, args);
+        va_end(args);
+        fflush(stdout);
+    }
     if (g_fwcomps_log_file != NULL)
     {
         if (prefix)

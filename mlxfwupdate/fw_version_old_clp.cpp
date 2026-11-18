@@ -47,7 +47,7 @@ FwVersionOldClp::FwVersionOldClp(unsigned short int major,
 
 FwVersionOldClp::~FwVersionOldClp() {}
 
-std::string FwVersionOldClp::get_master_version(const std::string& format, bool even_subminor) const
+std::string FwVersionOldClp::get_primary_version(const std::string& format, bool even_subminor) const
 {
     (void)format;
     (void)even_subminor;

@@ -65,11 +65,19 @@ public:
     size_t size() const { return (size_t)m_size; }
     size_t remaining() const { return (m_pos >= 0 && m_pos < m_size) ? (size_t)(m_size - m_pos) : 0; }
 
+    /* True once a read asked for more bytes than the buffer holds. read() returns
+     * void and zero-fills, so unpack() checks this to reject a truncated file. */
+    bool overflowed() const { return m_overflow; }
+
 private:
+    /* Returns false (and latches m_overflow) if n bytes are not available. */
+    bool canRead(size_t n);
+
     std::string m_fname;
     u_int8_t* m_buff;
     long m_pos;
     long m_size;
+    bool m_overflow;
 };
 
 #endif /* _PLDM_BUFF_H_ */

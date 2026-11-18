@@ -69,14 +69,19 @@ public:
     PldmComponenetImage* getComponentByIndex(u_int16_t index) const { return componentImages[index]; }
     void getDeviceComponentImages(u_int8_t dev_index, std::vector<PldmComponenetImage*> images_list) const;
     bool getComponentDataByPsid(ComponentIdentifier compIdentifier,
-                                std::string psid,
+                                const std::string& psid,
                                 u_int8_t** buff,
                                 u_int32_t& buffSize);
-    bool getPldmDescriptorByPsid(std::string psid, u_int16_t type, u_int16_t& descriptor) const;
-    std::string getPldmVendorDefinedDescriptorByPsid(std::string psid,
-                                                    PldmRecordDescriptor::VendorDefinedType type) const;
-    bool isPsidInPldm(std::string psid) const;
+    bool getPldmDescriptorByPsid(const std::string& psid, u_int16_t type, u_int16_t& descriptor) const;
+    bool getComponentsNamesByPsid(const std::string& psid, std::vector<std::string>& componentNames) const;
+    bool getMainComponentNameByPsid(const std::string& psid, std::string& component) const;
+    std::string getPldmVendorDefinedDescriptorByPsid(const std::string& psid,
+                                                     PldmRecordDescriptor::VendorDefinedType type) const;
+    bool isPsidInPldm(const std::string& psid) const;
     bool isComponentInPackage(const std::string& psid, const std::string& componentName) const;
+    bool getParsedSupportedComponentsByPsid(const std::string& psid,
+                                            std::vector<std::string>& parsedComponentNames) const;
+    static const std::vector<std::string> PARSEABLE_PRIORITY_COMPONENTS;
     bool isDownstreamDeviceRecordSupported() const
     {
         return packageHeader.getPackageHeaderFormatRevision() >= FIRST_REVISION_SUPPORTED_DOWNSTREAM_DEVICES;
@@ -96,7 +101,6 @@ private:
                                          const std::string& psid,
                                          u_int8_t** buff,
                                          u_int32_t& buffSize);
-
     bool isSpc6Device(u_int8_t pldmRevision) const;
 
     typedef std::map<std::string, PldmDevIdRecord*> PsidRecordMap;

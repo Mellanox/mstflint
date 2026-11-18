@@ -942,6 +942,13 @@ int dm_is_gpu(dm_dev_id_t type)
     return get_entry(type)->dev_type == DM_GPU;
 }
 
+int dm_is_cpu(dm_dev_id_t type)
+{
+    // MFT's CPU devices (Vera) are not in mstflint
+    (void)type;
+    return 0;
+}
+
 int dm_is_cpo(mfile* mf, u_int8_t* ptr_cpo_ind)
 {
     reg_access_status_t rc;

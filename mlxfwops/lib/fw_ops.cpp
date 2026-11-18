@@ -273,7 +273,9 @@ int FwOperations::getBufferSignature(u_int8_t* buf, u_int32_t size)
     {
         return 0;
     }
-    if (!strncmp((char*)buf, "MTFW", 4))
+    if (!strncmp((char*)buf, "MTFW", 4) ||
+        (size > L1PT_OFFSET + PartitionTable::MagicID().size() &&
+         std::equal(PartitionTable::MagicID().begin(), PartitionTable::MagicID().end(), &buf[L1PT_OFFSET])))
     {
         res = IMG_SIG_TYPE_BIN;
     }
@@ -285,6 +287,10 @@ int FwOperations::getBufferSignature(u_int8_t* buf, u_int32_t size)
     if (!strncmp((char*)buf, "NVDA", 4))
     {
         res = IMG_SIG_TYPE_CSH;
+    }
+    if (size >= 16 && IsPLDMHeader(buf)) // the PLDM package header identifier is a 16-byte UUID
+    {
+        res = IMG_SIG_TYPE_PLDM;
     }
     return res;
 }
@@ -691,6 +697,17 @@ bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase** ioAccessP, 
                 return false;
             }
             mfa_release_image(imgbuf);
+        }
+        else if (sig == IMG_SIG_TYPE_PLDM)
+        {
+            *ioAccessP = new FPldm;
+            if (!((FPldm*)*ioAccessP)->open(fwParams.buffHndl, numInfo, !fwParams.shortErrors))
+            {
+                printf("Failed to open PLDM package from buffer: %s\n", (*ioAccessP)->err());
+                WriteToErrBuff(fwParams.errBuff, (char*)(*ioAccessP)->err(), fwParams.errBuffSize);
+                delete *ioAccessP;
+                return false;
+            }
         }
         else
         {

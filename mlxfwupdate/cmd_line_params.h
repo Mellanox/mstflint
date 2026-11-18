@@ -102,8 +102,12 @@ public:
     bool no_extract_list;
     int numberOfRetrials;
     bool no_fw_ctrl;
-    bool update_all_fwctl;
+    bool force_cleanup;
     string component_type;
+    bool enable_flash_write_protect_via_redfish;
+    bool disable_flash_write_protect_via_redfish;
+    bool status_flash_write_protect_via_redfish;
+    bool toggle_flash_writeprotect_via_redfish;
     bool cable_query;
     bool cable_dry_run;
     bool cable_update;
@@ -115,6 +119,8 @@ public:
     bool cable_report_screen_only;
     bool cable_include_service_ports;
     int cable_verify_wait;
+    string cable_wrap;     // metadata .yaml whose image gets an extended header, internal only
+    string cable_wrap_out; // where that image is written
     bool verbose;
 };
 

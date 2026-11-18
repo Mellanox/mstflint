@@ -139,7 +139,7 @@ int OutputFmts::createInventoryXML(vector<MlnxDev*>& devs,
         if (doc_txt_len)
         {
             buffer = (char*)doc_txt_ptr;
-            // xmlFree(doc_txt_ptr); //TODO: This is a leak, temporarily only until windows crash is resolved!!
+            xmlFree(doc_txt_ptr);
         }
     }
     freeNode(&root_node);
@@ -275,10 +275,11 @@ int OutputFmts::createBurnXML(vector<MlnxDev*>& devs,
         if (doc_txt_len)
         {
             buffer = (char*)doc_txt_ptr;
-            // xmlFree(doc_txt_ptr); //TODO: This is a leak, temporarily only until windows crash is resolved!!
+            xmlFree(doc_txt_ptr);
         }
     }
     (void)node;
+    freeNode(&root_node);
     xmlFreeDoc(doc);
     xmlCleanupParser();
 #endif
@@ -335,10 +336,11 @@ int OutputFmts::createFailXML(int result, int update_query_, string& buffer, int
         if (doc_txt_len)
         {
             buffer = (char*)doc_txt_ptr;
-            // xmlFree(doc_txt_ptr); //TODO: This is a leak, temporarily only until windows crash is resolved!!
+            xmlFree(doc_txt_ptr);
         }
     }
     (void)node;
+    freeNode(&root_node);
     xmlFreeDoc(doc);
     xmlCleanupParser();
 #endif
