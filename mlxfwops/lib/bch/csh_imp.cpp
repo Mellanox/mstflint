@@ -279,6 +279,15 @@ void BinarySectionMetadata::SetJsonParams(const Json::Value& root)
       nbu::mft::common::GetStrValue(root["encryption_params"]["data_encryption_key_version"], true), nullptr, 16);
 }
 
+void BinarySectionMetadata::SetAuthenticationTag(const vector<u_int8_t>& tag)
+{
+    if (tag.size() != FS5_IMAGE_LAYOUT_U8_AUTH_TAG_SIZE)
+    {
+        throw runtime_error("Binary section authentication tag unexpected size");
+    }
+    memcpy(_struct.encryption_params.u8_auth_tag.u8_dummy, tag.data(), tag.size());
+}
+
 CSH::CSH() : _isUnpacked(false)
 {
     memset(&_header, 0, sizeof(_header));

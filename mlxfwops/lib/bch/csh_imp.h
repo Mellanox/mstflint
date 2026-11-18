@@ -179,6 +179,25 @@ public:
 
     static size_t Size() { return fs5_image_layout_binary_section_metadata_size(); }
 
+    vector<u_int8_t> GetDerivationKey()
+    {
+        return vector<u_int8_t>(_struct.encryption_params.u8_encryption_derivation_string.u8_dummy,
+                                _struct.encryption_params.u8_encryption_derivation_string.u8_dummy +
+                                  FS5_IMAGE_LAYOUT_U8_ENCRYPTION_DERIVATION_STRING_SIZE);
+    }
+    // TODO:: check with Nael what is the derivation context
+    vector<u_int8_t> GetDerivationContext()
+    {
+        return vector<u_int8_t>(_struct.encryption_params.u8_encryption_derivation_string.u8_dummy,
+                                _struct.encryption_params.u8_encryption_derivation_string.u8_dummy +
+                                  FS5_IMAGE_LAYOUT_U8_ENCRYPTION_DERIVATION_STRING_SIZE);
+    }
+    void SetIV(const vector<u_int8_t>& iv)
+    {
+        memcpy(_struct.encryption_params.u8_iv.u8_dummy, iv.data(), FS5_IMAGE_LAYOUT_U8_IV_SIZE);
+    }
+    void SetAuthenticationTag(const vector<u_int8_t>& tag);
+
 private:
     struct fs5_image_layout_binary_section_metadata _struct;
 };
