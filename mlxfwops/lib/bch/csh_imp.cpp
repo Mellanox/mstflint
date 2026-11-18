@@ -35,7 +35,7 @@
 
 #include "csh_imp.h"
 
-#ifndef MST_CPU_armv7l_umbriel // {
+#if !defined(MST_CPU_armv7l_umbriel) && !defined(NO_OPEN_SSL) // {
 #include "mlxsign_lib/mlxsign_lib.h"
 #include "mlxsign_lib/mlxsign_signer_interface.h"
 #endif // } MST_CPU_armv7l_umbriel
@@ -47,6 +47,7 @@
 #include <algorithm>
 #include <iomanip>
 #include <limits.h>
+#include <stdarg.h>
 #include <map>
 #include <unordered_map>
 
@@ -212,7 +213,7 @@ void PartitionTable::UnpackHeader(const vector<u_int8_t>& data)
 
 void PartitionTable::CalcDigest()
 {
-#ifndef MST_CPU_armv7l_umbriel // {
+#if !defined(MST_CPU_armv7l_umbriel) && !defined(NO_OPEN_SSL) // {
     vector<u_int8_t> data = Pack();
     data.erase(data.begin(), data.begin() + HeaderSize());
 
@@ -1204,7 +1205,7 @@ void CSH::SetJsonParams(const Json::Value& root)
 
 void CSH::CalcDigest()
 {
-#ifndef MST_CPU_armv7l_umbriel // {
+#if !defined(MST_CPU_armv7l_umbriel) && !defined(NO_OPEN_SSL) // {
     vector<u_int8_t> data;
     for (auto section : _cshSections)
     {
