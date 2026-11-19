@@ -399,6 +399,10 @@ static const CableEepromLayout SFF8636_LAYOUT = {148, 165, 168, 184, 196, 212};
 #define CABLE_EEPROM_MODULE_STATE_WIDTH 3
 #define CABLE_EEPROM_MODULE_STATE_OFFSET 3
 #define CABLE_EEPROM_DATE_LEN 6
+#define CABLE_EEPROM_DATE_CODE_LEN 8
+/* CMIS only: SFF-8636 keeps no CLEI code on page 0. */
+#define CABLE_EEPROM_CMIS_CLEI_OFFSET 190
+#define CABLE_EEPROM_CLEI_LEN 10
 
 /* CMIS identifiers. Anything else is read as SFF-8636, which is the older map and the safer
  * assumption for an identifier this code has not seen.
@@ -673,30 +677,66 @@ static u_int8_t readCableVendorStatus(mfile* mf, bool mapped, u_int32_t localPor
     return mfcdr.status;
 }
 
-/* The metadata keys this tool reads, named after the CMIS fields they match, as the OIF CMIS
- * Firmware Update Package IA (OIF2026.122) spells them. The NVIDIA LinkX release spells three of
- * them differently, and both spellings are read.
- *
- * VendorName and FwLoadName are required. Every other match key is optional, may use ? and *
- * wildcards, and narrows the match only when the entry states it. A key the tool does not know is
- * ignored, as the IA requires.
+/* The Firmware Load Descriptor keys, as the OIF CMIS Firmware Package IA (OIF2026.122.12, Table 5-1)
+ * names them. VendorName, VendorPN, ModuleActiveFwMajorVersion and FwLoadName are required. Every other
+ * match key is optional and narrows the match only when the entry states it. A key the tool does not know
+ * is ignored, as the IA requires.
  */
 #define CABLE_YAML_KEY_VENDOR_NAME "VendorName"
 #define CABLE_YAML_KEY_VENDOR_PN "VendorPN"
+#define CABLE_YAML_KEY_SFF8024_ID "SFF8024Identifier"
 #define CABLE_YAML_KEY_VENDOR_OUI "VendorOUI"
 #define CABLE_YAML_KEY_VENDOR_REV "VendorRev"
 #define CABLE_YAML_KEY_VENDOR_SN "VendorSN"
+#define CABLE_YAML_KEY_DATE_CODE "DateCode"
+#define CABLE_YAML_KEY_CLEI_CODE "CLEICode"
 #define CABLE_YAML_KEY_HW_MAJOR "ModuleHardwareMajorRevision"
-#define CABLE_YAML_KEY_HW_MAJOR_NVIDIA "VendorHWMajor"
 #define CABLE_YAML_KEY_HW_MINOR "ModuleHardwareMinorRevision"
-#define CABLE_YAML_KEY_ACTIVE_FW "ModuleActiveFirmwareVersion"
+#define CABLE_YAML_KEY_ACTIVE_MAJOR "ModuleActiveFwMajorVersion"
+#define CABLE_YAML_KEY_ACTIVE_MINOR "ModuleActiveFwMinorVersion"
+#define CABLE_YAML_KEY_ACTIVE_BUILD "ModuleActiveFwBuildVersion"
+#define CABLE_YAML_KEY_ACTIVE_EXTRA "ActiveExtraString"
+#define CABLE_YAML_KEY_INACTIVE_MAJOR "ModuleInactiveFwMajorVersion"
+#define CABLE_YAML_KEY_INACTIVE_MINOR "ModuleInactiveFwMinorVersion"
+#define CABLE_YAML_KEY_INACTIVE_BUILD "ModuleInactiveFwBuildVersion"
+#define CABLE_YAML_KEY_INACTIVE_EXTRA "InactiveExtraString"
 #define CABLE_YAML_KEY_LOAD_NAME "FwLoadName"
 #define CABLE_YAML_KEY_LOAD_VERSION "FwLoadVersion"
-#define CABLE_YAML_KEY_LOAD_VERSION_NVIDIA "FWLoadVersion"
-#define CABLE_YAML_KEY_SHA256 "FwUpdateLoadChecksumSHA256"
-#define CABLE_YAML_KEY_SHA256_NVIDIA "FwUpdateImageChecksumSHA256"
-#define CABLE_YAML_KEY_SHA512 "FwUpdateLoadChecksumSHA512"
-#define CABLE_YAML_KEY_SHA512_NVIDIA "FwUpdateImageChecksumSHA512"
+#define CABLE_YAML_KEY_SHA256 "FwLoadChecksumSHA256"
+#define CABLE_YAML_KEY_SHA512 "FwLoadChecksumSHA512"
+
+/* How the IA compares a key with the cable (OIF2026.122.12 5.1): character for character, with the
+ * ? and * wildcards, or as a number that may carry up to two of <, >, <= and >=.
+ */
+enum CableKeyMatch
+{
+    CABLE_KEY_EXACT,
+    CABLE_KEY_STRING,
+    CABLE_KEY_NUMBER
+};
+
+struct CableMatchKey
+{
+    const char* name;
+    CableKeyMatch match;
+};
+
+/* VendorName and VendorPN are kept apart from these: both are required, and the part number also
+ * goes into the extended header.
+ */
+static const CableMatchKey CABLE_MATCH_KEYS[] = {
+  {CABLE_YAML_KEY_SFF8024_ID, CABLE_KEY_EXACT},      {CABLE_YAML_KEY_VENDOR_OUI, CABLE_KEY_EXACT},
+  {CABLE_YAML_KEY_VENDOR_REV, CABLE_KEY_STRING},     {CABLE_YAML_KEY_VENDOR_SN, CABLE_KEY_STRING},
+  {CABLE_YAML_KEY_DATE_CODE, CABLE_KEY_STRING},      {CABLE_YAML_KEY_CLEI_CODE, CABLE_KEY_STRING},
+  {CABLE_YAML_KEY_HW_MAJOR, CABLE_KEY_NUMBER},       {CABLE_YAML_KEY_HW_MINOR, CABLE_KEY_NUMBER},
+  {CABLE_YAML_KEY_ACTIVE_MAJOR, CABLE_KEY_NUMBER},   {CABLE_YAML_KEY_ACTIVE_MINOR, CABLE_KEY_NUMBER},
+  {CABLE_YAML_KEY_ACTIVE_BUILD, CABLE_KEY_NUMBER},   {CABLE_YAML_KEY_ACTIVE_EXTRA, CABLE_KEY_STRING},
+  {CABLE_YAML_KEY_INACTIVE_MAJOR, CABLE_KEY_NUMBER}, {CABLE_YAML_KEY_INACTIVE_MINOR, CABLE_KEY_NUMBER},
+  {CABLE_YAML_KEY_INACTIVE_BUILD, CABLE_KEY_NUMBER}, {CABLE_YAML_KEY_INACTIVE_EXTRA, CABLE_KEY_STRING}};
+
+/* The IA's limits on FwLoadName (OIF2026.122.12 5.2.2). */
+#define CABLE_LOAD_NAME_MAX_LENGTH 512
+#define CABLE_LOAD_NAME_MAX_DEPTH 16
 
 #define CABLE_METADATA_SUFFIX ".yaml"
 
@@ -844,6 +884,45 @@ static int compareCableFwVersions(const CableFwVersion& left, const CableFwVersi
     return 0;
 }
 
+/* An archive member's path as the package keys it: relative to the package root, with the . and ..
+ * segments resolved the way FwLoadName's are, so a name finds its file whichever spelling the archiver
+ * used. Empty for a member that climbs above the root, which is left out of the package.
+ */
+static string archiveRelativePath(const string& name)
+{
+    vector<string> segments;
+    size_t start = 0;
+
+    while (start <= name.size())
+    {
+        size_t slash = name.find('/', start);
+        string segment = name.substr(start, (slash == string::npos) ? string::npos : slash - start);
+        if (segment == "..")
+        {
+            if (segments.empty())
+            {
+                return string();
+            }
+            segments.pop_back();
+        }
+        else if (!segment.empty() && segment != ".")
+        {
+            segments.push_back(segment);
+        }
+        if (slash == string::npos)
+        {
+            break;
+        }
+        start = slash + 1;
+    }
+    string path;
+    for (size_t i = 0; i < segments.size(); i++)
+    {
+        path += (i ? "/" : "") + segments[i];
+    }
+    return path;
+}
+
 /* Read the package when it is a ZIP.
  *
  * mstflint carries no ZIP reader (MFT reads it with MinizipArchive), so the ZIP cannot be opened
@@ -938,31 +1017,6 @@ static string tarText(const u_int8_t* field, size_t length)
     return string((const char*)field, end);
 }
 
-/* Tar keys a file by the path it was archived under, often with a leading ./, where the other readers
- * key it relative to the package root.
- */
-static string tarRelativePath(const string& name)
-{
-    size_t start = 0;
-
-    while (true)
-    {
-        if (name.compare(start, 2, "./") == 0)
-        {
-            start += 2;
-        }
-        else if (name.compare(start, 1, "/") == 0)
-        {
-            start += 1;
-        }
-        else
-        {
-            break;
-        }
-    }
-    return name.substr(start);
-}
-
 /* The path a pax extended header gives the next entry, from its "length path=value\n" records. */
 static string paxPath(const u_int8_t* data, size_t size)
 {
@@ -1055,7 +1109,7 @@ static void readTarEntries(const vector<u_int8_t>& tar, map<string, vector<u_int
         }
         else if (type == '0' || type == '\0' || type == '7')
         {
-            string relative = tarRelativePath(name);
+            string relative = archiveRelativePath(name);
             if (!relative.empty())
             {
                 contents[relative] = vector<u_int8_t>(data, data + size);
@@ -1110,8 +1164,8 @@ static string pathBaseName(const string& path)
  * relative to the package root, with forward slashes, so nothing downstream can tell the two
  * apart.
  */
-/* How deep a package directory may nest before the walk calls it a loop. */
-#define CABLE_PACKAGE_MAX_DEPTH 8
+/* How deep a package directory may nest before the walk calls it a loop: as deep as FwLoadName may reach. */
+#define CABLE_PACKAGE_MAX_DEPTH CABLE_LOAD_NAME_MAX_DEPTH
 
 static void readPackageDirectory(const string& path,
                                  const string& prefix,
@@ -1156,10 +1210,6 @@ static bool hasSuffix(const string& text, const string& suffix)
     return text.size() >= suffix.size() && text.compare(text.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
 
-/* Whether two metadata files describe the same cable. Every key both entries constrain has to
- * agree; a key only one of them states cannot separate them, because a cable carrying that value
- * matches both.
- */
 /* Archive entries always use forward slashes, whatever wrote them. */
 static string archiveDirectory(const string& entryName)
 {
@@ -1168,7 +1218,7 @@ static string archiveDirectory(const string& entryName)
     return (slash == string::npos) ? "" : entryName.substr(0, slash + 1);
 }
 
-/* An OUI as six upper-case hex digits, the form a VendorOUI pattern is compared in. */
+/* An OUI as six upper-case hex digits, the form the report prints it in. */
 static string cableOuiText(u_int32_t oui)
 {
     char text[8];
@@ -1177,24 +1227,267 @@ static string cableOuiText(u_int32_t oui)
     return string(text);
 }
 
-/* A VendorOUI the metadata wrote as 0x48B02D, 48-B0-2D or 48:b0:2d, brought to the six-digit form. */
-static string normalizedOuiPattern(const string& pattern)
+/* A decimal number, or a hexadecimal one written with 0x. */
+static bool parseMatchNumber(const string& text, u_int32_t& value)
 {
-    string body = pattern;
-    string result;
+    size_t start = 0;
+    u_int64_t base = 10;
+    u_int64_t result = 0;
 
-    if (body.size() > 2 && body[0] == '0' && (body[1] == 'x' || body[1] == 'X'))
+    if (text.size() > 2 && text[0] == '0' && (text[1] == 'x' || text[1] == 'X'))
     {
-        body = body.substr(2);
+        start = 2;
+        base = 16;
     }
-    for (size_t i = 0; i < body.size(); i++)
+    if (start >= text.size())
     {
-        if (body[i] != '-' && body[i] != ':' && body[i] != ' ')
+        return false;
+    }
+    for (size_t i = start; i < text.size(); i++)
+    {
+        unsigned char c = (unsigned char)text[i];
+        u_int64_t digit = 0;
+
+        if (isdigit(c))
         {
-            result += (char)toupper((unsigned char)body[i]);
+            digit = (u_int64_t)(c - '0');
+        }
+        else if (base == 16 && isxdigit(c))
+        {
+            digit = (u_int64_t)(tolower(c) - 'a' + 10);
+        }
+        else
+        {
+            return false;
+        }
+        result = result * base + digit;
+        if (result > 0xffffffffULL)
+        {
+            return false;
         }
     }
-    return result;
+    value = (u_int32_t)result;
+    return true;
+}
+
+/* A VendorOUI the metadata wrote as 0x48B02D, 48B02D, 48-B0-2D or 48:b0:2d. The IA matches it
+ * exactly, so anything but six hex digits is an error rather than a pattern.
+ */
+static bool parseOui(const string& text, u_int32_t& oui)
+{
+    string digits;
+    size_t start = (text.size() > 2 && text[0] == '0' && (text[1] == 'x' || text[1] == 'X')) ? 2 : 0;
+
+    for (size_t i = start; i < text.size(); i++)
+    {
+        if (text[i] != '-' && text[i] != ':')
+        {
+            digits += text[i];
+        }
+    }
+    return digits.size() == 6 && parseMatchNumber("0x" + digits, oui);
+}
+
+/* A number match (OIF2026.122.12 5.1.3): a number, *, or one or two of <, >, <= and >= joined by a
+ * comma, all of which must hold. Returns false when the pattern is none of these; matches says
+ * whether the value meets it.
+ */
+static bool numberPatternMatches(const string& pattern, u_int32_t value, bool& matches)
+{
+    string text;
+
+    for (size_t i = 0; i < pattern.size(); i++)
+    {
+        if (pattern[i] != ' ')
+        {
+            text += pattern[i];
+        }
+    }
+    matches = true;
+    if (text == "*")
+    {
+        return true;
+    }
+    vector<string> conditions;
+    size_t start = 0;
+    while (true)
+    {
+        size_t comma = text.find(',', start);
+        conditions.push_back(text.substr(start, (comma == string::npos) ? string::npos : comma - start));
+        if (comma == string::npos)
+        {
+            break;
+        }
+        start = comma + 1;
+    }
+    if (conditions.size() > 2)
+    {
+        return false;
+    }
+    for (size_t i = 0; i < conditions.size(); i++)
+    {
+        const string& condition = conditions[i];
+        size_t opLength = 0;
+        if (condition.compare(0, 2, "<=") == 0 || condition.compare(0, 2, ">=") == 0)
+        {
+            opLength = 2;
+        }
+        else if (!condition.empty() && (condition[0] == '<' || condition[0] == '>'))
+        {
+            opLength = 1;
+        }
+        // A bare number is an exact match, which only makes sense on its own.
+        if (opLength == 0 && conditions.size() > 1)
+        {
+            return false;
+        }
+        u_int32_t bound = 0;
+        if (!parseMatchNumber(condition.substr(opLength), bound))
+        {
+            return false;
+        }
+        string op = condition.substr(0, opLength);
+        bool holds = (op == "<=") ? value <= bound :
+                     (op == ">=") ? value >= bound :
+                     (op == "<")  ? value < bound :
+                     (op == ">")  ? value > bound :
+                                    value == bound;
+        matches = matches && holds;
+    }
+    return true;
+}
+
+static const CableMatchKey* findMatchKey(const string& name)
+{
+    for (size_t i = 0; i < sizeof(CABLE_MATCH_KEYS) / sizeof(CABLE_MATCH_KEYS[0]); i++)
+    {
+        if (name == CABLE_MATCH_KEYS[i].name)
+        {
+            return &CABLE_MATCH_KEYS[i];
+        }
+    }
+    return NULL;
+}
+
+/* Why a match key's value cannot be compared at all, empty when it can. Checked when the package is
+ * read, so a malformed value refuses the package rather than quietly matching nothing.
+ */
+static string matchPatternError(const CableMatchKey& key, const string& pattern)
+{
+    u_int32_t number = 0;
+    bool matches = false;
+
+    if (key.match == CABLE_KEY_NUMBER && !numberPatternMatches(pattern, 0, matches))
+    {
+        return string(key.name) + " \"" + pattern + "\" is not a number, *, or up to two of <, >, <= and >=";
+    }
+    if (key.match == CABLE_KEY_EXACT && string(key.name) == CABLE_YAML_KEY_VENDOR_OUI && !parseOui(pattern, number))
+    {
+        return string(key.name) + " \"" + pattern + "\" is not six hex digits; it takes no wildcard";
+    }
+    if (key.match == CABLE_KEY_EXACT && string(key.name) == CABLE_YAML_KEY_SFF8024_ID &&
+        (!parseMatchNumber(pattern, number) || number > 0xff))
+    {
+        return string(key.name) + " \"" + pattern + "\" is not a byte value; it takes no wildcard";
+    }
+    return string();
+}
+
+/* What the cable reports for one match key, as text for the string keys and as a number for the
+ * others. False when the cable did not report it, so the key cannot match. Active is the running
+ * image, slot A when none runs, the same one the FW major rule goes by; inactive is the other slot.
+ */
+static bool cableMatchValue(const CableInfo& cable, const string& key, string& text, u_int32_t& number)
+{
+    bool runsB = (cable.runningSlot == CABLE_IMAGE_SLOT_B);
+    const CableFwVersion& active = runsB ? cable.fwImageB : cable.fwImageA;
+    const CableFwVersion& inactive = runsB ? cable.fwImageA : cable.fwImageB;
+
+    if (key == CABLE_YAML_KEY_SFF8024_ID)
+    {
+        number = cable.identifierByte;
+        return cable.hasIdentifierByte;
+    }
+    if (key == CABLE_YAML_KEY_VENDOR_OUI)
+    {
+        number = cable.vendorOui;
+        return cable.vendorOui != 0;
+    }
+    if (key == CABLE_YAML_KEY_VENDOR_REV || key == CABLE_YAML_KEY_VENDOR_SN || key == CABLE_YAML_KEY_DATE_CODE ||
+        key == CABLE_YAML_KEY_CLEI_CODE)
+    {
+        text = (key == CABLE_YAML_KEY_VENDOR_REV) ? cable.vendorRev :
+               (key == CABLE_YAML_KEY_VENDOR_SN)  ? cable.serialNumber :
+               (key == CABLE_YAML_KEY_DATE_CODE)  ? cable.dateCode :
+                                                    cable.cleiCode;
+        // The date and CLEI codes come from the EEPROM alone, and one that did not read (an SFF-8636
+        // cable has no CLEI code) is unknown rather than empty, so even * does not match it.
+        return !text.empty() || (key != CABLE_YAML_KEY_DATE_CODE && key != CABLE_YAML_KEY_CLEI_CODE);
+    }
+    if (key == CABLE_YAML_KEY_HW_MAJOR || key == CABLE_YAML_KEY_HW_MINOR)
+    {
+        number = (key == CABLE_YAML_KEY_HW_MAJOR) ? cable.hwRevMajor : cable.hwRevMinor;
+        return true;
+    }
+    // Everything below comes from MCQI, and without it there is nothing to compare.
+    if (!cable.fwRead)
+    {
+        return false;
+    }
+    // mstflint does not read the images' extra strings, so they are unknown and even * does not
+    // match them.
+    if (key == CABLE_YAML_KEY_ACTIVE_EXTRA || key == CABLE_YAML_KEY_INACTIVE_EXTRA)
+    {
+        return false;
+    }
+    const CableFwVersion& version =
+      (key == CABLE_YAML_KEY_ACTIVE_MAJOR || key == CABLE_YAML_KEY_ACTIVE_MINOR || key == CABLE_YAML_KEY_ACTIVE_BUILD) ?
+        active :
+        inactive;
+    if (key == CABLE_YAML_KEY_ACTIVE_MAJOR || key == CABLE_YAML_KEY_INACTIVE_MAJOR)
+    {
+        number = version.major;
+        return true;
+    }
+    if (key == CABLE_YAML_KEY_ACTIVE_MINOR || key == CABLE_YAML_KEY_INACTIVE_MINOR)
+    {
+        number = version.minor;
+        return true;
+    }
+    if (key == CABLE_YAML_KEY_ACTIVE_BUILD || key == CABLE_YAML_KEY_INACTIVE_BUILD)
+    {
+        number = version.subminor;
+        return true;
+    }
+    return false;
+}
+
+static bool matchKeyMatchesCable(const string& name, const string& pattern, const CableInfo& cable)
+{
+    const CableMatchKey* key = findMatchKey(name);
+    string text;
+    u_int32_t number = 0;
+    u_int32_t expected = 0;
+    bool matches = false;
+
+    if (key == NULL || !cableMatchValue(cable, name, text, number))
+    {
+        return false;
+    }
+    switch (key->match)
+    {
+        case CABLE_KEY_EXACT:
+            if (name == CABLE_YAML_KEY_VENDOR_OUI)
+            {
+                return parseOui(pattern, expected) && expected == number;
+            }
+            return parseMatchNumber(pattern, expected) && expected == number;
+        case CABLE_KEY_STRING:
+            return globMatches(pattern, text);
+        case CABLE_KEY_NUMBER:
+            return numberPatternMatches(pattern, number, matches) && matches;
+    }
+    return false;
 }
 
 static bool metadataMatchesCable(const FwPackageEntry& entry, const CableInfo& cable)
@@ -1218,38 +1511,9 @@ static bool metadataMatchesCable(const FwPackageEntry& entry, const CableInfo& c
     {
         return false;
     }
-    if (entry.hasVendorOui && !globMatches(normalizedOuiPattern(entry.vendorOui), cableOuiText(cable.vendorOui)))
+    for (map<string, string>::const_iterator key = entry.matchKeys.begin(); key != entry.matchKeys.end(); ++key)
     {
-        return false;
-    }
-    if (entry.hasVendorRev && !globMatches(entry.vendorRev, cable.vendorRev))
-    {
-        return false;
-    }
-    if (entry.hasVendorSn && !globMatches(entry.vendorSn, cable.serialNumber))
-    {
-        return false;
-    }
-    if (entry.hasHwRevMajor && !globMatches(entry.hwRevMajor, int_to_string((int)cable.hwRevMajor)))
-    {
-        return false;
-    }
-    if (entry.hasHwRevMinor && !globMatches(entry.hwRevMinor, int_to_string((int)cable.hwRevMinor)))
-    {
-        return false;
-    }
-    if (entry.hasActiveFwVersion)
-    {
-        // The release writes the version zero padded, 070.010.11016, and tools print it bare,
-        // 70.10.11016; a pattern in either form matches.
-        char padded[32];
-        char bare[32];
-
-        snprintf(padded, sizeof(padded), "%03u.%03u.%05u", (unsigned)running.major, (unsigned)running.minor,
-                 (unsigned)running.subminor);
-        snprintf(bare, sizeof(bare), "%u.%u.%u", (unsigned)running.major, (unsigned)running.minor,
-                 (unsigned)running.subminor);
-        if (!globMatches(entry.activeFwVersion, padded) && !globMatches(entry.activeFwVersion, bare))
+        if (!matchKeyMatchesCable(key->first, key->second, cable))
         {
             return false;
         }
@@ -1321,12 +1585,13 @@ static CableExtHeaderKey cableExtHeaderKey(const FwPackageEntry& entry)
     // A pattern cannot go into the header, which the device compares byte for byte: a wildcard
     // part number leaves the image unwrapped, and a wildcard revision or hardware major is left
     // zero, which the device treats as any.
+    // A number match with a range or * is a pattern too.
     key.partNumber = hasWildcard(entry.vendorPartNumber) ? string() : entry.vendorPartNumber;
-    key.vendorRev = (entry.hasVendorRev && !hasWildcard(entry.vendorRev)) ? entry.vendorRev : string();
-    unsigned int hwRevMajor = 0;
-    int consumed = 0;
-    if (entry.hasHwRevMajor && sscanf(entry.hwRevMajor.c_str(), "%u%n", &hwRevMajor, &consumed) == 1 &&
-        consumed == (int)entry.hwRevMajor.size() && hwRevMajor <= 0xff)
+    map<string, string>::const_iterator rev = entry.matchKeys.find(CABLE_YAML_KEY_VENDOR_REV);
+    key.vendorRev = (rev != entry.matchKeys.end() && !hasWildcard(rev->second)) ? rev->second : string();
+    map<string, string>::const_iterator hwMajor = entry.matchKeys.find(CABLE_YAML_KEY_HW_MAJOR);
+    u_int32_t hwRevMajor = 0;
+    if (hwMajor != entry.matchKeys.end() && parseMatchNumber(hwMajor->second, hwRevMajor) && hwRevMajor <= 0xff)
     {
         key.hwRevMajor = (u_int8_t)hwRevMajor;
     }
@@ -2319,7 +2584,7 @@ static bool hasIdentityGap(const CableInfo& cable)
     return cable.vendorName.empty() || cable.partNumber.empty() || cable.serialNumber.empty() ||
            cable.vendorRev.empty() || cable.manufacturingDate.empty() || cable.vendorOui == 0 ||
            (cable.hwRevMajor == 0 && cable.hwRevMinor == 0) || cable.identifier == CABLE_REPORT_NOT_AVAILABLE ||
-           cable.state == CABLE_REPORT_NOT_AVAILABLE;
+           cable.state == CABLE_REPORT_NOT_AVAILABLE || !cable.hasIdentifierByte;
 }
 
 /* Fill whatever PDDR left empty, or could not read as text, from the EEPROM, field by field. PDDR stays
@@ -2366,6 +2631,12 @@ void CableFwManager::fillIdentityGapsFromEeprom(mfile* mf, CableInfo& cable)
     {
         cable.identifier = eeprom.identifier;
     }
+    // PDDR names the form factor with its own enum and carries neither code, so these three are
+    // the EEPROM's alone.
+    cable.identifierByte = eeprom.identifierByte;
+    cable.hasIdentifierByte = eeprom.hasIdentifierByte;
+    cable.dateCode = eeprom.dateCode;
+    cable.cleiCode = eeprom.cleiCode;
     if (cable.state == CABLE_REPORT_NOT_AVAILABLE)
     {
         cable.state = eeprom.state;
@@ -2513,6 +2784,8 @@ bool CableFwManager::readCableIdentity(mfile* mf, CableInfo& cable)
     bool isFlatMem = EXTRACT(lower[CABLE_EEPROM_FLAT_MEM_OFFSET], CABLE_EEPROM_FLAT_MEM_BIT, 1) != 0;
 
     cable.identifier = cableIdentifierName(identifier);
+    cable.identifierByte = identifier;
+    cable.hasIdentifierByte = true;
     // The CMIS module state is what mlxlink shows as "Module State". SFF-8636 has no equivalent.
     if (isCmis)
     {
@@ -2553,6 +2826,15 @@ bool CableFwManager::readCableIdentity(mfile* mf, CableInfo& cable)
         date.size() == CABLE_EEPROM_DATE_LEN)
     {
         cable.manufacturingDate = date.substr(4, 2) + "_" + date.substr(2, 2) + "_" + date.substr(0, 2);
+    }
+    // The package matches the date code and the CLEI code as stored, lot code included. Neither
+    // decides anything else, so one that is not text is simply not there to match.
+    cableText(&page0[layout.dateCode - CABLE_EEPROM_PAGE0_UPPER_OFFSET], CABLE_EEPROM_DATE_CODE_LEN, cable.globalPort,
+              "date code", cable.dateCode);
+    if (isCmis)
+    {
+        cableText(&page0[CABLE_EEPROM_CMIS_CLEI_OFFSET - CABLE_EEPROM_PAGE0_UPPER_OFFSET], CABLE_EEPROM_CLEI_LEN,
+                  cable.globalPort, "CLEI code", cable.cleiCode);
     }
 
     // The hardware revision lives on page 1, which a flat-memory cable does not implement. MCIA
@@ -2665,25 +2947,74 @@ static string yamlScalarText(const fkyaml::node& value)
     }
     if (value.is_integer())
     {
-        return int_to_string((int)value.get_value<int64_t>());
+        // Kept whole, so the key's own parser refuses a value out of its range instead of a truncated one.
+        return std::to_string((long long)value.get_value<int64_t>());
     }
     throw std::runtime_error("holds a value that is neither text nor a number");
 }
 
-/* The first of the spellings an entry carries, so the IA's and the NVIDIA release's both read. */
-static bool yamlField(const fkyaml::node& entry, const char* key, const char* altKey, string& value)
+static bool yamlField(const fkyaml::node& entry, const char* key, string& value)
 {
-    if (entry.contains(key))
+    if (!entry.contains(key))
     {
-        value = yamlScalarText(entry.at(key));
-        return true;
+        return false;
     }
-    if (altKey != NULL && entry.contains(altKey))
+    value = yamlScalarText(entry.at(key));
+    return true;
+}
+
+/* FwLoadName as the IA allows it (OIF2026.122.12 5.2.2): relative to its description file, with or
+ * without ./ in front, at most 512 characters, and never absolute or above the description's own
+ * folder, so a descriptor cannot reach outside the package. Returns the name without its ./ and ..
+ * segments, or throws why it is refused.
+ */
+static string loadNameRelativePath(const string& loadName)
+{
+    if (loadName.empty() || loadName.size() > CABLE_LOAD_NAME_MAX_LENGTH)
     {
-        value = yamlScalarText(entry.at(altKey));
-        return true;
+        throw std::runtime_error(CABLE_YAML_KEY_LOAD_NAME " must be 1 to " + int_to_string(CABLE_LOAD_NAME_MAX_LENGTH) +
+                                 " characters");
     }
-    return false;
+    if (loadName[0] == '/' || loadName.find('\\') != string::npos || loadName.find(':') != string::npos)
+    {
+        throw std::runtime_error(CABLE_YAML_KEY_LOAD_NAME " \"" + loadName +
+                                 "\" must be a relative path with / separators");
+    }
+    vector<string> segments;
+    size_t start = 0;
+    while (start <= loadName.size())
+    {
+        size_t slash = loadName.find('/', start);
+        string segment = loadName.substr(start, (slash == string::npos) ? string::npos : slash - start);
+        if (segment == "..")
+        {
+            if (segments.empty())
+            {
+                throw std::runtime_error(CABLE_YAML_KEY_LOAD_NAME " \"" + loadName +
+                                         "\" reaches above the folder of its description file");
+            }
+            segments.pop_back();
+        }
+        else if (!segment.empty() && segment != ".")
+        {
+            segments.push_back(segment);
+        }
+        if (slash == string::npos)
+        {
+            break;
+        }
+        start = slash + 1;
+    }
+    if (segments.empty())
+    {
+        throw std::runtime_error(CABLE_YAML_KEY_LOAD_NAME " \"" + loadName + "\" names no file");
+    }
+    string path;
+    for (size_t i = 0; i < segments.size(); i++)
+    {
+        path += (i ? "/" : "") + segments[i];
+    }
+    return path;
 }
 
 /* The folder a package file sits in, without its parents, which is the part number a package
@@ -2708,13 +3039,6 @@ static string packageFolderName(const string& entryName)
 static FwPackageEntry
   parseMetadataNode(const string& name, const fkyaml::node& node, const map<string, vector<u_int8_t> >& contents)
 {
-    static const char* const knownKeys[] = {
-      CABLE_YAML_KEY_VENDOR_NAME,     CABLE_YAML_KEY_VENDOR_PN,     CABLE_YAML_KEY_VENDOR_OUI,
-      CABLE_YAML_KEY_VENDOR_REV,      CABLE_YAML_KEY_VENDOR_SN,     CABLE_YAML_KEY_HW_MAJOR,
-      CABLE_YAML_KEY_HW_MAJOR_NVIDIA, CABLE_YAML_KEY_HW_MINOR,      CABLE_YAML_KEY_ACTIVE_FW,
-      CABLE_YAML_KEY_LOAD_NAME,       CABLE_YAML_KEY_LOAD_VERSION,  CABLE_YAML_KEY_LOAD_VERSION_NVIDIA,
-      CABLE_YAML_KEY_SHA256,          CABLE_YAML_KEY_SHA256_NVIDIA, CABLE_YAML_KEY_SHA512,
-      CABLE_YAML_KEY_SHA512_NVIDIA};
     FwPackageEntry entry;
     entry.metadataPath = name;
     // An entry that does not parse is recorded against itself with the reason, so every bad entry
@@ -2734,64 +3058,77 @@ static FwPackageEntry
                 continue;
             }
             string key = item.key().get_value<std::string>();
-            bool known = false;
-            for (size_t i = 0; i < sizeof(knownKeys) / sizeof(knownKeys[0]); i++)
+            const CableMatchKey* matchKey = findMatchKey(key);
+            if (matchKey != NULL)
             {
-                known = known || key == knownKeys[i];
+                string pattern;
+                // An OUI written bare, 0x48B02D, reads back as a number; it is put back in hex
+                // rather than compared as its decimal value.
+                if (key == CABLE_YAML_KEY_VENDOR_OUI && item->is_integer())
+                {
+                    int64_t oui = item->get_value<int64_t>();
+                    if (oui < 0 || oui > 0xffffff)
+                    {
+                        throw std::runtime_error("states a " CABLE_YAML_KEY_VENDOR_OUI " outside 0..0xFFFFFF");
+                    }
+                    pattern = cableOuiText((u_int32_t)oui);
+                }
+                else
+                {
+                    pattern = yamlScalarText(*item);
+                }
+                string error = matchPatternError(*matchKey, pattern);
+                if (!error.empty())
+                {
+                    throw std::runtime_error(error);
+                }
+                entry.matchKeys[key] = pattern;
             }
-            if (!known)
+            else if (key != CABLE_YAML_KEY_VENDOR_NAME && key != CABLE_YAML_KEY_VENDOR_PN &&
+                     key != CABLE_YAML_KEY_LOAD_NAME && key != CABLE_YAML_KEY_LOAD_VERSION &&
+                     key != CABLE_YAML_KEY_SHA256 && key != CABLE_YAML_KEY_SHA512)
             {
                 FWMANAGER_LOG_DEBUG("%s: ignoring %s, which the tool does not match on", name.c_str(), key.c_str());
             }
         }
 
         string loadName;
-        if (!yamlField(node, CABLE_YAML_KEY_VENDOR_NAME, NULL, entry.vendorName) ||
-            !yamlField(node, CABLE_YAML_KEY_LOAD_NAME, NULL, loadName))
+        if (!yamlField(node, CABLE_YAML_KEY_VENDOR_NAME, entry.vendorName) ||
+            !yamlField(node, CABLE_YAML_KEY_LOAD_NAME, loadName))
         {
             throw std::runtime_error("missing " CABLE_YAML_KEY_VENDOR_NAME " or " CABLE_YAML_KEY_LOAD_NAME);
         }
         // The metadata names its binary relative to itself, so the folder it sits in is what
         // resolves the name.
-        entry.imagePath = archiveDirectory(name) + loadName;
-
-        // A package keeps each part number in a folder of its own, so an entry that does not
-        // state one - a CM or JDM entry never does - takes it from there.
-        string folder = packageFolderName(name);
-        if (!yamlField(node, CABLE_YAML_KEY_VENDOR_PN, NULL, entry.vendorPartNumber))
+        entry.imagePath = archiveDirectory(name) + loadNameRelativePath(loadName);
+        size_t depth = 0;
+        for (size_t i = 0; i < entry.imagePath.size(); i++)
         {
-            entry.vendorPartNumber = folder;
+            depth += (entry.imagePath[i] == '/') ? 1 : 0;
         }
-        else if (!folder.empty() && !hasWildcard(entry.vendorPartNumber) &&
-                 !equalsIgnoringCase(folder, entry.vendorPartNumber))
+        if (depth > CABLE_LOAD_NAME_MAX_DEPTH)
+        {
+            throw std::runtime_error("names an image " + int_to_string((int)depth) +
+                                     " folders deep; the package allows " + int_to_string(CABLE_LOAD_NAME_MAX_DEPTH));
+        }
+
+        // The part number and the running FW major are the least an NVIDIA package names a cable by:
+        // without them an entry would reach other products' cables, so it is refused rather than
+        // left to match broadly.
+        if (!yamlField(node, CABLE_YAML_KEY_VENDOR_PN, entry.vendorPartNumber) ||
+            entry.matchKeys.find(CABLE_YAML_KEY_ACTIVE_MAJOR) == entry.matchKeys.end())
+        {
+            throw std::runtime_error("missing " CABLE_YAML_KEY_VENDOR_PN " or " CABLE_YAML_KEY_ACTIVE_MAJOR);
+        }
+        string folder = packageFolderName(name);
+        if (!folder.empty() && !hasWildcard(entry.vendorPartNumber) &&
+            !equalsIgnoringCase(folder, entry.vendorPartNumber))
         {
             // The folder is where its image is looked up, so a mismatch means the package was
             // assembled wrongly and the pairing cannot be trusted.
             throw std::runtime_error("declares " CABLE_YAML_KEY_VENDOR_PN " " + entry.vendorPartNumber +
                                      " but sits in folder " + folder + "; the package needs fixing");
         }
-        // An OUI written bare, 0x48B02D, reads back as a number; it is put back in hex rather than
-        // compared as its decimal value.
-        if (node.contains(CABLE_YAML_KEY_VENDOR_OUI) && node.at(CABLE_YAML_KEY_VENDOR_OUI).is_integer())
-        {
-            int64_t oui = node.at(CABLE_YAML_KEY_VENDOR_OUI).get_value<int64_t>();
-            if (oui < 0 || oui > 0xffffff)
-            {
-                throw std::runtime_error("states a " CABLE_YAML_KEY_VENDOR_OUI " outside 0..0xFFFFFF");
-            }
-            entry.vendorOui = cableOuiText((u_int32_t)oui);
-            entry.hasVendorOui = true;
-        }
-        else
-        {
-            entry.hasVendorOui = yamlField(node, CABLE_YAML_KEY_VENDOR_OUI, NULL, entry.vendorOui);
-        }
-        entry.hasVendorRev = yamlField(node, CABLE_YAML_KEY_VENDOR_REV, NULL, entry.vendorRev);
-        entry.hasVendorSn = yamlField(node, CABLE_YAML_KEY_VENDOR_SN, NULL, entry.vendorSn);
-        entry.hasHwRevMajor =
-          yamlField(node, CABLE_YAML_KEY_HW_MAJOR, CABLE_YAML_KEY_HW_MAJOR_NVIDIA, entry.hwRevMajor);
-        entry.hasHwRevMinor = yamlField(node, CABLE_YAML_KEY_HW_MINOR, NULL, entry.hwRevMinor);
-        entry.hasActiveFwVersion = yamlField(node, CABLE_YAML_KEY_ACTIVE_FW, NULL, entry.activeFwVersion);
 
         map<string, vector<u_int8_t> >::const_iterator image = contents.find(entry.imagePath);
         if (image == contents.end())
@@ -2804,14 +3141,12 @@ static FwPackageEntry
         // reach the cable. The IA makes it optional; when an entry carries it, it has to hold.
         string expected;
 #ifndef NO_OPEN_SSL
-        if (yamlField(node, CABLE_YAML_KEY_SHA256, CABLE_YAML_KEY_SHA256_NVIDIA, expected) &&
-            !equalsIgnoringCase(expected, sha256Hex(data)))
+        if (yamlField(node, CABLE_YAML_KEY_SHA256, expected) && !equalsIgnoringCase(expected, sha256Hex(data)))
         {
             throw std::runtime_error("SHA-256 mismatch for " + entry.imagePath + ": expected " + expected +
                                      ", the image hashes to " + sha256Hex(data));
         }
-        if (yamlField(node, CABLE_YAML_KEY_SHA512, CABLE_YAML_KEY_SHA512_NVIDIA, expected) &&
-            !equalsIgnoringCase(expected, sha512Hex(data)))
+        if (yamlField(node, CABLE_YAML_KEY_SHA512, expected) && !equalsIgnoringCase(expected, sha512Hex(data)))
         {
             throw std::runtime_error("SHA-512 mismatch for " + entry.imagePath + ": expected " + expected +
                                      ", the image hashes to " + sha512Hex(data));
@@ -2821,7 +3156,7 @@ static FwPackageEntry
         // The load version is what the extended header, the plan and the verification all go by.
         // A raw LinkX image states its own, which settles it; any other image needs the metadata to.
         string version;
-        bool hasVersion = yamlField(node, CABLE_YAML_KEY_LOAD_VERSION, CABLE_YAML_KEY_LOAD_VERSION_NVIDIA, version);
+        bool hasVersion = yamlField(node, CABLE_YAML_KEY_LOAD_VERSION, version);
         if (hasVersion && !parseCableFwVersion(version, entry.fwVersion))
         {
             throw std::runtime_error(CABLE_YAML_KEY_LOAD_VERSION " \"" + version + "\" is not major.minor.build");
@@ -2883,7 +3218,9 @@ static FwPackageEntry
     return entry;
 }
 
-/* One metadata file: a single entry, or a list of entries each matched on its own, as the IA allows. */
+/* One Firmware Load Description file: a list of descriptors, each matched on its own. The IA writes
+ * even a single descriptor as a one-item list (OIF2026.122.12 3.1).
+ */
 vector<FwPackageEntry> CableFwManager::parseMetadataFile(const string& name,
                                                          const vector<u_int8_t>& bytes,
                                                          const map<string, vector<u_int8_t> >& contents) const
@@ -2894,16 +3231,14 @@ vector<FwPackageEntry> CableFwManager::parseMetadataFile(const string& name,
     {
         fkyaml::node document = fkyaml::node::deserialize(string(bytes.begin(), bytes.end()));
 
-        if (document.is_sequence())
+        if (!document.is_sequence())
         {
-            for (fkyaml::node::const_iterator item = document.begin(); item != document.end(); ++item)
-            {
-                entries.push_back(parseMetadataNode(name, *item, contents));
-            }
+            throw std::runtime_error("is not a list of Firmware Load Descriptors, each starting with "
+                                     "\"- " CABLE_YAML_KEY_VENDOR_NAME ":\"");
         }
-        else
+        for (fkyaml::node::const_iterator item = document.begin(); item != document.end(); ++item)
         {
-            entries.push_back(parseMetadataNode(name, document, contents));
+            entries.push_back(parseMetadataNode(name, *item, contents));
         }
     }
     catch (const std::exception& e)
@@ -4073,6 +4408,30 @@ static void
     }
 }
 
+/* One match key of an entry as the metadata wrote it, N/A when the entry does not state it. */
+static string entryKeyText(const FwPackageEntry& entry, const char* key)
+{
+    map<string, string>::const_iterator value = entry.matchKeys.find(key);
+
+    return (value == entry.matchKeys.end()) ? string(CABLE_REPORT_NOT_AVAILABLE) : value->second;
+}
+
+/* The running version an entry asks for, major.minor.build, with * for a part it leaves open. */
+static string entryActiveFwText(const FwPackageEntry& entry)
+{
+    const char* const keys[] = {CABLE_YAML_KEY_ACTIVE_MAJOR, CABLE_YAML_KEY_ACTIVE_MINOR, CABLE_YAML_KEY_ACTIVE_BUILD};
+    string text;
+    bool any = false;
+
+    for (size_t i = 0; i < sizeof(keys) / sizeof(keys[0]); i++)
+    {
+        map<string, string>::const_iterator value = entry.matchKeys.find(keys[i]);
+        any = any || value != entry.matchKeys.end();
+        text += (i ? "." : "") + ((value == entry.matchKeys.end()) ? string("*") : value->second);
+    }
+    return any ? text : string(CABLE_REPORT_NOT_AVAILABLE);
+}
+
 /* Every metadata file the package held, whether or not it was usable. */
 void CableFwManager::appendPackagesTable(std::ostringstream& report)
 {
@@ -4091,16 +4450,17 @@ void CableFwManager::appendPackagesTable(std::ostringstream& report)
 
         if (!entry.vendorName.empty())
         {
-            vendor = entry.hasVendorOui ? entry.vendorName + " (" + entry.vendorOui + ")" : entry.vendorName;
+            map<string, string>::const_iterator oui = entry.matchKeys.find(CABLE_YAML_KEY_VENDOR_OUI);
+            vendor = (oui != entry.matchKeys.end()) ? entry.vendorName + " (" + oui->second + ")" : entry.vendorName;
         }
         vector<string> row;
 
         row.push_back(entry.imagePath.empty() ? entry.metadataPath : entry.imagePath);
         row.push_back(vendor);
         row.push_back(orNotAvailable(entry.vendorPartNumber));
-        row.push_back(entry.hasVendorRev ? entry.vendorRev : string(CABLE_REPORT_NOT_AVAILABLE));
-        row.push_back(entry.hasHwRevMajor ? entry.hwRevMajor : string(CABLE_REPORT_NOT_AVAILABLE));
-        row.push_back(entry.hasActiveFwVersion ? entry.activeFwVersion : string(CABLE_REPORT_NOT_AVAILABLE));
+        row.push_back(entryKeyText(entry, CABLE_YAML_KEY_VENDOR_REV));
+        row.push_back(entryKeyText(entry, CABLE_YAML_KEY_HW_MAJOR));
+        row.push_back(entryActiveFwText(entry));
         row.push_back(cableFwVersionText(entry.fwVersion));
         // Why an entry is invalid is listed once, in the plan, rather than in this table.
         row.push_back(entry.isValid ? "yes" : "no");

@@ -223,7 +223,12 @@ struct CableInfo
     // Cage form factor. PDDR names it with a firmware enum; the EEPROM fallback names it from the
     // SFF-8024 identifier byte, which is a different number space carrying the same meaning.
     string identifier;
+    // The raw SFF-8024 identifier byte, which the package matches; identifier above is its name.
+    u_int8_t identifierByte = 0;
+    bool hasIdentifierByte = false;
     string manufacturingDate;
+    string dateCode; // the EEPROM date code as stored, YYMMDD and a 2-character lot code
+    string cleiCode; // CMIS only; SFF-8636 has no CLEI code on page 0
     u_int8_t hwRevMajor = 0;
     u_int8_t hwRevMinor = 0;
 
@@ -264,26 +269,14 @@ struct FwPackageEntry
 {
     string metadataPath; // location inside the package, for the report and for error messages
     string imagePath;    // the binary the metadata names, resolved relative to the metadata file
-    // The match keys, as the metadata wrote them; all but the vendor name may hold ? and *
-    // wildcards. The part number is the package folder's when the entry states none.
     string vendorName;
+    // The part number pattern, required in every entry.
     string vendorPartNumber;
-    string vendorOui;
-    string vendorRev;
-    string vendorSn;
-    string hwRevMajor;
-    string hwRevMinor;
-    string activeFwVersion;
-    CableFwVersion fwVersion; // the load's version, which the cable is updated to
-    // Which of the optional keys the entry carried. A key the metadata omits is not compared at
-    // all, which is how the package decides how narrowly each binary matches; without these an
-    // omitted vendor revision would be indistinguishable from one that is genuinely empty.
-    bool hasVendorOui = false;
-    bool hasVendorRev = false;
-    bool hasVendorSn = false;
-    bool hasHwRevMajor = false;
-    bool hasHwRevMinor = false;
-    bool hasActiveFwVersion = false;
+    // Every other match key the entry states, by key name, as the metadata wrote it. A key the
+    // metadata omits is not compared at all, which is how the package decides how narrowly each
+    // binary matches.
+    map<string, string> matchKeys;
+    CableFwVersion fwVersion;            // the load's version, which the cable is updated to
     bool hasExtendedHeader = false;      // the binary carries the 48-byte header already
     bool hasLinkXExtendedHeader = false; // and it is the LinkX wrap, which no cable can be matched against
     bool isValid = false;
@@ -542,8 +535,9 @@ private:
      *
      * Metadata follows the OIF CMIS Firmware Update Package IA: a file holds one entry or a list
      * of them, keyed by the CMIS field names. VendorName is matched exactly; every other key the
-     * entry states is matched with ? and * wildcards, and a key it omits does not narrow the
-     * match. A CM or JDM entry states no part number and takes its folder's. The load's FW major
+     * entry states is matched by its IA match type (text with ? and *, numbers with ranges), and a
+     * key it omits does not narrow the match. VendorPN and the active FW major are required in every
+     * entry. The load's FW major
      * must equal the cable's running one, since it is the product id the device checks.
      *
      * A cable that several entries match takes the one with the highest load version, the
