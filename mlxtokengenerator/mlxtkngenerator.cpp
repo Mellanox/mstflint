@@ -121,7 +121,15 @@ vector < string > GetListOfFiles(string dirPath)
 static void printFlagLine(string flag_l, char flag_s, string param, string desc)
 {
     string shortFlag(1, flag_s);
-    string flags = "-" + shortFlag + "|--" + flag_l + (param.length() ? " <" + param + ">" : "");
+    string flags;
+    if (flag_s != ' ')
+    {
+        flags = "-" + shortFlag + "|--" + flag_l + (param.length() ? " <" + param + ">" : "");
+    }
+    else
+    {
+        flags = "--" + flag_l + (param.length() ? " <" + param + ">" : "");
+    }
 
     printf(INDENT2 "%-40s", flags.c_str());
     printf(INDENT3 ": %s\n", desc.c_str());
@@ -935,7 +943,7 @@ void MlxTknGenerator::PrintHelp()
     printFlagLine(OUTPUT_FILE_FLAG, OUTPUT_FILE_FLAG_SHORT, "Path", "Path to output file");
     printFlagLine(TOKENS_DIR_FLAG, TOKENS_DIR_FLAG_SHORT, "Path", "Path to a directory of tokens for aggregation");
     printFlagLine(DEBUG_FW_FILE_FLAG, DEBUG_FW_FILE_FLAG_SHORT, "Path", "Path to debug fw file");
-    printFlagLine(DEBUG_FW_DIR_FLAG, '\0', "Path", "Path to debug fw directory");
+    printFlagLine(DEBUG_FW_DIR_FLAG, ' ', "Path", "Path to debug fw directory");
     printFlagLine(
         NESTED_DEBUG_FW_FILE_FLAG, NESTED_DEBUG_FW_FILE_FLAG_SHORT, "Path", "Path to debug fw file for nested device");
     printFlagLine(CHALLENGE_BLOB_FLAG,
@@ -973,7 +981,7 @@ void MlxTknGenerator::InitCmdParser()
     AddOptions(OUTPUT_FILE_FLAG, OUTPUT_FILE_FLAG_SHORT, "Path", "Path to output file");
     AddOptions(TOKENS_DIR_FLAG, TOKENS_DIR_FLAG_SHORT, "Path", "Path to a directory of tokens for aggregation");
     AddOptions(DEBUG_FW_FILE_FLAG, DEBUG_FW_FILE_FLAG_SHORT, "Path", "Path to debug fw file");
-    AddOptions(DEBUG_FW_DIR_FLAG, '\0', "Path", "Path to debug fw directory");
+    AddOptions(DEBUG_FW_DIR_FLAG, ' ', "Path", "Path to debug fw directory");
     AddOptions(
         NESTED_DEBUG_FW_FILE_FLAG, NESTED_DEBUG_FW_FILE_FLAG_SHORT, "Path", "Path to debug fw file for nested device");
     AddOptions(CHALLENGE_BLOB_FLAG,
