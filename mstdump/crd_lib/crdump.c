@@ -904,13 +904,22 @@ static uint32_t crd_get_sp2_start_block(IN dm_dev_id_t dev_type)
 
     if (dm_dev_is_hca(dev_type))
     {
-        if (dm_is_cx8(dev_type) || dm_is_cx9(dev_type))
+        // A NIC not listed here, including a new one, starts its SP2 TLVs where ConnectX-8 does. A BlueField doesn't
+        // follow ConnectX here, so every BlueField uses the legacy address.
+        switch (dev_type)
         {
-            sp2_start_block = CRD_SP2_TLV_FIRST_ADDRESS_CX8;
-        }
-        else
-        {
-            sp2_start_block = CRD_SP2_TLV_FIRST_ADDRESS;
+            case DeviceConnectX4:
+            case DeviceConnectX4LX:
+            case DeviceConnectX5:
+            case DeviceConnectX6:
+            case DeviceConnectX6DX:
+            case DeviceConnectX6LX:
+            case DeviceConnectX7:
+                sp2_start_block = CRD_SP2_TLV_FIRST_ADDRESS;
+                break;
+            default:
+                sp2_start_block = dm_is_bluefield(dev_type) ? CRD_SP2_TLV_FIRST_ADDRESS : CRD_SP2_TLV_FIRST_ADDRESS_CX8;
+                break;
         }
     }
     return sp2_start_block;
