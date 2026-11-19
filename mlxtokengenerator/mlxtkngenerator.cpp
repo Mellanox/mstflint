@@ -435,12 +435,7 @@ void MlxTknGenerator::GetTokenDataFromChallenge(mfile* mf, shared_ptr<MlxPSCtoke
 {
     MLX_TOKEN_LOG_DEBUG("reading PSC token data from challenge");
     MlxCfgToken mlxCfgToken(mf);
-    string debugFwVersion;
     MlxCfgTokenType tokenType = token->GetTokenTypeEnum();
-    if (tokenType == McTokenTypeCRDT)
-    {
-        debugFwVersion = GetDebugFwVersion(_debugFwFile);
-    }
 
     struct reg_access_switch_mtcq_reg_ext challenge = mlxCfgToken.GetChallengeFromSwitchOrHCA(tokenType);
     token->GetChallengeBasedTokenData(challenge, _tokenConfig);
@@ -767,9 +762,30 @@ TokenFormat MlxTknGenerator::CheckTokenFormatByDeviceId()
     return tokenFormat;
 }
 
+void MlxTknGenerator::ValidateByTokenFormat(TokenFormat tokenFormat)
+{
+    if (tokenFormat == TOKEN_FORMAT_LEGACY)
+    {
+        if ((_tokenType == McTokenTypeDBG || _tokenType == McTokenTypeCRDT) && _debugFwFile.empty())
+        {
+            throw MlxTknGeneratorException("Debug fw path must be specified to generate %s token.",
+                                           MlxCfgToken::getTokenString(_tokenType).c_str());
+        }
+    }
+    else if (tokenFormat == TOKEN_FORMAT_PSC)
+    {
+        if ((_tokenType == McTokenTypeCRDT) && _tokenConfig.empty())
+        {
+            throw MlxTknGeneratorException("Token configuration must be specified to generate %s token.",
+                                           MlxCfgToken::getTokenString(_tokenType).c_str());
+        }
+    }
+}
+
 void MlxTknGenerator::GenerateTokenXML()
 {
     TokenFormat tokenFormat = CheckTokenFormatByDeviceId();
+    ValidateByTokenFormat(tokenFormat);
     switch (tokenFormat)
     {
         case TOKEN_FORMAT_PSC:
@@ -1117,10 +1133,6 @@ void MlxTknGenerator::ParamValidate()
         }
         if (_outputFile.empty()) {
             throw MlxTknGeneratorException("Output file path must be specified to generate a token.");
-        }
-        if (((_tokenType == McTokenTypeDBG) || (_tokenType == McTokenTypeCRDT)) && _debugFwFile.empty()) {
-            throw MlxTknGeneratorException("Debug fw path must be specified to generate %s token.",
-                                           MlxCfgToken::getTokenString(_tokenType).c_str());
         }
         if ((_deviceType == HCA) && !((_tokenType == McTokenTypeCS) || (_tokenType == McTokenTypeDBG) ||
                                       (_tokenType == McTokenTypeCRCS) || (_tokenType == McTokenTypeCRDT))) {

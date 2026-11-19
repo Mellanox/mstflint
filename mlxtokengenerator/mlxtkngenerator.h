@@ -69,6 +69,7 @@ private:
     ParseStatus HandleOption(string name, string value);
     void ParamValidate();
     void ValidateDeviceType(mfile* mf, Device_Type deviceType);
+    void ValidateByTokenFormat(TokenFormat tokenFormat);
 
     string GetDebugFwVersion(string filePath);
     vector<TLVParamsData>
