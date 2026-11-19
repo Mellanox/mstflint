@@ -81,7 +81,7 @@ mstflint_DEPENDENCIES += \
      $(top_builddir)/reg_access/libreg_access.la \
      $(top_builddir)/${MTCR_CONF_DIR}/.libs/libmtcr_ul.a
 
-LDADD_mstflint = ${LDL} $(JSON_LIBS)
+LDADD_mstflint = ${LDL} $(JSON_LIBS) $(SPDLOG_LIBS)
 
 mstflint_LDFLAGS = -static
 
