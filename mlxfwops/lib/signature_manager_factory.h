@@ -105,17 +105,16 @@ public:
         {
             return new RavenSwitchSignatureManager();
         }
-        else if (deviceId == DeviceQuantum2 || deviceId == DeviceQuantum3 || deviceId == DeviceNVLink6_Switch || deviceId == DeviceSpectrum4 || deviceId == DeviceSpectrum5 || deviceId == DeviceSpectrum6)
+        else if (deviceId == DeviceConnectX4 || deviceId == DeviceConnectX4LX || deviceId == DeviceConnectX5)
         {
-            return new SecuredSwitchSignatureManager();
-        }
-        else
-        {
+            // These NICs use the base manager; any other unlisted NIC gets the newest one.
             return new FwOperationsSignatureManager();
         }
+        return CreateNewestSignatureManager(deviceId);
     }
 
-    ISignatureManager* CreateSignatureManager(chip_type_t chip)
+    // deviceId is the dev_mgt type of chip; it decides only for a chip that is not listed below.
+    ISignatureManager* CreateSignatureManager(chip_type_t chip, dm_dev_id_t deviceId)
     {
         if (chip == CT_BLUEFIELD)
         {
@@ -169,13 +168,26 @@ public:
         {
             return new RavenSwitchSignatureManager();
         }
-        else if (chip == CT_QUANTUM2 || chip == CT_QUANTUM3 || chip == CT_NVLINK6_SWITCH || chip == CT_SPECTRUM4 || chip == CT_SPECTRUM5 || chip == CT_SPECTRUM6)
+        else if (chip == CT_CONNECTX4 || chip == CT_CONNECTX4_LX || chip == CT_CONNECTX5)
+        {
+            // These NICs use the base manager; any other unlisted NIC gets the newest one.
+            return new FwOperationsSignatureManager();
+        }
+        return CreateNewestSignatureManager(deviceId);
+    }
+
+private:
+    // A NIC or switch that is not listed above gets the newest behavior, any other device the base manager.
+    ISignatureManager* CreateNewestSignatureManager(dm_dev_id_t deviceId)
+    {
+        if (dm_dev_is_hca(deviceId))
+        {
+            return new ConnectX9FwOperationsSignatureManager();
+        }
+        if (dm_dev_is_switch(deviceId))
         {
             return new SecuredSwitchSignatureManager();
         }
-        else
-        {
-            return new FwOperationsSignatureManager();
-        }
+        return new FwOperationsSignatureManager();
     }
 };

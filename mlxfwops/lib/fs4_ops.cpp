@@ -1382,6 +1382,9 @@ bool Fs4Operations::IsSecurityVersionAccessible(chip_type_t chip_type)
             case CT_BLUEFIELD2:
             case CT_CONNECTX6DX:
             case CT_CONNECTX6LX:
+                res = false;
+                break;
+            // TODO - check if we can get security version from PSC for below devices.
             case CT_QUANTUM3:
             case CT_NVLINK6_SWITCH:
             case CT_CONNECTX8:
@@ -1391,8 +1394,31 @@ bool Fs4Operations::IsSecurityVersionAccessible(chip_type_t chip_type)
             case CT_ARCUSE:
                 res = false;
                 break;
-            default:
+            // Listed to keep CR-space access, so only an unlisted chip reaches the default below.
+            case CT_CONNECTX4:
+            case CT_CONNECTX4_LX:
+            case CT_CONNECTX5:
+            case CT_CONNECTX6:
+            case CT_CONNECTX7:
+            case CT_BLUEFIELD:
+            case CT_BLUEFIELD3:
+            case CT_BLUEFIELD4:
+            case CT_SPECTRUM:
+            case CT_SPECTRUM2:
+            case CT_SPECTRUM3:
+            case CT_SPECTRUM4:
+            case CT_SPECTRUM5:
+            case CT_SPECTRUM6:
+            case CT_QUANTUM2:
                 break;
+            default:
+            {
+                // An unlisted NIC or switch gets the outcome of the newest ones under the PSC TODO above.
+                dm_dev_id_t deviceId = DeviceUnknown;
+                dm_get_device_id_offline(getInfoFromChipType(chip_type).hwDevId, 0, &deviceId);
+                res = !(dm_dev_is_hca(deviceId) || dm_dev_is_switch(deviceId));
+                break;
+            }
         }
     }
     else

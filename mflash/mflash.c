@@ -3650,21 +3650,6 @@ int mf_set_reset_flash_on_warm_reboot(mflash* mfl)
 
     switch (mfl->dm_dev_id)
     {
-        case DeviceQuantum2:
-        case DeviceQuantum3:
-        case DeviceNVLink6_Switch:
-        case DeviceConnectX7:
-        case DeviceBlueField3:
-        case DeviceConnectX8:
-        case DeviceConnectX9:
-        case DeviceConnectX8_Pure_PCIe_Switch:
-        case DeviceConnectX9_Pure_PCIe_Switch:
-        case DeviceBlueField4:
-        case DeviceSpectrum4:
-        case DeviceSpectrum5:
-        case DeviceSpectrum6:
-            return MFE_OK;
-
         case DeviceSpectrum:
         case DeviceConnectX4:
         case DeviceConnectX4LX:
@@ -3685,6 +3670,11 @@ int mf_set_reset_flash_on_warm_reboot(mflash* mfl)
             break;
 
         default:
+            // NICs and switches newer than the ones listed above skip the reset bit.
+            if (dm_dev_is_hca(mfl->dm_dev_id) || dm_dev_is_switch(mfl->dm_dev_id))
+            {
+                return MFE_OK;
+            }
             return MFE_UNSUPPORTED_DEVICE;
     }
     MFLASH_LOG_DEBUG("setting power_boot_partial_reset at addr 0x%x.%d", set_reset_bit_dword_addr, set_reset_bit_offset);

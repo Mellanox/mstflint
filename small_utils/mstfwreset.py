@@ -157,7 +157,9 @@ UNSUPPORTED_PSIDS_PER_DEV_ID = {
 }
 
 BLUEFIELD_DEVICES = ['BlueField2', 'BlueField3', 'BlueField4']
-PCIE_SWITCH_DEVICES_ALL = BLUEFIELD_DEVICES + ['ConnectX7', 'ConnectX8', 'ConnectX9', 'ConnectX8-Pure-PCIe-Switch', 'ConnectX9-Pure-PCIe-Switch']
+# NICs without the PCIe switch flow; every other non-RMA supported NIC is checked through MPEIN.
+NON_PCIE_SWITCH_DEVICES = ['ConnectX4', 'ConnectX4LX', 'ConnectX5', 'BlueField', 'ConnectX6', 'ConnectX6DX', 'ConnectX6LX']
+PCIE_SWITCH_DEVICES_ALL = [name for name in SUPP_DEVICES if name not in NON_PCIE_SWITCH_DEVICES and not name.endswith('-RMA')]
 
 IS_MSTFLINT = os.path.basename(__file__) == "mstfwreset.py"
 # TODO later remove mcra to the new class

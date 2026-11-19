@@ -2346,11 +2346,32 @@ void FwOperations::SetDevFlags(chip_type_t chipType, u_int32_t devType, fw_img_t
 {
     (void)devType;
     ibDev = (fwType == FIT_FS3 && chipType != CT_SPECTRUM) || (chipType == CT_CONNECTX && !CntxEthOnly(devType));
-    ethDev = (chipType == CT_CONNECTX) || (chipType == CT_CONNECTX4) || (chipType == CT_CONNECTX4_LX) || (chipType == CT_CONNECTX5) || (chipType == CT_CONNECTX6) || (chipType == CT_CONNECTX6DX) ||
-             (chipType == CT_CONNECTX6LX) || (chipType == CT_SPECTRUM) || (chipType == CT_SPECTRUM2) || (chipType == CT_SPECTRUM3) || (chipType == CT_CONNECTX7) || (chipType == CT_QUANTUM2) ||
-             (chipType == CT_QUANTUM3) || (chipType == CT_NVLINK6_SWITCH) || (chipType == CT_SPECTRUM4) || (chipType == CT_SPECTRUM5) || (chipType == CT_SPECTRUM6) ||
-             (chipType == CT_BLUEFIELD) || (chipType == CT_BLUEFIELD2) || (chipType == CT_BLUEFIELD3) || (chipType == CT_CONNECTX8) || (chipType == CT_CONNECTX8_PURE_PCIE_SWITCH) ||
-             (chipType == CT_CONNECTX9) || (chipType == CT_CONNECTX9_PURE_PCIE_SWITCH) || (chipType == CT_BLUEFIELD4);
+    switch (chipType)
+    {
+        // Retimers are opted in one by one, and CT_CONNECTX has no hwDevData row to resolve.
+        case CT_CONNECTX:
+        // BF4_HW_ID (0x220) has no dev_mgt entry to resolve.
+        case CT_BLUEFIELD4:
+            ethDev = true;
+            break;
+
+        default:
+        {
+            // A NIC or switch that is not listed gets the flags of the newest devices. SetDevFlags is static, so it
+            // scans hwDevData itself instead of calling getInfoFromChipType().
+            dm_dev_id_t deviceId = DeviceUnknown;
+            for (int i = 0; hwDevData[i].name != NULL; i++)
+            {
+                if (hwDevData[i].chipType == chipType)
+                {
+                    dm_get_device_id_offline(hwDevData[i].hwDevId, 0, &deviceId);
+                    break;
+                }
+            }
+            ethDev = dm_dev_is_hca(deviceId) || dm_dev_is_switch(deviceId);
+            break;
+        }
+    }
 
     if ((!ibDev && !ethDev) || chipType == CT_UNKNOWN)
     {
@@ -3069,7 +3090,10 @@ bool FwOperations::CreateSignatureManager()
         {
             return errmsg("CreateSignatureManager: Unknown chip type\n");
         }
-        _signatureMngr = SignatureManagerFactory::GetInstance()->CreateSignatureManager(_fwImgInfo.ext_info.chip_type);
+        dm_dev_id_t deviceId = DeviceUnknown;
+        dm_get_device_id_offline(getInfoFromChipType(_fwImgInfo.ext_info.chip_type).hwDevId, 0, &deviceId);
+        _signatureMngr =
+          SignatureManagerFactory::GetInstance()->CreateSignatureManager(_fwImgInfo.ext_info.chip_type, deviceId);
         return true;
     }
     // here ioAccess must be initialized
@@ -3087,7 +3111,7 @@ bool FwOperations::CreateSignatureManager()
     else
     { // BIN file
         // For images we get the AbstractSignatureManager (base class) since we don't know the chip type in this stage
-        _signatureMngr = SignatureManagerFactory::GetInstance()->CreateSignatureManager(CT_UNKNOWN);
+        _signatureMngr = SignatureManagerFactory::GetInstance()->CreateSignatureManager(CT_UNKNOWN, DeviceUnknown);
         return true;
     }
     return false;
@@ -3187,21 +3211,10 @@ bool FwOperations::IsComponentSupported(FwComponent::comps_ids_t)
 
 bool FwOperations::IsExtendedGuidNumSupported()
 {
-    bool isSupported = false;
-    switch (_fwImgInfo.supportedHwId[0])
-    {
-        case SPECTRUM4_HW_ID:
-        case SPECTRUM5_HW_ID:
-        case SPECTRUM6_HW_ID:
-        case QUANTUM3_HW_ID:
-        case NVLINK6_SWITCH_HW_ID:
-            isSupported = true;
-            break;
-        default:
-            isSupported = false;
-            break;
-    }
-    return isSupported;
+    dm_dev_id_t deviceId = DeviceUnknown;
+    dm_get_device_id_offline(_fwImgInfo.supportedHwId[0], 0, &deviceId);
+    return dm_dev_is_switch(deviceId) && deviceId != DeviceSpectrum && deviceId != DeviceSpectrum2 &&
+           deviceId != DeviceSpectrum3;
 }
 
 void FwOperations::PrintSectionRange(VerifyCallBack verifyCallBackFunc,

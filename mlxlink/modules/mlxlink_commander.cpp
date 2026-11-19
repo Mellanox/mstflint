@@ -939,7 +939,9 @@ void MlxlinkCommander::updateNvlinkModeBStatus()
 
 bool MlxlinkCommander::deviceSupportsBonusPort() const
 {
-    return _devID == DeviceSpectrum4 || _devID == DeviceSpectrum5 || _devID == DeviceSpectrum6;
+    // The bonus port follows the Ethernet switch family from Spectrum-4 on.
+    return dm_dev_is_eth_switch(_devID) && _devID != DeviceSpectrum && _devID != DeviceSpectrum2 &&
+           _devID != DeviceSpectrum3;
 }
 
 bool MlxlinkCommander::probeLocalPortForBonusPort(u_int32_t localPort, u_int32_t& labelPort)
