@@ -104,6 +104,8 @@ public:
     u_int32_t GetTokenType() const;
     MlxCfgTokenType GetTokenTypeEnum() const;
 
+    friend class MlxTknGenerator;
+
 private:
     void InitTlvValue(TlvType typeTLV);
     static void InitTlvHeader(tokens_layout_psc_debug_token_tlv_header& tlvHeader, TlvType typeTLV);
@@ -137,7 +139,6 @@ private:
     std::string GetTokenConfigString() const;
 
     std::string FindValueInDeviceUnique(const std::string& value, const std::string& key);
-    std::string FixedTokenConfig(const std::string& tokenConfig);
     std::vector<std::string> SplitByComma(const std::string& tokenConfig);
 
     void AddDeviceUnique(const u_int64_t& deviceUnique);

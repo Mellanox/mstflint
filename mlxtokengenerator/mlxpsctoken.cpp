@@ -55,6 +55,8 @@
 #define NONCE_PREFIX "nonce"
 #define VALID_ENTRIES_KEY "Valid_entries"
 #define NONCE_VERSION_KEY "nonce_version"
+#define TOKENS_LAYOUT_PSC_TOKEN_HEADER_SIZE \
+    0x20 // header identifier + header version + structure size + reserved header
 
 TlvType MlxPSCtoken::StrToTlvType(const std::string& tlvName)
 {
@@ -203,7 +205,7 @@ u_int32_t MlxPSCtoken::GetTLVLength(TlvType typeTLV)
             return 4;
 
         case TlvType::RATCHET:
-            return 4;
+            return 8;
 
         case TlvType::SIGNATURE_STAGE1:
             return 4736;
@@ -315,10 +317,11 @@ std::string MlxPSCtoken::GetFWVersionString() const
     }
     else
     {
-        u_int32_t fw = _token.fw_version[0];
-        major = _token.fw_version[1] & 0xFF;
-        minor = (fw >> 16) & 0xFFFF;
-        subminor = fw & 0xFFFF;
+        u_int32_t fw0 = _token.fw_version[0];
+        u_int32_t fw1 = _token.fw_version[1];
+        major = fw1 & 0xFF;
+        minor = (fw0 >> 16) & 0xFFFF;
+        subminor = fw0 & 0xFFFF;
     }
 
     char buf[64];
@@ -481,7 +484,7 @@ void MlxPSCtoken::InitToken()
 {
     _token.header_identifier = 0x544C5631; // 'TLV1'
     _token.header_version = 0x0001;
-    _token.structure_size = 0x2a8c;
+    _token.structure_size = TOKENS_LAYOUT_PSC_DEBUG_TOKEN_SIZE - TOKENS_LAYOUT_PSC_TOKEN_HEADER_SIZE;
     memset(_token.reserved_header, 0, sizeof(_token.reserved_header));
 
     TlvType tlvTypes[] = {TlvType::TOKEN_IDENTIFIER,
@@ -544,30 +547,9 @@ std::vector<std::string> MlxPSCtoken::SplitByComma(const std::string& tokenConfi
     return tokenConfigVector;
 }
 
-std::string MlxPSCtoken::FixedTokenConfig(const string& tokenConfig)
-{
-    string cfgTkn = tokenConfig;
-    cfgTkn.erase(0, cfgTkn.find_first_not_of(" \t\n\r"));
-    cfgTkn.erase(cfgTkn.find_last_not_of(" \t\n\r") + 1);
-    mft_utils::to_lowercase(cfgTkn);
-    return cfgTkn;
-}
-
 void MlxPSCtoken::SetTokenConfig(const string& tokenConfig)
 {
     if (_tokenType == McTokenTypeCRDT)
-    {
-        string cfgTkn = FixedTokenConfig(tokenConfig);
-        if (cfgTkn == "debug_fw" || cfgTkn == "")
-        {
-            _token.token_config = 0x0;
-        }
-        else if (cfgTkn == "hci_fw")
-        {
-            _token.token_config = 0x1;
-        }
-    }
-    else if (_tokenType == McTokenTypeCRCS)
     {
         std::vector<std::string> tokenConfigVector = SplitByComma(tokenConfig);
         _token.token_config = 0x0000;
@@ -579,19 +561,23 @@ void MlxPSCtoken::SetTokenConfig(const string& tokenConfig)
 
             if (cfgTkn == "OOBHUB")
             {
-                _token.token_config |= (1 << 12); // 0x1000
-            }
-            else if (cfgTkn == "NCORE")
-            {
-                _token.token_config |= (1 << 8); // 0x0100
-            }
-            else if (cfgTkn == "VMOD")
-            {
-                _token.token_config |= (1 << 4); // 0x0010
+                _token.token_config |= (1 << 0);
             }
             else if (cfgTkn == "PSCFW")
             {
-                _token.token_config |= (1 << 0); // 0x0001
+                _token.token_config |= (1 << 3);
+            }
+            else if (cfgTkn == "NCORE")
+            {
+                _token.token_config |= (1 << 13);
+            }
+            else if (cfgTkn == "VMOD")
+            {
+                _token.token_config |= (1 << 14);
+            }
+            else if (cfgTkn == "HBI")
+            {
+                _token.token_config |= (1 << 10);
             }
             else
             {
@@ -718,8 +704,9 @@ void MlxPSCtoken::SetFWVersionFromMap(const string& fwVersion)
     }
     else
     {
-        _token.fw_version[0] = (minor << 16) | patch;
-        _token.fw_version[1] = major & 0xFF;
+        _token.fw_version[0] =
+          ((u_int32_t)(major & 0xFF) << 24) | ((u_int32_t)(minor & 0xFFFF) << 8) | ((patch >> 8) & 0xFF);
+        _token.fw_version[1] = (u_int32_t)(patch & 0xFF) << 24;
     }
 }
 

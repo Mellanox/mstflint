@@ -2213,9 +2213,9 @@ bool GenericCommander::IsPSCBinToken(const vector<u_int8_t>& buff)
 
 void GenericCommander::apply(const vector<u_int8_t>& buff)
 {
+    FwComponent::comps_ids_t compsId = FwComponent::comps_ids_t::COMPID_UNKNOWN;
     FwComponent comp;
     FwCompsMgr fwCompsAccess(_mf);
-    FwComponent::comps_ids_t compsId = FwComponent::comps_ids_t::COMPID_UNKNOWN;
 
     if (IsPSCBinToken(buff))
     {
