@@ -95,7 +95,6 @@ public:
     bool PrintCrcInfoLayout(VerifyCallBack verifyCallBackFunc, const PartitionTableEntry& entry, bool showitoc = true);
 
 #ifndef MST_CPU_armv7l_umbriel // {
-    bool SignForSecureBoot(const char*, const char*, const MlxSign::Signer&) override;
 #endif // } MST_CPU_armv7l_umbriel
     bool FwReadRom(std::vector<u_int8_t>& romSect) override;
     bool FwBurnRom(FImage* romImg,

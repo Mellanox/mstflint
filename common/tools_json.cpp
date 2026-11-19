@@ -37,9 +37,6 @@
 
  #include "common/tools_string.h"
 
- #include <cerrno>
- #include <cstdlib>
-
  namespace nbu
  {
  namespace mft
@@ -90,17 +87,7 @@
  
  std::string GetStrValue(const Json::Value& value, const std::string& fieldName, bool isMandatory, bool isNumber)
  {
-     std::string strValue;
-     if (value.isMember(fieldName))
-     {
-         const Json::Value& fieldValue = value[fieldName];
-         if (!fieldValue.isString())
-         {
-             throw std::invalid_argument(string_format("field '%s' must be a string", fieldName.c_str()));
-         }
-         strValue = fieldValue.asString();
-     }
-     if (strValue.empty())
+     if (value[fieldName].empty())
      {
          if (isMandatory)
          {
@@ -108,17 +95,14 @@
          }
          return isNumber ? "0" : "";
      }
-     if (isNumber)
+     else
      {
-         char* endPtr = nullptr;
-         errno = 0;
-         std::strtoul(strValue.c_str(), &endPtr, 16);
-         if (*endPtr != '\0' || errno == ERANGE)
+         if (!value[fieldName].isString())
          {
-             throw std::invalid_argument(string_format("field '%s' must be a hexadecimal number", fieldName.c_str()));
+             throw std::invalid_argument(string_format("field '%s' must be a string", fieldName.c_str()));
          }
+         return value[fieldName].asString();
      }
-     return strValue;
  }
  
  u_int32_t GetUIntFromStrValue(const Json::Value& value, const std::string& fieldName, bool isMandatory)

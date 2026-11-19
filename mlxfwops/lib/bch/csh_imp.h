@@ -181,7 +181,6 @@ enum class PartitionType
 
 const u_int32_t L1PT_OFFSET = 0xe000;
 const u_int32_t SECOND_L1PT_OFFSET = 0x1e000;
-const u_int32_t SHA384_DIGEST_SIZE = 48;
 const u_int32_t ROM_IMGS_MAGIC_PATTERN_OFFSET = 0xc;
 // the ROM images section is aligned to 384KB because the PBLT and PBLD flexible
 const u_int32_t ROM_IMGS_ALIGN_SIZE = 384 * 1024;
@@ -320,15 +319,6 @@ class MLXFWOP_API BinarySectionMetadata
 {
 public:
     BinarySectionMetadata();
-    BinarySectionMetadata(size_t sectionSize, size_t flashOffset, const vector<u_int8_t>& digest);
-    BinarySectionMetadata(u_int32_t itocType,
-                          u_int32_t loadDestinationLSB,
-                          u_int32_t loadDestinationMSB,
-                          u_int32_t entryPointLSB,
-                          u_int32_t entryPointMSB,
-                          size_t sectionSize,
-                          size_t flashOffset,
-                          const vector<u_int8_t>& digest);
 
     vector<u_int8_t> Pack() const;
     void Unpack(const vector<u_int8_t>& binarySection);
@@ -346,9 +336,6 @@ public:
     static size_t Size() { return fs5_image_layout_binary_section_metadata_size(); }
     static string CshSectionIDToString(u_int32_t sectionId);
     static u_int32_t CshSectionStringToID(const string& sectionName);
-
-    static const size_t DIGEST_OFFSET_IN_ENTRY = 0x60;
-    vector<u_int8_t> GetDigest() const;
 
     u_int64_t GetLoadDestination() const
     {
@@ -380,8 +367,6 @@ public:
     // The SVN and lifecycle attestation reports per CSH.
     virtual u_int32_t GetFwLifecycle() const { return 0; }
 
-    virtual void GetBinariesListDigest(vector<u_int8_t>& digest) const = 0;
-
     virtual u_int8_t GetRatchetLevel() const = 0;
 
     const static size_t BINARIES_LIST_DIGEST_OFFSET = 0x70;
@@ -405,8 +390,6 @@ public:
     u_int8_t GetRatchetLevel() const override { return _metadata_nbu.version.ratchet_level; }
     u_int32_t GetFwLifecycle() const override { return _metadata_nbu.fw_lifecycle; }
 
-    void GetBinariesListDigest(vector<u_int8_t>& digest) const override;
-
 private:
     struct fs5_image_layout_csh_metadata_nbu _metadata_nbu;
 };
@@ -426,8 +409,6 @@ public:
     u_int16_t GetComponentSubminorVersion() override { return 0; }
     u_int8_t GetRatchetLevel() const override { return _metadata.version.u8_ratchet_level; }
     u_int32_t GetFwLifecycle() const override { return _metadata.fw_lifecycle; }
-
-    void GetBinariesListDigest(vector<u_int8_t>& digest) const override;
 
 private:
     struct fs5_image_layout_csh_metadata _metadata;
@@ -479,7 +460,6 @@ public:
 
     bool isActiveChain();
     bool isBackupChain();
-    void GetStoredBinariesListDigest(vector<u_int8_t>& digest) const;
 
     static const string ROM_IMGS_NAME;
     static const string BCT_DTB_NAME;

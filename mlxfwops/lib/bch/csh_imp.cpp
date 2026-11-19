@@ -451,45 +451,6 @@ BinarySectionMetadata::BinarySectionMetadata()
     memset(&_struct, 0, sizeof(_struct));
 }
 
-BinarySectionMetadata::BinarySectionMetadata(size_t sectionSize, size_t flashOffset, const vector<u_int8_t>& digest)
-{
-    memset(&_struct, 0, sizeof(_struct));
-    _struct.bin_length =
-      sectionSize; // need to fix all other calls to BinarySectionMetadata so that what is being sent is the max size of
-                   // the section, if such attr exists in .mlx field, and not the actual size of the bin
-    _struct.flash_offset = flashOffset;
-
-    if (digest.size() != SHA384_DIGEST_SIZE)
-    {
-        throw runtime_error("Binary section digest unexpected size");
-    }
-    memcpy(_struct.bin_digest.digest, digest.data(), digest.size());
-}
-
-BinarySectionMetadata::BinarySectionMetadata(u_int32_t itocType,
-                                             u_int32_t loadDestinationLSB,
-                                             u_int32_t loadDestinationMSB,
-                                             u_int32_t entryPointLSB,
-                                             u_int32_t entryPointMSB,
-                                             size_t sectionSize,
-                                             size_t flashOffset,
-                                             const vector<u_int8_t>& digest)
-{
-    memset(&_struct, 0, sizeof(_struct));
-    memcpy(_struct.u8_magic_id, &itocType, sizeof(itocType));
-    _struct.load_dest[0] = loadDestinationLSB;
-    _struct.load_dest[1] = loadDestinationMSB;
-    _struct.entry_point[0] = entryPointLSB;
-    _struct.entry_point[1] = entryPointMSB;
-    _struct.bin_length = sectionSize;
-    _struct.flash_offset = flashOffset;
-    if (digest.size() != SHA384_DIGEST_SIZE)
-    {
-        throw runtime_error("Binary section digest unexpected size");
-    }
-    memcpy(_struct.bin_digest.digest, digest.data(), digest.size());
-};
-
 vector<u_int8_t> BinarySectionMetadata::Pack() const
 {
     vector<u_int8_t> metadata(fs5_image_layout_binary_section_metadata_size());
@@ -552,12 +513,6 @@ void CshMetadataNbu::Unpack(const vector<u_int8_t>& buffer)
     fs5_image_layout_csh_metadata_nbu_unpack(&_metadata_nbu, buffer.data());
 }
 
-void CshMetadataNbu::GetBinariesListDigest(vector<u_int8_t>& digest) const
-{
-    digest.assign(reinterpret_cast<const u_int8_t*>(_metadata_nbu.binaries_list_digest.digest),
-                  reinterpret_cast<const u_int8_t*>(_metadata_nbu.binaries_list_digest.digest) + SHA384_DIGEST_SIZE);
-}
-
 vector<u_int8_t> CshMetadata::Pack()
 {
     vector<u_int8_t> metadata(fs5_image_layout_csh_metadata_size());
@@ -573,12 +528,6 @@ void CshMetadata::Unpack(const vector<u_int8_t>& buffer)
         throw runtime_error("CSH metadata unexpected size");
     }
     fs5_image_layout_csh_metadata_unpack(&_metadata, buffer.data());
-}
-
-void CshMetadata::GetBinariesListDigest(vector<u_int8_t>& digest) const
-{
-    digest.assign(reinterpret_cast<const u_int8_t*>(_metadata.binaries_list_digest.digest),
-                  reinterpret_cast<const u_int8_t*>(_metadata.binaries_list_digest.digest) + SHA384_DIGEST_SIZE);
 }
 
 CSH::CSH() : _isUnpacked(false), _cshStructType(CshStructType::CSH_TB50X)
@@ -937,13 +886,3 @@ PartitionType ToPartitionType(CshComponentID cshId, bool throwOnError)
     return type;
 }
 
-vector<u_int8_t> BinarySectionMetadata::GetDigest() const
-{
-    return vector<u_int8_t>(reinterpret_cast<const u_int8_t*>(_struct.bin_digest.digest),
-                            reinterpret_cast<const u_int8_t*>(_struct.bin_digest.digest) + SHA384_DIGEST_SIZE);
-}
-
-void CSH::GetStoredBinariesListDigest(vector<u_int8_t>& digest) const
-{
-    _metadata->GetBinariesListDigest(digest);
-}

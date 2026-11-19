@@ -1340,10 +1340,6 @@ bool Fs6Operations::IsComponentFormatWithKeyId()
 }
 
 #ifndef MST_CPU_armv7l_umbriel // {
-bool Fs6Operations::SignForSecureBoot(const char*, const char*, const MlxSign::Signer&)
-{
-    return Unsupported(__FUNCTION__);
-}
 #endif // } MST_CPU_armv7l_umbriel
 
 bool Fs6Operations::CheckSecondL1ptExists()
