@@ -3295,7 +3295,7 @@ static long live_fish_id_database[] = {0x191, 0x246, 0x249, 0x24e, 0x1F6, 0x1F8,
                                        0x21e,                                                                                                          /* Connect-X8 */
                                        0x224,                                                                                                          /* Connect-X9 */
                                        0x21C,                                                                                                          /* BlueField3 */
-                                       0x220,                                                                                                          /* BlueField4 */
+                                       0x224,                                                                                                          /* BlueField4 */
                                        0x250,                                                                                                          /* Spectrum3 */
                                        0x254,                                                                                                          /* Spectrum4 */
                                        0x270,                                                                                                          /* Spectrum5 */
