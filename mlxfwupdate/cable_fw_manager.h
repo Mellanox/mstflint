@@ -540,8 +540,8 @@ private:
      * entry. The load's FW major
      * must equal the cable's running one, since it is the product id the device checks.
      *
-     * A cable that several entries match takes the one with the highest load version, the
-     * first of them on a tie, and the trace names every candidate.
+     * A cable that more than one entry matches makes the package invalid, and the error names every
+     * candidate.
      *
      * Give every cable an outcome, not only the ones to burn, and leave none UNDECIDED -
      * SKIP_NOT_PLUGGED,

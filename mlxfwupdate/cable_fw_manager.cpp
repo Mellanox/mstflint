@@ -3326,6 +3326,8 @@ int CableFwManager::loadPackage(map<string, vector<u_int8_t> >& contents)
 
 int CableFwManager::decideCableActions()
 {
+    vector<string> ambiguousCables;
+
     for (size_t i = 0; i < _cables.size(); i++)
     {
         CableInfo& cable = _cables[i];
@@ -3389,35 +3391,41 @@ int CableFwManager::decideCableActions()
             cable.action = CABLE_ACTION_SKIP_UNREADABLE;
             continue;
         }
-        if (!cable.isBurnable)
-        {
-            cable.action = CABLE_ACTION_SKIP_NOT_BURNABLE;
-            continue;
-        }
 
-        // Several entries can match one cable, typically loads of different versions for the same
-        // part number. The IA leaves the choice to the host: the highest load version is taken,
-        // and between equal versions the first entry, in package order.
+        // A package offers a cable one entry at most, so a second entry matching it makes the package
+        // invalid, whether or not that cable is updated: even naming the same image, the two can build
+        // different headers.
         const FwPackageEntry* match = NULL;
-        u_int32_t candidates = 0;
+        string candidates;
+        bool ambiguous = false;
         for (size_t j = 0; j < _packages.size(); j++)
         {
             if (!_packages[j].isValid || !metadataMatchesCable(_packages[j], cable))
             {
                 continue;
             }
-            candidates++;
             FWMANAGER_LOG_DEBUG("Cable %u: %s matches, load %s", cable.globalPort, _packages[j].metadataPath.c_str(),
                                 cableFwVersionText(_packages[j].fwVersion).c_str());
-            if (match == NULL || compareCableFwVersions(_packages[j].fwVersion, match->fwVersion) > 0)
+            candidates += "\n     " + _packages[j].metadataPath + " (" + _packages[j].imagePath + ")";
+            if (match == NULL)
             {
                 match = &_packages[j];
             }
+            else
+            {
+                ambiguous = true;
+            }
         }
-        if (candidates > 1)
+        if (ambiguous)
         {
-            FWMANAGER_LOG_DEBUG("Cable %u: %u entries match; took %s, load %s, the highest version", cable.globalPort,
-                                candidates, match->metadataPath.c_str(), cableFwVersionText(match->fwVersion).c_str());
+            ambiguousCables.push_back("Port " + int_to_string((int)cable.globalPort) + " (" + cable.partNumber +
+                                      ") matches:" + candidates);
+            continue;
+        }
+        if (!cable.isBurnable)
+        {
+            cable.action = CABLE_ACTION_SKIP_NOT_BURNABLE;
+            continue;
         }
 
         if (match == NULL)
@@ -3440,6 +3448,16 @@ int CableFwManager::decideCableActions()
         cable.packageEntryIndex = (int)(match - &_packages[0]);
         // An older target still goes ahead; it is flagged rather than refused.
         cable.isDowngrade = compareCableFwVersions(match->fwVersion, running) < 0;
+    }
+    if (!ambiguousCables.empty())
+    {
+        _errMsg = "Found " + int_to_string((int)ambiguousCables.size()) + " cable(s) that more than one entry in " +
+                  _cmdParams.cable_package + " matches:";
+        for (size_t i = 0; i < ambiguousCables.size(); i++)
+        {
+            _errMsg += "\n  " + int_to_string((int)(i + 1)) + ". " + ambiguousCables[i];
+        }
+        return ERR_CODE_IMG_NOT_FOUND;
     }
     return MLX_FWM_SUCCESS;
 }
