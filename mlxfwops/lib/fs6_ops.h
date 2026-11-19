@@ -81,7 +81,6 @@ public:
                               string sectionName,
                               ComponentHeader compHeader,
                               vector<u_int8_t>& sectionData) override;
-    bool SetSignedFWComponent(string binPath, ComponentType compName, const char* msg) override;
     bool GetFwComponentsData(string path) override;
     void PrintSectionRange(VerifyCallBack verifyCallBackFunc,
                            u_int32_t startAddr,
@@ -256,7 +255,6 @@ private:
     void UpdatePartitionTable(bool isL2pt, PrintCallBack callBackFunc = nullptr);
     bool CheckSecondL1ptExists();
     bool VerifyL1ptConsistency();
-    void CopyMagicPattern(size_t componentOffset, vector<u_int8_t>& compData);
     bool IsL2ptSection(CshComponentID cshId);
     bool IsL2ptSection(PartitionType partitionType);
     bool IsDtocEntry(PartitionType partitionType);

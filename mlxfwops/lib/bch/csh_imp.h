@@ -38,11 +38,12 @@
 #define CSH_IMP_H
 
 #include <vector>
+#include <string>
+#include <memory>
 #include <algorithm>
 
 #include "common/compatibility.h"
 #include "common/tools_endianness.h"
-#include "json/reader.h"
 
 #ifdef MFT_LEGACY_BUILD
 #include "fs5_image_layout_layouts.h"
@@ -342,21 +343,10 @@ public:
     string GetMagicId() const;
     vector<u_int8_t> GetMagicIdAsVector() const;
 
-    void SetDigest(const vector<u_int8_t>& digest);
-
-    void SetJsonParams(const Json::Value& root);
-
     static size_t Size() { return fs5_image_layout_binary_section_metadata_size(); }
     static string CshSectionIDToString(u_int32_t sectionId);
     static u_int32_t CshSectionStringToID(const string& sectionName);
 
-    vector<u_int8_t> GetDerivationString() const;
-    vector<u_int8_t> GetVersionAsVector() const;
-
-    bool IsIVSet() const { return _isIVSet; }
-    void SetIV(const vector<u_int8_t>& iv);
-    vector<u_int8_t> GetIV() const;
-    void SetAuthenticationTag(const vector<u_int8_t>& tag);
     static const size_t DIGEST_OFFSET_IN_ENTRY = 0x60;
     vector<u_int8_t> GetDigest() const;
 
@@ -370,13 +360,7 @@ public:
     }
 
 private:
-    void SetDwordsFrom8BytesJsonField(const Json::Value& root,
-                                      const string& fieldName,
-                                      u_int32_t& firstField,
-                                      u_int32_t& secondField);
-
     struct fs5_image_layout_binary_section_metadata _struct;
-    bool _isIVSet;
 };
 
 class MLXFWOP_API CshMetadataBase
@@ -396,10 +380,7 @@ public:
     // The SVN and lifecycle attestation reports per CSH.
     virtual u_int32_t GetFwLifecycle() const { return 0; }
 
-    virtual void SetBinariesListDigest(const vector<u_int8_t>& digest) = 0;
     virtual void GetBinariesListDigest(vector<u_int8_t>& digest) const = 0;
-
-    virtual void SetJsonParams(const Json::Value& root) = 0;
 
     virtual u_int8_t GetRatchetLevel() const = 0;
 
@@ -424,13 +405,9 @@ public:
     u_int8_t GetRatchetLevel() const override { return _metadata_nbu.version.ratchet_level; }
     u_int32_t GetFwLifecycle() const override { return _metadata_nbu.fw_lifecycle; }
 
-    void SetBinariesListDigest(const vector<u_int8_t>& digest) override;
     void GetBinariesListDigest(vector<u_int8_t>& digest) const override;
-    void SetJsonParams(const Json::Value& root) override;
 
 private:
-    void SetDependencyList(const Json::Value& root);
-    void SetEcid(const Json::Value& root);
     struct fs5_image_layout_csh_metadata_nbu _metadata_nbu;
 };
 
@@ -450,9 +427,7 @@ public:
     u_int8_t GetRatchetLevel() const override { return _metadata.version.u8_ratchet_level; }
     u_int32_t GetFwLifecycle() const override { return _metadata.fw_lifecycle; }
 
-    void SetBinariesListDigest(const vector<u_int8_t>& digest) override;
     void GetBinariesListDigest(vector<u_int8_t>& digest) const override;
-    void SetJsonParams(const Json::Value& root) override;
 
 private:
     struct fs5_image_layout_csh_metadata _metadata;
@@ -461,12 +436,6 @@ private:
 class MLXFWOP_API CSH
 {
 public:
-    enum class SigType
-    {
-        ECDSA,
-        LMS
-    };
-
     enum class CshStructType : u_int8_t
     {
         CSH_TB50X = 0x0,
@@ -482,7 +451,6 @@ public:
     void Unpack(const vector<u_int8_t>& buffer);
     void UnpackHeader(const vector<u_int8_t>& cshHeader);
     void UnpackSections(const vector<u_int8_t>& buffer, size_t offset = 0);
-    void AddBinarySectionMetadata(BinarySectionMetadata sectionMetadata, bool updateSectionsOffsets = true);
 
     vector<BinarySectionMetadata>& GetSections() { return _cshSections; }
     BinarySectionMetadata& GetSection(u_int32_t itocType);
@@ -502,15 +470,7 @@ public:
     u_int8_t GetNvPubKeyIdx() { return _header.u8_nv_pub_key_idx; }
 
     u_int8_t GetVmodAdmStatus();
-    void SetVmodAdmStatus(fs5_image_layout_vmod_status status);
     static string VmodAdmStatusToString(u_int8_t status);
-
-    void SetNvSignature(const vector<u_int8_t>& signature, SigType sigType);
-    void SetOemSignature(const vector<u_int8_t>& signature, SigType sigType);
-
-    void SetJsonParams(const Json::Value& root);
-    void CalcDigest();
-    vector<u_int8_t> GetDigest();
 
     static size_t HeaderSize(CshStructType type);
     static CshStructType GetCshStructType(const vector<u_int8_t>& cshHeader);
@@ -538,19 +498,11 @@ public:
     static const u_int8_t VMOD_ADM_STATUS_UNKNOWN = 0xff;
     static const u_int8_t ALL_TILES_COMMITTED = 0x00;
     static const u_int8_t ALL_TILES_NOT_COMMITTED = 0xff;
-    static const string cshHeaderName;
-    static const string cshMetadataName;
-    static const string binarySectionMetadataName;
 
 private:
     void UnpackCshMetadata(const vector<u_int8_t>& cshHeader, const u_int8_t* iter);
-    void SetHeaderFromJson(const Json::Value& root);
-    void SetSingleSectionFromJson(const Json::Value& root);
-    void SetSectionsFromJson(const Json::Value& root);
     void InitMembers();
 
-    static const u_int16_t CSH_ECDSA_SIG_SIZE = 96;
-    static const u_int16_t CSH_LMS_SIG_SIZE = 1740;
     static const u_int16_t VMOD_ADM_OFFSET = 12;
 
     struct fs5_image_layout_csh_header _header;

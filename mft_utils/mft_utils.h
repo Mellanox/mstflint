@@ -44,7 +44,6 @@
 #include <utility>
 #include <vector>
 #include <stdexcept>
-#include <tuple>
 
 #include "compatibility.h"
 
@@ -100,7 +99,6 @@ void MkDirIfNotExists(const string& path);
 vector<string> GetListOfFiles(const string& dirPath);
 vector<vector<u_int8_t>> ReadBinaryFilesFromDirectory(const string& dirPath);
 std::vector<u_int32_t> Uuid2Dword(const std::string& uuid_str);
-std::tuple<std::string, std::string> Split16CharsHexStringToDwords(const std::string& str);
 
 template<typename T>
 bool CompareNElements(const std::vector<T>& a, const std::vector<T>& b, int n)

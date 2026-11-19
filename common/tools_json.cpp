@@ -39,7 +39,6 @@
 
  #include <cerrno>
  #include <cstdlib>
- #include <limits>
 
  namespace nbu
  {
@@ -154,37 +153,6 @@
          }
          return value[fieldName].asUInt();
      }
- }
- 
- template<typename T>
- void SetUIntIfPresentImpl(const Json::Value& root, const std::string& fieldName, T& out)
- {
-     if (root.isMember(fieldName))
-     {
-         unsigned long value = std::stoul(GetStrValue(root, fieldName, true, true), nullptr, 16);
-         unsigned long maxValue = static_cast<unsigned long>(std::numeric_limits<T>::max());
-         if (value > maxValue)
-         {
-             throw std::invalid_argument(
-               string_format("field '%s' value 0x%lx exceeds the maximum of 0x%lx", fieldName.c_str(), value, maxValue));
-         }
-         out = static_cast<T>(value);
-     }
- }
- 
- void SetUIntIfPresent(const Json::Value& root, const std::string& fieldName, u_int8_t& out)
- {
-     SetUIntIfPresentImpl(root, fieldName, out);
- }
- 
- void SetUIntIfPresent(const Json::Value& root, const std::string& fieldName, u_int16_t& out)
- {
-     SetUIntIfPresentImpl(root, fieldName, out);
- }
- 
- void SetUIntIfPresent(const Json::Value& root, const std::string& fieldName, u_int32_t& out)
- {
-     SetUIntIfPresentImpl(root, fieldName, out);
  }
  
  } // namespace common

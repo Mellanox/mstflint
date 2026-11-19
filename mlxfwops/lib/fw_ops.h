@@ -258,7 +258,6 @@ public:
     static const vector<pair<string, ComponentType>> GetStringToComponentEnum();
     static ComponentType StringToComponentType(string compName);
     static string ComponentNameToString(ComponentType compName);
-    virtual bool SetSignedFWComponent(string bin_path, ComponentType compName, const char* msg);
     virtual bool GetFwComponentsData(string path);
     virtual bool
       ReadComponent(string compName, ComponentHeader compHeader, string file_path, vector<u_int8_t>& componentData);

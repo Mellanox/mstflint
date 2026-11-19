@@ -2851,11 +2851,6 @@ bool FwOperations::GetFwComponentsData(string)
     return errmsg("GetFwComponentsData is not supported");
 }
 
-bool FwOperations::SetSignedFWComponent(string, ComponentType, const char*)
-{
-    return errmsg("SetSignedFWComponent is not supported");
-}
-
 bool FwOperations::ReadComponent(string, ComponentHeader, string, vector<u_int8_t>&)
 {
     return errmsg("ReadComponent is not supported");
