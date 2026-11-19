@@ -265,6 +265,11 @@ std::string MlxPSCtoken::GetRatchetStr() const
     return ratchetStream.str();
 }
 
+std::string MlxPSCtoken::GetTokenConfigString() const
+{
+    return std::to_string(_token.token_config);
+}
+
 std::string MlxPSCtoken::GetUUIDString() const
 {
     // Convert keypair_uuid data to string
@@ -773,9 +778,9 @@ void MlxPSCtoken::SetDeviceUniqueFromMap(const map<string, string>& tokenData)
         _nonceVersion = std::stoul(nonceVer, nullptr, 0);
 
     string validEntriesStr = FindValueInDeviceUnique(value, VALID_ENTRIES_KEY);
-    int validEntries = validEntriesStr.empty() ? 1 : std::stoi(validEntriesStr);
+    _validEntries = validEntriesStr.empty() ? 1 : std::stoi(validEntriesStr);
 
-    for (int i = 0; i < validEntries; i++)
+    for (int i = 0; i < _validEntries; i++)
     {
         string ecid = FindValueInDeviceUnique(value, DEVICE_UNIQUE_ID_PREFIX + std::to_string(i));
         if (ecid.length() >= 16)
@@ -791,39 +796,188 @@ void MlxPSCtoken::SetDeviceUniqueFromMap(const map<string, string>& tokenData)
     }
 }
 
+void MlxPSCtoken::AddDeviceUnique(const u_int64_t& deviceUnique)
+{
+    _token.device_unique[_validEntries].serial_number[0] = deviceUnique;
+    _token.device_unique[_validEntries].serial_number[1] = deviceUnique >> 32;
+}
+
+void MlxPSCtoken::AddNonce(const u_int32_t* nonce)
+{
+    if (nonce != nullptr)
+    {
+        memcpy(_token.device_unique[_validEntries].nonce, nonce, sizeof(_token.device_unique[_validEntries].nonce));
+    }
+}
+
+void MlxPSCtoken::UpdateValidEntries()
+{
+    _validEntries++;
+}
+
+void MlxPSCtoken::ValidatePSID(const string& psid)
+{
+    if (psid != GetPSIDString())
+    {
+        throw MlxTknGeneratorException("PSID mismatch");
+    }
+}
+
+void MlxPSCtoken::ValidateDeviceType(DeviceType deviceType)
+{
+    if (deviceType != GetDeviceTypeEnum())
+    {
+        throw MlxTknGeneratorException("Device type mismatch");
+    }
+}
+
+void MlxPSCtoken::ValidateTokenType(MlxCfgTokenType tokenType)
+{
+    if (tokenType != GetTokenTypeEnum())
+    {
+        throw MlxTknGeneratorException("Token type mismatch");
+    }
+}
+
+void MlxPSCtoken::ValidateFWVersion(const string& fwVersion)
+{
+    if (fwVersion != GetFWVersionString())
+    {
+        throw MlxTknGeneratorException("FW version mismatch");
+    }
+}
+
+void MlxPSCtoken::ValidateTokenConfig(const string& tokenConfig)
+{
+    if (tokenConfig != GetTokenConfigString())
+    {
+        throw MlxTknGeneratorException("Token config mismatch");
+    }
+}
+
+void MlxPSCtoken::ValidateKeypairUUID(const string& keypairUUID)
+{
+    if (keypairUUID != GetUUIDString())
+    {
+        throw MlxTknGeneratorException("Keypair UUID mismatch");
+    }
+}
+
+void MlxPSCtoken::ValidateValidEntries(const MlxPSCtoken& token)
+{
+    ValidateDeviceType(token.GetDeviceTypeEnum());
+    ValidateTokenType(token.GetTokenTypeEnum());
+    ValidatePSID(token.GetPSIDString());
+    ValidateKeypairUUID(token.GetUUIDString());
+    ValidateFWVersion(token.GetFWVersionString());
+    ValidateTokenConfig(token.GetTokenConfigString());
+}
+
+void MlxPSCtoken::Aggregate(const MlxPSCtoken& token)
+{
+    ValidateValidEntries(token);
+    AddDeviceUnique(token.GetDeviceUnique());
+    AddNonce(token.GetNonce());
+    UpdateValidEntries();
+}
+
+void MlxPSCtoken::LoadFromXMLFile(string xmlContent, string filePath)
+{
+    map<string, string> tokenData;
+    string dbName = "";
+    GenericCommander commander(nullptr, dbName);
+    commander.XML2MapPSCToken(xmlContent, tokenData);
+    if (tokenData.empty())
+    {
+        throw MlxTknGeneratorException("Failed to parse the XML document: %s", filePath.c_str());
+    }
+    LoadParamsFromMap(tokenData);
+}
+
 void MlxPSCtoken::LoadParamsFromMap(const std::map<std::string, std::string>& tokenData)
 {
     for (const auto& entry : tokenData)
     {
-        const std::string& key = entry.first;
+        TlvType key = StrToTlvType(entry.first);
         const std::string& value = entry.second;
-        if (key == TlvTypeToStr(TlvType::PSID))
+        switch (key)
         {
-            SetPSIDFromMap(value);
-        }
-        else if (key == TlvTypeToStr(TlvType::FW_VERSION))
-        {
-            SetFWVersionFromMap(value);
-        }
-        else if (key == TlvTypeToStr(TlvType::DEVICE_UNIQUE))
-        {
-            SetDeviceUniqueFromMap(tokenData);
-        }
-        else if (key == TlvTypeToStr(TlvType::TOKEN_CONFIGURATION))
-        {
-            SetTokenConfigFromMap(value);
-        }
-        else if (key == TlvTypeToStr(TlvType::KEYPAIR_UUID))
-        {
-            SetKeypairUUIDFromMap(value);
+            case TlvType::PSID:
+                SetPSIDFromMap(value);
+                break;
+            case TlvType::FW_VERSION:
+                SetFWVersionFromMap(value);
+                break;
+            case TlvType::DEVICE_UNIQUE:
+                SetDeviceUniqueFromMap(tokenData);
+                break;
+            case TlvType::TOKEN_CONFIGURATION:
+                SetTokenConfigFromMap(value);
+                break;
+            case TlvType::KEYPAIR_UUID:
+                SetKeypairUUIDFromMap(value);
+                break;
+            default:
+                break;
         }
     }
 }
 
 MlxPSCtoken::MlxPSCtoken(DeviceType deviceType, MlxCfgTokenType tokenType) :
-    _deviceType(deviceType), _tokenType(tokenType)
+    _deviceType(deviceType), _tokenType(tokenType), _validEntries(0)
 {
     InitToken();
+}
+
+u_int64_t MlxPSCtoken::GetDeviceUnique() const
+{
+    if (_validEntries <= 0)
+    {
+        return 0;
+    }
+    u_int64_t deviceUnique = _token.device_unique[_validEntries - 1].serial_number[0];
+    deviceUnique |= (static_cast<u_int64_t>(_token.device_unique[_validEntries - 1].serial_number[1]) << 32);
+    return deviceUnique;
+}
+
+const u_int32_t* MlxPSCtoken::GetNonce() const
+{
+    if (_validEntries <= 0)
+    {
+        return nullptr;
+    }
+    return _token.device_unique[_validEntries - 1].nonce;
+}
+
+void MlxPSCtoken::SaveToXMLFile(const std::string& filePath)
+{
+    std::vector<std::pair<std::string, std::string>> tlvs = LoadFromParams();
+    SaveToXMLFile(filePath, tlvs);
+}
+
+MlxCfgTokenType MlxPSCtoken::GetTokenTypeFromXML(const std::string& xmlContent)
+{
+    map<string, string> tokenData;
+    string dbName = "";
+    GenericCommander commander(nullptr, dbName);
+    commander.XML2MapPSCToken(xmlContent, tokenData);
+    return MlxCfgToken::GetTokenType(tokenData[(TlvTypeToStr(TlvType::TOKEN_TYPE))]);
+}
+
+DeviceType MlxPSCtoken::GetDeviceTypeFromXML(const std::string& xmlContent)
+{
+    map<string, string> tokenData;
+    string dbName = "";
+    GenericCommander commander(nullptr, dbName);
+    commander.XML2MapPSCToken(xmlContent, tokenData);
+
+    auto it = tokenData.find(TlvTypeToStr(TlvType::DEVICE_TYPE));
+    if (it != tokenData.end())
+    {
+        return StrToDeviceType(it->second);
+    }
+
+    throw MlxTknGeneratorException("DEVICE_TYPE not found in XML");
 }
 
 /********************************************************************************************************************************/

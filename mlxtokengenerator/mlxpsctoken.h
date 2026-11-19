@@ -85,12 +85,17 @@ public:
 
     std::string ToXML(const std::vector<std::pair<std::string, std::string>>& tlvs);
     void SaveToXMLFile(const std::string& filePath, const std::vector<std::pair<std::string, std::string>>& tlvs);
+    void SaveToXMLFile(const std::string& filePath);
 
     TlvType StrToTlvType(const std::string& tlvTypeStr);
     static std::string TlvTypeToStr(TlvType typeTLV);
 
     std::vector<std::pair<std::string, std::string>> LoadFromParams();
     void LoadParamsFromMap(const std::map<std::string, std::string>& tokenData);
+    void LoadFromXMLFile(std::string xmlContent, std::string filePath);
+    void Aggregate(const MlxPSCtoken& token);
+    static DeviceType GetDeviceTypeFromXML(const std::string& xmlContent);
+    static MlxCfgTokenType GetTokenTypeFromXML(const std::string& xmlContent);
 
     static DeviceType StrToDeviceType(const std::string& deviceType);
 
@@ -129,16 +134,30 @@ private:
     int GetValidEntries() const;
     std::string GetNonceVersionString() const;
     std::string GetRatchetStr() const;
+    std::string GetTokenConfigString() const;
 
     std::string FindValueInDeviceUnique(const std::string& value, const std::string& key);
     std::string FixedTokenConfig(const std::string& tokenConfig);
     std::vector<std::string> SplitByComma(const std::string& tokenConfig);
 
+    void AddDeviceUnique(const u_int64_t& deviceUnique);
+    void AddNonce(const u_int32_t* nonce);
+    void UpdateValidEntries();
+    u_int64_t GetDeviceUnique() const;
+    const u_int32_t* GetNonce() const;
+    void ValidateValidEntries(const MlxPSCtoken& token);
+    void ValidatePSID(const string& psid);
+    void ValidateDeviceType(DeviceType deviceType);
+    void ValidateTokenType(MlxCfgTokenType tokenType);
+    void ValidateFWVersion(const string& fwVersion);
+    void ValidateTokenConfig(const string& tokenConfig);
+    void ValidateKeypairUUID(const string& keypairUUID);
     // Member variables
     DeviceType _deviceType;
     MlxCfgTokenType _tokenType;
     u_int8_t _nonceVersion;
     tokens_layout_psc_debug_token _token;
+    int _validEntries;
 };
 
 class MlxPSCtokenFactory

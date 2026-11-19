@@ -142,12 +142,14 @@ public:
     void checkConfTlvs(const vector<std::shared_ptr<TLVConf>>& tlvs, FwComponent::comps_ids_t& compsId);
     void orderConfTlvs(vector<std::shared_ptr<TLVConf>>& tlvs);
     void createConf(const string& xml, vector<u_int32_t>& buff);
+    void XML2MapPSCToken(const string& xml, map<string, string>& tokenData);
     void sign(vector<u_int32_t>& buff,
               const string& privateKeyFile = "",
               const string& keyPairUUid = "");
     void apply(const vector<u_int8_t>& buff);
     void CheckCompIdByTokenType(u_int8_t tokenType, FwComponent::comps_ids_t& compsId);
     void CheckCompIdByPSCToken(const vector<u_int8_t>& buff, FwComponent::comps_ids_t& compsId);
+    bool IsPscXmlByString(const string& xml);
     bool IsPSCBinToken(const vector<u_int8_t>& buff);
     string GetTokenPSIDFromBin(const vector<u_int8_t>& buff);
 };

@@ -53,13 +53,20 @@ public:
     MlxTknGenerator();
     ~MlxTknGenerator();
 
+    struct TokenFileData
+    {
+        string filePath;
+        string content;
+        TokenFormat format;
+    };
+
     void Run(int argc, char** argv);
     void GenerateTokenXML();
     void GenerateLegacyTokenXML();
     void GeneratePSCTokenXML();
     void AggregateTokensXML();
     void AutoGenerateTokensXML();
-    TokenFormat CheckTokenFormat();
+    TokenFormat CheckTokenFormatByDeviceId();
 
 private:
     void InitCmdParser();
@@ -93,6 +100,9 @@ private:
     vector<string> AggregateLegacyTokenXmlStrings(const vector<string>& xmlStrings, bool isMultiAggregate = false);
     void ValidatePSCTokenType(MlxCfgTokenType tokenType);
     void SetI2CSecondaryAddr();
+    void CheckTokenType(MlxCfgTokenType tokenType);
+    void AggregatePSCTokensXML(const vector<TokenFileData>& tokenFiles);
+    void AggregateLegacyTokensXML(const vector<TokenFileData>& tokenFiles);
 
     enum MlxTknGeneratorCmd {
         GenerateToken,

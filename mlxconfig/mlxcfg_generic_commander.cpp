@@ -1362,6 +1362,11 @@ void GenericCommander::genTLVsList(vector<string>& tlvs)
     }
 }
 
+bool GenericCommander::IsPscXmlByString(const string& xml)
+{
+    return xml.find(XNVIDIA) != std::string::npos;
+}
+
 void GenericCommander::genPSCXMLTemplate(string tlvName, string tlvValue, string& tlvTemplate, bool& indentation)
 {
     if (tlvValue == PSC_TLV_TYPE_START)
@@ -1966,6 +1971,146 @@ void GenericCommander::orderConfTlvs(vector<std::shared_ptr<TLVConf>>& tlvs)
             deltaLocation++;
         }
     }
+}
+
+#if !defined(DISABLE_XML2)
+static bool HasElementChildren(xmlNode* n)
+{
+    for (xmlNode* c = n->children; c; c = c->next)
+    {
+        if (c->type == XML_ELEMENT_NODE)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+static std::string NodeText(xmlNode* n)
+{
+    xmlChar* txt = xmlNodeGetContent(n);
+    std::string out = txt ? reinterpret_cast<const char*>(txt) : "";
+    if (txt)
+    {
+        xmlFree(txt);
+    }
+    return out;
+}
+
+static std::string MakeKeySkipRoot(const std::vector<std::string>& path)
+{
+    std::string k;
+    for (size_t i = 1; i < path.size(); ++i)
+    {
+        if (i > 1)
+        {
+            k += ".";
+        }
+        k += path[i];
+    }
+    if (k.empty() && !path.empty())
+    {
+        k = path.back();
+    }
+    return k;
+}
+
+static void CollectFlatMap(xmlNode* n, std::vector<std::string>& path, std::map<std::string, std::string>& out)
+{
+    if (!n || n->type != XML_ELEMENT_NODE)
+    {
+        return;
+    }
+
+    path.push_back(reinterpret_cast<const char*>(n->name));
+
+    if (!HasElementChildren(n))
+    {
+        out[MakeKeySkipRoot(path)] = NodeText(n);
+    }
+    else
+    {
+        std::string currentName = reinterpret_cast<const char*>(n->name);
+        if (currentName == MlxPSCtoken::TlvTypeToStr(TlvType::DEVICE_UNIQUE))
+        {
+            // Collect and concatenate all child key-value pairs
+            std::string concatenatedValue;
+            bool first = true;
+
+            for (xmlNode* c = n->children; c; c = c->next)
+            {
+                if (c->type == XML_ELEMENT_NODE && !HasElementChildren(c))
+                {
+                    if (!first)
+                    {
+                        concatenatedValue += ",";
+                    }
+                    concatenatedValue += reinterpret_cast<const char*>(c->name);
+                    concatenatedValue += "=";
+                    concatenatedValue += NodeText(c);
+                    first = false;
+                }
+            }
+
+            // Store as single key-value pair
+            std::string key = MakeKeySkipRoot(path);
+            out[key] = concatenatedValue;
+        }
+        else
+        {
+            // Normal processing for other nodes
+            for (xmlNode* c = n->children; c; c = c->next)
+            {
+                if (c->type == XML_ELEMENT_NODE)
+                {
+                    CollectFlatMap(c, path, out);
+                }
+            }
+        }
+    }
+    path.pop_back();
+}
+#endif
+
+void GenericCommander::XML2MapPSCToken(const string& xml, map<string, string>& tokenData)
+{
+#if !defined(DISABLE_XML2)
+    xmlDocPtr doc;
+    xmlNodePtr root;
+
+    doc = xmlReadMemory(xml.c_str(), xml.size(), "noname.xml", NULL, 0);
+    if (!doc)
+    {
+        throw MlxcfgException("Failed to parse the XML document\n");
+    }
+
+    try
+    {
+        root = xmlDocGetRootElement(doc);
+        if (!root || xmlStrcmp(root->name, (const xmlChar*)XML_ROOT))
+        {
+            throw MlxcfgException("The XML root node must be " XML_ROOT);
+        }
+
+        // check fingerprint
+        if (!root->ns || xmlStrcmp(root->ns->href, (const xmlChar*)XNVIDIA))
+        {
+            throw MlxcfgException("The XML Fingerprint " XNVIDIA " is missing or incorrect");
+        }
+        std::vector<std::string> path;
+        CollectFlatMap(root, path, tokenData);
+        xmlFreeDoc(doc);
+    }
+    catch (...)
+    {
+        xmlFreeDoc(doc);
+        throw;
+    }
+#else
+    (void)xml;
+    (void)tokenData;
+    throw MlxcfgException("Can not run the command, the tool was not compiled against libxml2");
+#endif
 }
 
 void GenericCommander::createConf(const string& xml, vector<u_int32_t>& buff)
