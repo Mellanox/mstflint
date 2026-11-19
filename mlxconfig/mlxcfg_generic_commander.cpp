@@ -2207,7 +2207,8 @@ bool GenericCommander::IsPSCBinToken(const vector<u_int8_t>& buff)
         return false;
     }
     // Check all first 6 bytes at once
-    const std::vector<uint8_t> expected = {0x54, 0x4C, 0x56, 0x31, 0x0A}; // 'TLV1'
+
+    const std::vector<uint8_t> expected = {0x54, 0x4C, 0x56, 0x31}; // 'TLV1'
     return std::equal(expected.begin(), expected.end(), buff.begin());
 }
 
