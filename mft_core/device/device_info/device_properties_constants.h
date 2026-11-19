@@ -53,6 +53,10 @@
 #define PROP_GENERATION "generation"
 #define PROP_PCI_DEVICE_ID_LIST "pci_device_id_list"
 #define PROP_IMAGE_LAYOUT_FORMAT "image_layout_format"
+#define PROP_SMGW_ADDRESS "smgw_address"
+#define PROP_FREE_RUNNING_COUNTER_ADDRESS "free_running_counter_address"
+#define PROP_FW_IMAGE_FORMAT "fw_image_format"
+#define PROP_FW_IMAGE_SECTION_ADDR_MSB "fw_image_section_addr_msb"
 #define PROP_FW_MAJOR "fw_major"
 #define PROP_SUPPORTS_ETH "supports_eth"
 #define PROP_SUPPORTS_IB "supports_ib"
@@ -130,6 +134,7 @@
 #define PROP_VERSION_BIT_OFFSET "version_bit_offset"
 #define PROP_VERSION_BITLEN "version_bitlen"
 #define PROP_VERSION_ADDRESS "version_address"
+#define PROP_LIVEFISH_INDICATION_ADDRESS "livefish_indication_address"
 
 /* Property value constants -- device_type field values */
 #define DEVICE_TYPE_NIC "NIC"
@@ -146,6 +151,13 @@
 #define IMAGE_LAYOUT_FS4 "fs4"
 #define IMAGE_LAYOUT_FS5 "fs5"
 #define IMAGE_LAYOUT_FS6 "fs6"
+
+/* Property value constants -- fw_image_format field values */
+#define FW_IMAGE_FORMAT_CONNECTIB "connectib"
+#define FW_IMAGE_FORMAT_FS4 "fs4"
+#define FW_IMAGE_FORMAT_FS4_GPU "fs4_gpu"
+#define FW_IMAGE_FORMAT_FS5 "fs5"
+#define FW_IMAGE_FORMAT_FS6 "fs6"
 
 /* Property value constants -- vendor field values */
 #define VENDOR_MELLANOX "Mellanox"

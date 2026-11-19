@@ -6,6 +6,8 @@
             "fw_name": "Libra",
             "device_type": "Retimer",
             "fw_major": 69,
+            "image_layout_format": "fs6",
+            "fw_image_format": "fs6",
             "vendor": "Mellanox"
         },
         "linkx_info": {

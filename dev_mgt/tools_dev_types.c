@@ -1017,27 +1017,30 @@ int dm_dev_is_eth_switch(dm_dev_id_t type)
     return dm_dev_is_switch(type) && get_property_as_bool(dm_get_hw_dev_id(type), PROP_SUPPORTS_ETH);
 }
 
+/* Cables, gearboxes and unknown types have no image layout, and looking it up for them would log an error. */
+static int dm_dev_has_image_layout(dm_dev_id_t type)
+{
+    return device_props_has_property(dm_get_hw_dev_id(type), PROP_IMAGE_LAYOUT_FORMAT);
+}
+
 int dm_dev_is_fs3(dm_dev_id_t type)
 {
-    return type == DeviceConnectX4 || type == DeviceConnectX4LX || type == DeviceSpectrum;
+    return dm_dev_has_image_layout(type) && is_fs3(dm_get_hw_dev_id(type));
 }
 
 int dm_dev_is_fs4(dm_dev_id_t type)
 {
-    return type == DeviceConnectX5 || type == DeviceConnectX6 || type == DeviceConnectX6DX || type == DeviceConnectX6LX || type == DeviceConnectX7 || type == DeviceBlueField ||
-           type == DeviceBlueField2 || type == DeviceBlueField3 || type == DeviceQuantum2 || type == DeviceSpectrum5 || type == DeviceSpectrum4 || type == DeviceSpectrum2 ||
-           type == DeviceSpectrum3;
+    return dm_dev_has_image_layout(type) && is_fs4(dm_get_hw_dev_id(type));
 }
 
 int dm_dev_is_fs5(dm_dev_id_t type)
 {
-    return type == DeviceConnectX8 || type == DeviceConnectX8_Pure_PCIe_Switch || type == DeviceQuantum3 || type == DeviceNVLink6_Switch || type == DeviceBlueField4 || type == DeviceConnectX9 ||
-           type == DeviceConnectX9_Pure_PCIe_Switch;
+    return dm_dev_has_image_layout(type) && is_fs5(dm_get_hw_dev_id(type));
 }
 
 int dm_dev_is_fs6(dm_dev_id_t type)
 {
-    return type == DeviceSpectrum6;
+    return dm_dev_has_image_layout(type) && is_fs6(dm_get_hw_dev_id(type));
 }
 
 int dm_is_ib_access(mfile* mf)

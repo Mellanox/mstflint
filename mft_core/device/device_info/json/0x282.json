@@ -6,7 +6,10 @@
             "fw_name": "ArcusE",
             "device_type": "Retimer",
             "fw_major": 62,
-            "vendor": "Mellanox"
+            "image_layout_format": "fs5",
+            "fw_image_format": "fs5",
+            "vendor": "Mellanox",
+            "free_running_counter_address": 1340672
         },
         "linkx_info": {
             "i2c_secondary" : 72,

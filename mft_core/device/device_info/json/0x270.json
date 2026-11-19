@@ -7,6 +7,7 @@
       "device_type": "Switch",
       "fw_major": 37,
       "image_layout_format": "fs4",
+      "fw_image_format": "fs4",
       "pci_device_id_list": [
         53122
       ],
@@ -17,7 +18,9 @@
       "supports_ib": false,
       "ports_num": 514,
       "series": "Spectrum",
-      "series_index": 4
+      "series_index": 4,
+      "smgw_address": 671744,
+      "free_running_counter_address": 670784
     },
     "dump_tools_info": {
       "number_of_clusters": 128,

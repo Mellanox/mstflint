@@ -3,6 +3,7 @@
         "general_info": {
             "device_name": "Sagitta",
             "device_type": "LinkX",
+            "image_layout_format": "fs5",
             "vendor": "Mellanox"
         },
         "linkx_info": {

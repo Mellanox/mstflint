@@ -351,6 +351,11 @@ extern "C"
         return strcmp(get_property_as_cstring(device_id, PROP_IMAGE_LAYOUT_FORMAT), IMAGE_LAYOUT_FS5) == 0;
     }
 
+    bool is_fs6(uint32_t device_id)
+    {
+        return strcmp(get_property_as_cstring(device_id, PROP_IMAGE_LAYOUT_FORMAT), IMAGE_LAYOUT_FS6) == 0;
+    }
+
     // -------------------------------------------------------------------------
     // Enumeration utilities
     // -------------------------------------------------------------------------
@@ -359,6 +364,13 @@ extern "C"
     {
         std::string device_id_str = device_id_to_hex_string(device_id);
         return properties_by_device_id.find(device_id_str) != properties_by_device_id.end();
+    }
+
+    bool device_props_has_property(uint32_t device_id, const char* property_name)
+    {
+        auto device_it = properties_by_device_id.find(device_id_to_hex_string(device_id));
+        return property_name && device_it != properties_by_device_id.end() &&
+               device_it->second.find(property_name) != device_it->second.end();
     }
 
     eDeviceID get_device_id_from_str(const char* dev_name)

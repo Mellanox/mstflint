@@ -325,6 +325,10 @@ def is_fs5(device_id):
     return get_property_as_string(device_id, PROP_IMAGE_LAYOUT_FORMAT) == IMAGE_LAYOUT_FS5
 
 
+def is_fs6(device_id):
+    return get_property_as_string(device_id, PROP_IMAGE_LAYOUT_FORMAT) == IMAGE_LAYOUT_FS6
+
+
 # ============================================================================
 # Enumeration utilities
 # ============================================================================

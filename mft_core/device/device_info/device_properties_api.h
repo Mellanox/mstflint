@@ -85,7 +85,10 @@ extern "C"
     bool is_fs3(uint32_t device_id);
     bool is_fs4(uint32_t device_id);
     bool is_fs5(uint32_t device_id);
+    bool is_fs6(uint32_t device_id);
     bool device_props_is_supported_device_id(uint32_t device_id);
+    // Unlike the getters, logs nothing when the device or the property is missing.
+    bool device_props_has_property(uint32_t device_id, const char* property_name);
 
     // -------------------------------------------------------------------------
     // Enumeration utilities

@@ -7,6 +7,7 @@
       "device_type": "GPU",
       "fw_major": 0,
       "image_layout_format": "N/A",
+      "fw_image_format": "fs4_gpu",
       "pci_device_id_list": [
         2900
       ],
@@ -15,7 +16,8 @@
       "is_secured": true,
       "supports_eth": false,
       "supports_ib": true,
-      "ports_num": 18
+      "ports_num": 18,
+      "free_running_counter_address": 50916384
     },
     "dump_tools_info": {
       "number_of_clusters": 32,

@@ -6,7 +6,9 @@
       "fw_name": "Maglan",
       "device_type": "Switch",
       "fw_major": 39,
-      "image_layout_format": "fs4",
+      "image_layout_format": "fs6",
+      "fw_image_format": "fs6",
+      "fw_image_section_addr_msb": true,
       "pci_device_id_list": [
         53124
       ],
@@ -17,7 +19,9 @@
       "supports_ib": false,
       "ports_num": 128,
       "series": "Spectrum",
-      "series_index": 5
+      "series_index": 5,
+      "smgw_address": 1394688,
+      "free_running_counter_address": 1396320
     },
     "dump_tools_info": {
       "number_of_clusters": 514,
@@ -73,7 +77,8 @@
       "static_cfg_not_done_offset": 0,
       "version_bit_offset": 24,
       "version_bitlen": 8,
-      "version_address": 2097152
+      "version_address": 2097152,
+      "livefish_indication_address": 1028184
     }
   }
 }
