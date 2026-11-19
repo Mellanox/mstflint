@@ -127,6 +127,10 @@ MLNX_DEVICES = [
     dict(name="ConnectX9-RMA", devid=0x225, status_config_not_done=(0xa0304, 31)),
     dict(name="ConnectX9-Pure-PCIe-Switch", devid=0x228, status_config_not_done=(0xa0304, 31)),
     dict(name="ConnectX9-Pure-PCIe-Switch-RMA", devid=0x229, status_config_not_done=(0xa0304, 31)),
+]
+# The rows above are NICs and SUPP_DEVICES is built from them; switch rows follow.
+MLNX_HCA_DEVICES = list(MLNX_DEVICES)
+MLNX_DEVICES += [
     dict(name="Quantum-2", devid=0x257, status_config_not_done=(0x100010, 0)),
     dict(name="Quantum-3", devid=0x25b, status_config_not_done=(0x200010, 0)),
     dict(name="Quantum-3-RMA", devid=0x25c, status_config_not_done=(0x200010, 0)),
@@ -144,10 +148,8 @@ MLNX_DEVICES = [
 
 BLUEFIELD4_PCI_DEVICE_ID = [0xA2DF]
 
-# Supported devices.
-SUPP_DEVICES = ["ConnectX4", "ConnectX4LX", "ConnectX5", "BlueField",
-                "ConnectX6", "ConnectX6DX", "ConnectX6LX", "BlueField2", "ConnectX7", "BlueField3", "ConnectX8", "ConnectX8-RMA", "BlueField4",
-                "ConnectX9", "ConnectX9-RMA", "ConnectX8-Pure-PCIe-Switch", "ConnectX8-Pure-PCIe-Switch-RMA", "ConnectX9-Pure-PCIe-Switch", "ConnectX9-Pure-PCIe-Switch-RMA"]
+# Supported devices: every NIC row, plus the BlueField4 name that getDeviceDict() assigns at runtime.
+SUPP_DEVICES = [nic["name"] for nic in MLNX_HCA_DEVICES] + ["BlueField4"]
 SUPP_SWITCH_DEVICES = ["Spectrum", "Spectrum-2", "Spectrum-3", "Quantum-2"]
 SUPP_OS = ["FreeBSD", "Linux", "Windows"]
 UNSUPPORTED_PSIDS_PER_DEV_ID = {

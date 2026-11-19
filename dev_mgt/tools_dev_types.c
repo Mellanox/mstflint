@@ -1009,13 +1009,12 @@ int dm_dev_is_raven_family_switch(dm_dev_id_t type)
 
 int dm_dev_is_ib_switch(dm_dev_id_t type)
 {
-    return (dm_dev_is_switch(type) &&
-            (type == DeviceQuantum2 || type == DeviceQuantum3 || type == DeviceNVLink6_Switch));
+    return dm_dev_is_switch(type) && get_property_as_bool(dm_get_hw_dev_id(type), PROP_SUPPORTS_IB);
 }
 
 int dm_dev_is_eth_switch(dm_dev_id_t type)
 {
-    return (dm_dev_is_switch(type) && (type == DeviceSpectrum || type == DeviceSpectrum2 || type == DeviceSpectrum3 || type == DeviceSpectrum4 || type == DeviceSpectrum5 || type == DeviceSpectrum6));
+    return dm_dev_is_switch(type) && get_property_as_bool(dm_get_hw_dev_id(type), PROP_SUPPORTS_ETH);
 }
 
 int dm_dev_is_fs3(dm_dev_id_t type)

@@ -108,6 +108,12 @@ int is_icmdif_supported(mflash* mfl, MfError* status)
 {
     *status = MFE_OK;
 
+    // Every device with a 6th or 7th generation flash supports ICMD.
+    if (get_flash_gen(mfl) != LEGACY_FLASH)
+    {
+        return 1;
+    }
+
     switch (mfl->dm_dev_id)
     {
         case DeviceSecureHost:
@@ -123,19 +129,6 @@ int is_icmdif_supported(mflash* mfl, MfError* status)
         case DeviceConnectX6:
         case DeviceConnectX6DX:
         case DeviceConnectX6LX:
-            return 1;
-        case DeviceQuantum2:
-        case DeviceQuantum3:
-        case DeviceNVLink6_Switch:
-        case DeviceArcusE:
-        case DeviceSpectrum4:
-        case DeviceSpectrum5:
-        case DeviceSpectrum6:
-        case DeviceConnectX7:
-        case DeviceConnectX8:
-        case DeviceConnectX9:
-        case DeviceBlueField3:
-        case DeviceBlueField4:
             return 1;
         default:
             *status = MFE_UNSUPPORTED_DEVICE;
