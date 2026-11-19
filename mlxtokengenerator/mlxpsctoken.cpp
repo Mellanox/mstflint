@@ -33,6 +33,7 @@
  *
  */
 
+#include <cstdio>
 #include <fstream>
 #include <iostream>
 #include <algorithm>
@@ -304,31 +305,25 @@ std::string MlxPSCtoken::GetPSIDString() const
 
 std::string MlxPSCtoken::GetFWVersionString() const
 {
-    stringstream fwVersionStream;
-
+    int major, minor, subminor;
     if (_deviceType == DeviceType::NIC || _deviceType == DeviceType::CX7 || _deviceType == DeviceType::SOC)
     {
         u_int32_t fw = _token.fw_version[0];
-        int major = (fw >> 24) & 0xFF;
-        int minor = (fw >> 16) & 0xFF;
-        int patch = fw & 0xFFFF;
-
-        fwVersionStream << std::dec << major << "." << std::setw(2) << std::setfill('0') << minor << "." << std::setw(4)
-                        << std::setfill('0') << patch;
+        major = (fw >> 24) & 0xFF;
+        minor = (fw >> 16) & 0xFF;
+        subminor = fw & 0xFFFF;
     }
     else
     {
         u_int32_t fw = _token.fw_version[0];
-        int major = (fw >> 16) & 0xFFFF;         // Upper 16 bits
-        int minor = fw & 0xFFFF;                 // Lower 16 bits
-        int patch = _token.fw_version[1] & 0xFF; // 8 bits
-
-        fwVersionStream << std::uppercase << std::hex << std::setw(4) << std::setfill('0') << major << "."
-                        << std::setw(4) << std::setfill('0') << minor << "." << std::setw(2) << std::setfill('0')
-                        << patch;
+        major = _token.fw_version[1] & 0xFF;
+        minor = (fw >> 16) & 0xFFFF;
+        subminor = fw & 0xFFFF;
     }
 
-    return fwVersionStream.str();
+    char buf[64];
+    snprintf(buf, sizeof(buf), minor < 100 ? "%d.%d.%04d" : "%d.%04d.%04d", major, minor, subminor);
+    return std::string(buf);
 }
 
 int MlxPSCtoken::GetValidEntries() const
@@ -711,23 +706,20 @@ void MlxPSCtoken::SetPSIDFromMap(const string& psid)
 
 void MlxPSCtoken::SetFWVersionFromMap(const string& fwVersion)
 {
+    unsigned int major, minor, patch;
+    if (sscanf(fwVersion.c_str(), "%u.%u.%u", &major, &minor, &patch) != 3)
+    {
+        return;
+    }
     if (_deviceType == DeviceType::NIC || _deviceType == DeviceType::CX7 || _deviceType == DeviceType::SOC)
     {
-        int major, minor, patch;
-        if (sscanf(fwVersion.c_str(), "%d.%d.%d", &major, &minor, &patch) == 3)
-        {
-            _token.fw_version[0] = (major << 24) | (minor << 16) | patch;
-            _token.fw_version[1] = 0;
-        }
+        _token.fw_version[0] = ((u_int32_t)(major & 0xFF) << 24) | ((u_int32_t)(minor & 0xFF) << 16) | (patch & 0xFFFF);
+        _token.fw_version[1] = 0;
     }
     else
     {
-        unsigned int major, minor, patch;
-        if (sscanf(fwVersion.c_str(), "%x.%x.%x", &major, &minor, &patch) == 3)
-        {
-            _token.fw_version[0] = (major << 16) | minor;
-            _token.fw_version[1] = patch;
-        }
+        _token.fw_version[0] = (minor << 16) | patch;
+        _token.fw_version[1] = major & 0xFF;
     }
 }
 
