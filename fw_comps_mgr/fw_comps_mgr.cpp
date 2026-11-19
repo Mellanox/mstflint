@@ -1848,6 +1848,9 @@ const char* FwComponent::getCompIdStr(comps_ids_t compId)
 
          case COMPID_CPO_VMOD_FW:
              return "COMPID_CPO_VMOD_FW";
+
+        case COMPID_PSC_TOKEN:
+            return "COMPID_PSC_TOKEN";
  
     default:
         return "UNKNOWN_COMPONENT";

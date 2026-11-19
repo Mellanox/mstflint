@@ -2200,39 +2200,6 @@ void GenericCommander::ValidateAndGetTlvsAndCompIdLegacy(const vector<u_int8_t>&
     checkConfTlvs(tlvs, compsId);
 }
 
-void GenericCommander::CheckCompIdByTokenType(u_int8_t tokenType, FwComponent::comps_ids_t& compsId)
-{
-    switch (tokenType)
-    {
-        case 0x2:
-            compsId = FwComponent::comps_ids_t::COMPID_CRCS_TOKEN;
-            break;
-        case 0x3:
-            compsId = FwComponent::comps_ids_t::COMPID_CRDT_TOKEN;
-            break;
-        default:
-            compsId = FwComponent::comps_ids_t::COMPID_UNKNOWN;
-    }
-}
-
-void GenericCommander::CheckCompIdByPSCToken(const vector<u_int8_t>& buff, FwComponent::comps_ids_t& compsId)
-{
-    size_t tokenSize = tokens_layout_psc_debug_token_size();
-
-    tokens_layout_psc_debug_token token;
-    memset(&token, 0, sizeof(token));
-
-    if (buff.size() >= tokenSize)
-    {
-        tokens_layout_psc_debug_token_unpack(&token, buff.data());
-        CheckCompIdByTokenType(token.token_type, compsId);
-    }
-    else
-    {
-        compsId = FwComponent::comps_ids_t::COMPID_UNKNOWN;
-    }
-}
-
 bool GenericCommander::IsPSCBinToken(const vector<u_int8_t>& buff)
 {
     if (buff.size() < 6)
@@ -2252,7 +2219,7 @@ void GenericCommander::apply(const vector<u_int8_t>& buff)
 
     if (IsPSCBinToken(buff))
     {
-        CheckCompIdByPSCToken(buff, compsId);
+        compsId = FwComponent::comps_ids_t::COMPID_PSC_TOKEN;
     }
     else
     {
