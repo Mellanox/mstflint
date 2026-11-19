@@ -788,6 +788,16 @@ AC_SEARCH_LIBS([sqlite3_initialize], [sqlite3], [SQLITE_SYSTEM_AVAILABLE="yes"],
     AC_SUBST(SQLITE_LIBS)])
 AM_CONDITIONAL([USE_LOCAL_SQLITE], [test "$SQLITE_SYSTEM_AVAILABLE" = no])
 
+# spdlog is used header-only by ext_libs/spdlog, but distributions package it as
+# a compiled library, which may also bring in fmt. Prefer the system copy when
+# pkg-config can find it and fall back to the bundled headers otherwise.
+PKG_CHECK_MODULES([SPDLOG], [spdlog >= 1.15],
+    [],
+    [SPDLOG_CFLAGS='-isystem $(top_srcdir)/ext_libs/spdlog/include'
+     SPDLOG_LIBS=
+     AC_SUBST(SPDLOG_CFLAGS)
+     AC_SUBST(SPDLOG_LIBS)])
+
 CFLAGS="$CFLAGS -DMST_UL"
 CXXFLAGS="$CXXFLAGS -DMST_UL"
 

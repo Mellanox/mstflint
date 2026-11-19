@@ -50,9 +50,10 @@ AM_CPPFLAGS = \
 
 AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe -Werror $(COMPILER_FPIC)
 
-# spdlog is header-only and third party: -isystem keeps -Werror from tripping
-# over its headers. It is only needed by NvToolsLogger.cpp.
-SPDLOG_CXXFLAGS = -isystem $(top_srcdir)/ext_libs/spdlog/include -DSPDLOG_NO_THREAD_ID
+# spdlog is third party: -isystem keeps -Werror from tripping over its headers.
+# $(SPDLOG_CFLAGS) points at the system copy when pkg-config found one, or at
+# ext_libs/spdlog otherwise. It is only needed by NvToolsLogger.cpp.
+SPDLOG_CXXFLAGS = $(SPDLOG_CFLAGS) -DSPDLOG_NO_THREAD_ID
 
 # The bundled jsoncpp is a libtool convenience library, so its objects are
 # already folded into .libs/libnvtoolslogger.a and must not be linked twice into
@@ -87,7 +88,7 @@ libnvtoolslogger_la_LDFLAGS = -pthread
 # both - that is a multiple-definition link failure. Final links get lib_os_api
 # from their own dependency on it; the .so rule below names it explicitly.
 libnvtoolslogger_la_DEPENDENCIES = libmft_log_config.la $(OS_API_LA)
-libnvtoolslogger_la_LIBADD = libmft_log_config.la -lstdc++
+libnvtoolslogger_la_LIBADD = libmft_log_config.la -lstdc++ $(SPDLOG_LIBS)
 
 libmft_log_config_ui_la_SOURCES = \
     log_config_ui.cpp \
@@ -119,7 +120,7 @@ $(NVTOOLSLOGGER_SO): libnvtoolslogger.la
 	$(CXX) -shared -pthread $(CXXFLAGS) $(LDFLAGS) $(COMPILER_FPIC) -o $@ \
 	  -Wl,--whole-archive .libs/libnvtoolslogger.a \
 	    $(top_builddir)/mft_core/mft_core_utils/operating_system_api/.libs/lib_os_api.a \
-	  -Wl,--no-whole-archive $(NVTOOLSLOGGER_JSON_SO_LIBS) -lstdc++
+	  -Wl,--no-whole-archive $(NVTOOLSLOGGER_JSON_SO_LIBS) $(SPDLOG_LIBS) -lstdc++
 
 all-local: $(NVTOOLSLOGGER_SO)
 
