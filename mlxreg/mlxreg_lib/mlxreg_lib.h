@@ -99,7 +99,12 @@ protected:
     bool isRegSizeSupported(string regName);
     int sendMaccessReg(u_int16_t regId, int method, std::vector<u_int32_t>& data);
     int sendMaccessReg(u_int16_t regId, int method, void* data, uint32_t size);
-    void initAdb(string extAdbFile);
+    void initAdb(string extAdbFile, PrmAdbType deviceType);
+#ifndef MST_UL // extension points; builds without MST_UL define them
+    void loadEmbeddedAdb(PrmAdbType deviceType);
+    int accessReg(u_int16_t regId, int method, void* data, uint32_t size, int* status);
+    void onCmdBufferGenerated(u_int16_t regId, std::vector<u_int32_t>& buffer);
+#endif
 
     /* Data Members */
     mfile* _mf;
