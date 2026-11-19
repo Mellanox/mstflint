@@ -45,6 +45,7 @@
 #include "dev_mgt/tools_dev_types.h"
 #include "mlxconfig/mlxcfg_generic_commander.h"
 #include "mft_utils/mft_utils.h"
+#include "common/tools_endianness.h"
 #include "tools_layouts/reg_access_switch_layouts.h"
 
 /********************************************************************************************************************************/
@@ -292,7 +293,7 @@ std::string MlxPSCtoken::GetPSIDString() const
 
     for (size_t i = 0; i < 4; i++)
     {
-        u_int32_t dword = __be32_to_cpu(_token.psid[i]);
+        u_int32_t dword = mft_be32_to_cpu(_token.psid[i]);
         const char* bytes = reinterpret_cast<const char*>(&dword);
 
         for (int j = 0; j < 4; j++)
@@ -509,7 +510,7 @@ void MlxPSCtoken::SetKeypairUUID(const u_int32_t* keypairUUID)
     u_int8_t keypair_uuid_bytes[16];
     for (int i = 0; i < 4; i++)
     {
-        u_int32_t val = __cpu_to_be32(keypairUUID[i]);
+        u_int32_t val = mft_cpu_to_be32(keypairUUID[i]);
         memcpy(&keypair_uuid_bytes[i * 4], &val, sizeof(u_int32_t));
     }
     memcpy(_token.keypair_uuid.data, keypair_uuid_bytes, sizeof(_token.keypair_uuid.data));
@@ -683,10 +684,10 @@ void MlxPSCtoken::SetPSIDFromMap(const string& psid)
         size_t dwordIdx = i / 4;
         size_t byteIdx = i % 4;
 
-        u_int32_t currentDword = __be32_to_cpu(_token.psid[dwordIdx]);
+        u_int32_t currentDword = mft_be32_to_cpu(_token.psid[dwordIdx]);
         char* bytes = reinterpret_cast<char*>(&currentDword);
         bytes[byteIdx] = psid[i];
-        _token.psid[dwordIdx] = __cpu_to_be32(currentDword);
+        _token.psid[dwordIdx] = mft_cpu_to_be32(currentDword);
     }
 }
 
