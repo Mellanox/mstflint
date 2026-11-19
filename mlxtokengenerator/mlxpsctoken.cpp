@@ -704,9 +704,8 @@ void MlxPSCtoken::SetFWVersionFromMap(const string& fwVersion)
     }
     else
     {
-        _token.fw_version[0] =
-          ((u_int32_t)(major & 0xFF) << 24) | ((u_int32_t)(minor & 0xFFFF) << 8) | ((patch >> 8) & 0xFF);
-        _token.fw_version[1] = (u_int32_t)(patch & 0xFF) << 24;
+        _token.fw_version[0] = major & 0xFF;
+        _token.fw_version[1] = ((u_int32_t)(minor & 0xFFFF) << 16) | (patch & 0xFFFF);
     }
 }
 
