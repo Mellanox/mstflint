@@ -860,7 +860,7 @@ void MlxPSCtoken::Aggregate(const MlxPSCtoken& token)
     UpdateValidEntries();
 }
 
-void MlxPSCtoken::LoadFromXMLFile(string xmlContent, string filePath)
+void MlxPSCtoken::LoadFromXMLFile(string xmlContent)
 {
     map<string, string> tokenData;
     string dbName = "";
@@ -868,7 +868,7 @@ void MlxPSCtoken::LoadFromXMLFile(string xmlContent, string filePath)
     commander.XML2MapPSCToken(xmlContent, tokenData);
     if (tokenData.empty())
     {
-        throw MlxTknGeneratorException("Failed to parse the XML document: %s", filePath.c_str());
+        throw MlxTknGeneratorException("Failed to parse the XML document");
     }
     LoadParamsFromMap(tokenData);
 }

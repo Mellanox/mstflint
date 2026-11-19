@@ -823,45 +823,23 @@ void MlxTknGenerator::CheckTokenType(MlxCfgTokenType tokenType)
     }
 }
 
-void MlxTknGenerator::AggregatePSCTokensXML(const vector<TokenFileData>& tokenFiles)
+void MlxTknGenerator::AggregatePSCTokensXML(const vector<string>& tokenFiles)
 {
-    DeviceType pscDeviceType = MlxPSCtoken::GetDeviceTypeFromXML(tokenFiles[0].content);
-    MlxCfgTokenType pscTokenType = MlxPSCtoken::GetTokenTypeFromXML(tokenFiles[0].content);
+    DeviceType pscDeviceType = MlxPSCtoken::GetDeviceTypeFromXML(tokenFiles[0]);
+    MlxCfgTokenType pscTokenType = MlxPSCtoken::GetTokenTypeFromXML(tokenFiles[0]);
     CheckTokenType(pscTokenType);
 
     shared_ptr<MlxPSCtoken> token = MlxPSCtokenFactory::CreatePSCtoken(pscTokenType, pscDeviceType);
-    token->LoadFromXMLFile(tokenFiles[0].content, tokenFiles[0].filePath);
+    token->LoadFromXMLFile(tokenFiles[0]);
 
     for (size_t i = 1; i < tokenFiles.size(); i++)
     {
-        MlxCfgTokenType pscTokenTypeForAggregation = MlxPSCtoken::GetTokenTypeFromXML(tokenFiles[i].content);
+        MlxCfgTokenType pscTokenTypeForAggregation = MlxPSCtoken::GetTokenTypeFromXML(tokenFiles[i]);
         CheckTokenType(pscTokenTypeForAggregation);
         shared_ptr<MlxPSCtoken> tokenForAggregation =
           MlxPSCtokenFactory::CreatePSCtoken(pscTokenTypeForAggregation, pscDeviceType);
-        tokenForAggregation->LoadFromXMLFile(tokenFiles[i].content, tokenFiles[i].filePath);
+        tokenForAggregation->LoadFromXMLFile(tokenFiles[i]);
         token->Aggregate(*tokenForAggregation);
-    }
-    token->SaveToXMLFile(_outputFile);
-}
-
-void MlxTknGenerator::AggregateLegacyTokensXML(const vector<TokenFileData>& tokenFiles)
-{
-    shared_ptr<MlxToken> token = MlxTokenFactory::CreateToken(_tokenType, _deviceType);
-    shared_ptr<MlxToken> tokenForAggregation = MlxTokenFactory::CreateToken(_tokenType, _deviceType);
-
-    bool isFirstToken = true;
-    for (auto file : tokenFiles)
-    {
-        if (isFirstToken)
-        {
-            token->LoadFromXMLFile(file.content);
-            isFirstToken = false;
-        }
-        else
-        {
-            tokenForAggregation->LoadFromXMLFile(file.content);
-            token->Aggregate(*tokenForAggregation);
-        }
     }
     token->SaveToXMLFile(_outputFile);
 }
@@ -871,31 +849,28 @@ void MlxTknGenerator::AggregateTokensXML()
     vector < string > tokensXML = GetListOfFiles(_tokensDir);
     MLX_TOKEN_LOG_DEBUG("aggregating token XMLs from %s (%d found)", _tokensDir.c_str(), (int)tokensXML.size());
 
-    vector<TokenFileData> tokenFiles;
+    vector<string> tokenFiles;
     bool firstFile = true;
-    TokenFormat firstFormat = TOKEN_FORMAT_LEGACY;
+    TokenFormat tokenFormat = TOKEN_FORMAT_LEGACY;
     string dbName = "";
     GenericCommander commander(nullptr, dbName, _deviceType);
     for (const auto& file : tokensXML)
     {
-        TokenFileData tokenData;
-        tokenData.filePath = file;
         vector<u_int8_t> binData = ReadFromFile(file);
-
         string xmlContent(binData.begin(), binData.end());
-        tokenData.content = xmlContent;
-        tokenData.format = commander.IsPscXmlByString(xmlContent) ? TOKEN_FORMAT_PSC : TOKEN_FORMAT_LEGACY;
+        TokenFormat currentTokenFormat =
+          commander.IsPscXmlByString(xmlContent) ? TOKEN_FORMAT_PSC : TOKEN_FORMAT_LEGACY;
 
         if (firstFile)
         {
-            firstFormat = tokenData.format;
+            tokenFormat = currentTokenFormat;
             firstFile = false;
         }
-        else if (tokenData.format != firstFormat)
+        else if (currentTokenFormat != tokenFormat)
         {
             throw MlxTknGeneratorException("Mixed token formats found in directory. All tokens must be the same format.");
         }
-        tokenFiles.push_back(tokenData);
+        tokenFiles.push_back(xmlContent);
     }
 
     if (tokenFiles.empty())
@@ -903,9 +878,19 @@ void MlxTknGenerator::AggregateTokensXML()
         throw MlxTknGeneratorException("No token files provided for aggregation");
     }
 
-    if (firstFormat == TOKEN_FORMAT_LEGACY)
+    if (tokenFormat == TOKEN_FORMAT_LEGACY)
     {
-        AggregateLegacyTokensXML(tokenFiles);
+        vector<string> aggregatedTokens = AggregateLegacyTokenXmlStrings(tokenFiles);
+        for (size_t i = 0; i < aggregatedTokens.size(); i++)
+        {
+            const vector<u_int8_t> bytes(aggregatedTokens[i].begin(), aggregatedTokens[i].end());
+            string filePath = _outputFile;
+            if (i > 0)
+            {
+                filePath += string_format("_%d.xml", i);
+            }
+            mft_utils::WriteToBinFile(filePath, bytes);
+        }
     }
     else
     {

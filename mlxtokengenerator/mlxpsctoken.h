@@ -92,7 +92,7 @@ public:
 
     std::vector<std::pair<std::string, std::string>> LoadFromParams();
     void LoadParamsFromMap(const std::map<std::string, std::string>& tokenData);
-    void LoadFromXMLFile(std::string xmlContent, std::string filePath);
+    void LoadFromXMLFile(std::string xmlContent);
     void Aggregate(const MlxPSCtoken& token);
     static DeviceType GetDeviceTypeFromXML(const std::string& xmlContent);
     static MlxCfgTokenType GetTokenTypeFromXML(const std::string& xmlContent);
