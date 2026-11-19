@@ -32,7 +32,11 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-SUBDIRS = minixz mini-yaml sole
+SUBDIRS = minixz
+
+if ENABLE_DPA
+SUBDIRS += mini-yaml sole
+endif
 
 if ENABLE_FWMGR
 if USE_LOCAL_INIPARSER
