@@ -319,9 +319,9 @@ std::string MlxPSCtoken::GetFWVersionString() const
     {
         u_int32_t fw0 = _token.fw_version[0];
         u_int32_t fw1 = _token.fw_version[1];
-        major = fw1 & 0xFF;
-        minor = (fw0 >> 16) & 0xFFFF;
-        subminor = fw0 & 0xFFFF;
+        major = (fw0 >> 24) & 0xFF;
+        minor = (fw0 >> 8) & 0xFFFF;
+        subminor = ((fw0 & 0xFF) << 8) | ((fw1 >> 24) & 0xFF);
     }
 
     char buf[64];
