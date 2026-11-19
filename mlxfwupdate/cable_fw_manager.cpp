@@ -219,6 +219,10 @@ CableFwManager::CableFwManager(const CmdLineParams& cmdParams, ProgressPrinter p
     _interrupted(interrupted),
     _progressLineOpen(false),
     _progressSpinner(0),
+    _downloadSecondsUsed(0),
+    _activationSecondsUsed(0),
+    _stageLimitSeconds(0),
+    _stageTimedOut(false),
     _discoverySeconds(-1),
     _updateSeconds(-1),
     _verificationSeconds(-1),
@@ -2368,13 +2372,15 @@ int CableFwManager::discoverCables()
         }
         // Counted the way the plan skips them: an NVIDIA cable whose firmware did not read is as
         // unreadable as one whose identity did not, and neither is updatable. An MFCDR verdict of
-        // fake or non-NVIDIA outranks both, as it does in the plan.
+        // fake or non-NVIDIA outranks both, as it does in the plan; a query that ran out of time
+        // outranks everything, whatever its reads returned.
         bool isThirdParty = _cables[i].vendorStatus == CABLE_VENDOR_STATUS_FAKE ||
                             _cables[i].vendorStatus == CABLE_VENDOR_STATUS_NON_NVIDIA;
         bool isUnreadable =
-          _cables[i].isPlugged && !isThirdParty &&
-          (!hasUsableIdentity(_cables[i]) || _cables[i].vendorStatus == CABLE_VENDOR_STATUS_READ_FAILED ||
-           (_cables[i].isNvidia && !_cables[i].fwRead));
+          _cables[i].isPlugged &&
+          (_cables[i].queryTimedOut || (!isThirdParty && (!hasUsableIdentity(_cables[i]) ||
+                                                          _cables[i].vendorStatus == CABLE_VENDOR_STATUS_READ_FAILED ||
+                                                          (_cables[i].isNvidia && !_cables[i].fwRead))));
         if (isUnreadable)
         {
             unreadable++;
@@ -2658,10 +2664,32 @@ static bool cableIdentityRead(const CableInfo& cable)
            cable.vendorOui != 0 || cable.invalidText != 0;
 }
 
+bool CableFwManager::queryOverdue(CableInfo& cable, std::chrono::steady_clock::time_point start, const char* next)
+{
+    double elapsed = secondsSince(start);
+
+    if (elapsed <= _cmdParams.cable_query_timeout)
+    {
+        return false;
+    }
+    cable.queryTimedOut = true;
+    // Reads that ran out of time cannot show the cage is empty, so it is reported as holding a cable it
+    // could not read.
+    cable.isPlugged = true;
+    cable.linkState = CABLE_STATE_UNREADABLE;
+    FWMANAGER_LOG_DEBUG("Cable %u: %.1f s of reads, past the %d s query timeout, before %s", cable.globalPort, elapsed,
+                        _cmdParams.cable_query_timeout, next);
+    emitProgress("-W- Port " + int_to_string((int)cable.globalPort) + ": reading the cable took longer than " +
+                 int_to_string(_cmdParams.cable_query_timeout) +
+                 " s (--module_query_timeout); it is skipped as unreadable\n");
+    return true;
+}
+
 void CableFwManager::queryCable(mfile* mf, CableInfo& cable)
 {
     // Every read below is attempted whatever the ones before it returned, so a cable shows all
     // that could be read about it, and each one that failed says so in the trace.
+    std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
     u_int8_t operStatus = 0;
     bool pmaosRead = readCableOperStatus(mf, cable.localIndex, operStatus) == ME_OK;
 
@@ -2672,6 +2700,10 @@ void CableFwManager::queryCable(mfile* mf, CableInfo& cable)
     else
     {
         FWMANAGER_LOG_DEBUG("Cable %u: PMAOS read failed", cable.globalPort);
+    }
+    if (queryOverdue(cable, start, "PDDR"))
+    {
+        return;
     }
 
     // PDDR is where the firmware republishes the EEPROM, and it is the source every field mlxlink
@@ -2719,6 +2751,10 @@ void CableFwManager::queryCable(mfile* mf, CableInfo& cable)
         }
     }
 
+    if (queryOverdue(cable, start, "the EEPROM"))
+    {
+        return;
+    }
     if (pddrRead)
     {
         // The firmware does not fill every field of the page - the hardware revision reads zero
@@ -2730,6 +2766,10 @@ void CableFwManager::queryCable(mfile* mf, CableInfo& cable)
         FWMANAGER_LOG_DEBUG("Cable %u: EEPROM read failed, its identity is unknown", cable.globalPort);
     }
     cable.isReadable = cableIdentityRead(cable);
+    if (queryOverdue(cable, start, "MFCDR"))
+    {
+        return;
+    }
 
     // MFCDR answers this directly where the firmware carries it; the OUI list is what is left
     // when it does not. A fake cable can copy an NVIDIA OUI, so where the firmware could have
@@ -2749,12 +2789,20 @@ void CableFwManager::queryCable(mfile* mf, CableInfo& cable)
         cable.isNvidia = (cable.vendorOui == CABLE_NVIDIA_OUI) || (cable.vendorOui == CABLE_NVIDIA_OUI_MELLANOX);
     }
 
+    if (queryOverdue(cable, start, "MCQI"))
+    {
+        return;
+    }
     if (readCableFwProperties(mf, cable))
     {
         // A cable that implements neither firmware-update procedure reports protocol 0.
         cable.isBurnable = (cable.managementInterfaceProtocol != 0);
     }
 
+    if (queryOverdue(cable, start, "the link state"))
+    {
+        return;
+    }
     if (!cable.isReadable)
     {
         // Switch FW reports a cage it cannot read the module in as plugged_with_error, which is
@@ -2766,6 +2814,7 @@ void CableFwManager::queryCable(mfile* mf, CableInfo& cable)
         return;
     }
     cable.linkState = readCableLinkStateText(cable);
+    queryOverdue(cable, start, "the end of its reads");
 }
 
 bool CableFwManager::readCableIdentity(mfile* mf, CableInfo& cable)
@@ -3338,6 +3387,12 @@ int CableFwManager::decideCableActions()
         {
             continue;
         }
+        // Reads that ran past --module_query_timeout left only part of the cable known.
+        if (cable.queryTimedOut)
+        {
+            cable.action = CABLE_ACTION_SKIP_UNREADABLE;
+            continue;
+        }
         if (!cable.isPlugged)
         {
             cable.action = CABLE_ACTION_SKIP_NOT_PLUGGED;
@@ -3714,6 +3769,13 @@ int CableFwManager::burnProgress(int completion, const char* stage, prog_t type,
             self->_progressLineOpen = (type != PROG_OK);
         }
     }
+    // A register access cannot be cut short, so a stage is stopped here, between progress updates. A
+    // completion that arrives late is still a completion.
+    if (type != PROG_OK && self->_stageLimitSeconds > 0 && secondsSince(self->_stageStart) > self->_stageLimitSeconds)
+    {
+        self->_stageTimedOut = true;
+        return 1;
+    }
     // Non-zero makes the component manager stop, and its destructor then cancels the update and
     // releases the handle - what flint does on Ctrl-C, whatever the stage.
     return self->isInterrupted() ? 1 : 0;
@@ -3867,6 +3929,27 @@ int CableFwManager::checkNoStopOnErrorSupport()
     return MLX_FWM_SUCCESS;
 }
 
+/* The timeout budget one kind of burn stage draws from, for every group together. A download that also
+ * activates, as one transaction, draws from both timeouts at once.
+ */
+static long long burnStageBudget(const CmdLineParams& params, bool download, bool activate)
+{
+    if (download && activate)
+    {
+        return (long long)params.cable_download_timeout + params.cable_activation_timeout;
+    }
+    return download ? params.cable_download_timeout : params.cable_activation_timeout;
+}
+
+static string burnStageBudgetText(const CmdLineParams& params, bool download, bool activate)
+{
+    string flags = (download && activate) ? "--module_download_timeout + --module_activation_timeout" :
+                   download               ? "--module_download_timeout" :
+                                            "--module_activation_timeout";
+    return "the " + std::to_string(burnStageBudget(params, download, activate)) + " s of " + flags +
+           " for all groups ran out";
+}
+
 void CableFwManager::burnPlanEntry(const CablePlanEntry& group, size_t firstResult)
 {
     size_t lastResult = firstResult + group.cableIndices.size();
@@ -3887,11 +3970,26 @@ void CableFwManager::burnPlanEntry(const CablePlanEntry& group, size_t firstResu
     // The wait belongs between the transfer and the activation, and it is only there for cables
     // that need it; with none asked for, the burn runs as one transaction, the way it is shipped.
     bool separateActivation = _cmdParams.cable_activation_wait > 0;
-    bool ok = runBurnStage(mf, group.burnImage, true, !separateActivation, firstResult, lastResult, errMsg, stageName);
+    bool ok = false;
+    if (separateActivation && _activationSecondsUsed >= _cmdParams.cable_activation_timeout)
+    {
+        // A download its activation could not follow would only leave an image waiting in the cable.
+        stageName = "download";
+        errMsg = "download: not started, " + burnStageBudgetText(_cmdParams, false, true);
+        FWMANAGER_LOG_DEBUG("Download on %s not started: %.1f s of the %d s activation budget already used",
+                            group.asicDevName.c_str(), _activationSecondsUsed, _cmdParams.cable_activation_timeout);
+    }
+    else
+    {
+        ok = runBurnStage(mf, group.burnImage, true, !separateActivation, firstResult, lastResult, errMsg, stageName);
+    }
     if (ok && separateActivation)
     {
-        // In slices, so Ctrl-C does not have to wait out the whole pause.
-        for (int waited = 0; waited < _cmdParams.cable_activation_wait * 10 && !isInterrupted(); waited++)
+        // In slices, so Ctrl-C does not have to wait out the whole pause. Pointless once the
+        // activations have used their budget: the stage after it would not start.
+        bool activationLeft = _activationSecondsUsed < _cmdParams.cable_activation_timeout;
+        for (int waited = 0; activationLeft && waited < _cmdParams.cable_activation_wait * 10 && !isInterrupted();
+             waited++)
         {
             msleep(100);
         }
@@ -3948,6 +4046,28 @@ bool CableFwManager::runBurnStage(mfile* mf,
     // device's own counters can, and they are read once the burn comes back.
     stageName = download ? (activate ? "burn" : "download") : "activation";
     string stage = stageName + ": ";
+    // Only a stage of the same kind uses up its budget: the activation clock does not run while a
+    // later group downloads, and neither runs during --module_activation_wait.
+    double& used = download ? _downloadSecondsUsed : _activationSecondsUsed;
+    double left = burnStageBudget(_cmdParams, download, activate) - used;
+
+    if (left <= 0)
+    {
+        // The group is still verified: its cables are read back and show the version they kept.
+        errMsg = stage + "not started, " + burnStageBudgetText(_cmdParams, download, activate);
+        FWMANAGER_LOG_DEBUG("%s stage not started: %.1f s of its %lld s budget already used", stageName.c_str(), used,
+                            burnStageBudget(_cmdParams, download, activate));
+        return false;
+    }
+    // The clock covers the whole stage, the setup before the transfer too, and charges the budget on
+    // every way out.
+    struct StageClock
+    {
+        double& used;
+        std::chrono::steady_clock::time_point start;
+        ~StageClock() { used += secondsSince(start); }
+    } clock = {used, std::chrono::steady_clock::now()};
+    _stageStart = clock.start;
 
     fwComps.GenerateHandle();
     // No index and no range: with auto update set the device matches the image against its own
@@ -3971,8 +4091,17 @@ bool CableFwManager::runBurnStage(mfile* mf,
     memset(&progress, 0, sizeof(progress));
     progress.func = &CableFwManager::burnProgress;
     progress.opaque = this;
+    _stageLimitSeconds = left;
+    _stageTimedOut = false;
     bool ok = fwComps.burnComponents(component, &progress);
-    if (!ok && isInterrupted())
+    _stageLimitSeconds = 0;
+    FWMANAGER_LOG_DEBUG("%s stage took %.1f s; %.1f s of its %lld s budget were used before it", stageName.c_str(),
+                        secondsSince(clock.start), used, burnStageBudget(_cmdParams, download, activate));
+    if (!ok && _stageTimedOut)
+    {
+        errMsg = stage + "timed out, " + burnStageBudgetText(_cmdParams, download, activate);
+    }
+    else if (!ok && isInterrupted())
     {
         errMsg = stage + "interrupted by the user";
     }
@@ -4021,6 +4150,12 @@ bool CableFwManager::runBurnStage(mfile* mf,
             _results[j].status =
               (i < transferFailures) ? "download: rejected by the device" : "activation: rejected by the device";
         }
+    }
+    // A stage cut short by its timeout ended before the device finished counting; its counts say
+    // nothing more than the timeout already does.
+    if (_stageTimedOut)
+    {
+        return false;
     }
     // burnComponents() reports success whatever the error counts say, and the per-cable detail
     // comes from a separate MCCE read that can come back empty or name a cable outside this

@@ -34,6 +34,7 @@
 #ifndef __CABLE_FW_MANAGER_H__
 #define __CABLE_FW_MANAGER_H__
 
+#include <chrono>
 #include <map>
 #include <set>
 #include <sstream>
@@ -57,6 +58,13 @@ using namespace std;
  * resets, so its link drops and comes back; measured link-up times are around three seconds.
  */
 #define CABLE_VERIFY_WAIT_DEFAULT 5
+
+/* How long, in seconds, one cable's reads, one group's download (or download and activation as one
+ * transaction) and one group's activation may take before the tool gives up on them.
+ */
+#define CABLE_QUERY_TIMEOUT_DEFAULT 60
+#define CABLE_DOWNLOAD_TIMEOUT_DEFAULT 900
+#define CABLE_ACTIVATION_TIMEOUT_DEFAULT 300
 
 /* A switch ASIC reachable from this host. */
 struct AsicInfo
@@ -198,6 +206,7 @@ struct CableInfo
     // so asicGa is trustworthy for every other type and worthless for those.
     u_int8_t moduleType = 0;
     bool isPlugged = false;     // a cable is plugged into the cage
+    bool queryTimedOut = false; // its reads ran past --module_query_timeout, so what is here is partial
     bool isReadable = false;    // its identity was read; nothing below means anything without it
     string linkState;           // PHY manager state, what mlxlink shows as "State"
     u_int8_t operStatus = 0xff; // raw PMAOS.oper_status; 0xff means it was never read
@@ -511,6 +520,10 @@ private:
     string readCableLinkStateText(const CableInfo& cable);
 
     void queryCable(mfile* mf, CableInfo& cable);
+    /* Whether this cable's reads have run past --module_query_timeout; marks it and says so when they have.
+     * A register read cannot be cut short, so this is checked between them.
+     */
+    bool queryOverdue(CableInfo& cable, std::chrono::steady_clock::time_point start, const char* next);
 
     /* Read the EEPROM identity - part number, vendor, revision, serial, form factor, module
      * state and manufacturing date. The field offsets differ between CMIS and SFF-8636, and the
@@ -746,6 +759,15 @@ private:
     // A burn progress line was printed without its newline; the next line has to end it first.
     bool _progressLineOpen;
     int _progressSpinner;
+    // The burn timeouts are budgets shared by every group: the seconds the download and the activation
+    // stages have used so far, each counted only while such a stage runs.
+    double _downloadSecondsUsed;
+    double _activationSecondsUsed;
+    // What the stage running now may still use and when it started, so the progress callback can stop
+    // it once the budget is gone; zero when no stage is running.
+    double _stageLimitSeconds;
+    std::chrono::steady_clock::time_point _stageStart;
+    bool _stageTimedOut;
     // Service ports taken out of _cables, by global port, so the summary still accounts for them.
     vector<u_int32_t> _servicePorts;
     // Seconds each phase took, for the summary; negative when the phase did not run.
