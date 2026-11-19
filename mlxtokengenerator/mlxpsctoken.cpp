@@ -794,6 +794,14 @@ void MlxPSCtoken::UpdateValidEntries()
     _validEntries++;
 }
 
+void MlxPSCtoken::NormalizeDeviceUniqueForAggregation()
+{
+    for (int i = 0; i < _validEntries; i++)
+    {
+        std::swap(_token.device_unique[i].serial_number[0], _token.device_unique[i].serial_number[1]);
+    }
+}
+
 void MlxPSCtoken::ValidatePSID(const string& psid)
 {
     if (psid != GetPSIDString())

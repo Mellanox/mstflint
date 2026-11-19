@@ -847,6 +847,7 @@ void MlxTknGenerator::AggregatePSCTokensXML(const vector<string>& tokenFiles)
 
     shared_ptr<MlxPSCtoken> token = MlxPSCtokenFactory::CreatePSCtoken(pscTokenType, pscDeviceType);
     token->LoadFromXMLFile(tokenFiles[0]);
+    token->NormalizeDeviceUniqueForAggregation();
 
     for (size_t i = 1; i < tokenFiles.size(); i++)
     {
@@ -855,6 +856,7 @@ void MlxTknGenerator::AggregatePSCTokensXML(const vector<string>& tokenFiles)
         shared_ptr<MlxPSCtoken> tokenForAggregation =
           MlxPSCtokenFactory::CreatePSCtoken(pscTokenTypeForAggregation, pscDeviceType);
         tokenForAggregation->LoadFromXMLFile(tokenFiles[i]);
+        tokenForAggregation->NormalizeDeviceUniqueForAggregation();
         token->Aggregate(*tokenForAggregation);
     }
     token->SaveToXMLFile(_outputFile);

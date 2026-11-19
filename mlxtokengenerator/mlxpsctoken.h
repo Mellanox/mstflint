@@ -144,6 +144,7 @@ private:
     void AddDeviceUnique(const u_int64_t& deviceUnique);
     void AddNonce(const u_int32_t* nonce);
     void UpdateValidEntries();
+    void NormalizeDeviceUniqueForAggregation();
     u_int64_t GetDeviceUnique() const;
     const u_int32_t* GetNonce() const;
     void ValidateValidEntries(const MlxPSCtoken& token);
