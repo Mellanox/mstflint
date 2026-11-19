@@ -883,7 +883,6 @@ bool generate_python_module(const std::vector<DeviceEntry>& devices,
         return false;
     }
 
-    f << "#!/usr/bin/env python\n";
     f << "# -*- coding: utf-8 -*-\n";
     f << PY_LICENSE_HEADER;
     f << "\n";
