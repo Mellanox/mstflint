@@ -89,6 +89,7 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root)
 %{mstflint_sdk_libdir}/libmstflint_sdk.so
+%{mstflint_sdk_libdir}/libmstflint_sdk.a
 # Python bindings (mft_sdk/Makefile.am sdkpythonlibdir); the whole directory, so
 # whatever byte-compiled files the build root's brp scripts add are owned too.
 %{mstflint_sdk_libdir}/mft_sdk_py
