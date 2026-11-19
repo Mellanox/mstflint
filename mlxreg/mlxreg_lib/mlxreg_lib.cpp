@@ -79,7 +79,7 @@ _MlxRegLib_impl<dynamic>::_MlxRegLib_impl(mfile* mf, string extAdbFile, bool isE
                 extAdbFile = PrmAdbDB::getDefaultDBName(deviceType);
             }
         }
-        initAdb(extAdbFile);
+        initAdb(extAdbFile, deviceType);
     }
     catch (MlxRegException& adbInitExp)
     {
@@ -177,7 +177,7 @@ bool _MlxRegLib_impl<dynamic>::isDeviceSupported(mfile* mf)
 }
 
 template<bool dynamic>
-void _MlxRegLib_impl<dynamic>::initAdb(string extAdbFile)
+void _MlxRegLib_impl<dynamic>::initAdb(string extAdbFile, PrmAdbType deviceType)
 {
     _adb = new Adb();
     if (extAdbFile != "")
@@ -189,7 +189,12 @@ void _MlxRegLib_impl<dynamic>::initAdb(string extAdbFile)
     }
     else
     {
+#ifndef MST_UL
+        loadEmbeddedAdb(deviceType);
+#else
+        (void)deviceType;
         throw MlxRegException("No Adabe was provided, please provide Adabe file to continue");
+#endif
     }
 }
 
@@ -267,6 +272,9 @@ int _MlxRegLib_impl<dynamic>::sendMaccessReg(u_int16_t regId, int method, std::v
     int i = RETRIES_COUNT;
     do
     {
+#ifndef MST_UL
+        beforeRegAccess(regId, method);
+#endif
         rc = maccess_reg(_mf,
                          regId,
                          (maccess_reg_method_t)method,
@@ -275,6 +283,9 @@ int _MlxRegLib_impl<dynamic>::sendMaccessReg(u_int16_t regId, int method, std::v
                          (sizeof(u_int32_t) * data.size()),
                          (sizeof(u_int32_t) * data.size()),
                          &status);
+#ifndef MST_UL
+        afterRegAccess(regId, method);
+#endif
         if ((rc != ME_ICMD_STATUS_IFC_BUSY && status != ME_REG_ACCESS_BAD_PARAM) || !(_mf->flags & MDEVS_REM))
         {
             break;
@@ -298,7 +309,13 @@ int _MlxRegLib_impl<dynamic>::sendMaccessReg(u_int16_t regId, int method, void* 
     int i = RETRIES_COUNT;
     do
     {
+#ifndef MST_UL
+        beforeRegAccess(regId, method);
+#endif
         rc = maccess_reg(_mf, regId, (maccess_reg_method_t)method, (u_int32_t*)data, size, size, size, &status);
+#ifndef MST_UL
+        afterRegAccess(regId, method);
+#endif
         if ((rc != ME_ICMD_STATUS_IFC_BUSY && status != ME_REG_ACCESS_BAD_PARAM) || !(_mf->flags & MDEVS_REM))
         {
             break;
@@ -530,6 +547,9 @@ std::vector<u_int32_t>
     }
 
     delete[] buffer;
+#ifndef MST_UL
+    onCmdBufferGenerated(regId, method, interfaceBuffer);
+#endif
     return interfaceBuffer;
 }
 
