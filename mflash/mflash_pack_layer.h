@@ -82,62 +82,9 @@ typedef void* trm_ctx;
 #define MFLASH_ERR_STR_SIZE 4
 #endif
 
-#define CX4_HW_ID           0x209
-#define CX4LX_HW_ID         0x20b
-#define CX5_HW_ID           0x20d
-#define CX6_HW_ID           0x20f
-#define CX7_HW_ID           0x218
-#define CX8_HW_ID           0x21e
-#define CX8_PURE_PCIE_SWITCH_HW_ID  0x222
-#define CX9_HW_ID           0x224
-#define CX9_PURE_PCIE_SWITCH_HW_ID  0x228
-#define CX6DX_HW_ID         0x212
-#define CX6LX_HW_ID         0x216
-#define BLUEFIELD_HW_ID     0x211
-#define BLUEFIELD2_HW_ID    0x214
-#define BLUEFIELD3_HW_ID    0x21c
-#define BLUEFIELD4_HW_ID    0x220
-#define SPECTRUM_HW_ID      0x249
-#define SPECTRUM2_HW_ID     0x24e
-#define SPECTRUM3_HW_ID     0x250
-#define QUANTUM2_HW_ID      0x257
-#define QUANTUM3_HW_ID      0x25b
-#define NVLINK6_SWITCH_HW_ID 0x278
-#define SPECTRUM4_HW_ID     0x254
-#define SPECTRUM5_HW_ID     0x270
-#define SPECTRUM6_HW_ID     0x274
 #define INBAND_MAX_REG_SIZE 44
 
 #define VSC_RECOVERY_SPACE_FLASH_GW_BASE_ADDRESS 0x10
-
-/*
- * Device IDs Macros:
- */
-#define IS_SEN(dev_id)                     ((dev_id) == SPECTRUM_HW_ID)
-#define IS_SPECTRUM2(dev_id)               ((dev_id) == SPECTRUM2_HW_ID)
-#define IS_CONNECTX4(dev_id)               ((dev_id) == CX4_HW_ID)
-#define IS_CONNECTX4LX(dev_id)             ((dev_id) == CX4LX_HW_ID)
-#define IS_CONNECTX5(dev_id)               ((dev_id) == CX5_HW_ID)
-#define IS_CONNECTX7(dev_id)               ((dev_id) == CX7_HW_ID)
-#define IS_CONNECTX8(dev_id)               ((dev_id) == CX8_HW_ID)
-#define IS_CONNECTX9(dev_id)               ((dev_id) == CX9_HW_ID)
-#define IS_CONNECTX8_PURE_PCIE_SWITCH(dev_id) ((dev_id) == CX8_PURE_PCIE_SWITCH_HW_ID)
-#define IS_CONNECTX9_PURE_PCIE_SWITCH(dev_id) ((dev_id) == CX9_PURE_PCIE_SWITCH_HW_ID)
-#define IS_CONNECTX6(dev_id)               ((dev_id) == CX6_HW_ID)
-#define IS_CONNECTX6DX(dev_id)             ((dev_id) == CX6DX_HW_ID)
-#define IS_CONNECTX6LX(dev_id)             ((dev_id) == CX6LX_HW_ID)
-#define IS_BLUEFIELD(dev_id)               ((dev_id) == BLUEFIELD_HW_ID)
-#define IS_SPECTRUM(dev_id)                ((dev_id) == SPECTRUM_HW_ID)
-#define IS_BLUEFEILD(dev_id)               ((dev_id) == BLUEFIELD_HW_ID)
-#define IS_BLUEFEILD2(dev_id)              ((dev_id) == BLUEFIELD2_HW_ID)
-#define IS_BLUEFEILD3(dev_id)              ((dev_id) == BLUEFIELD3_HW_ID)
-#define IS_BLUEFEILD4(dev_id)              ((dev_id) == BLUEFIELD4_HW_ID)
-#define IS_QUANTUM2(dev_id)                ((dev_id) == QUANTUM2_HW_ID)
-#define IS_QUANTUM3(dev_id)                ((dev_id) == QUANTUM3_HW_ID)
-#define IS_NVLINK6_SWITCH(dev_id)          ((dev_id) == NVLINK6_SWITCH_HW_ID)
-#define IS_SPECTRUM4(dev_id)               ((dev_id) == SPECTRUM4_HW_ID)
-#define IS_SPECTRUM5(dev_id)               ((dev_id) == SPECTRUM5_HW_ID)
-#define IS_SPECTRUM6(dev_id)               ((dev_id) == SPECTRUM6_HW_ID)
 
 typedef int (*f_mf_lock)(mflash* mfl, int lock_state);
 

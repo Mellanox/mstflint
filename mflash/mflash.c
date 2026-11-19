@@ -1343,7 +1343,7 @@ int spi_update_num_of_banks(mflash* mfl, int prev_num_of_flashes)
     num_of_banks = spi_get_num_of_flashes(prev_num_of_flashes);
     if (num_of_banks == -1)
     {
-        if (IS_SEN(mfl->attr.hw_dev_id))
+        if (mfl->attr.hw_dev_id == DeviceSpectrum_HwId)
         {
             mfl->opts[MFO_NUM_OF_BANKS] = 2;
         }
@@ -2799,7 +2799,7 @@ BinIdT get_bin_id(mflash* mfl, u_int32_t hw_dev_id)
 {
     u_int32_t dword = 0;
 
-    if (hw_dev_id == CX5_HW_ID)
+    if (hw_dev_id == DeviceConnectX5_HwId)
     {
         if (mread4(mfl->mf, CX5_EFUSE_ADDR, &dword) == 4)
         {
