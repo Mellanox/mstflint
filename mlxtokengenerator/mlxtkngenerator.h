@@ -37,8 +37,15 @@
 #include <cmdparser/cmdparser.h>
 #include <map>
 #include "mlxtoken.h"
+#include "mlxpsctoken.h"
 #include "mlxconfig/mlxcfg_ui.h"
 #include "mlxconfig/mlxcfg_ui_tokens.h"
+
+enum TokenFormat
+{
+    TOKEN_FORMAT_LEGACY,
+    TOKEN_FORMAT_PSC
+};
 
 class MlxTknGenerator: public CommandLineRequester
 {
@@ -48,8 +55,11 @@ public:
 
     void Run(int argc, char** argv);
     void GenerateTokenXML();
+    void GenerateLegacyTokenXML();
+    void GeneratePSCTokenXML();
     void AggregateTokensXML();
     void AutoGenerateTokensXML();
+    TokenFormat CheckTokenFormat();
 
 private:
     void InitCmdParser();
@@ -71,6 +81,8 @@ private:
     void IsValidGetMeasurementIndex50(const struct tokens_layout_get_measurment_index_50& getMeasurementIndex50);
     vector < TLVParamsData >
     GetTokenDataFromChallenge(mfile * mf, MlxCfgTokenType tokenType, bool isNestedToken);
+    void GetTokenDataFromChallenge(mfile* mf, shared_ptr<MlxPSCtoken> token);
+    void SetTokenDataToToken(shared_ptr<MlxPSCtoken> token);
     vector < TLVParamsData > GetRemoteTokenData(struct reg_access_switch_mtcq_reg_ext challenge,
                                                 MlxCfgTokenType tokenType,
                                                 string debugFwVersion);
@@ -79,6 +91,8 @@ private:
                                                         string debugFwVersion);
     vector < TLVParamsData > GetTokenDataFromQuery(string device, MlxCfgTokenType tokenType, Device_Type deviceType);
     vector<string> AggregateLegacyTokenXmlStrings(const vector<string>& xmlStrings, bool isMultiAggregate = false);
+    void ValidatePSCTokenType(MlxCfgTokenType tokenType);
+    void SetI2CSecondaryAddr();
 
     enum MlxTknGeneratorCmd {
         GenerateToken,
@@ -113,6 +127,8 @@ private:
     static const char   CHALLENGE_BLOB_FLAG_SHORT;
     static const string SECONDARY_ADDR_FLAG;
     static const char   SECONDARY_ADDR_FLAG_SHORT;
+    static const string TOKEN_CONFIG_FLAG;
+    static const char   TOKEN_CONFIG_FLAG_SHORT;
 
     CommandLineParser  _cmdParser;
     string             _device;
@@ -127,6 +143,7 @@ private:
     string             _blobFile;
     MlxTknGeneratorCmd _command;
     int                _i2cSecondaryAddr;
+    string             _tokenConfig;
 };
 
 #endif /* MLXTKNGNERATOR_H_ */

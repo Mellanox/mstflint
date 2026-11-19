@@ -59,6 +59,7 @@
 #include "mlxcfg_xml_reader.h"
 #include "mlxcfg_xml_tlv_builder.h"
 #include "common/tools_endianness.h"
+#include "mlxtokengenerator/mlxpsctoken.h"
 
 using namespace std;
 using namespace mlxcfg;
@@ -67,11 +68,16 @@ using namespace mlxcfg;
 #define TLVCLASS_SIZE 8
 #define RAW_FILE_FINGERPRINT "MLNX_RAW_TLV_FILE"
 #define XMLNS "http://www.mellanox.com/config"
+#define XNVIDIA "http://nvidia.com/config"
 #define XML_ROOT "config"
 
 #define XML_DOCUMENT_START                         \
     "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" \
     "<" XML_ROOT " xmlns=\"" XMLNS "\">"
+
+#define XML_PSC_TOKEN_DOCUMENT_START               \
+    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" \
+    "<" XML_ROOT " xmlns=\"" XNVIDIA "\">"
 #define XML_DOCUMENT_END "</" XML_ROOT ">"
 
 #define EQ_STR "=="
@@ -1356,6 +1362,49 @@ void GenericCommander::genTLVsList(vector<string>& tlvs)
     }
 }
 
+void GenericCommander::genPSCXMLTemplate(string tlvName, string tlvValue, string& tlvTemplate, bool& indentation)
+{
+    if (tlvValue == PSC_TLV_TYPE_START)
+    {
+        tlvTemplate = "<" + tlvName + ">";
+        indentation = true;
+    }
+    else if (tlvValue == PSC_TLV_TYPE_END)
+    {
+        tlvTemplate = "</" + tlvName + ">";
+        indentation = false;
+    }
+    else
+    {
+        if (indentation)
+        {
+            tlvTemplate = "\t<" + tlvName + ">" + tlvValue + "</" + tlvName + ">";
+        }
+        else
+        {
+            tlvTemplate = "<" + tlvName + ">" + tlvValue + "</" + tlvName + ">";
+        }
+    }
+}
+
+void GenericCommander::genXMLPSCTemplateAux(vector<pair<string, string>> tlvs, string& xmlTemplate)
+{
+    xmlTemplate = XML_PSC_TOKEN_DOCUMENT_START;
+    xmlTemplate += "\n";
+    bool indentation = false;
+    for (vector<pair<string, string>>::iterator it = tlvs.begin(); it != tlvs.end(); ++it)
+    {
+        string tlvName = it->first;
+        string tlvValue = it->second;
+        string tlvTemplate;
+        genPSCXMLTemplate(tlvName, tlvValue, tlvTemplate, indentation);
+        xmlTemplate += "\n" + tlvTemplate + "\n";
+    }
+    xmlTemplate += "\n";
+    xmlTemplate += XML_DOCUMENT_END;
+    xmlTemplate += "\n";
+}
+
 void GenericCommander::genXMLTemplateAux(vector<string> tlvs,
                                          string& xmlTemplate,
                                          bool allAttrs,
@@ -2006,34 +2055,65 @@ void GenericCommander::ValidateAndGetTlvsAndCompIdLegacy(const vector<u_int8_t>&
     checkConfTlvs(tlvs, compsId);
 }
 
+void GenericCommander::CheckCompIdByTokenType(u_int8_t tokenType, FwComponent::comps_ids_t& compsId)
+{
+    switch (tokenType)
+    {
+        case 0x2:
+            compsId = FwComponent::comps_ids_t::COMPID_CRCS_TOKEN;
+            break;
+        case 0x3:
+            compsId = FwComponent::comps_ids_t::COMPID_CRDT_TOKEN;
+            break;
+        default:
+            compsId = FwComponent::comps_ids_t::COMPID_UNKNOWN;
+    }
+}
+
+void GenericCommander::CheckCompIdByPSCToken(const vector<u_int8_t>& buff, FwComponent::comps_ids_t& compsId)
+{
+    size_t tokenSize = tokens_layout_psc_debug_token_size();
+
+    tokens_layout_psc_debug_token token;
+    memset(&token, 0, sizeof(token));
+
+    if (buff.size() >= tokenSize)
+    {
+        tokens_layout_psc_debug_token_unpack(&token, buff.data());
+        CheckCompIdByTokenType(token.token_type, compsId);
+    }
+    else
+    {
+        compsId = FwComponent::comps_ids_t::COMPID_UNKNOWN;
+    }
+}
+
+bool GenericCommander::IsPSCBinToken(const vector<u_int8_t>& buff)
+{
+    if (buff.size() < 6)
+    {
+        return false;
+    }
+    // Check all first 6 bytes at once
+    const std::vector<uint8_t> expected = {0x54, 0x4C, 0x56, 0x31, 0x0A}; // 'TLV1'
+    return std::equal(expected.begin(), expected.end(), buff.begin());
+}
+
 void GenericCommander::apply(const vector<u_int8_t>& buff)
 {
     FwComponent comp;
-
-    vector<std::shared_ptr<TLVConf>> tlvs;
-    vector<u_int32_t> dwBuff;
     FwCompsMgr fwCompsAccess(_mf);
     FwComponent::comps_ids_t compsId = FwComponent::comps_ids_t::COMPID_UNKNOWN;
-    size_t fingerPrintLength = strlen(BIN_FILE_FINGERPRINT);
 
-    /* Check if there is a fingerprint: */
-    if (buff.size() < fingerPrintLength)
+    if (IsPSCBinToken(buff))
     {
-        throw MlxcfgException("Invalid Configuration file");
+        CheckCompIdByPSCToken(buff, compsId);
     }
-    for (unsigned int i = 0; i < fingerPrintLength; i += 4)
+    else
     {
-        if (buff[i] != BIN_FILE_FINGERPRINT[i])
-        {
-            throw MlxcfgException("Fingerprint is missing in the Configuration file");
-        }
+        vector<std::shared_ptr<TLVConf>> tlvs;
+        ValidateAndGetTlvsAndCompIdLegacy(buff, tlvs, compsId);
     }
-
-    dwBuff.resize((buff.size() - fingerPrintLength) >> 2);
-    memcpy(dwBuff.data(), buff.data() + fingerPrintLength, buff.size() - fingerPrintLength);
-    bin2TLVConfs(dwBuff, tlvs);
-
-    checkConfTlvs(tlvs, compsId);
 
     if (!fwCompsAccess.getFwSupport())
     {

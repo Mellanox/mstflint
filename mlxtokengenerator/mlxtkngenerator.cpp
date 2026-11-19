@@ -89,6 +89,8 @@ const string MlxTknGenerator::CHALLENGE_BLOB_FLAG = "blob";
 const char   MlxTknGenerator::CHALLENGE_BLOB_FLAG_SHORT = 'b';
 const string MlxTknGenerator::SECONDARY_ADDR_FLAG = "i2c_secondary";
 const char   MlxTknGenerator::SECONDARY_ADDR_FLAG_SHORT = 's';
+const string MlxTknGenerator::TOKEN_CONFIG_FLAG = "token_config";
+const char   MlxTknGenerator::TOKEN_CONFIG_FLAG_SHORT = 'c';
 
 vector < string > GetListOfFiles(string dirPath)
 {
@@ -188,7 +190,8 @@ MlxTknGenerator::MlxTknGenerator() :
     _tokensDir(),
     _debugFwDir(),
     _command(Unknown),
-    _i2cSecondaryAddr(0)
+    _i2cSecondaryAddr(0),
+    _tokenConfig("")
 {
     InitCmdParser();
 }
@@ -428,14 +431,25 @@ vector < TLVParamsData > MlxTknGenerator::GetTokenDataFromChallenge(mfile * mf,
     return data;
 }
 
+void MlxTknGenerator::GetTokenDataFromChallenge(mfile* mf, shared_ptr<MlxPSCtoken> token)
+{
+    MLX_TOKEN_LOG_DEBUG("reading PSC token data from challenge");
+    MlxCfgToken mlxCfgToken(mf);
+    string debugFwVersion;
+    MlxCfgTokenType tokenType = token->GetTokenTypeEnum();
+    if (tokenType == McTokenTypeCRDT)
+    {
+        debugFwVersion = GetDebugFwVersion(_debugFwFile);
+    }
+
+    struct reg_access_switch_mtcq_reg_ext challenge = mlxCfgToken.GetChallengeFromSwitchOrHCA(tokenType);
+    token->GetChallengeBasedTokenData(challenge, _tokenConfig);
+}
+
 vector < TLVParamsData >
 MlxTknGenerator::GetDataForToken(string device, MlxCfgTokenType tokenType, Device_Type deviceType, bool isNestedToken)
 {
-#ifdef ENABLE_MST_DEV_I2C
-    if (_i2cSecondaryAddr != -1) {
-        set_force_i2c_address(_i2cSecondaryAddr);
-    }
-#endif
+    SetI2CSecondaryAddr();
     mfile* mf = mopen_adv(device.c_str(), (MType)(MST_DEFAULT | MST_CABLE));
 
     if (mf == NULL) {
@@ -642,12 +656,8 @@ void MlxTknGenerator::AutoGenerateTokensXML()
     mft_utils::WriteNamedFilesToDirectory(_outputFile, fileNamesAndContents);
 }
 
-void MlxTknGenerator::GenerateTokenXML()
+void MlxTknGenerator::GenerateLegacyTokenXML()
 {
-    vector < string > tlvs;
-    vector < TLVConf * > tlvsConfs;
-    string tokenXml;
-
     vector < TLVParamsData > tlvsConfsData;
 
     try
@@ -679,6 +689,98 @@ void MlxTknGenerator::GenerateTokenXML()
     {
         throw MlxTknGeneratorException(e._err.c_str());
     }
+}
+
+void MlxTknGenerator::SetI2CSecondaryAddr()
+{
+#ifdef ENABLE_MST_DEV_I2C
+    if (_i2cSecondaryAddr != -1)
+    {
+        set_force_i2c_address(_i2cSecondaryAddr);
+    }
+#endif
+}
+
+void MlxTknGenerator::SetTokenDataToToken(shared_ptr<MlxPSCtoken> token)
+{
+    SetI2CSecondaryAddr();
+    mfile* mf = mopen_adv(_device.c_str(), (MType)(MST_DEFAULT | MST_CABLE));
+
+    if (mf == NULL)
+    {
+        throw MlxTknGeneratorException("Failed to open the device.");
+    }
+    ValidateDeviceType(mf, _deviceType);
+    GetTokenDataFromChallenge(mf, token);
+    mclose(mf);
+}
+
+static dm_dev_id_t GetDeviceId(const string& device)
+{
+    mfile* mf = mopen_adv(device.c_str(), (MType)(MST_DEFAULT | MST_CABLE));
+    dm_dev_id_t deviceId = DeviceUnknown;
+    u_int32_t hwDevId = 0, hwRevId = 0;
+    if (!mf)
+    {
+        throw MlxTknGeneratorException("Failed to open the device");
+    }
+
+    if (dm_get_device_id(mf, &deviceId, &hwDevId, &hwRevId) == MFE_ERROR)
+    {
+        mclose(mf);
+        throw MlxTknGeneratorException("Failed to identify the device");
+    }
+    mclose(mf);
+    return deviceId;
+}
+
+void MlxTknGenerator::ValidatePSCTokenType(MlxCfgTokenType tokenType)
+{
+    if (tokenType != McTokenTypeCRCS && tokenType != McTokenTypeCRDT)
+    {
+        throw MlxTknGeneratorException("Invalid token type");
+    }
+}
+
+void MlxTknGenerator::GeneratePSCTokenXML()
+{
+    MLX_TOKEN_LOG_DEBUG("PSC token");
+    ValidatePSCTokenType(_tokenType);
+    DeviceType deviceType = MlxPSCtoken::GetDeviceTypeFromDeviceId(GetDeviceId(_device));
+    shared_ptr<MlxPSCtoken> token = MlxPSCtokenFactory::CreatePSCtoken(_tokenType, deviceType);
+    SetTokenDataToToken(token);
+    vector<pair<string, string>> tlvs = token->LoadFromParams();
+    token->SaveToXMLFile(_outputFile, tlvs);
+}
+
+TokenFormat MlxTknGenerator::CheckTokenFormat()
+{
+    TokenFormat tokenFormat = TOKEN_FORMAT_LEGACY;
+    if (_blobFile.empty())
+    {
+        dm_dev_id_t deviceId = GetDeviceId(_device);
+        if (dm_is_spc6(deviceId))
+        {
+            tokenFormat = TOKEN_FORMAT_PSC;
+        }
+    }
+    return tokenFormat;
+}
+
+void MlxTknGenerator::GenerateTokenXML()
+{
+    TokenFormat tokenFormat = CheckTokenFormat();
+    switch (tokenFormat)
+    {
+        case TOKEN_FORMAT_PSC:
+            GeneratePSCTokenXML();
+            break;
+
+        default:
+            GenerateLegacyTokenXML();
+            break;
+    }
+    std::cout << "Generate token XML done" << std::endl;
 }
 
 vector<string> MlxTknGenerator::AggregateLegacyTokenXmlStrings(const vector<string>& xmlStrings, bool isMultiAggregate)
@@ -769,6 +871,7 @@ void MlxTknGenerator::PrintHelp()
     printFlagLine(SECONDARY_ADDR_FLAG, SECONDARY_ADDR_FLAG_SHORT, "i2c_secondary", "I2C secondary address");
     printFlagLine(HELP_FLAG, HELP_FLAG_SHORT, "", "Show help message and exit");
     printFlagLine(VERSION_FLAG, VERSION_FLAG_SHORT, "", "Show version and exit");
+    printFlagLine(TOKEN_CONFIG_FLAG, TOKEN_CONFIG_FLAG_SHORT, "Token configuration", "Token configuration");
 
     printf("\n");
     printf(INDENT "COMMANDS SUMMARY\n");
@@ -804,6 +907,7 @@ void MlxTknGenerator::InitCmdParser()
                "Path",
                "Path to challenge blob file (relevant for CRCS/CRDT token types)");
     AddOptions(SECONDARY_ADDR_FLAG, SECONDARY_ADDR_FLAG_SHORT, "i2c_secondary", "I2C secondary address");
+    AddOptions(TOKEN_CONFIG_FLAG, TOKEN_CONFIG_FLAG_SHORT, "Token configuration", "Token configuration");
     AddOptions(HELP_FLAG, HELP_FLAG_SHORT, "", "Show help message and exit");
     AddOptions(VERSION_FLAG, VERSION_FLAG_SHORT, "", "Show version and exit");
 
@@ -857,6 +961,11 @@ ParseStatus MlxTknGenerator::HandleOption(string name, string value)
             return PARSE_ERROR;
         }
         _i2cSecondaryAddr = i2c_secondary_address;
+        return PARSE_OK;
+    }
+    else if (name == TOKEN_CONFIG_FLAG)
+    {
+        _tokenConfig = value;
         return PARSE_OK;
     }
     return PARSE_ERROR;
