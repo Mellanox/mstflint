@@ -57,6 +57,6 @@ c_dev_mgt.so: libdev_mgt.la
 	$(top_builddir)/reg_access/.libs/libreg_access.a \
 	$(top_builddir)/tools_layouts/.libs/libtools_layouts.a \
 	$(top_builddir)/${MTCR_CONF_DIR}/.libs/libmtcr_ul.a \
-	$(MST_REMOTE_LINK_LIBS) -lstdc++
+	$(MTCR_JSON_LIBS) $(MST_REMOTE_LINK_LIBS) -lstdc++
 
 CLEANFILES = c_dev_mgt.so

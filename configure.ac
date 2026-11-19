@@ -763,6 +763,18 @@ PKG_CHECK_MODULES([JSON], [jsoncpp],
      AC_SUBST(JSON_LIBS)])
 AM_CONDITIONAL([USE_LOCAL_JSON], [test "$JSON_SYSTEM_AVAILABLE" = no])
 
+# libmtcr_ul.a carries objects that reference jsoncpp: the tools logger's JSON
+# config parser and the generated device properties. Libtool targets inherit
+# jsoncpp from dependency_libs in libmtcr_ul.la, but the hand-written .so
+# recipes link the raw .libs/libmtcr_ul.a path and so bypass that; they have to
+# name jsoncpp themselves, or the modules fail to dlopen with "undefined
+# symbol: _ZN4Json...". With the bundled copy the objects are already part of
+# the archive, so nothing extra is needed.
+AS_IF([test "x$JSON_SYSTEM_AVAILABLE" = "xyes"],
+      [MTCR_JSON_LIBS="-ljsoncpp"],
+      [MTCR_JSON_LIBS=""])
+AC_SUBST([MTCR_JSON_LIBS])
+
 PKG_CHECK_MODULES([MUPARSER], [muparser],
     [MUPARSER_SYSTEM_AVAILABLE="yes"],
     [MUPARSER_SYSTEM_AVAILABLE="no"
