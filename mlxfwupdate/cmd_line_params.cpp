@@ -98,8 +98,6 @@ CmdLineParams::CmdLineParams()
     cable_report_file_only = false;
     cable_report_screen_only = false;
     cable_include_service_ports = false;
-    cable_wrap = "";
-    cable_wrap_out = "";
 
 #ifdef __WIN__
     char execName[1024];

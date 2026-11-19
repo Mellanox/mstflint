@@ -261,12 +261,6 @@ using namespace mft_utils;
 #define MODULE_INCLUDE_SERVICE_PORTS_L "module_include_service_ports"
 #define MODULE_INCLUDE_SERVICE_PORTS_S ' '
 
-#define MODULE_IMG_GEN_L "module_img_gen"
-#define MODULE_IMG_GEN_S ' '
-
-#define MODULE_IMG_GEN_OUT_L "module_img_gen_out"
-#define MODULE_IMG_GEN_OUT_S ' '
-
 string toolName = "";
 /************************************
  * Function: CmdLineParser
@@ -1034,16 +1028,6 @@ ParseStatus CmdLineParser::HandleOption(string name, string value)
     else if (name == MODULE_INCLUDE_SERVICE_PORTS_L)
     {
         _cmdLineParams->cable_include_service_ports = true;
-        return PARSE_OK;
-    }
-    else if (name == MODULE_IMG_GEN_L)
-    {
-        _cmdLineParams->cable_wrap = value;
-        return PARSE_OK;
-    }
-    else if (name == MODULE_IMG_GEN_OUT_L)
-    {
-        _cmdLineParams->cable_wrap_out = value;
         return PARSE_OK;
     }
     else if (name == MODULE_REPORT_VERBOSE_L)

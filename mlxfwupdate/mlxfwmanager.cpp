@@ -824,7 +824,7 @@ int mainEntry(int argc, char* argv[])
 
     // Cables are reached through their owning ASIC and have no PSID, so the cable flow
     // runs its own discovery and image matching instead of joining the MlnxDev list.
-    if (cmd_params.cable_query || cmd_params.cable_dry_run || cmd_params.cable_update || cmd_params.cable_wrap.length())
+    if (cmd_params.cable_query || cmd_params.cable_dry_run || cmd_params.cable_update)
     {
         CableFwManager cableMgr(cmd_params, printCableProgress, cableInterrupted);
         res = cableMgr.run();
@@ -2140,33 +2140,6 @@ bool checkCmdParams(CmdLineParams& cmd_params, config_t& config)
     {
         fprintf(stderr, "-E- XML output is not supported with --module_query, --module_dry_run and --module_update\n");
         return false;
-    }
-    // --module_img_gen works on one file and no device, so it stands alone.
-    if (cmd_params.cable_wrap.length() || cmd_params.cable_wrap_out.length())
-    {
-        if (cmd_params.cable_wrap.empty() || cmd_params.cable_wrap_out.empty())
-        {
-            fprintf(stderr, "-E- --module_img_gen and --module_img_gen_out must be given together\n");
-            return false;
-        }
-        // Nothing but -o and the log options means anything to a run that touches no device.
-        if (cable_mode || other_mode || device_options || cmd_params.log_on_update ||
-            cmd_params.device_names.size() != 0 || cmd_params.use_mfa_file || cmd_params.use_mfa_dir ||
-            cmd_params.write_xml)
-        {
-            fprintf(stderr,
-                    "-E- --module_img_gen cannot be combined with another operation mode, -d, -i, "
-                    "-D, --xml, --log-on-update, --force, --skip_if_same, --no_fw_ctrl, --lookup, --psid, "
-                    "--show-psids or --component_type\n");
-            return false;
-        }
-        cmd_params.cable_wrap = adjustRelPath(cmd_params.cable_wrap, config.adjuster_path);
-        cmd_params.cable_wrap_out = adjustRelPath(cmd_params.cable_wrap_out, config.adjuster_path);
-        if (!Filesystem::is_regular_file(Filesystem::path(cmd_params.cable_wrap)))
-        {
-            fprintf(stderr, "-E- Can't find file %s\n", cmd_params.cable_wrap.c_str());
-            return false;
-        }
     }
     if (cmd_params.cable_verify_wait >= 0 && !cable_mode)
     {

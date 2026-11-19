@@ -119,8 +119,6 @@ public:
     bool cable_report_screen_only;
     bool cable_include_service_ports;
     int cable_verify_wait;
-    string cable_wrap;     // metadata .yaml whose image gets an extended header, internal only
-    string cable_wrap_out; // where that image is written
     bool verbose;
 };
 
