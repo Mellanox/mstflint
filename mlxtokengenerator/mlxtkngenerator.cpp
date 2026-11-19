@@ -938,7 +938,7 @@ void MlxTknGenerator::PrintHelp()
     printf(INDENT "OPTIONS:\n");
     printFlagLine(DEVICE_FLAG, DEVICE_FLAG_SHORT, "MstDevice", "Mellanox mst device name");
     printFlagLine(DEVICE_TYPE_FLAG, DEVICE_TYPE_FLAG_SHORT, "Switch/HCA", "Mellanox mst device type");
-    printFlagLine(TOKEN_TYPE_FLAG, TOKEN_TYPE_FLAG_SHORT, "CS/DBG/CRCS/CRDT/RMCS/RMDT/FRC", "Token type");
+    printFlagLine(TOKEN_TYPE_FLAG, TOKEN_TYPE_FLAG_SHORT, "CS/DBG/CRCS/CRDT/RMCS/RMDT/FRC", "Token type, see TOKEN TYPES below");
     printFlagLine(NESTED_TOKEN_FLAG, NESTED_TOKEN_FLAG_SHORT, "", "Get nested token");
     printFlagLine(OUTPUT_FILE_FLAG, OUTPUT_FILE_FLAG_SHORT, "Path", "Path to output file");
     printFlagLine(TOKENS_DIR_FLAG, TOKENS_DIR_FLAG_SHORT, "Path", "Path to a directory of tokens for aggregation");
@@ -953,12 +953,31 @@ void MlxTknGenerator::PrintHelp()
     printFlagLine(SECONDARY_ADDR_FLAG, SECONDARY_ADDR_FLAG_SHORT, "i2c_secondary", "I2C secondary address");
     printFlagLine(HELP_FLAG, HELP_FLAG_SHORT, "", "Show help message and exit");
     printFlagLine(VERSION_FLAG, VERSION_FLAG_SHORT, "", "Show version and exit");
-    printFlagLine(TOKEN_CONFIG_FLAG, TOKEN_CONFIG_FLAG_SHORT, "Token configuration", "Token configuration");
+    printFlagLine(TOKEN_CONFIG_FLAG, TOKEN_CONFIG_FLAG_SHORT, "Token configuration",
+                  "Token configuration (relevant for CRDT token types)");
 
     printf("\n");
     printf(INDENT "COMMANDS SUMMARY\n");
     printf(INDENT2 "%-24s: %s\n", "generate_token", "generates a token xml automatically.");
     printf(INDENT2 "%-24s: %s\n", "aggregate_tokens", "aggregates token xml files to a single xml file.");
+    printf(INDENT2 "%-24s: %s\n", "auto_generate_tokens",
+           "generates a CRCS/CRDT token xml for every device on the machine, aggregated per PSID.");
+
+    printf("\n");
+    printf(INDENT "TOKEN TYPES\n");
+    printf(INDENT2 "%-8s: %s\n", "CS", "Customer Support. Opens the secured commands of the running FW.");
+    printf(INDENT2 "%-8s: %s\n", "DBG", "Debug FW. Allows a debug FW image to be loaded. Requires --debug_fw.");
+    printf(INDENT2 "%-8s: %s\n", "RMCS",
+           "Remote Customer Support. Bound to the debug session of the challenge, not supported on HCA.");
+    printf(INDENT2 "%-8s: %s\n", "RMDT", "Remote Debug Token. Same as RMCS for debug FW, not supported on HCA.");
+    printf(INDENT2 "%-8s  %s\n", "", "Requires --debug_fw.");
+    printf(INDENT2 "%-8s: %s\n", "CRCS", "Challenge-Response Customer Support. Bound to a single device challenge.");
+    printf(INDENT2 "%-8s: %s\n", "CRDT",
+           "Challenge-Response Debug Token. Bound to a single device challenge. Requires --debug_fw.");
+    printf("\n");
+    printf(INDENT2 "%s\n", "Supported token types per device type:");
+    printf(INDENT2 INDENT "%-8s: %s\n", "HCA", "CS, DBG, CRCS, CRDT");
+    printf(INDENT2 INDENT "%-8s: %s\n", "Switch", "CS, DBG, RMCS, RMDT, CRCS, CRDT");
 
     printf("\n");
     printf(INDENT "Examples:\n");
@@ -969,6 +988,13 @@ void MlxTknGenerator::PrintHelp()
         INDENT2 "%-24s: %s\n",
         "To create a DBG token",
         "mlxtokengenerator -d /dev/mst/mt4123_pciconf0 -k DBG -t HCA -f /tmp/dbg_fw.bin -o /tmp/dbg_token.xml generate_token");
+    printf(INDENT2 "%-24s: %s\n",
+           "To create a CRCS token",
+           "mlxtokengenerator -d /dev/mst/mt53120_pci_cr0 -k CRCS -t Switch -o /tmp/crcs_token.xml generate_token");
+    printf(
+      INDENT2 "%-24s: %s\n",
+      "To create a CRDT token",
+      "mlxtokengenerator -d /dev/mst/mt53120_pci_cr0 -k CRDT -t Switch -f /tmp/dbg_fw.bin -o /tmp/crdt_token.xml generate_token");
     printf("\n");
 }
 
