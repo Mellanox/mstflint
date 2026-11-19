@@ -44,7 +44,7 @@
 #include <assert.h>
 #include <algorithm>
 
-#include <ext_libs/sqlite/sqlite3.h>
+#include <sqlite3.h>
 #include "mlxcfg_db_manager.h"
 #include "mlxcfg_utils.h"
 #include <memory>

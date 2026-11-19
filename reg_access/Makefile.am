@@ -65,6 +65,6 @@ ${RREG_ACCESS_SO}: libreg_access.la
 	$(CC) -g -Wall -pthread -shared ${CFLAGS} ${LDFLAGS} *.o -o ${RREG_ACCESS_SO} \
 	$(top_builddir)/tools_layouts/.libs/libtools_layouts.a $(top_builddir)/tools_layouts/.libs/libcables_layouts.a \
 	$(top_builddir)/${MTCR_CONF_DIR}/.libs/libmtcr_ul.a \
-	$(MST_REMOTE_LINK_LIBS) -lstdc++
+	$(MTCR_JSON_LIBS) $(MST_REMOTE_LINK_LIBS) -lstdc++
 
 CLEANFILES = ${RREG_ACCESS_SO}

@@ -47,6 +47,6 @@ noinst_HEADERS = mvpd.h
 
 ${RMVPD_SO}: libmvpd.la
 	$(CC) -g -Wall -pthread -shared ${CFLAGS} *.o -o ${RMVPD_SO} \
-	 $(top_builddir)/${MTCR_CONF_DIR}/.libs/libmtcr_ul.a $(MST_REMOTE_LINK_LIBS)
+	 $(top_builddir)/${MTCR_CONF_DIR}/.libs/libmtcr_ul.a $(MTCR_JSON_LIBS) $(MST_REMOTE_LINK_LIBS)
 
 CLEANFILES = ${RMVPD_SO}
