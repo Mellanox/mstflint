@@ -116,11 +116,31 @@ EXTERN_C_START
             fflush(stdout);                             \
         }                                               \
     } while (0)
+
+#define FLASH_DPRINTF(args)                          \
+    do                                               \
+    {                                                \
+        char* reacDebug = getenv("MFT_FLASH_DEBUG"); \
+        if (reacDebug != NULL)                       \
+        {                                            \
+            printf("\33[2K\r");                      \
+            printf("[MFT_FLASH_DEBUG]: -D- ");       \
+            printf args;                             \
+            fflush(stdout);                          \
+        }                                            \
+    } while (0)
+
 #else
 #define FLASH_ACCESS_DPRINTF(...)
 #endif
 
 #define MAX_FLASH_FREQ 90 // MHz
+
+// overridable by the MFLASH_WRITE_RETRIES env var.
+#define DEFAULT_WRITE_RETRIES 3
+
+// overridable by the MFLASH_ERASE_RETRIES env var.
+#define DEFAULT_ERASE_RETRIES 3
 
 #define MAX_NUM_OF_CYCLES 15
 #define MIN_NUM_OF_CYCLES 1

@@ -465,6 +465,8 @@ bool Flash::open_com_checks(const char* device, int rc, bool force_lock)
         return errmsg("Failed getting flash attributes for device %s: %s", device, mf_err2str(rc));
     }
     _curr_sector_size = _attr.sector_size;
+    // The mirror describes a sector on whatever device was open before - never carry it across.
+    _sector_mirror_valid = false;
 
     rc = mf_set_opt(_mfl, MFO_NO_VERIFY, _no_flash_verify ? 1 : 0);
     if (rc != MFE_OK)
@@ -528,6 +530,7 @@ bool Flash::open(uefi_Dev_t* uefi_dev, uefi_dev_extra_t* uefi_extra, bool force_
 ////////////////////////////////////////////////////////////////////////
 void Flash::close()
 {
+    _sector_mirror_valid = false;
     if (!_mfl)
     {
         return;
@@ -689,11 +692,28 @@ bool Flash::erase_sector_phy(u_int32_t phy_addr)
     NATIVE_PHY_ADDR_FUNC(erase_sector, (phy_addr));
 }
 
+// Number of re-erase attempts allowed when a write fails because the sector wasn't properly
+// erased (see #5099855). Shared by the plain-write and the read-modify-write paths.
+static int get_reerase_retries()
+{
+    static bool evaluated = false;
+    static int retries = DEFAULT_ERASE_RETRIES;
+
+    if (!evaluated)
+    {
+        const char* retries_str = getenv("MFLASH_ERASE_RETRIES");
+        retries = retries_str ? atoi(retries_str) : DEFAULT_ERASE_RETRIES;
+        evaluated = true;
+    }
+    return retries;
+}
+
 ////////////////////////////////////////////////////////////////////////
 bool Flash::write(u_int32_t addr, void* data, int cnt, bool noerase)
 {
     // FIX:
     noerase = _no_erase || noerase;
+    _erase_needed = false;
 
     if (!_mfl)
     {
@@ -746,8 +766,14 @@ bool Flash::write(u_int32_t addr, void* data, int cnt, bool noerase)
                 _curr_sector = sector;
                 if (!erase_sector(_curr_sector))
                 {
+                    mf_release_persistent_lock(_mfl);
                     return false;
                 }
+                // Arm the mirror for the newly opened sector (erase_sector() invalidated it).
+                // Erased flash reads as 0xff, so that is the correct initial content.
+                _sector_mirror.assign(sect_size, 0xff);
+                _sector_mirror_addr = _curr_sector;
+                _sector_mirror_valid = true;
             }
         }
 
@@ -759,13 +785,77 @@ bool Flash::write(u_int32_t addr, void* data, int cnt, bool noerase)
         // Actual write:
         u_int32_t phys_addr = cont2phys(chunk_addr);
         // printf("-D- write: addr = %#x, phys_addr = %#x\n", chunk_addr, phys_addr);
-        mft_signal_set_handling(1);
-        if (_cputUtilizationApplied)
+        // On an erase miss we re-erase the sector and replay it whole from _sector_mirror, which
+        // holds everything written into it since we erased it - including chunks written by
+        // earlier write() calls into the same sector (one 64KB sector spans 16 Flash::TRANS-sized
+        // calls). This gives the plain-write path the same erase-retry as write_sector_with_erase()
+        // without paying for its pre-read: the replayed bytes come from the caller's data, never
+        // from a read-back of flash that has just misbehaved.
+        // noerase callers (the read-modify-write path) do their own retrying and we do not own
+        // their erase, so we must not erase underneath them.
+        bool can_reerase = !noerase && _sector_mirror_valid && _sector_mirror_addr == _curr_sector;
+        int reerase_retries = can_reerase ? get_reerase_retries() : 0;
+        u_int32_t chunk_offs_in_sector = chunk_addr - _curr_sector;
+
+        for (int reerase_attempt = 0;; reerase_attempt++)
         {
-            mf_set_cpu_utilization(_mfl, _cpuPercent);
+            mft_signal_set_handling(1);
+            if (_cputUtilizationApplied)
+            {
+                mf_set_cpu_utilization(_mfl, _cpuPercent);
+            }
+            if (reerase_attempt == 0)
+            {
+                rc = mf_write(_mfl, phys_addr, chunk_size, p);
+            }
+            else
+            {
+                // Replay the whole sector - this chunk was merged into the mirror below
+                rc = mf_write(_mfl, cont2phys(_curr_sector), _sector_mirror.size(), &_sector_mirror[0]);
+            }
+            _erase_needed = (rc == MFE_ERASE_ERROR);
+            deal_with_signal(_mfl);
+
+            if (rc == MFE_OK)
+            {
+                if (reerase_attempt > 0)
+                {
+                    FLASH_DPRINTF(("Write succeeded after %d re-erase attempts\n", reerase_attempt));
+                }
+                break;
+            }
+
+            // Only an erase miss is recoverable by re-erasing - any other failure is returned as-is
+            if (!_erase_needed)
+            {
+                FLASH_DPRINTF(("Write failed but not an erase failure - skipping re-erase\n"));
+                break;
+            }
+            if (reerase_attempt >= reerase_retries)
+            {
+                FLASH_DPRINTF(("Write failed, re-erase attempts exhausted (%d)\n", reerase_retries));
+                break;
+            }
+
+            FLASH_DPRINTF(("Write failed on erase miss, re-erase attempt %d\n", reerase_attempt + 1));
+            memcpy(&_sector_mirror[chunk_offs_in_sector], p, chunk_size);
+            if (!erase_sector(_curr_sector))
+            {
+                FLASH_DPRINTF(("Erase sector failed\n"));
+                mf_release_persistent_lock(_mfl);
+                return false;
+            }
+            // erase_sector() invalidates the mirror - the replay is exactly what it holds
+            _sector_mirror_valid = true;
         }
-        rc = mf_write(_mfl, phys_addr, chunk_size, p);
-        deal_with_signal(_mfl);
+
+        // Record this chunk at its offset in the sector, so a retry on any later chunk of the same
+        // sector can replay all of it. can_reerase already means "the mirror tracks _curr_sector and
+        // we own its erase" - the same condition that makes recording meaningful.
+        if (can_reerase && rc == MFE_OK)
+        {
+            memcpy(&_sector_mirror[chunk_offs_in_sector], p, chunk_size);
+        }
 
         if (rc != MFE_OK)
         {
@@ -853,8 +943,50 @@ bool Flash::write_sector_with_erase(u_int32_t addr, void* data, int cnt)
 
     memcpy(&buff[word_in_sector], data, cnt);
 
-    // no need to erase twice noerase=true
-    return write(sector, &buff[0], sector_size, true);
+    // We only re-erase when a read-back confirms the un-erased signature (a bit that must be 1 is still 0)
+    static bool reerase_retries_evaluated = false;
+    int reerase_retries = get_reerase_retries();
+    if (reerase_retries <= 0)
+    {
+        // no need to erase twice noerase=true
+        return write(sector, &buff[0], sector_size, true);
+    }
+
+    for (int reerase_attempt = 0; reerase_attempt <= reerase_retries; reerase_attempt++)
+    {
+        if (write(sector, &buff[0], sector_size, true))
+        {
+            if (reerase_attempt > 0)
+            {
+                FLASH_DPRINTF(("Write succeeded after %d re-erase attempts\n", reerase_attempt));
+            }
+            return true;
+        }
+
+        if (reerase_attempt == reerase_retries)
+        {
+            FLASH_DPRINTF(("Write failed, re-erase attempts exhausted (%d)\n", reerase_retries));
+            return false;
+        }
+        FLASH_DPRINTF(("Write failed, re-erase attempt %d\n", reerase_attempt));
+
+        // Re-erase only when the write failed because the sector wasn't erased. write() sets
+        // _erase_needed from mf_write's rc, so we act on it directly - no need to re-read the sector
+        // (a re-read is unreliable on SPC6 after a bad write). Any other failure can't be fixed by
+        // re-erasing, so return it as-is.
+        if (!_erase_needed)
+        {
+            FLASH_DPRINTF(("Write failed but not an erase failure - skipping re-erase\n"));
+            return false;
+        }
+
+        if (!erase_sector(sector))
+        {
+            FLASH_DPRINTF(("Erase sector failed\n"));
+            return false;
+        }
+    }
+    return false; // unreachable
 }
 
 bool Flash::write_with_erase(u_int32_t addr, void* data, int cnt)
@@ -884,6 +1016,10 @@ bool Flash::erase_sector(u_int32_t addr)
 {
     int rc;
     u_int32_t phys_addr = cont2phys(addr);
+    // Any erase invalidates the sector mirror. Callers outside write() (the flint erase subcommand,
+    // the FS2 config wipe) can blank a sector that _curr_sector still points at, and replaying a
+    // stale mirror would restore data that was deliberately erased. write() re-arms it explicitly.
+    _sector_mirror_valid = false;
     mft_signal_set_handling(1);
     if (_flash_working_mode == Flash::Fwm_4KB)
     {
@@ -1770,6 +1906,9 @@ bool Flash::set_flash_working_mode(int mode)
     {
         return errmsg("Changing Flash IO working mode not supported.");
     }
+    // The sector size and the _curr_sector masking below both change here, so the mirror's size
+    // and base address can no longer be trusted - drop it.
+    _sector_mirror_valid = false;
     // Verification Hook
     if (_attr.support_sub_and_sector)
     {
