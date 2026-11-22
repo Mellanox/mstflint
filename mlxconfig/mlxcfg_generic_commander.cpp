@@ -59,6 +59,7 @@
 #include "mlxcfg_xml_reader.h"
 #include "mlxcfg_xml_tlv_builder.h"
 #include "common/tools_endianness.h"
+#include "mlxtokengenerator/mlxpsctoken.h"
 
 using namespace std;
 using namespace mlxcfg;
@@ -67,11 +68,16 @@ using namespace mlxcfg;
 #define TLVCLASS_SIZE 8
 #define RAW_FILE_FINGERPRINT "MLNX_RAW_TLV_FILE"
 #define XMLNS "http://www.mellanox.com/config"
+#define XNVIDIA "http://nvidia.com/config"
 #define XML_ROOT "config"
 
 #define XML_DOCUMENT_START                         \
     "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" \
     "<" XML_ROOT " xmlns=\"" XMLNS "\">"
+
+#define XML_PSC_TOKEN_DOCUMENT_START               \
+    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" \
+    "<" XML_ROOT " xmlns=\"" XNVIDIA "\">"
 #define XML_DOCUMENT_END "</" XML_ROOT ">"
 
 #define EQ_STR "=="
@@ -1356,6 +1362,54 @@ void GenericCommander::genTLVsList(vector<string>& tlvs)
     }
 }
 
+bool GenericCommander::IsPscXmlByString(const string& xml)
+{
+    return xml.find(XNVIDIA) != std::string::npos;
+}
+
+void GenericCommander::genPSCXMLTemplate(string tlvName, string tlvValue, string& tlvTemplate, bool& indentation)
+{
+    if (tlvValue == PSC_TLV_TYPE_START)
+    {
+        tlvTemplate = "<" + tlvName + ">";
+        indentation = true;
+    }
+    else if (tlvValue == PSC_TLV_TYPE_END)
+    {
+        tlvTemplate = "</" + tlvName + ">";
+        indentation = false;
+    }
+    else
+    {
+        if (indentation)
+        {
+            tlvTemplate = "\t<" + tlvName + ">" + tlvValue + "</" + tlvName + ">";
+        }
+        else
+        {
+            tlvTemplate = "<" + tlvName + ">" + tlvValue + "</" + tlvName + ">";
+        }
+    }
+}
+
+void GenericCommander::genXMLPSCTemplateAux(vector<pair<string, string>> tlvs, string& xmlTemplate)
+{
+    xmlTemplate = XML_PSC_TOKEN_DOCUMENT_START;
+    xmlTemplate += "\n";
+    bool indentation = false;
+    for (vector<pair<string, string>>::iterator it = tlvs.begin(); it != tlvs.end(); ++it)
+    {
+        string tlvName = it->first;
+        string tlvValue = it->second;
+        string tlvTemplate;
+        genPSCXMLTemplate(tlvName, tlvValue, tlvTemplate, indentation);
+        xmlTemplate += "\n" + tlvTemplate + "\n";
+    }
+    xmlTemplate += "\n";
+    xmlTemplate += XML_DOCUMENT_END;
+    xmlTemplate += "\n";
+}
+
 void GenericCommander::genXMLTemplateAux(vector<string> tlvs,
                                          string& xmlTemplate,
                                          bool allAttrs,
@@ -1919,6 +1973,117 @@ void GenericCommander::orderConfTlvs(vector<std::shared_ptr<TLVConf>>& tlvs)
     }
 }
 
+namespace
+{
+std::string MakeKeySkipRoot(const std::vector<std::string>& path)
+{
+    std::string k;
+    for (size_t i = 1; i < path.size(); ++i)
+    {
+        if (i > 1)
+        {
+            k += ".";
+        }
+        k += path[i];
+    }
+    if (k.empty() && !path.empty())
+    {
+        k = path.back();
+    }
+    return k;
+}
+
+// Flattens a PSC token XML into "parent.child" keys mapped to the leaf text. A DEVICE_UNIQUE element with children
+// becomes one key whose value is "name=value,..." over its leaf children; anything nested deeper inside it is ignored.
+class PscTokenMapBuilder : public XmlStreamHandler
+{
+public:
+    explicit PscTokenMapBuilder(std::map<std::string, std::string>& out) :
+        _out(out), _deviceUniqueName(MlxPSCtoken::TlvTypeToStr(TlvType::DEVICE_UNIQUE))
+    {
+    }
+
+    void OnStartElement(const std::string& nsUri, const std::string& name, const XmlAttrs&) override
+    {
+        Element e;
+        e.name = name;
+        if (_stack.empty())
+        {
+            checkXmlRoot(nsUri, name, XML_ROOT, XNVIDIA);
+        }
+        else
+        {
+            Element& parent = _stack.back();
+            parent.hasChildren = true;
+            e.childOfDeviceUnique = parent.isDeviceUnique;
+            e.insideDeviceUnique = parent.isDeviceUnique || parent.insideDeviceUnique;
+        }
+        e.isDeviceUnique = !e.insideDeviceUnique && name == _deviceUniqueName;
+        _stack.push_back(e);
+        _path.push_back(name);
+    }
+
+    void OnText(const char* text, size_t len) override { _stack.back().text.append(text, len); }
+
+    void OnEndElement() override
+    {
+        Element e = _stack.back();
+        std::string key = MakeKeySkipRoot(_path);
+        _stack.pop_back();
+        _path.pop_back();
+
+        if (e.childOfDeviceUnique)
+        {
+            if (!e.hasChildren)
+            {
+                std::string& value = _stack.back().deviceUniqueValue;
+                if (!value.empty())
+                {
+                    value += ",";
+                }
+                value += e.name + "=" + e.text;
+            }
+        }
+        else if (e.insideDeviceUnique)
+        {
+            return;
+        }
+        else if (!e.hasChildren)
+        {
+            _out[key] = e.text;
+        }
+        else if (e.isDeviceUnique)
+        {
+            _out[key] = e.deviceUniqueValue;
+        }
+    }
+
+private:
+    struct Element
+    {
+        Element() : hasChildren(false), isDeviceUnique(false), childOfDeviceUnique(false), insideDeviceUnique(false) {}
+        std::string name;
+        std::string text;
+        std::string deviceUniqueValue;
+        bool hasChildren;
+        bool isDeviceUnique;
+        bool childOfDeviceUnique;
+        bool insideDeviceUnique;
+    };
+
+    std::map<std::string, std::string>& _out;
+    const std::string _deviceUniqueName;
+    std::vector<Element> _stack;
+    std::vector<std::string> _path;
+};
+} // namespace
+
+void GenericCommander::XML2MapPSCToken(const string& xml, map<string, string>& tokenData)
+{
+    PscTokenMapBuilder builder(tokenData);
+    parseXmlStream(xml, builder);
+}
+
 void GenericCommander::createConf(const string& xml, vector<u_int32_t>& buff)
 {
     vector<std::shared_ptr<TLVConf>> tlvs;
@@ -2006,34 +2171,33 @@ void GenericCommander::ValidateAndGetTlvsAndCompIdLegacy(const vector<u_int8_t>&
     checkConfTlvs(tlvs, compsId);
 }
 
+bool GenericCommander::IsPSCBinToken(const vector<u_int8_t>& buff)
+{
+    if (buff.size() < 6)
+    {
+        return false;
+    }
+    // Check all first 6 bytes at once
+
+    const std::vector<uint8_t> expected = {0x54, 0x4C, 0x56, 0x31}; // 'TLV1'
+    return std::equal(expected.begin(), expected.end(), buff.begin());
+}
+
 void GenericCommander::apply(const vector<u_int8_t>& buff)
 {
-    FwComponent comp;
-
-    vector<std::shared_ptr<TLVConf>> tlvs;
-    vector<u_int32_t> dwBuff;
-    FwCompsMgr fwCompsAccess(_mf);
     FwComponent::comps_ids_t compsId = FwComponent::comps_ids_t::COMPID_UNKNOWN;
-    size_t fingerPrintLength = strlen(BIN_FILE_FINGERPRINT);
+    FwComponent comp;
+    FwCompsMgr fwCompsAccess(_mf);
 
-    /* Check if there is a fingerprint: */
-    if (buff.size() < fingerPrintLength)
+    if (IsPSCBinToken(buff))
     {
-        throw MlxcfgException("Invalid Configuration file");
+        compsId = FwComponent::comps_ids_t::COMPID_PSC_TOKEN;
     }
-    for (unsigned int i = 0; i < fingerPrintLength; i += 4)
+    else
     {
-        if (buff[i] != BIN_FILE_FINGERPRINT[i])
-        {
-            throw MlxcfgException("Fingerprint is missing in the Configuration file");
-        }
+        vector<std::shared_ptr<TLVConf>> tlvs;
+        ValidateAndGetTlvsAndCompIdLegacy(buff, tlvs, compsId);
     }
-
-    dwBuff.resize((buff.size() - fingerPrintLength) >> 2);
-    memcpy(dwBuff.data(), buff.data() + fingerPrintLength, buff.size() - fingerPrintLength);
-    bin2TLVConfs(dwBuff, tlvs);
-
-    checkConfTlvs(tlvs, compsId);
 
     if (!fwCompsAccess.getFwSupport())
     {

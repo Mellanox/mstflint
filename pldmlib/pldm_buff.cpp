@@ -35,7 +35,6 @@
 *      Author: Samer Deeb
 */
 
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -46,7 +45,7 @@
 
 #include "pldm_buff.h"
 
-PldmBuffer::PldmBuffer() : m_fname(""), m_buff(NULL), m_pos(0), m_size(0) {}
+PldmBuffer::PldmBuffer() : m_fname(""), m_buff(NULL), m_pos(0), m_size(0), m_overflow(false) {}
 
 PldmBuffer::~PldmBuffer()
 {
@@ -63,6 +62,7 @@ void PldmBuffer::reset()
     m_buff = NULL;
     m_pos = 0;
     m_size = 0;
+    m_overflow = false;
 }
 
 void PldmBuffer::loadBuffer(u_int8_t* data, size_t size)
@@ -118,14 +118,34 @@ bool PldmBuffer::loadFile(const std::string& fname)
     return false;
 }
 
+bool PldmBuffer::canRead(size_t n)
+{
+    if (m_buff == NULL || remaining() < n)
+    {
+        m_overflow = true;
+        return false;
+    }
+    return true;
+}
+
 void PldmBuffer::read(u_int8_t& val)
 {
+    val = 0;
+    if (!canRead(sizeof(u_int8_t)))
+    {
+        return;
+    }
     val = *(m_buff + m_pos);
     m_pos += sizeof(u_int8_t);
 }
 
 void PldmBuffer::read(u_int16_t& val)
 {
+    val = 0;
+    if (!canRead(sizeof(u_int16_t)))
+    {
+        return;
+    }
     val = *(u_int16_t*)(m_buff + m_pos);
     m_pos += sizeof(u_int16_t);
     val = mft_le16_to_cpu(val);
@@ -133,6 +153,11 @@ void PldmBuffer::read(u_int16_t& val)
 
 void PldmBuffer::read(u_int32_t& val)
 {
+    val = 0;
+    if (!canRead(sizeof(u_int32_t)))
+    {
+        return;
+    }
     val = *(u_int32_t*)(m_buff + m_pos);
     m_pos += sizeof(u_int32_t);
     val = mft_le32_to_cpu(val);
@@ -148,6 +173,11 @@ void PldmBuffer::read(std::string& str, size_t str_size)
 
 void PldmBuffer::read(u_int8_t* arr, size_t arr_size)
 {
+    if (!canRead(arr_size))
+    {
+        memset(arr, 0, arr_size);
+        return;
+    }
     memcpy(arr, m_buff + m_pos, arr_size);
     m_pos += arr_size;
 }

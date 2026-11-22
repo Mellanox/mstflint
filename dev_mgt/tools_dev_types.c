@@ -942,6 +942,13 @@ int dm_is_gpu(dm_dev_id_t type)
     return get_entry(type)->dev_type == DM_GPU;
 }
 
+int dm_is_cpu(dm_dev_id_t type)
+{
+    // MFT's CPU devices (Vera) are not in mstflint
+    (void)type;
+    return 0;
+}
+
 int dm_is_cpo(mfile* mf, u_int8_t* ptr_cpo_ind)
 {
     reg_access_status_t rc;
@@ -958,6 +965,17 @@ int dm_is_cpo(mfile* mf, u_int8_t* ptr_cpo_ind)
     return MFE_OK;
 }
 
+int dm_dev_is_vmdl(mfile* mf, dm_dev_id_t type, u_int8_t* ptr_vmdl_ind)
+{
+    if (type != DeviceSpectrum5 && type != DeviceSpectrum6)
+    {
+        *ptr_vmdl_ind = 0;
+        return MFE_OK;
+    }
+
+    return dm_is_cpo(mf, ptr_vmdl_ind);
+}
+
 int dm_is_cx7(dm_dev_id_t type)
 {
     return (type == DeviceConnectX7);
@@ -971,6 +989,11 @@ int dm_is_cx8(dm_dev_id_t type)
 int dm_is_cx9(dm_dev_id_t type)
 {
     return (type == DeviceConnectX9 || type == DeviceConnectX9_Pure_PCIe_Switch);
+}
+
+int dm_is_spc6(dm_dev_id_t type)
+{
+    return (type == DeviceSpectrum6);
 }
 
 int dm_is_new_gen_switch(dm_dev_id_t type)

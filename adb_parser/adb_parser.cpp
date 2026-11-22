@@ -779,6 +779,10 @@ typename _Adb_impl<eval_expr, T_OFFSET>::AdbInstance*
         _unionSelectorEvalDeffered.clear();
         _conditionInstances.clear();
         _conditionalArrays.clear();
+        for (auto& nodes_it : nodesMap)
+        {
+            nodes_it.second->_ds_align_checked = false;
+        }
         if (ignoreMissingNodes)
         {
             addMissingNodes(depth, allowMultipleExceptions);
@@ -802,7 +806,7 @@ typename _Adb_impl<eval_expr, T_OFFSET>::AdbInstance*
             }
             createInstance(nodeDesc->fields[i], rootItem, emptyVars, depth == -1 ? -1 : depth - 1, ignoreMissingNodes,
                            enable_parse_missing_sons, missing_sons, allowMultipleExceptions, optimize_time,
-                           next_partition_tree, array_path_wildcards);
+                           next_partition_tree, array_path_wildcards, nodeDesc->is_ds_align_forced());
         }
 
         nodeDesc->inLayout = false;
@@ -1159,7 +1163,8 @@ bool _Adb_impl<eval_expr, O>::createInstance(AdbField* field,
                                              bool allowMultipleExceptions,
                                              bool optimize_time,
                                              PartitionTree* partition_tree,
-                                             bool array_path_wildcards)
+                                             bool array_path_wildcards,
+                                             bool force_ds_align)
 {
     string error_message;
     // Stop on exclude tree leaf
@@ -1187,6 +1192,21 @@ bool _Adb_impl<eval_expr, O>::createInstance(AdbField* field,
 
     auto missing_sons =
       enable_parse_missing_sons && node ? parse_missing_sons(*node, allowMultipleExceptions) : vector<SplittedPath>();
+
+    auto ds_align_forced = force_ds_align || (node && node->is_ds_align_forced());
+
+    if (!stop_on_partition_tree && !_checkDsAlign && force_ds_align && !field->isReserved && parent &&
+        parent->nodeDesc && !parent->nodeDesc->_ds_align_checked && !parent->nodeDesc->is_ds_align_forced())
+    {
+        auto esize = field->ds_align_size();
+        if (esize != 0 && field->offset % esize != 0)
+        {
+            error_message = "Field: " + field->name + " in Node: " + parent->nodeDesc->name + " offset(" +
+                            to_string(field->offset) + ") is not aligned to size(" + to_string(esize) + ")";
+            ExceptionHolder::handle_exception(allowMultipleExceptions, error_message, ExceptionHolder::ERROR_EXCEPTION,
+                                              parent->nodeDesc->fileName, parent->nodeDesc->lineNumber);
+        }
+    }
 
     for (uint32_t i = 0; i < field->arrayLen(); i++)
     {
@@ -1272,11 +1292,12 @@ bool _Adb_impl<eval_expr, O>::createInstance(AdbField* field,
                     }
                     createInstance(*it, inst, vars, depth == -1 ? -1 : depth - 1, ignoreMissingNodes,
                                    enable_parse_missing_sons, next_missing_sons, allowMultipleExceptions, optimize_time,
-                                   next_partition_tree, array_path_wildcards);
+                                   next_partition_tree, array_path_wildcards, ds_align_forced);
                 }
                 inst->nodeDesc->inLayout = false;
 
-                if (_checkDsAlign && inst->get_max_leaf_size() != 0 && inst->get_size() % inst->get_max_leaf_size() != 0)
+                if ((_checkDsAlign || ds_align_forced) && inst->get_max_leaf_size() != 0 &&
+                    inst->get_size() % inst->get_max_leaf_size() != 0)
                 {
                     error_message = "Node: " + inst->nodeDesc->name + " size(" + to_string(inst->get_size()) +
                                     ") is not aligned with largest leaf(" + to_string(inst->get_max_leaf_size()) + ")";
@@ -1302,6 +1323,11 @@ bool _Adb_impl<eval_expr, O>::createInstance(AdbField* field,
                                                               ExceptionHolder::ERROR_EXCEPTION);
                         }
                     }
+                }
+
+                if (!_checkDsAlign && ds_align_forced)
+                {
+                    inst->nodeDesc->_ds_align_checked = true;
                 }
             }
 

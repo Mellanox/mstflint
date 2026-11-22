@@ -66,6 +66,62 @@ MLXFWOP_API extern bool nextBootFwVer;
 #define GLOBAL_ALIGNMENT 0x80
 #define UUID_LEN 16
 #define BAD_CRC_MSG "Bad CRC."
+
+#define CHECK_UID_STRUCTS_SIZE(uids_context, cibfw_guids_context)                                             \
+    {                                                                                                         \
+        if (sizeof(uids_context) != sizeof(cibfw_guids_context))                                              \
+        {                                                                                                     \
+            return errmsg(                                                                                    \
+              "Internal error: Size of uids_t (%d) is not equal to size of  struct cibfw_guids guids (%d)\n", \
+              (int)sizeof(uids_context),                                                                      \
+              (int)sizeof(cibfw_guids_context));                                                              \
+        }                                                                                                     \
+    }
+
+#define DEV_INFO_SIG0 0x6d446576
+#define DEV_INFO_SIG1 0x496e666f
+#define DEV_INFO_SIG2 0x2342cafa
+#define DEV_INFO_SIG3 0xbacafe00
+#define CHECK_DEV_INFO_NEW_FORMAT(info_st) (info_st.major_version == 2)
+#define CHECK_DEV_INFO_OLD_FORMAT(info_st) (info_st.major_version == 1)
+
+#define CHECK_MFG_NEW_FORMAT(mfg_st) (mfg_st.major_version == 1)
+#define CHECK_MFG_OLD_FORMAT(mfg_st) (mfg_st.major_version == 0)
+
+#define GUID_TO_64(guid_st) (guid_st.l | (u_int64_t)guid_st.h << 32)
+
+enum class ComponentType
+{
+    Comp_Psc_Not_Valid = 0,
+    // Psc components
+    Comp_Psc_Bl1,
+    Comp_Psc_Fw,
+    Comp_Psc_Ncore,
+    Comp_Psc_Bct,
+    Comp_Psc_End = 100,
+    // iToc components
+    Comp_IToc_Start = 101,
+    Comp_IToc_Image_Info,
+    Comp_IToc_End = 200,
+    Comp_Csh_Start = 301,
+    Comp_Csh_Rom_Imgs,
+    Comp_Csh_Nv_Fws,
+    Comp_Csh_Oem_Fws,
+    Comp_Csh_Bct_Dtb,
+    Comp_Csh_Switch_Fws,
+    Comp_Csh_Sbd_Fw,
+    Comp_Csh_Vmod_Fw,
+    Comp_Csh_Caliptra_Fw,
+};
+
+enum class ComponentHeader
+{
+    Header_Non_Valid = 0,
+    Header_Only,
+    Header_With,
+    Header_Without,
+};
+
 class MLXFWOP_API FwOperations : public FlintErrMsg
 {
 public:
@@ -75,6 +131,7 @@ public:
     class ExtVerifyParams;
     struct fwOpsParams;
     struct sgParams;
+    struct CompInfo;
     typedef fwOpsParams fw_ops_params_t;
     typedef sgParams sg_params_t;
     // typedef std::tr1::function<void (void)> VerifyCallback;
@@ -86,7 +143,8 @@ public:
         IMG_SIG_TYPE_CF = 3,
         IMG_SIG_TYPE_CC = 4,
         IMG_SIG_TYPE_PLDM = 5,
-        IMG_SIG_OPEN_FILE_FAILED = 6
+        IMG_SIG_TYPE_CSH = 6,
+        IMG_SIG_OPEN_FILE_FAILED = 7
     };
     FwOperations(FBase* ioAccess) :
         _ioAccess(ioAccess),
@@ -104,6 +162,7 @@ public:
     {
         memset(_sectionsToRead, 0, sizeof(_sectionsToRead));
         memset(&_fwImgInfo, 0, sizeof(_fwImgInfo));
+        memset(&_fsCommonInfo, 0, sizeof(_fsCommonInfo));
         memset(&_fwParams, 0, sizeof(_fwParams));
         memset(&_protect_info_backup, 0x0, sizeof(_protect_info_backup));
     };
@@ -156,6 +215,14 @@ public:
     virtual bool FwReactivateImage() { return errmsg("Operation not supported."); }
     virtual bool GetIsReducedImage() { return _isReducedImage; }
     virtual void SetIsReducedImage(bool isReducedImage) { _isReducedImage = isReducedImage; }
+
+    enum class Spc6LayoutSupport
+    {
+        NotApplicable,         // device family (major) not covered by the list -> fail
+        NewLayoutNotSupported, // version is older than its branch's transition version
+        NewLayoutSupported     // version >= transition version -> has the 64MB layout FR
+    };
+    static Spc6LayoutSupport GetSpc6LayoutSupport(const FwVersion& fwVer);
     virtual bool FwInsertSHA256(PrintCallBack printFunc = (PrintCallBack)NULL);
     virtual bool SignForFwUpdate(const char* uuid,
                                  const MlxSign::Signer& signer,
@@ -188,6 +255,16 @@ public:
     virtual bool burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& burnParams);
     virtual bool FwSetPublicKeys(char* fname, PrintCallBack callBackFunc = (PrintCallBack)NULL);
     virtual bool FwSetForbiddenVersions(char* fname, PrintCallBack callBackFunc = (PrintCallBack)NULL);
+    static const vector<pair<string, ComponentType>> GetStringToComponentEnum();
+    static ComponentType StringToComponentType(string compName);
+    static string ComponentNameToString(ComponentType compName);
+    virtual bool GetFwComponentsData(string path);
+    virtual bool
+      ReadComponent(string compName, ComponentHeader compHeader, string file_path, vector<u_int8_t>& componentData);
+    virtual bool ReadComponentSection(string compName,
+                                      string sectionName,
+                                      ComponentHeader compHeader,
+                                      vector<u_int8_t>& sectionData);
     virtual bool FwReadRom(std::vector<u_int8_t>& romSect) = 0;
     virtual bool FwBurnRom(FImage* romImg,
                            bool ignoreProdIdCheck = false,
@@ -289,6 +366,7 @@ public:
     virtual bool IsCableQuerySupported();
     virtual bool IsLifeCycleSupported();
     virtual bool IsEncryptionSupported();
+    virtual bool IsComponentFormatWithKeyId();
     virtual bool IsCRDTDebugSessionActive();
     
     bool checkAndDisableFlashWpIfRequired(); // relavant to FS5 and FS6 but FS6 inherites FwOperations and not FS5
@@ -316,6 +394,8 @@ public:
     virtual bool GetSecureHostState(u_int8_t& state);
     virtual bool ChangeSecureHostState(bool disable, u_int64_t key);
     virtual bool IsComponentSupported(FwComponent::comps_ids_t component);
+    virtual const std::vector<CompInfo>& GetCompsVersionList() const { return _compsList; }
+    virtual bool IsVmodSupported();
     static bool IsPLDM(const string& pldmFile);
     virtual bool getBFBComponentsVersions(std::map<std::string, std::string>& name_to_version, bool pending);
     void getSupportedHwId(u_int32_t** supportedHwId, u_int32_t& supportedHwIdNum);
@@ -385,6 +465,15 @@ public:
         BurnRomOption burnRomOptions;
         bool shift8MBIfNeeded;
 
+        // VMOD downstream-device burn params (relevant only when vmodDownstreamControl == true)
+        bool vmodDownstreamControl;
+        int vmodDeviceIndex;
+        int vmodDeviceSize;
+        bool vmodAutoUpdate;
+        bool vmodActivationNeeded;
+        bool vmodDownloadTransferNeeded;
+        int vmodActivationDelaySec;
+
         // callback fun
         ProgressCallBack progressFunc;
         ProgressCallBackAdvSt ProgressFuncAdv;
@@ -417,6 +506,13 @@ public:
             useDevImgInfo(false),
             burnRomOptions(BRO_DEFAULT),
             shift8MBIfNeeded(false),
+            vmodDownstreamControl(false),
+            vmodDeviceIndex(0),
+            vmodDeviceSize(0),
+            vmodAutoUpdate(false),
+            vmodActivationNeeded(true),
+            vmodDownloadTransferNeeded(true),
+            vmodActivationDelaySec(0),
             progressFunc((ProgressCallBack)NULL),
             progressFuncEx((ProgressCallBackEx)NULL),
             progressUserData(NULL),
@@ -476,6 +572,7 @@ public:
         // FHT_MST_DEV
         char* mstHndl;
         bool forceLock;
+        bool forceCleanup;
         bool readOnly;
         int numOfBanks;              // should be set to -1 for "auto-detect"
         flash_params_t* flashParams; // can be NULL
@@ -504,6 +601,17 @@ public:
         bool usePPAttr;            // if set, use the per prot attributes below (FS3 Image Only)
         u_int16_t numOfGUIDsPP[2]; // number of GUIDs to allocate for each port. keep 0xff for default. (FS3 image Only)
         u_int8_t stepSizePP[2];    // step size between GUIDs. keep 0xffff for default. (FS3 Image Only)
+    };
+
+    struct CompInfo
+    {
+        CompInfo(ComponentType type, const FwVersion& version, const std::string& compLabel = "") :
+            compType(type), compVersion(version), label(compLabel)
+        {
+        }
+        ComponentType compType;
+        FwVersion compVersion;
+        std::string label;
     };
 
 protected:
@@ -590,7 +698,7 @@ protected:
     struct SectionInfo
     {
         u_int8_t type;
-        const char* name;
+        string name;
     };
 
     struct QueryOptions
@@ -608,6 +716,13 @@ protected:
         bool calcSha;
 
         burnDataParamsT() : data((u_int32_t*)NULL), dataSize(0), progressFunc((ProgressCallBack)NULL), calcSha(false){};
+    };
+
+    struct FsCommonInfo
+    {
+        fs3_info_t ext_info;
+        bool runFromAny;
+        u_int8_t logStep;
     };
 
     typedef int (*print2log_func)(const char* format, ...);
@@ -700,6 +815,7 @@ protected:
     HwDevData getInfoFromChipType(chip_type_t chipT) const;
 
     bool ReadBinFile(const char* fimage, u_int8_t*& file_data, int& file_size);
+    bool ReadBinFile(const char* fimage, vector<u_int8_t>& file_data);
     bool FwBurnData(u_int32_t* data, u_int32_t dataSize, ProgressCallBack progressFunc);
     bool FwBurnData(burnDataParamsT& burnDataParams);
     static bool FwAccessCreate(fw_ops_params_t& fwParams, FBase** ioAccessP, u_int16_t swDevId = 0);
@@ -711,16 +827,32 @@ protected:
     bool TestAndSetTimeStamp(FwOperations* imageOps);
     virtual bool VerifyBranchFormat(const char* vsdString);
     virtual bool GetDtocAddress(u_int32_t& dTocAddress);
-    virtual bool IsVmodSupported();
+    const char* GetSectionNameByType(u_int8_t section_type);
+
+    static bool CheckDevInfoSignature(u_int32_t* buff);
+    bool ChangeUidsFromBase(fs3_uid_t baseUid, image_layout_guids& guids);
+    bool ChangeDeviceInfoUidsFromBase(fs3_uid_t& usrGuid, const sg_params_t& sgParam);
+
+    virtual bool GetDevInfo(u_int8_t* buff = nullptr);
+    virtual bool GetMfgInfo(u_int8_t* buff = nullptr);
+    static bool IsFS6ReducedImage(unsigned char* romImageMagicPattern, unsigned char* l2ptMagicPattern = nullptr);
+    virtual void PrintSectionRange(VerifyCallBack verifyCallBackFunc,
+                                   u_int32_t startAddr,
+                                   u_int32_t endAddr,
+                                   u_int32_t size,
+                                   const string& sectionType,
+                                   const string& suffix = "");
 
     // Protected Members
     FBase* _ioAccess;
     FwImgInfo _fwImgInfo;
+    FsCommonInfo _fsCommonInfo;
     fw_ops_params_t _fwParams;
     std::vector<u_int8_t> _romSect;
     std::vector<u_int8_t> _fwConfSect;
     std::vector<u_int8_t> _hashFileSect;
     std::vector<u_int8_t> _readSectList;
+    std::vector<CompInfo> _compsList;
     bool _sectionsToRead[H_LAST];
     bool _quickQuery;
 
@@ -736,6 +868,8 @@ protected:
     ISignatureManager* _signatureMngr;
     bool _internalQueryPerformed;
     bool _isReducedImage;
+
+    static const SectionInfo _fs3SectionsInfoArr[];
 
 private:
     // Static Methods
@@ -756,12 +890,14 @@ private:
     static bool GetImageFormatVersion(FBase& f, u_int32_t boot_version_offset, u_int8_t& image_format_version);
     static u_int8_t IsPLDM(FBase& f);
     static bool IsPLDMHeader(const u_int8_t* data);
+    static u_int8_t IsFS6Image(FBase& f);
     static u_int8_t IsFS4OrFS5Image(FBase& f, u_int32_t* found_images);
     static u_int8_t IsFS3OrFS2Image(FBase& f, u_int32_t* found_images);
     static u_int8_t IsCableImage(FBase& f);
     static u_int8_t IsFSCompsImage(FBase& f);
     static bool FindMagicPattern(FBase* ioAccess, u_int32_t addr, u_int32_t const cntx_magic_pattern[]);
     static bool CntxEthOnly(u_int32_t devid);
+    static bool IsFileSignatureTb50x(FILE* fin);
 
     /* Name:        WriteToErrBuff
      * Description: Write a string into buffer, truncating it to fit.

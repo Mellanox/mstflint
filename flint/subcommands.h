@@ -125,7 +125,7 @@ protected:
     string getRomProtocolStr(u_int8_t proto);
     string getRomSuppCpuStr(u_int8_t suppCpu);
     u_int32_t getUserChoice(u_int32_t maximumValue);
-    static int verifyCbFunc(char* str);
+    static int verifyCbFunc(const char* str);
     static int CbCommon(int completion, char* preStr, char* endStr = NULL);
     static int burnCbFs3Func(int completion);
     static int advProgressFunc(int completion, const char* stage, prog_t type, int* unknownProgress);
@@ -240,10 +240,12 @@ private:
     int _unknownProgress; // used to trace the progress of unknown progress.
     FwCompsMgr* fwCompsAccess;
     FlintStatus burnFs3();
+    bool warnAboutBurnFailsafe();
     bool checkFwVersion(bool CreateFromImgInfo = true,
                         u_int16_t fw_ver0 = 0,
                         u_int16_t fw_ver1 = 0,
                         u_int16_t fw_ver2 = 0);
+    bool check64MBLayoutCompatibility();
     bool checkPSID();
     void updateBurnParams();
     bool dealWithExpRom();
@@ -308,7 +310,7 @@ class QuerySubCommand : public SubCommand
 private:
     fw_info_t _imgInfo;
     FlintStatus printImageInfo(const fw_info_t& fwInfo);
-    string printSecurityAttrInfo(u_int32_t m);
+    string printSecurityAttrInfo(u_int32_t m, u_int32_t image_type_by_key_id = 0);
     FlintStatus printInfo(const fw_info_t& fwInfo, bool fullQuery);
     bool displayFs4Uids(const fw_info_t& fwInfo);
     bool displayFs3Uids(const fw_info_t& fwInfo, bool isStripedImage);
@@ -322,7 +324,10 @@ private:
                          const component_linkx_st& linkx_data,
                          char* delimeter,
                          bool isCSV);
-    FlintStatus QueryLinkX(string deviceName, string outputFile, std::vector<int> deviceIds);
+    FlintStatus QueryLinkX(string deviceName,
+                           string outputFile,
+                           std::vector<int> deviceIds,
+                           FwComponent::comps_ids_t fwComponent);
     FlintStatus QueryCableAttributes();
     void PrintLifeCycle(const life_cycle_t& lifeCycle);
 

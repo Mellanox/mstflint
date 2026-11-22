@@ -181,6 +181,7 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("", "uid", 1));
     _flags.push_back(new Flag("", "blank_guids", 0));
     _flags.push_back(new Flag("", "clear_semaphore", 0));
+    _flags.push_back(new Flag("", "force_cleanup", 0));
     _flags.push_back(new Flag("h", "help", 0));
     _flags.push_back(new Flag("", "hh", 0));
     _flags.push_back(new Flag("i", "image", 1));
@@ -230,6 +231,7 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("", "cc", 1));
     _flags.push_back(new Flag("", "linkx", 0));
     _flags.push_back(new Flag("", "linkx_els", 0));
+    _flags.push_back(new Flag("", "vmod", 0));
     _flags.push_back(new Flag("", "downstream_device_id_start_index", 1));
     _flags.push_back(new Flag("", "num_of_downstream_devices", 1));
     _flags.push_back(new Flag("", "linkx_auto_update", 0));
@@ -650,6 +652,15 @@ void Flint::initCmdParser()
                " currently using the flash.\n"
                "Exercise caution.\n");
 
+    AddOptions("force_cleanup",
+               ' ',
+               "",
+               "Before executing the command, forcibly clear a stale flash semaphore and release an orphaned FSM"
+               " update handle (e.g. left behind by a previously killed tool), then proceed with the command.\n"
+               "Commands affected: burn\n"
+               "NOTE: May result in system instability or flash corruption if the device or another application is"
+               " currently using the flash.\n");
+
     AddOptions("qq",
                ' ',
                "",
@@ -828,6 +839,8 @@ void Flint::initCmdParser()
                "Use this flag while burning to device a Congestion Control Component");
 
     AddOptions("linkx", ' ', "", "Use this flag while burning to device a LinkX Component");
+
+    AddOptions("vmod", ' ', "", "Use this flag while burning to device a VMOD Component");
 
     AddOptions("linkx_els", ' ', "",
                "Use this flag while burning to device a LinkX_ELS(High Power laser​) Component");
@@ -1121,6 +1134,10 @@ ParseStatus Flint::HandleOption(string name, string value)
     {
         _flintParams.clear_semaphore = true;
     }
+    else if (name == "force_cleanup")
+    {
+        _flintParams.force_cleanup = true;
+    }
     else if (name == "image" || name == "i")
     {
         _flintParams.image_specified = true;
@@ -1306,6 +1323,10 @@ ParseStatus Flint::HandleOption(string name, string value)
     else if (name == "linkx")
     {
         _flintParams.linkx_control = true;
+    }
+    else if (name == "vmod")
+    {
+        _flintParams.vmod_control = true;
     }
     else if (name == "linkx_els")
     {

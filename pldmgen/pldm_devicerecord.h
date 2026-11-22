@@ -56,6 +56,7 @@
                       const std::vector<PLDMDescriptor>& descriptors);
      virtual ~PLDMDeviceRecord() = default;
      void Pack(std::vector<u_int8_t>& buff);
+     bool IsSpc6Device() const;
 
  protected:
      virtual bool IncludesVersionString() const { return true; }

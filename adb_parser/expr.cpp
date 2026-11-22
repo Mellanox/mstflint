@@ -38,10 +38,6 @@
 #include <string.h>
 #include "expr.h"
 
-const char* Expr::str;
-const char* Expr::initial_arg;
-Expr::status Expr::state;
-
 /*
  * Number of elements in array
  */

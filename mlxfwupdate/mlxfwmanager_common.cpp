@@ -250,53 +250,6 @@ int mlxfw_get_exec_name_from_path(char* str, char* exec_name)
 
 #endif
 
-bool unzipDataFile(std::vector<u_int8_t> data, std::vector<u_int8_t>& newData, const char* sectionName)
-{
-#ifndef NO_ZLIB
-    int rc;
-    if (data.empty())
-    {
-        return false;
-    }
-    // restore endianess.
-    TOCPUn(&(data[0]), data.size() / 4);
-
-    // uncompress:
-    uLongf destLen = data.size();
-    destLen *= 40; // Assuming this is the best compression ratio
-    vector<u_int8_t> dest(destLen);
-
-    for (int i = 0; i < 32; i++)
-    {
-        rc = uncompress((Bytef*)&(dest[0]), &destLen, (const Bytef*)&(data[0]), data.size());
-        if (rc != Z_BUF_ERROR)
-        {
-            break;
-        }
-        destLen *= 2;
-        dest.resize(destLen);
-    }
-
-    if (rc != Z_OK)
-    {
-        return false;
-    }
-    // printf("%s", (char*)&(dest[0]));
-
-    newData = dest;
-    newData[destLen] = 0; // Terminating NULL
-    newData.resize(destLen + 1);
-    (void)sectionName;
-    return true;
-#else
-    // avoid warnings
-    (void)data;
-    (void)newData;
-    (void)sectionName;
-    return false;
-#endif
-}
-
 #ifdef __WIN__
 int my_chmod(const char* path, mode_t mode)
 {
@@ -358,10 +311,53 @@ string getErrStr(int rc)
     err_msg[ERR_CODE_INVALID_PLDM_FORMAT] = ERR_MSG_INVALID_PLDM_FORMAT;
     err_msg[ERR_CODE_CABLE_UPDATE_FAILED] = ERR_MSG_CABLE_UPDATE_FAILED;
     err_msg[ERR_CODE_CABLE_NOT_SUPPORTED] = ERR_MSG_CABLE_NOT_SUPPORTED;
-
     if (err_msg.find(rc) != err_msg.end())
     {
         return err_msg[rc];
     }
     return "Unknown error";
+}
+
+bool unzipDataFile(std::vector<u_int8_t> data, std::vector<u_int8_t>& newData)
+{
+#ifndef NO_ZLIB
+    int rc;
+    if (data.empty())
+    {
+        return false;
+    }
+    // restore endianess.
+    TOCPUn(&(data[0]), data.size() / 4);
+
+    // uncompress:
+    uLongf destLen = data.size();
+    destLen *= 40; // Assuming this is the best compression ratio
+    vector<u_int8_t> dest(destLen);
+
+    for (int i = 0; i < 32; i++)
+    {
+        rc = uncompress((Bytef*)&(dest[0]), &destLen, (const Bytef*)&(data[0]), data.size());
+        if (rc != Z_BUF_ERROR)
+        {
+            break;
+        }
+        destLen *= 2;
+        dest.resize(destLen);
+    }
+
+    if (rc != Z_OK)
+    {
+        return false;
+    }
+
+    newData = dest;
+    newData.resize(destLen + 1);
+    newData[destLen] = 0; // Terminating NULL
+    return true;
+#else
+    // avoid warnings
+    (void)data;
+    (void)newData;
+    return false;
+#endif
 }

@@ -32,9 +32,11 @@
  */
 
 #include "fw_version.h"
+#include "mlxfwops_com.h"
 #include <sstream>
 #include <stdlib.h>
 #include <stdio.h>
+#include <cstring>
 
 const unsigned short MAX_MINOR_LENGETH = 4;
 const unsigned short FORMAT0_CIB_MAJOR = 10;
@@ -127,6 +129,7 @@ bool FwVersion::operator!=(const FwVersion& rhs) const
 // 41 is NVLink6_Switch
 // 37 is Spectrum5
 // 39 is Spectrum6
+// 95 is VMOD
 bool FwVersion::is_switch_or_gb() const
 {
     if (_major == 0 && _minor == 0 && _subminor == 0 && !_devBranchTag.empty())
@@ -135,6 +138,10 @@ bool FwVersion::is_switch_or_gb() const
     }
     if (_major == 13 || _major == 29 || _major == 30 || _major == 31 || _major == 34 || _major == 19 || _major == 21 || _major == 35 || _major == 36 ||
         _major == 37 || _major == 41)
+    {
+        return true;
+    }
+    if (_major == 95)
     {
         return true;
     }
@@ -179,6 +186,22 @@ int FwVersion::compare_master_version(const FwVersion& rhs) const
         }
     }
     return 0;
+}
+
+bool FwVersion::is_same_device_family(const FwVersion& rhs) const
+{
+    // Same device (major), and both are release versions (not dev-branch builds).
+    return is_master_branch() && rhs.is_master_branch() && _major == rhs._major;
+}
+
+unsigned short int FwVersion::get_subminor() const
+{
+    return _subminor;
+}
+
+unsigned short int FwVersion::get_minor() const
+{
+    return _minor;
 }
 
 int FwVersion::compare(const FwVersion& rhs) const
@@ -233,6 +256,38 @@ bool FwVersion::operator>=(const FwVersion& rhs) const
 FwVersion* FwVersion::clone() const
 {
     return new FwVersion(*this);
+}
+
+bool FwVersion::is_branch_version(const char* version)
+{
+    size_t length = std::strlen(version);
+    if (length > BRANCH_LEN || length < MIN_BRANCH_LEN)
+    {
+        return false;
+    }
+    if (version[length - MIN_BRANCH_LEN] == '_')
+    {
+        for (size_t i = length - MIN_BRANCH_LEN + 1; i < length; i++)
+        {
+            if (!isdigit(version[i]))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+    else if (version[length - MIN_BRANCH_LEN + 1] == '-')
+    {
+        for (size_t i = length - MIN_BRANCH_LEN + 2; i < length; i++)
+        {
+            if (!isdigit(version[i]))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
 }
 
 ComponentFwVersion::ComponentFwVersion() : _major(0), _minor(0), _subMinor(0), _format(VersionFormat::None) {}

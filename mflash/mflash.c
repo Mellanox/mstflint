@@ -2199,7 +2199,7 @@ int sx_flash_init_direct_access(mflash* mfl, flash_params_t* flash_params)
 void update_seventh_gen_addrs(mflash* mfl)
 {
     /* Registers addresses */
-    if (mfl->dm_dev_id == DeviceQuantum3 || mfl->dm_dev_id == DeviceNVLink6_Switch || mfl->dm_dev_id == DeviceSpectrum5 || mfl->dm_dev_id == DeviceSpectrum6)
+    if (mfl->dm_dev_id == DeviceQuantum3 || mfl->dm_dev_id == DeviceNVLink6_Switch || mfl->dm_dev_id == DeviceSpectrum5)
     {
         mfl->gw_cmd_register_addr = HCR_7GEN_QTM3_FLASH_CMD;
         mfl->gw_data_field_addr = HCR_7GEN_QTM3_FLASH_DATA;
@@ -2257,11 +2257,11 @@ void update_seventh_gen_addrs(mflash* mfl)
     }
     else if (mfl->dm_dev_id == DeviceSpectrum6)
     {
-        mfl->gw_cmd_register_addr = HCR_7GEN_QTM3_FLASH_CMD;
-        mfl->gw_data_field_addr = HCR_7GEN_QTM3_FLASH_DATA;
-        mfl->gcm_en_addr = HCR_7GEN_QTM3_GCM_EN_ADDR;
-        mfl->gw_addr_field_addr = HCR_7GEN_QTM3_FLASH_ADDR;
-        mfl->gw_data_size_register_addr = HCR_7GEN_QTM3_FLASH_DATA_SIZE;
+        mfl->gw_cmd_register_addr = HCR_7GEN_SPC6_FLASH_CMD;
+        mfl->gw_data_field_addr = HCR_7GEN_SPC6_FLASH_DATA;
+        mfl->gcm_en_addr = HCR_7GEN_SPC6_GCM_EN_ADDR;
+        mfl->gw_addr_field_addr = HCR_7GEN_SPC6_FLASH_ADDR;
+        mfl->gw_data_size_register_addr = HCR_7GEN_SPC6_FLASH_DATA_SIZE;
         if (is_zombiefish_device(mfl->mf))
         {
             mfl->gw_cmd_register_addr = mfl->gw_cmd_register_addr - HCR_7GEN_SPC6_FLASH_GW_BASE_ADDR + VSC_RECOVERY_SPACE_FLASH_GW_BASE_ADDRESS;

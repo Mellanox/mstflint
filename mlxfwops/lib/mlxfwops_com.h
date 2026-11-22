@@ -69,6 +69,7 @@
 #define SPECTRUM4_HW_ID 596
 #define SPECTRUM5_HW_ID 624
 #define SPECTRUM6_HW_ID 628
+#define SPECTRUM6_RMA_HW_ID 629
 #define CX4_HW_ID 521
 #define CX4LX_HW_ID 523
 #define CX5_HW_ID 525
@@ -112,6 +113,18 @@ typedef enum
     FS5_LC_FAILURE_ANALYSIS = 7
 } LifeCycleFS5;
 
+typedef enum
+{
+    FS6_LC_BLANK_CHIP = 0,
+    FS6_LC_PRE_PRODUCTION = 1,
+    FS6_LC_PRODUCTION = 3,
+    FS6_LC_FAILURE_ANALYSIS_MGIR = 6,
+    FS6_LC_RMA_ENABLED = 7,
+    FS6_LC_RMA_DISABLED = 0xf,
+    FS6_LC_FAILURE_ANALYSIS = 0x1f,
+    FS6_LC_INVALID = 0xFF
+} LifeCycleFS6;
+
 #define MAX_HTOC_ENTRIES_NUM 28
 #define MAX_HTOC_ENTRIES_NUM_VERSION_1 64
 #define HASHES_TABLE_TAIL_SIZE 8
@@ -120,7 +133,7 @@ typedef enum
 typedef int EFIAPI (*f_prog_func)(int completion);
 typedef int EFIAPI (*f_prog_func_ex)(int completion, void* opaque);
 typedef int EFIAPI (*f_prog_func_adv)(int completion, const char* str, prog_t, void* opaque);
-typedef int (*f_prog_func_str)(char* str);
+typedef int (*f_prog_func_str)(const char* str);
 
 typedef struct
 {
@@ -139,6 +152,7 @@ typedef struct
 #define DESCRIPTION_LEN 257
 #define BRANCH_LEN 28
 #define MIN_BRANCH_LEN 5
+#define VPD_MAX_SIZE 0x1000
 
 #define FREE_STR_MAX_LEN 256
 
@@ -484,7 +498,7 @@ typedef struct uids
 
 typedef struct life_cycle
 {
-    int version_field; // 0: fs4 , 1: fs5
+    int version_field; // 0: fs4 , 1: fs5, 2: fs6
     u_int8_t value;
 } life_cycle_t;
 
@@ -507,6 +521,7 @@ typedef struct fs3_info_ext
     char name[NAME_LEN];
     char description[DESCRIPTION_LEN];
     u_int32_t security_mode;
+    u_int8_t nv_pub_key_idx;
     u_int8_t mcc_en;
     char deviceVsd[VSD_LEN + 1];
     bool sec_boot;
@@ -631,7 +646,10 @@ typedef enum fw_img_type
     FIT_FSCTRL = 4,
     FIT_FS5 = 5,
     FIT_COMPS = 6,
-    FIT_PLDM = 7
+    FIT_PLDM = 7,
+    FIT_FS6 = 12,
+    FIT_CSH_VMOD = 13,
+    FIT_CSH = 14
 } fw_img_type_t;
 
 enum ExpRomProto

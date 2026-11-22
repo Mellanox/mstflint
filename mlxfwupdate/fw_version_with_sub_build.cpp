@@ -47,7 +47,7 @@ FwVersionWithSubBuild::FwVersionWithSubBuild(unsigned short int major,
 
 FwVersionWithSubBuild::~FwVersionWithSubBuild() {}
 
-std::string FwVersionWithSubBuild::get_master_version(const std::string& format, bool even_subminor) const
+std::string FwVersionWithSubBuild::get_primary_version(const std::string& format, bool even_subminor) const
 {
     char buff[MAX_VERSION_LENGTH + 1] = {0};
     snprintf(buff, sizeof(buff), format.c_str(), _major, _minor, _subminor / 100,

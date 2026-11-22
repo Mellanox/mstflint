@@ -36,7 +36,7 @@
 #ifndef __PSID_QUERY_ITEM_H__
 #define __PSID_QUERY_ITEM_H__
 
-#include <img_version.h>
+#include "img_version.h"
 #include "fw_comps_mgr/fw_comps_mgr.h"
 #include <string>
 #include <vector>

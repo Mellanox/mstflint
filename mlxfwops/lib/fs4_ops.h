@@ -252,7 +252,6 @@ private:
     bool FwSignSection(const vector<u_int8_t>& section, const string privPemFileStr, vector<u_int8_t>& encSha);
 #endif
     bool PrepItocSectionsForHmac(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
-    bool CheckSignatures(u_int32_t a[], u_int32_t b[], int n);
     bool CheckDevRSAPublicKeyUUID();
     virtual bool FwQuery(fw_info_t* fwInfo,
                          bool readRom = true,
@@ -267,7 +266,6 @@ private:
                              bool verbose = false);
     virtual bool Init();
     bool CheckTocSignature(struct image_layout_itoc_header* itoc_header, u_int32_t first_signature);
-    bool CheckDevInfoSignature(u_int32_t* buff);
     bool FsBurnAux(FwOperations* imageOps, ExtBurnParams& burnParams);
     bool BurnFs4Image(Fs4Operations& imageOps, ExtBurnParams& burnParams);
     bool Fs4GetItocInfo(struct fs4_toc_info* tocArr,

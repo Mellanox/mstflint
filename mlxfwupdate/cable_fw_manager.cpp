@@ -132,85 +132,34 @@ enum MmamModuleType
     MMAM_MODULE_TYPE_NPO_16X = 29
 };
 
-/* Whether MMAM.ga names the ASIC that owns this module. The PRM marks it Reserved for the
- * backplane and chip2chip types, where a Reserved value reading back as a valid-looking address
- * would attribute a phantom cable to an ASIC that owns no such thing. Nothing else is excluded
- * here: whether a cable is plugged in and can be burned is phase 2's and phase 3's question.
+/* The name of a module type whose MMAM.ga does not name the ASIC that owns the module, or NULL for
+ * every other type. The PRM marks ga Reserved for the backplane and chip2chip types, where a
+ * Reserved value reading back as a valid-looking address would attribute a phantom cable to an ASIC
+ * that owns no such thing. Nothing else is excluded here: whether a cable is plugged in and can be
+ * burned is phase 2's and phase 3's question.
  */
-static bool isAsicDetectionSupported(u_int8_t moduleType)
+static const char* reservedGaModuleTypeName(u_int8_t moduleType)
 {
     switch (moduleType)
     {
-        case MMAM_MODULE_TYPE_BACKPLANE_1X:
-        case MMAM_MODULE_TYPE_BACKPLANE_2X:
-        case MMAM_MODULE_TYPE_BACKPLANE_4X:
-        case MMAM_MODULE_TYPE_BACKPLANE_8X:
-        case MMAM_MODULE_TYPE_CHIP2CHIP_1X:
-        case MMAM_MODULE_TYPE_CHIP2CHIP_2X:
-        case MMAM_MODULE_TYPE_CHIP2CHIP_4X:
-        case MMAM_MODULE_TYPE_CHIP2CHIP_8X:
-            return false;
-        default:
-            return true;
-    }
-}
-
-static string moduleTypeName(u_int8_t moduleType)
-{
-    switch (moduleType)
-    {
-        case MMAM_MODULE_TYPE_BACKPLANE_4X:
-            return "Backplane_with_4_lanes";
-        case MMAM_MODULE_TYPE_QSFP:
-            return "QSFP";
-        case MMAM_MODULE_TYPE_SFP:
-            return "SFP";
-        case MMAM_MODULE_TYPE_NO_CAGE:
-            return "No_Cage";
         case MMAM_MODULE_TYPE_BACKPLANE_1X:
             return "Backplane_with_single_lane";
         case MMAM_MODULE_TYPE_BACKPLANE_2X:
             return "Backplane_with_two_lanes";
-        case MMAM_MODULE_TYPE_CHIP2CHIP_4X:
-            return "Chip2Chip4x";
-        case MMAM_MODULE_TYPE_CHIP2CHIP_2X:
-            return "Chip2Chip2x";
-        case MMAM_MODULE_TYPE_CHIP2CHIP_1X:
-            return "Chip2Chip1x";
-        case MMAM_MODULE_TYPE_QSFP_DD:
-            return "QSFP_DD";
-        case MMAM_MODULE_TYPE_OSFP:
-            return "OSFP";
-        case MMAM_MODULE_TYPE_SFP_DD:
-            return "SFP_DD";
-        case MMAM_MODULE_TYPE_DSFP:
-            return "DSFP";
-        case MMAM_MODULE_TYPE_CHIP2CHIP_8X:
-            return "Chip2Chip8x";
-        case MMAM_MODULE_TYPE_TWISTED_PAIR:
-            return "Twisted_Pair";
+        case MMAM_MODULE_TYPE_BACKPLANE_4X:
+            return "Backplane_with_4_lanes";
         case MMAM_MODULE_TYPE_BACKPLANE_8X:
             return "Backplane_with_8_lanes";
-        case MMAM_MODULE_TYPE_LOOPBACK:
-            return "Loopback";
-        case MMAM_MODULE_TYPE_OE_16X:
-            return "OE_16x";
-        case MMAM_MODULE_TYPE_OSFP_ELS:
-            return "OSFP_ELS";
-        case MMAM_MODULE_TYPE_QSFP_2X:
-            return "QSFP_2x";
-        case MMAM_MODULE_TYPE_CPO_32X:
-            return "CPO_32x";
-        case MMAM_MODULE_TYPE_ELS_16:
-            return "ELS_16";
-        case MMAM_MODULE_TYPE_CPO_64X:
-            return "CPO_64x";
-        case MMAM_MODULE_TYPE_QSFP_1X:
-            return "QSFP_1x";
-        case MMAM_MODULE_TYPE_NPO_16X:
-            return "NPO_16x";
+        case MMAM_MODULE_TYPE_CHIP2CHIP_1X:
+            return "Chip2Chip1x";
+        case MMAM_MODULE_TYPE_CHIP2CHIP_2X:
+            return "Chip2Chip2x";
+        case MMAM_MODULE_TYPE_CHIP2CHIP_4X:
+            return "Chip2Chip4x";
+        case MMAM_MODULE_TYPE_CHIP2CHIP_8X:
+            return "Chip2Chip8x";
         default:
-            return "unknown type " + int_to_string((int)moduleType);
+            return NULL;
     }
 }
 
@@ -370,6 +319,18 @@ int CableFwManager::run()
 /* What the report prints for anything the cable or the package did not supply. */
 #define CABLE_REPORT_NOT_AVAILABLE "N/A"
 
+/* What the report prints for an identity field the cable filled with something other than text. */
+#define CABLE_REPORT_INVALID_TEXT "Invalid"
+
+/* The identity fields CableInfo::invalidText flags. */
+enum CableTextField
+{
+    CABLE_TEXT_VENDOR_NAME = 1 << 0,
+    CABLE_TEXT_PART_NUMBER = 1 << 1,
+    CABLE_TEXT_SERIAL_NUMBER = 1 << 2,
+    CABLE_TEXT_VENDOR_REV = 1 << 3
+};
+
 /* The cable EEPROM lives behind this I2C address on every cage. */
 #define CABLE_EEPROM_I2C_ADDRESS 0x50
 
@@ -513,20 +474,98 @@ static const char* cableIdentifierName(u_int8_t identifier)
     }
 }
 
-/* EEPROM text is padded with spaces and is not terminated, so it needs both a bound and a trim. */
-static string trimmedEepromText(const u_int8_t* bytes, u_int16_t length)
+static string cableBytesHex(const u_int8_t* bytes, size_t length)
 {
-    string text((const char*)bytes, length);
-    size_t end = text.find_last_not_of(" \t\r\n");
+    string hex;
+    char byte[4];
 
-    if (end == string::npos)
+    for (size_t i = 0; i < length; i++)
     {
-        return "";
+        snprintf(byte, sizeof(byte), " %02x", (unsigned int)bytes[i]);
+        hex += byte;
     }
-    text = text.substr(0, end + 1);
-    // A field that never held text at all reads as zeros rather than spaces.
-    size_t nul = text.find('\0');
-    return (nul == string::npos) ? text : text.substr(0, nul);
+    return hex;
+}
+
+/* The identity fields are ASCII padded with spaces (SFF-8636 6.3, CMIS 8.3.2), and an all-zero field
+ * means unspecified, so NUL is the only other byte a valid field holds. Anything else - an
+ * unprogrammed sample, or a read that caught the module mid-reset - would reach the terminal raw,
+ * where control bytes move the cursor and wreck the report. The report shows a marker instead, so
+ * the raw bytes go to the trace, under the cable and field they came from.
+ */
+static bool isCableText(const u_int8_t* bytes, size_t length, u_int32_t globalPort, const char* field)
+{
+    for (size_t i = 0; i < length; i++)
+    {
+        if (bytes[i] != '\0' && (bytes[i] < 0x20 || bytes[i] > 0x7e))
+        {
+            FWMANAGER_LOG_DEBUG("Cable %u: %s is not ASCII text, raw bytes:%s", globalPort, field,
+                                cableBytesHex(bytes, length).c_str());
+            return false;
+        }
+    }
+    return true;
+}
+
+/* The text of one identity field, the same rule for PDDR and the EEPROM. NUL is padding at either end:
+ * an all-zero field is unspecified, and PDDR right-aligns some fields with NULs on the left (the vendor
+ * revision). A NUL between two characters is neither, and dropping it would join text that was never
+ * one string, so such a field is not taken as text. Trailing spaces are the EEPROM's padding.
+ */
+static bool cableText(const u_int8_t* bytes, size_t length, u_int32_t globalPort, const char* field, string& value)
+{
+    value.clear();
+    if (!isCableText(bytes, length, globalPort, field))
+    {
+        return false;
+    }
+    size_t first = 0;
+    size_t last = length;
+    while (first < length && bytes[first] == '\0')
+    {
+        first++;
+    }
+    while (last > first && bytes[last - 1] == '\0')
+    {
+        last--;
+    }
+    string text((const char*)bytes + first, last - first);
+    if (text.find('\0') != string::npos)
+    {
+        FWMANAGER_LOG_DEBUG("Cable %u: %s has a NUL inside its text, raw bytes:%s", globalPort, field,
+                            cableBytesHex(bytes, length).c_str());
+        return false;
+    }
+    size_t end = text.find_last_not_of(' ');
+    if (end != string::npos)
+    {
+        value = text.substr(0, end + 1);
+    }
+    return true;
+}
+
+/* Records whether a field read as text, so a re-read clears what an earlier read flagged. */
+static void markCableText(CableInfo& cable, u_int8_t field, bool isText)
+{
+    cable.invalidText = isText ? (u_int8_t)(cable.invalidText & ~field) : (u_int8_t)(cable.invalidText | field);
+}
+
+/* Whether the identity read and every field of it is text. A field that is not text is an
+ * unprogrammed EEPROM or a bad read, and neither is a cable the package can be matched against.
+ */
+static bool hasUsableIdentity(const CableInfo& cable)
+{
+    return cable.isReadable && cable.invalidText == 0;
+}
+
+/* An identity field as the report prints it. */
+static string cableIdentityText(const CableInfo& cable, const string& value, u_int8_t field)
+{
+    if ((cable.invalidText & field) != 0)
+    {
+        return CABLE_REPORT_INVALID_TEXT;
+    }
+    return value.empty() ? CABLE_REPORT_NOT_AVAILABLE : value;
 }
 
 static reg_access_status_t
@@ -1498,33 +1537,27 @@ static const char* cablePddrIdentifierName(u_int8_t identifier)
     }
 }
 
-/* PDDR keeps the ASCII identity fields in dword arrays, most significant byte first. NULs are
- * padding wherever they fall - the vendor revision is right-aligned and NUL-padded on the left -
- * but a space is only padding at the end: a vendor name or part number may contain one, and these
- * fields are what the package is matched on.
+/* PDDR keeps the ASCII identity fields in dword arrays, most significant byte first. A space is
+ * only padding at the end: a vendor name or part number may contain one, and these fields are what
+ * the package is matched on.
  */
-static string pddrAsciiText(const u_int32_t* words, size_t count)
+static bool pddrAsciiText(const u_int32_t* words, size_t count, u_int32_t globalPort, const char* field, string& value)
 {
-    string text;
+    std::vector<u_int8_t> bytes;
 
     for (size_t i = 0; i < count; i++)
     {
         for (int shift = 24; shift >= 0; shift -= 8)
         {
-            char c = (char)((words[i] >> shift) & 0xff);
-            if (c != '\0')
-            {
-                text += c;
-            }
+            bytes.push_back((u_int8_t)((words[i] >> shift) & 0xff));
         }
     }
-    size_t end = text.find_last_not_of(' ');
-    return (end == string::npos) ? string() : text.substr(0, end + 1);
+    return cableText(&bytes[0], bytes.size(), globalPort, field, value);
 }
 
-static string pddrAsciiWord(u_int32_t word)
+static bool pddrAsciiWord(u_int32_t word, u_int32_t globalPort, const char* field, string& value)
 {
-    return pddrAsciiText(&word, 1);
+    return pddrAsciiText(&word, 1, globalPort, field, value);
 }
 
 /* Read one cable's identity and state off the PDDR module info page. The firmware has already
@@ -1555,26 +1588,33 @@ static bool readCableModuleInfo(mfile* mf, u_int32_t localPort, CableInfo& cable
     }
     cable.identifier = cablePddrIdentifierName(info.cable_identifier);
     cable.state = cableModuleStateName(info.module_st);
-    cable.vendorName = pddrAsciiText(info.vendor_name, 4);
-    cable.partNumber = pddrAsciiText(info.vendor_pn, 4);
-    cable.serialNumber = pddrAsciiText(info.vendor_sn, 4);
-    cable.vendorRev = pddrAsciiWord(info.vendor_rev);
+    markCableText(cable, CABLE_TEXT_VENDOR_NAME,
+                  pddrAsciiText(info.vendor_name, 4, cable.globalPort, "vendor name", cable.vendorName));
+    markCableText(cable, CABLE_TEXT_PART_NUMBER,
+                  pddrAsciiText(info.vendor_pn, 4, cable.globalPort, "vendor PN", cable.partNumber));
+    markCableText(cable, CABLE_TEXT_SERIAL_NUMBER,
+                  pddrAsciiText(info.vendor_sn, 4, cable.globalPort, "vendor SN", cable.serialNumber));
+    markCableText(cable, CABLE_TEXT_VENDOR_REV,
+                  pddrAsciiWord(info.vendor_rev, cable.globalPort, "vendor revision", cable.vendorRev));
     cable.vendorOui = info.vendor_oui;
     cable.hwRevMajor = info.module_hw_revision_major;
     cable.hwRevMinor = info.module_hw_revision_minor;
 
     // Eight ASCII characters, year first, of which the last two are a lot code. Rendered the way
-    // mlxlink does, which puts the day first.
+    // mlxlink does, which puts the day first. Only the date is checked: the lot code is not shown,
+    // so a bad one does not cost a good date.
+    u_int8_t dateBytes[8];
     string date;
-    for (int shift = 56; shift >= 0; shift -= 8)
+    for (int i = 0; i < 8; i++)
     {
-        char c = (char)((info.date_code >> shift) & 0xff);
-        if (c != '\0' && c != ' ')
+        dateBytes[i] = (u_int8_t)((info.date_code >> (56 - 8 * i)) & 0xff);
+        if (dateBytes[i] != '\0' && dateBytes[i] != ' ')
         {
-            date += c;
+            date += (char)dateBytes[i];
         }
     }
-    if (date.size() >= CABLE_EEPROM_DATE_LEN)
+    if (date.size() >= CABLE_EEPROM_DATE_LEN &&
+        isCableText(dateBytes, CABLE_EEPROM_DATE_LEN, cable.globalPort, "date code"))
     {
         cable.manufacturingDate = date.substr(4, 2) + "_" + date.substr(2, 2) + "_" + date.substr(0, 2);
     }
@@ -1597,6 +1637,7 @@ static bool readCableModuleInfo(mfile* mf, u_int32_t localPort, CableInfo& cable
 /* phy_mngr_fsm_state. The link is carrying traffic on exactly one of these. */
 #define CABLE_LINK_STATE_ACTIVE 3
 #define CABLE_LINK_STATE_ACTIVE_NAME "Active"
+#define CABLE_LINK_STATE_UNKNOWN_NAME "Unknown"
 
 /* The PHY manager link state, which is what mlxlink prints as "State". It is the link, not the
  * cable: a healthy cable with nothing at the far end sits in Polling forever.
@@ -1633,6 +1674,12 @@ static const char* cableLinkStateName(u_int8_t state)
             return "Training";
         case 13:
             return "SubFSM active";
+        case 14:
+            return "Protocol detect";
+        case 15:
+            return CABLE_LINK_STATE_UNKNOWN_NAME;
+        case 17:
+            return "Waiting state";
         default:
             return CABLE_REPORT_NOT_AVAILABLE;
     }
@@ -1771,9 +1818,12 @@ static const char* cableActionName(CableUpdateAction action)
             return "SKIP_NO_FW_FILE";
         case CABLE_ACTION_SKIP_CURRENT:
             return "SKIP_CURRENT";
-        default:
-            return "UNDECIDED";
+        case CABLE_ACTION_UNDECIDED:
+            break;
     }
+    // Unreachable while every cable is decided before the plan prints. Every enumerator has a case
+    // and there is no default, so -Wswitch fails the build on a new action left unnamed here.
+    return "UNDECIDED";
 }
 
 /* The device describes itself in one line of semicolon-separated clauses; the first is the part
@@ -1960,7 +2010,8 @@ int CableFwManager::walkCableMap(mfile* mf, u_int32_t total)
         cable.localIndex = ((u_int32_t)entry.local_module_msb << 8) | (u_int32_t)entry.local_module;
         cable.moduleType = entry.module_type;
 
-        if (!isAsicDetectionSupported(entry.module_type))
+        const char* reservedGaType = reservedGaModuleTypeName(entry.module_type);
+        if (reservedGaType != NULL)
         {
             // Recorded rather than dropped: the report accounts for every module the system
             // reported, and the reason a module was left alone is part of that account.
@@ -1968,7 +2019,7 @@ int CableFwManager::walkCableMap(mfile* mf, u_int32_t total)
             cable.asicGa = 0; // default, the action is what reports this port as skipped
             FWMANAGER_LOG_DEBUG("Port %s is of module type %s, which leaves MMAM.ga Reserved, so its owning ASIC "
                                 "cannot be identified",
-                                globalPort.c_str(), moduleTypeName(entry.module_type).c_str());
+                                globalPort.c_str(), reservedGaType);
             _cables.push_back(cable);
             continue;
         }
@@ -2055,9 +2106,10 @@ int CableFwManager::discoverCables()
         // fake or non-NVIDIA outranks both, as it does in the plan.
         bool isThirdParty = _cables[i].vendorStatus == CABLE_VENDOR_STATUS_FAKE ||
                             _cables[i].vendorStatus == CABLE_VENDOR_STATUS_NON_NVIDIA;
-        bool isUnreadable = _cables[i].isPlugged && !isThirdParty &&
-                            (!_cables[i].isReadable || _cables[i].vendorStatus == CABLE_VENDOR_STATUS_READ_FAILED ||
-                             (_cables[i].isNvidia && !_cables[i].fwRead));
+        bool isUnreadable =
+          _cables[i].isPlugged && !isThirdParty &&
+          (!hasUsableIdentity(_cables[i]) || _cables[i].vendorStatus == CABLE_VENDOR_STATUS_READ_FAILED ||
+           (_cables[i].isNvidia && !_cables[i].fwRead));
         if (isUnreadable)
         {
             unreadable++;
@@ -2231,6 +2283,36 @@ string CableFwManager::readCableLinkStateText(const CableInfo& cable)
     return cableLinkStateName(state);
 }
 
+/* Takes the EEPROM's value for a text field PDDR left empty - unspecified, or not text at all, which
+ * a read that caught the module mid-reset can return and the EEPROM read that follows may not repeat.
+ * A field PDDR could not read as text stays flagged unless the EEPROM has real text for it.
+ */
+static void
+  fillTextGap(CableInfo& cable, const CableInfo& eeprom, string CableInfo::*member, u_int8_t field, const char* name)
+{
+    string& value = cable.*member;
+    const string& fromEeprom = eeprom.*member;
+
+    if (!value.empty())
+    {
+        return;
+    }
+    if (!fromEeprom.empty())
+    {
+        if ((cable.invalidText & field) != 0)
+        {
+            FWMANAGER_LOG_DEBUG("Cable %u: %s from PDDR is not text, took '%s' from the EEPROM", cable.globalPort, name,
+                                fromEeprom.c_str());
+        }
+        value = fromEeprom;
+        markCableText(cable, field, true);
+    }
+    else if ((eeprom.invalidText & field) != 0)
+    {
+        markCableText(cable, field, false);
+    }
+}
+
 /* Whether PDDR left anything the EEPROM can supply. */
 static bool hasIdentityGap(const CableInfo& cable)
 {
@@ -2240,8 +2322,8 @@ static bool hasIdentityGap(const CableInfo& cable)
            cable.state == CABLE_REPORT_NOT_AVAILABLE;
 }
 
-/* Fill whatever PDDR left empty from the EEPROM, field by field. PDDR stays authoritative for
- * everything it does answer, so the two tools still agree wherever they can.
+/* Fill whatever PDDR left empty, or could not read as text, from the EEPROM, field by field. PDDR stays
+ * authoritative for everything it does answer, so the two tools still agree wherever they can.
  */
 void CableFwManager::fillIdentityGapsFromEeprom(mfile* mf, CableInfo& cable)
 {
@@ -2257,25 +2339,14 @@ void CableFwManager::fillIdentityGapsFromEeprom(mfile* mf, CableInfo& cable)
     eeprom.globalPort = cable.globalPort;
     if (!readCableIdentity(mf, eeprom))
     {
-        FWMANAGER_LOG_DEBUG("Cable %u: EEPROM read failed, the fields PDDR left empty stay N/A", cable.globalPort);
+        FWMANAGER_LOG_DEBUG("Cable %u: EEPROM read failed, the fields PDDR left as gaps stay as they are",
+                            cable.globalPort);
         return;
     }
-    if (cable.vendorName.empty())
-    {
-        cable.vendorName = eeprom.vendorName;
-    }
-    if (cable.partNumber.empty())
-    {
-        cable.partNumber = eeprom.partNumber;
-    }
-    if (cable.serialNumber.empty())
-    {
-        cable.serialNumber = eeprom.serialNumber;
-    }
-    if (cable.vendorRev.empty())
-    {
-        cable.vendorRev = eeprom.vendorRev;
-    }
+    fillTextGap(cable, eeprom, &CableInfo::vendorName, CABLE_TEXT_VENDOR_NAME, "vendor name");
+    fillTextGap(cable, eeprom, &CableInfo::partNumber, CABLE_TEXT_PART_NUMBER, "vendor PN");
+    fillTextGap(cable, eeprom, &CableInfo::serialNumber, CABLE_TEXT_SERIAL_NUMBER, "vendor SN");
+    fillTextGap(cable, eeprom, &CableInfo::vendorRev, CABLE_TEXT_VENDOR_REV, "vendor revision");
     if (cable.manufacturingDate.empty())
     {
         cable.manufacturingDate = eeprom.manufacturingDate;
@@ -2310,8 +2381,10 @@ void CableFwManager::fillIdentityGapsFromEeprom(mfile* mf, CableInfo& cable)
  */
 static bool cableIdentityRead(const CableInfo& cable)
 {
+    // A field that came back as something other than text was still answered: the cage holds a
+    // module, so its link state is worth showing, and hasUsableIdentity() keeps it out of the plan.
     return !cable.partNumber.empty() || !cable.vendorName.empty() || !cable.serialNumber.empty() ||
-           cable.vendorOui != 0;
+           cable.vendorOui != 0 || cable.invalidText != 0;
 }
 
 void CableFwManager::queryCable(mfile* mf, CableInfo& cable)
@@ -2464,14 +2537,20 @@ bool CableFwManager::readCableIdentity(mfile* mf, CableInfo& cable)
     u_int16_t rev = layout.vendorRev - CABLE_EEPROM_PAGE0_UPPER_OFFSET;
     u_int16_t oui = layout.vendorOui - CABLE_EEPROM_PAGE0_UPPER_OFFSET;
 
-    cable.vendorName = trimmedEepromText(&page0[name], CABLE_EEPROM_ID_LEN);
-    cable.partNumber = trimmedEepromText(&page0[part], CABLE_EEPROM_ID_LEN);
-    cable.serialNumber = trimmedEepromText(&page0[serial], CABLE_EEPROM_ID_LEN);
-    cable.vendorRev = trimmedEepromText(&page0[rev], CABLE_EEPROM_REV_LEN);
+    markCableText(cable, CABLE_TEXT_VENDOR_NAME,
+                  cableText(&page0[name], CABLE_EEPROM_ID_LEN, cable.globalPort, "vendor name", cable.vendorName));
+    markCableText(cable, CABLE_TEXT_PART_NUMBER,
+                  cableText(&page0[part], CABLE_EEPROM_ID_LEN, cable.globalPort, "vendor PN", cable.partNumber));
+    markCableText(cable, CABLE_TEXT_SERIAL_NUMBER,
+                  cableText(&page0[serial], CABLE_EEPROM_ID_LEN, cable.globalPort, "vendor SN", cable.serialNumber));
+    markCableText(cable, CABLE_TEXT_VENDOR_REV,
+                  cableText(&page0[rev], CABLE_EEPROM_REV_LEN, cable.globalPort, "vendor revision", cable.vendorRev));
     cable.vendorOui = ((u_int32_t)page0[oui] << 16) | ((u_int32_t)page0[oui + 1] << 8) | (u_int32_t)page0[oui + 2];
     // Six ASCII digits, year first. Rendered the way mlxlink does, which puts the day first.
-    string date = trimmedEepromText(&page0[layout.dateCode - CABLE_EEPROM_PAGE0_UPPER_OFFSET], CABLE_EEPROM_DATE_LEN);
-    if (date.size() == CABLE_EEPROM_DATE_LEN)
+    string date;
+    if (cableText(&page0[layout.dateCode - CABLE_EEPROM_PAGE0_UPPER_OFFSET], CABLE_EEPROM_DATE_LEN, cable.globalPort,
+                  "date code", date) &&
+        date.size() == CABLE_EEPROM_DATE_LEN)
     {
         cable.manufacturingDate = date.substr(4, 2) + "_" + date.substr(2, 2) + "_" + date.substr(0, 2);
     }
@@ -2943,8 +3022,13 @@ int CableFwManager::decideCableActions()
             cable.action = CABLE_ACTION_SKIP_3RD_PARTY;
             continue;
         }
-        if (!cable.isReadable)
+        if (!hasUsableIdentity(cable))
         {
+            if (cable.isReadable)
+            {
+                FWMANAGER_LOG_DEBUG("Cable %u: identity fields 0x%x are not text, so it is not matched to a package",
+                                    cable.globalPort, (unsigned int)cable.invalidText);
+            }
             cable.action = CABLE_ACTION_SKIP_UNREADABLE;
             continue;
         }
@@ -3745,11 +3829,11 @@ void CableFwManager::verifyBurnedCables()
 
         // A link that was carrying traffic before the update has to be carrying it after. This is
         // the thing an operator actually loses. A
-        // state the register would not report is unknown rather than down.
+        // state the register would not report, or reports as unknown, is unknown rather than down.
         result.stateAfter = readCableLinkStateText(current);
-        result.stateRegressed = (result.stateBefore == CABLE_LINK_STATE_ACTIVE_NAME) &&
-                                (result.stateAfter != CABLE_LINK_STATE_ACTIVE_NAME) &&
-                                (result.stateAfter != CABLE_REPORT_NOT_AVAILABLE);
+        result.stateRegressed =
+          (result.stateBefore == CABLE_LINK_STATE_ACTIVE_NAME) && (result.stateAfter != CABLE_LINK_STATE_ACTIVE_NAME) &&
+          (result.stateAfter != CABLE_REPORT_NOT_AVAILABLE) && (result.stateAfter != CABLE_LINK_STATE_UNKNOWN_NAME);
         if (read)
         {
             result.readBack = true;
@@ -4066,12 +4150,14 @@ void CableFwManager::appendCableRow(std::ostringstream& report, const CableInfo&
                << (attributed ? int_to_string((int)cableLabelPort(cable.localIndex)) :
                                 string(CABLE_REPORT_NOT_AVAILABLE));
     }
-    report << std::setw(18) << orNotAvailable(cable.vendorName) << std::setw(20) << orNotAvailable(cable.partNumber)
-           << std::setw(18) << orNotAvailable(cable.serialNumber) << std::setw(17) << orNotAvailable(cable.linkState)
-           << std::setw(12) << orNotAvailable(cable.vendorRev) << std::setw(14) << cableHwRevisionText(cable)
-           << std::setw(14) << (showFirmware ? cableFwVersionText(cable.fwImageA) : string(CABLE_REPORT_NOT_AVAILABLE))
-           << std::setw(14) << (showFirmware ? cableFwVersionText(cable.fwImageB) : string(CABLE_REPORT_NOT_AVAILABLE))
-           << std::setw(12)
+    report << std::setw(18) << cableIdentityText(cable, cable.vendorName, CABLE_TEXT_VENDOR_NAME) << std::setw(20)
+           << cableIdentityText(cable, cable.partNumber, CABLE_TEXT_PART_NUMBER) << std::setw(18)
+           << cableIdentityText(cable, cable.serialNumber, CABLE_TEXT_SERIAL_NUMBER) << std::setw(17)
+           << orNotAvailable(cable.linkState) << std::setw(12)
+           << cableIdentityText(cable, cable.vendorRev, CABLE_TEXT_VENDOR_REV) << std::setw(14)
+           << cableHwRevisionText(cable) << std::setw(14)
+           << (showFirmware ? cableFwVersionText(cable.fwImageA) : string(CABLE_REPORT_NOT_AVAILABLE)) << std::setw(14)
+           << (showFirmware ? cableFwVersionText(cable.fwImageB) : string(CABLE_REPORT_NOT_AVAILABLE)) << std::setw(12)
            << (cable.fwRead ? cableRunningSlotText(cable.isRunningImage, cable.runningSlot) :
                               string(CABLE_REPORT_NOT_AVAILABLE));
 }

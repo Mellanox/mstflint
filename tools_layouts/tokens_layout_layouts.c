@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
@@ -34,16 +35,88 @@
  */
 
 /***
- *** This file was generated at "2025-12-18 14:56:49"
+ *** This file was generated at "2026-01-15 12:17:21"
  *** by:
- ***    > /auto/mswg/release/tools/a-me/a-me-1.2.11/a-me-1.2.11-16/adabe_plugins/adb2c/adb2pack.py --input
+ ***    > /auto/mswg/release/tools/a-me/a-me-1.2.12/a-me-1.2.12-2/adabe_plugins/adb2c/adb2pack.py --input
  * /user/tools_layouts/adb/tokens_layout/tokens_layout.adb --file-prefix tokens_layout --prefix tokens_layout_
  *--no-adb-utils -o /user/tools_layouts
  ***/
 #include "tokens_layout_layouts.h"
 
-void tokens_layout_nbu_debug_token_tlv_header_pack(const struct tokens_layout_nbu_debug_token_tlv_header* ptr_struct,
-                                                   u_int8_t                                             * ptr_buff)
+void tokens_layout_psc_debug_token_device_unique_entry_pack(
+  const struct tokens_layout_psc_debug_token_device_unique_entry* ptr_struct,
+  u_int8_t* ptr_buff)
+{
+    u_int32_t offset;
+    int i;
+
+    for (i = 0; i < 2; ++i)
+    {
+        offset = adb2c_calc_array_field_address(0, 32, i, 320, 1);
+        adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->serial_number[i]);
+    }
+    for (i = 0; i < 8; ++i)
+    {
+        offset = adb2c_calc_array_field_address(64, 32, i, 320, 1);
+        adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->nonce[i]);
+    }
+}
+
+void tokens_layout_psc_debug_token_device_unique_entry_unpack(
+  struct tokens_layout_psc_debug_token_device_unique_entry* ptr_struct,
+  const u_int8_t* ptr_buff)
+{
+    u_int32_t offset;
+    int i;
+
+    for (i = 0; i < 2; ++i)
+    {
+        offset = adb2c_calc_array_field_address(0, 32, i, 320, 1);
+        ptr_struct->serial_number[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+    }
+    for (i = 0; i < 8; ++i)
+    {
+        offset = adb2c_calc_array_field_address(64, 32, i, 320, 1);
+        ptr_struct->nonce[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+    }
+}
+
+void tokens_layout_psc_debug_token_device_unique_entry_print(
+  const struct tokens_layout_psc_debug_token_device_unique_entry* ptr_struct,
+  FILE* fd,
+  int indent_level)
+{
+    int i;
+
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "======== tokens_layout_psc_debug_token_device_unique_entry ========\n");
+
+    for (i = 0; i < 2; ++i)
+    {
+        adb2c_add_indentation(fd, indent_level);
+        fprintf(fd, "serial_number_%03d   : " U32H_FMT "\n", i, ptr_struct->serial_number[i]);
+    }
+    for (i = 0; i < 8; ++i)
+    {
+        adb2c_add_indentation(fd, indent_level);
+        fprintf(fd, "nonce_%03d           : " U32H_FMT "\n", i, ptr_struct->nonce[i]);
+    }
+}
+
+unsigned int tokens_layout_psc_debug_token_device_unique_entry_size(void)
+{
+    return TOKENS_LAYOUT_PSC_DEBUG_TOKEN_DEVICE_UNIQUE_ENTRY_SIZE;
+}
+
+void tokens_layout_psc_debug_token_device_unique_entry_dump(
+  const struct tokens_layout_psc_debug_token_device_unique_entry* ptr_struct,
+  FILE* fd)
+{
+    tokens_layout_psc_debug_token_device_unique_entry_print(ptr_struct, fd, 0);
+}
+
+void tokens_layout_psc_debug_token_tlv_header_pack(const struct tokens_layout_psc_debug_token_tlv_header* ptr_struct,
+                                                   u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -53,8 +126,8 @@ void tokens_layout_nbu_debug_token_tlv_header_pack(const struct tokens_layout_nb
     adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->tlv_type);
 }
 
-void tokens_layout_nbu_debug_token_tlv_header_unpack(struct tokens_layout_nbu_debug_token_tlv_header* ptr_struct,
-                                                     const u_int8_t                                 * ptr_buff)
+void tokens_layout_psc_debug_token_tlv_header_unpack(struct tokens_layout_psc_debug_token_tlv_header* ptr_struct,
+                                                     const u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -64,12 +137,12 @@ void tokens_layout_nbu_debug_token_tlv_header_unpack(struct tokens_layout_nbu_de
     ptr_struct->tlv_type = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
 }
 
-void tokens_layout_nbu_debug_token_tlv_header_print(const struct tokens_layout_nbu_debug_token_tlv_header* ptr_struct,
-                                                    FILE                                                 * fd,
-                                                    int                                                    indent_level)
+void tokens_layout_psc_debug_token_tlv_header_print(const struct tokens_layout_psc_debug_token_tlv_header* ptr_struct,
+                                                    FILE* fd,
+                                                    int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "======== tokens_layout_nbu_debug_token_tlv_header ========\n");
+    fprintf(fd, "======== tokens_layout_psc_debug_token_tlv_header ========\n");
 
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "tlv_length           : " UH_FMT "\n", ptr_struct->tlv_length);
@@ -77,23 +150,24 @@ void tokens_layout_nbu_debug_token_tlv_header_print(const struct tokens_layout_n
     fprintf(fd, "tlv_type             : " UH_FMT "\n", ptr_struct->tlv_type);
 }
 
-unsigned int tokens_layout_nbu_debug_token_tlv_header_size(void)
+unsigned int tokens_layout_psc_debug_token_tlv_header_size(void)
 {
-    return TOKENS_LAYOUT_NBU_DEBUG_TOKEN_TLV_HEADER_SIZE;
+    return TOKENS_LAYOUT_PSC_DEBUG_TOKEN_TLV_HEADER_SIZE;
 }
 
-void tokens_layout_nbu_debug_token_tlv_header_dump(const struct tokens_layout_nbu_debug_token_tlv_header* ptr_struct,
-                                                   FILE                                                 * fd)
+void tokens_layout_psc_debug_token_tlv_header_dump(const struct tokens_layout_psc_debug_token_tlv_header* ptr_struct,
+                                                   FILE* fd)
 {
-    tokens_layout_nbu_debug_token_tlv_header_print(ptr_struct, fd, 0);
+    tokens_layout_psc_debug_token_tlv_header_print(ptr_struct, fd, 0);
 }
 
 void tokens_layout_uuid_pack(const struct tokens_layout_uuid* ptr_struct, u_int8_t* ptr_buff)
 {
     u_int32_t offset;
-    int       i;
+    int i;
 
-    for (i = 0; i < 16; ++i) {
+    for (i = 0; i < 16; ++i)
+    {
         offset = adb2c_calc_array_field_address(24, 8, i, 128, 1);
         adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->data[i]);
     }
@@ -102,9 +176,10 @@ void tokens_layout_uuid_pack(const struct tokens_layout_uuid* ptr_struct, u_int8
 void tokens_layout_uuid_unpack(struct tokens_layout_uuid* ptr_struct, const u_int8_t* ptr_buff)
 {
     u_int32_t offset;
-    int       i;
+    int i;
 
-    for (i = 0; i < 16; ++i) {
+    for (i = 0; i < 16; ++i)
+    {
         offset = adb2c_calc_array_field_address(24, 8, i, 128, 1);
         ptr_struct->data[i] = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
     }
@@ -117,7 +192,8 @@ void tokens_layout_uuid_print(const struct tokens_layout_uuid* ptr_struct, FILE*
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== tokens_layout_uuid ========\n");
 
-    for (i = 0; i < 16; ++i) {
+    for (i = 0; i < 16; ++i)
+    {
         adb2c_add_indentation(fd, indent_level);
         fprintf(fd, "data_%03d            : " UH_FMT "\n", i, ptr_struct->data[i]);
     }
@@ -134,10 +210,10 @@ void tokens_layout_uuid_dump(const struct tokens_layout_uuid* ptr_struct, FILE* 
 }
 
 void tokens_layout_get_measurment_index_50_pack(const struct tokens_layout_get_measurment_index_50* ptr_struct,
-                                                u_int8_t                                          * ptr_buff)
+                                                u_int8_t* ptr_buff)
 {
     u_int32_t offset;
-    int       i;
+    int i;
 
     offset = 0;
     adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->header_identifier);
@@ -145,63 +221,69 @@ void tokens_layout_get_measurment_index_50_pack(const struct tokens_layout_get_m
     adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->header_version);
     offset = 64;
     adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->structure_size);
-    for (i = 0; i < 5; ++i) {
+    for (i = 0; i < 5; ++i)
+    {
         offset = adb2c_calc_array_field_address(96, 32, i, 1344, 1);
         adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->reserved_header[i]);
     }
     offset = 256;
-    tokens_layout_nbu_debug_token_tlv_header_pack(&(ptr_struct->token_identifier_hdr), ptr_buff + offset / 8);
+    tokens_layout_psc_debug_token_tlv_header_pack(&(ptr_struct->token_identifier_hdr), ptr_buff + offset / 8);
     offset = 288;
     adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->token_identifier);
     offset = 320;
-    tokens_layout_nbu_debug_token_tlv_header_pack(&(ptr_struct->device_type_hdr), ptr_buff + offset / 8);
+    tokens_layout_psc_debug_token_tlv_header_pack(&(ptr_struct->device_type_hdr), ptr_buff + offset / 8);
     offset = 352;
     adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->device_type);
     offset = 384;
-    tokens_layout_nbu_debug_token_tlv_header_pack(&(ptr_struct->status_hdr), ptr_buff + offset / 8);
+    tokens_layout_psc_debug_token_tlv_header_pack(&(ptr_struct->status_hdr), ptr_buff + offset / 8);
     offset = 416;
     adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->status);
     offset = 448;
-    tokens_layout_nbu_debug_token_tlv_header_pack(&(ptr_struct->keypair_uuid_hdr), ptr_buff + offset / 8);
+    tokens_layout_psc_debug_token_tlv_header_pack(&(ptr_struct->keypair_uuid_hdr), ptr_buff + offset / 8);
     offset = 480;
     tokens_layout_uuid_pack(&(ptr_struct->keypair_uuid), ptr_buff + offset / 8);
     offset = 608;
-    tokens_layout_nbu_debug_token_tlv_header_pack(&(ptr_struct->ecid_hdr), ptr_buff + offset / 8);
-    for (i = 0; i < 2; ++i) {
+    tokens_layout_psc_debug_token_tlv_header_pack(&(ptr_struct->ecid_hdr), ptr_buff + offset / 8);
+    for (i = 0; i < 2; ++i)
+    {
         offset = adb2c_calc_array_field_address(640, 32, i, 1344, 1);
         adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->ecid[i]);
     }
     offset = 704;
-    tokens_layout_nbu_debug_token_tlv_header_pack(&(ptr_struct->psid_hdr), ptr_buff + offset / 8);
-    for (i = 0; i < 4; ++i) {
+    tokens_layout_psc_debug_token_tlv_header_pack(&(ptr_struct->psid_hdr), ptr_buff + offset / 8);
+    for (i = 0; i < 4; ++i)
+    {
         offset = adb2c_calc_array_field_address(736, 32, i, 1344, 1);
         adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->psid[i]);
     }
     offset = 864;
-    tokens_layout_nbu_debug_token_tlv_header_pack(&(ptr_struct->fw_version_hdr), ptr_buff + offset / 8);
-    for (i = 0; i < 2; ++i) {
+    tokens_layout_psc_debug_token_tlv_header_pack(&(ptr_struct->fw_version_hdr), ptr_buff + offset / 8);
+    for (i = 0; i < 2; ++i)
+    {
         offset = adb2c_calc_array_field_address(896, 32, i, 1344, 1);
         adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->fw_version[i]);
     }
     offset = 960;
-    tokens_layout_nbu_debug_token_tlv_header_pack(&(ptr_struct->nonce_hdr), ptr_buff + offset / 8);
-    for (i = 0; i < 8; ++i) {
+    tokens_layout_psc_debug_token_tlv_header_pack(&(ptr_struct->nonce_hdr), ptr_buff + offset / 8);
+    for (i = 0; i < 8; ++i)
+    {
         offset = adb2c_calc_array_field_address(992, 32, i, 1344, 1);
         adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->nonce[i]);
     }
     offset = 1248;
-    tokens_layout_nbu_debug_token_tlv_header_pack(&(ptr_struct->ratchet_hdr), ptr_buff + offset / 8);
-    for (i = 0; i < 2; ++i) {
+    tokens_layout_psc_debug_token_tlv_header_pack(&(ptr_struct->ratchet_hdr), ptr_buff + offset / 8);
+    for (i = 0; i < 2; ++i)
+    {
         offset = adb2c_calc_array_field_address(1280, 32, i, 1344, 1);
         adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->ratchet[i]);
     }
 }
 
 void tokens_layout_get_measurment_index_50_unpack(struct tokens_layout_get_measurment_index_50* ptr_struct,
-                                                  const u_int8_t                              * ptr_buff)
+                                                  const u_int8_t* ptr_buff)
 {
     u_int32_t offset;
-    int       i;
+    int i;
 
     offset = 0;
     ptr_struct->header_identifier = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
@@ -209,61 +291,67 @@ void tokens_layout_get_measurment_index_50_unpack(struct tokens_layout_get_measu
     ptr_struct->header_version = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
     offset = 64;
     ptr_struct->structure_size = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-    for (i = 0; i < 5; ++i) {
+    for (i = 0; i < 5; ++i)
+    {
         offset = adb2c_calc_array_field_address(96, 32, i, 1344, 1);
         ptr_struct->reserved_header[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
     }
     offset = 256;
-    tokens_layout_nbu_debug_token_tlv_header_unpack(&(ptr_struct->token_identifier_hdr), ptr_buff + offset / 8);
+    tokens_layout_psc_debug_token_tlv_header_unpack(&(ptr_struct->token_identifier_hdr), ptr_buff + offset / 8);
     offset = 288;
     ptr_struct->token_identifier = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
     offset = 320;
-    tokens_layout_nbu_debug_token_tlv_header_unpack(&(ptr_struct->device_type_hdr), ptr_buff + offset / 8);
+    tokens_layout_psc_debug_token_tlv_header_unpack(&(ptr_struct->device_type_hdr), ptr_buff + offset / 8);
     offset = 352;
     ptr_struct->device_type = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
     offset = 384;
-    tokens_layout_nbu_debug_token_tlv_header_unpack(&(ptr_struct->status_hdr), ptr_buff + offset / 8);
+    tokens_layout_psc_debug_token_tlv_header_unpack(&(ptr_struct->status_hdr), ptr_buff + offset / 8);
     offset = 416;
     ptr_struct->status = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
     offset = 448;
-    tokens_layout_nbu_debug_token_tlv_header_unpack(&(ptr_struct->keypair_uuid_hdr), ptr_buff + offset / 8);
+    tokens_layout_psc_debug_token_tlv_header_unpack(&(ptr_struct->keypair_uuid_hdr), ptr_buff + offset / 8);
     offset = 480;
     tokens_layout_uuid_unpack(&(ptr_struct->keypair_uuid), ptr_buff + offset / 8);
     offset = 608;
-    tokens_layout_nbu_debug_token_tlv_header_unpack(&(ptr_struct->ecid_hdr), ptr_buff + offset / 8);
-    for (i = 0; i < 2; ++i) {
+    tokens_layout_psc_debug_token_tlv_header_unpack(&(ptr_struct->ecid_hdr), ptr_buff + offset / 8);
+    for (i = 0; i < 2; ++i)
+    {
         offset = adb2c_calc_array_field_address(640, 32, i, 1344, 1);
         ptr_struct->ecid[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
     }
     offset = 704;
-    tokens_layout_nbu_debug_token_tlv_header_unpack(&(ptr_struct->psid_hdr), ptr_buff + offset / 8);
-    for (i = 0; i < 4; ++i) {
+    tokens_layout_psc_debug_token_tlv_header_unpack(&(ptr_struct->psid_hdr), ptr_buff + offset / 8);
+    for (i = 0; i < 4; ++i)
+    {
         offset = adb2c_calc_array_field_address(736, 32, i, 1344, 1);
         ptr_struct->psid[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
     }
     offset = 864;
-    tokens_layout_nbu_debug_token_tlv_header_unpack(&(ptr_struct->fw_version_hdr), ptr_buff + offset / 8);
-    for (i = 0; i < 2; ++i) {
+    tokens_layout_psc_debug_token_tlv_header_unpack(&(ptr_struct->fw_version_hdr), ptr_buff + offset / 8);
+    for (i = 0; i < 2; ++i)
+    {
         offset = adb2c_calc_array_field_address(896, 32, i, 1344, 1);
         ptr_struct->fw_version[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
     }
     offset = 960;
-    tokens_layout_nbu_debug_token_tlv_header_unpack(&(ptr_struct->nonce_hdr), ptr_buff + offset / 8);
-    for (i = 0; i < 8; ++i) {
+    tokens_layout_psc_debug_token_tlv_header_unpack(&(ptr_struct->nonce_hdr), ptr_buff + offset / 8);
+    for (i = 0; i < 8; ++i)
+    {
         offset = adb2c_calc_array_field_address(992, 32, i, 1344, 1);
         ptr_struct->nonce[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
     }
     offset = 1248;
-    tokens_layout_nbu_debug_token_tlv_header_unpack(&(ptr_struct->ratchet_hdr), ptr_buff + offset / 8);
-    for (i = 0; i < 2; ++i) {
+    tokens_layout_psc_debug_token_tlv_header_unpack(&(ptr_struct->ratchet_hdr), ptr_buff + offset / 8);
+    for (i = 0; i < 2; ++i)
+    {
         offset = adb2c_calc_array_field_address(1280, 32, i, 1344, 1);
         ptr_struct->ratchet[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
     }
 }
 
 void tokens_layout_get_measurment_index_50_print(const struct tokens_layout_get_measurment_index_50* ptr_struct,
-                                                 FILE                                              * fd,
-                                                 int                                                 indent_level)
+                                                 FILE* fd,
+                                                 int indent_level)
 {
     int i;
 
@@ -276,63 +364,69 @@ void tokens_layout_get_measurment_index_50_print(const struct tokens_layout_get_
     fprintf(fd, "header_version       : " U32H_FMT "\n", ptr_struct->header_version);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "structure_size       : " U32H_FMT "\n", ptr_struct->structure_size);
-    for (i = 0; i < 5; ++i) {
+    for (i = 0; i < 5; ++i)
+    {
         adb2c_add_indentation(fd, indent_level);
         fprintf(fd, "reserved_header_%03d : " U32H_FMT "\n", i, ptr_struct->reserved_header[i]);
     }
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "token_identifier_hdr:\n");
-    tokens_layout_nbu_debug_token_tlv_header_print(&(ptr_struct->token_identifier_hdr), fd, indent_level + 1);
+    tokens_layout_psc_debug_token_tlv_header_print(&(ptr_struct->token_identifier_hdr), fd, indent_level + 1);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "token_identifier     : " U32H_FMT "\n", ptr_struct->token_identifier);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "device_type_hdr:\n");
-    tokens_layout_nbu_debug_token_tlv_header_print(&(ptr_struct->device_type_hdr), fd, indent_level + 1);
+    tokens_layout_psc_debug_token_tlv_header_print(&(ptr_struct->device_type_hdr), fd, indent_level + 1);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "device_type          : " U32H_FMT "\n", ptr_struct->device_type);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "status_hdr:\n");
-    tokens_layout_nbu_debug_token_tlv_header_print(&(ptr_struct->status_hdr), fd, indent_level + 1);
+    tokens_layout_psc_debug_token_tlv_header_print(&(ptr_struct->status_hdr), fd, indent_level + 1);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "status               : " U32H_FMT "\n", ptr_struct->status);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "keypair_uuid_hdr:\n");
-    tokens_layout_nbu_debug_token_tlv_header_print(&(ptr_struct->keypair_uuid_hdr), fd, indent_level + 1);
+    tokens_layout_psc_debug_token_tlv_header_print(&(ptr_struct->keypair_uuid_hdr), fd, indent_level + 1);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "keypair_uuid:\n");
     tokens_layout_uuid_print(&(ptr_struct->keypair_uuid), fd, indent_level + 1);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "ecid_hdr:\n");
-    tokens_layout_nbu_debug_token_tlv_header_print(&(ptr_struct->ecid_hdr), fd, indent_level + 1);
-    for (i = 0; i < 2; ++i) {
+    tokens_layout_psc_debug_token_tlv_header_print(&(ptr_struct->ecid_hdr), fd, indent_level + 1);
+    for (i = 0; i < 2; ++i)
+    {
         adb2c_add_indentation(fd, indent_level);
         fprintf(fd, "ecid_%03d            : " U32H_FMT "\n", i, ptr_struct->ecid[i]);
     }
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "psid_hdr:\n");
-    tokens_layout_nbu_debug_token_tlv_header_print(&(ptr_struct->psid_hdr), fd, indent_level + 1);
-    for (i = 0; i < 4; ++i) {
+    tokens_layout_psc_debug_token_tlv_header_print(&(ptr_struct->psid_hdr), fd, indent_level + 1);
+    for (i = 0; i < 4; ++i)
+    {
         adb2c_add_indentation(fd, indent_level);
         fprintf(fd, "psid_%03d            : " U32H_FMT "\n", i, ptr_struct->psid[i]);
     }
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "fw_version_hdr:\n");
-    tokens_layout_nbu_debug_token_tlv_header_print(&(ptr_struct->fw_version_hdr), fd, indent_level + 1);
-    for (i = 0; i < 2; ++i) {
+    tokens_layout_psc_debug_token_tlv_header_print(&(ptr_struct->fw_version_hdr), fd, indent_level + 1);
+    for (i = 0; i < 2; ++i)
+    {
         adb2c_add_indentation(fd, indent_level);
         fprintf(fd, "fw_version_%03d      : " U32H_FMT "\n", i, ptr_struct->fw_version[i]);
     }
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "nonce_hdr:\n");
-    tokens_layout_nbu_debug_token_tlv_header_print(&(ptr_struct->nonce_hdr), fd, indent_level + 1);
-    for (i = 0; i < 8; ++i) {
+    tokens_layout_psc_debug_token_tlv_header_print(&(ptr_struct->nonce_hdr), fd, indent_level + 1);
+    for (i = 0; i < 8; ++i)
+    {
         adb2c_add_indentation(fd, indent_level);
         fprintf(fd, "nonce_%03d           : " U32H_FMT "\n", i, ptr_struct->nonce[i]);
     }
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "ratchet_hdr:\n");
-    tokens_layout_nbu_debug_token_tlv_header_print(&(ptr_struct->ratchet_hdr), fd, indent_level + 1);
-    for (i = 0; i < 2; ++i) {
+    tokens_layout_psc_debug_token_tlv_header_print(&(ptr_struct->ratchet_hdr), fd, indent_level + 1);
+    for (i = 0; i < 2; ++i)
+    {
         adb2c_add_indentation(fd, indent_level);
         fprintf(fd, "ratchet_%03d         : " U32H_FMT "\n", i, ptr_struct->ratchet[i]);
     }
@@ -344,26 +438,294 @@ unsigned int tokens_layout_get_measurment_index_50_size(void)
 }
 
 void tokens_layout_get_measurment_index_50_dump(const struct tokens_layout_get_measurment_index_50* ptr_struct,
-                                                FILE                                              * fd)
+                                                FILE* fd)
 {
     tokens_layout_get_measurment_index_50_print(ptr_struct, fd, 0);
 }
 
-void tokens_layout_tokens_layout_Nodes_pack(const union tokens_layout_tokens_layout_Nodes* ptr_struct,
-                                            u_int8_t                                     * ptr_buff)
+void tokens_layout_psc_debug_token_pack(const struct tokens_layout_psc_debug_token* ptr_struct, u_int8_t* ptr_buff)
 {
-    tokens_layout_get_measurment_index_50_pack(&(ptr_struct->get_measurment_index_50), ptr_buff);
+    u_int32_t offset;
+    int i;
+
+    offset = 0;
+    adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->header_identifier);
+    offset = 32;
+    adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->header_version);
+    offset = 64;
+    adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->structure_size);
+    for (i = 0; i < 5; ++i)
+    {
+        offset = adb2c_calc_array_field_address(96, 32, i, 87136, 1);
+        adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->reserved_header[i]);
+    }
+    offset = 256;
+    tokens_layout_psc_debug_token_tlv_header_pack(&(ptr_struct->token_identifier_hdr), ptr_buff + offset / 8);
+    offset = 288;
+    adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->token_identifier);
+    offset = 320;
+    tokens_layout_psc_debug_token_tlv_header_pack(&(ptr_struct->device_type_hdr), ptr_buff + offset / 8);
+    offset = 352;
+    adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->device_type);
+    offset = 384;
+    tokens_layout_psc_debug_token_tlv_header_pack(&(ptr_struct->token_type_hdr), ptr_buff + offset / 8);
+    offset = 416;
+    adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->token_type);
+    offset = 448;
+    tokens_layout_psc_debug_token_tlv_header_pack(&(ptr_struct->keypair_uuid_hdr), ptr_buff + offset / 8);
+    offset = 480;
+    tokens_layout_uuid_pack(&(ptr_struct->keypair_uuid), ptr_buff + offset / 8);
+    offset = 608;
+    tokens_layout_psc_debug_token_tlv_header_pack(&(ptr_struct->psid_hdr), ptr_buff + offset / 8);
+    for (i = 0; i < 4; ++i)
+    {
+        offset = adb2c_calc_array_field_address(640, 32, i, 87136, 1);
+        adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->psid[i]);
+    }
+    offset = 768;
+    tokens_layout_psc_debug_token_tlv_header_pack(&(ptr_struct->fw_version_hdr), ptr_buff + offset / 8);
+    for (i = 0; i < 2; ++i)
+    {
+        offset = adb2c_calc_array_field_address(800, 32, i, 87136, 1);
+        adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->fw_version[i]);
+    }
+    offset = 864;
+    tokens_layout_psc_debug_token_tlv_header_pack(&(ptr_struct->device_unique_hdr), ptr_buff + offset / 8);
+    for (i = 0; i < 32; ++i)
+    {
+        offset = adb2c_calc_array_field_address(896, 320, i, 87136, 1);
+        tokens_layout_psc_debug_token_device_unique_entry_pack(&(ptr_struct->device_unique[i]), ptr_buff + offset / 8);
+    }
+    offset = 11136;
+    tokens_layout_psc_debug_token_tlv_header_pack(&(ptr_struct->token_config_hdr), ptr_buff + offset / 8);
+    offset = 11168;
+    adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->token_config);
+    offset = 11200;
+    tokens_layout_psc_debug_token_tlv_header_pack(&(ptr_struct->ratchet_hdr), ptr_buff + offset / 8);
+    for (i = 0; i < 2; ++i)
+    {
+        offset = adb2c_calc_array_field_address(11232, 32, i, 87136, 1);
+        adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->ratchet[i]);
+    }
+    offset = 11296;
+    tokens_layout_psc_debug_token_tlv_header_pack(&(ptr_struct->signature_stage1_hdr), ptr_buff + offset / 8);
+    for (i = 0; i < 1184; ++i)
+    {
+        offset = adb2c_calc_array_field_address(11328, 32, i, 87136, 1);
+        adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->signature_stage1[i]);
+    }
+    offset = 49216;
+    tokens_layout_psc_debug_token_tlv_header_pack(&(ptr_struct->signature_stage2_hdr), ptr_buff + offset / 8);
+    for (i = 0; i < 1184; ++i)
+    {
+        offset = adb2c_calc_array_field_address(49248, 32, i, 87136, 1);
+        adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->signature_stage2[i]);
+    }
+}
+
+void tokens_layout_psc_debug_token_unpack(struct tokens_layout_psc_debug_token* ptr_struct, const u_int8_t* ptr_buff)
+{
+    u_int32_t offset;
+    int i;
+
+    offset = 0;
+    ptr_struct->header_identifier = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+    offset = 32;
+    ptr_struct->header_version = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+    offset = 64;
+    ptr_struct->structure_size = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+    for (i = 0; i < 5; ++i)
+    {
+        offset = adb2c_calc_array_field_address(96, 32, i, 87136, 1);
+        ptr_struct->reserved_header[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+    }
+    offset = 256;
+    tokens_layout_psc_debug_token_tlv_header_unpack(&(ptr_struct->token_identifier_hdr), ptr_buff + offset / 8);
+    offset = 288;
+    ptr_struct->token_identifier = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+    offset = 320;
+    tokens_layout_psc_debug_token_tlv_header_unpack(&(ptr_struct->device_type_hdr), ptr_buff + offset / 8);
+    offset = 352;
+    ptr_struct->device_type = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+    offset = 384;
+    tokens_layout_psc_debug_token_tlv_header_unpack(&(ptr_struct->token_type_hdr), ptr_buff + offset / 8);
+    offset = 416;
+    ptr_struct->token_type = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+    offset = 448;
+    tokens_layout_psc_debug_token_tlv_header_unpack(&(ptr_struct->keypair_uuid_hdr), ptr_buff + offset / 8);
+    offset = 480;
+    tokens_layout_uuid_unpack(&(ptr_struct->keypair_uuid), ptr_buff + offset / 8);
+    offset = 608;
+    tokens_layout_psc_debug_token_tlv_header_unpack(&(ptr_struct->psid_hdr), ptr_buff + offset / 8);
+    for (i = 0; i < 4; ++i)
+    {
+        offset = adb2c_calc_array_field_address(640, 32, i, 87136, 1);
+        ptr_struct->psid[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+    }
+    offset = 768;
+    tokens_layout_psc_debug_token_tlv_header_unpack(&(ptr_struct->fw_version_hdr), ptr_buff + offset / 8);
+    for (i = 0; i < 2; ++i)
+    {
+        offset = adb2c_calc_array_field_address(800, 32, i, 87136, 1);
+        ptr_struct->fw_version[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+    }
+    offset = 864;
+    tokens_layout_psc_debug_token_tlv_header_unpack(&(ptr_struct->device_unique_hdr), ptr_buff + offset / 8);
+    for (i = 0; i < 32; ++i)
+    {
+        offset = adb2c_calc_array_field_address(896, 320, i, 87136, 1);
+        tokens_layout_psc_debug_token_device_unique_entry_unpack(&(ptr_struct->device_unique[i]),
+                                                                 ptr_buff + offset / 8);
+    }
+    offset = 11136;
+    tokens_layout_psc_debug_token_tlv_header_unpack(&(ptr_struct->token_config_hdr), ptr_buff + offset / 8);
+    offset = 11168;
+    ptr_struct->token_config = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+    offset = 11200;
+    tokens_layout_psc_debug_token_tlv_header_unpack(&(ptr_struct->ratchet_hdr), ptr_buff + offset / 8);
+    for (i = 0; i < 2; ++i)
+    {
+        offset = adb2c_calc_array_field_address(11232, 32, i, 87136, 1);
+        ptr_struct->ratchet[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+    }
+    offset = 11296;
+    tokens_layout_psc_debug_token_tlv_header_unpack(&(ptr_struct->signature_stage1_hdr), ptr_buff + offset / 8);
+    for (i = 0; i < 1184; ++i)
+    {
+        offset = adb2c_calc_array_field_address(11328, 32, i, 87136, 1);
+        ptr_struct->signature_stage1[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+    }
+    offset = 49216;
+    tokens_layout_psc_debug_token_tlv_header_unpack(&(ptr_struct->signature_stage2_hdr), ptr_buff + offset / 8);
+    for (i = 0; i < 1184; ++i)
+    {
+        offset = adb2c_calc_array_field_address(49248, 32, i, 87136, 1);
+        ptr_struct->signature_stage2[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+    }
+}
+
+void tokens_layout_psc_debug_token_print(const struct tokens_layout_psc_debug_token* ptr_struct,
+                                         FILE* fd,
+                                         int indent_level)
+{
+    int i;
+
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "======== tokens_layout_psc_debug_token ========\n");
+
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "header_identifier    : " U32H_FMT "\n", ptr_struct->header_identifier);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "header_version       : " U32H_FMT "\n", ptr_struct->header_version);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "structure_size       : " U32H_FMT "\n", ptr_struct->structure_size);
+    for (i = 0; i < 5; ++i)
+    {
+        adb2c_add_indentation(fd, indent_level);
+        fprintf(fd, "reserved_header_%03d : " U32H_FMT "\n", i, ptr_struct->reserved_header[i]);
+    }
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "token_identifier_hdr:\n");
+    tokens_layout_psc_debug_token_tlv_header_print(&(ptr_struct->token_identifier_hdr), fd, indent_level + 1);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "token_identifier     : " U32H_FMT "\n", ptr_struct->token_identifier);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "device_type_hdr:\n");
+    tokens_layout_psc_debug_token_tlv_header_print(&(ptr_struct->device_type_hdr), fd, indent_level + 1);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "device_type          : " U32H_FMT "\n", ptr_struct->device_type);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "token_type_hdr:\n");
+    tokens_layout_psc_debug_token_tlv_header_print(&(ptr_struct->token_type_hdr), fd, indent_level + 1);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "token_type           : " U32H_FMT "\n", ptr_struct->token_type);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "keypair_uuid_hdr:\n");
+    tokens_layout_psc_debug_token_tlv_header_print(&(ptr_struct->keypair_uuid_hdr), fd, indent_level + 1);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "keypair_uuid:\n");
+    tokens_layout_uuid_print(&(ptr_struct->keypair_uuid), fd, indent_level + 1);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "psid_hdr:\n");
+    tokens_layout_psc_debug_token_tlv_header_print(&(ptr_struct->psid_hdr), fd, indent_level + 1);
+    for (i = 0; i < 4; ++i)
+    {
+        adb2c_add_indentation(fd, indent_level);
+        fprintf(fd, "psid_%03d            : " U32H_FMT "\n", i, ptr_struct->psid[i]);
+    }
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "fw_version_hdr:\n");
+    tokens_layout_psc_debug_token_tlv_header_print(&(ptr_struct->fw_version_hdr), fd, indent_level + 1);
+    for (i = 0; i < 2; ++i)
+    {
+        adb2c_add_indentation(fd, indent_level);
+        fprintf(fd, "fw_version_%03d      : " U32H_FMT "\n", i, ptr_struct->fw_version[i]);
+    }
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "device_unique_hdr:\n");
+    tokens_layout_psc_debug_token_tlv_header_print(&(ptr_struct->device_unique_hdr), fd, indent_level + 1);
+    for (i = 0; i < 32; ++i)
+    {
+        adb2c_add_indentation(fd, indent_level);
+        fprintf(fd, "device_unique_%03d:\n", i);
+        tokens_layout_psc_debug_token_device_unique_entry_print(&(ptr_struct->device_unique[i]), fd, indent_level + 1);
+    }
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "token_config_hdr:\n");
+    tokens_layout_psc_debug_token_tlv_header_print(&(ptr_struct->token_config_hdr), fd, indent_level + 1);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "token_config         : " U32H_FMT "\n", ptr_struct->token_config);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "ratchet_hdr:\n");
+    tokens_layout_psc_debug_token_tlv_header_print(&(ptr_struct->ratchet_hdr), fd, indent_level + 1);
+    for (i = 0; i < 2; ++i)
+    {
+        adb2c_add_indentation(fd, indent_level);
+        fprintf(fd, "ratchet_%03d         : " U32H_FMT "\n", i, ptr_struct->ratchet[i]);
+    }
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "signature_stage1_hdr:\n");
+    tokens_layout_psc_debug_token_tlv_header_print(&(ptr_struct->signature_stage1_hdr), fd, indent_level + 1);
+    for (i = 0; i < 1184; ++i)
+    {
+        adb2c_add_indentation(fd, indent_level);
+        fprintf(fd, "signature_stage1_%03d : " U32H_FMT "\n", i, ptr_struct->signature_stage1[i]);
+    }
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "signature_stage2_hdr:\n");
+    tokens_layout_psc_debug_token_tlv_header_print(&(ptr_struct->signature_stage2_hdr), fd, indent_level + 1);
+    for (i = 0; i < 1184; ++i)
+    {
+        adb2c_add_indentation(fd, indent_level);
+        fprintf(fd, "signature_stage2_%03d : " U32H_FMT "\n", i, ptr_struct->signature_stage2[i]);
+    }
+}
+
+unsigned int tokens_layout_psc_debug_token_size(void)
+{
+    return TOKENS_LAYOUT_PSC_DEBUG_TOKEN_SIZE;
+}
+
+void tokens_layout_psc_debug_token_dump(const struct tokens_layout_psc_debug_token* ptr_struct, FILE* fd)
+{
+    tokens_layout_psc_debug_token_print(ptr_struct, fd, 0);
+}
+
+void tokens_layout_tokens_layout_Nodes_pack(const union tokens_layout_tokens_layout_Nodes* ptr_struct,
+                                            u_int8_t* ptr_buff)
+{
+    tokens_layout_psc_debug_token_pack(&(ptr_struct->psc_debug_token), ptr_buff);
 }
 
 void tokens_layout_tokens_layout_Nodes_unpack(union tokens_layout_tokens_layout_Nodes* ptr_struct,
-                                              const u_int8_t                         * ptr_buff)
+                                              const u_int8_t* ptr_buff)
 {
-    tokens_layout_get_measurment_index_50_unpack(&(ptr_struct->get_measurment_index_50), ptr_buff);
+    tokens_layout_psc_debug_token_unpack(&(ptr_struct->psc_debug_token), ptr_buff);
 }
 
 void tokens_layout_tokens_layout_Nodes_print(const union tokens_layout_tokens_layout_Nodes* ptr_struct,
-                                             FILE                                         * fd,
-                                             int                                            indent_level)
+                                             FILE* fd,
+                                             int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== tokens_layout_tokens_layout_Nodes ========\n");
@@ -371,6 +733,9 @@ void tokens_layout_tokens_layout_Nodes_print(const union tokens_layout_tokens_la
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "get_measurment_index_50:\n");
     tokens_layout_get_measurment_index_50_print(&(ptr_struct->get_measurment_index_50), fd, indent_level + 1);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "psc_debug_token:\n");
+    tokens_layout_psc_debug_token_print(&(ptr_struct->psc_debug_token), fd, indent_level + 1);
 }
 
 unsigned int tokens_layout_tokens_layout_Nodes_size(void)

@@ -118,6 +118,7 @@ public:
     bool extended_help;
     bool blank_guids;
     bool clear_semaphore;
+    bool force_cleanup;
     bool quick_query;
     bool low_cpu;
     bool next_boot_fw_ver;
@@ -185,6 +186,7 @@ public:
     string hsm_password;
     bool linkx_control;
     bool linkx_els_control;
+    bool vmod_control;
     int cableDeviceIndex;
     int cableDeviceSize;
     bool cable_device_index_specified;

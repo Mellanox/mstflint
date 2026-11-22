@@ -89,6 +89,8 @@ const string MlxTknGenerator::CHALLENGE_BLOB_FLAG = "blob";
 const char   MlxTknGenerator::CHALLENGE_BLOB_FLAG_SHORT = 'b';
 const string MlxTknGenerator::SECONDARY_ADDR_FLAG = "i2c_secondary";
 const char   MlxTknGenerator::SECONDARY_ADDR_FLAG_SHORT = 's';
+const string MlxTknGenerator::TOKEN_CONFIG_FLAG = "token_config";
+const char   MlxTknGenerator::TOKEN_CONFIG_FLAG_SHORT = 'c';
 
 vector < string > GetListOfFiles(string dirPath)
 {
@@ -119,7 +121,15 @@ vector < string > GetListOfFiles(string dirPath)
 static void printFlagLine(string flag_l, char flag_s, string param, string desc)
 {
     string shortFlag(1, flag_s);
-    string flags = "-" + shortFlag + "|--" + flag_l + (param.length() ? " <" + param + ">" : "");
+    string flags;
+    if (flag_s != ' ')
+    {
+        flags = "-" + shortFlag + "|--" + flag_l + (param.length() ? " <" + param + ">" : "");
+    }
+    else
+    {
+        flags = "--" + flag_l + (param.length() ? " <" + param + ">" : "");
+    }
 
     printf(INDENT2 "%-40s", flags.c_str());
     printf(INDENT3 ": %s\n", desc.c_str());
@@ -188,7 +198,8 @@ MlxTknGenerator::MlxTknGenerator() :
     _tokensDir(),
     _debugFwDir(),
     _command(Unknown),
-    _i2cSecondaryAddr(0)
+    _i2cSecondaryAddr(0),
+    _tokenConfig("")
 {
     InitCmdParser();
 }
@@ -428,14 +439,20 @@ vector < TLVParamsData > MlxTknGenerator::GetTokenDataFromChallenge(mfile * mf,
     return data;
 }
 
+void MlxTknGenerator::GetTokenDataFromChallenge(mfile* mf, shared_ptr<MlxPSCtoken> token)
+{
+    MLX_TOKEN_LOG_DEBUG("reading PSC token data from challenge");
+    MlxCfgToken mlxCfgToken(mf);
+    MlxCfgTokenType tokenType = token->GetTokenTypeEnum();
+
+    struct reg_access_switch_mtcq_reg_ext challenge = mlxCfgToken.GetChallengeFromSwitchOrHCA(tokenType);
+    token->GetChallengeBasedTokenData(challenge, _tokenConfig);
+}
+
 vector < TLVParamsData >
 MlxTknGenerator::GetDataForToken(string device, MlxCfgTokenType tokenType, Device_Type deviceType, bool isNestedToken)
 {
-#ifdef ENABLE_MST_DEV_I2C
-    if (_i2cSecondaryAddr != -1) {
-        set_force_i2c_address(_i2cSecondaryAddr);
-    }
-#endif
+    SetI2CSecondaryAddr();
     mfile* mf = mopen_adv(device.c_str(), (MType)(MST_DEFAULT | MST_CABLE));
 
     if (mf == NULL) {
@@ -642,12 +659,8 @@ void MlxTknGenerator::AutoGenerateTokensXML()
     mft_utils::WriteNamedFilesToDirectory(_outputFile, fileNamesAndContents);
 }
 
-void MlxTknGenerator::GenerateTokenXML()
+void MlxTknGenerator::GenerateLegacyTokenXML()
 {
-    vector < string > tlvs;
-    vector < TLVConf * > tlvsConfs;
-    string tokenXml;
-
     vector < TLVParamsData > tlvsConfsData;
 
     try
@@ -679,6 +692,119 @@ void MlxTknGenerator::GenerateTokenXML()
     {
         throw MlxTknGeneratorException(e._err.c_str());
     }
+}
+
+void MlxTknGenerator::SetI2CSecondaryAddr()
+{
+#ifdef ENABLE_MST_DEV_I2C
+    if (_i2cSecondaryAddr != -1)
+    {
+        set_force_i2c_address(_i2cSecondaryAddr);
+    }
+#endif
+}
+
+void MlxTknGenerator::SetTokenDataToToken(shared_ptr<MlxPSCtoken> token)
+{
+    SetI2CSecondaryAddr();
+    mfile* mf = mopen_adv(_device.c_str(), (MType)(MST_DEFAULT | MST_CABLE));
+
+    if (mf == NULL)
+    {
+        throw MlxTknGeneratorException("Failed to open the device.");
+    }
+    ValidateDeviceType(mf, _deviceType);
+    GetTokenDataFromChallenge(mf, token);
+    mclose(mf);
+}
+
+static dm_dev_id_t GetDeviceId(const string& device)
+{
+    mfile* mf = mopen_adv(device.c_str(), (MType)(MST_DEFAULT | MST_CABLE));
+    dm_dev_id_t deviceId = DeviceUnknown;
+    u_int32_t hwDevId = 0, hwRevId = 0;
+    if (!mf)
+    {
+        throw MlxTknGeneratorException("Failed to open the device");
+    }
+
+    if (dm_get_device_id(mf, &deviceId, &hwDevId, &hwRevId) == MFE_ERROR)
+    {
+        mclose(mf);
+        throw MlxTknGeneratorException("Failed to identify the device");
+    }
+    mclose(mf);
+    return deviceId;
+}
+
+void MlxTknGenerator::ValidatePSCTokenType(MlxCfgTokenType tokenType)
+{
+    if (tokenType != McTokenTypeCRCS && tokenType != McTokenTypeCRDT)
+    {
+        throw MlxTknGeneratorException("Invalid token type");
+    }
+}
+
+void MlxTknGenerator::GeneratePSCTokenXML()
+{
+    MLX_TOKEN_LOG_DEBUG("PSC token");
+    ValidatePSCTokenType(_tokenType);
+    DeviceType deviceType = MlxPSCtoken::GetDeviceTypeFromDeviceId(GetDeviceId(_device));
+    shared_ptr<MlxPSCtoken> token = MlxPSCtokenFactory::CreatePSCtoken(_tokenType, deviceType);
+    SetTokenDataToToken(token);
+    vector<pair<string, string>> tlvs = token->LoadFromParams();
+    token->SaveToXMLFile(_outputFile, tlvs);
+}
+
+TokenFormat MlxTknGenerator::CheckTokenFormatByDeviceId()
+{
+    TokenFormat tokenFormat = TOKEN_FORMAT_LEGACY;
+    if (_blobFile.empty())
+    {
+        dm_dev_id_t deviceId = GetDeviceId(_device);
+        if (dm_is_spc6(deviceId))
+        {
+            tokenFormat = TOKEN_FORMAT_PSC;
+        }
+    }
+    return tokenFormat;
+}
+
+void MlxTknGenerator::ValidateByTokenFormat(TokenFormat tokenFormat)
+{
+    if (tokenFormat == TOKEN_FORMAT_LEGACY)
+    {
+        if ((_tokenType == McTokenTypeDBG || _tokenType == McTokenTypeCRDT) && _debugFwFile.empty())
+        {
+            throw MlxTknGeneratorException("Debug fw path must be specified to generate %s token.",
+                                           MlxCfgToken::getTokenString(_tokenType).c_str());
+        }
+    }
+    else if (tokenFormat == TOKEN_FORMAT_PSC)
+    {
+        if ((_tokenType == McTokenTypeCRDT) && _tokenConfig.empty())
+        {
+            throw MlxTknGeneratorException("Token configuration must be specified to generate %s token.",
+                                           MlxCfgToken::getTokenString(_tokenType).c_str());
+        }
+    }
+}
+
+void MlxTknGenerator::GenerateTokenXML()
+{
+    TokenFormat tokenFormat = CheckTokenFormatByDeviceId();
+    ValidateByTokenFormat(tokenFormat);
+    switch (tokenFormat)
+    {
+        case TOKEN_FORMAT_PSC:
+            GeneratePSCTokenXML();
+            break;
+
+        default:
+            GenerateLegacyTokenXML();
+            break;
+    }
+    std::cout << "Generate token XML done" << std::endl;
 }
 
 vector<string> MlxTknGenerator::AggregateLegacyTokenXmlStrings(const vector<string>& xmlStrings, bool isMultiAggregate)
@@ -713,31 +839,89 @@ vector<string> MlxTknGenerator::AggregateLegacyTokenXmlStrings(const vector<stri
     return chunks;
 }
 
+void MlxTknGenerator::CheckTokenType(MlxCfgTokenType tokenType)
+{
+    if (tokenType != _tokenType)
+    {
+        throw MlxTknGeneratorException("Token type mismatch");
+    }
+}
+
+void MlxTknGenerator::AggregatePSCTokensXML(const vector<string>& tokenFiles)
+{
+    DeviceType pscDeviceType = MlxPSCtoken::GetDeviceTypeFromXML(tokenFiles[0]);
+    MlxCfgTokenType pscTokenType = MlxPSCtoken::GetTokenTypeFromXML(tokenFiles[0]);
+    CheckTokenType(pscTokenType);
+
+    shared_ptr<MlxPSCtoken> token = MlxPSCtokenFactory::CreatePSCtoken(pscTokenType, pscDeviceType);
+    token->LoadFromXMLFile(tokenFiles[0]);
+    token->NormalizeDeviceUniqueForAggregation();
+
+    for (size_t i = 1; i < tokenFiles.size(); i++)
+    {
+        MlxCfgTokenType pscTokenTypeForAggregation = MlxPSCtoken::GetTokenTypeFromXML(tokenFiles[i]);
+        CheckTokenType(pscTokenTypeForAggregation);
+        shared_ptr<MlxPSCtoken> tokenForAggregation =
+          MlxPSCtokenFactory::CreatePSCtoken(pscTokenTypeForAggregation, pscDeviceType);
+        tokenForAggregation->LoadFromXMLFile(tokenFiles[i]);
+        tokenForAggregation->NormalizeDeviceUniqueForAggregation();
+        token->Aggregate(*tokenForAggregation);
+    }
+    token->SaveToXMLFile(_outputFile);
+}
+
 void MlxTknGenerator::AggregateTokensXML()
 {
     vector < string > tokensXML = GetListOfFiles(_tokensDir);
     MLX_TOKEN_LOG_DEBUG("aggregating token XMLs from %s (%d found)", _tokensDir.c_str(), (int)tokensXML.size());
-    shared_ptr < MlxToken > token = MlxTokenFactory::CreateToken(_tokenType, _deviceType);
-    shared_ptr < MlxToken > tokenForAggregation = MlxTokenFactory::CreateToken(_tokenType, _deviceType);
 
-    if (tokensXML.empty()) {
-        throw MlxTknGeneratorException("Given tokens directory is empty.");
-    }
-
-    vector<u_int8_t> binData = ReadFromFile(tokensXML.back());
-    string xmlContent(binData.begin(), binData.end());
-    token->LoadFromXMLFile(xmlContent);
-    tokensXML.pop_back();
-
-    for (auto file : tokensXML)
+    vector<string> tokenFiles;
+    bool firstFile = true;
+    TokenFormat tokenFormat = TOKEN_FORMAT_LEGACY;
+    string dbName = "";
+    GenericCommander commander(nullptr, dbName, _deviceType);
+    for (const auto& file : tokensXML)
     {
-        binData = ReadFromFile(file);
-        xmlContent = string(binData.begin(), binData.end());
-        tokenForAggregation->LoadFromXMLFile(xmlContent);
-        token->Aggregate(*tokenForAggregation);
+        vector<u_int8_t> binData = ReadFromFile(file);
+        string xmlContent(binData.begin(), binData.end());
+        TokenFormat currentTokenFormat =
+          commander.IsPscXmlByString(xmlContent) ? TOKEN_FORMAT_PSC : TOKEN_FORMAT_LEGACY;
+
+        if (firstFile)
+        {
+            tokenFormat = currentTokenFormat;
+            firstFile = false;
+        }
+        else if (currentTokenFormat != tokenFormat)
+        {
+            throw MlxTknGeneratorException("Mixed token formats found in directory. All tokens must be the same format.");
+        }
+        tokenFiles.push_back(xmlContent);
     }
 
-    token->SaveToXMLFile(_outputFile);
+    if (tokenFiles.empty())
+    {
+        throw MlxTknGeneratorException("No token files provided for aggregation");
+    }
+
+    if (tokenFormat == TOKEN_FORMAT_LEGACY)
+    {
+        vector<string> aggregatedTokens = AggregateLegacyTokenXmlStrings(tokenFiles);
+        for (size_t i = 0; i < aggregatedTokens.size(); i++)
+        {
+            const vector<u_int8_t> bytes(aggregatedTokens[i].begin(), aggregatedTokens[i].end());
+            string filePath = _outputFile;
+            if (i > 0)
+            {
+                filePath += string_format("_%d.xml", i);
+            }
+            mft_utils::WriteToBinFile(filePath, bytes);
+        }
+    }
+    else
+    {
+        AggregatePSCTokensXML(tokenFiles);
+    }
 }
 
 void MlxTknGenerator::PrintHelp()
@@ -754,12 +938,12 @@ void MlxTknGenerator::PrintHelp()
     printf(INDENT "OPTIONS:\n");
     printFlagLine(DEVICE_FLAG, DEVICE_FLAG_SHORT, "MstDevice", "Mellanox mst device name");
     printFlagLine(DEVICE_TYPE_FLAG, DEVICE_TYPE_FLAG_SHORT, "Switch/HCA", "Mellanox mst device type");
-    printFlagLine(TOKEN_TYPE_FLAG, TOKEN_TYPE_FLAG_SHORT, "CS/DBG/CRCS/CRDT/RMCS/RMDT/FRC", "Token type");
+    printFlagLine(TOKEN_TYPE_FLAG, TOKEN_TYPE_FLAG_SHORT, "CS/DBG/CRCS/CRDT/RMCS/RMDT/FRC", "Token type, see TOKEN TYPES below");
     printFlagLine(NESTED_TOKEN_FLAG, NESTED_TOKEN_FLAG_SHORT, "", "Get nested token");
     printFlagLine(OUTPUT_FILE_FLAG, OUTPUT_FILE_FLAG_SHORT, "Path", "Path to output file");
     printFlagLine(TOKENS_DIR_FLAG, TOKENS_DIR_FLAG_SHORT, "Path", "Path to a directory of tokens for aggregation");
     printFlagLine(DEBUG_FW_FILE_FLAG, DEBUG_FW_FILE_FLAG_SHORT, "Path", "Path to debug fw file");
-    printFlagLine(DEBUG_FW_DIR_FLAG, '\0', "Path", "Path to debug fw directory");
+    printFlagLine(DEBUG_FW_DIR_FLAG, ' ', "Path", "Path to debug fw directory");
     printFlagLine(
         NESTED_DEBUG_FW_FILE_FLAG, NESTED_DEBUG_FW_FILE_FLAG_SHORT, "Path", "Path to debug fw file for nested device");
     printFlagLine(CHALLENGE_BLOB_FLAG,
@@ -769,11 +953,31 @@ void MlxTknGenerator::PrintHelp()
     printFlagLine(SECONDARY_ADDR_FLAG, SECONDARY_ADDR_FLAG_SHORT, "i2c_secondary", "I2C secondary address");
     printFlagLine(HELP_FLAG, HELP_FLAG_SHORT, "", "Show help message and exit");
     printFlagLine(VERSION_FLAG, VERSION_FLAG_SHORT, "", "Show version and exit");
+    printFlagLine(TOKEN_CONFIG_FLAG, TOKEN_CONFIG_FLAG_SHORT, "Token configuration",
+                  "Token configuration (relevant for CRDT token types)");
 
     printf("\n");
     printf(INDENT "COMMANDS SUMMARY\n");
     printf(INDENT2 "%-24s: %s\n", "generate_token", "generates a token xml automatically.");
     printf(INDENT2 "%-24s: %s\n", "aggregate_tokens", "aggregates token xml files to a single xml file.");
+    printf(INDENT2 "%-24s: %s\n", "auto_generate_tokens",
+           "generates a CRCS/CRDT token xml for every device on the machine, aggregated per PSID.");
+
+    printf("\n");
+    printf(INDENT "TOKEN TYPES\n");
+    printf(INDENT2 "%-8s: %s\n", "CS", "Customer Support. Opens the secured commands of the running FW.");
+    printf(INDENT2 "%-8s: %s\n", "DBG", "Debug FW. Allows a debug FW image to be loaded. Requires --debug_fw.");
+    printf(INDENT2 "%-8s: %s\n", "RMCS",
+           "Remote Customer Support. Bound to the debug session of the challenge, not supported on HCA.");
+    printf(INDENT2 "%-8s: %s\n", "RMDT", "Remote Debug Token. Same as RMCS for debug FW, not supported on HCA.");
+    printf(INDENT2 "%-8s  %s\n", "", "Requires --debug_fw.");
+    printf(INDENT2 "%-8s: %s\n", "CRCS", "Challenge-Response Customer Support. Bound to a single device challenge.");
+    printf(INDENT2 "%-8s: %s\n", "CRDT",
+           "Challenge-Response Debug Token. Bound to a single device challenge. Requires --debug_fw.");
+    printf("\n");
+    printf(INDENT2 "%s\n", "Supported token types per device type:");
+    printf(INDENT2 INDENT "%-8s: %s\n", "HCA", "CS, DBG, CRCS, CRDT");
+    printf(INDENT2 INDENT "%-8s: %s\n", "Switch", "CS, DBG, RMCS, RMDT, CRCS, CRDT");
 
     printf("\n");
     printf(INDENT "Examples:\n");
@@ -784,6 +988,13 @@ void MlxTknGenerator::PrintHelp()
         INDENT2 "%-24s: %s\n",
         "To create a DBG token",
         "mlxtokengenerator -d /dev/mst/mt4123_pciconf0 -k DBG -t HCA -f /tmp/dbg_fw.bin -o /tmp/dbg_token.xml generate_token");
+    printf(INDENT2 "%-24s: %s\n",
+           "To create a CRCS token",
+           "mlxtokengenerator -d /dev/mst/mt53120_pci_cr0 -k CRCS -t Switch -o /tmp/crcs_token.xml generate_token");
+    printf(
+      INDENT2 "%-24s: %s\n",
+      "To create a CRDT token",
+      "mlxtokengenerator -d /dev/mst/mt53120_pci_cr0 -k CRDT -t Switch -f /tmp/dbg_fw.bin -o /tmp/crdt_token.xml generate_token");
     printf("\n");
 }
 
@@ -796,7 +1007,7 @@ void MlxTknGenerator::InitCmdParser()
     AddOptions(OUTPUT_FILE_FLAG, OUTPUT_FILE_FLAG_SHORT, "Path", "Path to output file");
     AddOptions(TOKENS_DIR_FLAG, TOKENS_DIR_FLAG_SHORT, "Path", "Path to a directory of tokens for aggregation");
     AddOptions(DEBUG_FW_FILE_FLAG, DEBUG_FW_FILE_FLAG_SHORT, "Path", "Path to debug fw file");
-    AddOptions(DEBUG_FW_DIR_FLAG, '\0', "Path", "Path to debug fw directory");
+    AddOptions(DEBUG_FW_DIR_FLAG, ' ', "Path", "Path to debug fw directory");
     AddOptions(
         NESTED_DEBUG_FW_FILE_FLAG, NESTED_DEBUG_FW_FILE_FLAG_SHORT, "Path", "Path to debug fw file for nested device");
     AddOptions(CHALLENGE_BLOB_FLAG,
@@ -804,6 +1015,7 @@ void MlxTknGenerator::InitCmdParser()
                "Path",
                "Path to challenge blob file (relevant for CRCS/CRDT token types)");
     AddOptions(SECONDARY_ADDR_FLAG, SECONDARY_ADDR_FLAG_SHORT, "i2c_secondary", "I2C secondary address");
+    AddOptions(TOKEN_CONFIG_FLAG, TOKEN_CONFIG_FLAG_SHORT, "Token configuration", "Token configuration");
     AddOptions(HELP_FLAG, HELP_FLAG_SHORT, "", "Show help message and exit");
     AddOptions(VERSION_FLAG, VERSION_FLAG_SHORT, "", "Show version and exit");
 
@@ -857,6 +1069,11 @@ ParseStatus MlxTknGenerator::HandleOption(string name, string value)
             return PARSE_ERROR;
         }
         _i2cSecondaryAddr = i2c_secondary_address;
+        return PARSE_OK;
+    }
+    else if (name == TOKEN_CONFIG_FLAG)
+    {
+        _tokenConfig = value;
         return PARSE_OK;
     }
     return PARSE_ERROR;
@@ -952,10 +1169,6 @@ void MlxTknGenerator::ParamValidate()
         }
         if (_outputFile.empty()) {
             throw MlxTknGeneratorException("Output file path must be specified to generate a token.");
-        }
-        if (((_tokenType == McTokenTypeDBG) || (_tokenType == McTokenTypeCRDT)) && _debugFwFile.empty()) {
-            throw MlxTknGeneratorException("Debug fw path must be specified to generate %s token.",
-                                           MlxCfgToken::getTokenString(_tokenType).c_str());
         }
         if ((_deviceType == HCA) && !((_tokenType == McTokenTypeCS) || (_tokenType == McTokenTypeDBG) ||
                                       (_tokenType == McTokenTypeCRCS) || (_tokenType == McTokenTypeCRDT))) {

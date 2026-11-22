@@ -561,6 +561,8 @@ ssize_t get_image_by_map_entry(mfa_desc* mfa_d,
     toc_entry** toce_ar = NULL;
     int toce_num = 0;
 
+    *buffer = NULL;
+
     if (n > 0)
     {
         toce_ar = (toc_entry**)malloc(sizeof(toc_entry*) * n);
@@ -647,6 +649,7 @@ ssize_t get_image_by_map_entry(mfa_desc* mfa_d,
 
 img_alloc_clean_up:
     free(*buffer);
+    *buffer = NULL;
 
 clean_up:
     free(toce_ar);

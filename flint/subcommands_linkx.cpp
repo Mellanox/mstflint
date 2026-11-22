@@ -190,7 +190,10 @@ bool QuerySubCommand::PrintLinkXQuery(string& outPutString,
     return true;
 }
 
-FlintStatus QuerySubCommand::QueryLinkX(string deviceName, string outputFile, std::vector<int> deviceIds)
+FlintStatus QuerySubCommand::QueryLinkX(string deviceName,
+                                        string outputFile,
+                                        std::vector<int> deviceIds,
+                                        FwComponent::comps_ids_t fwComponent)
 {
     if (preFwOps() == FLINT_FAILED)
     {
@@ -236,14 +239,14 @@ FlintStatus QuerySubCommand::QueryLinkX(string deviceName, string outputFile, st
         int deviceIndex = deviceIds[i] + 1;
         fwCompsAccess.SetIndexAndSize(deviceIndex, 1);
         comp_status_st ComponentStatus;
-        if (!fwCompsAccess.RefreshComponentsStatus(&ComponentStatus))
+        if (!fwCompsAccess.RefreshComponentsStatus(&ComponentStatus, fwComponent))
         {
             printf("-E- Refresh components failed, error is %s.\n", fwCompsAccess.getLastErrMsg());
             finalResult = false;
             continue;
         }
         component_linkx_st linkx_data;
-        if (!fwCompsAccess.GetComponentLinkxProperties(FwComponent::COMPID_LINKX, &linkx_data))
+        if (!fwCompsAccess.GetComponentLinkxProperties(fwComponent, &linkx_data))
         {
             printf("-E- Cable query failed, the error is %s.\n", fwCompsAccess.getLastErrMsg());
             finalResult = false;
