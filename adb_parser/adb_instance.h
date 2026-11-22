@@ -215,7 +215,8 @@ public:
 
     static string evalExpr(string expr, AttrsMap* vars);
     static string addPathSuffixForArraySupport(string path);
-    const string& get_field_name();
+    const string& get_field_name() const;
+    void set_field_name(const string& name);
     bool isLeaf();
     bool isUnion();
     bool isStruct();
@@ -317,8 +318,11 @@ public:
     static const char path_seperator;
     static const string EXP_PATTERN;
 
-    // Members
+private:
     string layout_item_name{}; // instance name
+
+public:
+    // Members
     string full_path{};
     vector<_AdbInstance_impl<eval_expr, T_OFFSET>*> subItems{};
     AdbField* fieldDesc{nullptr};

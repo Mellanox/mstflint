@@ -767,10 +767,10 @@ typename _Adb_impl<eval_expr, T_OFFSET>::AdbInstance*
         rootItem->fieldDesc = rootField;
         rootItem->nodeDesc = nodeDesc;
         rootItem->parent = nullptr;
-        rootItem->layout_item_name = root_display_name.size() > 0 ? root_display_name : nodeDesc->name;
+        rootItem->set_field_name(root_display_name.size() > 0 ? root_display_name : nodeDesc->name);
         if (optimize_time)
         {
-            rootItem->full_path = rootItem->layout_item_name;
+            rootItem->full_path = rootItem->get_field_name();
         }
         rootItem->offset = root_offset;
         rootItem->initInstOps();
