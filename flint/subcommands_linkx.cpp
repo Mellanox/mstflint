@@ -417,6 +417,45 @@ void BurnSubCommand::ReportSkippedCables(FwCompsMgr& fwCompsAccess)
 /* Every LinkX burn leads with eight 0xFF bytes ahead of the image. */
 #define LINKX_BURN_IMAGE_PREFIX_SIZE 8
 
+/* Where a tar archive names its format, "ustar". */
+#define TAR_MAGIC_OFFSET 257
+
+/* Whether the file is a gzip, tar or ZIP archive. No module image is one, but a firmware package is (the
+ * gzipped tar the OIF CMIS Firmware Package IA defines), and the burn sends the file to the cable as it is.
+ */
+static bool isArchive(const string& fileName)
+{
+    u_int8_t head[TAR_MAGIC_OFFSET + 5] = {0};
+    FILE* file = fopen(fileName.c_str(), "rb");
+
+    if (file == NULL)
+    {
+        return false;
+    }
+    size_t length = fread(head, 1, sizeof(head), file);
+    fclose(file);
+    bool gzip = length >= 2 && head[0] == 0x1f && head[1] == 0x8b;
+    bool zip = length >= 4 && memcmp(head, "PK\x03\x04", 4) == 0;
+    bool tar = length == sizeof(head) && memcmp(head + TAR_MAGIC_OFFSET, "ustar", 5) == 0;
+    return gzip || zip || tar;
+}
+
+/* Whether the file is a firmware package, reporting it when it is: a package is installed with mstfwmanager,
+ * and a cable burn would send it to the device as it is.
+ */
+bool BurnSubCommand::IsFirmwarePackage(const string& fileName)
+{
+    if (!isArchive(fileName))
+    {
+        return false;
+    }
+    reportErr(true,
+              "%s is a gzip/tar/ZIP archive, not a module image. A firmware package is installed with "
+              "mstfwmanager --module_update -i %s\n",
+              fileName.c_str(), fileName.c_str());
+    return true;
+}
+
 FlintStatus BurnSubCommand::BurnLinkX(string deviceName,
                                       int deviceIndex,
                                       int deviceSize,
@@ -429,6 +468,11 @@ FlintStatus BurnSubCommand::BurnLinkX(string deviceName,
                                       FwComponent::comps_ids_t fwComponent,
                                       bool noStopOnError)
 {
+    // Checked before the device is touched: the package is the wrong input whatever the device is.
+    if (downloadTransferNeeded && IsFirmwarePackage(binaryFileName))
+    {
+        return FLINT_FAILED;
+    }
     if (preFwOps() == FLINT_FAILED)
     {
         reportErr(true, FLINT_OPEN_FWOPS_DEVICE_ERROR_1, deviceName.c_str());

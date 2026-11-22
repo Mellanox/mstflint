@@ -3046,6 +3046,12 @@ FlintStatus BurnSubCommand::BurnCMISCable()
 
     if (!_flintParams.image.empty())
     {
+        // Checked before the image is parsed, the same as a LinkX burn: a package is the wrong input
+        // whatever the cable is.
+        if (IsFirmwarePackage(_flintParams.image))
+        {
+            return FLINT_FAILED;
+        }
         if (burnFlow == CableBurnFlow::Burn3rdParty)
         {
             if (!readFromFile(_flintParams.image, fwImage))
