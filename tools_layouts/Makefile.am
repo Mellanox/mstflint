@@ -67,6 +67,7 @@ libtools_layouts_la_SOURCES = prm_adb_db.cpp prm_adb_db.h \
 				image_info_layouts.c image_info_layouts.h \
 				reg_access_switch_layouts.c reg_access_switch_layouts.h \
 				fs5_image_layout_layouts.h fs5_image_layout_layouts.c \
+				fs6_image_layout_layouts.h fs6_image_layout_layouts.c \
 				tokens_layout_layouts.c tokens_layout_layouts.h
 
 libtools_layouts_la_DEPENDENCIES = libadb_utils.la

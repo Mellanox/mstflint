@@ -560,9 +560,9 @@ bool Fs5Operations::GetMfgInfo(u_int8_t* buff)
     {
         if (_fwImgInfo.supportedHwId[0] == ARCUSE_HW_ID)
         { // ArcusE is missing DEV_INFO section, align non-orig guids to make flint query output correct format
-            memcpy(&_fs3ImgInfo.ext_info.fs3_uids_info.image_layout_uids, &_fs3ImgInfo.ext_info.orig_fs3_uids_info.image_layout_uids,
-                   sizeof(_fs3ImgInfo.ext_info.orig_fs3_uids_info.image_layout_uids));
-            _fs3ImgInfo.ext_info.fs3_uids_info.guid_format = IMAGE_LAYOUT_UIDS;
+            memcpy(&_fsCommonInfo.ext_info.fs3_uids_info.image_layout_uids, &_fsCommonInfo.ext_info.orig_fs3_uids_info.image_layout_uids,
+                   sizeof(_fsCommonInfo.ext_info.orig_fs3_uids_info.image_layout_uids));
+            _fsCommonInfo.ext_info.fs3_uids_info.guid_format = IMAGE_LAYOUT_UIDS;
         }
     }
     return rc;
@@ -599,6 +599,10 @@ bool Fs5Operations::GetLivefishIndicationAddr(uint32_t& lfIndicationAddr)
         case DeviceQuantum3_HwId:
         case DeviceNVLink6_Switch_HwId:
             lfIndicationAddr = 0xfc13c;
+            break;
+
+        case DeviceSpectrum6_HwId:
+            lfIndicationAddr = 0xfb058;
             break;
 
         default:

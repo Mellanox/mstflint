@@ -62,7 +62,14 @@
 // }
 
 // component are ordered by priority
-const vector<string> FsPldmOperations::SupportedComponents = {"FW", "NIC_FW", "FW_SPC6", "VMOD"};
+const string FsPldmOperations::PLDM_COMPONENT_FW = "FW";
+const string FsPldmOperations::PLDM_COMPONENT_NIC_FW = "NIC_FW";
+const string FsPldmOperations::PLDM_COMPONENT_FW_SPC6 = "FW_SPC6";
+const string FsPldmOperations::PLDM_COMPONENT_VMOD = "VMOD";
+
+const vector<string> FsPldmOperations::SupportedComponents = {
+  FsPldmOperations::PLDM_COMPONENT_FW, FsPldmOperations::PLDM_COMPONENT_NIC_FW,
+  FsPldmOperations::PLDM_COMPONENT_FW_SPC6, FsPldmOperations::PLDM_COMPONENT_VMOD};
 
 bool FsPldmOperations::FwInit()
 {
@@ -185,6 +192,16 @@ string FsPldmOperations::GetPldmVendorDefinedDescriptor(string psid, PldmRecordD
     return _pkg.getPldmVendorDefinedDescriptorByPsid(psid, type);
 }
 
+bool FsPldmOperations::GetMainComponentName(const string& psid, std::string& component) const
+{
+    return _pkg.getMainComponentNameByPsid(psid, component);
+}
+
+bool FsPldmOperations::getSupportedComponents(const string& psid, std::vector<string>& supportedComponents) const
+{
+    return _pkg.getParsedSupportedComponentsByPsid(psid, supportedComponents);
+}
+
 bool FsPldmOperations::CreateFwOpsImage(u_int32_t* buff,
                                         u_int32_t buffSize,
                                         FwOperations** newImageOps,
@@ -209,9 +226,9 @@ FwComponent::comps_ids_t FsPldmOperations::ToCompId(string componentName)
 }
 
 bool FsPldmOperations::FwOperationsCreate(const char* requestedPsid,
-                                        const string& componentType,
-                                        FwOperations** newImageOps,
-                                        mfile* deviceMfile)
+                                          const string& componentType,
+                                          FwOperations** newImageOps,
+                                          mfile* deviceMfile)
 {
     MLXFWOPS_LOG_DEBUG("psid=%s componentType=%s", requestedPsid ? requestedPsid : "none", componentType.c_str());
     u_int8_t* buff;
@@ -278,10 +295,10 @@ void FsPldmOperations::PrintInfo()
         PrintDeviceRecord(devIdRec, devIdx);
     }
 
-    if (_pkg.isDownstreamDeviceRecordSupported())
+    u_int8_t downstreamDeviceRecordCount = _pkg.getDownstreamDeviceRecordCount();
+    if (_pkg.isDownstreamDeviceRecordSupported() && downstreamDeviceRecordCount > 0)
     {
         printf("\nDownstream Device Records:");
-        u_int8_t downstreamDeviceRecordCount = _pkg.getDownstreamDeviceRecordCount();
         for (u_int8_t devIdx = 0; devIdx < downstreamDeviceRecordCount; devIdx++)
         {
             PldmDevIdRecord* downstreamDevIdRec = _pkg.getDownstreamDeviceRecord(devIdx);
@@ -348,7 +365,9 @@ bool FsPldmOperations::IsComponentInPackage(const string& psid, const string& co
         return errmsg("Component name is empty");
     }
 
-    if (std::find(SupportedComponents.begin(), SupportedComponents.end(), componentName) == SupportedComponents.end())
+    if (std::find(PldmPkg::PARSEABLE_PRIORITY_COMPONENTS.begin(),
+                  PldmPkg::PARSEABLE_PRIORITY_COMPONENTS.end(),
+                  componentName) == PldmPkg::PARSEABLE_PRIORITY_COMPONENTS.end())
     {
         return errmsg("Component %s is not supported.", componentName.c_str());
     }
@@ -362,14 +381,13 @@ bool FsPldmOperations::IsComponentInPackage(const string& psid, const string& co
 
 string FsPldmOperations::GetFirstSupportedComponent(const string& psid)
 {
-    for (const string& component : SupportedComponents)
+    std::vector<string> supportedComponents;
+    getSupportedComponents(psid, supportedComponents);
+    if (supportedComponents.empty())
     {
-        if (_pkg.isComponentInPackage(psid, component))
-        {
-            return component;
-        }
+        return "";
     }
-    return "";
+    return supportedComponents[0];
 }
 
 bool FsPldmOperations::FwQuery(fw_info_t* fwInfo, bool, bool, bool, bool, bool)
@@ -387,9 +405,9 @@ bool FsPldmOperations::FwReadRom(std::vector<u_int8_t>& romSect)
     return Unsupported(__FUNCTION__);
 }
 bool FsPldmOperations::FwBurnRom(FImage* romImg,
-                                bool ignoreProdIdCheck,
-                                bool ignoreDevidCheck,
-                                ProgressCallBack progressFunc)
+                                 bool ignoreProdIdCheck,
+                                 bool ignoreDevidCheck,
+                                 ProgressCallBack progressFunc)
 {
     return Unsupported(__FUNCTION__);
 }

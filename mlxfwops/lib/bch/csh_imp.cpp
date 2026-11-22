@@ -1,0 +1,888 @@
+/*
+ * Copyright (c) 2013-2025 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED
+ *
+ * This software is available to you under a choice of one of two
+ * licenses.  You may choose to be licensed under the terms of the GNU
+ * General Public License (GPL) Version 2, available from the file
+ * COPYING in the main directory of this source tree, or the
+ * OpenIB.org BSD license below:
+ *
+ *     Redistribution and use in source and binary forms, with or
+ *     without modification, are permitted provided that the following
+ *     conditions are met:
+ *
+ *      - Redistributions of source code must retain the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer.
+ *
+ *      - Redistributions in binary form must reproduce the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer in the documentation and/or other materials
+ *        provided with the distribution.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
+ *  Version: $Id$
+ *
+ */
+
+#include "csh_imp.h"
+
+#if !defined(MST_CPU_armv7l_umbriel) && !defined(NO_OPEN_SSL) // {
+#include "mlxsign_lib/mlxsign_lib.h"
+#endif // } MST_CPU_armv7l_umbriel
+
+#include "../flint_base.h"
+#include "common/bit_slice.h"
+#include <algorithm>
+#include <iomanip>
+#include <limits.h>
+#include <stdarg.h>
+#include <map>
+#include <unordered_map>
+
+bool IsCshComponent(PartitionType partitionType)
+{
+    return partitionType == PartitionType::PT_ROM_IMGS || partitionType == PartitionType::PT_BCT_DTB ||
+           partitionType == PartitionType::PT_CALIPTRA_FW || partitionType == PartitionType::PT_NV_FWS ||
+           partitionType == PartitionType::PT_SWITCH_FWS || partitionType == PartitionType::PT_SBD_FW ||
+           partitionType == PartitionType::PT_VMOD_FW;
+}
+
+bool IsPartitionTypeMaxSize(PartitionType partitionType)
+{
+    return partitionType == PartitionType::PT_ROM_IMGS || partitionType == PartitionType::PT_CHAIN_CONTAINER ||
+           partitionType == PartitionType::PT_VMOD_FW || partitionType == PartitionType::PT_CPO_CALIBRATION_DATA;
+}
+
+CshComponentID ToCshId(PartitionType partitionType)
+{
+    CshComponentID cshId = CshComponentID::Unknown;
+    switch (partitionType)
+    {
+        case PartitionType::PT_ROM_IMGS:
+            cshId = CshComponentID::ROM_IMGS;
+            break;
+        case PartitionType::PT_BCT_DTB:
+            cshId = CshComponentID::BCT_DTB;
+            break;
+        case PartitionType::PT_CALIPTRA_FW:
+            cshId = CshComponentID::CALIPTRA_FW;
+            break;
+        case PartitionType::PT_NV_FWS:
+            cshId = CshComponentID::NV_FWS;
+            break;
+        case PartitionType::PT_SWITCH_FWS:
+            cshId = CshComponentID::SWITCH_FWS;
+            break;
+        case PartitionType::PT_SBD_FW:
+            cshId = CshComponentID::SBD_FW;
+            break;
+        default:
+            throw runtime_error("Partition type " + to_string((u_int32_t)partitionType) + " is not a CSH component");
+    }
+    return cshId;
+}
+
+string ToString(CshComponentID cshId)
+{
+    switch (cshId)
+    {
+        case CshComponentID::ROM_IMGS:
+            return CSH::ROM_IMGS_NAME;
+        case CshComponentID::BCT_DTB:
+            return CSH::BCT_DTB_NAME;
+        case CshComponentID::OEM_FWS: // TODO backwards compatibility - remove after FS6 is fully adopted
+            return CSH::OEM_FWS_NAME;
+        case CshComponentID::NV_FWS:
+            return CSH::NV_FWS_NAME;
+        case CshComponentID::SWITCH_FWS:
+            return CSH::SWITCH_FWS_NAME;
+        case CshComponentID::SBD_FW:
+            return CSH::SBD_FW_NAME;
+        case CshComponentID::VMOD_FW:
+            return CSH::VMOD_FW_NAME;
+        case CshComponentID::CALIPTRA_FW:
+            return CSH::CALIPTRA_FW_NAME;
+        default:
+            return "Unknown";
+    }
+}
+
+
+const string CSH::ROM_IMGS_NAME = "ROM_IMGS";
+const string CSH::BCT_DTB_NAME = "BCT_DTB";
+const string CSH::OEM_FWS_NAME = "OEM_FWS";
+const string CSH::NV_FWS_NAME = "NV_FWS";
+const string CSH::SWITCH_FWS_NAME = "SWITCH_FWS";
+const string CSH::SBD_FW_NAME = "SBD_FW";
+const string CSH::VMOD_FW_NAME = "VMOD_FW";
+const string CSH::CALIPTRA_FW_NAME = "CALIPTRA_FW";
+
+CshException::CshException(CshExceptionType type, const char* fmt, ...) : _type(type)
+{
+    const unsigned int max = 1024;
+    char tmp[max];
+    va_list args;
+
+    va_start(args, fmt);
+    vsnprintf(tmp, max, fmt, args);
+    va_end(args);
+    _msg = tmp;
+}
+
+vector<u_int8_t> PartitionTable::Pack()
+{
+    vector<u_int8_t> data = PackHeader();
+    for (auto entry : _entries)
+    {
+        vector<u_int8_t> packedEntry = entry.Pack();
+        data.insert(data.end(), packedEntry.begin(), packedEntry.end());
+    }
+    return data;
+}
+
+vector<u_int8_t> PartitionTable::PackHeader()
+{
+    vector<u_int8_t> header(fs5_image_layout_partition_table_header_size());
+    fs5_image_layout_partition_table_header_pack(&_struct, header.data());
+    CPUTOn(header.data(), header.size() / 4);
+    return header;
+}
+
+void PartitionTable::UnpackHeader(const vector<u_int8_t>& data)
+{
+    if (data.size() < PartitionTable::HeaderSize())
+    {
+        throw runtime_error("Partition header size too small");
+    }
+    vector<u_int8_t> headerCopy = data;
+    CPUTOn(headerCopy.data(), headerCopy.size() / 4);
+    fs5_image_layout_partition_table_header_unpack(&_struct, headerCopy.data());
+}
+
+void PartitionTable::CalcDigest()
+{
+#if !defined(MST_CPU_armv7l_umbriel) && !defined(NO_OPEN_SSL) // {
+    vector<u_int8_t> data = Pack();
+    data.erase(data.begin(), data.begin() + HeaderSize());
+
+    vector<u_int8_t> digest;
+    MlxSignSHA384 Sha384;
+    Sha384 << data;
+    Sha384.getDigest(digest);
+
+    memcpy(_struct.sha384_hash.digest, digest.data(), digest.size());
+#endif // } MST_CPU_armv7l_umbriel
+}
+
+void PartitionTable::AddEntry(const PartitionTableEntry& entry)
+{
+    _entries.push_back(entry);
+}
+
+void PartitionTable::SetEntrySize(PartitionType entryType, u_int32_t size, int chainNumber)
+{
+    ResolveChainNumber(chainNumber, _activeChain);
+    GetEntry(entryType, chainNumber).SetSectionSize(size);
+}
+
+u_int32_t PartitionTable::GetEntryOffset(PartitionType entryType, int chainNumber)
+{
+    ResolveChainNumber(chainNumber, _activeChain);
+    return GetEntry(entryType, chainNumber).GetStartOffset();
+}
+
+u_int32_t PartitionTable::GetEntrySize(PartitionType entryType, int chainNumber)
+{
+    ResolveChainNumber(chainNumber, _activeChain);
+    return GetEntry(entryType, chainNumber).GetSectionSize();
+}
+
+PartitionTableEntry& PartitionTable::GetEntry(PartitionType entryType, int chainNumber)
+{
+    bool useChainFilter = (entryType == PartitionType::PT_ROM_IMGS || entryType == PartitionType::PT_CHAIN_CONTAINER);
+    ResolveChainNumber(chainNumber, _activeChain);
+
+    const auto compareFunc = [entryType, useChainFilter, chainNumber](const PartitionTableEntry& entry)
+    {
+        if (entry.GetPartitionTypeEnum() != entryType)
+            return false;
+        if (useChainFilter)
+            return entry.GetChainNumber() == chainNumber;
+        return true;
+    };
+
+    auto entry = std::find_if(_entries.begin(), _entries.end(), compareFunc);
+    if (entry == _entries.end())
+    {
+        {
+            std::ostringstream oss;
+            oss << "couldn't find entry 0x" << std::hex << std::uppercase << (u_int32_t)entryType;
+            throw runtime_error(oss.str());
+        }
+    }
+
+    return *entry;
+}
+
+int PartitionTable::GetEntryIndex(PartitionType entryType, int chainNumber)
+{
+    bool useChainFilter = (entryType == PartitionType::PT_ROM_IMGS || entryType == PartitionType::PT_CHAIN_CONTAINER);
+    ResolveChainNumber(chainNumber, _activeChain);
+
+    const auto compareFunc = [entryType, useChainFilter, chainNumber](const PartitionTableEntry& entry)
+    {
+        if (entry.GetPartitionTypeEnum() != entryType)
+            return false;
+        if (useChainFilter)
+            return entry.GetChainNumber() == chainNumber;
+        return true;
+    };
+
+    auto it = std::find_if(_entries.begin(), _entries.end(), compareFunc);
+    if (it == _entries.end())
+    {
+        return -1; // Not found
+    }
+
+    return std::distance(_entries.begin(), it);
+}
+
+size_t PartitionTable::GetEntryTableOffset(PartitionType entryType, int chainNumber)
+{
+    int index = GetEntryIndex(entryType, chainNumber);
+    if (index < 0)
+    {
+        throw runtime_error("couldn't find entry");
+    }
+    return HeaderSize() + index * PartitionTableEntry::Size();
+}
+
+bool PartitionTableEntry::IsCshActiveChain() const
+{
+    return _csh != nullptr && _csh->isActiveChain();
+}
+
+bool PartitionTableEntry::IsCshBackupChain() const
+{
+    return _csh != nullptr && _csh->isBackupChain();
+}
+
+PartitionTableEntry::PartitionTableEntry(size_t offset, size_t size, u_int32_t type)
+{
+    memset(&_struct, 0, sizeof(_struct));
+    _struct.start_address[0] = offset;
+    _struct.partition_size[0] = size;
+    _struct.partition_type = type;
+    _csh = nullptr;
+}
+
+vector<u_int8_t> PartitionTableEntry::Pack()
+{
+    vector<u_int8_t> entry(fs5_image_layout_partition_table_entry_size());
+    fs5_image_layout_partition_table_entry_pack(&_struct, entry.data());
+    CPUTOn(entry.data(), entry.size() / 4);
+    return entry;
+}
+
+void PartitionTableEntry::Unpack(const vector<u_int8_t>& data)
+{
+    if (data.size() != fs5_image_layout_partition_table_entry_size())
+    {
+        throw runtime_error("Partition entry unexpected size");
+    }
+    vector<u_int8_t> dataCopy = data;
+    CPUTOn(dataCopy.data(), dataCopy.size() / 4);
+    fs5_image_layout_partition_table_entry_unpack(&_struct, dataCopy.data());
+}
+
+int PartitionTableEntry::GetChainNumber() const
+{
+    return (_struct.partition_attr[0] & 0x0E) >> 1; // bits 1-3: boot-chain to which this partition belongs (valid only
+                                                    // for ROM_IMGS and CHAIN_CONTAINER in L1PT).
+}
+
+void PartitionTableEntry::SetStartOffset(size_t offset)
+{
+    _struct.start_address[0] = offset;
+}
+
+void PartitionTableEntry::SetSectionSize(size_t size)
+{
+    _struct.partition_size[0] = size;
+}
+
+void PartitionTableEntry::SetPartitionType(u_int32_t type)
+{
+    _struct.partition_type = type;
+}
+
+u_int32_t PartitionTableEntry::GetPartitionType() const
+{
+    return _struct.partition_type;
+}
+
+PartitionType PartitionTableEntry::GetPartitionTypeEnum() const
+{
+    return static_cast<PartitionType>(_struct.partition_type);
+}
+
+const std::map<CshSectionType, string>& NcoreSectionNamesMap()
+{
+    static const std::map<CshSectionType, string> namesMap = {
+      {CshSectionType::BOOT2_MAGIC_ID, "BOOT_CODE"},
+      {CshSectionType::IMAGE_INFO_MAGIC_ID, "IMAGE_INFO"},
+      {CshSectionType::HW_BOOT_INI_MAGIC_ID, "HW_BOOT_CFG"},
+      {CshSectionType::FW_BOOT_INI_MAGIC_ID, "FW_BOOT_CFG"},
+      {CshSectionType::PRE_LINKUP_MAGIC_ID, "PCIE_LINK_CODE"},
+      {CshSectionType::POST_LINKUP_MAGIC_ID, "PCI_CODE"},
+      {CshSectionType::HW_NON_ISFU_INI_MAGIC_ID, "CCIR_INFRA_CODE"},
+      {CshSectionType::HW_MAIN_INI_MAGIC_ID, "HW_MAIN_CFG"},
+      {CshSectionType::FW_MAIN_INI_MAGIC_ID, "FW_MAIN_CFG"},
+      {CshSectionType::POST_IRON_BOOT_MAGIC_ID, "POST_IRON_BOOT_CODE"},
+      {CshSectionType::HW_TILE_INI_MAGIC_ID, "HW_TILE_INI"},
+      {CshSectionType::FW_TILE_INI_MAGIC_ID, "FW_TILE_INI"},
+      {CshSectionType::TILE_CODE_HASH_SQUARE_MAGIC_ID, "TILE_PAGES_LOCKED_HASHES"},
+      {CshSectionType::TILE_CODE_HASH_MAGIC_ID, "TILE_PAGES_HASHES"},
+      {CshSectionType::TILE_CODE_MAGIC_ID, "TILE_FW_CODE"},
+      {CshSectionType::PLASTIC_DATA_MAGIC_ID, "MAIN_DATA"},
+      {CshSectionType::MAIN_HASH_SQUARE_MAGIC_ID, "MAIN_PAGES_LOCKED_HASHES"},
+      {CshSectionType::MAIN_HASH_MAGIC_ID, "MAIN_PAGES_HASHES"},
+      {CshSectionType::MAIN_MAGIC_ID, "MAIN_CODE"},
+      {CshSectionType::NANO_KERNEL_MAGIC_ID, "NANO_KERNEL"},
+      {CshSectionType::NANO_KERNEL_1_MAGIC_ID, "NANO_KERNEL_1"},
+      {CshSectionType::CERTIFICATES_CHAIN_MAGIC_ID, "CERTIFICATES_CHAIN_L1_L3"},
+      {CshSectionType::VMOD_CODE_MAGIC_ID, "VMOD_FW_IMG"},
+      {CshSectionType::VMOD_IMAGE_INFO_MAGIC_ID, "VMOD_IMAGE_INFO"},
+      {CshSectionType::VMOD_HW_NON_ISFU_INI_MAGIC_ID, "VMOD_CCIR_INFRA_CODE"},
+      {CshSectionType::VMOD_HW_MAIN_INI_MAGIC_ID, "VMOD_HW_MAIN_INI"},
+      {CshSectionType::VMOD_FW_MAIN_INI_MAGIC_ID, "VMOD_FW_MAIN_INI"},
+      {CshSectionType::VMOD_UID_MAGIC_ID, "VMOD_UID"},
+      {CshSectionType::VMOD_ISSU_NOTCH_INI_MAGIC_ID, "VMOD_ISSU_NOTCH_INI"},
+      {CshSectionType::VMOD_CODE_HASH_MAGIC_ID, "VMOD_PAGES_HASHES"},
+      {CshSectionType::VMOD_CODE_HASH_SQUARE_MAGIC_ID, "VMOD_PAGES_LOCKED_HASHES"},
+      {CshSectionType::L3PW_MAGIC_ID, "L3PT_WP"},
+      {CshSectionType::L3PR_MAGIC_ID, "L3PT_RW"},
+      {CshSectionType::PRE_LINK_CODE_MAGIC_ID, "PRE_LINK_CODE"},
+      {CshSectionType::PRE_LINK_DATA_MAGIC_ID, "PRE_LINK_DATA"},
+      {CshSectionType::POST_LINK_CODE_MAGIC_ID, "POST_LINK_CODE"},
+      {CshSectionType::POST_LINK_DATA_MAGIC_ID, "POST_LINK_DATA"},
+      {CshSectionType::IRON_PREP_CODE_MAGIC_ID, "IRON_PREP_CODE"},
+      {CshSectionType::EXPANSION_ROM_MAGIC_ID, "EXPANSION_ROM"},
+      {CshSectionType::PAGER_CONFIG_MAGIC_ID, "PAGER_CONFIG"},
+      {CshSectionType::NIC_ETC_MAGIC_ID, "NIC_ETC"},
+      {CshSectionType::NIC_ETC_PAGES_HASHES_MAGIC_ID, "NIC_ETC_PAGES_HASHES"},
+      {CshSectionType::NIC_ETC_PAGES_LOCKED_HASHES_MAGIC_ID, "NIC_ETC_PAGES_LOCKED_HASHES"},
+      {CshSectionType::DPA_ATOC_MAGIC_ID, "DPA_ATOC"},
+      {CshSectionType::DPA_ATOC_PAGES_HASHES_MAGIC_ID, "DPA_ATOC_PAGES_HASHES"},
+      {CshSectionType::DPA_ATOC_PAGES_LOCKED_HASHES_MAGIC_ID, "DPA_ATOC_PAGES_LOCKED_HASHES"},
+      {CshSectionType::CRDUMP_MASK_DATA_MAGIC_ID, "CRDUMP_MASK_DATA"}};
+    return namesMap;
+}
+
+const std::unordered_map<string, CshSectionType>& NcoreSectionNamesReverseMap()
+{
+    static const std::unordered_map<string, CshSectionType> reverseMap = []
+    {
+        std::unordered_map<string, CshSectionType> reverse;
+        for (const auto& entry : NcoreSectionNamesMap())
+        {
+            // emplace keeps the first mapping if names are ever duplicated
+            reverse.emplace(entry.second, entry.first);
+        }
+        return reverse;
+    }();
+    return reverseMap;
+}
+
+const std::vector<string>& NonNcoreSectionNames()
+{
+    static const std::vector<string> nonNcoreSectionNames = {
+      "PBLT", "PBLD", "PFWT", "PFWD", "SBDF", "CALF",
+    };
+    return nonNcoreSectionNames;
+}
+
+string BinarySectionMetadata::CshSectionIDToString(u_int32_t sectionId)
+{
+    const auto& namesMap = NcoreSectionNamesMap();
+    auto it = namesMap.find(static_cast<CshSectionType>(sectionId));
+    if (it != namesMap.end())
+    {
+        return it->second;
+    }
+
+    char sectionName[5] = {0};
+    memcpy(sectionName, &sectionId, 4);
+    CPUTOn(sectionName, 1);
+    string sectionNameStr(sectionName);
+
+    const auto& nonNcoreSectionNames = NonNcoreSectionNames();
+    if (std::find(nonNcoreSectionNames.begin(), nonNcoreSectionNames.end(), sectionNameStr) ==
+        nonNcoreSectionNames.end())
+    {
+        sectionNameStr = "UNKNOWN";
+    }
+
+    return sectionNameStr;
+}
+
+u_int32_t BinarySectionMetadata::CshSectionStringToID(const string& sectionName)
+{
+    const auto& reverseMap = NcoreSectionNamesReverseMap();
+    auto it = reverseMap.find(sectionName);
+    if (it != reverseMap.end())
+    {
+        return static_cast<u_int32_t>(it->second);
+    }
+
+    return 0;
+}
+BinarySectionMetadata::BinarySectionMetadata()
+{
+    memset(&_struct, 0, sizeof(_struct));
+}
+
+vector<u_int8_t> BinarySectionMetadata::Pack() const
+{
+    vector<u_int8_t> metadata(fs5_image_layout_binary_section_metadata_size());
+    fs5_image_layout_binary_section_metadata_pack(&_struct, metadata.data());
+    CPUTOn(metadata.data(), metadata.size() / 4);
+    return metadata;
+}
+
+void BinarySectionMetadata::Unpack(const vector<u_int8_t>& binarySection)
+{
+    if (binarySection.size() != fs5_image_layout_binary_section_metadata_size())
+    {
+        throw runtime_error("Binary section unexpected size");
+    }
+    vector<u_int8_t> binarySectionCopy = binarySection;
+    CPUTOn(binarySectionCopy.data(), binarySectionCopy.size() / 4);
+    fs5_image_layout_binary_section_metadata_unpack(&_struct, binarySectionCopy.data());
+}
+
+u_int32_t BinarySectionMetadata::GetSectionType() const
+{
+    u_int32_t magic;
+    memcpy(&magic, _struct.u8_magic_id, sizeof(magic));
+    return magic;
+}
+
+string BinarySectionMetadata::GetMagicId() const
+{
+    string magic(begin(_struct.u8_magic_id), end(_struct.u8_magic_id));
+    std::reverse(magic.begin(), magic.end());
+    return magic;
+}
+
+vector<u_int8_t> BinarySectionMetadata::GetMagicIdAsVector() const
+{
+    vector<u_int8_t> sectionMagicId(begin(_struct.u8_magic_id), end(_struct.u8_magic_id));
+    std::reverse(sectionMagicId.begin(), sectionMagicId.end());
+    return sectionMagicId;
+}
+
+CshMetadataNbu::CshMetadataNbu()
+{
+    memset(&_metadata_nbu, 0, sizeof(_metadata_nbu));
+}
+
+vector<u_int8_t> CshMetadataNbu::Pack()
+{
+    vector<u_int8_t> metadata(fs5_image_layout_csh_metadata_nbu_size());
+    fs5_image_layout_csh_metadata_nbu_pack(&_metadata_nbu, metadata.data());
+    CPUTOn(metadata.data(), metadata.size() / 4);
+    return metadata;
+}
+
+void CshMetadataNbu::Unpack(const vector<u_int8_t>& buffer)
+{
+    if (buffer.size() != fs5_image_layout_csh_metadata_nbu_size())
+    {
+        throw runtime_error("CSH metadata unexpected size");
+    }
+    fs5_image_layout_csh_metadata_nbu_unpack(&_metadata_nbu, buffer.data());
+}
+
+vector<u_int8_t> CshMetadata::Pack()
+{
+    vector<u_int8_t> metadata(fs5_image_layout_csh_metadata_size());
+    fs5_image_layout_csh_metadata_pack(&_metadata, metadata.data());
+    CPUTOn(metadata.data(), metadata.size() / 4);
+    return metadata;
+}
+
+void CshMetadata::Unpack(const vector<u_int8_t>& buffer)
+{
+    if (buffer.size() != fs5_image_layout_csh_metadata_size())
+    {
+        throw runtime_error("CSH metadata unexpected size");
+    }
+    fs5_image_layout_csh_metadata_unpack(&_metadata, buffer.data());
+}
+
+CSH::CSH() : _isUnpacked(false), _cshStructType(CshStructType::CSH_TB50X)
+{
+    InitMembers();
+}
+
+CSH::CSH(u_int16_t id, CshStructType type) : _isUnpacked(false), _cshStructType(type)
+{
+    InitMembers();
+    _metadata->SetComponentId(id);
+}
+
+void CSH::InitMembers()
+{
+    memset(&_header, 0, sizeof(_header));
+    memset(&_nv_signature, 0, sizeof(_nv_signature));
+    memset(&_oem_signature, 0, sizeof(_nv_signature));
+    if (_cshStructType == CshStructType::CSH_NBU)
+    {
+        _header.struct_version_major = 0x01;
+        _metadata = unique_ptr<CshMetadataBase>(new CshMetadataNbu());
+    }
+    else
+    {
+        _metadata = unique_ptr<CshMetadataBase>(new CshMetadata());
+    }
+    memcpy(&_header.u8_header_magic, "ADVN", 4);
+}
+
+vector<u_int8_t> CSH::Pack()
+{
+    _metadata->SetNumberOfBinaries(_cshSections.size());
+
+    vector<u_int8_t> cshData(fs5_image_layout_csh_header_size() + 2 * fs5_image_layout_csh_signature_size());
+    auto cshIter = cshData.data();
+    fs5_image_layout_csh_header_pack(&_header, cshIter);
+    cshIter += fs5_image_layout_csh_header_size();
+    fs5_image_layout_csh_signature_pack(&_nv_signature, cshIter);
+    cshIter += fs5_image_layout_csh_signature_size();
+    fs5_image_layout_csh_signature_pack(&_oem_signature, cshIter);
+    CPUTOn(cshData.data(), cshData.size() / 4);
+
+    vector<u_int8_t> metadata = _metadata->Pack();
+    cshData.insert(cshData.end(), metadata.begin(), metadata.end());
+
+    for (auto section : _cshSections)
+    {
+        vector<u_int8_t> metadata = section.Pack();
+        cshData.insert(cshData.end(), metadata.begin(), metadata.end());
+    }
+
+    //* switch_fws is fixed as 32 sections, must keep the reserved space
+    // TODO remove this once switch_fws isn't fixed as 32 sections
+    if (cshData.size() < GetCshSize())
+    {
+        cshData.resize(GetCshSize());
+    }
+
+    if (_metadata->GetComponentId() == (u_int16_t)CshComponentID::VMOD_FW)
+    {
+        //* struct pack/unpack handles vmod_adm in reversed order
+        CPUTOn(cshData.data() + VMOD_ADM_OFFSET, 1);
+    }
+
+    return cshData;
+}
+
+void CSH::Unpack(const vector<u_int8_t>& csh)
+{
+    UnpackHeader(csh);
+    UnpackSections(csh, CSH::HeaderSize(_cshStructType));
+    _isUnpacked = true;
+}
+
+void CSH::UnpackHeader(const vector<u_int8_t>& cshHeader)
+{
+    _cshStructType = GetCshStructType(cshHeader);
+
+    if (cshHeader.size() < CSH::HeaderSize(_cshStructType) || cshHeader.size() % 4 != 0)
+    {
+        throw runtime_error("CSH header unexpected size");
+    }
+    vector<u_int8_t> cshHeaderCopy = cshHeader;
+    CPUTOn(cshHeaderCopy.data(), cshHeaderCopy.size() / 4);
+
+    auto iter = cshHeaderCopy.data();
+    fs5_image_layout_csh_header_unpack(&_header, iter);
+    iter += fs5_image_layout_csh_header_size();
+    fs5_image_layout_csh_signature_unpack(&_nv_signature, iter);
+    iter += fs5_image_layout_csh_signature_size();
+    fs5_image_layout_csh_signature_unpack(&_oem_signature, iter);
+    iter += fs5_image_layout_csh_signature_size();
+
+    UnpackCshMetadata(cshHeaderCopy, iter);
+
+    memcpy(&_header.u8_header_magic, "ADVN", 4);
+
+    if (!IsValidCompId(_metadata->GetComponentId()))
+    {
+        std::stringstream ss;
+        ss << "Unknown CSH Component ID 0x" << std::hex << std::uppercase << _metadata->GetComponentId();
+        throw runtime_error(ss.str());
+    }
+
+    if (_metadata->GetComponentId() == (u_int16_t)CshComponentID::VMOD_FW)
+    {
+        //* struct pack/unpack handles vmod_adm in reversed order
+        u_int8_t* headerPtr = reinterpret_cast<u_int8_t*>(&_header);
+        CPUTOn(headerPtr + VMOD_ADM_OFFSET, 1);
+    }
+}
+
+bool CSH::isActiveChain()
+{
+    const auto& romImgsCandidateMagicPatternBE = PartitionTable::RomImgsCandidateMagicPatternBE();
+    if (std::equal(romImgsCandidateMagicPatternBE.begin(), romImgsCandidateMagicPatternBE.end(),
+                   _header.csh_header_status.magic_pattern.magic_pattern))
+    {
+        return true;
+    }
+    return false;
+}
+
+bool CSH::isBackupChain()
+{
+    const auto& romImgsBackupMagicPatternBE = PartitionTable::RomImgsBackupMagicPatternBE();
+    if (std::equal(romImgsBackupMagicPatternBE.begin(), romImgsBackupMagicPatternBE.end(),
+                   _header.csh_header_status.magic_pattern.magic_pattern))
+    {
+        return true;
+    }
+    return false;
+}
+
+void CSH::UnpackCshMetadata(const vector<u_int8_t>& cshHeader, const u_int8_t* iter)
+{
+    if (_cshStructType == CshStructType::CSH_NBU)
+    {
+        _metadata = unique_ptr<CshMetadataBase>(new CshMetadataNbu());
+        _metadata->Unpack(vector<u_int8_t>(iter, iter + fs5_image_layout_csh_metadata_nbu_size()));
+    }
+    else
+    {
+        _metadata = unique_ptr<CshMetadataBase>(new CshMetadata());
+        _metadata->Unpack(vector<u_int8_t>(iter, iter + fs5_image_layout_csh_metadata_size()));
+    }
+}
+
+void CSH::UnpackSections(const vector<u_int8_t>& buffer, size_t offset)
+{
+    if (GetNumberOfBinaries() == 0)
+    {
+        throw runtime_error("Number of binary sections is zero.");
+    }
+    if (offset >= buffer.size() ||
+        (buffer.size() - offset < GetNumberOfBinaries() * fs5_image_layout_binary_section_metadata_size()))
+    {
+        throw runtime_error("Buffer size for binary sections is too small.");
+    }
+
+    auto sectionIter = buffer.begin() + offset;
+    for (size_t i = 0; i < GetNumberOfBinaries(); i++)
+    {
+        BinarySectionMetadata binary;
+        binary.Unpack(vector<u_int8_t>(sectionIter, sectionIter + BinarySectionMetadata::Size()));
+        _cshSections.push_back(binary);
+        sectionIter += BinarySectionMetadata::Size();
+    }
+}
+
+vector<u_int8_t> CSH::PackMetadata() const
+{
+    return _metadata->Pack();
+}
+
+size_t CSH::GetCshSize() const
+{
+    if (_metadata->GetComponentId() == 0x0)
+    {
+        throw runtime_error("CSH component ID is not set");
+    }
+    bool isSwitchFws = (CshComponentID)_metadata->GetComponentId() == CshComponentID::SWITCH_FWS;
+    return CSH::HeaderSize(_cshStructType) + (isSwitchFws ? 32 : _cshSections.size()) * BinarySectionMetadata::Size();
+}
+
+size_t CSH::GetComponentSize() const
+{
+    size_t componentSize = GetCshSize();
+    if (!_cshSections.empty())
+    {
+        size_t lastSectionOffset = 0, lastSectionSize = 0;
+        for (auto section : _cshSections)
+        {
+            if (section.GetSectionOffset() > lastSectionOffset)
+            {
+                lastSectionOffset = section.GetSectionOffset();
+                lastSectionSize = section.GetSectionSize();
+            }
+        }
+        componentSize = lastSectionSize + lastSectionOffset;
+    }
+    return componentSize;
+}
+
+bool CSH::IsValidCompId(u_int16_t id)
+{
+    switch ((CshComponentID)id)
+    {
+        case CshComponentID::ROM_IMGS:
+        case CshComponentID::BCT_DTB:
+        case CshComponentID::CALIPTRA_FW:
+        case CshComponentID::OEM_FWS: // TODO backwards compatibility - remove after FS6 is fully adopted
+        case CshComponentID::NV_FWS:
+        case CshComponentID::SWITCH_FWS:
+        case CshComponentID::SBD_FW:
+        case CshComponentID::VMOD_FW:
+        case CshComponentID::RECOVERY_IMAGE:
+            return true;
+        default:
+            return false;
+    }
+}
+
+CSH::CshStructType CSH::GetCshStructType(const vector<u_int8_t>& cshHeader)
+{
+    const string cshMagic = "NVDA";
+    if (cshHeader.size() < fs5_image_layout_csh_header_size())
+    {
+        throw runtime_error("CSH header unexpected size");
+    }
+    if (string(cshHeader.begin(), cshHeader.begin() + 4) != cshMagic)
+    {
+        throw CshException(CshException::CshExceptionType::CSH_HEADER_NOT_FOUND, "CSH header magic is not NVDA");
+    }
+
+    CshStructType type = CshStructType::CSH_TB50X;
+    struct fs5_image_layout_csh_header header;
+    memset(&header, 0, sizeof(header));
+    vector<u_int8_t> headerCopy = cshHeader;
+    CPUTOn(headerCopy.data(), headerCopy.size() / 4);
+
+    fs5_image_layout_csh_header_unpack(&header, headerCopy.data());
+    if (header.struct_version_major == 0x1 && header.struct_version_minor == 0x0)
+    {
+        type = CshStructType::CSH_NBU;
+    }
+    return type;
+}
+
+CshComponentID CSH::GetComponentType() const
+{
+    return (CshComponentID)_metadata->GetComponentId();
+}
+
+size_t CSH::HeaderSize(CshStructType type)
+{
+    size_t size = fs5_image_layout_csh_header_size() + fs5_image_layout_csh_signature_size() +
+                  fs5_image_layout_csh_signature_size();
+    if (type == CshStructType::CSH_TB50X)
+    {
+        size += fs5_image_layout_csh_metadata_size();
+    }
+    else
+    {
+        size += fs5_image_layout_csh_metadata_nbu_size();
+    }
+    return size;
+}
+
+BinarySectionMetadata& CSH::GetSection(u_int32_t itocType)
+{
+    for (auto& section : _cshSections)
+    {
+        if (section.GetSectionType() == itocType)
+        {
+            return section;
+        }
+    }
+    u_int32_t magic = itocType;
+    CPUTOn(&magic, 1);
+    char magicStr[sizeof(magic) + 1] = {0};
+    memcpy(magicStr, &magic, sizeof(magic));
+    std::stringstream ss;
+    ss << "Section with magic ID " << magicStr << " (0x" << std::hex << std::setw(8) << std::setfill('0') << itocType
+       << ") not found in CSH.";
+    throw runtime_error(ss.str());
+}
+
+u_int8_t CSH::GetVmodAdmStatus()
+{
+    if (GetComponentIdEnum() != CshComponentID::VMOD_FW)
+    {
+        throw runtime_error("CSH component is not a VMOD FW");
+    }
+    return _header.csh_header_status.vmod_status.image_administrative_status;
+}
+
+string CSH::VmodAdmStatusToString(u_int8_t status)
+{
+    u_int8_t maskedStatus = EXTRACT(status, 0, 4);
+    switch (maskedStatus)
+    {
+        case VMOD_ADM_STATUS_INVALID:
+            return "INVALID";
+        case VMOD_ADM_STATUS_CANDIDATE:
+            return "CANDIDATE";
+        case VMOD_ADM_STATUS_ACTIVE:
+            return "ACTIVE";
+        case VMOD_ADM_STATUS_BACKUP:
+            return "BACKUP";
+        case VMOD_ADM_STATUS_REVOKED:
+            return "REVOKED";
+        default:
+            return "UNKNOWN";
+    }
+}
+
+PartitionType ToPartitionType(CshComponentID cshId, bool throwOnError)
+{
+    PartitionType type = PartitionType::PT_ROM_IMGS;
+    switch (cshId)
+    {
+        case CshComponentID::ROM_IMGS:
+            type = PartitionType::PT_ROM_IMGS;
+            break;
+        case CshComponentID::NV_FWS:
+            type = PartitionType::PT_NV_FWS;
+            break;
+        case CshComponentID::OEM_FWS: // TODO backwards compatibility - remove after FS6 is fully adopted
+            type = PartitionType::PT_CALIPTRA_FW;
+            break;
+        case CshComponentID::CALIPTRA_FW:
+            type = PartitionType::PT_CALIPTRA_FW;
+            break;
+        case CshComponentID::BCT_DTB:
+            type = PartitionType::PT_BCT_DTB;
+            break;
+        case CshComponentID::SWITCH_FWS:
+            type = PartitionType::PT_SWITCH_FWS;
+            break;
+        case CshComponentID::SBD_FW:
+            type = PartitionType::PT_SBD_FW;
+            break;
+        case CshComponentID::VMOD_FW:
+            type = PartitionType::PT_VMOD_FW;
+            break;
+        default:
+            if (throwOnError)
+            {
+                throw runtime_error("Unknown CSH id");
+            }
+            type = PartitionType::PT_UNKNOWN;
+            break;
+    }
+    return type;
+}
+

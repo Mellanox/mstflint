@@ -91,7 +91,9 @@ bool PldmPkgHdr::unpack(PldmBuffer& buff)
         return false;
     }
     buff.read(packageVersionString, packageVersionStringLength);
-    return true;
+    // read() zero-fills on overflow, so a truncated file leaves every field above
+    // looking plausible; the latched flag is the only sign it ran off the end.
+    return !buff.overflowed();
 }
 
 void PldmPkgHdr::print(FILE* fp)

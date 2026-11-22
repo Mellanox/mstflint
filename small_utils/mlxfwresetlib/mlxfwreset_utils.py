@@ -43,6 +43,10 @@ import platform
 import re
 import time
 
+# Linux PCI domains can be wider than 16 bits (e.g. Intel VMD domains start at 10000)
+PCI_DOMAIN_PATTERN = r"[0-9A-Fa-f]{4,8}"
+PCI_DBDF_PATTERN = r"^" + PCI_DOMAIN_PATTERN + r":[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}\.[0-9A-Fa-f]$"
+
 
 ######################################################################
 # Description:  Execute command and get (rc, stdout-output, stderr-output)
@@ -102,12 +106,12 @@ def addDomainToAddress(devAddr, domain=None):
 
 def removeDomainFromAddress(devAddr):
     if len(devAddr.split(":")) == 3:
-        return devAddr[5:]
+        return devAddr.split(":", 1)[1]
     return devAddr
 
 
 def isDevDBDFFormat(dev):
-    pat = r"[0-9,A-F,a-f]{4}:[0-9,A-F,a-f]{2}:[0-9,A-F,a-f]{2}\.[0-9,A-F,a-f]{1,2}"
+    pat = PCI_DOMAIN_PATTERN + r":[0-9,A-F,a-f]{2}:[0-9,A-F,a-f]{2}\.[0-9,A-F,a-f]{1,2}"
     if re.match(pat, dev):
         return True
     return False

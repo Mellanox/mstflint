@@ -45,8 +45,6 @@
 #include <linux/kthread.h>
 #include "mst_kernel.h"
 
-#include <linux/device/class.h>
-
 #if defined(class_create) && !defined(CONFIG_HAVE_CLASS_CREATE_1_ARG)
 /* old macro version */
 #define MY_CLASS_CREATE(name) class_create(THIS_MODULE, name)
@@ -346,7 +344,6 @@ static void swap_pci_address_space(int* address_space)
             break;
 
         case AS_ND_CRSPACE:
-            fallthrough;
         case AS_CR_SPACE:
             *address_space = AS_PCI_CRSPACE;
             break;

@@ -36,10 +36,10 @@
 #ifndef __MLNX_DEV_H__
 #define __MLNX_DEV_H__
 
-#include <compatibility.h>
+#include "common/compatibility.h"
 #include <sstream>
-#include <tools_dev_types.h>
-#include <img_version.h>
+#include "dev_mgt/tools_dev_types.h"
+#include "img_version.h"
 #include "mlxfwmanager_common.h"
 #include "mlxconfig/mlxcfg_commander.h"
 #ifdef __WIN__
@@ -88,15 +88,19 @@ public:
     void setDevToNeedUpdate();
     bool doesDevNeedUpdate();
     void setNoFwCtrl();
+    void setForceCleanup(bool val = true) { _forceCleanup = val; };
     void openFwctlDev();
     void setMccSupport(bool val = true) { _mccSupport = val; };
+    bool willUseFwCtrl() const { return _mccSupport && !_noFwCtrl; };
     vector<ImgVersion> _imageVers;
     inline bool isAlignmentNeeded();
     inline void setShifting8MBInBurnParams(bool v) { _burnParams.shift8MBIfNeeded = v; }
-
+    FwOperations* getDeviceFwOps();
     bool checkExistence(vector<MlnxDev*>& devs);
     string getUniqueId() { return _uniqueId; };
+    bool isRedfishDevice() { return _isRedfishDevice; };
     bool isBFBSupported() { return _bfbSupported; };
+    void setPldmComponentType(const std::string& componentType) { _pldmComponentType = componentType; };
 
 public:
     string guidPortOne;
@@ -124,14 +128,12 @@ private:
     int queryFwops();
     bool OpenDev();
     bool openImg(u_int32_t* fileBuffer, u_int32_t bufferSize, u_int16_t swDevId = 0);
-    bool openImg(u_int32_t* fileBuffer, u_int32_t bufferSize);
     port_type_t findPortType(int port);
     void initUniqueId();
     bool equals(MlnxDev* dev);
     int LockDevice(FwOperations* fwOps);
     int UnlockDevice(FwOperations* fwOps);
 
-private:
     typedef enum
     {
         INIT_DEVINFO,
@@ -164,16 +166,18 @@ private:
     int _ExpRomExists;
     bool _needsUpdate;
     bool _noFwCtrl;
+    bool _forceCleanup;
     bool _mccSupport;
     string _description;
     string _partNumber;
     string _deviceTypeStr;
     dm_dev_id_t _deviceType;
-
+    bool _burnAllRedfishDevices;
     bool _preBurnInit;
     int _unknowProgress;
+    bool _isRedfishDevice;
     bool _bfbSupported;
-
+    std::string _pldmComponentType;
 #ifdef __WIN__
     ToolsSync m_ToolsSync;
 #endif

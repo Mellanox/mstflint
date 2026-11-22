@@ -107,7 +107,21 @@
  
      // RecordLength
      ((u_int16_t*)(buff.data() + recordLengthFieldOffset))[0] = mft_cpu_to_le16(buff.size() - buffSizeBeforePack);
+ } 
+ bool PLDMDeviceRecord::IsSpc6Device() const
+ {
+     for (const auto& descriptor : _descriptors)
+     {
+         if (descriptor._type == static_cast<u_int16_t>(DescriptorType::TYPE_PCI_DEVICE_ID) &&
+             descriptor._value.size() >= 2)
+         {
+             u_int16_t pciDeviceId = descriptor._value[0] | (descriptor._value[1] << 8);
+             return IsSpc6PciDeviceId(pciDeviceId);
+         }
+     }
+     return false;
  }
+
  
 
 PLDMDownstreamDeviceRecord::PLDMDownstreamDeviceRecord(const string& setVersion,

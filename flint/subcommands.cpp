@@ -143,6 +143,15 @@ static const map<LifeCycleFS5, const char*> life_cycle_fs5_strings = {{FS5_LC_BL
                                                                       {FS5_LC_PRODUCTION, "GA SECURED"},
                                                                       {FS5_LC_FAILURE_ANALYSIS, "RMA"}};
 
+static const map<LifeCycleFS6, const char*> life_cycle_fs6_strings = {
+  {FS6_LC_BLANK_CHIP, "PRODUCTION"},
+  {FS6_LC_PRE_PRODUCTION, "PRE PRODUCTION"},
+  {FS6_LC_PRODUCTION, "GA SECURED"},
+  {FS6_LC_FAILURE_ANALYSIS_MGIR, "FAILURE ANALYSIS"},
+  {FS6_LC_RMA_ENABLED, "GA SECURED"},
+  {FS6_LC_RMA_DISABLED, "GA SECURED"},
+  {FS6_LC_FAILURE_ANALYSIS, "FAILURE ANALYSIS"}};
+
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
 
 const char* month_2monstr(int month)
@@ -471,7 +480,7 @@ void SubCommand::openLog()
     }
 }
 
-int SubCommand::verifyCbFunc(char* str)
+int SubCommand::verifyCbFunc(const char* str)
 {
     printf("%s", str);
     return 0;
@@ -593,6 +602,7 @@ void SubCommand::initDeviceFwParams(char* errBuff, FwOperations::fw_ops_params_t
     fwParams.errBuffSize = ERR_BUFF_SIZE;
     fwParams.flashParams = _flintParams.flash_params_specified ? &_flintParams.flash_params : NULL;
     fwParams.forceLock = _flintParams.clear_semaphore;
+    fwParams.forceCleanup = _flintParams.force_cleanup;
     fwParams.hndlType = FHT_MST_DEV;
     fwParams.ignoreCacheRep = _flintParams.override_cache_replacement ? 1 : 0;
     fwParams.mstHndl = strcpy(new char[_flintParams.device.length() + 1], _flintParams.device.c_str());
@@ -780,7 +790,8 @@ bool SubCommand::basicVerifyParams()
             break;
 
         case Wtv_Dev_And_Img:
-            if (_flintParams.linkx_control == false  && _flintParams.linkx_els_control == false)
+            if (_flintParams.linkx_control == false && _flintParams.linkx_els_control == false &&
+                _flintParams.vmod_control == false)
             {
                 if ((_flintParams.image_specified == false) || (_flintParams.device_specified == false))
                 {
@@ -1439,9 +1450,10 @@ bool SubCommand::checkGuidsFlags(u_int16_t devType,
     (void)ibDev;
     if (guidsSpecified || macsSpecified || uidSpecified)
     {
-        if (uidSpecified && fwType != FIT_FS3 && fwType != FIT_FS4 && fwType != FIT_FS5 && fwType != FIT_FSCTRL)
+        if (uidSpecified && fwType != FIT_FS3 && fwType != FIT_FS4 && fwType != FIT_FS5 && fwType != FIT_FS6 &&
+            fwType != FIT_FSCTRL)
         {
-            reportErr(true, "-uid flag is applicable only for FS3/FS4/FS5 FW Only.\n");
+            reportErr(true, "-uid flag is applicable only for FS3/FS4/FS5/FS6 FW Only.\n");
             return false;
         }
         else if (!ethDev && macsSpecified)
@@ -1635,6 +1647,10 @@ const char* SubCommand::fwImgTypeToStr(u_int8_t fwImgType)
             return "FS5";
             break;
 
+        case FIT_FS6:
+            return "FS6";
+            break;
+
         case FIT_FSCTRL:
             return "FSCTRL";
             break;
@@ -1645,6 +1661,14 @@ const char* SubCommand::fwImgTypeToStr(u_int8_t fwImgType)
         
         case FIT_PLDM:
             return "PLDM_1_0";
+            break;
+
+        case FIT_CSH_VMOD:
+            return "FSVMOD";
+            break;
+
+        case FIT_CSH:
+            return "CSH";
             break;
 
         default:
@@ -2416,7 +2440,18 @@ bool BurnSubCommand::verifyParams()
         reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "--linkx", "--linkx_els");
         return false;
     }
-    else if (_flintParams.linkx_control == true || _flintParams.linkx_els_control == true)
+    else if (_flintParams.vmod_control == true && _flintParams.linkx_control == true)
+    {
+        reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "--vmod", "--linkx");
+        return false;
+    }
+    else if (_flintParams.vmod_control == true && _flintParams.linkx_els_control == true)
+    {
+        reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "--vmod", "--linkx_els");
+        return false;
+    }
+    else if (_flintParams.linkx_control == true || _flintParams.linkx_els_control == true ||
+             _flintParams.vmod_control == true)
     {
         if (_flintParams.device_specified == false)
         {
@@ -2465,8 +2500,9 @@ bool BurnSubCommand::verifyParams()
         {
             if (_flintParams.linkx_auto_update == false)
             {
-                if (_flintParams.cable_device_index_specified == false ||
-                    _flintParams.cable_device_size_specified == false)
+                if ((_flintParams.cable_device_index_specified == false ||
+                     _flintParams.cable_device_size_specified == false) &&
+                    !(_flintParams.vmod_control && !_flintParams.activate))
                 {
                     reportErr(true, "Must supply the linkx device index and size / or autoupdate for burn cables!\n");
                     return false;
@@ -2635,6 +2671,13 @@ void BurnSubCommand::updateBurnParams()
     _burnParams.skipCiReq = _flintParams.skip_ci_req;
     _burnParams.useImgDevData = _flintParams.ignore_dev_data;
     _burnParams.burnDevDataOnly = _flintParams.dev_data_only;
+    _burnParams.vmodDownstreamControl = _flintParams.vmod_control;
+    _burnParams.vmodDeviceIndex = _flintParams.cableDeviceIndex;
+    _burnParams.vmodDeviceSize = _flintParams.cableDeviceSize;
+    _burnParams.vmodAutoUpdate = _flintParams.linkx_auto_update;
+    _burnParams.vmodActivationNeeded = _flintParams.activate;
+    _burnParams.vmodDownloadTransferNeeded = _flintParams.download_transfer;
+    _burnParams.vmodActivationDelaySec = _flintParams.activate_delay_sec;
     if (_burnParams.userGuidsSpecified)
     {
         _burnParams.userUids = _flintParams.user_guids;
@@ -2726,6 +2769,71 @@ bool BurnSubCommand::checkFwVersion(bool CreateFromImgInfo, u_int16_t fw_ver0, u
     return true;
 }
 
+bool BurnSubCommand::check64MBLayoutCompatibility()
+{
+    MLXFWOPS_LOG_DEBUG("BurnSubCommand::check64MBLayoutCompatibility");
+    // Need a valid device query to read the device FW version; otherwise we can't decide -> skip.
+    if (!_devQueryRes)
+    {
+        return true;
+    }
+
+    // The 64MB-layout transition is an SPC6 feature and only relevant for the non-production
+    // (mcc/recovery) flow. Skip otherwise.
+    if (_burnParams.useImgDevData || _devInfo.fw_info.chip_type != CT_SPECTRUM6 ||
+        _imgInfo.fw_info.chip_type != CT_SPECTRUM6)
+    {
+        return true;
+    }
+
+    // Build the FwVersion from the numeric fields only (ignore the dev-branch tag) so that
+    // dev-branch builds are classified by the same numeric comparison as release builds.
+    FwVersion devVer(_devInfo.fw_info.fw_ver[0], _devInfo.fw_info.fw_ver[1], _devInfo.fw_info.fw_ver[2]);
+    FwOperations::Spc6LayoutSupport devSupport = FwOperations::GetSpc6LayoutSupport(devVer);
+    MLXFWOPS_LOG_DEBUG("BurnSubCommand::check64MBLayoutCompatibility: device support: %d", static_cast<int>(devSupport));
+
+    if (devSupport == FwOperations::Spc6LayoutSupport::NotApplicable)
+    {
+        MLXFWOPS_LOG_DEBUG(
+          "BurnSubCommand::check64MBLayoutCompatibility: Device FW version %s is not covered by the 64MB layout detection logic (support: %d).",
+          devVer.get().c_str(), static_cast<int>(devSupport));
+        return true;
+    }
+
+    // Device is on a known branch but older than its transition version -> not in 64MB layout,
+    // so there is no constraint to enforce on the image.
+    if (devSupport == FwOperations::Spc6LayoutSupport::NewLayoutNotSupported)
+    {
+        MLXFWOPS_LOG_DEBUG(
+          "BurnSubCommand::check64MBLayoutCompatibility: device is older than its transition version (FW version: %s)",
+          devVer.get().c_str());
+        return true;
+    }
+
+    // From here the device IS in the 64MB layout -> the image must support it too.
+    FwVersion imgVer(_imgInfo.fw_info.fw_ver[0], _imgInfo.fw_info.fw_ver[1], _imgInfo.fw_info.fw_ver[2]);
+    FwOperations::Spc6LayoutSupport imgSupport = FwOperations::GetSpc6LayoutSupport(imgVer);
+    MLXFWOPS_LOG_DEBUG("BurnSubCommand::check64MBLayoutCompatibility: image support: %d", static_cast<int>(imgSupport));
+
+    if (imgSupport == FwOperations::Spc6LayoutSupport::NotApplicable)
+    {
+        MLXFWOPS_LOG_DEBUG(
+          "BurnSubCommand::check64MBLayoutCompatibility: Image FW version %s is not covered by the 64MB layout detection logic (support: %d).",
+          imgVer.get().c_str(), static_cast<int>(imgSupport));
+        return true;
+    }
+
+    if (imgSupport != FwOperations::Spc6LayoutSupport::NewLayoutSupported)
+    {
+        reportErr(true,
+                  "The device is in the 64MB flash layout but the image being burned does not support it. "
+                  "Aborting.\n");
+        return false;
+    }
+
+    return true;
+}
+
 bool BurnSubCommand::checkPSID()
 {
     if (strlen(_imgInfo.fw_info.psid) == 0 || strlen(_devInfo.fw_info.psid) == 0)
@@ -2775,10 +2883,44 @@ bool BurnSubCommand::checkPSID()
     return true;
 }
 
-FlintStatus BurnSubCommand::burnFs3()
+bool BurnSubCommand::warnAboutBurnFailsafe()
+{
+    if (!_burnParams.burnFailsafe)
+    {
+        printf("Burn process will not be failsafe. No checks will be performed.\n");
+        if (_burnParams.useImgDevData)
+        {
+            if (_burnParams.burnDevDataOnly)
+            {
+                printf("All device data sections will be overwritten.\n");
+            }
+            else
+            {
+                printf("ALL flash, including the device data sections will be overwritten.\n");
+            }
+        }
+        printf("If this process fails, computer may remain in an inoperable state.\n");
+        if (!askUser())
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+FlintStatus BurnSubCommand::burnFs3() // supports FS3/FS4/FS5/FSCTRL
 {
     _shouldSkip = false;
     bool printPreparing = false;
+    if (_flintParams.force_cleanup && _fwOps->IsFsCtrlOperations())
+    {
+        if (!askUser("The --force_cleanup flag will forcibly clear the flash semaphore and release the MCC "
+                     "update handle on the device, which may cause instability or flash corruption if the "
+                     "device or another application is currently using the flash. Continue"))
+        {
+            return FLINT_FAILED;
+        }
+    }
     if (_devQueryRes)
     {
         char errBuff[ERR_BUFF_SIZE] = {0};
@@ -2809,7 +2951,8 @@ FlintStatus BurnSubCommand::burnFs3()
     }
 
     // Here we want to burn FS3 device so we check if the image is indeed FS3 image
-    if (_imgInfo.fw_type != FIT_FS3 && _imgInfo.fw_type != FIT_FS4 && _imgInfo.fw_type != FIT_FS5)
+    if (_imgInfo.fw_type != FIT_FS3 && _imgInfo.fw_type != FIT_FS4 && _imgInfo.fw_type != FIT_FS5 &&
+        _imgInfo.fw_type != FIT_FS6 && _imgInfo.fw_type != FIT_CSH_VMOD)
     {
         reportErr(true, FLINT_IMG_DEV_COMPAT_ERROR, "FS3", "FS3");
         return FLINT_FAILED;
@@ -2855,25 +2998,10 @@ FlintStatus BurnSubCommand::burnFs3()
             return FLINT_FAILED;
         }
     }
-    if (!_burnParams.burnFailsafe)
+
+    if (!warnAboutBurnFailsafe())
     {
-        printf("Burn process will not be failsafe. No checks will be performed.\n");
-        if (_burnParams.useImgDevData)
-        {
-            if (_burnParams.burnDevDataOnly)
-            {
-                printf("All device data sections will be overwritten.\n");
-            }
-            else
-            {
-                printf("ALL flash, including the device data sections will be overwritten.\n");
-            }
-        }
-        printf("If this process fails, computer may remain in an inoperable state.\n");
-        if (!askUser())
-        {
-            return FLINT_FAILED;
-        }
+        return FLINT_FAILED;
     }
 
     if (printPreparing)
@@ -3319,11 +3447,14 @@ FlintStatus BurnSubCommand::executeCommand()
     }
 
 #ifndef NO_MSTARCHIVE
-    string mfa2file = _flintParams.image;
-    _mfa2Pkg = MFA2::LoadMFA2Package(mfa2file);
-    if (_mfa2Pkg != NULL)
+    if (_flintParams.image_specified)
     {
-        _flintParams.mfa2_specified = true;
+        string mfa2file = _flintParams.image;
+        _mfa2Pkg = MFA2::LoadMFA2Package(mfa2file);
+        if (_mfa2Pkg != NULL)
+        {
+            _flintParams.mfa2_specified = true;
+        }
     }
 #endif
     if (_flintParams.image_reactivation)
@@ -3431,7 +3562,7 @@ FlintStatus BurnSubCommand::executeCommand()
     // query both image and device (deviceQuery can fail but we save rc)
     _devQueryRes = _fwOps->FwQuery(&_devInfo, true, false, true, false, (_flintParams.silent == false));
     
-    if (_imgOps->FwType() == FIT_PLDM)
+    if (_imgOps != NULL && _imgOps->FwType() == FIT_PLDM)
     {
         FsPldmOperations* pldmOps = dynamic_cast<FsPldmOperations*>(_imgOps);
         if (pldmOps == nullptr)
@@ -3474,14 +3605,30 @@ FlintStatus BurnSubCommand::executeCommand()
         }
     }
 
-    if (_imgOps->FwType() == FIT_COMPS)
+    bool vmodActivateOnly = _flintParams.vmod_control && _imgOps == NULL;
+    if (vmodActivateOnly || (_imgOps != NULL && (_imgOps->FwType() == FIT_COMPS ||
+                                                 (_imgOps->FwType() == FIT_CSH_VMOD && _fwOps->IsFsCtrlOperations()))))
     {
-        FsCompsOperations* compsOps = dynamic_cast<FsCompsOperations*>(_imgOps);
+        if (_flintParams.vmod_control && _fwOps->IsVmodSupported() == false)
+        {
+            reportErr(true, LINKX_BURN_DEVICE_NOT_SUPPORTED, _flintParams.device.c_str());
+            return FLINT_FAILED;
+        }
+        FsCompsOperations* compsOps = _imgOps != NULL ? dynamic_cast<FsCompsOperations*>(_imgOps) : nullptr;
         if (_flintParams.yes)
         {
             _burnParams.ignoreVersionCheck = true;
         }
-        if (!_fwOps->FwBurnAdvanced(_imgOps, _burnParams, compsOps->GetComponentID()))
+        FwComponent::comps_ids_t componentId = FwComponent::COMPID_UNKNOWN;
+        if (vmodActivateOnly)
+        {
+            componentId = FwComponent::COMPID_CPO_VMOD_FW;
+        }
+        else if (compsOps != nullptr)
+        {
+            componentId = compsOps->GetComponentID();
+        }
+        if (!_fwOps->FwBurnAdvanced(_imgOps, _burnParams, componentId))
         {
             reportErr(true, FLINT_FSX_BURN_ERROR, "FIT_COMPS", _fwOps->err());
             return FLINT_FAILED;
@@ -3489,7 +3636,7 @@ FlintStatus BurnSubCommand::executeCommand()
         else
         {
             cout << "-I- Component FW burn finished successfully." << endl;
-            const char* resetRec = _imgOps->FwGetResetRecommandationStr();
+            const char* resetRec = _imgOps != NULL ? _imgOps->FwGetResetRecommandationStr() : nullptr;
             if (resetRec)
             {
                 printf("-I- %s\n", resetRec);
@@ -3561,7 +3708,17 @@ FlintStatus BurnSubCommand::executeCommand()
         reportErr(true, "The \"--use_image_guids\" flag is supported only for GEN4 devices.\n");
         return FLINT_FAILED;
     }
-    if (_fwType == FIT_FS3 || _fwType == FIT_FS4 || _fwType == FIT_FS5 || _fwType == FIT_FSCTRL)
+
+    if (_fwType == FIT_FS6 && _imgOps->FwType() == FIT_FS6 && !check64MBLayoutCompatibility())
+    {
+        UnlockDevice(_fwOps);
+        return FLINT_FAILED;
+    }
+
+    bool isFs6ViaMcc =
+      (_fwType == FIT_FS6 && _fwOps->IsFsCtrlOperations()); // need to make sure it's mcc flow in case of FIT_FS6 since
+                                                            // in DFA/MFBA flow we don't use FW control
+    if (_fwType == FIT_FS3 || _fwType == FIT_FS4 || _fwType == FIT_FS5 || isFs6ViaMcc || _fwType == FIT_FSCTRL)
     {
         u_int32_t devid = 0;
         mfile* mf = _fwOps->getMfileObj();
@@ -3610,6 +3767,38 @@ FlintStatus BurnSubCommand::executeCommand()
         FlintStatus res = burnFs3();
         UnlockDevice(_fwOps);
         return res;
+    }
+    else if (_fwType == FIT_FS6) // DFA flow for FS6
+    {
+        // No PSID check when device query is unavailable in case of production burn.
+        if (_devQueryRes && !checkPSID())
+        {
+            UnlockDevice(_fwOps);
+            return FLINT_FAILED;
+        }
+
+        if (!warnAboutBurnFailsafe())
+        {
+            UnlockDevice(_fwOps);
+            return FLINT_FAILED;
+        }
+        if (!_fwOps->FwBurnAdvanced(_imgOps, _burnParams))
+        {
+            reportErr(true, FLINT_FSX_BURN_ERROR, "FIT_FS6", _fwOps->err());
+            UnlockDevice(_fwOps);
+            return FLINT_FAILED;
+        }
+        else
+        {
+            cout << "-I- FS6 burn finished successfully." << endl;
+            const char* resetRec = _imgOps->FwGetResetRecommandationStr();
+            if (resetRec)
+            {
+                printf("-I- %s\n", resetRec);
+            }
+            UnlockDevice(_fwOps);
+            return FLINT_SUCCESS;
+        }
     }
     // unknown fw type
     reportErr(true, FLINT_UNKNOWN_FW_TYPE_ERROR);
@@ -3985,6 +4174,16 @@ FlintStatus BurnSubCommand::burnMFA2()
 
 bool QuerySubCommand::verifyParams()
 {
+    if (_flintParams.vmod_control == true && _flintParams.linkx_control == true)
+    {
+        reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "--vmod", "--linkx");
+        return false;
+    }
+    if (_flintParams.vmod_control == true && _flintParams.linkx_els_control == true)
+    {
+        reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "--vmod", "--linkx_els");
+        return false;
+    }
     if (_flintParams.cmd_params.size() > 1)
     {
         reportErr(true, FLINT_CMD_ARGS_ERROR, _name.c_str(), 1, (int)_flintParams.cmd_params.size());
@@ -4172,7 +4371,7 @@ bool QuerySubCommand::displayFs3Uids(const fw_info_t& fwInfo, bool isStripedImag
     return true;
 }
 
-string QuerySubCommand::printSecurityAttrInfo(u_int32_t m)
+string QuerySubCommand::printSecurityAttrInfo(u_int32_t m, u_int32_t image_type_by_key_id)
 {
     string attr = "";
     if (m & SMM_SECURE_FW)
@@ -4196,7 +4395,14 @@ string QuerySubCommand::printSecurityAttrInfo(u_int32_t m)
     {
         attr += ", debug";
     }
-    if (m & SMM_DEV_FW)
+    if (_flintParams.image_specified && _imgOps->IsComponentFormatWithKeyId())
+    {
+        if (image_type_by_key_id == 0 || image_type_by_key_id == 1)
+        {
+            attr += (image_type_by_key_id == 0) ? ", image_prod" : ", image_dev";
+        }
+    }
+    else if (m & SMM_DEV_FW)
     {
         attr += ", dev";
     }
@@ -4308,14 +4514,31 @@ void QuerySubCommand::PrintLifeCycle(const life_cycle_t& lifeCycle)
 {
     try
     {
+        MLXFWOPS_LOG_DEBUG("lifeCycle.version_field: %d, lifeCycle.value: %d", lifeCycle.version_field, lifeCycle.value);
         string lifeCycleString = "";
+
         if (lifeCycle.version_field == 0)
         {
             lifeCycleString = life_cycle_fs4_strings.at(static_cast<LifeCycleFS4>(lifeCycle.value));
         }
-        else
+        else if (lifeCycle.version_field == 1)
         {
             lifeCycleString = life_cycle_fs5_strings.at(static_cast<LifeCycleFS5>(lifeCycle.value));
+        }
+        else if (lifeCycle.version_field == 2)
+        {
+            if (lifeCycle.value == FS6_LC_INVALID)
+            {
+                lifeCycleString = NA_STR;
+            }
+            else
+            {
+                lifeCycleString = life_cycle_fs6_strings.at(static_cast<LifeCycleFS6>(lifeCycle.value));
+            }
+        }
+        else
+        {
+            lifeCycleString = NA_STR;
         }
         printf("Life cycle:            %s\n", lifeCycleString.c_str());
     }
@@ -4396,6 +4619,8 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
     MLXFWOPS_LOG_DEBUG("fullQuery=%d", fullQuery);
     bool isFs3 = (fwInfo.fw_type == FIT_FS3) ? true : false;
     bool isFs4 = (fwInfo.fw_type == FIT_FS4 || fwInfo.fw_type == FIT_FS5) ? true : false;
+    bool isFs6 = (fwInfo.fw_type == FIT_FS6) ? true : false;
+    bool isCshVmod = (fwInfo.fw_type == FIT_CSH_VMOD) ? true : false;
     bool isFsCtrl = (fwInfo.fw_type == FIT_FSCTRL) ? true : false;
     FwOperations* ops = (_flintParams.device_specified) ? _fwOps : _imgOps;
     FwVersion image_version = FwOperations::createFwVersion(&fwInfo.fw_info);
@@ -4449,6 +4674,22 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
     }
     if (fullQuery)
     {
+        vector<FwOperations::CompInfo> compsList = ops->GetCompsVersionList();
+        if (compsList.size() > 0)
+        {
+            printf("Components Version:\n");
+            for (const auto& comp : compsList)
+            {
+                string compName = FwOperations::ComponentNameToString(comp.compType);
+                if (!comp.label.empty())
+                {
+                    compName += " (" + comp.label + ")";
+                }
+                printf("%-22s %s\n", compName.c_str(),
+                       comp.compVersion.get_fw_version("%d.%d.%d", false, "N/A").c_str());
+            }
+        }
+
         // there is no full query atm just quick query
         if (fwInfo.fw_info.min_fit_ver[0] || fwInfo.fw_info.min_fit_ver[1] || fwInfo.fw_info.min_fit_ver[2] ||
             fwInfo.fw_info.min_fit_ver[3])
@@ -4494,10 +4735,13 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
         printf("                       type=PXE  version=skipped devid=skipped cpu=skipped\n");
         printf("                       type=NVMe version=skipped devid=skipped cpu=skipped\n");
     }
-    /*i.e its fs3/fs4*/
-    if (!displayFs3Uids(fwInfo, isStripedImage))
+    if (!isCshVmod)
     {
-        return FLINT_FAILED;
+        /*i.e its fs3/fs4*/
+        if (!displayFs3Uids(fwInfo, isStripedImage))
+        {
+            return FLINT_FAILED;
+        }
     }
 
     // VSD, PSID
@@ -4530,7 +4774,7 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
         printf("Image VSD:             %s\n", imageVSD);
         printf("Device VSD:            %s\n", deviceVSD);
         printf("PSID:                  %s\n", fwInfo.fw_info.psid);
-        if (!isStripedImage && strncmp(fwInfo.fw_info.psid, fwInfo.fs3_info.orig_psid, 13) != 0)
+        if (!isStripedImage && !isCshVmod && strncmp(fwInfo.fw_info.psid, fwInfo.fs3_info.orig_psid, 13) != 0)
         {
             if (strlen(fwInfo.fs3_info.orig_psid))
             {
@@ -4547,23 +4791,36 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
         printf(FLINT_NOT_MLNX_FW_WARNING, fwInfo.fw_info.vsd_vendor_id);
     }
 
-    if (isFs3 || isFs4 || isFsCtrl)
+    if (isFs3 || isFs4 || isFs6 || isFsCtrl || isCshVmod)
     {
         u_int32_t security_mode = fwInfo.fs3_info.security_mode;
         if (_flintParams.device_specified && ops->IsCRDTDebugSessionActive())
         {
             security_mode |= SMM_CRDT_TOKEN;
         }
-        std::string securityAttrInfo = printSecurityAttrInfo(security_mode);
+        u_int32_t imageTypeByKeyId = 0;
+        if (isFs6 || isCshVmod)
+        {
+            imageTypeByKeyId = fwInfo.fs3_info.nv_pub_key_idx;
+            if (imageTypeByKeyId == 4)
+            {
+                imageTypeByKeyId = 1;
+            }
+            else if (imageTypeByKeyId < 4)
+            {
+                imageTypeByKeyId = 0;
+            }
+        }
+        std::string securityAttrInfo = printSecurityAttrInfo(security_mode, imageTypeByKeyId);
         printf("Security Attributes:   %s\n", securityAttrInfo.c_str());
     }
 
-    if (isFs4 && _flintParams.image_specified)
+    if ((isFs4 || isFs6 || isCshVmod) && _flintParams.image_specified)
     { // Security Version is supported in Connectx-6dx and up
         printf("Security Ver:          %d\n", fwInfo.fs3_info.image_security_version);
     }
 
-    if ((isFs3 || isFs4 || isFsCtrl) && fullQuery)
+    if ((isFs3 || isFs4 || isFs6 || isFsCtrl || isCshVmod) && fullQuery)
     {
         string updateMethod = "Legacy";
         if (fwInfo.fs3_info.security_mode & SMM_MCC_EN)
@@ -4810,8 +5067,14 @@ FlintStatus QuerySubCommand::executeCommand()
 {
     MLXFWOPS_LOG_DEBUG("QuerySubCommand::executeCommand");
 
-    if (_flintParams.linkx_control == true)
+    if (_flintParams.linkx_control == true || _flintParams.vmod_control == true ||
+        _flintParams.linkx_els_control == true)
     {
+        if (!verifyParams())
+        {
+            return FLINT_FAILED;
+        }
+
         if (_flintParams.device_specified == false)
         {
             reportErr(true, FLINT_NO_DEVICE_ERROR);
@@ -4822,7 +5085,17 @@ FlintStatus QuerySubCommand::executeCommand()
             reportErr(true, "Flag \"--downstream_device_ids\" with values should be provided.\n");
             return FLINT_FAILED;
         }
-        return QueryLinkX(_flintParams.device, _flintParams.output_file, _flintParams.downstream_device_ids);
+        FwComponent::comps_ids_t fwComponent = FwComponent::COMPID_LINKX_ELS;
+        if (_flintParams.linkx_control)
+        {
+            fwComponent = FwComponent::COMPID_LINKX;
+        }
+        else if (_flintParams.vmod_control)
+        {
+            fwComponent = FwComponent::COMPID_CPO_VMOD_FW;
+        }
+        return QueryLinkX(_flintParams.device, _flintParams.output_file, _flintParams.downstream_device_ids,
+                          fwComponent);
     }
     if (_flintParams.device.find("_cable") != string::npos && _flintParams.device.find("_rt") == string::npos)
     {
@@ -6084,9 +6357,9 @@ FlintStatus SetCpoCalibrationDataSubCommand::executeCommand()
     }
     FwOperations* ops = _flintParams.device_specified ? _fwOps : _imgOps;
 
-    if (ops->FwType() != FIT_FS4 && ops->FwType() != FIT_FS5)
+    if (ops->FwType() != FIT_FS4 && ops->FwType() != FIT_FS5 && ops->FwType() != FIT_FS6)
     {
-        reportErr(true, "Setting CPO calibration data is applicable only for FS4/FS5 FW.\n");
+        reportErr(true, "Setting CPO calibration data is applicable only for FS4/FS5/FS6 FW.\n");
         return FLINT_FAILED;
     }
 

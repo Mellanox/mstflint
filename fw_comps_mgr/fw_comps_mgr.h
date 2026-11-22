@@ -124,6 +124,7 @@ typedef struct
     char description[DESCRIPTION_LEN];
     char deviceVsd[VSD_LEN + 1];
     char imageVsd[VSD_LEN + 1];
+    char vmodVsd[VSD_LEN + 1];
     bool sec_boot;
     life_cycle_t life_cycle;
     bool encryption;
@@ -202,7 +203,12 @@ public:
         DPA_COMPONENT_REMOVAL = 0x1D,
         COMPID_MTDT_TOKEN = 0x1E,
         COMPID_CPO_VMOD_FW = 0x1F,
-        COMPID_LAST_IDX    = 0x20,
+        COMPID_PSC_TOKEN = 0x20,
+        COMPID_OE_CALIBRATION_PARAMS = 0x21,
+        COMPID_CPLD_IMG = 0x22,
+        COMPID_HBI_IMG = 0x23,
+        COMPID_CALIPTRA = 0x24,
+        COMPID_LAST_IDX    = 0x24,
         COMPID_UNKNOWN = 0xFFFF,
     } comps_ids_t;
 
@@ -508,7 +514,8 @@ public:
         MQIS_REGISTER_IMAGE_VSD = 3,
         MQIS_REGISTER_DEVICE_VSD = 4,
         MQIS_REGISTER_ROM_INFO = 5,
-        MQIS_REGISTER_LAST_VALUE = MQIS_REGISTER_ROM_INFO
+        MQIS_REGISTER_VMOD_VSD = 6,
+        MQIS_REGISTER_LAST_VALUE = MQIS_REGISTER_VMOD_VSD
     } MQISDeviceDescriptionT;
 
     typedef enum
@@ -579,6 +586,8 @@ public:
     fw_comps_error_t regErrTrans(reg_access_status_t err);
     bool lock_flash_semaphore();
     void unlock_flash_semaphore();
+    bool force_clear_flash_semaphore();
+    bool CleanupLocks();
     void SetIndexAndSize(int deviceIndex,
                          int deviceSize,
                          bool autoUpdate = false,
@@ -603,7 +612,14 @@ public:
     const std::vector<burn_failure_t>& GetBurnFailures() const { return _burnFailures; }
     string GetMccErrorString(u_int8_t mccErrorCode);
     void SetActivationStep(bool activationNeeded) { _activationNeeded = activationNeeded; }
-    bool RefreshComponentsStatus(comp_status_st* ComponentStatus = NULL);
+    void SetBurnSteps(bool activationNeeded, bool downloadTransferNeeded)
+    {
+        _activationNeeded = activationNeeded;
+        _downloadTransferNeeded = downloadTransferNeeded;
+        _isDelayedActivationCommandSent = false;
+    }
+    bool RefreshComponentsStatus(comp_status_st* ComponentStatus = NULL,
+                                 FwComponent::comps_ids_t compType = FwComponent::COMPID_UNKNOWN);
     bool GetComponentLinkxProperties(FwComponent::comps_ids_t compType, component_linkx_st* cmpLinkX);
     bool GetComponentSyncEProperties(component_synce_st& cmpSyncE);
     bool GetComponentInfo(FwComponent::comps_ids_t compType, vector<u_int8_t>& data);
@@ -625,6 +641,7 @@ public:
     bool runMISOC(reg_access_hca_misoc_reg_ext* bfb_component, u_int32_t type, u_int32_t query_pending);
     bool AddElsPortOffset(int& elsOffsetIndex);
     bool IsCRDTDebugSessionActive();
+    bool GetHBIVersion(component_version_st& hbiVersion);
     bool IsVmodSupported() { return _compsQueryMap[FwComponent::COMPID_CPO_VMOD_FW].valid; }
 
 private:
@@ -757,6 +774,7 @@ private:
     u_int32_t _hwDevId;
     mfile* _mf;
     const char* _currComponentStr;
+    FwComponent::comps_ids_t _currCompType;
     std::vector<u_int8_t> _productVerStr;
     bool _isDmaSupported;
     AbstractComponentAccess* _accessObj;

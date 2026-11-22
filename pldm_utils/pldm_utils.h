@@ -55,6 +55,7 @@ constexpr u_int16_t DEV_ID_TYPE = 0x0100;
 // Bit 0 of DownstreamDeviceUpdateOptionFlags - when set, the SelfContainedActivationMinVersionString
 // is present and the SelfContainedActivationMinVersionComparisonStamp follows it
 constexpr u_int32_t DOWNSTREAM_SELF_CONTAINED_ACTIVATION_BIT = 0x1;
+constexpr u_int32_t NVIDIA_IANA_ENTERPRISE_ID = 0x1647;
 
 enum class ComponentField : u_int16_t
 {
@@ -86,6 +87,12 @@ enum class DescriptorType : uint16_t
     TYPE_PCI_REVISION_ID = 0x103,
     TYPE_VENDOR_DEFINED = 0xffff
 };
+
+inline bool IsSpc6PciDeviceId(u_int16_t pciDeviceId)
+{
+    const u_int16_t SPC6_PCI_DEVICE_ID = 0xCF84;
+    return pciDeviceId == SPC6_PCI_DEVICE_ID;
+}
 
 enum class ComponentIdentifier
 {

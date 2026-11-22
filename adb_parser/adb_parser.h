@@ -255,7 +255,8 @@ private:
                         bool getAllExceptions = false,
                         bool optimize_time = false,
                         PartitionTree* partition_tree = nullptr,
-                        bool array_path_wildcards = false);
+                        bool array_path_wildcards = false,
+                        bool force_ds_align = false);
     bool checkInstSizeConsistency(bool getAllExceptions = false);
     static PartitionTree* prune_up(PartitionTree* partition_tree);
     static bool

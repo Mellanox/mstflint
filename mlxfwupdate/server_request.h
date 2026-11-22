@@ -38,9 +38,10 @@
 
 #include <math.h>
 #include <vector>
-#include <tools_dev_types.h>
+#include "dev_mgt/tools_dev_types.h"
 #include "psid_query_item.h"
 #include "mlxfwmanager_common.h"
+#include "common/tools_json.h"
 #ifdef USE_CURL
 #include <json/reader.h>
 #include <json/writer.h>

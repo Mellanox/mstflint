@@ -9054,16 +9054,19 @@ void MlxlinkCommander::prepareJsonOut()
 u_int32_t MlxlinkCommander::getNumberOfPorts()
 {
     int numOfPorts = 0;
-    if (dm_is_gpu(static_cast<dm_dev_id_t>(_devID)) || _devID == DeviceSpectrum3 || _devID == DeviceQuantum3 || _devID == DeviceNVLink6_Switch || _isHCA || _isCpo)
+
+    try
     {
         sendPrmReg(ACCESS_REG_MGIR, REG_GET);
         numOfPorts = getFieldValue("num_ports");
     }
-    else
+    catch (MlxRegException& exc)
     {
+        // if MGIR is not supported, we need to use MGPIR to get the number of ports - to be deprecated in the future.
         sendPrmReg(ACCESS_REG_MGPIR, REG_GET);
         numOfPorts = getFieldValue("num_of_modules");
     }
+
     return numOfPorts;
 }
 
@@ -9472,13 +9475,21 @@ u_int32_t MlxlinkCommander::getApsuParamValue(const APSU_CONFIG_PARAM& param, co
     }
     else
     {
-        RegAccessParser::strToUint32((char*)userValue.c_str(), value);
+        // Parse as 64-bit so a value above UINT32_MAX fails the range check instead of wrapping into it.
+        char* endPtr = nullptr;
+        unsigned long long parsed = strtoull(userValue.c_str(), &endPtr, 0);
+        if (userValue.empty() || userValue[0] == '-' || *endPtr != '\0')
+        {
+            throw MlxRegException("Argument: " + userValue + " is invalid.");
+        }
 
-        if (value < param.minValue || value > maxValue)
+        if (parsed < param.minValue || parsed > maxValue)
         {
             throw MlxRegException("The --" + param.flagName + " flag accepts values in the range " + range +
                                   (param.kind == APSU_PARAM_NUMERIC ? "" : ", EN or DS"));
         }
+
+        value = (u_int32_t)parsed;
     }
 
     return value;

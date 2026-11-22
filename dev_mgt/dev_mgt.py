@@ -143,6 +143,10 @@ if DEV_MGT:
             return DEV_MGT.dm_dev_is_fs5(dm_dev_id)
 
         @classmethod
+        def is_fs6(cls, dm_dev_id):
+            return DEV_MGT.dm_dev_is_fs6(dm_dev_id)
+
+        @classmethod
         def sw_id2hw_id(cls, sw_dev_id):
             dm_dev_id = DEV_MGT.dm_dev_sw_id2type(sw_dev_id)
             rc = 0

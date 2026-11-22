@@ -334,6 +334,16 @@
          _deviceRecords.push_back(ParseDeviceRecord(deviceRecordsJSON[i]));
      }
 
+     // WA: an spc6 device never wrote ComponentOpaqueDataLength at revision >= 2,
+     // only be generated at revision 1.
+     if (!_deviceRecords.empty() && _deviceRecords[0].IsSpc6Device() &&
+         _packageHeaderFormatRevision >= FIRST_REVISION_SUPPORTED_DOWNSTREAM_DEVICES)
+     {
+         throw PLDMException("spc6-device packages must use Package Header Format Revision 0x1; "
+                             "revision 0x%x is not supported for spc6 devices.",
+                             _packageHeaderFormatRevision);
+     }
+
      // parse the downstream devices
      downstreamDevicesJSON = root[DOWNSTREAM_DEVICES_STR];
      if (!downstreamDevicesJSON.empty() && _packageHeaderFormatRevision < FIRST_REVISION_SUPPORTED_DOWNSTREAM_DEVICES)

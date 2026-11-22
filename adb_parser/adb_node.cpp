@@ -134,12 +134,25 @@ typename AdbNode_impl<T_OFFSET>::address_t AdbNode_impl<T_OFFSET>::get_max_leaf_
 template<typename T_OFFSET>
 void AdbNode_impl<T_OFFSET>::update_max_leaf(AdbField* other)
 {
-    uint64_t esize = other->eSize();
-    if ((other->isLeaf() || other->subNode == "uint64") && (esize == 16 || esize == 32 || esize == 64) &&
-        esize > get_max_leaf_size())
+    if (other->ds_align_size() > get_max_leaf_size())
     {
         _max_leaf = other;
     }
+}
+
+/**
+ * Function: AdbNode_impl::is_ds_align_forced
+ **/
+template<typename T_OFFSET>
+bool AdbNode_impl<T_OFFSET>::is_ds_align_forced() const
+{
+    if (_ds_align_checked)
+    {
+        return false;
+    }
+
+    auto it = attrs.find(ATTR_FORCE_DS_ALIGN);
+    return it != attrs.end() && it->second == ATTR_FORCE_DS_ALIGN_ON;
 }
 
 /**
@@ -193,6 +206,12 @@ void AdbNode_impl<T_OFFSET>::print(int indent)
     for (size_t i = 0; i < fields.size(); i++)
         fields[i]->print(indent + 1);
 }
+
+// Constants
+template<typename T_OFFSET>
+const string AdbNode_impl<T_OFFSET>::ATTR_FORCE_DS_ALIGN = "force_ds_align";
+template<typename T_OFFSET>
+const string AdbNode_impl<T_OFFSET>::ATTR_FORCE_DS_ALIGN_ON = "1";
 
 // Explicit instantiations
 template class AdbNode_impl<uint32_t>;
