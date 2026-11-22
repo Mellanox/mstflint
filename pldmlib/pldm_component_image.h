@@ -43,7 +43,7 @@ class PldmComponenetImage
 public:
     PldmComponenetImage();
     virtual ~PldmComponenetImage();
-    bool unpack(PldmBuffer& buff, u_int8_t pldmRevision = 0x1);
+    bool unpack(PldmBuffer& buff, u_int8_t pldmRevision, bool isSpc6Device);
     void printFormatted() const;
     u_int32_t getComponentSize() const { return componentSize; }
     const u_int8_t* getComponentData() const { return componentData; }

@@ -96,6 +96,26 @@ void MkDirIfNotExists(const string& path);
 vector<string> GetListOfFiles(const string& dirPath);
 vector<vector<u_int8_t>> ReadBinaryFilesFromDirectory(const string& dirPath);
 std::vector<u_int32_t> Uuid2Dword(const std::string& uuid_str);
+
+template<typename T>
+bool CompareNElements(const std::vector<T>& a, const std::vector<T>& b, int n)
+{
+    // Validate that n doesn't exceed the size of either vector
+    if (n > static_cast<int>(a.size()) || n > static_cast<int>(b.size()))
+    {
+        throw std::invalid_argument("Size parameter n ( " + std::to_string(n) + " ) exceeds vector size");
+    }
+
+    for (int i = 0; i < n; i++)
+    {
+        if (a[i] != b[i])
+        {
+            // printf("-D- a[%d]=%d b[%d]=%d", i, a[i], i, b[i]);
+            return false;
+        }
+    }
+    return true;
+}
 /* Creates an empty uniquely named file at <sibling>.XXXXXX and returns its path, or an empty string on failure. */
 string CreateSiblingTempFile(const string& sibling);
 

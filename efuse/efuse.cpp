@@ -125,8 +125,10 @@ static bool read_device_part_number(mfile* mf, std::string& part_number)
         }
         if (mqis.read_offset + mqis.read_length > total_len)
         {
-            MFT_LOG_ERROR(nvtoolslogger::Layer::EFUSE, ("mqis.read_offset + mqis.read_length > total_len, read_offset=" + std::to_string(mqis.read_offset) +
-              " read_length=" + std::to_string(mqis.read_length) + " total_len=" + std::to_string(total_len)).c_str());
+            MFT_LOG_ERROR(nvtoolslogger::Layer::EFUSE,
+                          ("mqis.read_offset + mqis.read_length > total_len, read_offset=" + std::to_string(mqis.read_offset) + " read_length=" + std::to_string(mqis.read_length) +
+                           " total_len=" + std::to_string(total_len))
+                            .c_str());
             return false;
         }
         memcpy(buf.data() + mqis.read_offset, mqis.info_string, mqis.read_length);
@@ -202,14 +204,19 @@ static void decode_raw_and_value(const MrfvEntry& mrfv, const std::string& rail,
 
     if (raw_fuses_highest_bit > 31)
     {
-        MFT_LOG_ERROR(nvtoolslogger::Layer::EFUSE, ("raw_fuses_highest_bit=" + std::to_string(raw_fuses_highest_bit) + " out of range for fuse_id=" + std::to_string(mrfv.fuse_id) + " instance_id=" + std::to_string(inst)).c_str());
+        MFT_LOG_ERROR(
+          nvtoolslogger::Layer::EFUSE,
+          ("raw_fuses_highest_bit=" + std::to_string(raw_fuses_highest_bit) + " out of range for fuse_id=" + std::to_string(mrfv.fuse_id) + " instance_id=" + std::to_string(inst)).c_str());
         return;
     }
 
     uint32_t raw_fuses = EXTRACT(mrfv.raw_fuses, 0, raw_fuses_highest_bit + 1);
 
-    MFT_LOG_DEBUG(nvtoolslogger::Layer::EFUSE, ("fuse_id=" + std::to_string(mrfv.fuse_id) + " instance_id=" + std::to_string(inst) + " value_valid=" + std::to_string(value_valid) + " value_base=" + std::to_string(value_base_raw) +
-              " value_exponent=" + std::to_string(value_exponent_raw) + " raw_fuses=" + std::to_string(raw_fuses) + " raw_fuses_highest_bit=" + std::to_string(raw_fuses_highest_bit)).c_str());
+    MFT_LOG_DEBUG(
+      nvtoolslogger::Layer::EFUSE,
+      ("fuse_id=" + std::to_string(mrfv.fuse_id) + " instance_id=" + std::to_string(inst) + " value_valid=" + std::to_string(value_valid) + " value_base=" + std::to_string(value_base_raw) +
+       " value_exponent=" + std::to_string(value_exponent_raw) + " raw_fuses=" + std::to_string(raw_fuses) + " raw_fuses_highest_bit=" + std::to_string(raw_fuses_highest_bit))
+        .c_str());
 
     if (value_valid != 1)
     {
@@ -233,8 +240,10 @@ static void decode_raw_and_value(const MrfvEntry& mrfv, const std::string& rail,
 #ifdef EFUSE_CVB_ENABLED
 static void decode_cvb(const MrfvEntry& mrfv, const std::string& rail, int inst, int voltage_type, std::vector<FuseReading>& readings)
 {
-    MFT_LOG_DEBUG(nvtoolslogger::Layer::EFUSE, ("fuse_id=" + std::to_string(mrfv.fuse_id) + " instance_id=" + std::to_string(inst) + " voltage_type=" + std::to_string(voltage_type) + " selector=" + std::to_string(mrfv.selector) +
-              " selector_cause=" + std::to_string(mrfv.selector_cause) + " cvb_voltage=" + std::to_string(mrfv.cvb_voltage)).c_str());
+    MFT_LOG_DEBUG(nvtoolslogger::Layer::EFUSE,
+                  ("fuse_id=" + std::to_string(mrfv.fuse_id) + " instance_id=" + std::to_string(inst) + " voltage_type=" + std::to_string(voltage_type) + " selector=" + std::to_string(mrfv.selector) +
+                   " selector_cause=" + std::to_string(mrfv.selector_cause) + " cvb_voltage=" + std::to_string(mrfv.cvb_voltage))
+                    .c_str());
 
     if (mrfv.selector != 1 || mrfv.selector_cause != 0)
     {
@@ -361,7 +370,10 @@ static void query_one_fuse(mfile* mf, dm_dev_id_t dev_type, const FuseConfig& fu
     // so we fall back to fm. Gate on the bit if older NICs ever need explicit support.
     uint8_t fuse_mismatch = (mrfv.fm_sel == 1) ? mrfv.fm2 : mrfv.fm;
 
-    MFT_LOG_DEBUG(nvtoolslogger::Layer::EFUSE, ("fuse_id=" + std::to_string(fuse.fuse_id) + " instance_id=" + std::to_string(inst) + " v=" + std::to_string(mrfv.v) + " fm=" + std::to_string(mrfv.fm) + " fm2=" + std::to_string(mrfv.fm2) + " fm_sel=" + std::to_string(mrfv.fm_sel) + " fuse_mismatch=" + std::to_string(fuse_mismatch)).c_str());
+    MFT_LOG_DEBUG(nvtoolslogger::Layer::EFUSE,
+                  ("fuse_id=" + std::to_string(fuse.fuse_id) + " instance_id=" + std::to_string(inst) + " v=" + std::to_string(mrfv.v) + " fm=" + std::to_string(mrfv.fm) +
+                   " fm2=" + std::to_string(mrfv.fm2) + " fm_sel=" + std::to_string(mrfv.fm_sel) + " fuse_mismatch=" + std::to_string(fuse_mismatch))
+                    .c_str());
 
     if (fuse_mismatch == 1)
     {
@@ -474,7 +486,8 @@ static bool read_fuse_values(mfile* mf, dm_dev_id_t dev_type, const DeviceConfig
             if (!oe_enabled)
             {
                 // non-CPO or no OEs: skip per-OE fuses cleanly
-                MFT_LOG_DEBUG(nvtoolslogger::Layer::EFUSE, ("Skipping per-OE fuse_id=" + std::to_string(fuse.fuse_id) + " (" + fuse.name + "): no Optical Engines reported (oe_count=" + std::to_string(oe_count) + ")").c_str());
+                MFT_LOG_DEBUG(nvtoolslogger::Layer::EFUSE,
+                              ("Skipping per-OE fuse_id=" + std::to_string(fuse.fuse_id) + " (" + fuse.name + "): no Optical Engines reported (oe_count=" + std::to_string(oe_count) + ")").c_str());
                 continue;
             }
             for (int i = oe_base; i < oe_base + oe_count; i++)
@@ -544,7 +557,7 @@ static void print_fuse_readings(dm_dev_id_t dev_type, u_int32_t hw_dev_id, u_int
 void EfuseTool::InitCmdParser()
 {
     AddDescription("Print fuse voltage readings (from MRFV prm-register).");
-    AddOptions("device", 'd', "<device>", "MST device path (required). Example: /dev/mst/mt53124_pciconf0", false, true);
+    AddOptions("device", 'd', "<device>", "PCI device address (required). Example: 0000:03:00.0", false, true);
     AddOptions("config", 'c', "<config_file>", "Path to efuse config JSON file (overrides installed config)", false, false);
     AddOptions("help", 'h', "", "Show this help message and exit");
     _cmdParser.AddRequester(this);
@@ -579,7 +592,7 @@ ParseStatus EfuseTool::ParseCmdLine(int argc, char* argv[])
     }
     if (_device.empty())
     {
-        fprintf(stderr, "-E- Missing device argument. Use -d <mst_device>.\n");
+        fprintf(stderr, "-E- Missing device argument. Use -d <device>.\n");
         return PARSE_ERROR_SHOW_USAGE;
     }
     return PARSE_OK;

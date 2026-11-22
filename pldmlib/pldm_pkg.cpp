@@ -34,7 +34,7 @@
  *  Created on: Feb 27, 2019
  *      Author: Samer Deeb
  */
- 
+
 #include <stdio.h>
 #include <string>
 #include <vector>
@@ -48,6 +48,9 @@
 #include "pldm_pkg.h"
 #include "pldm_utils/pldm_utils.h"
 #include "common/tools_endianness.h"
+
+// component are ordered by priority
+const std::vector<std::string> PldmPkg::PARSEABLE_PRIORITY_COMPONENTS = {"FW", "NIC_FW", "FW_SPC6", "VMOD"};
 
 PldmPkg::PldmPkg() :
     deviceIDRecordCount(0), componentImageCount(0), downstreamDeviceRecordCount(0), packageHeaderChecksum(0)
@@ -111,6 +114,25 @@ bool PldmPkg::unpackRecords(PldmBuffer& buff,
     return true;
 }
 
+// WA: ComponentOpaqueDataLength only matters at revision >= 2, and every
+// known spc6 fwpkg carries exactly one device ID record. Only deviceIDRecords[0] is inspected;
+// if a package ever legitimately carries multiple device records with different device
+// identities, a single package-wide flag is the wrong model and this must be revisited.
+bool PldmPkg::isSpc6Device(u_int8_t pldmRevision) const
+{
+    if (pldmRevision < FIRST_REVISION_SUPPORTED_DOWNSTREAM_DEVICES)
+    {
+        return false;
+    }
+    u_int16_t pciDeviceId;
+    if (!deviceIDRecords.empty() &&
+        deviceIDRecords[0]->getDescriptor(static_cast<u_int16_t>(DescriptorType::TYPE_PCI_DEVICE_ID), pciDeviceId))
+    {
+        return IsSpc6PciDeviceId(pciDeviceId);
+    }
+    return false;
+}
+
 bool PldmPkg::unpack(PldmBuffer& buff)
 {
     reset();
@@ -127,6 +149,9 @@ bool PldmPkg::unpack(PldmBuffer& buff)
     {
         return false;
     }
+
+    const bool spc6Device = isSpc6Device(pldmRevision);
+
     // downstream device record support is added in revision 3 and above
     if (packageHeader.getPackageHeaderFormatRevision() >= FIRST_REVISION_SUPPORTED_DOWNSTREAM_DEVICES)
     {
@@ -145,7 +170,7 @@ bool PldmPkg::unpack(PldmBuffer& buff)
     for (u_int8_t i = 0; i < componentImageCount; i++)
     {
         PldmComponenetImage* componentImage = new PldmComponenetImage();
-        if (!componentImage->unpack(buff, pldmRevision))
+        if (!componentImage->unpack(buff, pldmRevision, spc6Device))
         {
             delete componentImage;
             reset();
@@ -154,10 +179,54 @@ bool PldmPkg::unpack(PldmBuffer& buff)
         componentImages.push_back(componentImage);
     }
     buff.read(packageHeaderChecksum);
+    return !buff.overflowed();
+}
+
+bool PldmPkg::getMainComponentNameByPsid(const std::string& psid, std::string& component) const
+{
+    std::string validPsid = psid;
+    std::vector<std::string> componentNames;
+    if (validPsid.empty())
+    {
+        if (psidRecordMap.empty())
+        {
+            return false;
+        }
+        validPsid = psidRecordMap.begin()->first;
+    }
+    if (!getComponentsNamesByPsid(validPsid, componentNames))
+    {
+        return false;
+    }
+    for (const std::string& mainComponentName : PARSEABLE_PRIORITY_COMPONENTS)
+    {
+        if (std::find(componentNames.begin(), componentNames.end(), mainComponentName) != componentNames.end())
+        {
+            component = mainComponentName;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool PldmPkg::getParsedSupportedComponentsByPsid(const std::string& psid,
+                                                 std::vector<std::string>& parsedComponentNames) const
+{
+    std::vector<std::string> allComponentNames;
+    if (!getComponentsNamesByPsid(psid, allComponentNames))
+    {
+        return false;
+    }
+
+    std::copy_if(
+      PARSEABLE_PRIORITY_COMPONENTS.begin(), PARSEABLE_PRIORITY_COMPONENTS.end(),
+      std::back_inserter(parsedComponentNames),
+      [&allComponentNames](const std::string& name)
+      { return std::find(allComponentNames.begin(), allComponentNames.end(), name) != allComponentNames.end(); });
     return true;
 }
 
-bool PldmPkg::isComponentInPackage(const std::string& psid, const std::string& componentName) const
+bool PldmPkg::getComponentsNamesByPsid(const std::string& psid, std::vector<std::string>& componentNames) const
 {
     PldmDevIdRecord* rec = findRecordByPsid(psid);
     if (rec == NULL)
@@ -166,10 +235,7 @@ bool PldmPkg::isComponentInPackage(const std::string& psid, const std::string& c
     }
     std::vector<u_int8_t> componentsIndexes = rec->getComponentsIndexes();
 
-    ComponentIdentifier componentIdentifier;
-    StringToComponentIdentifier(componentName, componentIdentifier);
-
-    for (size_t i = 0; i < componentsIndexes.size(); i++)
+    for (size_t i = 0; i < componentsIndexes.size() && i < componentImageCount; i++)
     {
         if (componentsIndexes[i] == 0)
         {
@@ -177,17 +243,35 @@ bool PldmPkg::isComponentInPackage(const std::string& psid, const std::string& c
         }
         PldmComponenetImage* ComponentImage = getComponentByIndex(i);
         ComponentIdentifier currentComponentIdentifier =
-        static_cast<ComponentIdentifier>(ComponentImage->getComponentIdentifier());
+          static_cast<ComponentIdentifier>(ComponentImage->getComponentIdentifier());
         std::string currentComponentName;
+
         ComponentIdentifierToStringValue(currentComponentIdentifier, ComponentField::Name, currentComponentName);
-        if (currentComponentName == componentName ||
-            (isNicFwComponent(currentComponentIdentifier) &&
-            isNicFwComponent(componentIdentifier))) // 2 components for nic image FW, NIC_FW
-        {
-            return true;
-        }
+        componentNames.push_back(currentComponentName);
     }
-    return false;
+    return true;
+}
+
+bool PldmPkg::isComponentInPackage(const std::string& psid, const std::string& componentName) const
+{
+    std::vector<std::string> componentNames;
+    if (!getComponentsNamesByPsid(psid, componentNames))
+    {
+        return false;
+    }
+
+    ComponentIdentifier componentIdentifier;
+    StringToComponentIdentifier(componentName, componentIdentifier);
+
+    // if the component is firmware, we need to check if it contains FW or NIC_FW - both are valid for firmware
+    // components
+    if (isNicFwComponent(componentIdentifier))
+    {
+        std::vector<std::string> targets = {"FW", "NIC_FW"};
+        return std::find_first_of(componentNames.begin(), componentNames.end(), targets.begin(), targets.end()) !=
+               componentNames.end();
+    }
+    return std::find(componentNames.begin(), componentNames.end(), componentName) != componentNames.end();
 }
 
 const PldmComponenetImage* PldmPkg::getImageByPsid(const std::string& psid) const
@@ -205,8 +289,20 @@ const PldmComponenetImage* PldmPkg::getImageByPsid(const std::string& psid) cons
     return componentImages[location];
 }
 
-bool PldmPkg::getPldmDescriptorByPsid(std::string psid, u_int16_t type, u_int16_t& descriptor) const
+bool PldmPkg::getPldmDescriptorByPsid(const std::string& psid, u_int16_t type, u_int16_t& descriptor) const
 {
+    std::string mainComponentName;
+    if (!getMainComponentNameByPsid(psid, mainComponentName))
+    {
+        return false;
+    }
+    // special case for VMOD component , his device id represent the device and nt the component
+    if (mainComponentName == "VMOD" && type == DEV_ID_TYPE)
+    {
+        descriptor = 0;
+        return true;
+    }
+
     auto getDescriptorFromRecords = [&](const std::vector<PldmDevIdRecord*>& records)
     {
         for (auto devIdRec : records)
@@ -228,8 +324,8 @@ bool PldmPkg::getPldmDescriptorByPsid(std::string psid, u_int16_t type, u_int16_
     return getDescriptorFromRecords(downstreamDeviceRecords);
 }
 
-std::string PldmPkg::getPldmVendorDefinedDescriptorByPsid(std::string psid,
-                                                        PldmRecordDescriptor::VendorDefinedType type) const
+std::string PldmPkg::getPldmVendorDefinedDescriptorByPsid(const std::string& psid,
+                                                          PldmRecordDescriptor::VendorDefinedType type) const
 {
     auto getVendorDefinedFromRecords = [&](const std::vector<PldmDevIdRecord*>& records) -> std::string
     {
@@ -251,7 +347,7 @@ std::string PldmPkg::getPldmVendorDefinedDescriptorByPsid(std::string psid,
     }
     return getVendorDefinedFromRecords(downstreamDeviceRecords);
 }
-bool PldmPkg::isPsidInPldm(std::string psid) const
+bool PldmPkg::isPsidInPldm(const std::string& psid) const
 {
     if (psid.empty())
     {
@@ -299,7 +395,7 @@ bool PldmPkg::extractComponentDataFromRecords(const std::vector<PldmDevIdRecord*
 
                 PldmComponenetImage* ComponentImage = getComponentByIndex(i);
                 ComponentIdentifier identifier =
-                static_cast<ComponentIdentifier>(ComponentImage->getComponentIdentifier());
+                  static_cast<ComponentIdentifier>(ComponentImage->getComponentIdentifier());
                 if (identifier == compIdentifier ||
                     (isNicFwComponent(compIdentifier) && isNicFwComponent(identifier))) // 2 components for nic image
                                                                                         // FW, NIC_FW
@@ -362,7 +458,7 @@ bool PldmPkg::recomputeHeaderChecksum(PldmBuffer& buff) const
 }
 
 bool PldmPkg::getComponentDataByPsid(ComponentIdentifier compIdentifier,
-                                     std::string psid,
+                                     const std::string& psid,
                                      u_int8_t** buff,
                                      u_int32_t& buffSize)
 {

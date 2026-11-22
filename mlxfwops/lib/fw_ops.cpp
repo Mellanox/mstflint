@@ -34,6 +34,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <iomanip>
+#include <utility>
 #include <algorithm>
 #include <fstream>
 
@@ -49,6 +51,8 @@
 const char* file_handle_type_to_str(fw_hndl_type_t type);
 #include "nvtoolslogger/nvtoolslogger_c.h"
 #include "fs_pldm.h"
+#include "fs6_ops.h"
+#include "mft_utils/mft_utils.h"
 #include "fsctrl_ops.h"
 #include "fs_comps_factory.h"
 #include "dev_mgt/tools_dev_types.h"
@@ -79,11 +83,139 @@ const char* file_handle_type_to_str(fw_hndl_type_t type);
 
 extern const char* g_sectNames[];
 
+const FwOperations::SectionInfo FwOperations::_fs3SectionsInfoArr[] = {
+  {FS3_END, "END"},
+  {FS3_ITOC, "ITOC_HEADER"},
+  {FS3_BOOT_CODE, "BOOT_CODE"},
+  {FS3_PCI_CODE, "PCI_CODE"},
+  {FS3_MAIN_CODE, "MAIN_CODE"},
+  {FS3_PCIE_LINK_CODE, "PCIE_LINK_CODE"},
+  {FS3_IRON_PREP_CODE, "IRON_PREP_CODE"},
+  {FS3_POST_IRON_BOOT_CODE, "POST_IRON_BOOT_CODE"},
+  {FS3_UPGRADE_CODE, "UPGRADE_CODE"},
+  {FS3_HW_BOOT_CFG, "HW_BOOT_CFG"},
+  {FS3_HW_MAIN_CFG, "HW_MAIN_CFG"},
+  {FS3_PHY_UC_CODE, "PHY_UC_CODE"},
+  {FS3_PHY_UC_CONSTS, "PHY_UC_CONSTS"},
+  {FS3_PCIE_PHY_UC_CODE, "PCIE_PHY_UC_CODE"},
+  {FS3_CCIR_INFRA_CODE, "CCIR_INFRA_CODE"},
+  {FS3_CCIR_ALGO_CODE, "CCIR_ALGO_CODE"},
+  {FS4_BOOT3_CODE, "BOOT3_CODE"},
+  {FS3_IMAGE_INFO, "IMAGE_INFO"},
+  {FS3_FW_BOOT_CFG, "FW_BOOT_CFG"},
+  {FS3_FW_MAIN_CFG, "FW_MAIN_CFG"},
+  {FS3_APU_KERNEL, "APU_KERNEL"},
+  {FS3_ACE_CODE, "ACE_CODE"},
+  {FS3_ROM_CODE, "ROM_CODE"},
+  {FS3_RESET_INFO, "RESET_INFO"},
+  {FS4_PROG_FW_META, "PROG_FW_META"},
+  {FS4_PROG_FW_BIN, "PROG_FW_BIN"},
+  {FS4_PRE_LINK_CODE, "PRE_LINK_CODE"},
+  {FS4_PRE_LINK_DATA, "PRE_LINK_DATA"},
+  {FS4_POST_LINK_CODE, "POST_LINK_CODE"},
+  {FS4_POST_LINK_DATA, "POST_LINK_DATA"},
+  {FS3_DBG_FW_INI, "DBG_FW_INI"},
+  {FS3_DBG_FW_PARAMS, "DBG_FW_PARAMS"},
+  {FS3_FW_ADB, "FW_ADB"},
+  {FS4_GB_FW_CODE, "GB_FW_CODE"},
+  {FS4_TILE_FW_CODE, "TILE_FW_CODE"},
+  {FS4_FW_TILE_INI, "FW_TILE_INI"},
+  {FS4_HW_TILE_INI, "HW_TILE_INI"},
+  {FS4_SLOT_DEPENDENT_INI, "SLOT_DEPENDENT_INI"},
+  {FS3_IMAGE_SIGNATURE_256, "IMAGE_SIGNATURE_256"},
+  {FS3_PUBLIC_KEYS_2048, "PUBLIC_KEYS_2048"},
+  {FS3_PUBLIC_KEYS_4096, "PUBLIC_KEYS_4096"},
+  {FS3_FORBIDDEN_VERSIONS, "FORBIDDEN_VERSIONS"},
+  {FS3_IMAGE_SIGNATURE_512, "IMAGE_SIGNATURE_512"},
+  {FS3_CRDUMP_MASK_DATA, "CRDUMP_MASK_DATA"},
+  {FS3_HMAC_DIGEST, "HMAC_DIGEST"},
+  {FS3_MFG_INFO, MFG_INFO},
+  {FS3_DEV_INFO, DEV_INFO},
+  {FS3_NV_DATA1, "NV_DATA"},
+  {FS3_VPD_R0, "VPD_R0"},
+  {FS3_NV_DATA2, "NV_DATA"},
+  {FS3_FW_NV_LOG, "FW_NV_LOG"},
+  {FS3_NV_DATA0, "NV_DATA"},
+  {FS4_DEV_INFO1, "DEV_INFO1"},
+  {FS4_DEV_INFO2, "DEV_INFO2"},
+  {FS4_FW_INTERNAL_USAGE, "FW_INTERNAL_USAGE"},
+  {FS4_PROGRAMMABLE_HW_FW1, "PROGRAMMABLE_HW_FW"},
+  {FS4_PROGRAMMABLE_HW_FW2, "PROGRAMMABLE_HW_FW"},
+  {FS4_DIGITAL_CERT_PTR, "DIGITAL_CERT_PTR"},
+  {FS4_DIGITAL_CERT_RW, "DIGITAL_CERT_RW"},
+  {FS4_LC_INI1_TABLE, "LC_INI1_TABLE"},
+  {FS4_LC_INI2_TABLE, "LC_INI2_TABLE"},
+  {FS4_LC_INI_NV_DATA, "LC_INI_NV_DATA"},
+  {FS4_CERT_CHAIN_0, "CERT_CHAIN_0"},
+  {FS5_SECURITY_LOG, "SECURITY_LOG"},
+  {FS4_CPO_CALIBRATION_DATA, "CPO_CALIBRATION_DATA"},
+  {FS4_DIGITAL_CACERT_RW, "DIGITAL_CACERT_RW"},
+  {FS4_CERTIFICATE_CHAINS_1, "CERTIFICATE_CHAINS_1"},
+  {FS4_CERTIFICATE_CHAINS_2, "CERTIFICATE_CHAINS_2"},
+  {FS4_ROOT_CERTIFICATES_1, "ROOT_CERTIFICATES_1"},
+  {FS4_ROOT_CERTIFICATES_2, "ROOT_CERTIFICATES_2"},
+  {FS4_TOOLS_AREA, "TOOLS_AREA"},
+  {FS3_DTOC, "DTOC_HEADER"},
+  {FS4_HW_PTR, "HW_POINTERS"},
+  {FS4_FW_DEBUG_DUMP, "FW_DEBUG_DUMP"},
+  {FS4_FW_DEBUG_DUMP_2, "FW_DEBUG_DUMP_2"},
+  {FS4_RSA_PUBLIC_KEY, "RSA_PUBLIC_KEY"},
+  {FS4_RSA_4096_SIGNATURES, "RSA_4096_SIGNATURES"},
+  {FS4_EXCLKSYNC_INFO, "EXCLKSYNC_INFO"},
+  {FS4_ENCRYPTION_KEY_TRANSITION, "ENCRYPTION_KEY_TRANSITION"},
+  {FS4_PXIR_INI, "PXIR_INI"},
+  {FS4_PXIR_INI1, "PXIR_INI1"},
+  {FS4_NVDA_ROT_CERTIFICATES, "NVDA_ROT_CERTIFICATES"},
+  {FS4_MAIN_PAGES_HASHES, "MAIN_PAGES_HASHES"},
+  {FS4_MAIN_PAGES_LOCKED_HASHES, "MAIN_PAGES_LOCKED_HASHES"},
+  {FS6_TILE_PAGES_HASHES, "TILE_PAGES_HASHES"},
+  {FS6_TILE_PAGES_LOCKED_HASHES, "TILE_PAGES_LOCKED_HASHES"},
+  {FS4_STRN_MAIN, "STRN_MAIN"},
+  {FS4_STRN_IRON, "STRN_IRON"},
+  {FS4_STRN_TILE, "STRN_TILE"},
+  {FS4_MAIN_DATA, "MAIN_DATA"},
+  {FS4_HASHES_TABLE, "HASHES_TABLE"},
+  {FS4_ISSU_NOTCH_CONFIG, "ISSU_NOTCH_CONFIG"},
+  {FS4_ISSU_MAIN_UID, "ISSU_MAIN_UID"},
+  {FS4_TILE_UID, "TILE_UID"}};
+
+const char* FwOperations::GetSectionNameByType(u_int8_t section_type)
+{
+    for (u_int32_t i = 0; i < ARR_SIZE(_fs3SectionsInfoArr); i++)
+    {
+        const SectionInfo* sect_info = &_fs3SectionsInfoArr[i];
+        if (sect_info->type == section_type)
+        {
+            return sect_info->name.c_str();
+        }
+    }
+    return UNKNOWN_SECTION;
+}
+
 bool FwOperations::readBufAux(FBase& f, u_int32_t o, void* d, int l, const char* p)
 {
     bool rc = true;
     READBUF(f, o, d, l, p);
     return rc;
+}
+
+bool FwOperations::IsFileSignatureTb50x(FILE* fin)
+{
+    unsigned char l1pt_bytes[8] = {0};
+    // Check that file is large enough and read 8 bytes from L1PT_OFFSET if so
+    fseek(fin, 0, SEEK_END);
+    long file_size = ftell(fin);
+    if (file_size > 0 && (u_int32_t)file_size > L1PT_OFFSET + 8)
+    {
+        fseek(fin, L1PT_OFFSET, SEEK_SET);
+        fread(l1pt_bytes, 1, 8, fin);
+    }
+    fseek(fin, 0, SEEK_SET);
+    if (std::equal(PartitionTable::MagicID().begin(), PartitionTable::MagicID().end(), l1pt_bytes))
+    {
+        return true;
+    }
+    return false;
 }
 
 int FwOperations::getFileSignature(const char* fname)
@@ -110,7 +242,8 @@ int FwOperations::getFileSignature(const char* fname)
         return res;
     }
 
-    if (!strncmp((char*)tmpb, "MTFW", 4) || FsCompsFactory::IsFsCompsFingerPrint(tmpb))
+    if (!strncmp((char*)tmpb, "MTFW", 4) || FsCompsFactory::IsFsCompsFingerPrint(tmpb) || IsFileSignatureTb50x(fin) ||
+        FwOperations::IsFS6ReducedImage(&tmpb[ROM_IMGS_MAGIC_PATTERN_OFFSET]))
     {
         res = IMG_SIG_TYPE_BIN;
     }
@@ -140,7 +273,9 @@ int FwOperations::getBufferSignature(u_int8_t* buf, u_int32_t size)
     {
         return 0;
     }
-    if (!strncmp((char*)buf, "MTFW", 4))
+    if (!strncmp((char*)buf, "MTFW", 4) ||
+        (size > L1PT_OFFSET + PartitionTable::MagicID().size() &&
+         std::equal(PartitionTable::MagicID().begin(), PartitionTable::MagicID().end(), &buf[L1PT_OFFSET])))
     {
         res = IMG_SIG_TYPE_BIN;
     }
@@ -149,6 +284,14 @@ int FwOperations::getBufferSignature(u_int8_t* buf, u_int32_t size)
         res = IMG_SIG_TYPE_MFA;
     }
 
+    if (!strncmp((char*)buf, "NVDA", 4))
+    {
+        res = IMG_SIG_TYPE_CSH;
+    }
+    if (size >= 16 && IsPLDMHeader(buf)) // the PLDM package header identifier is a 16-byte UUID
+    {
+        res = IMG_SIG_TYPE_PLDM;
+    }
     return res;
 }
 
@@ -274,6 +417,7 @@ bool FwOperations::FwVerifyAdv(ExtVerifyParams& verifyParams)
 void FwOperations::FwInitCom()
 {
     memset(&_fwImgInfo, 0, sizeof(_fwImgInfo));
+    memset(&_fsCommonInfo.ext_info, 0, sizeof(_fsCommonInfo.ext_info));
 }
 
 void FwOperations::GetFwParams(fw_ops_params_t& fwParams)
@@ -525,7 +669,7 @@ bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase** ioAccessP, 
         u_int32_t numInfo = fwParams.buffSize;
 #ifndef NO_MFA_SUPPORT
         int sig = getBufferSignature((u_int8_t*)fwParams.buffHndl, numInfo);
-        if (sig == IMG_SIG_TYPE_BIN || swDevId != 0)
+        if (sig == IMG_SIG_TYPE_BIN || sig == IMG_SIG_TYPE_CSH || swDevId != 0)
         {
             *ioAccessP = new FImage;
             if (!((FImage*)*ioAccessP)->open(fwParams.buffHndl, (u_int32_t)numInfo, !fwParams.shortErrors))
@@ -553,6 +697,17 @@ bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase** ioAccessP, 
                 return false;
             }
             mfa_release_image(imgbuf);
+        }
+        else if (sig == IMG_SIG_TYPE_PLDM)
+        {
+            *ioAccessP = new FPldm;
+            if (!((FPldm*)*ioAccessP)->open(fwParams.buffHndl, numInfo, !fwParams.shortErrors))
+            {
+                printf("Failed to open PLDM package from buffer: %s\n", (*ioAccessP)->err());
+                WriteToErrBuff(fwParams.errBuff, (char*)(*ioAccessP)->err(), fwParams.errBuffSize);
+                delete *ioAccessP;
+                return false;
+            }
         }
         else
         {
@@ -615,6 +770,52 @@ bool FwOperations::GetImageFormatVersion(FBase& f, u_int32_t boot_version_offset
     image_format_version = boot_version.image_format_version;
     MLXFWOPS_LOG_DEBUG("image_format_version = %d", image_format_version);
     return true;
+}
+
+u_int8_t FwOperations::IsFS6Image(FBase& f)
+{
+    MLXFWOPS_LOG_DEBUG("FwOperations::IsFS6Image");
+    u_int8_t fwFormat = FS_UNKNOWN_IMG;
+    vector<u_int8_t> magicPattern;
+    if (f.get_effective_size() >= L1PT_OFFSET + PartitionTable::MagicID().size())
+    {
+        magicPattern.resize(PartitionTable::MagicID().size());
+        if (f.read(L1PT_OFFSET, magicPattern.data(), PartitionTable::MagicID().size()))
+        {
+            if (std::equal(PartitionTable::MagicID().begin(), PartitionTable::MagicID().end(), magicPattern.begin()))
+            {
+                fwFormat = FS_FS6_GEN;
+            }
+        }
+    }
+
+    if (fwFormat == FS_UNKNOWN_IMG)
+    {
+        unsigned char cshRomImagesMagicPattern[4] = {0};
+        unsigned char cshL2ptMagicPattern[8] = {0};
+
+        if (f.read(ROM_IMGS_MAGIC_PATTERN_OFFSET, cshRomImagesMagicPattern, sizeof(cshRomImagesMagicPattern)) &&
+            f.read(ROM_IMGS_ALIGN_SIZE, cshL2ptMagicPattern, sizeof(cshL2ptMagicPattern)))
+        {
+            if (IsFS6ReducedImage(cshRomImagesMagicPattern, cshL2ptMagicPattern))
+            {
+                fwFormat = FS_FS6_GEN;
+            }
+        }
+    }
+    return fwFormat;
+}
+
+bool FwOperations::IsFS6ReducedImage(unsigned char* romImageMagicPattern, unsigned char* l2ptMagicPattern)
+{
+    const auto& romExpected = PartitionTable::RomImageMagicPattern();
+    const auto& l2ptExpected = PartitionTable::MagicID();
+
+    bool romMatches = std::equal(romExpected.begin(), romExpected.end(), romImageMagicPattern);
+    bool l2ptMatches =
+      (l2ptMagicPattern == nullptr) || std::equal(l2ptExpected.begin(), l2ptExpected.end(), l2ptMagicPattern);
+
+    return romMatches && l2ptMatches;
 }
 
 u_int8_t FwOperations::IsFS4OrFS5Image(FBase& f, u_int32_t* found_images)
@@ -769,6 +970,13 @@ u_int8_t FwOperations::CheckFwFormat(FBase& f, bool getFwFormatFromImg, u_int16_
         {
             return v;
         }
+
+        v = IsFS6Image(f);
+        if (v != FS_UNKNOWN_IMG)
+        {
+            return v;
+        }
+
         // If not FS4 then check if it is FS3 or FS2
         return IsFS3OrFS2Image(f, &found_images);
     }
@@ -868,7 +1076,8 @@ bool FwOperations::imageDevOperationsCreate(fw_ops_params_t& devParams, fw_ops_p
         *imgFwOps = NULL;
         return false;
     }
-    if (imgQuery.fs3_info.security_mode == SM_NONE && ignoreSecurityAttributes == false && (*imgFwOps)->FwType() != FIT_COMPS && (*imgFwOps)->FwType() != FIT_PLDM)
+    if (imgQuery.fs3_info.security_mode == SM_NONE && ignoreSecurityAttributes == false && (*imgFwOps)->FwType() != FIT_COMPS && (*imgFwOps)->FwType() != FIT_PLDM &&
+        (*imgFwOps)->FwType() != FIT_CSH_VMOD)
     {
         devParams.noFwCtrl = true;
     }
@@ -895,6 +1104,7 @@ void FwOperations::BackUpFwParams(fw_ops_params_t& fwParams)
     // no support for flash params
     _fwParams.flashParams = (flash_params_t*)NULL;
     _fwParams.forceLock = fwParams.forceLock;
+    _fwParams.forceCleanup = fwParams.forceCleanup;
     _fwParams.ignoreCacheRep = fwParams.ignoreCacheRep;
     _fwParams.mstHndl = (fwParams.hndlType == FHT_MST_DEV && fwParams.mstHndl) ?
                           strcpy((char*)(new char[(strlen(fwParams.mstHndl) + 1)]), fwParams.mstHndl) :
@@ -1124,6 +1334,13 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
             {
                 MLXFWOPS_LOG_DEBUG("FS5 ops created for %s", file_handle_type_to_str(fwParams.hndlType));
                 fwops = new Fs5Operations(ioAccess);
+                break;
+            }
+
+            case FS_FS6_GEN:
+            {
+                MLXFWOPS_LOG_DEBUG("FS6 ops created for %s", file_handle_type_to_str(fwParams.hndlType));
+                fwops = new Fs6Operations(ioAccess);
                 break;
             }
 
@@ -2070,6 +2287,22 @@ bool FwOperations::RomInfo::GetExpRomVerForOneRom(u_int32_t verOffset)
     return true;
 }
 
+bool FwOperations::ReadBinFile(const char* fimage, vector<u_int8_t>& file_data)
+{
+    u_int8_t* buffer = nullptr;
+    int buffer_size = 0;
+
+    // Read from file
+    if (!ReadBinFile(fimage, buffer, buffer_size))
+    {
+        delete[] buffer;
+        return false;
+    }
+    file_data.insert(file_data.end(), buffer, buffer + buffer_size);
+    delete[] buffer;
+    return true;
+}
+
 bool FwOperations::ReadBinFile(const char* fimage, u_int8_t*& file_data, int& file_size)
 {
 #ifndef UEFI_BUILD
@@ -2361,6 +2594,11 @@ bool FwOperations::IsEncryptionSupported()
     return errmsg("IsEncryptionSupported not supported.");
 }
 
+bool FwOperations::IsComponentFormatWithKeyId()
+{
+    return errmsg("IsComponentFormatWithKeyId is not supported");
+}
+
 bool FwOperations::IsCRDTDebugSessionActive()
 {
     return errmsg("IsCRDTDebugSessionActive is not supported");
@@ -2385,7 +2623,7 @@ bool FwOperations::FwBurnAdvanced(FwOperations* imageOps, ExtBurnParams& burnPar
 bool FwOperations::checkAndDisableFlashWpIfRequired()
 {
     u_int8_t fwType = this->FwType();
-    if (fwType != FIT_FS5)
+    if (fwType != FIT_FS5 && fwType != FIT_FS6)
     {
         MLXFWOPS_LOG_DEBUG("not supported for fw type %d", fwType);
         return true; // only supported for FS5 and FS6
@@ -2414,7 +2652,7 @@ bool FwOperations::restoreWriteProtectInfo()
 {
     MLXFWOPS_LOG_DEBUG("FwOperations::restoreWriteProtectInfo");
     u_int8_t fwType = this->FwType();
-    if (fwType != FIT_FS5)
+    if (fwType != FIT_FS5 && fwType != FIT_FS6)
     {
         MLXFWOPS_LOG_DEBUG("not supported for fw type %d", fwType);
         return true; // only supported for FS5 and FS6
@@ -2552,6 +2790,77 @@ bool FwOperations::FwSetForbiddenVersions(char* fname, PrintCallBack callBackFun
     return errmsg("FwSetForbiddenVersions not supported");
 }
 
+bool FwOperations::CheckDevInfoSignature(u_int32_t* buff)
+{
+    MLXFWOPS_LOG_DEBUG("FwOperations::CheckDevInfoSignature");
+    u_int32_t sig0 = buff[0], sig1 = buff[1], sig2 = buff[2], sig3 = buff[3];
+    TOCPU1(sig0);
+    TOCPU1(sig1);
+    TOCPU1(sig2);
+    TOCPU1(sig3);
+    std::vector<u_int32_t> a = {sig0, sig1, sig2, sig3};
+    std::vector<u_int32_t> b = {DEV_INFO_SIG0, DEV_INFO_SIG1, DEV_INFO_SIG2, DEV_INFO_SIG3};
+    return mft_utils::CompareNElements(a, b, 4);
+}
+
+const vector<pair<string, ComponentType>> FwOperations::GetStringToComponentEnum()
+{
+    static const vector<pair<string, ComponentType>> stringToComponentEnum = {
+      {"NCORE", ComponentType::Comp_Psc_Ncore},
+      {"BL1", ComponentType::Comp_Psc_Bl1},
+      {"FW", ComponentType::Comp_Psc_Fw},
+      {"BCT", ComponentType::Comp_Psc_Bct},
+      {"IMAGE_INFO", ComponentType::Comp_IToc_Image_Info},
+      {CSH::ROM_IMGS_NAME, ComponentType::Comp_Csh_Rom_Imgs},
+      {CSH::NV_FWS_NAME, ComponentType::Comp_Csh_Nv_Fws},
+      {CSH::OEM_FWS_NAME, ComponentType::Comp_Csh_Oem_Fws},
+      {CSH::BCT_DTB_NAME, ComponentType::Comp_Csh_Bct_Dtb},
+      {CSH::SWITCH_FWS_NAME, ComponentType::Comp_Csh_Switch_Fws},
+      {CSH::SBD_FW_NAME, ComponentType::Comp_Csh_Sbd_Fw},
+      {CSH::VMOD_FW_NAME, ComponentType::Comp_Csh_Vmod_Fw},
+      {CSH::CALIPTRA_FW_NAME, ComponentType::Comp_Csh_Caliptra_Fw}};
+    return stringToComponentEnum;
+}
+
+ComponentType FwOperations::StringToComponentType(string compName)
+{
+    for (size_t i = 0; i < GetStringToComponentEnum().size(); i++)
+    {
+        if (GetStringToComponentEnum()[i].first == compName)
+        {
+            return GetStringToComponentEnum()[i].second;
+        }
+    }
+    return ComponentType::Comp_Psc_Not_Valid;
+}
+
+string FwOperations::ComponentNameToString(ComponentType compName)
+{
+    for (size_t i = 0; i < GetStringToComponentEnum().size(); i++)
+    {
+        if (GetStringToComponentEnum()[i].second == compName)
+        {
+            return GetStringToComponentEnum()[i].first;
+        }
+    }
+    return "";
+}
+
+bool FwOperations::GetFwComponentsData(string)
+{
+    return errmsg("GetFwComponentsData is not supported");
+}
+
+bool FwOperations::ReadComponent(string, ComponentHeader, string, vector<u_int8_t>&)
+{
+    return errmsg("ReadComponent is not supported");
+}
+
+bool FwOperations::ReadComponentSection(string, string, ComponentHeader, vector<u_int8_t>&)
+{
+    return errmsg("ReadComponentSection is not supported");
+}
+
 bool FwOperations::GetRSAPublicKey(vector<u_int8_t>& key)
 {
     (void)key;
@@ -2591,7 +2900,7 @@ u_int8_t FwOperations::GetFwFormatFromHwDevID(u_int32_t hwDevId)
     {
         return FS_FS5_GEN;
     }
-    else if ((hwDevId == SPECTRUM6_HW_ID))
+    else if ((hwDevId == SPECTRUM6_HW_ID) || (hwDevId == SPECTRUM6_RMA_HW_ID))
     {
         return FS_FS6_GEN;
     }
@@ -2798,34 +3107,7 @@ u_int32_t FwOperations::GetPublicKeySecureBootPtr()
 
 bool FwOperations::VerifyBranchFormat(const char* vsdString)
 {
-    size_t length = strlen(vsdString);
-    if (length > BRANCH_LEN || length < MIN_BRANCH_LEN)
-    {
-        return false;
-    }
-    if (vsdString[length - MIN_BRANCH_LEN] == '_')
-    {
-        for (size_t i = length - MIN_BRANCH_LEN + 1; i < length; i++)
-        {
-            if (!isdigit(vsdString[i]))
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-    else if (vsdString[length - MIN_BRANCH_LEN + 1] == '-')
-    {
-        for (size_t i = length - MIN_BRANCH_LEN + 2; i < length; i++)
-        {
-            if (!isdigit(vsdString[i]))
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-    return false;
+    return FwVersion::is_branch_version(vsdString);
 }
 
 void FwOperations::getSupportedHwId(u_int32_t** supportedHwId, u_int32_t& supportedHwIdNum)
@@ -2922,6 +3204,20 @@ bool FwOperations::IsExtendedGuidNumSupported()
     return isSupported;
 }
 
+void FwOperations::PrintSectionRange(VerifyCallBack verifyCallBackFunc,
+                                     u_int32_t startAddr,
+                                     u_int32_t endAddr,
+                                     u_int32_t size,
+                                     const string& sectionType,
+                                     const string& suffix)
+{
+    std::stringstream ss;
+    ss << "0x" << std::hex << std::setw(8) << std::setfill('0') << startAddr << "-0x" << std::setw(8)
+       << std::setfill('0') << endAddr << " (0x" << std::setw(6) << std::setfill('0') << size << ")/ " << std::left
+       << std::setw(25) << std::setfill(' ') << sectionType << " | " << suffix << std::endl;
+    report_callback(verifyCallBackFunc, ss.str().c_str());
+}
+
 #if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
 bool FwOperations::CheckPemKeySize(const string privPemFileStr, u_int32_t& keySize)
 {
@@ -2981,9 +3277,10 @@ life_cycle_t CRSpaceRegisters::getLifeCycle()
         bitLen = 2;
             break;
             case CT_SPECTRUM6:
-            lifeCycleAddress = 0xf0000;
+            lifeCycleAddress = 0xf0004;
             firstBit = 16;
             bitLen = 5;
+            lifeCycle.version_field = 2;
             break;
         case CT_CONNECTX8:
         case CT_CONNECTX9:
@@ -3004,19 +3301,34 @@ life_cycle_t CRSpaceRegisters::getLifeCycle()
     }
 
     lifeCycle.value = getConsecutiveBits(getRegister(lifeCycleAddress), firstBit, bitLen);
+    if (_chip_type == CT_SPECTRUM6 && lifeCycle.value == FS6_LC_FAILURE_ANALYSIS_MGIR)
+    {
+        MLXFWOPS_LOG_DEBUG("lifeCycle.value (0x%x) is not a supported value through CR-Space.", lifeCycle.value);
+        lifeCycle.value = FS6_LC_INVALID;
+    }
 
     return lifeCycle;
 }
 
 bool CRSpaceRegisters::IsLifeCycleSecured(life_cycle_t life_cycle)
 {
-    if (life_cycle.version_field == 1)
+    if (life_cycle.version_field == 0)
+    {
+        return life_cycle.value == FS4_LC_GA_SECURED;
+    }
+    else if (life_cycle.version_field == 1)
     {
         return (life_cycle.value == FS5_LC_PRE_PRODUCTION || life_cycle.value == FS5_LC_PRODUCTION);
     }
+    else if (life_cycle.version_field == 2)
+    {
+        return life_cycle.value == FS6_LC_PRE_PRODUCTION || life_cycle.value == FS6_LC_PRODUCTION ||
+               life_cycle.value == FS6_LC_RMA_ENABLED || life_cycle.value == FS6_LC_RMA_DISABLED;
+    }
     else
     {
-        return life_cycle.value == FS4_LC_GA_SECURED;
+        MLXFWOPS_LOG_DEBUG("life_cycle.version_field has unexpected value: %d", life_cycle.version_field);
+        return false;
     }
 }
 
@@ -3056,7 +3368,7 @@ int CRSpaceRegisters::getGlobalImageStatus()
             global_image_status_address = 0xa1844;
             break;
         case CT_SPECTRUM6:
-            global_image_status_address = 0x155004;
+            global_image_status_address = 0x157c04;
             break;
         default:
             throw logic_error("-E- global_image_status query is not implemented for the current device.");
@@ -3142,4 +3454,200 @@ u_int32_t CRSpaceRegisters::getRegister(u_int32_t address)
 bool FwOperations::getBFBComponentsVersions(std::map<std::string, std::string>&, bool)
 {
     return errmsg("getBFBComponentsVersions is not supported");
+}
+
+bool FwOperations::GetMfgInfo(u_int8_t* buff)
+{
+    // structs of the same size we can unpack either way
+    struct cibfw_mfg_info cib_mfg_info;
+    image_layout_mfg_info mfg_info;
+
+    cibfw_mfg_info_unpack(&cib_mfg_info, buff);
+    // cibfw_mfg_info_dump(&mfg_info, stdout);
+    if (IsExtendedGuidNumSupported() || CHECK_MFG_NEW_FORMAT(cib_mfg_info))
+    {
+        image_layout_mfg_info_unpack(&mfg_info, buff);
+        CHECK_UID_STRUCTS_SIZE(_fsCommonInfo.ext_info.orig_fs3_uids_info.image_layout_uids, mfg_info.guids);
+        memcpy(&_fsCommonInfo.ext_info.orig_fs3_uids_info.image_layout_uids, &mfg_info.guids, sizeof(mfg_info.guids));
+        strcpy(_fsCommonInfo.ext_info.orig_psid, mfg_info.psid);
+        _fsCommonInfo.ext_info.guids_override_en = mfg_info.guids_override_en;
+        _fsCommonInfo.ext_info.orig_fs3_uids_info.guid_format = IMAGE_LAYOUT_UIDS;
+    }
+    else if (CHECK_MFG_OLD_FORMAT(cib_mfg_info))
+    {
+        CHECK_UID_STRUCTS_SIZE(_fsCommonInfo.ext_info.orig_fs3_uids_info.cib_uids, cib_mfg_info.guids);
+        memcpy(&_fsCommonInfo.ext_info.orig_fs3_uids_info.cib_uids, &cib_mfg_info.guids, sizeof(cib_mfg_info.guids));
+        strcpy(_fsCommonInfo.ext_info.orig_psid, cib_mfg_info.psid);
+        _fsCommonInfo.ext_info.guids_override_en = cib_mfg_info.guids_override_en;
+        _fsCommonInfo.ext_info.orig_fs3_uids_info.guid_format = CIB_UIDS;
+    }
+    else
+    {
+        return errmsg(MLXFW_UNKNOWN_SECT_VER_ERR, "Unknown MFG_INFO format version (%d.%d).",
+                      cib_mfg_info.major_version, cib_mfg_info.minor_version);
+    }
+
+    if (cib_mfg_info.minor_version == 1)
+    {
+        // get orig_prs name
+        struct tools_open_mfg_info tools_mfg_info;
+        memset(&tools_mfg_info, 0, sizeof(tools_mfg_info));
+        tools_open_mfg_info_unpack(&tools_mfg_info, buff);
+        strncpy(_fsCommonInfo.ext_info.orig_prs_name, tools_mfg_info.orig_prs_name, FS3_PRS_NAME_LEN);
+        _fsCommonInfo.ext_info.orig_prs_name[FS3_PRS_NAME_LEN - 1] = '\0';
+    }
+    return true;
+}
+
+bool FwOperations::GetDevInfo(u_int8_t* buff)
+{
+    struct cibfw_device_info cib_dev_info;
+    image_layout_device_info device_info;
+    // same size, we can unpack to check version
+    cibfw_device_info_unpack(&cib_dev_info, buff);
+    // cibfw_device_info_dump(&dev_info, stdout);
+    if (IsExtendedGuidNumSupported() || CHECK_DEV_INFO_NEW_FORMAT(cib_dev_info))
+    {
+        image_layout_device_info_unpack(&device_info, buff);
+        CHECK_UID_STRUCTS_SIZE(_fsCommonInfo.ext_info.fs3_uids_info.image_layout_uids, device_info.guids);
+        memcpy(&_fsCommonInfo.ext_info.fs3_uids_info.image_layout_uids, &device_info.guids, sizeof(device_info.guids));
+        strcpy(_fwImgInfo.ext_info.vsd, device_info.vsd);
+        _fsCommonInfo.ext_info.fs3_uids_info.guid_format = IMAGE_LAYOUT_UIDS;
+        _fwImgInfo.ext_info.vsd_sect_found = true;
+    }
+    else if (CHECK_DEV_INFO_OLD_FORMAT(cib_dev_info))
+    {
+        CHECK_UID_STRUCTS_SIZE(_fsCommonInfo.ext_info.fs3_uids_info.cib_uids, cib_dev_info.guids);
+        memcpy(&_fsCommonInfo.ext_info.fs3_uids_info.cib_uids, &cib_dev_info.guids, sizeof(cib_dev_info.guids));
+        strcpy(_fwImgInfo.ext_info.vsd, cib_dev_info.vsd);
+        _fsCommonInfo.ext_info.fs3_uids_info.guid_format = CIB_UIDS;
+        _fwImgInfo.ext_info.vsd_sect_found = true;
+    }
+    else
+    {
+        return errmsg(MLXFW_UNKNOWN_SECT_VER_ERR, "Unknown DEV_INFO format version (%d.%d).",
+                      cib_dev_info.major_version, cib_dev_info.minor_version);
+    }
+    return true;
+}
+
+bool FwOperations::ChangeDeviceInfoUidsFromBase(fs3_uid_t& usrGuid, const sg_params_t& sgParam)
+{
+    if (!_fsCommonInfo.ext_info.guids_override_en)
+    {
+        return errmsg("guids override is not set, cannot set device guids");
+    }
+
+    usrGuid.num_of_guids_pp[0] = sgParam.usePPAttr  ? sgParam.numOfGUIDsPP[0] :
+                                 sgParam.numOfGUIDs ? sgParam.numOfGUIDs :
+                                                      DEFAULT_GUID_NUM;
+    usrGuid.step_size_pp[0] = sgParam.usePPAttr ? sgParam.stepSizePP[0] :
+                              sgParam.stepSize  ? sgParam.stepSize :
+                                                  DEFAULT_STEP;
+    usrGuid.num_of_guids_pp[1] = sgParam.usePPAttr  ? sgParam.numOfGUIDsPP[1] :
+                                 sgParam.numOfGUIDs ? sgParam.numOfGUIDs :
+                                                      DEFAULT_GUID_NUM;
+    usrGuid.step_size_pp[1] = sgParam.usePPAttr ? sgParam.stepSizePP[1] :
+                              sgParam.stepSize  ? sgParam.stepSize :
+                                                  DEFAULT_STEP;
+    usrGuid.use_pp_attr = 1;
+
+    usrGuid.base_guid_specified = false;
+    usrGuid.base_mac_specified = false;
+    usrGuid.set_mac_from_guid = false;
+
+    if (sgParam.guidsSpecified || sgParam.uidSpecified)
+    {
+        usrGuid.base_guid_specified = true;
+        usrGuid.base_guid = sgParam.userGuids[0];
+        usrGuid.set_mac_from_guid = sgParam.uidSpecified ? true : false;
+    }
+    if (sgParam.macsSpecified)
+    {
+        /* check base mac */
+        if (!CheckMac(sgParam.userGuids[1]))
+        {
+            return errmsg("Bad MAC (" MAC_FORMAT ") given: %s. Please specify a valid MAC value",
+                          sgParam.userGuids[1].h, sgParam.userGuids[1].l, err());
+        }
+        usrGuid.base_mac_specified = true;
+        usrGuid.base_mac = sgParam.userGuids[1];
+    }
+
+    if (!usrGuid.base_guid_specified && !usrGuid.base_mac_specified)
+    {
+        return errmsg("base GUID/MAC were not specified.");
+    }
+    return true;
+}
+
+bool FwOperations::ChangeUidsFromBase(fs3_uid_t base_uid, image_layout_guids& guids)
+{
+    /*
+     * on ConnectX4 we derrive guids from base_guid and macs from base_mac
+     */
+    u_int64_t base_guid_64;
+    u_int64_t base_mac_64;
+    if (!base_uid.use_pp_attr)
+    {
+        return errmsg("Expected per port attributes to be specified");
+    }
+
+    base_guid_64 = base_uid.base_guid_specified ? GUID_TO_64(base_uid.base_guid) : guids.guids.uid;
+    base_mac_64 = base_uid.base_mac_specified ? GUID_TO_64(base_uid.base_mac) : guids.macs.uid;
+    if (base_uid.set_mac_from_guid && base_uid.base_guid_specified)
+    {
+        // in case we derrive mac from guid
+        base_mac_64 =
+          (((u_int64_t)base_uid.base_guid.l & 0xffffff) | (((u_int64_t)base_uid.base_guid.h & 0xffffff00) << 16));
+    }
+
+    if (base_uid.num_of_guids_pp[0] != DEFAULT_GUID_NUM)
+    {
+        guids.guids.num_allocated = (u_int8_t)(base_uid.num_of_guids_pp[0] & 0xff);
+        guids.guids.num_allocated_msb = (u_int8_t)((base_uid.num_of_guids_pp[0] >> 8) & 0xff);
+        guids.macs.num_allocated = guids.guids.num_allocated;
+        guids.macs.num_allocated_msb = guids.guids.num_allocated_msb;
+    }
+
+    guids.guids.uid = base_guid_64;
+    guids.guids.step = base_uid.step_size_pp[0] != DEFAULT_STEP ? base_uid.step_size_pp[0] : guids.guids.step;
+
+    guids.macs.uid = base_mac_64;
+    guids.macs.step = base_uid.step_size_pp[0] != DEFAULT_STEP ? base_uid.step_size_pp[0] : guids.macs.step;
+    return true;
+}
+
+FwOperations::Spc6LayoutSupport FwOperations::GetSpc6LayoutSupport(const FwVersion& fwVer)
+{
+    static const std::pair<unsigned short int, unsigned short int> spc6BlockedSubminorRanges[] = {
+      {2, 298},
+      {932, 938},
+      {1900, 1908},
+    };
+
+    static const FwVersion spc6FamilyVersion(39, 0, 0);
+    if (!fwVer.is_same_device_family(spc6FamilyVersion))
+    {
+        return Spc6LayoutSupport::NotApplicable;
+    }
+
+    const unsigned short int minor = fwVer.get_minor();
+    if (minor != 2020)
+    {
+        return Spc6LayoutSupport::NotApplicable;
+    }
+
+    const unsigned short int subminor = fwVer.get_subminor();
+    for (const auto& blockedRange : spc6BlockedSubminorRanges)
+    {
+        MLXFWOPS_LOG_DEBUG("Checking blocked range: %d-%d", blockedRange.first, blockedRange.second);
+        if (subminor >= blockedRange.first && subminor <= blockedRange.second)
+        {
+            MLXFWOPS_LOG_DEBUG("Blocked range found");
+            return Spc6LayoutSupport::NewLayoutNotSupported;
+        }
+    }
+
+    return Spc6LayoutSupport::NewLayoutSupported;
 }

@@ -85,6 +85,7 @@
 /* The DBs compress by a factor of 30-45, so the first guess almost always holds */
 #define CRD_XZ_SIZE_GUESS_FACTOR 32
 #define CRD_XZ_DICT_MAX (16 * 1024 * 1024)
+#define CRD_CSV_MAX_SIZE ((size_t)1 << 30)
 
 // Scratchpad 2
 #define CRD_SP2_TLV_FIRST_ADDRESS 0x18         /* This first tlv address is valid only for HCA */
@@ -547,7 +548,7 @@ static int crd_decompress_csv(IN u_int8_t* compressed, IN size_t compressed_size
     char* larger_data = NULL;
     size_t capacity = 0;
 
-    if (compressed_size > SIZE_MAX / CRD_XZ_SIZE_GUESS_FACTOR)
+    if (compressed_size > CRD_CSV_MAX_SIZE / CRD_XZ_SIZE_GUESS_FACTOR)
     {
         CRD_DEBUG("Compressed csv is too large : %llu bytes\n", (unsigned long long)compressed_size);
         sprintf(crd_error, "Compressed csv file is too large");
@@ -586,7 +587,7 @@ static int crd_decompress_csv(IN u_int8_t* compressed, IN size_t compressed_size
             CRD_DEBUG("xz stream ended prematurely, %llu bytes decompressed\n", (unsigned long long)buf.out_pos);
             break;
         }
-        if (capacity > SIZE_MAX / 2)
+        if (capacity > CRD_CSV_MAX_SIZE / 2)
         {
             CRD_DEBUG("Decompressed csv exceeded %llu bytes\n", (unsigned long long)capacity);
             sprintf(crd_error, "Decompressed csv file is too large");

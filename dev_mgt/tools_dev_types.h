@@ -113,6 +113,7 @@ extern "C"
         DeviceSpectrum4, /* Albatross */
         DeviceSpectrum5,
         DeviceSpectrum6,
+        DeviceSpectrum6_RMA,
         DeviceSpectrum6IB,
         DeviceQuantum2, /* Blackbird */
         DeviceQuantum3, /* Sunbird */
@@ -166,6 +167,7 @@ extern "C"
         DeviceSpectrum4_HwId = 0x254,
         DeviceSpectrum5_HwId = 0x270,
         DeviceSpectrum6_HwId = 0x274,
+        DeviceSpectrum6_RMA_HwId = 0x275,
         DeviceSpectrum6IB_HwId = 0x276,
         DeviceArcusPTC_HwId = 0x7f, /* ArcusP Test Chip */
         DeviceArcusP_HwId = 0x80,
@@ -287,21 +289,31 @@ extern "C"
     int dm_is_gpu(dm_dev_id_t type);
 
     /**
+     * A predicate returning if the device is a cpu device
+     */
+    int dm_is_cpu(dm_dev_id_t type);
+
+    /**
      * Reads MGIR.cpo_indication into *ptr_cpo_ind (1 = CPO system).
      * Returns MFE_OK on success, MFE_ERROR on register-access failure
      * (in which case *ptr_cpo_ind is left untouched).
      */
     int dm_is_cpo(mfile* mf, u_int8_t* ptr_cpo_ind);
 
+    int dm_dev_is_vmdl(mfile* mf, dm_dev_id_t type, u_int8_t* ptr_vmdl_ind);
+
     int dm_is_qt3(dm_dev_id_t type);
 
     int dm_dev_is_fs5(dm_dev_id_t type);
+
+    int dm_dev_is_fs6(dm_dev_id_t type);
 
     int dm_is_5th_gen_hca(dm_dev_id_t type);
 
     int dm_is_cx8(dm_dev_id_t type);
 
     int dm_is_cx9(dm_dev_id_t type);
+    int dm_is_spc6(dm_dev_id_t type);
 
     int dm_is_new_gen_switch(dm_dev_id_t type);
 

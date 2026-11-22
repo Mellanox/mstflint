@@ -39,6 +39,7 @@
 #if ENABLE_DPA
 #include "fs_dpa_app_ops.h"
 #endif
+#include "fs_csh_ops.h"
 
 class FsCompsFactory
 {
@@ -49,7 +50,7 @@ public:
         #if ENABLE_DPA
                 || IsDpaAppFingerPrint(fingerPrint)
         #endif
-               )        
+                || IsCshFingerPrint(fingerPrint))
         {
             return true;
         }
@@ -82,8 +83,12 @@ public:
             return new FsDpaAppOperations(imageAccess);
         }
         #endif
+        else if (IsCshFingerPrint(fingerPrint))
+        {
+            return new FsCshOperations(imageAccess);
+        }
 
-        throw FsCompsException("Couldn't identify component in given io access");
+        throw FsCompsException("Couldn't identify component in given io access.");
     }
 
 private:
@@ -114,6 +119,14 @@ private:
         return strncmp((const char*)fingerPrint, (const char*)expectedfingerPrint, DPA_APP_FP_LENGTH) == 0;
     }
     #endif
+
+    static bool IsCshFingerPrint(const u_int8_t fingerPrint[])
+    {
+        static const u_int32_t CSH_FP_LENGTH = 4;
+        const u_int8_t expectedfingerPrint[CSH_FP_LENGTH + 1] = {'N', 'V', 'D', 'A'};
+
+        return strncmp((const char*)fingerPrint, (const char*)expectedfingerPrint, CSH_FP_LENGTH) == 0;
+    }
 };
 
 #endif /* FS_COMPS_FACTORY */

@@ -39,10 +39,10 @@
  */
 
 #include <iostream>
-#include "mft_utils.h"
+#include "mft_utils/mft_utils.h"
 #include "cmd_line_parser.h"
 #include "cmd_line_params.h"
-#include "tools_version.h"
+#include "common/tools_version.h"
 
 #ifdef MST_UL
 #define TOOL_NAME "mstfwmanager"
@@ -213,14 +213,26 @@ using namespace mft_utils;
 #define NO_FW_CTRL_L "no_fw_ctrl"
 #define NO_FW_CTRL_S ' '
 
-#define UPDATE_ALL_FWCTL_L "update_all_fwctl"
-#define UPDATE_ALL_FWCTL_S ' '
+#define FORCE_CLEANUP_L "force_cleanup"
+#define FORCE_CLEANUP_S ' '
 
 #define COMP_TYPE_L "component_type"
 #define COMP_TYPE_S ' '
 
 #define SKIP_IF_SAME_L "skip_if_same"
 #define SKIP_IF_SAME_S ' '
+
+#define ENABLE_FLASH_WRITE_PROTECT_VIA_REDFISH_L "enable_flash_write_protect_via_redfish"
+#define ENABLE_FLASH_WRITE_PROTECT_VIA_REDFISH_S ' '
+
+#define DISABLE_FLASH_WRITE_PROTECT_VIA_REDFISH_L "disable_flash_write_protect_via_redfish"
+#define DISABLE_FLASH_WRITE_PROTECT_VIA_REDFISH_S ' '
+
+#define STATUS_FLASH_WRITE_PROTECT_VIA_REDFISH_L "status_flash_write_protect_via_redfish"
+#define STATUS_FLASH_WRITE_PROTECT_VIA_REDFISH_S ' '
+
+#define TOGGLE_FLASH_WRITEPROTECT_VIA_REDFISH_L "toggle_flash_writeprotect_via_redfish"
+#define TOGGLE_FLASH_WRITEPROTECT_VIA_REDFISH_S ' '
 
 #define MODULE_QUERY_L "module_query"
 #define MODULE_QUERY_S ' '
@@ -382,8 +394,8 @@ void CmdLineParser::initOptions()
 
     this->AddOptions(USE_IMG_FILE_L, USE_IMG_FILE_S, "FileName",
                      "Specified image file to use: an MFA or PLDM file, or with --" MODULE_DRY_RUN_L
-                     " and --" MODULE_UPDATE_L " a module firmware update package to update from: a tgz file, "
-                     "or a directory holding its contents");
+                     " and --" MODULE_UPDATE_L " a module firmware update package to update from: a tgz or zip "
+                     "file, or a directory holding its contents");
 
     this->AddOptions(USE_IMG_DIR_L, USE_IMG_DIR_S, "DirectoryName",
                      "Specified directory instead of default to locate image files");
@@ -398,7 +410,9 @@ void CmdLineParser::initOptions()
 
     this->AddOptions(NO_FW_CTRL_L, NO_FW_CTRL_S, "", "Don't use FW Ctrl update");
 
-    this->AddOptions(UPDATE_ALL_FWCTL_L, UPDATE_ALL_FWCTL_S, "", "Enable firmware update in parallel via fwctl");
+    this->AddOptions(FORCE_CLEANUP_L, FORCE_CLEANUP_S, "",
+                     "Before burning, forcibly clear a stale flash semaphore and release an orphaned FSM update "
+                     "handle (e.g. left behind by a previously killed tool), then proceed with the update.");
 
     this->AddOptions(YES_L, YES_S, "", "Answer is yes in prompts");
 
@@ -512,17 +526,30 @@ void CmdLineParser::initOptions()
 
     this->AddOptions(NO_EXTRACT_LIST_L, NO_EXTRACT_LIST_S, "", "Do not extract or list binaries",
                      true); // Hidden
-    
+
     this->AddOptions(COMP_TYPE_L, COMP_TYPE_S, "componentName", "Specify the PLDM component type to extract");
 
     this->AddOptions(SKIP_IF_SAME_L, SKIP_IF_SAME_S, "", "Skip firmware update if current and new versions match");
+
+#ifdef ENABLE_REDFISH // Redfish is not part of mstflint
+    this->AddOptions(ENABLE_FLASH_WRITE_PROTECT_VIA_REDFISH_L, ENABLE_FLASH_WRITE_PROTECT_VIA_REDFISH_S, "",
+                     "Enable flash write protect via Redfish");
+
+    this->AddOptions(DISABLE_FLASH_WRITE_PROTECT_VIA_REDFISH_L, DISABLE_FLASH_WRITE_PROTECT_VIA_REDFISH_S, "",
+                     "Disable flash write protect via Redfish");
+
+    this->AddOptions(STATUS_FLASH_WRITE_PROTECT_VIA_REDFISH_L, STATUS_FLASH_WRITE_PROTECT_VIA_REDFISH_S, "",
+                     "Status flash write protect via Redfish");
+
+    this->AddOptions(TOGGLE_FLASH_WRITEPROTECT_VIA_REDFISH_L, TOGGLE_FLASH_WRITEPROTECT_VIA_REDFISH_S, "",
+                     "Toggle flash write protect via Redfish");
+#endif
 
     this->AddOptions(MODULE_QUERY_L, MODULE_QUERY_S, "", "Query the firmware of the modules plugged into the system");
 
     this->AddOptions(MODULE_DRY_RUN_L, MODULE_DRY_RUN_S, "", "Show the module update plan without updating anything");
 
-    this->AddOptions(MODULE_UPDATE_L, MODULE_UPDATE_S, "",
-                     "Update module firmware from the package given by -i");
+    this->AddOptions(MODULE_UPDATE_L, MODULE_UPDATE_S, "", "Update module firmware from the package given by -i");
 
     this->AddOptions(MODULE_ACTIVATION_WAIT_L, MODULE_ACTIVATION_WAIT_S, "Seconds",
                      "Seconds to wait between downloading the module firmware and activating it (default 0)");
@@ -613,6 +640,28 @@ ParseStatus CmdLineParser::HandleOption(string name, string value)
         _cmdLineParams->server_url = value;
         return PARSE_OK;
     }
+#ifdef ENABLE_REDFISH // Redfish is not part of mstflint
+    else if (name == ENABLE_FLASH_WRITE_PROTECT_VIA_REDFISH_L)
+    {
+        _cmdLineParams->enable_flash_write_protect_via_redfish = true;
+        return PARSE_OK;
+    }
+    else if (name == DISABLE_FLASH_WRITE_PROTECT_VIA_REDFISH_L)
+    {
+        _cmdLineParams->disable_flash_write_protect_via_redfish = true;
+        return PARSE_OK;
+    }
+    else if (name == STATUS_FLASH_WRITE_PROTECT_VIA_REDFISH_L)
+    {
+        _cmdLineParams->status_flash_write_protect_via_redfish = true;
+        return PARSE_OK;
+    }
+    else if (name == TOGGLE_FLASH_WRITEPROTECT_VIA_REDFISH_L)
+    {
+        _cmdLineParams->toggle_flash_writeprotect_via_redfish = true;
+        return PARSE_OK;
+    }
+#endif
     else if (name == PROXY_L)
     {
         _cmdLineParams->proxy = value;
@@ -822,9 +871,9 @@ ParseStatus CmdLineParser::HandleOption(string name, string value)
         _cmdLineParams->no_fw_ctrl = true;
         return PARSE_OK;
     }
-    else if (name == UPDATE_ALL_FWCTL_L)
+    else if (name == FORCE_CLEANUP_L)
     {
-        _cmdLineParams->update_all_fwctl = true;
+        _cmdLineParams->force_cleanup = true;
         return PARSE_OK;
     }
     else if (name == YES_L)

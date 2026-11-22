@@ -59,7 +59,7 @@ CmdLineParams::CmdLineParams()
     clear_semaphore = false;
     extract_all = false;
     no_fw_ctrl = false;
-    update_all_fwctl = false;
+    force_cleanup = false;
     target_file = "";
     server_url = "https://www.mellanox.com";
     proxy = "";
@@ -83,6 +83,10 @@ CmdLineParams::CmdLineParams()
     numberOfRetrials = 5;
     component_type = "";
     skip_if_same = false;
+    enable_flash_write_protect_via_redfish = false;
+    disable_flash_write_protect_via_redfish = false;
+    status_flash_write_protect_via_redfish = false;
+    toggle_flash_writeprotect_via_redfish = false;
     verbose = false;
     cable_query = false;
     cable_dry_run = false;
@@ -97,6 +101,7 @@ CmdLineParams::CmdLineParams()
     cable_report_file_only = false;
     cable_report_screen_only = false;
     cable_include_service_ports = false;
+
 #ifdef __WIN__
     char execName[1024];
     char certificatPath[1024];

@@ -70,6 +70,7 @@ static void mft_signal_set_handling(int isOn)
 #include "mft_utils.h"
 
 static FILE* g_fwcomps_log_file = NULL;
+static bool g_fwcomps_suppress_stdout = false;
 static thread_local std::string g_fwcomps_device_context;
 static std::recursive_mutex g_fwcomps_print_mutex;
 
@@ -87,6 +88,13 @@ extern "C" void fwcomps_output_unlock()
 extern "C" void fwcomps_set_log_file(FILE* log_file)
 {
     g_fwcomps_log_file = log_file;
+}
+
+// Suppress stdout messages when the caller emits machine-readable output.
+extern "C" void fwcomps_set_suppress_stdout(int suppress)
+{
+    std::lock_guard<std::recursive_mutex> lock(g_fwcomps_print_mutex);
+    g_fwcomps_suppress_stdout = (suppress != 0);
 }
 
 extern "C" void fwcomps_set_device_context(const char* ctx)
@@ -110,16 +118,25 @@ static void fwcomps_print_msg(const char* fmt, ...)
     {
         while (*fmt == '\n')
         {
-            printf("\n");
+            if (!g_fwcomps_suppress_stdout)
+            {
+                printf("\n");
+            }
             fmt++;
         }
-        printf("%s: ", prefix);
     }
-    va_list args;
-    va_start(args, fmt);
-    vprintf(fmt, args);
-    va_end(args);
-    fflush(stdout);
+    if (!g_fwcomps_suppress_stdout)
+    {
+        if (prefix)
+        {
+            printf("%s: ", prefix);
+        }
+        va_list args;
+        va_start(args, fmt);
+        vprintf(fmt, args);
+        va_end(args);
+        fflush(stdout);
+    }
     if (g_fwcomps_log_file != NULL)
     {
         if (prefix)
@@ -755,6 +772,12 @@ bool FwCompsMgr::controlFsm(fsm_command_t          command,
         if (_linkXFlow && (command == FSM_CMD_DOWNSTREAM_DEVICE_TRANSFER || command == FSM_CMD_ACTIVATE_ALL))
         {
             comp_query_st compQuery = _compsQueryMap[FwComponent::COMPID_LINKX];
+            bool isVmod = _currCompType == FwComponent::COMPID_CPO_VMOD_FW;
+            if (isVmod)
+            {
+                compQuery = _compsQueryMap[FwComponent::COMPID_CPO_VMOD_FW];
+                _lastFsmCtrl.component_index = compQuery.comp_status.component_index;
+            }
             if (compQuery.comp_status.component_index == _componentIndex)
             {
                 _lastFsmCtrl.component_index =
@@ -773,6 +796,10 @@ bool FwCompsMgr::controlFsm(fsm_command_t          command,
                 _lastFsmCtrl.activation_delay_sec = _activation_delay_sec;
                 _isDelayedActivationCommandSent = _activation_delay_sec > 0;
             }
+        }
+        if (command == FSM_CMD_FORCE_HANDLE_RELEASE && _lastFsmCtrl.update_handle == 0)
+        {
+            _lastFsmCtrl.update_handle = 1;
         }
         rc = reg_access_mcc(_mf, method, &_lastFsmCtrl);
         /* add here auto_update + device_index_size */
@@ -1167,6 +1194,7 @@ void FwCompsMgr::SetIndexAndSize(int  deviceIndex,
 
 FwCompsMgr::FwCompsMgr(mfile* mf, DeviceTypeT devType, int deviceIndex)
 {
+    _currCompType = FwComponent::COMPID_UNKNOWN;
     _fwSupport = false;
     _handleGenerated = false;
     _clearSetEnv = false;
@@ -1193,6 +1221,7 @@ FwCompsMgr::FwCompsMgr(mfile* mf, DeviceTypeT devType, int deviceIndex)
 
 FwCompsMgr::FwCompsMgr(const char* devname, DeviceTypeT devType, int deviceIndex)
 {
+    _currCompType = FwComponent::COMPID_UNKNOWN;
     _mf = NULL;
     _fwSupport = false;
     _handleGenerated = false;
@@ -1278,11 +1307,12 @@ FwCompsMgr::~FwCompsMgr()
     }
 #endif
     if (_mf) {
-        if (!_isDelayedActivationCommandSent) {
-            if (_lastFsmCtrl.control_state != FSMST_IDLE) {
-                controlFsm(FSM_CMD_CANCEL, FSMST_LOCKED);
-                controlFsm(FSM_CMD_RELEASE_UPDATE_HANDLE, FSMST_IDLE);
-            }
+        const bool haveHandle = _handleGenerated && (_updateHandle != 0);
+        const bool fsmActive = (_lastFsmCtrl.control_state != FSMST_IDLE);
+        if (!_isDelayedActivationCommandSent && (fsmActive || (haveHandle && _lastError != FWCOMPS_SUCCESS)))
+        {
+            controlFsm(FSM_CMD_CANCEL, FSMST_LOCKED);
+            controlFsm(FSM_CMD_RELEASE_UPDATE_HANDLE, FSMST_IDLE);
         }
     }
     if (_openedMfile) {
@@ -1346,9 +1376,14 @@ const char* CompNames[] = {"NO_COMPONENT 1",                      // 0x0
                            "COMPID_DPA_COMPONENT",                // 0x1C
                            "COMPID_DPA_COMPONENT_REMOVAL",        // 0x1D
                            "COMPID_MTDT_TOKEN",                   // 0x1E
-                           "COMPID_CPO_VMOD_FW"};                 // 0x1F
+                           "COMPID_CPO_VMOD_FW",                  // 0x1F
+                           "COMPID_PSC_TOKEN",                    // 0x20
+                           "COMPID_OE_CALIBRATION_PARAMS",        // 0x21
+                           "COMPID_CPLD_IMG",                     // 0x22
+                           "COMPID_HBI_IMG",                      // 0x23
+                           "COMPID_CALIPTRA"};                    // 0x24
 
-bool FwCompsMgr::RefreshComponentsStatus(comp_status_st* ComponentStatus)
+bool FwCompsMgr::RefreshComponentsStatus(comp_status_st* ComponentStatus, FwComponent::comps_ids_t compType)
 {
     u_int16_t compIdx = 0;
     int last_index_flag = 0;
@@ -1368,8 +1403,7 @@ bool FwCompsMgr::RefreshComponentsStatus(comp_status_st* ComponentStatus)
         if (queryComponentStatus(compIdx, &(compStatus.comp_status)))
         {
             compStatus.comp_status.component_index = compIdx;
-            if (ComponentStatus != NULL && (compStatus.comp_status.identifier == FwComponent::COMPID_LINKX ||
-                                            compStatus.comp_status.identifier == FwComponent::COMPID_LINKX_ELS))
+            if (ComponentStatus != NULL && compStatus.comp_status.identifier == compType)
             {
                 memcpy(ComponentStatus, &compStatus.comp_status, sizeof(compStatus.comp_status));
             }
@@ -1585,6 +1619,7 @@ bool FwCompsMgr::burnComponents(FwComponent& comp, ProgressCallBackAdvSt* progre
         return false;
     }
     _currCompQuery = &(_compsQueryMap[component]);
+    _currCompType = component;
     if (component == FwComponent::DPA_COMPONENT)
     {
         MLXFWOPS_LOG_DEBUG("max_component_size = %d", _currCompQuery->comp_cap.max_component_size);
@@ -1634,7 +1669,7 @@ bool FwCompsMgr::burnComponents(FwComponent& comp, ProgressCallBackAdvSt* progre
             return false;
         }
         if (comp.getType() == FwComponent::COMPID_LINKX || comp.getType() == FwComponent::COMPID_LINKX_ELS || 
-            comp.getType() == FwComponent::COMPID_CLOCK_SYNC_EEPROM) 
+            comp.getType() == FwComponent::COMPID_CLOCK_SYNC_EEPROM)
             {
                 if (!controlFsm(FSM_CMD_DOWNSTREAM_DEVICE_TRANSFER, FSMST_DOWNSTREAM_DEVICE_TRANSFER, 0, FSMST_LOCKED,
                                 progressFuncAdv)) {
@@ -1813,6 +1848,9 @@ const char* FwComponent::getCompIdStr(comps_ids_t compId)
 
          case COMPID_CPO_VMOD_FW:
              return "COMPID_CPO_VMOD_FW";
+
+        case COMPID_PSC_TOKEN:
+            return "COMPID_PSC_TOKEN";
  
     default:
         return "UNKNOWN_COMPONENT";
@@ -2099,6 +2137,17 @@ bool FwCompsMgr::queryFwInfo(fwInfoT* query, bool next_boot_fw_ver)
         {
             query->life_cycle.version_field = 1;
         }
+        else if (dm_dev_is_fs6(dm_device_id)) // see in PRM the mapping of LC values (from CR-Space to MGIR)
+        {
+            if (query->life_cycle.value == FS6_LC_FAILURE_ANALYSIS_MGIR)
+            {
+                query->life_cycle.version_field = 2;
+            }
+            else if (query->life_cycle.value == FS5_LC_PRE_PRODUCTION)
+            {
+                query->life_cycle.version_field = 1;
+            }
+        }
     } else {
         _lastError = FWCOMPS_UNSUPPORTED_DEVICE;
         return false;
@@ -2121,6 +2170,7 @@ bool FwCompsMgr::queryFwInfo(fwInfoT* query, bool next_boot_fw_ver)
     vector < u_int8_t > descriptionInfoString;
     vector < u_int8_t > imageVsd;
     vector < u_int8_t > deviceVsd;
+    vector<u_int8_t> vmodVsd;
     if (getDeviceHWInfo(FwCompsMgr::MQIS_REGISTER_DEVICE_NAME, nameInfoString)) {
         strncpy(query->name, (char*)nameInfoString.data(), NAME_LEN - 1);
     }
@@ -2132,6 +2182,10 @@ bool FwCompsMgr::queryFwInfo(fwInfoT* query, bool next_boot_fw_ver)
     }
     if (getDeviceHWInfo(FwCompsMgr::MQIS_REGISTER_DEVICE_VSD, deviceVsd)) {
         strncpy(query->deviceVsd, (char*)deviceVsd.data(), VSD_LEN);
+    }
+    if (getDeviceHWInfo(FwCompsMgr::MQIS_REGISTER_VMOD_VSD, vmodVsd))
+    {
+        strncpy(query->vmodVsd, (char*)vmodVsd.data(), VSD_LEN);
     }
 
     query->pci_switch_only_mode_valid = 0;
@@ -2421,6 +2475,57 @@ void FwCompsMgr::unlock_flash_semaphore()
 #endif
 }
 
+bool FwCompsMgr::force_clear_flash_semaphore()
+{
+#ifndef UEFI_BUILD
+    trm_sts trm_rc = trm_create(&_trm, _mf);
+    if (trm_rc)
+    {
+        MLXFWOPS_LOG_DEBUG("Failed to create TRM context for flash semaphore cleanup.");
+        return false;
+    }
+    trm_rc = trm_unlock(_trm, TRM_RES_FLASH_PROGRAMING);
+    trm_destroy(_trm);
+    _trm = NULL;
+    if (trm_rc)
+    {
+        MLXFWOPS_LOG_DEBUG("Failed to clear flash semaphore.");
+        return false;
+    }
+#endif
+    return true;
+}
+
+bool FwCompsMgr::CleanupLocks()
+{
+    // Best-effort recovery: run every step even if an earlier one fails
+    MLXFWOPS_LOG_DEBUG("Forcibly clearing stale flash semaphore and FSM update handle.");
+    bool success = true;
+
+    if (!force_clear_flash_semaphore())
+    {
+        success = false;
+    }
+    if (!forceRelease())
+    {
+        MLXFWOPS_LOG_DEBUG("Failed to release FSM update handle.");
+        success = false;
+    }
+    if (!(controlFsm(FSM_QUERY) && (_lastFsmCtrl.control_state == FSMST_IDLE)))
+    {
+        MLXFWOPS_LOG_DEBUG("FSM did not return to IDLE after force cleanup.");
+        success = false;
+    }
+
+    // Reset the error state so cleanup side effects don't taint the subsequent burn.
+    _lastError = FWCOMPS_SUCCESS;
+    _lastRegAccessStatus = ME_OK;
+    isSpecificError = false;
+    _lastSpecificError.clear();
+
+    return success;
+}
+
 void FwCompsMgr::deal_with_signal()
 {
 #ifndef UEFI_BUILD
@@ -2438,6 +2543,22 @@ void FwCompsMgr::deal_with_signal()
     mft_signal_set_handling(0);
 #endif
     return;
+}
+
+bool FwCompsMgr::GetHBIVersion(component_version_st& hbiVersion)
+{
+    if (!_compsQueryMap[FwComponent::COMPID_HBI_IMG].valid)
+    {
+        _lastError = FWCOMPS_COMP_NOT_SUPPORTED;
+        return false;
+    }
+
+    if (!getComponentVersion(FwComponent::COMPID_HBI_IMG, false, &hbiVersion))
+    {
+        return false;
+    }
+
+    return true;
 }
 
 bool FwCompsMgr::getComponentVersion(FwComponent::comps_ids_t compType, bool pending, component_version_st* cmpVer)

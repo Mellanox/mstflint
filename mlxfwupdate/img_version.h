@@ -36,8 +36,8 @@
 #define __IMG_VERSION_H__
 
 #include <string>
-#include <compatibility.h>
-#include <mlxfwops/lib/fw_version.h>
+#include "common/compatibility.h"
+#include "mlxfwops/lib/fw_version.h"
 #include <stdexcept>
 
 using namespace std;

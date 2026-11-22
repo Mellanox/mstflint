@@ -35,7 +35,7 @@
 #ifndef MLXFWUPDATE_FW_VERSION_OLD_CLP_H_
 #define MLXFWUPDATE_FW_VERSION_OLD_CLP_H_
 
-#include <mlxfwops/lib/fw_version.h>
+#include "mlxfwops/lib/fw_version.h"
 
 class FwVersionOldClp : public FwVersion
 {
@@ -46,7 +46,7 @@ public:
     FwVersionOldClp* clone() const;
 
 private:
-    std::string get_master_version(const std::string& format, bool even_subminor = false) const;
+    std::string get_primary_version(const std::string& format, bool even_subminor = false) const;
 };
 
 #endif /* MLXFWUPDATE_FW_VERSION_OLD_CLP_H_ */

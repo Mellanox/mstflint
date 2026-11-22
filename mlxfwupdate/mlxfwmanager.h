@@ -35,9 +35,9 @@
 #include <iostream>
 #include <vector>
 #include <atomic>
-#include <compatibility.h>
+#include "common/compatibility.h"
 #include <mtcr.h>
-#include <mfa.h>
+#include "libmfa/mfa.h"
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <ctime>
@@ -45,7 +45,7 @@
 #include <errno.h>
 #include <string.h>
 #include <iniparser.h>
-#include <mft_sig_handler.h>
+#include "mft_utils/mft_sig_handler.h"
 #include <fcntl.h>
 #include <dirent.h>
 #include <stdlib.h>
@@ -157,9 +157,7 @@ int getPLDMCompsListFromPSIDs(string file,
                               vector<string>& psid_list,
                               vector<tuple<PsidQueryItem, u_int8_t*, u_int32_t>>& results,
                               ComponentIdentifier compId);
-int queryPLDM(string file,
-              vector<string>& psid_list,
-              map<string, vector<tuple<FwComponent::comps_ids_t, u_int8_t*, u_int32_t>>>& psidPldmComponents);
+
 int download(ServerRequest* srq,
              vector<string>& url,
              vector<string>& fileNames,
@@ -212,18 +210,15 @@ int prompt(const char* str, int yes_no_);
 FILE* createOutFile(string& fileName, bool fileSpecified);
 int progressCB_nodisplay(int completion);
 int progressCB_display(int completion);
-int progressCB_display_multi_thread(int completion);
 int advProgressFunc_display(int completion, const char* stage, prog_t type, int* unknownProgress);
-int advProgressFunc_display_multi_thread(int completion, const char* stage, prog_t type, int* unknownProgress);
 bool checkCmdParams(CmdLineParams& cmd_params, config_t& config);
 bool initConfig(config_t& config, char* argv[], CmdLineParams& cmd_params);
 bool getIniParams(config_t& config);
 string adjustRelPath(string path, string adjuster);
-int isDirectory(string path);
-int isFile(string path);
-int list_files_content(config_t& config, const vector<string>& psid_list);
-int extract_all(CmdLineParams& cmd_params, config_t& config, ServerRequest* srq, const vector<string>& psid_list);
+int list_files_content(config_t& config, vector<string>& psid_list);
+int extract_all(CmdLineParams& cmd_params, config_t& config, ServerRequest* srq, vector<string>& psid_list);
 int extract_image(CmdLineParams& cmd_params, config_t& config, ServerRequest* srq, bool useExtractDir = false);
+int extract_image_to_file(CmdLineParams& cmd_params, config_t& config, std::string& targetFilePath);
 int CalcFileCrc(char* fileName);
 void TerminationHandler(int signum);
 void initHandler();
@@ -248,6 +243,25 @@ void filterFiles(vector<DownloadedFileProperties> files,
 
 int generateProductionName(string& targetFile, PsidQueryItem ri);
 bool isSameVersion(MlnxDev* dev, PsidQueryItem& psidUpdateInfo);
+
+enum BurnDeviceResult
+{
+    BURN_CONTINUE,
+    BURN_GOTO_CLEANUP,
+    BURN_GOTO_EARLY_CLEANUP
+};
+BurnDeviceResult burnDevice(MlnxDev* dev,
+                            const string& mfa_file,
+                            const CmdLineParams& cmd_params,
+                            int (*progressCB)(int),
+                            int (*advProgressCB)(int, const char*, prog_t, void*),
+                            const string& targetFilePath,
+                            const vector<string>& redfishDevicesSelectedByUser,
+                            int& res,
+                            int& rc0,
+                            int& burn_success_cnt,
+                            FILE* FLog,
+                            bool skip_prompts = false);
 
 std::atomic<int> abort_request{0};
 int CompareFFV = 0;

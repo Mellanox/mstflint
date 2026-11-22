@@ -40,7 +40,7 @@ from __future__ import print_function
 import platform
 import re
 from .pci_device import PciDevice
-from .mlxfwreset_utils import cmdExec
+from .mlxfwreset_utils import cmdExec, PCI_DOMAIN_PATTERN
 import mtcr
 
 
@@ -58,7 +58,7 @@ class MlnxPeripheralComponents(object):
 
         if self.os == 'Linux':
             cmd = 'mstdevices_info -vv'
-            pattern = r'.*\s+(\S+)\s+(([0-9A-Fa-f]{4})*:*([0-9A-Fa-f]{2}):([0-9A-Fa-f]{2})\.([0-9A-Fa-f]{1,2})).*'
+            pattern = r'.*\s+(\S+)\s+((' + PCI_DOMAIN_PATTERN + r')?:*([0-9A-Fa-f]{2}):([0-9A-Fa-f]{2})\.([0-9A-Fa-f]{1,2})).*'
         elif self.os == 'FreeBSD':
             cmd = 'mst status -v'
             pattern = r'.*\s(pci(\d+):(\d+):(\d+):(\d+))\s.*'

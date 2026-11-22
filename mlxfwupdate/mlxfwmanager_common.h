@@ -46,12 +46,12 @@
 #include <sys/stat.h>
 #include <string>
 #include <vector>
-#include <tools_dev_types.h>
-#include <mlxfwops.h>
-#include <mlxfwops_com.h>
-#include <fs_checks.h>
-#include <mflash.h>
-#include <fw_ops.h>
+#include "dev_mgt/tools_dev_types.h"
+#include "mlxfwops/lib/mlxfwops.h"
+#include "mlxfwops/lib/mlxfwops_com.h"
+#include "mlxfwops/lib/fs_checks.h"
+#include "mflash/mflash.h"
+#include "mlxfwops/lib/fw_ops.h"
 #include <sys/types.h>
 #include "err_msgs.h"
 #include "nvtoolslogger/NvToolsLogger.h"
@@ -59,7 +59,7 @@
 /* Tool-wide tracing for mlxfwmanager. The layer is the tool, not any one flow inside it, so
  * every part of mlxfwmanager logs here and one switch turns all of it on:
  *
- *     mstflintlogger --set-module mlxfwmanager:debug
+ *     nvtoolslogger --set-module mlxfwmanager:debug
  */
 #define FWMANAGER_LOG_DEBUG(...) MFT_LOG_DEBUGF(nvtoolslogger::Layer::MLXFWMANAGER, __VA_ARGS__)
 #define FWMANAGER_LOG_INFO(...) MFT_LOG_INFOF(nvtoolslogger::Layer::MLXFWMANAGER, __VA_ARGS__)
@@ -84,6 +84,7 @@ typedef int mode_t;
 #endif
 const char* SafeGetEnv(const char* var);
 #define TMP_DIR SafeGetEnv("TEMP")
+#define SKIP_AND_DO_NOT_REPORT_ERROR -999
 
 using namespace std;
 
@@ -119,8 +120,9 @@ string beautify_device_name(string family);
 int CreateTempDir(string tempDir, string& tempBaseDir);
 int my_chmod(const char* path, mode_t mode);
 int RemoveDir(const string& dir);
+// mstflint keeps this here; MFT moved it into mft_utils, which would add zlib to every tool.
+bool unzipDataFile(std::vector<u_int8_t> data, std::vector<u_int8_t>& newData);
 
-bool unzipDataFile(std::vector<u_int8_t> data, std::vector<u_int8_t>& newData, const char* sectionName);
 int MkDir(const string dir);
 
 #if defined(__WIN__)

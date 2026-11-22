@@ -53,6 +53,7 @@ FlintParams::FlintParams()
     device_specified = false;
     blank_guids = false;
     clear_semaphore = false;
+    force_cleanup = false;
     quick_query = true; // should now be true by default
     next_boot_fw_ver = false;
     low_cpu = false;
@@ -104,6 +105,7 @@ FlintParams::FlintParams()
     hsm_password_specified = false;
     linkx_control = false;
     linkx_els_control = false;
+    vmod_control = false;
     cableDeviceIndex = -1;
     cableDeviceSize = -1;
     cable_device_size_specified = false;

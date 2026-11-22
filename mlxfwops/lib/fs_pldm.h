@@ -72,7 +72,8 @@ public:
                             mfile* deviceMfile = NULL);
     bool IsComponentInPackage(const string& psid, const string& componentName);
     string GetFirstSupportedComponent(const string& psid);
-
+    bool GetMainComponentName(const string& psid, std::string& component) const;
+    bool getSupportedComponents(const string& psid, std::vector<string>& supportedComponents) const;
     void PrintInfo();
     // Unsupported functionality
     bool FwQuery(fw_info_t* fwInfo, bool, bool, bool, bool, bool) override;
@@ -114,6 +115,11 @@ public:
                           FwOperations** newImageOps,
                           u_int16_t swDevId,
                           bool isStripedImage);
+
+    static const string PLDM_COMPONENT_FW;
+    static const string PLDM_COMPONENT_NIC_FW;
+    static const string PLDM_COMPONENT_FW_SPC6;
+    static const string PLDM_COMPONENT_VMOD;
 
     static const vector<string> SupportedComponents;
     static bool

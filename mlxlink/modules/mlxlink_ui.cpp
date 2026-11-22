@@ -1720,7 +1720,7 @@ void MlxlinkUi::initCmdParser()
     AddOptions(APSU_PROPAGATION_TIMER_FLAG, APSU_PROPAGATION_TIMER_FLAG_SHORT, "propagation_timer",
                "Propagation Timer in 10ms units [0-31] (Optional)");
     AddOptions(APSU_QUIET_TIMER_FLAG, APSU_QUIET_TIMER_FLAG_SHORT, "quiet_timer",
-               "Quiet Timer in 10ms units [0-15] (Optional)");
+               "Quiet Timer in 10ms units " + getApsuRangeHelp(APSU_QUIET_TIMER_FLAG) + " (Optional)");
     AddOptions(APSU_INVERT_TO_FLAG, APSU_INVERT_TO_FLAG_SHORT, "invert_to", "Invert Timeout in ms [0-15] (Optional)");
     AddOptions(APSU_TF_DETECT_TIMER_FLAG, APSU_TF_DETECT_TIMER_FLAG_SHORT, "tf_detect_timer",
                "TF Detect Timer in ms [0-15] (Optional)");
@@ -1731,7 +1731,8 @@ void MlxlinkUi::initCmdParser()
     AddOptions(APSU_VALIDATION_TIMER_FLAG, APSU_VALIDATION_TIMER_FLAG_SHORT, "validation_timer",
                "Validation Timer in 10ms units [0-15] (Optional)");
     AddOptions(APSU_RESTART_ON_LOS_FLAG, APSU_RESTART_ON_LOS_FLAG_SHORT, "restart_on_los",
-               "Restart On LoS: 0(no restart), 1(restart), 2(restart on long LoS only) (Optional)");
+               "Restart On LoS: 0(default), 1(restart on link failure), 2(no restart on link failure), "
+               "3(restart on long link failure) (Optional)");
     AddOptions(APSU_LOCAL_PATTERN_TX_FLAG, APSU_LOCAL_PATTERN_TX_FLAG_SHORT, "local_pattern_tx",
                "Local Pattern TX: 0(PRBS31), 1(PCS data) (Optional)");
     AddOptions(APSU_MAX_HOP_COUNT_FLAG, APSU_MAX_HOP_COUNT_FLAG_SHORT, "max_hop_count",

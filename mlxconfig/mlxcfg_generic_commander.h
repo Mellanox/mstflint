@@ -127,6 +127,8 @@ public:
 
     void genTLVsList(vector<string>& tlvs);
     void genXMLTemplate(vector<string> tlvs, string& xmlTemplate, bool allAttrs);
+    void genPSCXMLTemplate(string tlvName, string tlvValue, string& tlvTemplate, bool& indentation);
+    void genXMLPSCTemplateAux(vector<pair<string, string>> tlvs, string& xmlTemplate);
     void genXMLFromTLVConf(vector<std::shared_ptr<TLVConf>>& tlvsConfs, string& xmlTemplate, bool allAttrs);
     void TLVs2TLVConfs(const vector<string>& tlvs, vector<std::shared_ptr<TLVConf>>& tlvsConfs);
     void XML2TLVConf(const string& xmlContent, vector<std::shared_ptr<TLVConf>>& tlvs);
@@ -140,10 +142,13 @@ public:
     void checkConfTlvs(const vector<std::shared_ptr<TLVConf>>& tlvs, FwComponent::comps_ids_t& compsId);
     void orderConfTlvs(vector<std::shared_ptr<TLVConf>>& tlvs);
     void createConf(const string& xml, vector<u_int32_t>& buff);
+    void XML2MapPSCToken(const string& xml, map<string, string>& tokenData);
     void sign(vector<u_int32_t>& buff,
               const string& privateKeyFile = "",
               const string& keyPairUUid = "");
     void apply(const vector<u_int8_t>& buff);
+    bool IsPscXmlByString(const string& xml);
+    bool IsPSCBinToken(const vector<u_int8_t>& buff);
     string GetTokenPSIDFromBin(const vector<u_int8_t>& buff);
 };
 

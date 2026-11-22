@@ -56,12 +56,10 @@
 #include "mlxcfg_status.h"
 #include "mlxcfg_tlv.h"
 #include "mlxcfg_utils.h"
+#include "mlxcfg_xml_reader.h"
+#include "mlxcfg_xml_tlv_builder.h"
 #include "common/tools_endianness.h"
-
-#if !defined(DISABLE_XML2)
-#include <libxml/parser.h>
-#include <libxml/tree.h>
-#endif
+#include "mlxtokengenerator/mlxpsctoken.h"
 
 using namespace std;
 using namespace mlxcfg;
@@ -70,48 +68,17 @@ using namespace mlxcfg;
 #define TLVCLASS_SIZE 8
 #define RAW_FILE_FINGERPRINT "MLNX_RAW_TLV_FILE"
 #define XMLNS "http://www.mellanox.com/config"
+#define XNVIDIA "http://nvidia.com/config"
 #define XML_ROOT "config"
 
 #define XML_DOCUMENT_START                         \
     "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" \
     "<" XML_ROOT " xmlns=\"" XMLNS "\">"
-#define XML_DOCUMENT_END "</" XML_ROOT ">"
-#define XML_COMMENT_NODE "comment"
 
-#define IGNORE_IF_EMPTY_NODE(n) \
-    if (!n->name)               \
-    {                           \
-        continue;               \
-    }
-#define IGNORE_IF_TEXT_NODE(n) \
-    if (xmlNodeIsText(n))      \
-    {                          \
-        n = n->next;           \
-        continue;              \
-    }
-#define IGNORE_IF_COMMENT_NODE(n)                                      \
-    if (xmlStrcasecmp(n->name, (const xmlChar*)XML_COMMENT_NODE) == 0) \
-    {                                                                  \
-        n = n->next;                                                   \
-        continue;                                                      \
-    }
-#define IGNORE_UNUSEFUL_NODE(n) \
-    IGNORE_IF_EMPTY_NODE(n)     \
-    IGNORE_IF_TEXT_NODE(n)      \
-    IGNORE_IF_COMMENT_NODE(n)
-#define XMLFREE_AND_SET_NULL(p) \
-    if (p)                      \
-    {                           \
-        xmlFree(p);             \
-        p = NULL;               \
-    }
-#define GET_AND_SET_ATTR(attrVal, currTlv, attr)         \
-    attrVal = xmlGetProp(currTlv, (const xmlChar*)attr); \
-    if (attrVal)                                         \
-    {                                                    \
-        tlvConf->setAttr(attr, (const char*)attrVal);    \
-        XMLFREE_AND_SET_NULL(attrVal);                   \
-    }
+#define XML_PSC_TOKEN_DOCUMENT_START               \
+    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" \
+    "<" XML_ROOT " xmlns=\"" XNVIDIA "\">"
+#define XML_DOCUMENT_END "</" XML_ROOT ">"
 
 #define EQ_STR "=="
 #define NOT_EQ_STR "!="
@@ -1395,6 +1362,54 @@ void GenericCommander::genTLVsList(vector<string>& tlvs)
     }
 }
 
+bool GenericCommander::IsPscXmlByString(const string& xml)
+{
+    return xml.find(XNVIDIA) != std::string::npos;
+}
+
+void GenericCommander::genPSCXMLTemplate(string tlvName, string tlvValue, string& tlvTemplate, bool& indentation)
+{
+    if (tlvValue == PSC_TLV_TYPE_START)
+    {
+        tlvTemplate = "<" + tlvName + ">";
+        indentation = true;
+    }
+    else if (tlvValue == PSC_TLV_TYPE_END)
+    {
+        tlvTemplate = "</" + tlvName + ">";
+        indentation = false;
+    }
+    else
+    {
+        if (indentation)
+        {
+            tlvTemplate = "\t<" + tlvName + ">" + tlvValue + "</" + tlvName + ">";
+        }
+        else
+        {
+            tlvTemplate = "<" + tlvName + ">" + tlvValue + "</" + tlvName + ">";
+        }
+    }
+}
+
+void GenericCommander::genXMLPSCTemplateAux(vector<pair<string, string>> tlvs, string& xmlTemplate)
+{
+    xmlTemplate = XML_PSC_TOKEN_DOCUMENT_START;
+    xmlTemplate += "\n";
+    bool indentation = false;
+    for (vector<pair<string, string>>::iterator it = tlvs.begin(); it != tlvs.end(); ++it)
+    {
+        string tlvName = it->first;
+        string tlvValue = it->second;
+        string tlvTemplate;
+        genPSCXMLTemplate(tlvName, tlvValue, tlvTemplate, indentation);
+        xmlTemplate += "\n" + tlvTemplate + "\n";
+    }
+    xmlTemplate += "\n";
+    xmlTemplate += XML_DOCUMENT_END;
+    xmlTemplate += "\n";
+}
+
 void GenericCommander::genXMLTemplateAux(vector<string> tlvs,
                                          string& xmlTemplate,
                                          bool allAttrs,
@@ -1565,204 +1580,11 @@ void GenericCommander::bin2TLVConfs(const vector<u_int32_t>& tlvsBin, vector<std
 
 void GenericCommander::XML2TLVConf(const string& xmlContent, vector<std::shared_ptr<TLVConf>>& tlvs)
 {
-#if !defined(DISABLE_XML2)
-    xmlDocPtr doc;
-    xmlNodePtr root, currTlv, currParam;
-    xmlChar *portAttr = NULL, *moduleAttr = NULL, *hostAttr = NULL, *funcAttr = NULL, *rdEnAttr = NULL,
-            *priorityAttr = NULL, *ovrEnAttr = NULL, *xmlVal = NULL, *indexAttr = NULL, *writerIdAttr = NULL;
-
-    doc = xmlReadMemory(xmlContent.c_str(), xmlContent.size(), "noname.xml", NULL, 0);
-    if (!doc)
-    {
-        throw MlxcfgException("Failed to parse the XML document\n");
-    }
-
-    try
-    {
-        root = xmlDocGetRootElement(doc);
-        if (!root || xmlStrcmp(root->name, (const xmlChar*)XML_ROOT))
-        {
-            throw MlxcfgException("The XML root node must be " XML_ROOT);
-        }
-
-        // check fingerprint
-        if (!root->ns || xmlStrcmp(root->ns->href, (const xmlChar*)XMLNS))
-        {
-            throw MlxcfgException("The XML Fingerprint " XMLNS " is missing or incorrect");
-        }
-        currTlv = root->xmlChildrenNode;
-        while (currTlv)
-        {
-            IGNORE_UNUSEFUL_NODE(currTlv)
-            u_int32_t port = 0;
-            u_int32_t u_module = 0;
-            int32_t tlvModule;
-            std::shared_ptr<TLVConf> tlvConf = nullptr;
-            bool isAllPorts = false;
-            bool isAllModules = false;
-
-            // printf("-D- tlv name=%s\n", (char*)currTlv->name);
-            portAttr = xmlGetProp(currTlv, (const xmlChar*)PORT_ATTR);
-            moduleAttr = xmlGetProp(currTlv, (const xmlChar*)MODULE_ATTR);
-
-            if (!portAttr)
-            {
-                port = 0;
-            }
-            else if (!xmlStrcasecmp(portAttr, (const xmlChar*)ALL_ATTR_VAL))
-            {
-                isAllPorts = true;
-                port = 1;
-            }
-            else if (!strToNum((const char*)portAttr, port) ||
-                     !(1 <= port && (int32_t)port <= tlvConf->getMaxPort(_mf, false)))
-            {
-                throw MlxcfgException("Illegal value of port attribute %s", (const char*)portAttr);
-            }
-
-            if (!moduleAttr)
-            {
-                tlvModule = -1;
-            }
-            else if (!xmlStrcasecmp(moduleAttr, (const xmlChar*)ALL_ATTR_VAL))
-            {
-                isAllModules = true;
-                tlvModule = 0;
-            }
-            else if (!strToNum((const char*)moduleAttr, u_module) || !(u_module <= (u_int32_t)tlvConf->getMaxModule()))
-            {
-                throw MlxcfgException("Illegal value of module attribute %s", (const char*)portAttr);
-            }
-            else
-            {
-                tlvModule = u_module;
-            }
-
-            tlvConf = _dbManager->getCloneTLVByName((char*)currTlv->name, port, tlvModule);
-            try
-            {
-                if (isAllPorts)
-                {
-                    tlvConf->setAttr(PORT_ATTR, ALL_ATTR_VAL);
-                }
-                if (isAllModules)
-                {
-                    tlvConf->setAttr(MODULE_ATTR, ALL_ATTR_VAL);
-                }
-                GET_AND_SET_ATTR(writerIdAttr, currTlv, WRITER_ID_ATTR)
-                GET_AND_SET_ATTR(ovrEnAttr, currTlv, OVR_EN_ATTR)
-                GET_AND_SET_ATTR(rdEnAttr, currTlv, RD_EN_ATTR)
-                GET_AND_SET_ATTR(priorityAttr, currTlv, PRIORITY_ATTR)
-                GET_AND_SET_ATTR(hostAttr, currTlv, HOST_ATTR)
-                GET_AND_SET_ATTR(funcAttr, currTlv, FUNC_ATTR)
-
-                // loop over the parameters list
-                vector<string> collectedParams;
-                currParam = currTlv->xmlChildrenNode;
-                map<string, map<u_int32_t, string>> arrayValues;
-                while (currParam)
-                {
-                    IGNORE_UNUSEFUL_NODE(currParam)
-                    xmlVal = xmlNodeListGetString(doc, currParam->xmlChildrenNode, 1);
-                    indexAttr = xmlGetProp(currParam, (const xmlChar*)INDEX_ATTR);
-                    if (xmlVal && *xmlVal)
-                    {
-                        if (indexAttr)
-                        {
-                            string indexAttrStr = (const char*)indexAttr;
-                            vector<u_int32_t> indexes;
-                            extractIndexes(indexAttrStr, indexes);
-                            for (vector<u_int32_t>::iterator it = indexes.begin(); it != indexes.end(); ++it)
-                            {
-                                arrayValues[(char*)currParam->name][*it] = (char*)xmlVal;
-                            }
-                        }
-                        else
-                        {
-                            if (find(collectedParams.begin(), collectedParams.end(), (char*)currParam->name) !=
-                                collectedParams.end())
-                            {
-                                throw MlxcfgException("Duplicate use of same parameter: %s\n", (char*)currParam->name);
-                            }
-                            collectedParams.push_back((char*)currParam->name);
-                            tlvConf->updateParamByName((char*)currParam->name, (char*)xmlVal, QueryNext);
-                        }
-                    }
-                    else
-                    {
-                        if (tlvConf->isAStringParam((char*)currParam->name))
-                        {
-                            tlvConf->updateParamByName((char*)currParam->name, "", QueryNext);
-                        }
-                        else
-                        {
-                            throw MlxcfgException("The Parameter %s of the configuration %s "
-                                                  "does not have value",
-                                                  (char*)currParam->name,
-                                                  tlvConf->_name.c_str());
-                        }
-                    }
-                    XMLFREE_AND_SET_NULL(xmlVal);
-                    XMLFREE_AND_SET_NULL(indexAttr)
-                    currParam = currParam->next;
-                }
-                // process arrayValues
-                for (map<string, map<u_int32_t, string>>::iterator p = arrayValues.begin(); p != arrayValues.end(); ++p)
-                {
-                    // TODO check validity of indices
-                    string paramName = p->first;
-                    vector<string> vals(p->second.size());
-                    for (map<u_int32_t, string>::iterator v = p->second.begin(); v != p->second.end(); ++v)
-                    {
-                        vals[v->first] = v->second;
-                    }
-                    tlvConf->updateParamByName(paramName, vals, QueryNext);
-                }
-            }
-            catch (MlxcfgException& e)
-            {
-                throw e;
-            }
-            tlvs.push_back(tlvConf);
-            currTlv = currTlv->next;
-            XMLFREE_AND_SET_NULL(portAttr)
-            XMLFREE_AND_SET_NULL(moduleAttr)
-        }
-        if (tlvs.size() == 0)
-        {
-            throw MlxcfgException("No TLV configurations were found in the XML");
-        }
-    }
-    catch (MlxcfgException& e)
-    {
-        XMLFREE_AND_SET_NULL(writerIdAttr)
-        XMLFREE_AND_SET_NULL(portAttr)
-        XMLFREE_AND_SET_NULL(moduleAttr)
-        XMLFREE_AND_SET_NULL(ovrEnAttr)
-        XMLFREE_AND_SET_NULL(rdEnAttr)
-        XMLFREE_AND_SET_NULL(priorityAttr)
-        XMLFREE_AND_SET_NULL(hostAttr)
-        XMLFREE_AND_SET_NULL(funcAttr)
-        XMLFREE_AND_SET_NULL(xmlVal)
-        xmlFreeDoc(doc);
-        doc = NULL;
-        throw e;
-    }
-    XMLFREE_AND_SET_NULL(writerIdAttr)
-    XMLFREE_AND_SET_NULL(portAttr)
-    XMLFREE_AND_SET_NULL(moduleAttr)
-    XMLFREE_AND_SET_NULL(ovrEnAttr)
-    XMLFREE_AND_SET_NULL(rdEnAttr)
-    XMLFREE_AND_SET_NULL(priorityAttr)
-    XMLFREE_AND_SET_NULL(hostAttr)
-    XMLFREE_AND_SET_NULL(funcAttr)
-    XMLFREE_AND_SET_NULL(xmlVal)
-    xmlFreeDoc(doc);
-#else  /* if !defined(DISABLE_XML2) */
-    (void)xmlContent;
-    (void)tlvs;
-    throw MlxcfgException("Can not run the command, the tool was not compiled against libxml2");
-#endif /* if !defined(DISABLE_XML2) */
+    vector<std::shared_ptr<TLVConf>> parsedTlvs;
+    XmlTlvBuilder builder(_dbManager, TLVConf::getMaxPort(_mf, false), XML_ROOT, XMLNS, parsedTlvs);
+    parseXmlStream(xmlContent, builder);
+    builder.checkAnyTlvFound();
+    tlvs.insert(tlvs.end(), parsedTlvs.begin(), parsedTlvs.end());
 }
 
 void GenericCommander::XML2Raw(const string& xmlContent, string& raw)
@@ -2151,6 +1973,117 @@ void GenericCommander::orderConfTlvs(vector<std::shared_ptr<TLVConf>>& tlvs)
     }
 }
 
+namespace
+{
+std::string MakeKeySkipRoot(const std::vector<std::string>& path)
+{
+    std::string k;
+    for (size_t i = 1; i < path.size(); ++i)
+    {
+        if (i > 1)
+        {
+            k += ".";
+        }
+        k += path[i];
+    }
+    if (k.empty() && !path.empty())
+    {
+        k = path.back();
+    }
+    return k;
+}
+
+// Flattens a PSC token XML into "parent.child" keys mapped to the leaf text. A DEVICE_UNIQUE element with children
+// becomes one key whose value is "name=value,..." over its leaf children; anything nested deeper inside it is ignored.
+class PscTokenMapBuilder : public XmlStreamHandler
+{
+public:
+    explicit PscTokenMapBuilder(std::map<std::string, std::string>& out) :
+        _out(out), _deviceUniqueName(MlxPSCtoken::TlvTypeToStr(TlvType::DEVICE_UNIQUE))
+    {
+    }
+
+    void OnStartElement(const std::string& nsUri, const std::string& name, const XmlAttrs&) override
+    {
+        Element e;
+        e.name = name;
+        if (_stack.empty())
+        {
+            checkXmlRoot(nsUri, name, XML_ROOT, XNVIDIA);
+        }
+        else
+        {
+            Element& parent = _stack.back();
+            parent.hasChildren = true;
+            e.childOfDeviceUnique = parent.isDeviceUnique;
+            e.insideDeviceUnique = parent.isDeviceUnique || parent.insideDeviceUnique;
+        }
+        e.isDeviceUnique = !e.insideDeviceUnique && name == _deviceUniqueName;
+        _stack.push_back(e);
+        _path.push_back(name);
+    }
+
+    void OnText(const char* text, size_t len) override { _stack.back().text.append(text, len); }
+
+    void OnEndElement() override
+    {
+        Element e = _stack.back();
+        std::string key = MakeKeySkipRoot(_path);
+        _stack.pop_back();
+        _path.pop_back();
+
+        if (e.childOfDeviceUnique)
+        {
+            if (!e.hasChildren)
+            {
+                std::string& value = _stack.back().deviceUniqueValue;
+                if (!value.empty())
+                {
+                    value += ",";
+                }
+                value += e.name + "=" + e.text;
+            }
+        }
+        else if (e.insideDeviceUnique)
+        {
+            return;
+        }
+        else if (!e.hasChildren)
+        {
+            _out[key] = e.text;
+        }
+        else if (e.isDeviceUnique)
+        {
+            _out[key] = e.deviceUniqueValue;
+        }
+    }
+
+private:
+    struct Element
+    {
+        Element() : hasChildren(false), isDeviceUnique(false), childOfDeviceUnique(false), insideDeviceUnique(false) {}
+        std::string name;
+        std::string text;
+        std::string deviceUniqueValue;
+        bool hasChildren;
+        bool isDeviceUnique;
+        bool childOfDeviceUnique;
+        bool insideDeviceUnique;
+    };
+
+    std::map<std::string, std::string>& _out;
+    const std::string _deviceUniqueName;
+    std::vector<Element> _stack;
+    std::vector<std::string> _path;
+};
+} // namespace
+
+void GenericCommander::XML2MapPSCToken(const string& xml, map<string, string>& tokenData)
+{
+    PscTokenMapBuilder builder(tokenData);
+    parseXmlStream(xml, builder);
+}
+
 void GenericCommander::createConf(const string& xml, vector<u_int32_t>& buff)
 {
     vector<std::shared_ptr<TLVConf>> tlvs;
@@ -2238,34 +2171,33 @@ void GenericCommander::ValidateAndGetTlvsAndCompIdLegacy(const vector<u_int8_t>&
     checkConfTlvs(tlvs, compsId);
 }
 
+bool GenericCommander::IsPSCBinToken(const vector<u_int8_t>& buff)
+{
+    if (buff.size() < 6)
+    {
+        return false;
+    }
+    // Check all first 6 bytes at once
+
+    const std::vector<uint8_t> expected = {0x54, 0x4C, 0x56, 0x31}; // 'TLV1'
+    return std::equal(expected.begin(), expected.end(), buff.begin());
+}
+
 void GenericCommander::apply(const vector<u_int8_t>& buff)
 {
-    FwComponent comp;
-
-    vector<std::shared_ptr<TLVConf>> tlvs;
-    vector<u_int32_t> dwBuff;
-    FwCompsMgr fwCompsAccess(_mf);
     FwComponent::comps_ids_t compsId = FwComponent::comps_ids_t::COMPID_UNKNOWN;
-    size_t fingerPrintLength = strlen(BIN_FILE_FINGERPRINT);
+    FwComponent comp;
+    FwCompsMgr fwCompsAccess(_mf);
 
-    /* Check if there is a fingerprint: */
-    if (buff.size() < fingerPrintLength)
+    if (IsPSCBinToken(buff))
     {
-        throw MlxcfgException("Invalid Configuration file");
+        compsId = FwComponent::comps_ids_t::COMPID_PSC_TOKEN;
     }
-    for (unsigned int i = 0; i < fingerPrintLength; i += 4)
+    else
     {
-        if (buff[i] != BIN_FILE_FINGERPRINT[i])
-        {
-            throw MlxcfgException("Fingerprint is missing in the Configuration file");
-        }
+        vector<std::shared_ptr<TLVConf>> tlvs;
+        ValidateAndGetTlvsAndCompIdLegacy(buff, tlvs, compsId);
     }
-
-    dwBuff.resize((buff.size() - fingerPrintLength) >> 2);
-    memcpy(dwBuff.data(), buff.data() + fingerPrintLength, buff.size() - fingerPrintLength);
-    bin2TLVConfs(dwBuff, tlvs);
-
-    checkConfTlvs(tlvs, compsId);
 
     if (!fwCompsAccess.getFwSupport())
     {

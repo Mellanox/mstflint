@@ -278,6 +278,7 @@ extern const std::vector<u_int32_t> bonusPortCounterGroups;
 const std::vector<u_int32_t>& getElsModuleSupportedFunctions();
 const std::vector<u_int32_t>& getCpuSupportedFunctions();
 const APSU_CONFIG_PARAM* getApsuConfigParam(const std::string& flagName);
+std::string getApsuRangeHelp(const std::string& flagName);
 
 class MlxlinkMaps
 {

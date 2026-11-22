@@ -87,6 +87,13 @@ public:
     int getDigest(std::vector<u_int8_t>& digest);
 };
 
+class MlxSignSHA384 : public MlxSignSHA
+{
+public:
+    MlxSignSHA384();
+    int getDigest(std::vector<u_int8_t>& digest);
+};
+
 /*
  * Class MlxSignRSA: used for signing messages using RSA algorithm
  * Usage:

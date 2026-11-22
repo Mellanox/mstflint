@@ -84,6 +84,10 @@ u_int8_t FsCtrlOperations::FwType()
     {
         return FIT_FS5;
     }
+    else if (fwFormat == FS_FS6_GEN)
+    {
+        return FIT_FS6;
+    }
     return FIT_FSCTRL;
 }
 
@@ -331,6 +335,7 @@ bool FsCtrlOperations::FsIntQuery()
     snprintf(_fsCtrlImgInfo.name, sizeof(_fsCtrlImgInfo.name), "%s", fwQuery.name);
     snprintf(_fsCtrlImgInfo.description, sizeof(_fsCtrlImgInfo.description), "%s", fwQuery.description);
     snprintf(_fsCtrlImgInfo.deviceVsd, sizeof(_fsCtrlImgInfo.deviceVsd), "%s", fwQuery.deviceVsd);
+    _vmodVsd = fwQuery.vmodVsd;
     if (FwType() == FIT_FS3)
     {
         memcpy(_fwImgInfo.ext_info.vsd, fwQuery.deviceVsd, VSD_LEN);
@@ -471,6 +476,7 @@ bool FsCtrlOperations::FwQuery(fw_info_t* fwInfo, bool readRom, bool isStripedIm
     (void)quickQuery;
     (void)ignoreDToc;
     (void)verbose;
+    _compsList.clear();
     memcpy(&(fwInfo->fw_info), &(_fwImgInfo.ext_info), sizeof(fw_info_com_t));
     memcpy(&(fwInfo->fs3_info), &(_fsCtrlImgInfo), sizeof(fs3_info_t));
     fwInfo->fs3_info.fs3_uids_info.guid_format = IMAGE_LAYOUT_UIDS;
@@ -505,6 +511,26 @@ bool FsCtrlOperations::FwQuery(fw_info_t* fwInfo, bool readRom, bool isStripedIm
     {
         fwInfo->fs3_info.geo_address_valid = false;
     }
+
+    component_version_st hbiVersion;
+    if (_fwCompsAccess->GetHBIVersion(hbiVersion))
+    {
+        u_int16_t hbiVersionArray[2];
+        hbiVersionArray[0] = EXTRACT(hbiVersion.version, 8, 8);
+        hbiVersionArray[1] = EXTRACT(hbiVersion.version, 0, 8);
+        _compsList.push_back(
+          CompInfo{ComponentType::Comp_Csh_Sbd_Fw, FwVersion(hbiVersionArray[0], hbiVersionArray[1], 0)});
+    }
+    else
+    {
+        MLXFWOPS_LOG_DEBUG("Failed to get HBI version - Error %d", _fwCompsAccess->getLastError());
+    }
+
+    if (!_vmodVsd.empty())
+    {
+        _compsList.push_back(CompInfo{ComponentType::Comp_Csh_Vmod_Fw, FwVersion(0, 0, 0, _vmodVsd)});
+    }
+
     return true;
 }
 
@@ -846,19 +872,59 @@ bool FsCtrlOperations::FwBurnAdvanced(FwOperations* imageOps, ExtBurnParams& bur
     {
         _fwCompsAccess->SetActivationStep(false);
     }
+    else if (componentId == FwComponent::comps_ids_t::COMPID_CPO_VMOD_FW)
+    {
+        if (imageOps != NULL)
+        {
+            vector<u_int8_t> data(sizeof(_fwImgInfo.ext_info.psid));
+            memcpy(data.data(), _fwImgInfo.ext_info.psid, sizeof(_fwImgInfo.ext_info.psid));
+            if (!imageOps->IsCompatibleToDevice(data, burnParams.ignoreVersionCheck))
+            {
+                return errmsg("%s", imageOps->err());
+            }
+        }
+        if (burnParams.vmodDownstreamControl && (burnParams.vmodAutoUpdate || burnParams.vmodDeviceSize > 0))
+        {
+            _fwCompsAccess->SetIndexAndSize(burnParams.vmodDeviceIndex + 1, burnParams.vmodDeviceSize,
+                                            burnParams.vmodAutoUpdate, burnParams.vmodActivationNeeded,
+                                            burnParams.vmodDownloadTransferNeeded, burnParams.vmodActivationDelaySec);
+        }
+        else if (burnParams.vmodDownstreamControl && burnParams.vmodDownloadTransferNeeded &&
+                 !burnParams.vmodActivationNeeded)
+        {
+            _fwCompsAccess->SetBurnSteps(burnParams.vmodActivationNeeded, burnParams.vmodDownloadTransferNeeded);
+        }
+    }
+    else if (imageOps == NULL)
+    {
+        return errmsg("bad parameter is given to FwBurnAdvanced\n");
+    }
 
     std::vector<u_int8_t> compData;
     u_int32_t imageSize = 0;
-    if (!imageOps->GetImageSize(&imageSize))
+    if (componentId == FwComponent::comps_ids_t::COMPID_CPO_VMOD_FW)
     {
-        return false;
+        if (imageOps != NULL && !imageOps->FwExtract4MBImage(compData, true))
+        {
+            return errmsg(imageOps->getErrorCode(), "Failed to Extract 4MB from the image");
+        }
     }
-    compData.resize(imageSize);
-    if (!imageOps->FwReadData(compData.data(), &imageSize))
+    else
     {
-        return errmsg(imageOps->getErrorCode(), "Failed to read component from file");
+        if (!imageOps->GetImageSize(&imageSize))
+        {
+            return false;
+        }
+        compData.resize(imageSize);
+        if (!imageOps->FwReadData(compData.data(), &imageSize))
+        {
+            return errmsg(imageOps->getErrorCode(), "Failed to read component from file");
+        }
     }
-    printf("-I- Downloading FW ...\n");
+    if (imageOps != NULL)
+    {
+        printf("-I- Downloading FW ...\n");
+    }
     return _Burn(compData, burnParams.ProgressFuncAdv, componentId);
 }
 
@@ -938,6 +1004,13 @@ bool FsCtrlOperations::_Burn(std::vector<u_int8_t> imageOps4MData, ProgressCallB
 
     MLXFWOPS_LOG_INFO("MCC burn started (component %d, %d bytes)", (int)ComponentId, (int)imageOps4MData.size());
     bootImageComponent.init(imageOps4MData, imageOps4MData.size(), ComponentId);
+    if (_fwParams.forceCleanup)
+    {
+        if (!_fwCompsAccess->CleanupLocks())
+        {
+            printf("-W- Forced cleanup did not fully complete. Attempting to burn anyway.\n");
+        }
+    }
     if (!_fwCompsAccess->lock_flash_semaphore())
     {
         return errmsg(FwCompsErrToFwOpsErr(_fwCompsAccess->getLastError()), "%s", _fwCompsAccess->getLastErrMsg());

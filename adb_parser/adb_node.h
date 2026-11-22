@@ -86,11 +86,16 @@ public:
 
     address_t get_max_leaf_size() const;
     void update_max_leaf(AdbField* other);
+    bool is_ds_align_forced() const;
 
     string toXml(const string& addPrefix, bool bigEndian = false);
 
     // FOR DEBUG
     void print(int indent = 0);
+
+private:
+    static const string ATTR_FORCE_DS_ALIGN;
+    static const string ATTR_FORCE_DS_ALIGN_ON;
 
 protected:
     short_address_t _size{0}; // in bits
@@ -105,6 +110,7 @@ public:
     FieldsList condFields; // Field that weren't instantiated due to not satisfied condition
     AttrsMap attrs;
     bool inLayout{false};
+    bool _ds_align_checked{false};
 
     // defined in
     string fileName;

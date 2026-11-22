@@ -681,7 +681,7 @@ class MlnxPciOpLinux(MlnxPciOp):
         (rc, out, _) = cmdExec(cmd)
         bridgeDev = out.strip()
         result = re.match(
-            r'^[0-9A-Fa-f]{4}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}\.[0-9A-Fa-f]$', bridgeDev)
+            mlxfwreset_utils.PCI_DBDF_PATTERN, bridgeDev)
         if rc != 0 or result is None:
             raise NoPciBridgeException(
                 "Failed to get Bridge Device for the given PCI device! You might be running on a Virtual Machine!")
@@ -712,7 +712,7 @@ class MlnxPciOpLinux(MlnxPciOp):
             i = q.get()
             files = os.listdir(i)
             for file in files:
-                if re.match(r'^[0-9A-Fa-f]{4}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}\.[0-9A-Fa-f]$', file) is not None:
+                if re.match(mlxfwreset_utils.PCI_DBDF_PATTERN, file) is not None:
                     if self.getVendorId(file) in SUPPORTED_DEVICES_WITH_SWITCHES:
                         q.put(i + "/" + file)
                         devices.append(file)

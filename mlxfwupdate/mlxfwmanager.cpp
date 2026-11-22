@@ -46,50 +46,65 @@
 #include <mutex>
 #include <vector>
 #include <cstdarg>
-#include <cstdio>
 #include <cstring>
 #include <fstream>
 #include <fcntl.h>
-
 #include "pldm_utils/pldm_utils.h"
 #include "mft_utils/mft_utils.h"
-
 #define TUPLE_POS_COMPID 0
 #define TUPLE_POS_BUFF_PTR 1
 #define TUPLE_POS_BUFF_SIZE 2
 
-// Structure to hold device update results for parallel execution
-struct DeviceUpdateResult
-{
-    int device_index;
-    int rc;
-    bool imageWasCached;
-    string log_message;
-    string error_message;
+// Function from fw_comps_mgr to set log file for library logging
+extern "C" void fwcomps_set_log_file(FILE* log_file);
+// Suppress fw_comps_mgr human-readable stdout when emitting machine-readable output
+extern "C" void fwcomps_set_suppress_stdout(int suppress);
+// Set device context for fw_comps_mgr messages (e.g. "Device #1 (0000:01:00.0)"); NULL to clear
+extern "C" void fwcomps_set_device_context(const char* ctx);
+// Shared output lock from fw_comps_mgr – same mutex that guards FWCOMPS_PRINT,
+// so progress callbacks and library messages never interleave on stdout.
+extern "C" void fwcomps_output_lock();
+extern "C" void fwcomps_output_unlock();
 
-    DeviceUpdateResult()
-    {
-        device_index = -1;
-        rc = 0;
-        imageWasCached = false;
-        log_message = "";
-        error_message = "";
-    }
+struct FwcompsOutputGuard
+{
+    FwcompsOutputGuard() { fwcomps_output_lock(); }
+    ~FwcompsOutputGuard() { fwcomps_output_unlock(); }
 };
 
+#ifdef ENABLE_REDFISH // Redfish is not part of mstflint
+#include "mlxfwops/lib/redfish_ops.h"
+#include "redfish/RedfishNameHandler.h"
+bool g_toggle_flash_writeprotect_via_redfish = false;
+RedfishLoginInfo g_redfishLoginInfo;
+#endif
+// Local device index for device progress display in parallel mode (-1 = not in parallel).
+/* Whether a package file is a gzipped or plain tar. Those are checked when the package is read; only a
+ * ZIP is checked up front.
+ */
+static bool isTarPackage(const string& path)
+{
+    char head[262] = {0};
+    std::ifstream file(path.c_str(), std::ios::binary);
 
-// Local device index for per device progress display in parallel mode.
+    file.read(head, sizeof(head));
+    std::streamsize read = file.gcount();
+    return (read >= 2 && (unsigned char)head[0] == 0x1f && (unsigned char)head[1] == 0x8b) ||
+           (read == (std::streamsize)sizeof(head) && memcmp(&head[257], "ustar", 5) == 0);
+}
+
 static thread_local int g_progress_device_index = -1;
 // Local device label for progress messages, e.g. "Device #1 (0000:43:00.0)".
-static thread_local std::string g_progress_device_label;
-// Local line number for cursor positioning.
+static const size_t PROGRESS_DEVICE_LABEL_SIZE = 80;
+static thread_local char g_progress_device_label[PROGRESS_DEVICE_LABEL_SIZE] = "";
+// Local line number for cursor positioning (1..N).
 static thread_local int g_progress_line_number = 0;
-// Total number of device lines in parallel mode.
+// Total number of device progress lines in parallel mode.
 static int g_parallel_device_count = 0;
 // Progress lines are created on first use.
 static bool g_progress_lines_created = false;
 
-// ANSI codes for cursor movement.
+// ANSI codes for cursor movement
 #define CURSOR_UP "\033[A"
 #define CURSOR_DOWN "\033[B"
 
@@ -99,7 +114,6 @@ static void print_progress_at_line(int line, const char* fmt, ...)
     {
         return;
     }
-    // On first use, create N progress lines at the bottom (below any stage messages already printed)
     if (!g_progress_lines_created)
     {
         for (int i = 0; i < g_parallel_device_count; i++)
@@ -108,7 +122,6 @@ static void print_progress_at_line(int line, const char* fmt, ...)
         }
         g_progress_lines_created = true;
     }
-    // Progress lines are the last N lines; from "home" (below them) we go up (N+1 - slot) steps
     int steps = g_parallel_device_count + 1 - line;
     for (int j = 0; j < steps; j++)
     {
@@ -121,7 +134,7 @@ static void print_progress_at_line(int line, const char* fmt, ...)
     vsnprintf(buf, sizeof(buf), fmt, args);
     va_end(args);
     print_out("%s", buf);
-    print_out("\033[K"); // erase to end of line
+    print_out("\033[K");
     for (int j = 0; j < steps; j++)
     {
         print_out(CURSOR_DOWN);
@@ -129,187 +142,8 @@ static void print_progress_at_line(int line, const char* fmt, ...)
     print_out("\r");
 }
 
-// Function from fw_comps_mgr to set log file for library logging
-extern "C" void fwcomps_set_log_file(FILE* log_file);
-extern "C" void fwcomps_set_device_context(const char* ctx);
-extern "C" void fwcomps_output_lock();
-extern "C" void fwcomps_output_unlock();
-
-struct FwcompsOutputGuard
-{
-    FwcompsOutputGuard() { fwcomps_output_lock(); }
-    ~FwcompsOutputGuard() { fwcomps_output_unlock(); }
-};
-
-// Function to update a single device (used for both sequential and parallel updates)
-void updateSingleDevice(int device_index,
-                       MlnxDev* dev,
-                       string mfa_file,
-                       bool pldmFlow,
-                       map<string, vector<tuple<FwComponent::comps_ids_t, u_int8_t*, u_int32_t>>>& psidPldmComponents,
-                       int (*progressCB)(int),
-                       bool burnFailsafe,
-                       f_prog_func_adv advProgressCB,
-                       DeviceUpdateResult& result)
-{
-    result.device_index = device_index;
-    result.rc = 0;
-    result.imageWasCached = false;
-    
-    vector<string> questions;
-    bool isTimeConsumingFixesNeeded = false;
-    
-    // preBurn phase
-    int rc0 = dev->preBurn(mfa_file, progressCB, burnFailsafe, isTimeConsumingFixesNeeded, questions, advProgressCB);
-    
-    if (rc0)
-    {
-        if (abort_request)
-        {
-            result.error_message = "Interrupted";
-            result.rc = ERR_CODE_INTERRUPTED;
-        }
-        else
-        {
-            result.error_message = dev->getLastErrMsg();
-            result.rc = rc0;
-        }
-        return;
-    }
-    
-    // PLDM flow
-    if (pldmFlow)
-    {
-        for (auto comps : (psidPldmComponents[dev->getPsid()]))
-        {
-            if (std::get<TUPLE_POS_COMPID>(comps) == FwComponent::comps_ids_t::COMPID_BFB)
-            {
-                if (dev->isBFBSupported())
-                {
-                    dev->burnPLDMComponent(std::get<TUPLE_POS_COMPID>(comps),
-                                          std::get<TUPLE_POS_BUFF_PTR>(comps),
-                                          std::get<TUPLE_POS_BUFF_SIZE>(comps));
-                }
-            }
-        }
-    }
-    
-    // Burn phase
-    rc0 = dev->burn(result.imageWasCached);
-    result.rc = rc0;
-    
-    if (!rc0)
-    {
-        result.log_message = "Done";
-    }
-    else
-    {
-        if (abort_request)
-        {
-            result.error_message = "Interrupted";
-            result.rc = ERR_CODE_INTERRUPTED;
-        }
-        else
-        {
-            result.error_message = dev->getLastErrMsg();
-        }
-    }
-}
-
-struct DeviceQueryResult
-{
-    MlnxDev* dev;
-    DeviceQueryResult() : dev(nullptr) {}
-};
-
-static void querySingleDevice(int i,
-                              bool use_device_names,
-                              const vector<string>* device_names,
-                              dev_info* devsinfo,
-                              bool no_fw_ctrl,
-                              int compare_ffv,
-                              vector<DeviceQueryResult>& results)
-{
-    if (use_device_names && (size_t)i < device_names->size() && (*device_names)[i].find("redfish") != std::string::npos)
-    {
-        return;
-    }
-    MlnxDev* dev =
-      use_device_names ? new MlnxDev((*device_names)[i].c_str(), compare_ffv) : new MlnxDev(&devsinfo[i], compare_ffv);
-    dm_dev_id_t deviceType = dev->getDeviceType();
-    if (dm_is_gpu(deviceType))
-    {
-        delete dev;
-        return;
-    }
-    if (no_fw_ctrl)
-    {
-        dev->setNoFwCtrl();
-    }
-    dev->query();
-    results[i].dev = dev;
-}
-
-static void runParallelBurn(vector<MlnxDev*>& devs,
-                            const config_t& config,
-                            const map<string, PsidQueryItem>& psidUpdateInfo,
-                            const CmdLineParams& cmd_params,
-                            bool pldmFlow,
-                            map<string, vector<tuple<FwComponent::comps_ids_t, u_int8_t*, u_int32_t>>>& psidPldmComponents,
-                            vector<DeviceUpdateResult>& update_results,
-                            int (*progressCB_update)(int),
-                            f_prog_func_adv advProgressCB_update,
-                            const vector<int>& update_indices)
-{
-    vector<std::thread> update_threads;
-    for (size_t idx = 0; idx < update_indices.size(); idx++)
-    {
-        int i = update_indices[idx];
-        int line_num = (int)(idx + 1);
-        update_threads.push_back(std::thread(
-          [i, line_num, &devs, &config, &psidUpdateInfo, &cmd_params, pldmFlow, &psidPldmComponents,
-           &update_results, progressCB_update, advProgressCB_update]()
-          {
-              g_progress_device_index = i + 1;
-              g_progress_line_number = line_num;
-              char dev_ctx[80];
-              snprintf(dev_ctx, sizeof(dev_ctx), "Device #%d (%s)", i + 1, devs[i]->getDevDisplayName(true).c_str());
-              fwcomps_set_device_context(dev_ctx);
-              g_progress_device_label = dev_ctx;
-              string mfa_file = config.mfa_path;
-              string tmp = psidUpdateInfo.at(devs[i]->getPsid()).url;
-              if (!cmd_params.use_mfa_file && !pldmFlow)
-              {
-                  size_t pos = tmp.rfind("/");
-                  if (pos != string::npos)
-                  {
-                      tmp = tmp.substr(pos + 1);
-                  }
-                  mfa_file += "/";
-                  mfa_file += tmp;
-              }
-              else
-              {
-                  mfa_file = tmp;
-              }
-              updateSingleDevice(i, devs[i], mfa_file, pldmFlow, psidPldmComponents,
-                                 progressCB_update, cmd_params.burnFailsafe, advProgressCB_update, update_results[i]);
-              fwcomps_set_device_context(NULL);
-              g_progress_device_label.clear();
-              g_progress_device_index = -1;
-              g_progress_line_number = 0;
-          }));
-    }
-    for (auto& t : update_threads)
-    {
-        if (t.joinable())
-        {
-            t.join();
-        }
-    }
-    g_parallel_device_count = 0;
-    g_progress_lines_created = false;
-}
+int progressCB_display_multi_thread(int completion);
+int advProgressFunc_display_multi_thread(int completion, const char* stage, prog_t type, int* unknownProgress);
 
 int main(int argc, char* argv[])
 {
@@ -327,6 +161,332 @@ int main(int argc, char* argv[])
         fprintf(stderr, "-E- %s\n", e._err.c_str());
         return ERR_CODE_INVALID_PLDM_COMPONENT;
     }
+}
+
+bool userSpecifiedDevices(const CmdLineParams& cmd_params)
+{
+    return !cmd_params.device_names.empty();
+}
+
+bool deviceSelectedByUser(const CmdLineParams& cmd_params, const std::string& device)
+{
+    return std::find(cmd_params.device_names.begin(), cmd_params.device_names.end(), device) !=
+           cmd_params.device_names.end();
+}
+
+bool redfishDeviceSupported(const std::string& device)
+{
+    // BMC and HMC devices are not supported.
+    return (device.find("_hmc") == std::string::npos && device.find("_bmc") == std::string::npos);
+}
+
+BurnDeviceResult burnDevice(MlnxDev* dev,
+                            const string& mfa_file,
+                            const CmdLineParams& cmd_params,
+                            int (*progressCB)(int),
+                            int (*advProgressCB)(int, const char*, prog_t, void*),
+                            const string& targetFilePath,
+                            const vector<string>& redfishDevicesSelectedByUser,
+                            int& res,
+                            int& rc0,
+                            int& burn_success_cnt,
+                            FILE* FLog,
+                            bool skip_prompts)
+{
+    bool imageWasCached = false;
+    vector<string> questions;
+    bool isTimeConsumingFixesNeeded = false;
+    int localRes = 0;
+
+    localRes =
+      dev->preBurn(mfa_file, progressCB, cmd_params.burnFailsafe, isTimeConsumingFixesNeeded, questions, advProgressCB);
+    if (localRes == SKIP_AND_DO_NOT_REPORT_ERROR)
+    {
+        return BURN_CONTINUE;
+    }
+    rc0 |= localRes;
+#ifdef ENABLE_REDFISH // Redfish is not part of mstflint
+    if (dev->isRedfishDevice())
+    {
+        RedfishOperations* redfishFwOps = (RedfishOperations*)dev->getDeviceFwOps();
+        if (!redfishFwOps)
+        {
+            res = 1;
+            return BURN_GOTO_EARLY_CLEANUP;
+        }
+        redfishFwOps->setFWPackagePath(targetFilePath);
+        redfishFwOps->setRedfishDevicesSelectedByUser(redfishDevicesSelectedByUser);
+    }
+#else
+    (void)targetFilePath;
+    (void)redfishDevicesSelectedByUser;
+#endif
+
+    if (rc0)
+    {
+        if (abort_request)
+        {
+            if (!skip_prompts)
+            {
+                print_out("\b\b\b\bInterrupted\n");
+            }
+            res = ERR_CODE_INTERRUPTED;
+            dev->clearSemaphore();
+            return BURN_GOTO_EARLY_CLEANUP;
+        }
+        else if (!skip_prompts)
+        {
+            print_out("\b\b\b\bFail : %s \n", dev->getLastErrMsg().c_str());
+        }
+    }
+    else
+    {
+        if (!skip_prompts)
+        {
+            for (unsigned int questionIndex = 0; questionIndex < questions.size(); questionIndex++)
+            {
+                print_out("%s", questions[questionIndex].c_str());
+                int answer = prompt("Perform update? [y/N]: ", cmd_params.yes_no_);
+                if (!answer)
+                {
+                    print_out("No updates performed\n");
+                    return BURN_GOTO_CLEANUP;
+                }
+            }
+        }
+        if (isTimeConsumingFixesNeeded)
+        {
+            print_out("Preparing...\n");
+        }
+
+        rc0 |= dev->burn(imageWasCached);
+        if (!rc0)
+        {
+            if (!skip_prompts)
+            {
+                print_out("\b\b\b\bDone\n");
+            }
+            burn_success_cnt++;
+            if (imageWasCached && !skip_prompts)
+            {
+                print_out("Image was successfully cached by driver.\n");
+            }
+        }
+        else
+        {
+            if (abort_request)
+            {
+                if (!skip_prompts)
+                {
+                    print_out("\b\b\b\bInterrupted\n");
+                }
+                res = ERR_CODE_INTERRUPTED;
+                dev->clearSemaphore();
+                return BURN_GOTO_EARLY_CLEANUP;
+            }
+            else if (!skip_prompts)
+            {
+                print_out("\b\b\b\bFail : %s \n", dev->getLastErrMsg().c_str());
+            }
+        }
+    }
+
+    if (FLog != NULL)
+    {
+        fprintf(FLog, "%s\n", dev->getLog().c_str());
+    }
+
+    return BURN_CONTINUE;
+}
+
+// Result of a single device FW update (for parallel update)
+struct DeviceUpdateResult
+{
+    int device_index;
+    int rc;
+    bool imageWasCached;
+    string log_message;
+    string error_message;
+    DeviceUpdateResult()
+    {
+        device_index = -1;
+        rc = 0;
+        imageWasCached = false;
+        log_message = "";
+        error_message = "";
+    }
+};
+
+// Result of a single device query (for parallel query)
+struct DeviceQueryResult
+{
+    MlnxDev* dev;
+    DeviceQueryResult() : dev(nullptr) {}
+};
+
+static void querySingleDevice(int i,
+                              bool use_device_names,
+                              const vector<string>* device_names,
+                              dev_info* devsinfo,
+                              bool no_fw_ctrl,
+                              int compare_ffv,
+                              vector<DeviceQueryResult>& results)
+{
+    if (abort_request)
+    {
+        return;
+    }
+    if (use_device_names && (size_t)i < device_names->size() && (*device_names)[i].find("redfish") != std::string::npos)
+    {
+        return;
+    }
+    MlnxDev* dev =
+      use_device_names ? new MlnxDev((*device_names)[i].c_str(), compare_ffv) : new MlnxDev(&devsinfo[i], compare_ffv);
+    dm_dev_id_t deviceType = dev->getDeviceType();
+    if (dm_is_gpu(deviceType) || dm_is_cpu(deviceType))
+    {
+        delete dev;
+        return;
+    }
+    if (no_fw_ctrl)
+    {
+        dev->setNoFwCtrl();
+    }
+    if (abort_request)
+    {
+        delete dev;
+        return;
+    }
+    dev->query();
+    results[i].dev = dev;
+}
+
+// Run the same burn flow as sequential path for one device (used in parallel update).
+static void updateSingleDevice(int device_index,
+                               MlnxDev* dev,
+                               const string& mfa_file,
+                               const CmdLineParams& cmd_params,
+                               int (*progressCB)(int),
+                               int (*advProgressCB)(int, const char*, prog_t, void*),
+                               const string& targetFilePath,
+                               const vector<string>& redfishDevicesSelectedByUser,
+                               DeviceUpdateResult& result)
+{
+    int local_res = 0;
+    int local_rc0 = 0;
+    int local_burn_success = 0;
+    ImageAccess imgacc(CompareFFV);
+    image_flow_type_t flowType = imgacc.DetermineFlow(mfa_file, dev->getPsid());
+    BurnDeviceResult burnResult = BURN_GOTO_EARLY_CLEANUP;
+
+    if (cmd_params.force_cleanup)
+    {
+        dev->setForceCleanup();
+    }
+
+    if (flowType == PLDM_FLOW || flowType == PLDM_TYPE_1_IN_MFA_FLOW)
+    {
+        string pldmFile = mfa_file;
+        vector<string> supportedComponents;
+        if (!imgacc.getBurnSupportedComponents(pldmFile, dev->getPsid(), supportedComponents))
+        {
+            result.rc = -1;
+            result.error_message = "Failed to get supported components";
+            return;
+        }
+        for (const std::string& component : supportedComponents)
+        {
+            dev->setPldmComponentType(component);
+            burnResult = burnDevice(dev, pldmFile, cmd_params, progressCB, advProgressCB, targetFilePath,
+                                    redfishDevicesSelectedByUser, local_res, local_rc0, local_burn_success, NULL, true);
+            if (burnResult != BURN_CONTINUE)
+            {
+                break;
+            }
+        }
+    }
+    else
+    {
+        burnResult = burnDevice(dev, mfa_file, cmd_params, progressCB, advProgressCB, targetFilePath,
+                                redfishDevicesSelectedByUser, local_res, local_rc0, local_burn_success, NULL, true);
+    }
+
+    result.device_index = device_index;
+    result.rc = local_rc0;
+    result.imageWasCached = false;
+    if (result.rc)
+    {
+        result.error_message = dev->getLastErrMsg();
+        if (abort_request)
+        {
+            result.rc = ERR_CODE_INTERRUPTED;
+            result.error_message = "Interrupted";
+        }
+    }
+    else
+    {
+        result.log_message = "Done";
+    }
+}
+
+static void runParallelBurn(vector<MlnxDev*>& devs,
+                            const config_t& config,
+                            const map<string, PsidQueryItem>& psidUpdateInfo,
+                            const CmdLineParams& cmd_params,
+                            vector<DeviceUpdateResult>& update_results,
+                            int (*progressCB_update)(int),
+                            f_prog_func_adv advProgressCB_update,
+                            const string& targetFilePath,
+                            const vector<string>& redfishDevicesSelectedByUser,
+                            const vector<int>& update_indices)
+{
+    vector<std::thread> update_threads;
+    for (size_t idx = 0; idx < update_indices.size(); idx++)
+    {
+        int i = update_indices[idx];
+        int line_num = (int)(idx + 1);
+        update_threads.push_back(std::thread(
+          [i, line_num, &devs, &config, &psidUpdateInfo, &cmd_params, &update_results, progressCB_update,
+           advProgressCB_update, &targetFilePath, &redfishDevicesSelectedByUser]()
+          {
+              g_progress_device_index = i + 1;
+              g_progress_line_number = line_num;
+              snprintf(g_progress_device_label, sizeof(g_progress_device_label), "Device #%d (%s)", i + 1,
+                       devs[i]->getDevDisplayName(true).c_str());
+              fwcomps_set_device_context(g_progress_device_label);
+              string mfa_file = config.mfa_path;
+              string tmp = psidUpdateInfo.at(devs[i]->getPsid()).url;
+              if (!cmd_params.use_mfa_file)
+              {
+                  size_t pos = tmp.rfind("/");
+                  if (pos != string::npos)
+                  {
+                      tmp = tmp.substr(pos + 1);
+                  }
+                  mfa_file += "/";
+                  mfa_file += tmp;
+              }
+              else
+              {
+                  mfa_file = tmp;
+              }
+              updateSingleDevice(i, devs[i], mfa_file, cmd_params, progressCB_update, advProgressCB_update,
+                                 targetFilePath, redfishDevicesSelectedByUser, update_results[i]);
+              fwcomps_set_device_context(NULL);
+              g_progress_device_label[0] = '\0';
+              g_progress_device_index = -1;
+              g_progress_line_number = 0;
+          }));
+    }
+    for (auto& t : update_threads)
+    {
+        if (t.joinable())
+        {
+            t.join();
+        }
+    }
+    g_parallel_device_count = 0;
+    g_progress_lines_created = false;
 }
 
 /* Lets the cable flow reach the terminal while its run is still going, which it cannot do itself:
@@ -352,25 +512,27 @@ int mainEntry(int argc, char* argv[])
     config_t config;
     bool early_cleanup = true;
     bool os_valid;
-    int rc, rc0;
-    bool pldmFlow = false;
+    int rc = 0;
     bool shouldSkip = false;
     vector<string> dev_names;
     vector<MlnxDev*> devs;
     CmdLineParams cmd_params;
     string arch = "";
+    std::string targetFilePath = "";
     int burn_cnt = 0;
     int burn_success_cnt = 0;
     int require_update_cnt = 0;
     vector<string> status_strings;
     map<string, PsidQueryItem> psidUpdateInfo;
-    map<string, vector<tuple<FwComponent::comps_ids_t, u_int8_t*, u_int32_t>>> psidPldmComponents;
+    vector<DeviceUpdateResult> update_results;
+    vector<int> update_indices;
     vector<string> psid_list;
     vector<string> fw_version_list;
     vector<dm_dev_id_t> dev_types_list;
     vector<string> downloaded_files_names;
     vector<string> mfa_list;
     vector<string> urls_links;
+    std::vector<std::string> redfishDevicesSelectedByUser;
     string mpath;
     int err_continue = 0;
     int devs_num = 0;
@@ -378,17 +540,20 @@ int mainEntry(int argc, char* argv[])
     string strbuf;
     OutputFmts outfmts;
     PsidLookupDB psidLookupDB;
+    string redfishPSID;
     string logFileName;
     string outFileName;
     string xml_query;
     string errorMsg = "";
     string logDir;
+    std::string fwPackagePath;
     int (*progressCB)(int);
     int (*advProgressCB)(int, const char*, prog_t, void*);
     ServerRequest* srq = NULL;
     initHandler();
     CmdLineParser cmdParser(&cmd_params, argv, argc);
     logDir = getLogDir(toolName);
+
     // parse command line args
     if (!cmdParser.parse(argv, argc))
     {
@@ -415,6 +580,56 @@ int mainEntry(int argc, char* argv[])
         res = ERR_CODE_BAD_CMD_ARGS;
         return res;
     }
+
+#ifdef ENABLE_REDFISH // Redfish is not part of mstflint
+    if (cmd_params.enable_flash_write_protect_via_redfish || cmd_params.disable_flash_write_protect_via_redfish ||
+        cmd_params.status_flash_write_protect_via_redfish || cmd_params.toggle_flash_writeprotect_via_redfish)
+    {
+        try
+        {
+            static vector<std::string> redfishDevices = RedfishNameHandler::GetRedfishDevices();
+            if (redfishDevices.empty())
+            {
+                fprintf(stderr, "-E- No Redfish devices found\n");
+                return ERR_CODE_SERVER_RETRIEVE_FAIL;
+            }
+            g_redfishLoginInfo = RedfishNameHandler::GetRedfishLoginInfo(redfishDevices[0]);
+            if (cmd_params.enable_flash_write_protect_via_redfish)
+            {
+                RedfishAccess::EnableFlashWriteProtect(g_redfishLoginInfo);
+                print_out("-I- Flash write protect enabled via Redfish\n");
+            }
+            else if (cmd_params.disable_flash_write_protect_via_redfish ||
+                     cmd_params.toggle_flash_writeprotect_via_redfish)
+            {
+                RedfishAccess::DisableFlashWriteProtect(g_redfishLoginInfo);
+                print_out("-I- Flash write protect disabled via Redfish\n");
+            }
+            else if (cmd_params.status_flash_write_protect_via_redfish)
+            {
+                if (RedfishAccess::IsFlashWriteProtected(g_redfishLoginInfo))
+                {
+                    print_out("-I- Flash write protect status: enabled\n");
+                }
+                else
+                {
+                    print_out("-I- Flash write protect status: disabled\n");
+                }
+            }
+        }
+        catch (const std::exception& e)
+        {
+            fprintf(stderr, "-E- %s\n", e.what());
+            return ERR_CODE_SERVER_RETRIEVE_FAIL;
+        }
+
+        if (!cmd_params.toggle_flash_writeprotect_via_redfish)
+        {
+            return 0;
+        }
+    }
+#endif
+
     if (cmd_params.calc_crc)
     {
         if (config.mfa_path == ".")
@@ -443,13 +658,15 @@ int mainEntry(int argc, char* argv[])
 
     if (cmd_params.query_device_xml)
     {
-        cmd_params.write_xml = true;
+        cmd_params.write_xml = 1;
     }
 
     if (cmd_params.device_names.size() != 0 && cmd_params.write_xml && !cmd_params.query_device_xml)
     {
         fprintf(stdout, "-W- XML is not functional when -d is used in  command line\n");
+        cmd_params.write_xml = 0;
     }
+
     progressCB = progressCB_nodisplay;
     advProgressCB = NULL;
     if (cmd_params.show_progress)
@@ -459,6 +676,7 @@ int mainEntry(int argc, char* argv[])
     }
 
     formatted_output = cmd_params.write_xml;
+    fwcomps_set_suppress_stdout(cmd_params.write_xml);
     if (cmd_params.use_output_file)
     {
         strbuf = adjustRelPath(cmd_params.output_file, config.adjuster_path);
@@ -662,10 +880,6 @@ int mainEntry(int argc, char* argv[])
     {
         psidLookupDB.readFile(adjustRelPath(cmd_params.lookup_file, config.adjuster_path));
     }
-    if (ImageAccess::getFileSignature(config.mfa_path) == IMG_SIG_TYPE_PLDM)
-    {
-        pldmFlow = true;
-    }
 
     // Query all Devs (parallel when multiple devices, else sequential)
     print_out("Querying Mellanox devices firmware ...\n");
@@ -725,6 +939,10 @@ int mainEntry(int argc, char* argv[])
         for (int i = 0; i < devs_num; i++)
         {
             MlnxDev* dev;
+            if (abort_request)
+            {
+                break;
+            }
             if (cmd_params.device_names.size())
             {
                 if (cmd_params.device_names[i].find("redfish") != std::string::npos)
@@ -733,11 +951,12 @@ int mainEntry(int argc, char* argv[])
                 }
                 dev = new MlnxDev(cmd_params.device_names[i].c_str(), cmd_params.compare_ffv);
                 dm_dev_id_t deviceType = dev->getDeviceType();
-                if (dm_is_gpu(deviceType))
+                if (dm_is_gpu(deviceType) || dm_is_cpu(deviceType))
                 {
-                    print_err("-E- GPU device is not supported\n");
+                    print_err("-E- GPU or CPU device is not supported\n");
+                    res = ERR_CODE_UNSUPPORTED_DEVICE;
                     delete dev;
-                    continue;
+                    goto early_err_clean_up;
                 }
 
                 if (cmd_params.clear_semaphore)
@@ -760,7 +979,7 @@ int mainEntry(int argc, char* argv[])
             {
                 dev = new MlnxDev(&devsinfo[i], cmd_params.compare_ffv);
                 dm_dev_id_t deviceType = dev->getDeviceType();
-                if (dm_is_gpu(deviceType))
+                if (dm_is_gpu(deviceType) || dm_is_cpu(deviceType))
                 {
                     delete dev;
                     continue;
@@ -792,6 +1011,84 @@ int mainEntry(int argc, char* argv[])
             devs.push_back(dev);
         }
     }
+
+    if (abort_request)
+    {
+        print_out("\nInterrupted\n");
+        res = ERR_CODE_INTERRUPTED;
+        goto clean_up;
+    }
+
+#ifdef ENABLE_REDFISH // Redfish is not part of mstflint
+    static vector<std::string> redfishDevices = RedfishNameHandler::GetRedfishDevices();
+    if (redfishDevices.size() > 0)
+    {
+        int local_devs_num = 0;
+        local_devs_num = getLocalDevices(&devsinfo);
+
+        for (int i = 0; i < local_devs_num; i++)
+        {
+            unsigned int dev_id_address = 0xf0014, dev_id = 0;
+            mfile* mf = mopen(devsinfo[i].dev_name);
+            if (mf)
+            {
+                mread4(mf, dev_id_address, &dev_id);
+                mclose(mf);
+            }
+            if (dev_id == DeviceQuantum3_HwId)
+            {
+                MlnxDev* dev = new MlnxDev(devsinfo[i].dev_name, cmd_params.compare_ffv);
+                if (!dev)
+                {
+                    res = 1;
+                    goto early_err_clean_up;
+                }
+                dev->query();
+                dev->patchPsidInfo(psidLookupDB.getPsid(dev->getBoardTypeId()));
+                cmd_params.psid = redfishPSID = dev->getPsid();
+                delete dev;
+                break;
+            }
+        }
+
+        for (const std::string& device : redfishDevices)
+        {
+            if ((userSpecifiedDevices(cmd_params) && !deviceSelectedByUser(cmd_params, device)) ||
+                !redfishDeviceSupported(device))
+            {
+                continue;
+            }
+
+            MlnxDev* redfishDevice = new MlnxDev(device.c_str(), cmd_params.compare_ffv);
+            redfishDevice->query();
+            if (!redfishDevice->isQuerySuccess())
+            {
+                delete redfishDevice;
+                redfishDevice = nullptr;
+                goto early_err_clean_up;
+            }
+            cmd_params.psid = redfishPSID;
+            if (!cmd_params.mfa_file.empty() && !cmd_params.psid.empty())
+            {
+                if (extract_image_to_file(cmd_params, config, targetFilePath))
+                {
+                    res = 1;
+                    delete redfishDevice;
+                    redfishDevice = nullptr;
+                    goto early_err_clean_up;
+                }
+                cmd_params.force_update = 1;
+            }
+            redfishDevice->patchPsidInfo(cmd_params.psid);
+            devs.push_back(redfishDevice);
+            if (cmd_params.device_names.size())
+            {
+                redfishDevicesSelectedByUser.push_back(device.c_str());
+            }
+        }
+    }
+#endif
+
     if (!devs.size())
     {
         print_out("-W- No devices found that match lookup file\n");
@@ -818,19 +1115,14 @@ int mainEntry(int argc, char* argv[])
             mpath = adjustRelPath(cmd_params.mfa_file, config.adjuster_path);
         }
 
-        if (pldmFlow)
-        {
-            rc = queryPLDM(cmd_params.mfa_file, psid_list, psidPldmComponents);
-        }
-        
-        rc = queryMFAs(srq, mpath, psid_list, dev_types_list, psidUpdateInfo, cmd_params.update_online, errorMsg, fw_version_list);
+        rc = queryMFAs(srq, mpath, psid_list, dev_types_list, psidUpdateInfo, cmd_params.update_online, errorMsg,
+                       fw_version_list);
 
         if (rc < 0)
         {
             // print_err("-E- No relevant image files or info could be found\n");
             err_continue++;
         }
-
         // Get required list of MFAs to download/burn
         getUniqueMFAList(devs, psidUpdateInfo, cmd_params.force_update, mfa_list, downloaded_files_names,
                          cmd_params.skip_if_same);
@@ -923,7 +1215,9 @@ int mainEntry(int argc, char* argv[])
             }
         }
         require_update_cnt++;
+        update_indices.push_back(i);
     }
+
     if (!cmd_params.force_update)
     {
         if (require_update_cnt != 0)
@@ -939,6 +1233,31 @@ int mainEntry(int argc, char* argv[])
         else
         {
             goto early_err_clean_up;
+        }
+    }
+    if (cmd_params.force_cleanup && require_update_cnt != 0)
+    {
+        bool anyFwCtrl = false;
+        for (int idx : update_indices)
+        {
+            if (devs[idx]->willUseFwCtrl())
+            {
+                anyFwCtrl = true;
+                break;
+            }
+        }
+        if (anyFwCtrl)
+        {
+            int answer =
+              prompt("The --force_cleanup flag will forcibly clear the flash semaphore and release the MCC "
+                     "update handle on FW-control devices, which may cause instability or flash corruption if "
+                     "the device or another application is currently using the flash. Continue? [y/N]: ",
+                     cmd_params.yes_no_);
+            if (!answer)
+            {
+                print_out("No updates performed\n");
+                goto clean_up;
+            }
         }
     }
 
@@ -957,44 +1276,50 @@ int mainEntry(int argc, char* argv[])
             }
         }
     }
+    for (int i = 0; i < (int)devs.size(); i++)
     {
-        bool use_parallel_burn = (devs.size() > 1);
-        bool single_device = (devs.size() == 1);
-
-        vector<DeviceUpdateResult> update_results(devs.size());
-        vector<int> update_indices;
-
-        for (int i = 0; i < (int)devs.size(); i++)
+        if (status_strings[i].size() != 0)
         {
-            if (status_strings[i].size() != 0)
-            {
-                print_out("Device #%d: %s\n", (i + 1), status_strings[i].c_str());
-                continue;
-            }
-            burn_cnt++;
-            update_indices.push_back(i);
+            print_out("Device #%d (%s): %s\n", (i + 1), devs[i]->getDevDisplayName(true).c_str(),
+                      status_strings[i].c_str());
         }
+    }
+    burn_cnt = (int)update_indices.size();
+    if (!update_indices.empty())
+    {
+        bool single_device = (update_indices.size() == 1);
+        bool use_parallel_burn = (int)update_indices.size() > 1 && cmd_params.show_progress;
+        int (*progressCB_update)(int) = progressCB;
+        f_prog_func_adv advProgressCB_update = (f_prog_func_adv)advProgressCB;
 
-        if (use_parallel_burn && update_indices.size() > 1)
+        if (use_parallel_burn)
         {
+            print_out("Starting firmware update for %d device(s)...\n", (int)update_indices.size());
             g_parallel_device_count = (int)update_indices.size();
             g_progress_lines_created = false;
-            for (size_t idx = 0; idx < update_indices.size(); idx++)
-            {
-                int i = update_indices[idx];
-                print_out("Device #%d (%s): Updating FW ...\n", (i + 1),
-                          devs[i]->getDevDisplayName(true).c_str());
-            }
-            fflush(FOut);
-            runParallelBurn(devs, config, psidUpdateInfo, cmd_params, pldmFlow, psidPldmComponents,
-                            update_results,
-                            cmd_params.show_progress ? progressCB_display_multi_thread : progressCB_nodisplay,
-                            cmd_params.show_progress ? (f_prog_func_adv)&advProgressFunc_display_multi_thread : NULL,
-                            update_indices);
-
             for (size_t u = 0; u < update_indices.size(); u++)
             {
                 int i = update_indices[u];
+                print_out("Device #%d (%s): Updating FW in parallel...\n", (i + 1),
+                          devs[i]->getDevDisplayName(true).c_str());
+            }
+            fflush(FOut);
+            progressCB_update = progressCB_display_multi_thread;
+            advProgressCB_update = (f_prog_func_adv)&advProgressFunc_display_multi_thread;
+        }
+
+        update_results.resize(devs.size());
+        if (use_parallel_burn)
+        {
+            runParallelBurn(devs, config, psidUpdateInfo, cmd_params, update_results, progressCB_update,
+                            advProgressCB_update, targetFilePath, redfishDevicesSelectedByUser, update_indices);
+        }
+
+        for (size_t u = 0; u < update_indices.size(); u++)
+        {
+            int i = update_indices[u];
+            if (use_parallel_burn)
+            {
                 if (update_results[i].rc == 0)
                 {
                     print_out("Device #%d (%s): Done\n", (i + 1), devs[i]->getDevDisplayName(true).c_str());
@@ -1024,16 +1349,8 @@ int mainEntry(int argc, char* argv[])
                     res = ERR_CODE_INTERRUPTED;
                 }
             }
-            if (use_parallel_burn && res == ERR_CODE_INTERRUPTED)
+            else
             {
-                goto early_err_clean_up;
-            }
-        }
-        else
-        {
-            for (size_t u = 0; u < update_indices.size(); u++)
-            {
-                int i = update_indices[u];
                 if (single_device)
                 {
                     print_out("Updating FW ...     \n");
@@ -1045,7 +1362,7 @@ int mainEntry(int argc, char* argv[])
                 }
                 string mfa_file = config.mfa_path;
                 string tmp = psidUpdateInfo[devs[i]->getPsid()].url;
-                if (!cmd_params.use_mfa_file && !pldmFlow)
+                if (!cmd_params.use_mfa_file)
                 {
                     size_t pos = tmp.rfind("/");
                     if (pos != string::npos)
@@ -1059,36 +1376,52 @@ int mainEntry(int argc, char* argv[])
                 {
                     mfa_file = tmp;
                 }
-                DeviceUpdateResult single_result;
-                updateSingleDevice(i, devs[i], mfa_file, pldmFlow, psidPldmComponents,
-                                   progressCB, cmd_params.burnFailsafe, advProgressCB, single_result);
-                rc0 = single_result.rc;
-                if (single_result.rc == ERR_CODE_INTERRUPTED)
+                ImageAccess imgacc(CompareFFV);
+                BurnDeviceResult burnResult = BURN_GOTO_EARLY_CLEANUP;
+                // Use updateSingleDevice to avoid code duplication
                 {
-                    print_out("\b\b\b\bInterrupted\n");
-                    res = ERR_CODE_INTERRUPTED;
-                    devs[i]->clearSemaphore();
-                    goto early_err_clean_up;
-                }
-                else if (single_result.rc)
-                {
-                    print_out("\b\b\b\bFail : %s \n", single_result.error_message.c_str());
-                }
-                else
-                {
-                    print_out("\b\b\b\bDone\n");
-                    burn_success_cnt++;
-                    if (single_result.imageWasCached)
+                    DeviceUpdateResult single_result;
+                    updateSingleDevice(i, devs[i], mfa_file, cmd_params, progressCB, advProgressCB, targetFilePath,
+                                       redfishDevicesSelectedByUser, single_result);
+                    rc |= single_result.rc;
+                    if (single_result.rc == ERR_CODE_INTERRUPTED)
                     {
-                        print_out("Image was successfully cached by driver.\n");
+                        res = ERR_CODE_INTERRUPTED;
+                        burnResult = BURN_GOTO_EARLY_CLEANUP;
+                    }
+                    else if (single_result.rc)
+                    {
+                        print_err("-E- %s\n", single_result.error_message.c_str());
+                        res = ERR_CODE_PROG_FAILED;
+                        burnResult = BURN_GOTO_EARLY_CLEANUP;
+                    }
+                    else
+                    {
+                        if (single_device)
+                        {
+                            print_out(cmd_params.show_progress ? "\b\b\b\bDone\n" : "Done\n");
+                        }
+                        else
+                        {
+                            print_out("Device #%d (%s): Done\n", (i + 1), devs[i]->getDevDisplayName(true).c_str());
+                        }
+                        burn_success_cnt++;
+                        burnResult = BURN_CONTINUE;
                     }
                 }
-                rc |= rc0;
-                if (FLog != NULL)
+                if (burnResult == BURN_GOTO_CLEANUP)
                 {
-                    fprintf(FLog, "%s\n", devs[i]->getLog().c_str());
+                    goto clean_up;
+                }
+                if (burnResult == BURN_GOTO_EARLY_CLEANUP)
+                {
+                    goto early_err_clean_up;
                 }
             }
+        }
+        if (use_parallel_burn && res == ERR_CODE_INTERRUPTED)
+        {
+            goto early_err_clean_up;
         }
     }
 
@@ -1130,6 +1463,15 @@ int mainEntry(int argc, char* argv[])
 clean_up:
     // Add clean up for devices in devs vector
     early_cleanup = false;
+
+#ifdef ENABLE_REDFISH // Redfish is not part of mstflint
+    if (cmd_params.toggle_flash_writeprotect_via_redfish)
+    {
+        // Enable flash write protect
+        RedfishAccess::EnableFlashWriteProtect(g_redfishLoginInfo);
+        print_out("-I- Flash write protect enabled via Redfish\n");
+    }
+#endif
 early_err_clean_up:
     if (early_cleanup)
     {
@@ -1174,10 +1516,11 @@ early_err_clean_up:
     {
         delete devs[i];
     }
+    fwcomps_set_suppress_stdout(0);
     return mapRetValue(res, config.setupType);
 }
 
-int extract_all(CmdLineParams& cmd_params, config_t& config, ServerRequest* srq, const vector<string>& psid_list)
+int extract_all(CmdLineParams& cmd_params, config_t& config, ServerRequest* srq, vector<string>& psid_list)
 {
     ImageAccess imgacc(CompareFFV);
     vector<PsidQueryItem> items;
@@ -1226,7 +1569,7 @@ int extract_image(CmdLineParams& cmd_params, config_t& config, ServerRequest* sr
         StringToComponentIdentifier(cmd_params.component_type, compIdentifier);
 
         u_int32_t buffSize;
-        if (!imgacc.loadPldmPkg(config.mfa_path))
+        if (!imgacc.loadPldmPkgFile(config.mfa_path))
         {
             print_err("-E- Can't parse PLDM package.\n");
             res = ERR_CODE_INVALID_PLDM_FORMAT;
@@ -1277,7 +1620,7 @@ int extract_image(CmdLineParams& cmd_params, config_t& config, ServerRequest* sr
         }
 
         rc = queryMFAs(srq, mpath, psid_list, dev_types_list, psidUpdateInfo, cmd_params.update_online, errorMsg,
-                    fw_version_list);
+                       fw_version_list);
         if (rc < 0)
         {
             print_err("-E- Failed while reading file(s)\n");
@@ -1352,18 +1695,111 @@ clean_up:
     return res;
 }
 
-/* Whether a package file is a gzipped or plain tar. Those are checked when the package is read; only a
- * ZIP is checked up front.
- */
-static bool isTarPackage(const string& path)
+int extract_image_to_file(CmdLineParams& cmd_params, config_t& config, std::string& targetFilePath)
 {
-    char head[262] = {0};
-    std::ifstream file(path.c_str(), std::ios::binary);
+    map<string, PsidQueryItem> psidUpdateInfo;
+    vector<string> psid_list;
+    vector<dm_dev_id_t> dev_types_list;
+    vector<string> fw_version_list;
+    string mpath;
+    string errorMsg = "";
+    ServerRequest* srq = nullptr;
+    int res = 0;
+    int rc;
+    u_int8_t* filebuf = NULL;
+    ImageAccess imgacc(CompareFFV);
 
-    file.read(head, sizeof(head));
-    std::streamsize read = file.gcount();
-    return (read >= 2 && (unsigned char)head[0] == 0x1f && (unsigned char)head[1] == 0x8b) ||
-           (read == (std::streamsize)sizeof(head) && memcmp(&head[257], "ustar", 5) == 0);
+    if (cmd_params.psid == "")
+    {
+        print_err("-E- Need to provide PSID for extraction.\n");
+        res = ERR_CODE_BAD_CMD_ARGS;
+        return res;
+    }
+
+    psid_list.push_back(cmd_params.psid);
+    mpath = config.mfa_path;
+
+    if (cmd_params.use_mfa_file)
+    {
+        mpath = adjustRelPath(cmd_params.mfa_file, config.adjuster_path);
+    }
+
+    rc = queryMFAs(srq, mpath, psid_list, dev_types_list, psidUpdateInfo, cmd_params.update_online, errorMsg,
+                   fw_version_list);
+    if (rc < 0)
+    {
+        print_err("-E- Failed while reading file(s)\n");
+        res = ERR_CODE_IMG_NOT_FOUND;
+        return res;
+    }
+    config.mfa_path = mpath;
+    int cnt = psidUpdateInfo.size();
+    ssize_t sza = 0;
+    if (cnt == 1)
+    {
+        string srcFile = psidUpdateInfo[cmd_params.psid].url;
+        string tag = psidUpdateInfo[cmd_params.psid].selector_tag;
+        sza = imgacc.getImage(srcFile.c_str(), cmd_params.psid, tag, 1, &filebuf);
+        if (sza > 0)
+        {
+            string targetFile = cmd_params.target_file;
+            if (generateProductionName(targetFile, psidUpdateInfo[cmd_params.psid]))
+            {
+                res = ERR_CODE_WRITE_FILE_FAIL;
+                goto clean_up;
+            }
+
+#if defined(__linux__) && !defined(__VMKERNEL_UW_NATIVE__)
+            targetFile = "/tmp/" + targetFile;
+#else
+            res = ERR_CODE_WRITE_FILE_FAIL;
+            goto clean_up;
+#endif
+            print_out("Extracting image for psid: %s to temporary file %s\n", cmd_params.psid.c_str(),
+                      targetFile.c_str());
+            targetFilePath = targetFile;
+            FILE* f = fopen(targetFile.c_str(), "wb");
+            int sz = 0;
+            if (f != NULL)
+            {
+                sz = fwrite(filebuf, 1, sza, f);
+                fclose(f);
+                if (sz < sza)
+                {
+                    print_err("-E- Failed while writing to file.\n");
+                    res = ERR_CODE_WRITE_FILE_FAIL;
+                }
+            }
+            else
+            {
+                print_err("-E- Failed to open %s for writing.\n", targetFile.c_str());
+                res = ERR_CODE_WRITE_FILE_FAIL;
+            }
+            print_out("Done!\n");
+        }
+        else
+        {
+            print_err("-E- Failed to extract image, MFA file might not have requested PSID\n");
+            res = ERR_CODE_INTERNAL_ERR;
+        }
+    }
+    else if (cnt > 1)
+    {
+        print_err("-E- More than one relevant image found. Not performing extraction!\n");
+        res = ERR_CODE_IMG_NOT_FOUND;
+    }
+    else
+    {
+        print_err("-E- NO mfa file found!\n");
+        res = ERR_CODE_IMG_NOT_FOUND;
+    }
+
+clean_up:
+    if (filebuf)
+    {
+        free(filebuf);
+    }
+    return res;
 }
 
 /* The package is only opened much later, when the update plan is built, so a file that is
@@ -1478,7 +1914,7 @@ bool checkCmdParams(CmdLineParams& cmd_params, config_t& config)
 {
     if (cmd_params.use_mfa_dir)
     {
-        if (!isDirectory(adjustRelPath(cmd_params.mfa_dir, config.adjuster_path)))
+        if (!mft_utils::IsDirectory(adjustRelPath(cmd_params.mfa_dir, config.adjuster_path)))
         {
             fprintf(stderr, "-E- Can't find directory %s\n", cmd_params.mfa_dir.c_str());
             return false;
@@ -1494,7 +1930,7 @@ bool checkCmdParams(CmdLineParams& cmd_params, config_t& config)
     if (cmd_params.download)
     {
         cmd_params.write_xml = 0;
-        if (!isDirectory(adjustRelPath(cmd_params.download_dir, config.adjuster_path)))
+        if (!mft_utils::IsDirectory(adjustRelPath(cmd_params.download_dir, config.adjuster_path)))
         {
             fprintf(stderr, "-E- Can't find directory %s\n", cmd_params.download_dir.c_str());
             return false;
@@ -1663,11 +2099,14 @@ bool checkCmdParams(CmdLineParams& cmd_params, config_t& config)
     }
     // The cable flow returns before the device list is built, and the modes dispatched before it
     // would win over it silently, so a combination is always a mistake rather than a preference.
-    if (cable_mode &&
-        (cmd_params.update_fw || cmd_params.query_device || cmd_params.query_device_xml || cmd_params.download ||
-         cmd_params.update_online || cmd_params.extract_image || cmd_params.extract_all ||
-         cmd_params.list_file_contents || cmd_params.clear_semaphore || !cmd_params.burnFailsafe ||
-         cmd_params.onlineQueryPsids.length() || cmd_params.get_download_opt.length() || cmd_params.calc_crc))
+    bool other_mode =
+      cmd_params.update_fw || cmd_params.query_device || cmd_params.query_device_xml || cmd_params.download ||
+      cmd_params.update_online || cmd_params.extract_image || cmd_params.extract_all || cmd_params.list_file_contents ||
+      cmd_params.clear_semaphore || !cmd_params.burnFailsafe || cmd_params.onlineQueryPsids.length() ||
+      cmd_params.get_download_opt.length() || cmd_params.calc_crc ||
+      cmd_params.enable_flash_write_protect_via_redfish || cmd_params.disable_flash_write_protect_via_redfish ||
+      cmd_params.status_flash_write_protect_via_redfish || cmd_params.toggle_flash_writeprotect_via_redfish;
+    if (cable_mode && other_mode)
     {
         fprintf(stderr, "-E- --module_query, --module_dry_run and --module_update cannot be combined with another "
                         "operation mode\n");
@@ -1676,12 +2115,14 @@ bool checkCmdParams(CmdLineParams& cmd_params, config_t& config)
     // Device-scoped selection and burn options are read only on the PSID/MFA path, which the
     // cable dispatch jumps over, so they cannot be honoured and would otherwise be ignored in
     // silence.
-    if (cable_mode && (cmd_params.force_update || cmd_params.skip_if_same || cmd_params.no_fw_ctrl ||
-                       cmd_params.use_lookup_file || cmd_params.psid.length() || cmd_params.component_type.length()))
+    bool device_options = cmd_params.force_update || cmd_params.skip_if_same || cmd_params.no_fw_ctrl ||
+                          cmd_params.use_lookup_file || cmd_params.psid.length() || cmd_params.psid_list.size() ||
+                          cmd_params.component_type.length();
+    if (cable_mode && device_options)
     {
         fprintf(stderr,
                 "-E- --module_query, --module_dry_run and --module_update do not support --force, --skip_if_same, "
-                "--no_fw_ctrl, --lookup, --psid and --component_type\n");
+                "--no_fw_ctrl, --lookup, --psid, --show-psids and --component_type\n");
         return false;
     }
     // --log-on-update keeps the log only when a device was burned, and burned devices are
@@ -1988,6 +2429,22 @@ int checkAndDisplayDeviceQuery1D(vector<MlnxDev*>& devs,
         bool image_has_unknown_expansionRom = false;
         if (devs[i]->isQuerySuccess())
         {
+#ifdef ENABLE_REDFISH // Redfish is not part of mstflint
+            if (devs[i]->isRedfishDevice())
+            {
+                try
+                {
+                    RedfishDeviceInformation redfishInfo = RedfishAccess::GetDevice(devs[i]->getDevName());
+                    description = redfishInfo.description;
+                    ver = redfishInfo.fwVersion;
+                }
+                catch (const std::exception& e)
+                {
+                    description = "N/A";
+                    ver = "N/A";
+                }
+            }
+#endif
             devQuerySuccess = true;
             pn = devs[i]->getPartNumber();
             if (pn.length())
@@ -2010,8 +2467,11 @@ int checkAndDisplayDeviceQuery1D(vector<MlnxDev*>& devs,
                     pn = "";
                 }
             }
+            if (!devs[i]->isRedfishDevice())
+            {
+                ver = devs[i]->getFWVersion(false);
+            }
 
-            ver = devs[i]->getFWVersion(false);
             for (unsigned int j = 0; j < devs[i]->_imageVers.size(); j++)
             {
                 expRomTypes[devs[i]->_imageVers[j].getTypeStr()] = true;
@@ -2020,7 +2480,10 @@ int checkAndDisplayDeviceQuery1D(vector<MlnxDev*>& devs,
             }
 
             availVer = "N/A";
-            description = devs[i]->getDescription();
+            if (!devs[i]->isRedfishDevice())
+            {
+                description = devs[i]->getDescription();
+            }
 
             if (psidUpdateInfo.find(devs[i]->getPsid()) != psidUpdateInfo.end())
             {
@@ -2387,20 +2850,6 @@ void getUniqueMFAList(vector<MlnxDev*>& devs,
     }
 }
 
-int isDirectory(string path)
-{
-    int status;
-    struct stat st;
-
-    status = stat(path.c_str(), &st);
-    if (status != 0)
-    {
-        return 0;
-    }
-
-    return (S_ISDIR(st.st_mode));
-}
-
 int getPLDMCompsListFromPSIDs(string file,
                               vector<string>& psid_list,
                               vector<tuple<PsidQueryItem, u_int8_t*, u_int32_t>>& results,
@@ -2409,7 +2858,7 @@ int getPLDMCompsListFromPSIDs(string file,
     int rc = 0;
     ImageAccess imgacc(CompareFFV);
     vector<PsidQueryItem> comps;
-    imgacc.loadPldmPkg(file);
+    imgacc.loadPldmPkgFile(file);
     imgacc.getPldmContent(comps, compIdentifier);
     for (auto& comp : comps)
     {
@@ -2417,7 +2866,7 @@ int getPLDMCompsListFromPSIDs(string file,
         {
             if (comp.psid == psid)
             {
-                u_int8_t* buff;
+                u_int8_t* buff = NULL;
                 u_int32_t buffSize = 0;
                 if (!imgacc.getPldmComponentByPsid(psid, compIdentifier, &buff, buffSize))
                 {
@@ -2432,20 +2881,6 @@ int getPLDMCompsListFromPSIDs(string file,
     return rc;
 }
 
-int isFile(string path)
-{
-    int status;
-    struct stat st;
-
-    status = stat(path.c_str(), &st);
-    if (status != 0)
-    {
-        return 0;
-    }
-
-    return (S_ISREG(st.st_mode));
-}
-
 int getMFAListFromPSIDs(string mfa_path, vector<string>& psid_list, vector<PsidQueryItem>& results, string& errorMsg)
 {
     int rc;
@@ -2458,7 +2893,7 @@ int getMFAListFromPSIDs(string mfa_path, vector<string>& psid_list, vector<PsidQ
         int _FileOrDir = 0;
         vector<PsidQueryItem> riv;
         PsidQueryItem ri;
-        if (isDirectory(mfa_path))
+        if (mft_utils::IsDirectory(mfa_path))
         {
             _FileOrDir = 1;
             rc = imgacc.queryDirPsid(mfa_path, psid_list[i], arch, 1, riv);
@@ -2519,22 +2954,6 @@ int getMFAListFromPSIDs(string mfa_path, vector<string>& psid_list, vector<PsidQ
     return 0;
 }
 
-int queryPLDM(string file,
-              vector<string>& psid_list,
-              map<string, vector<tuple<FwComponent::comps_ids_t, u_int8_t*, u_int32_t>>>& psidPldmComponents)
-{
-    vector<tuple<PsidQueryItem, u_int8_t*, u_int32_t>> pldmCompsResults;
-    getPLDMCompsListFromPSIDs(file, psid_list, pldmCompsResults, ComponentIdentifier::Identifier_BFB_Comp);
-    for (unsigned i = 0; i < pldmCompsResults.size(); i++)
-    {
-        tuple<FwComponent::comps_ids_t, u_int8_t*, u_int32_t> compTuple =
-          std::make_tuple(get<TUPLE_POS_COMPID>(pldmCompsResults[i]).compId,
-                          get<TUPLE_POS_BUFF_PTR>(pldmCompsResults[i]), get<TUPLE_POS_BUFF_SIZE>(pldmCompsResults[i]));
-        psidPldmComponents[get<0>(pldmCompsResults[i]).psid].push_back(compTuple);
-    }
-    return 0;
-}
-
 int queryMFAs(ServerRequest* srq,
               string& mfa_path,
               vector<string>& psid_list,
@@ -2563,6 +2982,9 @@ int queryMFAs(ServerRequest* srq,
     else
     {
         // Query Local MFAs
+        for (u_int32_t ii = 0; ii < psid_list.size(); ii++)
+        {
+        }
         rc = getMFAListFromPSIDs(mfa_path, psid_list, results, errorMsg);
         if (rc == -1)
         {
@@ -2630,7 +3052,7 @@ FILE* createOutFile(string& fileName, bool fileSpecified)
 
 int progressCB_display_multi_thread(int completion)
 {
-    const char* prefix = g_progress_device_label.empty() ? NULL : g_progress_device_label.c_str();
+    const char* prefix = (g_progress_device_label[0] == '\0') ? NULL : g_progress_device_label;
     if (g_progress_device_index >= 0 && g_progress_line_number > 0)
     {
         FwcompsOutputGuard guard;
@@ -2664,7 +3086,7 @@ int progressCB_display_multi_thread(int completion)
 
 int advProgressFunc_display_multi_thread(int completion, const char* stage, prog_t type, int* unknownProgress)
 {
-    const char* prefix = g_progress_device_label.empty() ? NULL : g_progress_device_label.c_str();
+    const char* prefix = (g_progress_device_label[0] == '\0') ? NULL : g_progress_device_label;
     const bool at_line = (g_progress_device_index >= 0 && g_progress_line_number > 0);
     const bool with_prefix = (g_progress_device_index >= 0);
     const int line_num = g_progress_line_number;
@@ -2758,7 +3180,6 @@ int advProgressFunc_display_multi_thread(int completion, const char* stage, prog
 int progressCB_display(int completion)
 {
     print_out("\b\b\b\b%3d%%", completion);
-
     return abort_request;
 }
 
@@ -2789,7 +3210,6 @@ int advProgressFunc_display(int completion, const char* stage, prog_t type, int*
             }
             break;
     }
-
     return abort_request;
 }
 
@@ -2927,7 +3347,7 @@ bool initConfig(config_t& config, char* argv[], CmdLineParams& cmd_params)
     return true;
 }
 
-int list_files_content(config_t& config, const vector<string>& psid_list)
+int list_files_content(config_t& config, vector<string>& psid_list)
 {
     string fname;
     DIR* d;
@@ -3096,6 +3516,7 @@ void display_file_listing(vector<PsidQueryItem>& items, string psid, bool show_t
         print_out(" ");
         display_field_str(items[i].psid, 18);
         print_out(" ");
+
         if ((imv = (ImgVersion*)items[i].findImageVersion("FW")))
         {
             display_field_str(imv->getPrintableVersion(0), 28);
@@ -3948,7 +4369,7 @@ int generateProductionName(string& targetFile, PsidQueryItem ri)
     }
 
     string IC_code_name;
-    dm_dev_id_t devType;
+    dm_dev_id_t devType = {};
 
     if (dm_get_device_id_offline(ri.devId, ri.revId, &devType))
     {
@@ -3956,7 +4377,6 @@ int generateProductionName(string& targetFile, PsidQueryItem ri)
     }
     else
     {
-        
         IC_code_name = dm_dev_type2str(devType);
     }
 
@@ -4020,8 +4440,8 @@ void displayReleaseNoteMFAs(map<string, PsidQueryItem> psidUpdateInfo, vector<Ml
 int displayReleaseNoteFiles(const filesOPtions& filterOPtions, const CmdLineParams& cmd_params)
 {
     map<std::string, std::string> releaseNote;
-    map<std::string, vector<string> > os;
-    map<std::string, vector<string> > files;
+    map<std::string, vector<string>> os;
+    map<std::string, vector<string>> files;
     string tmp = "";
     for (unsigned int i = 0; i < filterOPtions.filtered.size(); i++)
     {
@@ -4034,7 +4454,7 @@ int displayReleaseNoteFiles(const filesOPtions& filterOPtions, const CmdLinePara
     }
 
     print_out("------ Files To Be Downloaded ------\n\n");
-    for (map<std::string, vector<string> >::iterator p = files.begin(); p != files.end(); ++p)
+    for (map<std::string, vector<string>>::iterator p = files.begin(); p != files.end(); ++p)
     {
         print_out("\n%s :\n", beautify_device_name(p->first).c_str());
         print_out("%.*s\n\n", p->first.length() + 2 < 40 ? (int)p->first.length() + 2 : 39,
