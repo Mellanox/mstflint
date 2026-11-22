@@ -38,6 +38,7 @@
  **/
 
 #include "adb_field.h"
+#include "adb_exceptionHolder.h"
 #include <iostream>
 #include <sstream>
 #include <iomanip>
@@ -99,39 +100,12 @@ void AdbField_impl<T_OFFSET>::set_size(short_address_t size)
 }
 
 /**
- * Function: AdbField_impl::isLeaf
- **/
-template<typename T_OFFSET>
-bool AdbField_impl<T_OFFSET>::isLeaf()
-{
-    return subNode.empty();
-}
-
-/**
- * Function: AdbField_impl::isStruct
- **/
-template<typename T_OFFSET>
-bool AdbField_impl<T_OFFSET>::isStruct()
-{
-    return !isLeaf();
-}
-
-/**
  * Function: AdbField_impl::operator<
  **/
 template<typename T_OFFSET>
 bool AdbField_impl<T_OFFSET>::operator<(const AdbField_impl& other) const
 {
     return offset != other.offset ? offset < other.offset : name < other.name;
-}
-
-/**
- * Function: AdbField::isArray
- **/
-template<typename T_OFFSET>
-bool AdbField_impl<T_OFFSET>::isArray()
-{
-    return array_type >= ArrayType::definite;
 }
 
 /**
@@ -167,6 +141,44 @@ template<typename T_OFFSET>
 bool AdbField_impl<T_OFFSET>::isDynamicArr()
 {
     return array_type == ArrayType::dynamic;
+}
+
+template<typename T_OFFSET>
+void AdbField_impl<T_OFFSET>::set_name(const string& new_name)
+{
+    name = new_name;
+    if (_element_names.names)
+    {
+        _element_names.names.reset();
+        build_element_names();
+    }
+}
+
+template<typename T_OFFSET>
+void AdbField_impl<T_OFFSET>::build_element_names()
+{
+    if (_element_names.names)
+    {
+        return;
+    }
+    uint32_t count = arrayLen();
+    unique_ptr<vector<string>> names(new vector<string>());
+    names->reserve(count);
+    for (uint32_t i = 0; i < count; ++i)
+    {
+        string index = to_string(i + lowBound);
+        string entry;
+        entry.reserve(name.size() + index.size() + 2);
+        entry.append(name).append(1, '[').append(index).append(1, ']');
+        names->push_back(std::move(entry));
+    }
+    _element_names.names = std::move(names);
+}
+
+template<typename T_OFFSET>
+void AdbField_impl<T_OFFSET>::throw_missing_element_name(uint32_t index) const
+{
+    throw AdbException("No element name for index " + to_string(index) + " of field " + name);
 }
 
 /**
@@ -455,8 +467,8 @@ string AdbField_impl<T_OFFSET>::toXml(const string& addPrefix)
 template<typename T_OFFSET>
 bool AdbField_impl<T_OFFSET>::compareFieldsForXmlOutput(AdbField_impl<T_OFFSET>* f1, AdbField_impl<T_OFFSET>* f2)
 {
-    AdbField_impl<T_OFFSET> first = *f1;
-    AdbField_impl<T_OFFSET> second = *f2;
+    const AdbField_impl<T_OFFSET>& first = *f1;
+    const AdbField_impl<T_OFFSET>& second = *f2;
     if (first.offset / 32 < second.offset / 32)
     {
         return true;

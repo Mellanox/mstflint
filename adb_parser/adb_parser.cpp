@@ -1188,6 +1188,11 @@ bool _Adb_impl<eval_expr, O>::createInstance(AdbField* field,
     auto missing_sons =
       enable_parse_missing_sons && node ? parse_missing_sons(*node, allowMultipleExceptions) : vector<SplittedPath>();
 
+    if (field->isArray())
+    {
+        field->build_element_names();
+    }
+
     for (uint32_t i = 0; i < field->arrayLen(); i++)
     {
         vector<SplittedPath> next_missing_sons = parent_missing_sons;

@@ -41,6 +41,7 @@
 #include "adb_condition.h"
 
 #include <map>
+#include <memory>
 #include <set>
 #include <string>
 #include <vector>
@@ -318,10 +319,6 @@ public:
     static const char path_seperator;
     static const string EXP_PATTERN;
 
-private:
-    string layout_item_name{}; // instance name
-
-public:
     // Members
     string full_path{};
     vector<_AdbInstance_impl<eval_expr, T_OFFSET>*> subItems{};
@@ -330,13 +327,20 @@ public:
     _AdbInstance_impl<eval_expr, T_OFFSET>* parent{nullptr};
     _AdbInstance_impl<eval_expr, T_OFFSET>* unionSelector{nullptr}; // For union instances only
     InstOpsProperties inst_ops_props{};
-    uint32_t arrIdx{0};
-    T_OFFSET offset{0xffffffff};  // Global offset in bits (Relative to 0) todo: put static cast
     AdbField* _max_leaf{nullptr}; // for DS alignment check
-    InstancePropertiesMask inst_props{};
     LayoutPartitionProps* partition_props{nullptr};
 
 private:
+    unique_ptr<string> _name_override{};
+
+public:
+    uint32_t arrIdx{0};
+    InstancePropertiesMask inst_props{};
+    T_OFFSET offset{0xffffffff}; // Global offset in bits (Relative to 0) todo: put static cast
+
+private:
+    static const string EMPTY_NAME;
+
     _AdbInstance_impl<eval_expr, T_OFFSET>* find_layout_item_dfs(const std::string& path);
     string walk_full_name(size_t skipLevel) const;
     void append_walked_path(string& out, size_t levels) const;
@@ -399,5 +403,7 @@ template<bool e, typename O>
 const char _AdbInstance_impl<e, O>::path_seperator{'.'};
 template<bool e, typename O>
 const string _AdbInstance_impl<e, O>::EXP_PATTERN{"\\s*([a-zA-Z0-9_]+)=((\\$\\(.*?\\)|\\S+|$)*)\\s*"};
+template<bool e, typename O>
+const string _AdbInstance_impl<e, O>::EMPTY_NAME{};
 
 #endif

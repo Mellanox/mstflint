@@ -69,10 +69,9 @@ _AdbInstance_impl<e, T_OFFSET>::_AdbInstance_impl(AdbField* i_fieldDesc,
     fieldDesc(i_fieldDesc), nodeDesc(i_nodeDesc), parent(i_parent), arrIdx(i_arrIdx), offset(calcArrOffset(bigEndianArr))
 {
     // Re-initializations due to packing efficiency
-    string array_name_suffix{fieldDesc->isArray() ? "[" + to_string(arrIdx + fieldDesc->lowBound) + "]" : ""};
-    layout_item_name = i_fieldDesc->name + array_name_suffix;
     if (optimize_time)
     {
+        string array_name_suffix{fieldDesc->isArray() ? "[" + to_string(arrIdx + fieldDesc->lowBound) + "]" : ""};
         if (fieldDesc->isArray() && path_array_wildcards)
         {
             array_name_suffix = "[*]";
@@ -397,13 +396,21 @@ _AdbInstance_impl<e, O>::~_AdbInstance_impl()
 template<bool e, typename O>
 const string& _AdbInstance_impl<e, O>::get_field_name() const
 {
-    return layout_item_name;
+    if (_name_override)
+    {
+        return *_name_override;
+    }
+    if (!parent || !fieldDesc)
+    {
+        return nodeDesc ? nodeDesc->name : EMPTY_NAME;
+    }
+    return fieldDesc->isArray() ? fieldDesc->element_name(arrIdx) : fieldDesc->name;
 }
 
 template<bool e, typename O>
 void _AdbInstance_impl<e, O>::set_field_name(const string& name)
 {
-    layout_item_name = name;
+    _name_override.reset(new string(name));
 }
 
 /**
