@@ -184,6 +184,12 @@ class _AdbInstance_impl
         LayoutPartitionProps(PartitionTree* tree);
     };
 
+    struct InstanceStrings
+    {
+        unique_ptr<string> name_override{};
+        string full_path{};
+    };
+
 public:
     // Methods
     _AdbInstance_impl() = default;
@@ -218,6 +224,7 @@ public:
     static string addPathSuffixForArraySupport(string path);
     const string& get_field_name() const;
     void set_field_name(const string& name);
+    void init_root_name(const string& name, bool store_full_path);
     bool isLeaf();
     bool isUnion();
     bool isStruct();
@@ -320,7 +327,6 @@ public:
     static const string EXP_PATTERN;
 
     // Members
-    string full_path{};
     vector<_AdbInstance_impl<eval_expr, T_OFFSET>*> subItems{};
     AdbField* fieldDesc{nullptr};
     AdbNode* nodeDesc{nullptr};
@@ -331,7 +337,7 @@ public:
     LayoutPartitionProps* partition_props{nullptr};
 
 private:
-    unique_ptr<string> _name_override{};
+    unique_ptr<InstanceStrings> _strings{};
 
 public:
     uint32_t arrIdx{0};
@@ -341,6 +347,7 @@ public:
 private:
     static const string EMPTY_NAME;
 
+    const string& stored_full_path() const;
     _AdbInstance_impl<eval_expr, T_OFFSET>* find_layout_item_dfs(const std::string& path);
     string walk_full_name(size_t skipLevel) const;
     void append_walked_path(string& out, size_t levels) const;

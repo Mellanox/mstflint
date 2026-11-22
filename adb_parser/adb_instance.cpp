@@ -71,13 +71,20 @@ _AdbInstance_impl<e, T_OFFSET>::_AdbInstance_impl(AdbField* i_fieldDesc,
     // Re-initializations due to packing efficiency
     if (optimize_time)
     {
-        string array_name_suffix{fieldDesc->isArray() ? "[" + to_string(arrIdx + fieldDesc->lowBound) + "]" : ""};
-        if (fieldDesc->isArray() && path_array_wildcards)
+        string suffix;
+        if (fieldDesc->isArray())
         {
-            array_name_suffix = "[*]";
+            suffix = path_array_wildcards ? string("[*]") : "[" + to_string(arrIdx + fieldDesc->lowBound) + "]";
         }
-        full_path = parent ? parent->full_path + "." + i_fieldDesc->name + array_name_suffix :
-                             i_fieldDesc->name + array_name_suffix;
+        const string& parent_path = parent ? parent->stored_full_path() : EMPTY_NAME;
+        _strings.reset(new InstanceStrings());
+        string& path = _strings->full_path;
+        path.reserve(parent_path.size() + 1 + i_fieldDesc->name.size() + suffix.size());
+        if (parent)
+        {
+            path.append(parent_path).append(1, '.');
+        }
+        path.append(i_fieldDesc->name).append(suffix);
     }
 
     // TODO: the whole block below looks unnecesarry
@@ -396,9 +403,15 @@ _AdbInstance_impl<e, O>::~_AdbInstance_impl()
 template<bool e, typename O>
 const string& _AdbInstance_impl<e, O>::get_field_name() const
 {
-    if (_name_override)
+    if (_strings && _strings->name_override)
     {
-        return *_name_override;
+        return *_strings->name_override;
+    }
+    // Only the root of an optimize_time layout gets here. A root's path is its name, so init_root_name
+    // stores the name once, as the path, rather than also as an override.
+    if (!parent && !stored_full_path().empty())
+    {
+        return _strings->full_path;
     }
     if (!parent || !fieldDesc)
     {
@@ -410,7 +423,32 @@ const string& _AdbInstance_impl<e, O>::get_field_name() const
 template<bool e, typename O>
 void _AdbInstance_impl<e, O>::set_field_name(const string& name)
 {
-    _name_override.reset(new string(name));
+    if (!_strings)
+    {
+        _strings.reset(new InstanceStrings());
+    }
+    _strings->name_override.reset(new string(name));
+}
+
+template<bool e, typename O>
+void _AdbInstance_impl<e, O>::init_root_name(const string& name, bool store_full_path)
+{
+    if (store_full_path)
+    {
+        unique_ptr<InstanceStrings> strings(new InstanceStrings());
+        strings->full_path = name;
+        _strings.swap(strings);
+    }
+    else
+    {
+        set_field_name(name);
+    }
+}
+
+template<bool e, typename O>
+const string& _AdbInstance_impl<e, O>::stored_full_path() const
+{
+    return _strings ? _strings->full_path : EMPTY_NAME;
 }
 
 /**
@@ -512,6 +550,7 @@ bool _AdbInstance_impl<e, O>::isPartOfArray()
 template<bool e, typename O>
 string _AdbInstance_impl<e, O>::fullName(size_t skipLevel)
 {
+    const string& full_path = stored_full_path();
     if (!full_path.empty())
     {
         if (skipLevel == 0)
