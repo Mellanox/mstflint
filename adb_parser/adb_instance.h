@@ -338,6 +338,8 @@ public:
 
 private:
     _AdbInstance_impl<eval_expr, T_OFFSET>* find_layout_item_dfs(const std::string& path);
+    string walk_full_name(size_t skipLevel) const;
+    void append_walked_path(string& out, size_t levels) const;
 
     void traverse_layout(const string& path,
                          T_OFFSET offset_shift,

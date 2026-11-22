@@ -526,29 +526,43 @@ string _AdbInstance_impl<e, O>::fullName(size_t skipLevel)
             return full_path.substr(pos);
         }
     }
-    list<string> fnList;
-    _AdbInstance_impl<e, O>* p = parent;
+    return walk_full_name(skipLevel);
+}
 
-    fnList.push_front(get_field_name());
-    while (p != NULL)
+template<bool e, typename O>
+string _AdbInstance_impl<e, O>::walk_full_name(size_t skipLevel) const
+{
+    size_t depth = 0;
+    for (const _AdbInstance_impl<e, O>* p = this; p != nullptr; p = p->parent)
     {
-        fnList.push_front(p->get_field_name());
-        p = p->parent;
+        ++depth;
     }
+    if (depth <= skipLevel)
+    {
+        return get_field_name();
+    }
+    size_t levels = depth - skipLevel;
+    size_t length = levels - 1;
+    const _AdbInstance_impl<e, O>* p = this;
+    for (size_t i = 0; i < levels; ++i, p = p->parent)
+    {
+        length += p->get_field_name().size();
+    }
+    string path;
+    path.reserve(length);
+    append_walked_path(path, levels);
+    return path;
+}
 
-    if (fnList.size() > skipLevel)
+template<bool e, typename O>
+void _AdbInstance_impl<e, O>::append_walked_path(string& out, size_t levels) const
+{
+    if (levels > 1)
     {
-        while (skipLevel--)
-        {
-            fnList.pop_front();
-        }
-
-        return Algorithm::join(fnList, ".");
+        parent->append_walked_path(out, levels - 1);
+        out.push_back(path_seperator);
     }
-    else
-    {
-        return fnList.back();
-    }
+    out.append(get_field_name());
 }
 
 template<bool e, typename O>
