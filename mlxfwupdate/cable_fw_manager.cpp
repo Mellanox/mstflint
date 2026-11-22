@@ -352,9 +352,11 @@ enum CableTextField
 #define CABLE_NVIDIA_OUI_MELLANOX 0x0002C9
 #define CABLE_NVIDIA_OUI 0x48B02D
 
-/* MCQI fw_image_status_bitmap: which image the cable is running, if any. */
+/* MCQI fw_image_status_bitmap: which image the cable is running, if any, and which slot is erased. */
 #define CABLE_FW_STATUS_BIT_A_RUNNING 0
+#define CABLE_FW_STATUS_BIT_A_EMPTY 2
 #define CABLE_FW_STATUS_BIT_B_RUNNING 4
+#define CABLE_FW_STATUS_BIT_B_EMPTY 6
 
 /* MFCDR.status. */
 #define CABLE_VENDOR_STATUS_UNKNOWN 0
@@ -709,12 +711,13 @@ static u_int8_t readCableVendorStatus(mfile* mf, bool mapped, u_int32_t localPor
 #define CABLE_YAML_KEY_SHA256 "FwLoadChecksumSHA256"
 #define CABLE_YAML_KEY_SHA512 "FwLoadChecksumSHA512"
 
-/* How the IA compares a key with the cable (OIF2026.122.12 5.1): character for character, with the
- * ? and * wildcards, or as a number that may carry up to two of <, >, <= and >=.
+/* How the IA compares a key with the cable (OIF2026.122.12 5.1): as an exact OUI or byte value, as text
+ * with the ? and * wildcards, or as a number that may carry up to two of <, >, <= and >=.
  */
 enum CableKeyMatch
 {
-    CABLE_KEY_EXACT,
+    CABLE_KEY_OUI,
+    CABLE_KEY_BYTE,
     CABLE_KEY_STRING,
     CABLE_KEY_NUMBER
 };
@@ -729,7 +732,7 @@ struct CableMatchKey
  * goes into the extended header.
  */
 static const CableMatchKey CABLE_MATCH_KEYS[] = {
-  {CABLE_YAML_KEY_SFF8024_ID, CABLE_KEY_EXACT},      {CABLE_YAML_KEY_VENDOR_OUI, CABLE_KEY_EXACT},
+  {CABLE_YAML_KEY_SFF8024_ID, CABLE_KEY_BYTE},       {CABLE_YAML_KEY_VENDOR_OUI, CABLE_KEY_OUI},
   {CABLE_YAML_KEY_VENDOR_REV, CABLE_KEY_STRING},     {CABLE_YAML_KEY_VENDOR_SN, CABLE_KEY_STRING},
   {CABLE_YAML_KEY_DATE_CODE, CABLE_KEY_STRING},      {CABLE_YAML_KEY_CLEI_CODE, CABLE_KEY_STRING},
   {CABLE_YAML_KEY_HW_MAJOR, CABLE_KEY_NUMBER},       {CABLE_YAML_KEY_HW_MINOR, CABLE_KEY_NUMBER},
@@ -888,24 +891,23 @@ static int compareCableFwVersions(const CableFwVersion& left, const CableFwVersi
     return 0;
 }
 
-/* An archive member's path as the package keys it: relative to the package root, with the . and ..
- * segments resolved the way FwLoadName's are, so a name finds its file whichever spelling the archiver
- * used. Empty for a member that climbs above the root, which is left out of the package.
+/* The segments of a / separated path, with the . and empty ones dropped and each .. taking off the one
+ * before it. False when a .. climbs above where the path starts.
  */
-static string archiveRelativePath(const string& name)
+static bool resolvePathSegments(const string& path, vector<string>& segments)
 {
-    vector<string> segments;
     size_t start = 0;
 
-    while (start <= name.size())
+    segments.clear();
+    while (start <= path.size())
     {
-        size_t slash = name.find('/', start);
-        string segment = name.substr(start, (slash == string::npos) ? string::npos : slash - start);
+        size_t slash = path.find('/', start);
+        string segment = path.substr(start, (slash == string::npos) ? string::npos : slash - start);
         if (segment == "..")
         {
             if (segments.empty())
             {
-                return string();
+                return false;
             }
             segments.pop_back();
         }
@@ -919,12 +921,33 @@ static string archiveRelativePath(const string& name)
         }
         start = slash + 1;
     }
+    return true;
+}
+
+static string joinPathSegments(const vector<string>& segments)
+{
     string path;
+
     for (size_t i = 0; i < segments.size(); i++)
     {
         path += (i ? "/" : "") + segments[i];
     }
     return path;
+}
+
+/* An archive member's path as the package keys it: relative to the package root, with the . and ..
+ * segments resolved the way FwLoadName's are, so a name finds its file whichever spelling the archiver
+ * used. Empty for a member that climbs above the root, which is left out of the package.
+ */
+static string archiveRelativePath(const string& name)
+{
+    vector<string> segments;
+
+    if (!resolvePathSegments(name, segments))
+    {
+        return string();
+    }
+    return joinPathSegments(segments);
 }
 
 /* Read the package when it is a ZIP.
@@ -1385,12 +1408,11 @@ static string matchPatternError(const CableMatchKey& key, const string& pattern)
     {
         return string(key.name) + " \"" + pattern + "\" is not a number, *, or up to two of <, >, <= and >=";
     }
-    if (key.match == CABLE_KEY_EXACT && string(key.name) == CABLE_YAML_KEY_VENDOR_OUI && !parseOui(pattern, number))
+    if (key.match == CABLE_KEY_OUI && !parseOui(pattern, number))
     {
         return string(key.name) + " \"" + pattern + "\" is not six hex digits; it takes no wildcard";
     }
-    if (key.match == CABLE_KEY_EXACT && string(key.name) == CABLE_YAML_KEY_SFF8024_ID &&
-        (!parseMatchNumber(pattern, number) || number > 0xff))
+    if (key.match == CABLE_KEY_BYTE && (!parseMatchNumber(pattern, number) || number > 0xff))
     {
         return string(key.name) + " \"" + pattern + "\" is not a byte value; it takes no wildcard";
     }
@@ -1430,11 +1452,20 @@ static bool cableMatchValue(const CableInfo& cable, const string& key, string& t
     }
     if (key == CABLE_YAML_KEY_HW_MAJOR || key == CABLE_YAML_KEY_HW_MINOR)
     {
+        // A revision that was not read (a failed page 1 read, a flat-memory or SFF-8636 cable) is unknown
+        // rather than 0.0, so no range, not even *, matches it.
         number = (key == CABLE_YAML_KEY_HW_MAJOR) ? cable.hwRevMajor : cable.hwRevMinor;
-        return true;
+        return cable.hasHwRevision;
     }
     // Everything below comes from MCQI, and without it there is nothing to compare.
     if (!cable.fwRead)
+    {
+        return false;
+    }
+    bool isInactiveKey = (key == CABLE_YAML_KEY_INACTIVE_MAJOR || key == CABLE_YAML_KEY_INACTIVE_MINOR ||
+                          key == CABLE_YAML_KEY_INACTIVE_BUILD || key == CABLE_YAML_KEY_INACTIVE_EXTRA);
+    // An erased or unreported slot has no version, so even * does not match it.
+    if (isInactiveKey && cable.isInactiveSlotUnknown)
     {
         return false;
     }
@@ -1480,11 +1511,9 @@ static bool matchKeyMatchesCable(const string& name, const string& pattern, cons
     }
     switch (key->match)
     {
-        case CABLE_KEY_EXACT:
-            if (name == CABLE_YAML_KEY_VENDOR_OUI)
-            {
-                return parseOui(pattern, expected) && expected == number;
-            }
+        case CABLE_KEY_OUI:
+            return parseOui(pattern, expected) && expected == number;
+        case CABLE_KEY_BYTE:
             return parseMatchNumber(pattern, expected) && expected == number;
         case CABLE_KEY_STRING:
             return globMatches(pattern, text);
@@ -1868,6 +1897,8 @@ static bool readCableModuleInfo(mfile* mf, u_int32_t localPort, CableInfo& cable
     cable.vendorOui = info.vendor_oui;
     cable.hwRevMajor = info.module_hw_revision_major;
     cable.hwRevMinor = info.module_hw_revision_minor;
+    // Zero is what PDDR returns when it does not carry the revision, so only a non-zero one counts as read.
+    cable.hasHwRevision = (cable.hwRevMajor != 0 || cable.hwRevMinor != 0);
 
     // Eight ASCII characters, year first, of which the last two are a lot code. Rendered the way
     // mlxlink does, which puts the day first. Only the date is checked: the lot code is not shown,
@@ -2584,24 +2615,12 @@ static void
     }
 }
 
-/* Whether PDDR left anything the EEPROM can supply. */
-static bool hasIdentityGap(const CableInfo& cable)
-{
-    return cable.vendorName.empty() || cable.partNumber.empty() || cable.serialNumber.empty() ||
-           cable.vendorRev.empty() || cable.manufacturingDate.empty() || cable.vendorOui == 0 ||
-           (cable.hwRevMajor == 0 && cable.hwRevMinor == 0) || cable.identifier == CABLE_REPORT_NOT_AVAILABLE ||
-           cable.state == CABLE_REPORT_NOT_AVAILABLE || !cable.hasIdentifierByte;
-}
-
 /* Fill whatever PDDR left empty, or could not read as text, from the EEPROM, field by field. PDDR stays
- * authoritative for everything it does answer, so the two tools still agree wherever they can.
+ * authoritative for everything it does answer, so the two tools still agree wherever they can. The read
+ * is never skipped: PDDR carries neither the SFF-8024 identifier byte, the date code nor the CLEI code.
  */
 void CableFwManager::fillIdentityGapsFromEeprom(mfile* mf, CableInfo& cable)
 {
-    if (!hasIdentityGap(cable))
-    {
-        return;
-    }
     CableInfo eeprom;
 
     eeprom.localIndex = cable.localIndex;
@@ -2628,10 +2647,11 @@ void CableFwManager::fillIdentityGapsFromEeprom(mfile* mf, CableInfo& cable)
     }
     // The hardware revision is a package match key, and PDDR reports zero for it on every cable
     // measured, so the EEPROM is the only place it comes from today.
-    if (cable.hwRevMajor == 0 && cable.hwRevMinor == 0)
+    if (!cable.hasHwRevision)
     {
         cable.hwRevMajor = eeprom.hwRevMajor;
         cable.hwRevMinor = eeprom.hwRevMinor;
+        cable.hasHwRevision = eeprom.hasHwRevision;
     }
     if (cable.identifier == CABLE_REPORT_NOT_AVAILABLE)
     {
@@ -2813,8 +2833,9 @@ void CableFwManager::queryCable(mfile* mf, CableInfo& cable)
                             CABLE_STATE_UNREADABLE;
         return;
     }
+    // No deadline check after the last read: a cable whose reads all finished is kept, however long
+    // they took.
     cable.linkState = readCableLinkStateText(cable);
-    queryOverdue(cable, start, "the end of its reads");
 }
 
 bool CableFwManager::readCableIdentity(mfile* mf, CableInfo& cable)
@@ -2897,6 +2918,7 @@ bool CableFwManager::readCableIdentity(mfile* mf, CableInfo& cable)
         {
             cable.hwRevMajor = hwRev[0];
             cable.hwRevMinor = hwRev[1];
+            cable.hasHwRevision = true;
         }
     }
     FWMANAGER_LOG_DEBUG("Cable %u: %s %s pn %s sn %s rev %s oui 0x%06x hw %d.%d date %s flat_mem %d", cable.globalPort,
@@ -2944,6 +2966,13 @@ bool CableFwManager::readCableFwProperties(mfile* mf, CableInfo& cable)
 
     cable.runningSlot = runsB ? CABLE_IMAGE_SLOT_B : CABLE_IMAGE_SLOT_A;
     cable.isRunningImage = runsA || runsB;
+    // An erased slot reports 0.0.0, and so does an idle slot the FW does not report (it gives the running
+    // slot's version only), without marking it erased; neither is a version a package can match on.
+    const CableFwVersion& inactive = runsB ? cable.fwImageA : cable.fwImageB;
+    bool inactiveErased = EXTRACT(properties.fw_image_status_bitmap,
+                                  runsB ? CABLE_FW_STATUS_BIT_A_EMPTY : CABLE_FW_STATUS_BIT_B_EMPTY, 1) != 0;
+    cable.isInactiveSlotUnknown =
+      inactiveErased || (inactive.major == 0 && inactive.minor == 0 && inactive.subminor == 0);
     cable.managementInterfaceProtocol = properties.management_interface_protocol;
     cable.activationType = properties.activation_type;
     cable.fwRead = true;
@@ -3030,40 +3059,16 @@ static string loadNameRelativePath(const string& loadName)
                                  "\" must be a relative path with / separators");
     }
     vector<string> segments;
-    size_t start = 0;
-    while (start <= loadName.size())
+    if (!resolvePathSegments(loadName, segments))
     {
-        size_t slash = loadName.find('/', start);
-        string segment = loadName.substr(start, (slash == string::npos) ? string::npos : slash - start);
-        if (segment == "..")
-        {
-            if (segments.empty())
-            {
-                throw std::runtime_error(CABLE_YAML_KEY_LOAD_NAME " \"" + loadName +
-                                         "\" reaches above the folder of its description file");
-            }
-            segments.pop_back();
-        }
-        else if (!segment.empty() && segment != ".")
-        {
-            segments.push_back(segment);
-        }
-        if (slash == string::npos)
-        {
-            break;
-        }
-        start = slash + 1;
+        throw std::runtime_error(CABLE_YAML_KEY_LOAD_NAME " \"" + loadName +
+                                 "\" reaches above the folder of its description file");
     }
     if (segments.empty())
     {
         throw std::runtime_error(CABLE_YAML_KEY_LOAD_NAME " \"" + loadName + "\" names no file");
     }
-    string path;
-    for (size_t i = 0; i < segments.size(); i++)
-    {
-        path += (i ? "/" : "") + segments[i];
-    }
-    return path;
+    return joinPathSegments(segments);
 }
 
 /* The folder a package file sits in, without its parents, which is the part number a package

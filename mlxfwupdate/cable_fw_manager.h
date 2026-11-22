@@ -59,8 +59,8 @@ using namespace std;
  */
 #define CABLE_VERIFY_WAIT_DEFAULT 5
 
-/* How long, in seconds, one cable's reads, one group's download (or download and activation as one
- * transaction) and one group's activation may take before the tool gives up on them.
+/* Seconds one cable's reads may take, and seconds all groups' downloads and all groups' activations may
+ * take together. A download that also activates (--module_activation_wait 0) gets the sum of the two.
  */
 #define CABLE_QUERY_TIMEOUT_DEFAULT 60
 #define CABLE_DOWNLOAD_TIMEOUT_DEFAULT 900
@@ -240,13 +240,15 @@ struct CableInfo
     string cleiCode; // CMIS only; SFF-8636 has no CLEI code on page 0
     u_int8_t hwRevMajor = 0;
     u_int8_t hwRevMinor = 0;
+    bool hasHwRevision = false; // the revision was read; without it the two above are defaults, not 0.0
 
     // Running firmware, from the MCQI LinkX properties.
     CableFwVersion fwImageA;
     CableFwVersion fwImageB;
     CableImageSlot runningSlot = CABLE_IMAGE_SLOT_A;
-    bool isRunningImage = false; // an image is actually running; runningSlot is meaningless without it
-    bool fwRead = false;         // MCQI answered; without it every version here is a default, not a reading
+    bool isRunningImage = false;        // an image is actually running; runningSlot is meaningless without it
+    bool fwRead = false;                // MCQI answered; without it every version here is a default, not a reading
+    bool isInactiveSlotUnknown = false; // the slot not running is erased or unreported, so its version is no reading
     // MCQI LinkX properties, 6 bits. 0 means the cable implements neither firmware-update
     // procedure; 1 is SFF-8636 with pseudo-CMIS, 2-7 are CMIS 4.0 through 5.5. isBurnable folds
     // several conditions into one bool, so this is the only one of them the report can still
