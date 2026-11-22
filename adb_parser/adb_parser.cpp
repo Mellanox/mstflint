@@ -767,11 +767,7 @@ typename _Adb_impl<eval_expr, T_OFFSET>::AdbInstance*
         rootItem->fieldDesc = rootField;
         rootItem->nodeDesc = nodeDesc;
         rootItem->parent = nullptr;
-        rootItem->layout_item_name = root_display_name.size() > 0 ? root_display_name : nodeDesc->name;
-        if (optimize_time)
-        {
-            rootItem->full_path = rootItem->layout_item_name;
-        }
+        rootItem->init_root_name(root_display_name.empty() ? nodeDesc->name : root_display_name, optimize_time);
         rootItem->offset = root_offset;
         rootItem->initInstOps();
 
@@ -1187,6 +1183,11 @@ bool _Adb_impl<eval_expr, O>::createInstance(AdbField* field,
 
     auto missing_sons =
       enable_parse_missing_sons && node ? parse_missing_sons(*node, allowMultipleExceptions) : vector<SplittedPath>();
+
+    if (field->isArray())
+    {
+        field->build_element_names();
+    }
 
     for (uint32_t i = 0; i < field->arrayLen(); i++)
     {

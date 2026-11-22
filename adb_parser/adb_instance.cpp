@@ -43,6 +43,7 @@
 #include "adb_expr.h"
 #include "adb_exceptionHolder.h"
 #include "buf_ops.h"
+#include <cctype>
 #include <string>
 #include <list>
 #include <algorithm>
@@ -68,16 +69,22 @@ _AdbInstance_impl<e, T_OFFSET>::_AdbInstance_impl(AdbField* i_fieldDesc,
     fieldDesc(i_fieldDesc), nodeDesc(i_nodeDesc), parent(i_parent), arrIdx(i_arrIdx), offset(calcArrOffset(bigEndianArr))
 {
     // Re-initializations due to packing efficiency
-    string array_name_suffix{fieldDesc->isArray() ? "[" + to_string(arrIdx + fieldDesc->lowBound) + "]" : ""};
-    layout_item_name = i_fieldDesc->name + array_name_suffix;
     if (optimize_time)
     {
-        if (fieldDesc->isArray() && path_array_wildcards)
+        string suffix;
+        if (fieldDesc->isArray())
         {
-            array_name_suffix = "[*]";
+            suffix = path_array_wildcards ? string("[*]") : "[" + to_string(arrIdx + fieldDesc->lowBound) + "]";
         }
-        full_path = parent ? parent->full_path + "." + i_fieldDesc->name + array_name_suffix :
-                             i_fieldDesc->name + array_name_suffix;
+        const string& parent_path = parent ? parent->stored_full_path() : EMPTY_NAME;
+        _strings.reset(new InstanceStrings());
+        string& path = _strings->full_path;
+        path.reserve(parent_path.size() + 1 + i_fieldDesc->name.size() + suffix.size());
+        if (parent)
+        {
+            path.append(parent_path).append(1, '.');
+        }
+        path.append(i_fieldDesc->name).append(suffix);
     }
 
     // TODO: the whole block below looks unnecesarry
@@ -186,7 +193,7 @@ typename enable_if<U>::type _AdbInstance_impl<eval_expr, O>::eval_expressions(At
     try
     {
         // First add the special variables
-        parent_vars["NAME"] = layout_item_name;
+        parent_vars["NAME"] = get_field_name();
         parent_vars["ARR_IDX"] = to_string(arrIdx);
         parent_vars["BN"] = "[" + to_string(offset % 32 + get_size() - 1) + ":" + to_string(offset % 32) + "]";
         parent_vars["parent"] = "#(parent)"; // special internal name
@@ -394,9 +401,54 @@ _AdbInstance_impl<e, O>::~_AdbInstance_impl()
  * Function: _AdbInstance_impl::get_field_name
  **/
 template<bool e, typename O>
-const string& _AdbInstance_impl<e, O>::get_field_name()
+const string& _AdbInstance_impl<e, O>::get_field_name() const
 {
-    return layout_item_name;
+    if (_strings && _strings->name_override)
+    {
+        return *_strings->name_override;
+    }
+    // Only the root of an optimize_time layout gets here. A root's path is its name, so init_root_name
+    // stores the name once, as the path, rather than also as an override.
+    if (!parent && !stored_full_path().empty())
+    {
+        return _strings->full_path;
+    }
+    if (!parent || !fieldDesc)
+    {
+        return nodeDesc ? nodeDesc->name : EMPTY_NAME;
+    }
+    return fieldDesc->isArray() ? fieldDesc->element_name(arrIdx) : fieldDesc->name;
+}
+
+template<bool e, typename O>
+void _AdbInstance_impl<e, O>::set_field_name(const string& name)
+{
+    if (!_strings)
+    {
+        _strings.reset(new InstanceStrings());
+    }
+    _strings->name_override.reset(new string(name));
+}
+
+template<bool e, typename O>
+void _AdbInstance_impl<e, O>::init_root_name(const string& name, bool store_full_path)
+{
+    if (store_full_path)
+    {
+        unique_ptr<InstanceStrings> strings(new InstanceStrings());
+        strings->full_path = name;
+        _strings.swap(strings);
+    }
+    else
+    {
+        set_field_name(name);
+    }
+}
+
+template<bool e, typename O>
+const string& _AdbInstance_impl<e, O>::stored_full_path() const
+{
+    return _strings ? _strings->full_path : EMPTY_NAME;
 }
 
 /**
@@ -498,6 +550,7 @@ bool _AdbInstance_impl<e, O>::isPartOfArray()
 template<bool e, typename O>
 string _AdbInstance_impl<e, O>::fullName(size_t skipLevel)
 {
+    const string& full_path = stored_full_path();
     if (!full_path.empty())
     {
         if (skipLevel == 0)
@@ -519,29 +572,43 @@ string _AdbInstance_impl<e, O>::fullName(size_t skipLevel)
             return full_path.substr(pos);
         }
     }
-    list<string> fnList;
-    _AdbInstance_impl<e, O>* p = parent;
+    return walk_full_name(skipLevel);
+}
 
-    fnList.push_front(layout_item_name);
-    while (p != NULL)
+template<bool e, typename O>
+string _AdbInstance_impl<e, O>::walk_full_name(size_t skipLevel) const
+{
+    size_t depth = 0;
+    for (const _AdbInstance_impl<e, O>* p = this; p != nullptr; p = p->parent)
     {
-        fnList.push_front(p->layout_item_name);
-        p = p->parent;
+        ++depth;
     }
+    if (depth <= skipLevel)
+    {
+        return get_field_name();
+    }
+    size_t levels = depth - skipLevel;
+    size_t length = levels - 1;
+    const _AdbInstance_impl<e, O>* p = this;
+    for (size_t i = 0; i < levels; ++i, p = p->parent)
+    {
+        length += p->get_field_name().size();
+    }
+    string path;
+    path.reserve(length);
+    append_walked_path(path, levels);
+    return path;
+}
 
-    if (fnList.size() > skipLevel)
+template<bool e, typename O>
+void _AdbInstance_impl<e, O>::append_walked_path(string& out, size_t levels) const
+{
+    if (levels > 1)
     {
-        while (skipLevel--)
-        {
-            fnList.pop_front();
-        }
-
-        return Algorithm::join(fnList, ".");
+        parent->append_walked_path(out, levels - 1);
+        out.push_back(path_seperator);
     }
-    else
-    {
-        return fnList.back();
-    }
+    out.append(get_field_name());
 }
 
 template<bool e, typename O>
@@ -785,13 +852,20 @@ _AdbInstance_impl<e, O>* _AdbInstance_impl<e, O>::getChildByPath(const string& p
         return this;
     }
 
+    auto matchesLowered = [&childName](const string& name)
+    {
+        return name.size() == childName.size() &&
+               equal(name.begin(), name.end(), childName.begin(),
+                     [](char c, char lowered)
+                     { return static_cast<char>(tolower(static_cast<unsigned char>(c))) == lowered; });
+    };
+
     // Search for childName
     _AdbInstance_impl<e, O>* child = NULL;
     for (size_t i = 0; i < subItems.size(); i++)
     {
-        string subName =
-          isCaseSensitive ? subItems[i]->layout_item_name : Algorithm::to_lower_copy(subItems[i]->layout_item_name);
-        if (subName == childName)
+        const string& subName = subItems[i]->get_field_name();
+        if (isCaseSensitive ? subName == childName : matchesLowered(subName))
         {
             child = subItems[i];
             break;
@@ -819,7 +893,7 @@ vector<_AdbInstance_impl<e, O>*>
 
     if (by_inst_name || isLeaf())
     {
-        if (layout_item_name == childName)
+        if (get_field_name() == childName)
         {
             childList.push_back(this);
         }
@@ -1343,7 +1417,7 @@ _AdbInstance_impl<e, O>* _AdbInstance_impl<e, O>::getUnionSelectedNodeName(const
 
     if (!unionSelector)
     {
-        throw AdbException("Can't find selector for union: " + layout_item_name);
+        throw AdbException("Can't find selector for union: " + get_field_name());
     }
 
     map<string, uint64_t> selectorValMap = unionSelector->getEnumMap();
@@ -1362,12 +1436,12 @@ _AdbInstance_impl<e, O>* _AdbInstance_impl<e, O>::getUnionSelectedNodeName(const
                 }
             }
             throw AdbException("Found selector value (" + selectorEnum + ") is defined for selector field (" +
-                               unionSelector->layout_item_name +
+                               unionSelector->get_field_name() +
                                ") but no appropriate subfield of this union was found");
         }
     }
 
-    throw AdbException("Union selector field (" + unionSelector->layout_item_name +
+    throw AdbException("Union selector field (" + unionSelector->get_field_name() +
                        ") doesn't define selector value (" + to_string(selectorVal) + ")");
 }
 
@@ -1396,7 +1470,7 @@ _AdbInstance_impl<e, O>* _AdbInstance_impl<e, O>::getUnionSelectedNodeName(const
         }
     }
 
-    throw AdbException("Union selector field (" + unionSelector->layout_item_name +
+    throw AdbException("Union selector field (" + unionSelector->get_field_name() +
                        ") doesn't define a selector value (" + selectorEnum + ")");
 }
 
@@ -1507,13 +1581,14 @@ vector<_AdbInstance_impl<e, O>*> _AdbInstance_impl<e, O>::getLeafFields(bool ext
             {
                 if (subItems[i]->parent->fieldDesc && subItems[i]->parent->fieldDesc->subNode == "uint64")
                 {
-                    subItems[i]->layout_item_name =
-                      subItems[i]->parent->layout_item_name + "_" + subItems[i]->layout_item_name;
+                    subItems[i]->set_field_name(subItems[i]->parent->get_field_name() + "_" +
+                                                subItems[i]->get_field_name());
                 }
                 else
                 {
-                    subItems[i]->layout_item_name +=
-                      _AdbInstance_impl<e, O>::addPathSuffixForArraySupport(subItems[i]->fullName());
+                    subItems[i]->set_field_name(
+                      subItems[i]->get_field_name() +
+                      _AdbInstance_impl<e, O>::addPathSuffixForArraySupport(subItems[i]->fullName()));
                 }
                 subItems[i]->inst_props.is_name_extended = true;
             }

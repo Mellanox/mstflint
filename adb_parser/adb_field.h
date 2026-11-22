@@ -38,6 +38,7 @@
 
 #include "adb_xmlCreator.h"
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 #include <utility>
@@ -82,9 +83,9 @@ public:
                   string sub_node = "",
                   string desc = "");
     virtual ~AdbField_impl(){};
-    bool isLeaf();
-    bool isStruct();
-    bool isArray();
+    bool isLeaf() { return subNode.empty(); }
+    bool isStruct() { return !isLeaf(); }
+    bool isArray() { return array_type >= ArrayType::definite; }
     bool isEnum();
     vector<pair<string, uint64_t>> getEnum();
     bool merge_broken_name(AdbField_impl<T_OFFSET>& other);
@@ -95,6 +96,16 @@ public:
     uint32_t arrayLen();
     bool isUnlimitedArr();
     bool isDynamicArr();
+    void set_name(const string& new_name);
+    void build_element_names();
+    const string& element_name(uint32_t index) const
+    {
+        if (!_element_names.names || index >= _element_names.names->size())
+        {
+            throw_missing_element_name(index);
+        }
+        return (*_element_names.names)[index];
+    }
 
     virtual address_t get_size() const;
     virtual void set_size(short_address_t size);
@@ -108,17 +119,38 @@ public:
     // FOR DEBUG
     void print(int indent = 0);
 
+private:
+    struct ElementNameTable
+    {
+        ElementNameTable() = default;
+        ElementNameTable(const ElementNameTable& other) :
+            names{other.names ? new vector<string>(*other.names) : nullptr}
+        {
+        }
+        ElementNameTable& operator=(const ElementNameTable& other)
+        {
+            names.reset(other.names ? new vector<string>(*other.names) : nullptr);
+            return *this;
+        }
+
+        unique_ptr<vector<string>> names{};
+    };
+
+    ElementNameTable _element_names{};
+
+    [[noreturn]] void throw_missing_element_name(uint32_t index) const;
+
 protected:
     short_address_t _size{0};
 
 public:
     // Members
+    ArrayType array_type{};
     string name;
     T_OFFSET offset{(static_cast<T_OFFSET>(-1))}; // in bits (relative to the node start addr)
     string desc;
     uint32_t lowBound{0};
     uint32_t highBound{0};
-    ArrayType array_type{};
     string subNode;
     AttrsMap attrs;
     bool isReserved{false};

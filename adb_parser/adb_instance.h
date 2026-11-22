@@ -41,6 +41,7 @@
 #include "adb_condition.h"
 
 #include <map>
+#include <memory>
 #include <set>
 #include <string>
 #include <vector>
@@ -183,6 +184,12 @@ class _AdbInstance_impl
         LayoutPartitionProps(PartitionTree* tree);
     };
 
+    struct InstanceStrings
+    {
+        unique_ptr<string> name_override{};
+        string full_path{};
+    };
+
 public:
     // Methods
     _AdbInstance_impl() = default;
@@ -215,7 +222,9 @@ public:
 
     static string evalExpr(string expr, AttrsMap* vars);
     static string addPathSuffixForArraySupport(string path);
-    const string& get_field_name();
+    const string& get_field_name() const;
+    void set_field_name(const string& name);
+    void init_root_name(const string& name, bool store_full_path);
     bool isLeaf();
     bool isUnion();
     bool isStruct();
@@ -318,22 +327,30 @@ public:
     static const string EXP_PATTERN;
 
     // Members
-    string layout_item_name{}; // instance name
-    string full_path{};
     vector<_AdbInstance_impl<eval_expr, T_OFFSET>*> subItems{};
     AdbField* fieldDesc{nullptr};
     AdbNode* nodeDesc{nullptr};
     _AdbInstance_impl<eval_expr, T_OFFSET>* parent{nullptr};
     _AdbInstance_impl<eval_expr, T_OFFSET>* unionSelector{nullptr}; // For union instances only
     InstOpsProperties inst_ops_props{};
-    uint32_t arrIdx{0};
-    T_OFFSET offset{0xffffffff};  // Global offset in bits (Relative to 0) todo: put static cast
     AdbField* _max_leaf{nullptr}; // for DS alignment check
-    InstancePropertiesMask inst_props{};
     LayoutPartitionProps* partition_props{nullptr};
 
 private:
+    unique_ptr<InstanceStrings> _strings{};
+
+public:
+    uint32_t arrIdx{0};
+    InstancePropertiesMask inst_props{};
+    T_OFFSET offset{0xffffffff}; // Global offset in bits (Relative to 0) todo: put static cast
+
+private:
+    static const string EMPTY_NAME;
+
+    const string& stored_full_path() const;
     _AdbInstance_impl<eval_expr, T_OFFSET>* find_layout_item_dfs(const std::string& path);
+    string walk_full_name(size_t skipLevel) const;
+    void append_walked_path(string& out, size_t levels) const;
 
     void traverse_layout(const string& path,
                          T_OFFSET offset_shift,
@@ -393,5 +410,7 @@ template<bool e, typename O>
 const char _AdbInstance_impl<e, O>::path_seperator{'.'};
 template<bool e, typename O>
 const string _AdbInstance_impl<e, O>::EXP_PATTERN{"\\s*([a-zA-Z0-9_]+)=((\\$\\(.*?\\)|\\S+|$)*)\\s*"};
+template<bool e, typename O>
+const string _AdbInstance_impl<e, O>::EMPTY_NAME{};
 
 #endif
