@@ -1713,9 +1713,29 @@ bool checkCmdParams(CmdLineParams& cmd_params, config_t& config)
           "-E- --module_activation_wait is only valid with --module_query, --module_dry_run or --module_update\n");
         return false;
     }
+    if ((cmd_params.cable_query_timeout >= 0 || cmd_params.cable_download_timeout >= 0 ||
+         cmd_params.cable_activation_timeout >= 0) &&
+        !cable_mode)
+    {
+        fprintf(stderr, "-E- --module_query_timeout, --module_download_timeout and --module_activation_timeout are "
+                        "only valid with --module_query, --module_dry_run or --module_update\n");
+        return false;
+    }
     if (cable_mode && cmd_params.cable_verify_wait < 0)
     {
         cmd_params.cable_verify_wait = CABLE_VERIFY_WAIT_DEFAULT;
+    }
+    if (cable_mode && cmd_params.cable_query_timeout < 0)
+    {
+        cmd_params.cable_query_timeout = CABLE_QUERY_TIMEOUT_DEFAULT;
+    }
+    if (cable_mode && cmd_params.cable_download_timeout < 0)
+    {
+        cmd_params.cable_download_timeout = CABLE_DOWNLOAD_TIMEOUT_DEFAULT;
+    }
+    if (cable_mode && cmd_params.cable_activation_timeout < 0)
+    {
+        cmd_params.cable_activation_timeout = CABLE_ACTIVATION_TIMEOUT_DEFAULT;
     }
     if (cable_mode && cmd_params.cable_activation_wait < 0)
     {

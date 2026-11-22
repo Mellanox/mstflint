@@ -90,6 +90,9 @@ CmdLineParams::CmdLineParams()
     cable_package = "";
     cable_activation_wait = -1; // resolved to the default once the mode is known
     cable_verify_wait = -1;     // same
+    cable_query_timeout = -1;
+    cable_download_timeout = -1;
+    cable_activation_timeout = -1;
     cable_report_dir = "";
     cable_report_file_only = false;
     cable_report_screen_only = false;

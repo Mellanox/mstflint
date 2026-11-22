@@ -115,6 +115,11 @@ public:
     bool cable_report_screen_only;
     bool cable_include_service_ports;
     int cable_verify_wait;
+    // Seconds one cable's reads, one group's download (or download and activation in one go) and
+    // one group's activation may take; resolved to the defaults once the mode is known.
+    int cable_query_timeout;
+    int cable_download_timeout;
+    int cable_activation_timeout;
     bool verbose;
 };
 

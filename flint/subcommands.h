@@ -268,6 +268,7 @@ private:
     void ReportBurnFailures(FwCompsMgr& fwCompsAccess, u_int32_t transfer, u_int32_t activate);
     string FormatFailureTable(FwCompsMgr& fwCompsAccess, const std::vector<FwCompsMgr::burn_failure_t>& details);
     FlintStatus BurnCMISCable();
+    bool IsFirmwarePackage(const string& fileName);
     FlintStatus ResetModule(string device);
     FlintStatus WaitForModuleInit(string device);
     FlintStatus PerformBurn(std::vector<u_int8_t>& fwImage, std::vector<u_int8_t>& vendorData);

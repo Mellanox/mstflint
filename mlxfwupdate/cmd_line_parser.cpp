@@ -237,6 +237,15 @@ using namespace mft_utils;
 #define MODULE_VERIFY_WAIT_L "module_verify_wait"
 #define MODULE_VERIFY_WAIT_S ' '
 
+#define MODULE_QUERY_TIMEOUT_L "module_query_timeout"
+#define MODULE_QUERY_TIMEOUT_S ' '
+
+#define MODULE_DOWNLOAD_TIMEOUT_L "module_download_timeout"
+#define MODULE_DOWNLOAD_TIMEOUT_S ' '
+
+#define MODULE_ACTIVATION_TIMEOUT_L "module_activation_timeout"
+#define MODULE_ACTIVATION_TIMEOUT_S ' '
+
 #define MODULE_REPORT_DIR_L "module_report_dir"
 #define MODULE_REPORT_DIR_S ' '
 
@@ -520,6 +529,16 @@ void CmdLineParser::initOptions()
 
     this->AddOptions(MODULE_VERIFY_WAIT_L, MODULE_VERIFY_WAIT_S, "Seconds",
                      "Seconds to let the modules finish re-training before the update is verified (default 5)");
+
+    this->AddOptions(MODULE_QUERY_TIMEOUT_L, MODULE_QUERY_TIMEOUT_S, "Seconds",
+                     "Seconds one module's reads may take before it is skipped as unreadable (default 60)");
+
+    this->AddOptions(
+      MODULE_DOWNLOAD_TIMEOUT_L, MODULE_DOWNLOAD_TIMEOUT_S, "Seconds",
+      "Seconds all groups' downloads may take together; with --module_activation_wait 0, plus --module_activation_timeout (default 900)");
+
+    this->AddOptions(MODULE_ACTIVATION_TIMEOUT_L, MODULE_ACTIVATION_TIMEOUT_S, "Seconds",
+                     "Seconds all groups' activations may take together (default 300)");
 
     this->AddOptions(MODULE_REPORT_DIR_L, MODULE_REPORT_DIR_S, "DirectoryName",
                      "Directory to write the module update report to (default current directory)");
@@ -962,6 +981,25 @@ ParseStatus CmdLineParser::HandleOption(string name, string value)
         if (_cmdLineParams->cable_verify_wait < 0)
         {
             cout << "-E- Negative value is not allowed " << value << "\n";
+            return PARSE_ERROR;
+        }
+        return PARSE_OK;
+    }
+    else if (name == MODULE_QUERY_TIMEOUT_L || name == MODULE_DOWNLOAD_TIMEOUT_L || name == MODULE_ACTIVATION_TIMEOUT_L)
+    {
+        int& timeout = (name == MODULE_QUERY_TIMEOUT_L)    ? _cmdLineParams->cable_query_timeout :
+                       (name == MODULE_DOWNLOAD_TIMEOUT_L) ? _cmdLineParams->cable_download_timeout :
+                                                             _cmdLineParams->cable_activation_timeout;
+        std::istringstream iss(value);
+        iss >> timeout;
+        if (iss.fail() || !iss.eof())
+        {
+            cout << "-E- Invalid value for --" << name << ": " << value << "\n";
+            return PARSE_ERROR_SHOW_USAGE;
+        }
+        if (timeout < 1)
+        {
+            cout << "-E- --" << name << " must be at least 1 second: " << value << "\n";
             return PARSE_ERROR;
         }
         return PARSE_OK;
