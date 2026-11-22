@@ -1973,31 +1973,9 @@ void GenericCommander::orderConfTlvs(vector<std::shared_ptr<TLVConf>>& tlvs)
     }
 }
 
-#if !defined(DISABLE_XML2)
-static bool HasElementChildren(xmlNode* n)
+namespace
 {
-    for (xmlNode* c = n->children; c; c = c->next)
-    {
-        if (c->type == XML_ELEMENT_NODE)
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
-static std::string NodeText(xmlNode* n)
-{
-    xmlChar* txt = xmlNodeGetContent(n);
-    std::string out = txt ? reinterpret_cast<const char*>(txt) : "";
-    if (txt)
-    {
-        xmlFree(txt);
-    }
-    return out;
-}
-
-static std::string MakeKeySkipRoot(const std::vector<std::string>& path)
+std::string MakeKeySkipRoot(const std::vector<std::string>& path)
 {
     std::string k;
     for (size_t i = 1; i < path.size(); ++i)
@@ -2015,102 +1993,95 @@ static std::string MakeKeySkipRoot(const std::vector<std::string>& path)
     return k;
 }
 
-static void CollectFlatMap(xmlNode* n, std::vector<std::string>& path, std::map<std::string, std::string>& out)
+// Flattens a PSC token XML into "parent.child" keys mapped to the leaf text. A DEVICE_UNIQUE element with children
+// becomes one key whose value is "name=value,..." over its leaf children; anything nested deeper inside it is ignored.
+class PscTokenMapBuilder : public XmlStreamHandler
 {
-    if (!n || n->type != XML_ELEMENT_NODE)
+public:
+    explicit PscTokenMapBuilder(std::map<std::string, std::string>& out) :
+        _out(out), _deviceUniqueName(MlxPSCtoken::TlvTypeToStr(TlvType::DEVICE_UNIQUE))
     {
-        return;
     }
 
-    path.push_back(reinterpret_cast<const char*>(n->name));
-
-    if (!HasElementChildren(n))
+    void OnStartElement(const std::string& nsUri, const std::string& name, const XmlAttrs&) override
     {
-        out[MakeKeySkipRoot(path)] = NodeText(n);
-    }
-    else
-    {
-        std::string currentName = reinterpret_cast<const char*>(n->name);
-        if (currentName == MlxPSCtoken::TlvTypeToStr(TlvType::DEVICE_UNIQUE))
+        Element e;
+        e.name = name;
+        if (_stack.empty())
         {
-            // Collect and concatenate all child key-value pairs
-            std::string concatenatedValue;
-            bool first = true;
-
-            for (xmlNode* c = n->children; c; c = c->next)
-            {
-                if (c->type == XML_ELEMENT_NODE && !HasElementChildren(c))
-                {
-                    if (!first)
-                    {
-                        concatenatedValue += ",";
-                    }
-                    concatenatedValue += reinterpret_cast<const char*>(c->name);
-                    concatenatedValue += "=";
-                    concatenatedValue += NodeText(c);
-                    first = false;
-                }
-            }
-
-            // Store as single key-value pair
-            std::string key = MakeKeySkipRoot(path);
-            out[key] = concatenatedValue;
+            checkXmlRoot(nsUri, name, XML_ROOT, XNVIDIA);
         }
         else
         {
-            // Normal processing for other nodes
-            for (xmlNode* c = n->children; c; c = c->next)
+            Element& parent = _stack.back();
+            parent.hasChildren = true;
+            e.childOfDeviceUnique = parent.isDeviceUnique;
+            e.insideDeviceUnique = parent.isDeviceUnique || parent.insideDeviceUnique;
+        }
+        e.isDeviceUnique = !e.insideDeviceUnique && name == _deviceUniqueName;
+        _stack.push_back(e);
+        _path.push_back(name);
+    }
+
+    void OnText(const char* text, size_t len) override { _stack.back().text.append(text, len); }
+
+    void OnEndElement() override
+    {
+        Element e = _stack.back();
+        std::string key = MakeKeySkipRoot(_path);
+        _stack.pop_back();
+        _path.pop_back();
+
+        if (e.childOfDeviceUnique)
+        {
+            if (!e.hasChildren)
             {
-                if (c->type == XML_ELEMENT_NODE)
+                std::string& value = _stack.back().deviceUniqueValue;
+                if (!value.empty())
                 {
-                    CollectFlatMap(c, path, out);
+                    value += ",";
                 }
+                value += e.name + "=" + e.text;
             }
         }
+        else if (e.insideDeviceUnique)
+        {
+            return;
+        }
+        else if (!e.hasChildren)
+        {
+            _out[key] = e.text;
+        }
+        else if (e.isDeviceUnique)
+        {
+            _out[key] = e.deviceUniqueValue;
+        }
     }
-    path.pop_back();
-}
-#endif
+
+private:
+    struct Element
+    {
+        Element() : hasChildren(false), isDeviceUnique(false), childOfDeviceUnique(false), insideDeviceUnique(false) {}
+        std::string name;
+        std::string text;
+        std::string deviceUniqueValue;
+        bool hasChildren;
+        bool isDeviceUnique;
+        bool childOfDeviceUnique;
+        bool insideDeviceUnique;
+    };
+
+    std::map<std::string, std::string>& _out;
+    const std::string _deviceUniqueName;
+    std::vector<Element> _stack;
+    std::vector<std::string> _path;
+};
+} // namespace
 
 void GenericCommander::XML2MapPSCToken(const string& xml, map<string, string>& tokenData)
 {
-#if !defined(DISABLE_XML2)
-    xmlDocPtr doc;
-    xmlNodePtr root;
-
-    doc = xmlReadMemory(xml.c_str(), xml.size(), "noname.xml", NULL, 0);
-    if (!doc)
-    {
-        throw MlxcfgException("Failed to parse the XML document\n");
-    }
-
-    try
-    {
-        root = xmlDocGetRootElement(doc);
-        if (!root || xmlStrcmp(root->name, (const xmlChar*)XML_ROOT))
-        {
-            throw MlxcfgException("The XML root node must be " XML_ROOT);
-        }
-
-        // check fingerprint
-        if (!root->ns || xmlStrcmp(root->ns->href, (const xmlChar*)XNVIDIA))
-        {
-            throw MlxcfgException("The XML Fingerprint " XNVIDIA " is missing or incorrect");
-        }
-        std::vector<std::string> path;
-        CollectFlatMap(root, path, tokenData);
-        xmlFreeDoc(doc);
-    }
-    catch (...)
-    {
-        xmlFreeDoc(doc);
-        throw;
-    }
-#else
-    (void)xml;
-    (void)tokenData;
-    throw MlxcfgException("Can not run the command, the tool was not compiled against libxml2");
-#endif
+    PscTokenMapBuilder builder(tokenData);
+    parseXmlStream(xml, builder);
 }
 
 void GenericCommander::createConf(const string& xml, vector<u_int32_t>& buff)
