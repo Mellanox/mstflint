@@ -298,28 +298,25 @@ class PrivilegeMgr(object):
         # If no configuration queried, then return error code 1
         return len(current_conf) == 0
 
-    def parseRawTlv(self, host_index, data, valid):
-        tlv = {"host index": host_index, "level": "PRIVILEGED",
-               "disable_rshim": "FALSE", "disable_tracer": "FALSE",
-               "disable_port_owner": "FALSE", "disable_counter_rd": "FALSE"}
-        if valid:
-            conf_data = int(self.TLV_DATA_RE.search(data).group(1), 16)
-            level = int((conf_data & self.LIMITED) / self.LIMITED)
-            disable_rshim = (conf_data & self.DISABLE_RSHIM) / \
-                self.DISABLE_RSHIM
-            disable_tracer = (
-                conf_data & self.DISABLE_TRACER) / self.DISABLE_TRACER
-            disable_port_owner = (
-                conf_data & self.DISABLE_PORT_OWNER) / self.DISABLE_PORT_OWNER
-            disable_counter_rd = (
-                conf_data & self.DISABLE_COUNTER_RD) / self.DISABLE_COUNTER_RD
-            tlv.update({"level": ("PRIVILEGED", "RESTRICTED")[level]})
-            tlv.update({"disable_rshim": str(bool(disable_rshim)).upper()})
-            tlv.update({"disable_tracer": str(bool(disable_tracer)).upper()})
-            tlv.update({"disable_port_owner": str(
-                bool(disable_port_owner)).upper()})
-            tlv.update({"disable_counter_rd": str(
-                bool(disable_counter_rd)).upper()})
+    def parseRawTlv(self, host_index, data):
+        tlv = {"host index": host_index}
+        conf_data = int(self.TLV_DATA_RE.search(data).group(1), 16)
+        level = int((conf_data & self.LIMITED) / self.LIMITED)
+        disable_rshim = (conf_data & self.DISABLE_RSHIM) / \
+            self.DISABLE_RSHIM
+        disable_tracer = (
+            conf_data & self.DISABLE_TRACER) / self.DISABLE_TRACER
+        disable_port_owner = (
+            conf_data & self.DISABLE_PORT_OWNER) / self.DISABLE_PORT_OWNER
+        disable_counter_rd = (
+            conf_data & self.DISABLE_COUNTER_RD) / self.DISABLE_COUNTER_RD
+        tlv.update({"level": ("PRIVILEGED", "RESTRICTED")[level]})
+        tlv.update({"disable_rshim": str(bool(disable_rshim)).upper()})
+        tlv.update({"disable_tracer": str(bool(disable_tracer)).upper()})
+        tlv.update({"disable_port_owner": str(
+            bool(disable_port_owner)).upper()})
+        tlv.update({"disable_counter_rd": str(
+            bool(disable_counter_rd)).upper()})
         return tlv
 
     def queryConf(self, host_index):
@@ -328,7 +325,12 @@ class PrivilegeMgr(object):
         # Run query operation
         cmd = self.QUERY_CMD_LINE % (self._device, self._file_name)
         exit_code, stdout, _ = self._exec_cmd(cmd)
-        return self.parseRawTlv(host_index, stdout, not exit_code)
+        # A TLV that was never written reads back with rc 0 and its default
+        # value, so a failure means the level is unknown and must not be shown
+        if exit_code:
+            target = "host %d" % host_index if self._isARM else "the host"
+            raise PrivilegeException("Failed to query the configuration of %s" % target)
+        return self.parseRawTlv(host_index, stdout)
 
     def setPrivilegeConf(self, host_index, disable_info=False):
         self._nv_host_priv_conf = 0
@@ -345,10 +347,14 @@ class PrivilegeMgr(object):
         return exit_code
 
     def setRestrictConf(self, host_index):
-        current_conf = self.queryConf(host_index)
-        # If host is restricted, remove the restiction to applay the new
-        # restrict command
-        if current_conf["level"] == "RESTRICTED":
+        # Remove the restriction before applying the new one. When the current
+        # level cannot be read, the restriction is written directly, so a
+        # failed write never leaves the host privileged
+        try:
+            restricted = self.queryConf(host_index)["level"] == "RESTRICTED"
+        except PrivilegeException:
+            restricted = False
+        if restricted:
             self.setPrivilegeConf(host_index, disable_info=True)
         # Update the TLV with the restriction bytes and port function
         # configuration
