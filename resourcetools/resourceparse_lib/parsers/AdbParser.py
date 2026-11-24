@@ -489,6 +489,8 @@ class ConditionVariable:
         if not self.evaluated:
             if self.found and self.layout_item:
                 offset = calculate_aligned_offset(self.layout_item.offset, self.layout_item.size)
+                if len(bit_array) < (offset + self.layout_item.size):
+                    raise ResourceParseException('Condition variable - "{}", is beyond the end of the segment data'.format(self._name))
                 self.evaluated = True
                 self.value = int(bit_array[offset:offset + self.layout_item.size], 2)
             else:
