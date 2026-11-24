@@ -2226,4 +2226,25 @@ bool isModulePoweredOn(const string& modulePath)
     return readBoolFromSysFs(sysfsPowerOn);
 }
 
+static bool isCableDevice(const string& deviceName)
+{
+    return deviceName.find("_cable") != string::npos && deviceName.find("_rt") == string::npos;
+}
+
+mfile* openMlxlinkDevice(const string& deviceName)
+{
+    if (isCableDevice(deviceName))
+    {
+        throw mlxreg::MlxRegException(CABLE_DEVICE_ERROR_STR);
+    }
+
+    mfile* mf = mopen_adv(deviceName.c_str(), (MType)(MST_DEFAULT | MST_LINKX_CHIP));
+    if (!mf)
+    {
+        throw mlxreg::MlxRegException("Failed to open device: \"" + deviceName + "\", " + mtcr_get_last_err());
+    }
+
+    return mf;
+}
+
 /*end*/

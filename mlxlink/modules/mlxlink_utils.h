@@ -204,5 +204,6 @@ u_int32_t prrMeasDataDwordsForType(u_int32_t measType);
 bool readBoolFromSysFs(const string& sysfsPath);
 bool isModulePresent(const string& modulePath);
 bool isModulePoweredOn(const string& modulePath);
+mfile* openMlxlinkDevice(const string& deviceName);
 
 #endif
