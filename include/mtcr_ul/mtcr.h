@@ -199,6 +199,12 @@ void swap_pci_address_space(mfile* mf);
 
 int is_pcie_switch_device(mfile* mf);
 
+/* Returns 1 when the device was opened through the mst kernel driver
+ * (mstflint_access), i.e. mf->fd is a driver char-device fd that the mst
+ * driver ioctls (e.g. PCICONF_HOT_RESET) can be sent on. Returns 0 for
+ * every other access, including fwctl. */
+int is_mst_driver_backed(mfile* mf);
+
 int hot_reset(mfile* mf, int in_parallel,
               int domain_1, int bus_1,
               int device_1, int function_1,

@@ -2715,10 +2715,14 @@ def reset_flow_host(device, args, command):
         is_bluefield4 = True
     reset_type = mfrl.default_reset_type() if args.reset_type is None else args.reset_type
 
+    # The sync 2 (FW-owned) reset flow triggers the PCI reset through the mst driver
+    # (PCICONF_HOT_RESET ioctl), so sync 2 is available only when the device was
+    # actually opened through the mst driver. Querying the open device (instead of
+    # running "lsmod") reflects the real execution path and does not depend on the
+    # external kmod package being installed.
     mst_driver_is_loaded = False
     if platform.system() == "Linux":
-        if isModuleLoaded("mstflint_access"):
-            mst_driver_is_loaded = True
+        mst_driver_is_loaded = MstDevObj.isMstDriverBacked()
 
     mroq = CmdRegMroq(reset_type, RegAccessObj, mcam, logger, mst_driver_is_loaded)
 

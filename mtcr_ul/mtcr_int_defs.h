@@ -84,6 +84,11 @@ typedef struct ul_ctx
     f_mwrite4_block res_mwrite4_block;
     /*************************************************************/
     int via_driver;
+    /* Set only by mtcr_driver_open(): the device was opened through one of
+     * the mst driver (mstflint_access) character devices, so mf->fd can
+     * receive the mst driver ioctls (e.g. PCICONF_HOT_RESET). via_driver is
+     * not usable for this - fwctl devices set it too. */
+    int mst_driver_backed;
     /* Remote (MST HTTP) devices only: mtcr_remote_ctx*, owned by mtcr_remote.c
      * and released by mtcr_remote_mclose(). Kept here rather than in mfile so
      * the installed mtcr_mf.h layout is unchanged. Declared unconditionally so

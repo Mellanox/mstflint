@@ -99,6 +99,11 @@ if CMTCR:
             self.is_gpu_device = CMTCR.is_gpu_device
             self.readDeviceIdFunc = CMTCR.read_device_id
             self.hot_reset = CMTCR.hot_reset
+            try:
+                self.isMstDriverBackedFunc = CMTCR.is_mst_driver_backed
+            except AttributeError:
+                # libmtcr does not export is_mst_driver_backed (too old) - report "not mst driver backed"
+                self.isMstDriverBackedFunc = None
         ##########################
         def close(self):
             if self.mf:
@@ -211,6 +216,16 @@ if CMTCR:
         def send_hot_reset(self, in_parallel, domain_1,
                            bus_1, device_1, function_1, domain_2, bus_2, device_2, function_2):
             return self.hot_reset(self.mf, in_parallel, domain_1, bus_1, device_1, function_1, domain_2, bus_2, device_2, function_2)
+
+        ##########################
+        def isMstDriverBacked(self):
+            """True when the device is accessed through the mst kernel driver (mstflint_access),
+            i.e. the mst driver ioctls (hot reset) can be issued on this device.
+            False for every other access (PCI config space, memory BAR, remote, fwctl, ...) or
+            when the loaded libmtcr is too old to answer."""
+            if self.isMstDriverBackedFunc is None:
+                return False
+            return bool(self.isMstDriverBackedFunc(self.mf))
         ##########################
 
 else:
@@ -288,3 +303,7 @@ else:
         ##########################
         def mHcaReset(self, dbdf_list):
             raise MtcrException("mswReset isn't supported in MCRA mode")
+
+        ##########################
+        def isMstDriverBacked(self):
+            return False
