@@ -1654,11 +1654,6 @@ def assert_supported_psid(devid, mfrl, mroq, tool_owner_support, command):
             mfrl.disable_unsupported_reset_levels()
             mroq.disable_all_syncs()
 
-            # 'status' only reports what the device needs, so let it run and recommend a power cycle
-            # instead of failing the query.
-            if command != "status" and mroq.mroq_is_supported() and not mfrl.is_any_reset_level_supported(mroq.is_any_sync_supported(tool_owner_support)):
-                raise RuntimeError("No reset level is supported")
-
 ######################################################################
 # Description: Send MFRL to FW in Multihost setup
 ######################################################################
@@ -2667,18 +2662,18 @@ def reset_flow_host(device, args, command):
 
     is_pcie_switch = is_pcie_switch_device(devid)
     sync_2_only_supported = False
+    no_reset_level_supported = False
     if mroq.mroq_is_supported():
-        if not mfrl.is_any_reset_level_supported(mroq.is_any_sync_supported(tool_owner_support)):
-            # 'status' only reports what the device needs, so let it run and recommend a power cycle
-            # instead of failing the query.
-            if command != "status":
-                raise RuntimeError("No reset level is supported")
-
         sync_2_only_supported = mroq.is_sync2_only_supported(tool_owner_support)
         if sync_2_only_supported:
             logger.debug("Sync 2 is the only supported sync, will not be the default.")
 
     assert_supported_psid(devid, mfrl, mroq, tool_owner_support, command)  # leaving for BWC, to be removed
+
+    # assert_supported_psid() can disable reset levels and syncs, so what the device supports
+    # is only settled once it has run.
+    if mroq.mroq_is_supported():
+        no_reset_level_supported = not mfrl.is_any_reset_level_supported(mroq.is_any_sync_supported(tool_owner_support))
 
     if command == "query":
         if mroq.mroq_is_supported():
@@ -2703,6 +2698,11 @@ def reset_flow_host(device, args, command):
                        json_output=args.json_output)
 
     elif command == "reset":
+        if no_reset_level_supported:
+            # Nothing to reset is a state of the device, not a failure of the command, so this
+            # reports and exits 0 rather than erroring out.
+            raise NoError("No reset level is supported - a full power cycle is required")
+
         if mroq.mroq_is_supported():
             is_any_sync_supported = mroq.is_any_sync_supported(tool_owner_support)
             skip_pci_reset = False
