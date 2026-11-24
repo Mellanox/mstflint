@@ -340,10 +340,15 @@ vector<u_int8_t> ReadFromFile(string filename)
      return bytes;
  }
  
- string ToHexString(u_int32_t value, u_int8_t width)
+ // Hex string of value, zero-padded to width digits. When withPrefix is true, "0x" is added at the start of the string.
+ string ToHexString(u_int32_t value, u_int8_t width, bool withPrefix)
  {
      std::stringstream ss;
-     ss << "0x" << std::hex << std::setw(width) << std::setfill('0') << value;
+     if (withPrefix)
+     {
+         ss << "0x";
+     }
+     ss << std::hex << std::setw(width) << std::setfill('0') << value;
      return ss.str();
  }
  
