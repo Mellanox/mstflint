@@ -46,6 +46,7 @@
 #include <limits.h>
 #include <stdarg.h>
 #include <map>
+#include <sstream>
 #include <unordered_map>
 
 bool IsCshComponent(PartitionType partitionType)
