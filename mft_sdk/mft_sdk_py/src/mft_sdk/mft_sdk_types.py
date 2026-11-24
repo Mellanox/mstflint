@@ -338,7 +338,6 @@ class MstDeviceType(IntEnum):
     ConnectX8_Pure_PCIe_Switch = 8
     ConnectX9 = 9
     ConnectX9_Pure_PCIe_Switch = 10
-    ConnectX10 = 11
     BlueField = 12
     BlueField2 = 13
     BlueField3 = 14
@@ -349,18 +348,15 @@ class MstDeviceType(IntEnum):
     Spectrum4 = 19
     Spectrum5 = 20
     Spectrum6 = 21
-    Spectrum7 = 22  # spc7_placeholder_need_to_verify - placeholder
     Quantum2 = 23
     Quantum3 = 24
     NVLink6_Switch = 25
-    NVLink7_Switch = 26
     GB100 = 27
     GR100 = 28
     GR150 = 29
     GR150A01P = 30
     NR10 = 31
     FN100 = 32
-    NVLink8_Switch = 33
     UnknownDeviceType = 34
 
 
