@@ -757,6 +757,7 @@ public:
     void setPlaneIndex(int planeIndex);
     string getTestModeFsmStateStr();
     bool isTestModeFsmStateSupported();
+    string getLinkErrorRecoveryCounterStr();
 
     // Mlxlink params
     UserInput _userInput;
