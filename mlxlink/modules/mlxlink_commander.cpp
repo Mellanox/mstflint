@@ -2575,6 +2575,22 @@ bool MlxlinkCommander::isTestModeFsmStateSupported()
     return isTestModeFsmStateSupported;
 }
 
+string MlxlinkCommander::getLinkErrorRecoveryCounterStr()
+{
+    try
+    {
+        sendPrmReg(ACCESS_REG_PPCNT, GET, "grp=%d", PPCNT_PHYSICAL_LAYER_RECOVERY_COUNTERS);
+
+        return to_string(getFieldValue("total_successful_recovery_events"));
+    }
+    catch (const MlxRegException&)
+    {
+        sendPrmReg(ACCESS_REG_PPCNT, GET, "grp=%d", PPCNT_PHY_GROUP);
+
+        return to_string(getFieldValue("successful_recovery_events"));
+    }
+}
+
 string MlxlinkCommander::getTestModeFsmStateStr()
 {
     if (!isTestModeFsmStateSupported())
@@ -2721,9 +2737,8 @@ void MlxlinkCommander::prepareBerInfo()
         sendPrmReg(ACCESS_REG_PPCNT, GET, "grp=%d", PPCNT_PHY_GROUP);
 
         u_int32_t linkDownCounter = getFieldValue("link_down_events");
-        u_int32_t linkRecoveryCounter = getFieldValue("successful_recovery_events");
         setPrintVal(_berInfoCmd, "Link Down Counter", to_string(linkDownCounter), ANSI_COLOR_RESET, true, _linkUP);
-        setPrintVal(_berInfoCmd, "Link Error Recovery Counter", to_string(linkRecoveryCounter), ANSI_COLOR_RESET, true, _linkUP);
+        setPrintVal(_berInfoCmd, "Link Error Recovery Counter", getLinkErrorRecoveryCounterStr(), ANSI_COLOR_RESET, true, _linkUP);
     }
 
     if (_productTechnology >= PRODUCT_7NM && !dm_is_gpu((dm_dev_id_t)_devID))
@@ -2766,9 +2781,8 @@ void MlxlinkCommander::prepareBerInfoEDR()
         sendPrmReg(ACCESS_REG_PPCNT, GET, "grp=%d", PPCNT_PHY_GROUP);
 
         u_int32_t linkDownCounter = getFieldValue("link_down_events");
-        u_int32_t linkRecoveryCounter = getFieldValue("successful_recovery_events");
         setPrintVal(_berInfoCmd, "Link Down Counter", to_string(linkDownCounter), ANSI_COLOR_RESET, true, _linkUP);
-        setPrintVal(_berInfoCmd, "Link Error Recovery Counter", to_string(linkRecoveryCounter), ANSI_COLOR_RESET, true, _linkUP);
+        setPrintVal(_berInfoCmd, "Link Error Recovery Counter", getLinkErrorRecoveryCounterStr(), ANSI_COLOR_RESET, true, _linkUP);
     }
 }
 
@@ -2803,11 +2817,7 @@ void MlxlinkCommander::showBer()
             sendPrmReg(ACCESS_REG_PPCNT, GET, "grp=%d", PPCNT_IB_PORT_COUNTERS_GROUP);
 
             setPrintVal(_berInfoCmd, "Link Down Counter", getFieldStr("link_downed_counter"), ANSI_COLOR_RESET, true, _linkUP);
-
-            sendPrmReg(ACCESS_REG_PPCNT, GET, "grp=%d", PPCNT_PHY_GROUP);
-
-            u_int32_t linkRecoveryCounter = getFieldValue("successful_recovery_events");
-            setPrintVal(_berInfoCmd, "Link Error Recovery Counter", to_string(linkRecoveryCounter), ANSI_COLOR_RESET, true, _linkUP);
+            setPrintVal(_berInfoCmd, "Link Error Recovery Counter", getLinkErrorRecoveryCounterStr(), ANSI_COLOR_RESET, true, _linkUP);
         }
 
         cout << _berInfoCmd;
