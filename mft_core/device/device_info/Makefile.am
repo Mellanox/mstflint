@@ -52,15 +52,19 @@ libdevice_info_la_LIBADD = \
     $(top_builddir)/mft_core/mft_core_utils/logger/liblogger.la \
     $(top_builddir)/mft_core/mft_core_utils/mft_exceptions/libmftexceptions.la
 
-noinst_PROGRAMS = generate_device_properties
-generate_device_properties_CPPFLAGS = $(JSON_CFLAGS)
-generate_device_properties_SOURCES = generate_device_properties.cpp
-generate_device_properties_LDADD = $(JSON_LIBS)
-generate_device_properties_DEPENDENCIES = $(JSON_LIBS)
+# Do not link the build-machine generator against the host's libjson.la.
+DEVICE_PROPS_GENERATOR_SRCS = \
+    $(srcdir)/generate_device_properties.cpp \
+    $(top_srcdir)/ext_libs/json/json_reader.cpp \
+    $(top_srcdir)/ext_libs/json/json_value.cpp \
+    $(top_srcdir)/ext_libs/json/json_writer.cpp
 
-# Build libjson.la on demand, so `make -C mft_core` works before ext_libs is built.
-$(top_builddir)/ext_libs/json/libjson.la:
-	cd $(top_builddir)/ext_libs/json && $(MAKE) $(AM_MAKEFLAGS) libjson.la
+generate_device_properties$(EXEEXT): $(DEVICE_PROPS_GENERATOR_SRCS) \
+    $(wildcard $(top_srcdir)/ext_libs/json/json/*.h) \
+    $(top_srcdir)/ext_libs/json/json_tool.h $(top_srcdir)/ext_libs/json/json_valueiterator.inl
+	$(AM_V_CXX)$(CXX_FOR_BUILD) -I$(top_srcdir)/ext_libs/json \
+	  $(CPPFLAGS_FOR_BUILD) $(CXXFLAGS_FOR_BUILD) -std=c++11 -o $@ \
+	  $(DEVICE_PROPS_GENERATOR_SRCS) $(LDFLAGS_FOR_BUILD)
 
 DEVICE_PROPS_GENERATOR = generate_device_properties$(EXEEXT)
 DEVICE_PROPS_JSON_DIR = $(srcdir)/json
@@ -70,7 +74,7 @@ DEVICE_PROPS_GEN_PY = $(DEVICE_PROPS_GEN_DIR)/device_properties_data.py
 DEVICE_PROPS_GEN_STAMP = $(DEVICE_PROPS_GEN_DIR)/.device_properties_data.stamp
 
 BUILT_SOURCES = $(DEVICE_PROPS_GEN_H) $(DEVICE_PROPS_GEN_PY)
-CLEANFILES = $(DEVICE_PROPS_GEN_H) $(DEVICE_PROPS_GEN_PY) $(DEVICE_PROPS_GEN_STAMP)
+CLEANFILES = $(DEVICE_PROPS_GEN_H) $(DEVICE_PROPS_GEN_PY) $(DEVICE_PROPS_GEN_STAMP) $(DEVICE_PROPS_GENERATOR)
 
 # A single generator invocation produces both files. Drive it through one
 # stamp target so the recipe runs exactly once even under `make -j`, avoiding
@@ -92,11 +96,12 @@ $(DEVICE_PROPS_GEN_PY): $(DEVICE_PROPS_GEN_H)
 
 $(DEVICE_PROPS_GEN_STAMP): $(DEVICE_PROPS_GENERATOR) $(wildcard $(DEVICE_PROPS_JSON_DIR)/*.json)
 	$(MKDIR_P) $(DEVICE_PROPS_GEN_DIR)
-	@touch $@
 	./$(DEVICE_PROPS_GENERATOR) $(DEVICE_PROPS_JSON_DIR) $(DEVICE_PROPS_GEN_DIR)
+	@touch $@
 	@touch $(DEVICE_PROPS_GEN_H) $(DEVICE_PROPS_GEN_PY)
 
 EXTRA_DIST = \
+    generate_device_properties.cpp \
     device_properties_api.py \
     device_properties_constants.py \
     unit_test/test_device_id_constants.py \
