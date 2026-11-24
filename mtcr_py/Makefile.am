@@ -35,21 +35,9 @@ mtcr_pylibdir = $(libdir)/mstflint/python_tools/
 mtcr_pylib_DATA = cmtcr.so
 dist_mtcr_pylib_DATA = mtcr.py
 
-# With --enable-vfio, libmtcr_ul.a absorbs vfio_driver_access -> libcommon
-# (tools_json.cpp), which references jsoncpp symbols (Json::parseFromStream,
-# Json::Value::asString, ...). cmtcr.so must therefore also link jsoncpp,
-# otherwise it fails to dlopen at runtime with "undefined symbol: _ZN4Json...".
-if ENABLE_VFIO
-if USE_LOCAL_JSON
-CMTCR_JSON_LIBS = $(top_builddir)/ext_libs/json/.libs/libjson.a
-else
-CMTCR_JSON_LIBS = -ljsoncpp
-endif
-else
-CMTCR_JSON_LIBS =
-endif
-
+# cmtcr.so links libmtcr_ul.a directly, so it has to resolve the archive's
+# jsoncpp references itself (see MTCR_JSON_LIBS in configure.ac).
 cmtcr.so:
-	$(CC) -g -Wall -pthread -shared ${CFLAGS} ${LDFLAGS} -o cmtcr.so -Wl,--whole-archive $(top_builddir)/${MTCR_CONF_DIR}/.libs/libmtcr_ul.a -Wl,--no-whole-archive $(CMTCR_JSON_LIBS) $(MST_REMOTE_LINK_LIBS) -lstdc++
+	$(CC) -g -Wall -pthread -shared ${CFLAGS} ${LDFLAGS} -o cmtcr.so -Wl,--whole-archive $(top_builddir)/${MTCR_CONF_DIR}/.libs/libmtcr_ul.a -Wl,--no-whole-archive $(MTCR_JSON_LIBS) $(MST_REMOTE_LINK_LIBS) -lstdc++
 
 CLEANFILES = cmtcr.so

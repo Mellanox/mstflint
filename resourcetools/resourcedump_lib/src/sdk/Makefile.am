@@ -83,6 +83,7 @@ resource_dump_sdk_so_DEPS = \
     $(top_builddir)/dev_mgt/.libs/libdev_mgt.a \
     $(MTCR_LIB) \
     $(OFED_LIBS) \
+    $(MTCR_JSON_LIBS) \
     $(MST_REMOTE_LINK_LIBS) \
     -lstdc++
 
