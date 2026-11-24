@@ -2521,6 +2521,9 @@ def validate_args_for_unsupported_mroq(args):
 ######################################################################
 
 
+NO_RESET_LEVEL_MSG = "No reset level is supported - a full power cycle is required"
+
+
 def reset_flow_host(device, args, command):
     # open reg access obj
     global MstDevObj
@@ -2676,6 +2679,9 @@ def reset_flow_host(device, args, command):
         no_reset_level_supported = not mfrl.is_any_reset_level_supported(mroq.is_any_sync_supported(tool_owner_support))
 
     if command == "query":
+        if no_reset_level_supported:
+            # A reset-type applies only to a reset-level, so with no reset-level none is supported.
+            mfrl.disable_all_reset_levels_and_types()
         if mroq.mroq_is_supported():
             print("The following query is relevant only for reset-type {}:\n".format(reset_type))
             print(mfrl.query_text(mroq.is_any_sync_supported(tool_owner_support), sync_2_only_supported))
@@ -2687,6 +2693,8 @@ def reset_flow_host(device, args, command):
             rp_pio_dpc_block_checker.print_warning()
         if mcam.is_mrsi_supported():
             print(mrsi.query_text(is_bluefield))
+        if no_reset_level_supported:
+            print("-I- {0}.".format(NO_RESET_LEVEL_MSG))
 
     elif command == "status":
         if mroq.mroq_is_supported():
@@ -2701,7 +2709,7 @@ def reset_flow_host(device, args, command):
         if no_reset_level_supported:
             # Nothing to reset is a state of the device, not a failure of the command, so this
             # reports and exits 0 rather than erroring out.
-            raise NoError("No reset level is supported - a full power cycle is required")
+            raise NoError(NO_RESET_LEVEL_MSG)
 
         if mroq.mroq_is_supported():
             is_any_sync_supported = mroq.is_any_sync_supported(tool_owner_support)
