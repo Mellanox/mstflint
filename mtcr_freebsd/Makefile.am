@@ -42,22 +42,22 @@ AM_CPPFLAGS = \
 noinst_LTLIBRARIES = libmtcr_ul.la
 
 libmtcr_ul_la_SOURCES = \
-    $(top_srcdir)/mtcr_ul/mtcr_ib.h \
-    $(top_srcdir)/mtcr_ul/mtcr_ib_res_mgt.c \
-    $(top_srcdir)/mtcr_ul/mtcr_ib_res_mgt.h \
-    $(top_srcdir)/mtcr_ul/mtcr_icmd_cif.h \
-    $(top_srcdir)/mtcr_ul/mtcr_int_defs.h \
-    $(top_srcdir)/mtcr_ul/mtcr_mem_ops.c \
-    $(top_srcdir)/mtcr_ul/mtcr_mem_ops.h \
-    $(top_srcdir)/mtcr_ul/mtcr_ul_icmd_cif.c \
-    $(top_srcdir)/mtcr_ul/packets_common.c \
-    $(top_srcdir)/mtcr_ul/packets_common.h\
-    $(top_srcdir)/mtcr_ul/packets_layout.c \
-    $(top_srcdir)/mtcr_ul/packets_layout.h \
-    $(top_srcdir)/mtcr_ul/mtcr_common.h \
-    $(top_srcdir)/mtcr_ul/mtcr_common.c \
-    $(top_srcdir)/mtcr_ul/mtcr_gpu.c \
-    $(top_srcdir)/mtcr_ul/mtcr_gpu.h \
+    ../mtcr_ul/mtcr_ib.h \
+    ../mtcr_ul/mtcr_ib_res_mgt.c \
+    ../mtcr_ul/mtcr_ib_res_mgt.h \
+    ../mtcr_ul/mtcr_icmd_cif.h \
+    ../mtcr_ul/mtcr_int_defs.h \
+    ../mtcr_ul/mtcr_mem_ops.c \
+    ../mtcr_ul/mtcr_mem_ops.h \
+    ../mtcr_ul/mtcr_ul_icmd_cif.c \
+    ../mtcr_ul/packets_common.c \
+    ../mtcr_ul/packets_common.h\
+    ../mtcr_ul/packets_layout.c \
+    ../mtcr_ul/packets_layout.h \
+    ../mtcr_ul/mtcr_common.h \
+    ../mtcr_ul/mtcr_common.c \
+    ../mtcr_ul/mtcr_gpu.c \
+    ../mtcr_ul/mtcr_gpu.h \
     mtcr_mf.h \
     mtcr_ul.c \
     mtcr_ul_com_defs.h \
@@ -69,7 +69,7 @@ libmtcr_ul_la_CFLAGS = -W -Wall -g -MP -MD -fPIC -DMTCR_API="" -DMST_UL
 # layer of the central NVIDIA Tools logger, so it needs the same dependency
 # the Linux libmtcr_ul has.
 if ENABLE_INBAND
-libmtcr_ul_la_SOURCES += $(top_srcdir)/mtcr_ul/mtcr_ib_ofed.c
+libmtcr_ul_la_SOURCES += ../mtcr_ul/mtcr_ib_ofed.c
 endif
 
 libmtcr_ul_la_DEPENDENCIES = \
