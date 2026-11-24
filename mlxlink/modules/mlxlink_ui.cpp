@@ -335,7 +335,7 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(SET_PLR_FLAG_SHORT, SET_PLR_FLAG, "", "Set PLR Configuration");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PLR_REJECT_MODE_FLAG_SHORT, PLR_REJECT_MODE_FLAG, "reject_mode",
-                                 "PLR Reject Mode: 0(PLR margin)/1(CRC and CS)/2(CS) or Margin/CRC_CS/CS (Optional)");
+                                 "PLR Reject Mode: 0(PLR margin)/1(CRC and CS)/2(CS)/3(CS on demand) or Margin/CRC_CS/CS/CS_ON_DEMAND (Optional)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PLR_MARGIN_THRESHOLD_FLAG_SHORT, PLR_MARGIN_THRESHOLD_FLAG, "margin_th",
                                  "PLR Margin Threshold [0-7] (Optional)");
@@ -1355,7 +1355,7 @@ void MlxlinkUi::initCmdParser()
     AddOptions(PLR_INFO_FLAG, PLR_INFO_FLAG_SHORT, "", "Show PLR Info");
     AddOptions(SET_PLR_FLAG, SET_PLR_FLAG_SHORT, "", "Set PLR configuration");
     AddOptions(PLR_REJECT_MODE_FLAG, PLR_REJECT_MODE_FLAG_SHORT, "PLR_REJECT_MODE",
-               "PLR reject mode (0-2 or Margin/CRC_CS/CS)");
+               "PLR reject mode (0-3 or Margin/CRC_CS/CS/CS_ON_DEMAND)");
     AddOptions(PLR_MARGIN_THRESHOLD_FLAG, PLR_MARGIN_THRESHOLD_FLAG_SHORT, "PLR_MARGIN_TH",
                "PLR margin threshold (0-7)");
     AddOptions(PLR_TX_CRC_FLAG, PLR_TX_CRC_FLAG_SHORT, "PLR_TX_CRC", "TX CRC over PLR (0/1)");

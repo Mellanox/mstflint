@@ -1778,14 +1778,17 @@ void MlxlinkMaps::initPlrRejectModeMapping()
     _plrRejectModeToStr[PLR_REJECT_MODE_PLR_MARGIN] = "rejection based on PLR margin";
     _plrRejectModeToStr[PLR_REJECT_MODE_CRC_AND_CS] = "rejection based on CRC and CS";
     _plrRejectModeToStr[PLR_REJECT_MODE_CS] = "rejection based on CS";
+    _plrRejectModeToStr[PLR_REJECT_MODE_CS_ON_DEMAND] = "rejection based on CS on demand";
 
     _plrRejectModeStrToValue["Margin"] = PLR_REJECT_MODE_PLR_MARGIN;
     _plrRejectModeStrToValue["CRC_CS"] = PLR_REJECT_MODE_CRC_AND_CS;
     _plrRejectModeStrToValue["CS"] = PLR_REJECT_MODE_CS;
+    _plrRejectModeStrToValue["CS_ON_DEMAND"] = PLR_REJECT_MODE_CS_ON_DEMAND;
 
     _plrRejectModeMaskToStr[PLR_REJECT_MODE_SUPPORT_MASK_PLR_MARGIN] = _plrRejectModeToStr[PLR_REJECT_MODE_PLR_MARGIN];
     _plrRejectModeMaskToStr[PLR_REJECT_MODE_SUPPORT_MASK_CRC_AND_CS] = _plrRejectModeToStr[PLR_REJECT_MODE_CRC_AND_CS];
     _plrRejectModeMaskToStr[PLR_REJECT_MODE_SUPPORT_MASK_CS] = _plrRejectModeToStr[PLR_REJECT_MODE_CS];
+    _plrRejectModeMaskToStr[PLR_REJECT_MODE_SUPPORT_MASK_CS_ON_DEMAND] = _plrRejectModeToStr[PLR_REJECT_MODE_CS_ON_DEMAND];
 
     _plrMarginThMaskToStr[PLR_MARGIN_TH_SUPPORT_MASK_0] = "0";
     _plrMarginThMaskToStr[PLR_MARGIN_TH_SUPPORT_MASK_1] = "1";

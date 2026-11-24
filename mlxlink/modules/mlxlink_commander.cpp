@@ -7395,13 +7395,13 @@ void MlxlinkCommander::setPlr()
                 }
                 catch (...)
                 {
-                    throw MlxRegException("Invalid plr_reject_mode value. Valid values are 0-2 or Margin/CRC_CS/CS");
+                    throw MlxRegException("Invalid plr_reject_mode value. Valid values are 0-3 or Margin/CRC_CS/CS/CS_ON_DEMAND");
                 }
             }
 
-            if (rejectMode > 2)
+            if (rejectMode > PLR_REJECT_MODE_CS_ON_DEMAND)
             {
-                throw MlxRegException("Invalid plr_reject_mode value. Valid values are 0-2 or Margin/CRC_CS/CS");
+                throw MlxRegException("Invalid plr_reject_mode value. Valid values are 0-3 or Margin/CRC_CS/CS/CS_ON_DEMAND");
             }
 
             u_int32_t rejectModeSupport = getFieldValue("plr_reject_mode_support");
