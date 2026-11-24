@@ -77,7 +77,7 @@ public:
                   int compare_ffv,
                   bool show_progress,
                   string key,
-                  string certificate,
+                  string caBundlePath,
                   unsigned int numberOfRetrials);
     ~ServerRequest();
     int updateMFAsRequest(vector<string>& psid_list,
@@ -113,7 +113,7 @@ private:
     int _compare_ffv;
     bool _show_progress;
     string _key;
-    string _ceritifcate;
+    string _caBundlePath;
     unsigned int _numberOfRetrials;
 #ifdef USE_CURL
     static CURL* _curl;
