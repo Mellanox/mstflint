@@ -99,7 +99,6 @@ LIST_HEAD(mst_devices);
 #define CONNECTX8_BRIDGE_PCI_ID 6525
 #define CONNECTX9_PCI_ID 4133
 #define CONNECTX9_BRIDGE_PCI_ID 6526
-#define CONNECTX10_PCI_ID 4135
 #define SCHRODINGER_PCI_ID 6518
 #define FREYSA_PCI_ID 6521
 #define BLUEFIELD_PCI_ID 41682
@@ -209,7 +208,6 @@ static struct pci_device_id supported_pci_devices[] = {{PCI_DEVICE(MST_MELLANOX_
                                                        {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, CONNECTX8_BRIDGE_PCI_ID)},
                                                        {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, CONNECTX9_PCI_ID)},
                                                        {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, CONNECTX9_BRIDGE_PCI_ID)},
-                                                       {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, CONNECTX10_PCI_ID)},
                                                        {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, SCHRODINGER_PCI_ID)},
                                                        {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, FREYSA_PCI_ID)},
                                                        {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, CONNECTX8_BRIDGE_PCI_ID)},
