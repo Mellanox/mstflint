@@ -699,12 +699,26 @@ def build_probe(work):
     cmd = ("gcc -O2 -o {out} {src} -I{inc} -L{lib} -l{name} "
            "-Wl,-rpath,{lib}{extra} -Wl,--allow-shlib-undefined").format(
                out=out, src=src, inc=inc, lib=lib, name=sdk_lib, extra=extra_rpath)
+    kind = "lib{}.so".format(sdk_lib)
+    if os.environ.get("MFT_SDK_LINK") == "static":
+        # MFT_SDK_LINK=static (the harness's SDK_LINK=static): link the archive
+        # next to the .so, by path, plus the .pc's Libs.private -- what a C
+        # program driven by gcc and pkg-config --static gets.
+        archive = os.path.join(lib, "libmstflint_sdk.a")
+        if not os.path.isfile(archive):
+            check("B0_probe_build", "FAIL", "MFT_SDK_LINK=static, but there is no " + archive)
+            return None
+        prc, priv = run("{} --static --libs-only-l mstflint_sdk".format(os.environ.get("PKG_CONFIG", "pkg-config")))
+        libs = " ".join(t for t in priv.split() if t != "-lmstflint_sdk") if prc == 0 else ""
+        cmd = "gcc -O2 -o {out} {src} -I{inc} {archive} {libs} -pthread".format(
+            out=out, src=src, inc=inc, archive=archive, libs=libs or "-lexpat -lstdc++ -lm -ldl")
+        kind = "libmstflint_sdk.a (Libs.private: {})".format(libs or "none from pkg-config; fixed list")
     rc, txt = run(cmd)
     if rc != 0 or not os.path.isfile(out):
         check("B0_probe_build", "FAIL", txt.strip()[:200])
         return None
     check("B0_probe_build", "PASS",
-          "against lib{}.so in {} [{}]".format(sdk_lib, lib, sdk_paths_origin))
+          "against {} in {} [{}]".format(kind, lib, sdk_paths_origin))
     return out
 
 

@@ -101,6 +101,15 @@ _TESTS_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_HARNESS = os.path.join(_TESTS_DIR, "build-tests", "mstflint_sdk_cpp_test")
 SDK_SONAME = "libmstflint_sdk.so"
 GTEST_EXCLUSIONS = "-*I2c*:*NullDeviceToAllApis*:*TelemetryJson*:*FreeJsonString*"
+# MFT_SDK_LINK=static: the harness was built with SDK_LINK=static against the
+# DEFAULT package's libmstflint_sdk.a, so it loads no SDK .so and
+# LD_LIBRARY_PATH cannot steer it into a variant. Each variant's own archive is
+# tested by linking the smoke client against it instead.
+SDK_STATIC = os.environ.get("MFT_SDK_LINK") == "static"
+SDK_ARCHIVE = "libmstflint_sdk.a"
+STATIC_HARNESS_SKIP = ("static harness (MFT_SDK_LINK=static): it carries the default package's "
+                       "archive, so it cannot test this variant; compile_smoke/runtime_smoke "
+                       "test the variant's " + SDK_ARCHIVE)
 
 # Every package identity this suite may install or must clean away. The wipe
 # below removes exactly these + the SDK install dirs; it deliberately does NOT
@@ -587,7 +596,7 @@ class PackagingSuite(object):
             os.path.join(c.data_path, "prm_dbs", "hca", "ext",
                          "register_access_table.adb"),
             os.path.join(c.dirs["libdir"], "pkgconfig", "mstflint_sdk.pc"),
-        ]
+        ] + ([os.path.join(c.sdk_libdir, SDK_ARCHIVE)] if SDK_STATIC else [])
         missing = [p for p in expect if not os.path.exists(p)]
         if missing:
             return self._record("install_layout", "FAIL", "missing: " + missing[0])
@@ -622,6 +631,7 @@ class PackagingSuite(object):
                            os.path.join(d["includedir"], "mstflint", "sdk", "mft_sdk"),
                            os.path.join(d["datadir"], "mstflint", "sdk", "prm_dbs"),
                            os.path.join(d["libdir"], "pkgconfig", "mstflint_sdk.pc"))
+               + ((os.path.join(d["libdir"], "mstflint", "sdk", SDK_ARCHIVE),) if SDK_STATIC else ())
                if os.path.exists(p)]
         return self._record("no_default_paths", "PASS" if not bad else "FAIL",
                             ", ".join(bad))
@@ -631,13 +641,15 @@ class PackagingSuite(object):
         c = self.ctx
         so = os.path.join(c.sdk_libdir, "libmstflint_sdk.so")
         want = (c.data_path + "/").encode()
-        try:
-            with open(so, "rb") as f:
-                found = want in f.read()
-        except IOError as e:
-            return self._record("data_path_consistency", "FAIL", str(e))
+        found = True
+        for lib in [so] + ([os.path.join(c.sdk_libdir, SDK_ARCHIVE)] if SDK_STATIC else []):
+            try:
+                with open(lib, "rb") as f:
+                    found = found and want in f.read()
+            except IOError as e:
+                return self._record("data_path_consistency", "FAIL", str(e))
         return self._record("data_path_consistency", "PASS" if found else "FAIL",
-                            c.data_path)
+                            c.data_path + (" (.so and .a)" if SDK_STATIC else ""))
 
     def compile_smoke(self):
         c = self.ctx
@@ -646,11 +658,29 @@ class PackagingSuite(object):
         cmd = ("gcc -O2 -o {out} {src} -I{inc} -L{lib} -lmstflint_sdk "
                "-Wl,-rpath,{lib} -Wl,--allow-shlib-undefined").format(
             out=self.smoke_bin, src=src, inc=c.sdk_incdir, lib=c.sdk_libdir)
+        if SDK_STATIC:
+            # The variant's archive by path plus the Libs.private line of the
+            # variant's own .pc, read directly (no pkg-config binary needed).
+            pc = os.path.join(c.dirs["libdir"], "pkgconfig", "mstflint_sdk.pc")
+            libs = ""
+            try:
+                for line in open(pc).read().splitlines():
+                    if line.startswith("Libs.private:"):
+                        libs = line.split(":", 1)[1].strip()
+            except IOError as e:
+                return self._record("compile_smoke", "FAIL", "cannot read {}: {}".format(pc, e))
+            if not libs:
+                return self._record("compile_smoke", "FAIL",
+                                    "{} has no Libs.private: a static consumer cannot link".format(pc))
+            cmd = "gcc -O2 -o {out} {src} -I{inc} {lib}/{ar} {libs} -pthread".format(
+                out=self.smoke_bin, src=src, inc=c.sdk_incdir, lib=c.sdk_libdir,
+                ar=SDK_ARCHIVE, libs=libs)
         rc, out = _run(cmd, "compile smoke client", self.verbose)
         if rc != 0:
             return self._record("compile_smoke", "FAIL",
                                 out.strip().splitlines()[-1][:120])
-        return self._record("compile_smoke", "PASS")
+        return self._record("compile_smoke", "PASS",
+                            "against the variant's {}".format(SDK_ARCHIVE) if SDK_STATIC else "")
 
     def runtime_smoke(self):
         if not self.device:
@@ -678,6 +708,8 @@ class PackagingSuite(object):
 
     def harness_gtest(self):
         c = self.ctx
+        if SDK_STATIC:
+            return self._record("harness_discovery", "SKIP", STATIC_HARNESS_SKIP)
         if not os.path.exists(self.harness):
             return self._record("harness_discovery", "FAIL",
                                 self.harness + " missing — run: "
@@ -724,6 +756,8 @@ class PackagingSuite(object):
         """
         if self.sdk_only:
             return self._record("cli_compare", "SKIP", "--sdk-only mode")
+        if SDK_STATIC:
+            return self._record("cli_compare", "SKIP", STATIC_HARNESS_SKIP)
         if not self.device:
             return self._record("cli_compare", "SKIP", "no device")
         reg_tool = MFT_SDK_REG_TOOL

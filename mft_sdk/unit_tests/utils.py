@@ -403,6 +403,9 @@ def _parse_nm_mst_symbols(output, keywords=None, exclude=None):
     for line in output.split('\n'):
         parts = line.strip().split()
         for part in parts:
+            # GCC's local clones (.cold, .part.N, .isra.N, .constprop.N) of a
+            # function linked into the binary (static SDK) name the function itself.
+            part = part.split('.', 1)[0]
             if part.startswith('mst') and len(part) > 3 and part[3].isupper():
                 if part not in exclude:
                     if keywords is None or any(kw in part for kw in keywords):

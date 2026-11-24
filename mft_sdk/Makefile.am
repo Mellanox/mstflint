@@ -140,6 +140,21 @@ libmstflint_sdk_la_LIBADD = \
     $(expat_LIBS) \
     $(LDL)
 
+# Static libmstflint_sdk.a next to the .so: the same inputs pre-linked into one
+# object in which only the API in libmstflint_sdk.map stays global (groups
+# allocated, GNU_UNIQUE renamed, all else local); constructors run first.
+sdklib_DATA = libmstflint_sdk.a
+CLEANFILES = libmstflint_sdk.a
+libmstflint_sdk.a: libmstflint_sdk.la
+	$(LD) -r --force-group-allocation -o $@.o $(addprefix .libs/,$(libmstflint_sdk_la_OBJECTS:.lo=.o)) --start-group \
+	    $(foreach l,$(filter %.la %.a,$(libmstflint_sdk_la_LIBADD)),$(if $(filter %.la,$(l)),$(dir $(l)).libs/$(notdir $(l:.la=.a)),$(l))) --end-group
+	$(OBJCOPY) --strip-debug -R '.gnu.lto_*' -R '.gnu.debuglto_*' $@.o
+	$(NM) $@.o | awk '$$2 == "u" {print $$3, "__mstflint_sdk_" $$3}' > $@.ren
+	sed -n 's/^ *\([A-Za-z_][A-Za-z0-9_]*\);.*/\1/p' $(srcdir)/libmstflint_sdk.map > $@.api
+	$(NM) -g --defined-only $@.o | grep -qwFf $@.api || { echo "$@: no API function in it (slim-LTO objects? build with -ffat-lto-objects)" >&2; exit 1; }
+	$(OBJCOPY) --redefine-syms=$@.ren --keep-global-symbols=$@.api --rename-section .init_array=.init_array.65500 $@.o
+	rm -f $@ && $(AR) rcsD $@ $@.o && rm -f $@.o $@.ren $@.api
+
 # Public SDK headers. Kept under the mstflint include tree (to avoid clashing
 # with an MFT-provided $(includedir)/mft_sdk), but inside an mft_sdk/ subdir so
 # consumers use `#include <mft_sdk/...>` (with -I$(includedir)/mstflint/sdk) --
