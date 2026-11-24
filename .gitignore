@@ -44,6 +44,7 @@ libtool
 /mlxtokengenerator/msttokengenerator
 /mst_utils/mstdevices_info
 /mstdump/crd_main/mstregdump
+/mstdump/crd_main/mstregdump-bin
 /mstflint.spec
 /mstflint-sdk.spec
 /resourcetools/mstresourcedump

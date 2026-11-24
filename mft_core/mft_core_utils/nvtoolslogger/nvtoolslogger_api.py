@@ -66,6 +66,7 @@ class Layer(IntEnum):
     CABLE_ACCESS = 14
     CABLE_CDB = 15
     MLXFWMANAGER = 16
+    MSTDUMP = 17
 
 
 _LIB_NAME = "libnvtoolslogger.so"

@@ -30,7 +30,6 @@
 
 # from tools_external_libs import get_external_libs_dir
 
-import sys
 import ctypes
 import platform
 import subprocess
@@ -106,8 +105,7 @@ class CResourceDump:
             CDLL(Path(".") / "{}.{}".format(mtcr_lib_basename, so_suffix), Path("..") / "{}.{}".format(mtcr_lib_basename, so_suffix), ctypes.RTLD_GLOBAL)
             c_resource_dump_sdk = CDLL(Path(".") / "{}.{}".format(rd_sdk_lib_basename, so_suffix), Path("..") / "{}.{}".format(rd_sdk_lib_basename, so_suffix), ctypes.RTLD_GLOBAL)
     except OSError as ose:
-        print("Error: Failed loading shared-library - {0}. Exiting...".format(ose))
-        sys.exit(1)
+        raise Exception("Failed loading shared-library - {0}".format(ose))
 
     _c_create_resource_dump = c_resource_dump_sdk.create_resource_dump
     _c_create_resource_dump.restype = ctypes.c_uint16

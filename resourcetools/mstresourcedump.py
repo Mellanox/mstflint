@@ -37,7 +37,11 @@ if sys.version_info[0] < 3:
     print("Error: This tool supports python 3.x only. Exiting...")
     exit(1)
 
-from resourcedump_lib.commands.CommandFactory import CommandFactory
+try:
+    from resourcedump_lib.commands.CommandFactory import CommandFactory
+except Exception as e:
+    print("Error: {0}. Exiting...".format(e))
+    sys.exit(1)
 from resourcedump_lib.utils import constants as cs
 from mstresourceparse import ResourceParse
 from resourceparse_lib.parsers.RawParser import RawParser
