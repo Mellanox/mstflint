@@ -84,7 +84,7 @@
 #define BF_HW_ID 529
 #define BF2_HW_ID 532
 #define BF3_HW_ID 540
-#define BF4_HW_ID 544
+#define BF4_HW_ID 548
 
 #define INBAND_MAX_REG_SIZE 44
 #define MCDA_REG_HEADER 16
