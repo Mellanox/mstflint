@@ -221,7 +221,11 @@ class CmdRegMfrl():
 
         result += "\nReset-types "
         result += "(relevant only for reset-levels {0}):\n".format(','.join(relevant_levels))
-        default_reset_type = self.default_reset_type()
+        try:
+            default_reset_type = self.default_reset_type()
+        except CmdNotSupported:
+            # Every reset-type is disabled (no reset-level is supported), so there is no default to mark.
+            default_reset_type = None
         for reset_type_ii in self._reset_types:
             type_ = reset_type_ii['type']
             description = reset_type_ii['description']
@@ -367,6 +371,12 @@ class CmdRegMfrl():
                 if reset_level_ii['supported']:
                     self.logger.debug("Disabled reset level {0}".format(reset_level_ii['level']))
                 reset_level_ii['supported'] = False
+
+    def disable_all_reset_levels_and_types(self):
+        for reset_level_ii in self._reset_levels:
+            reset_level_ii['supported'] = False
+        for reset_type_ii in self._reset_types:
+            reset_type_ii['supported'] = False
 
     def get_reset_state(self):
         """

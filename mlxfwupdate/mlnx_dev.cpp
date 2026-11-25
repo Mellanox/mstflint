@@ -989,10 +989,7 @@ int MlnxDev::queryFwops()
         {
             _uniqueId += "_" + systemGuid;
         }
-        if (!nodeGuid.empty())
-        {
-            _uniqueId += "_" + nodeGuid;
-        }
+        _uniqueId += "_" + to_string(fw_query.fs3_info.geo_address);
     }
     else
     {
