@@ -480,8 +480,7 @@ extern "C"
         for (eDeviceID dev_id : devices)
         {
             // TODO - when FN100 will be ready: ommit it from the if.
-            // TODO - when NVLink8_Switch will be ready: ommit it from the if.
-            if ((is_switch((uint32_t)dev_id) || is_gpu((uint32_t)dev_id)) && dev_id != FN100 && dev_id != NVLink8_Switch)
+            if ((is_switch((uint32_t)dev_id) || is_gpu((uint32_t)dev_id)) && dev_id != FN100)
             {
                 printf("%s\n", get_property_as_cstring((uint32_t)dev_id, PROP_DEVICE_NAME));
             }
