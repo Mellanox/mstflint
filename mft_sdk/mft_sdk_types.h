@@ -97,6 +97,7 @@ extern "C"
      */
     typedef enum MstDeviceType
     {
+        /* Values are ABI. */
         ConnectX4,
         ConnectX4LX,
         ConnectX5,
@@ -108,8 +109,7 @@ extern "C"
         ConnectX8_Pure_PCIe_Switch,
         ConnectX9,
         ConnectX9_Pure_PCIe_Switch,
-        ConnectX10,
-        BlueField,
+        BlueField = 12,
         BlueField2,
         BlueField3,
         BlueField4,
@@ -119,20 +119,16 @@ extern "C"
         Spectrum4,
         Spectrum5,
         Spectrum6,
-
-        Spectrum7,
-        Quantum2,
+        Quantum2 = 23,
         Quantum3,
         NVLink6_Switch,
-        NVLink7_Switch,
-        GB100,
+        GB100 = 27,
         GR100,
         GR150,
         GR150A01P,
         NR10,
         FN100,
-        NVLink8_Switch,
-        UnknownDeviceType
+        UnknownDeviceType = 34
     } MstDeviceType;
 
     /**

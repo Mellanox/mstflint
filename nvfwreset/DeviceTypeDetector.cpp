@@ -46,7 +46,7 @@
 #include "mtcr.h"
 #include "mtcr_ul/mtcr_icmd_cif.h"
 
-const std::vector<std::uint32_t> socketDirectSupportedDevID = {0x226, 0x224, 0x21e, 0x218, 0x216, 0x212, 0x20f,
+const std::vector<std::uint32_t> socketDirectSupportedDevID = {0x224, 0x21e, 0x218, 0x216, 0x212, 0x20f,
                                                                0x20d, 0x209, 0x20b, 0x21c, 0x222, 0x223};
 
 bool DeviceTypeDetector::IsPCIESwitchDevice(const mfile* mf)
