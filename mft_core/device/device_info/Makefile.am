@@ -101,7 +101,8 @@ EXTRA_DIST = \
     device_properties_constants.py \
     unit_test/test_device_id_constants.py \
     unit_test/test_device_properties_constants.py \
-    unit_test/test_device_properties_api.py
+    unit_test/test_device_properties_api.py \
+    unit_test/test_device_tool_keys.py
 
 # 'make dist' bundles the per-device JSON files without enumerating them here
 # (the whole point of option 7 is that the JSON list lives only on disk).
@@ -114,7 +115,8 @@ dist-hook:
 TESTS = \
     unit_test/test_device_id_constants.py \
     unit_test/test_device_properties_constants.py \
-    unit_test/test_device_properties_api.py
+    unit_test/test_device_properties_api.py \
+    unit_test/test_device_tool_keys.py
 
 TEST_EXTENSIONS = .py
 PY_LOG_COMPILER = $(PYTHON)

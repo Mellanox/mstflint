@@ -32,6 +32,7 @@
 #include "fs5_ops.h"
 #include "nvtoolslogger/NvToolsLogger.h"
 #include "calc_hw_crc.h"
+#include "mft_core/device/device_info/device_properties_api.h"
 #include "fs5_image_layout_layouts.h"
 #include <algorithm>
 #include "common/tools_endianness.h"
@@ -587,34 +588,18 @@ bool Fs5Operations::CheckAndDealWithChunkSizes(u_int32_t cntxLog2ChunkSize, u_in
 
 bool Fs5Operations::GetLivefishIndicationAddr(uint32_t& lfIndicationAddr)
 {
-    switch (_fwImgInfo.supportedHwId[0])
+    const uint32_t hwDevId = _fwImgInfo.supportedHwId[0];
+    if (!device_props_has_property(hwDevId, PROP_LIVEFISH_INDICATION_ADDRESS))
     {
-        case DeviceConnectX8_HwId:
-        case DeviceConnectX9_HwId:
-        case DeviceConnectX8_Pure_PCIe_Switch_HwId:
-        case DeviceConnectX9_Pure_PCIe_Switch_HwId:
-            lfIndicationAddr = 0xf813c;
-            break;
-
-        case DeviceQuantum3_HwId:
-        case DeviceNVLink6_Switch_HwId:
-            lfIndicationAddr = 0xfc13c;
-            break;
-
-        case DeviceSpectrum6_HwId:
-            lfIndicationAddr = 0xfb058;
-            break;
-
-        default:
-            return false;
+        return false;
     }
-
+    lfIndicationAddr = get_property_as_uint(hwDevId, PROP_LIVEFISH_INDICATION_ADDRESS);
     return true;
 }
 
 bool Fs5Operations::ClearLivefishfIndication(Flash* flashAccess)
 {
-    // Clear LF indication by writing zero to CR space address (4th gen: 0xf813c, 0xfc13c)
+    // Clear LF indication by writing zero to the device's livefish indication CR space address
     // This tells the firmware that the device is no longer in LF
     // and enables broader support like mlxfwreset without requiring power cycle
     MLXFWOPS_LOG_DEBUG("Fs5Operations::ClearLivefishfIndication");

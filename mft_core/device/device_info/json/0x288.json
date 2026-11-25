@@ -6,7 +6,10 @@
             "fw_name": "Arcus2",
             "device_type": "Retimer",
             "fw_major": 67,
-            "vendor": "Mellanox"
+            "image_layout_format": "fs5",
+            "fw_image_format": "fs5",
+            "vendor": "Mellanox",
+            "free_running_counter_address": 1341696
         },
         "linkx_info": {
             "i2c_secondary": 72,

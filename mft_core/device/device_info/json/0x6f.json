@@ -3,6 +3,7 @@
         "general_info": {
             "device_name": "Menhit",
             "device_type": "LinkX",
+            "fw_image_format": "fs4",
             "vendor": "Mellanox"
         },
         "linkx_info": {

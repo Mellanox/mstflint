@@ -17,7 +17,8 @@
       "supports_ib": true,
       "ports_num": 4,
       "series": "ConnectX",
-      "series_index": 11
+      "series_index": 11,
+      "free_running_counter_address": 352256
     },
     "dump_tools_info": {
       "number_of_clusters": 1,
@@ -87,7 +88,8 @@
       "static_cfg_not_done_offset": 31,
       "version_bit_offset": 28,
       "version_bitlen": 4,
-      "version_address": 27262976
+      "version_address": 27262976,
+      "livefish_indication_address": 1016124
     }
   }
 }

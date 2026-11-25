@@ -7,6 +7,7 @@
       "device_type": "NIC",
       "fw_major": 28,
       "image_layout_format": "fs4",
+      "fw_image_format": "fs4",
       "pci_device_id_list": [
         4129
       ],
@@ -17,7 +18,8 @@
       "supports_ib": true,
       "ports_num": 4,
       "series": "ConnectX",
-      "series_index": 9
+      "series_index": 9,
+      "free_running_counter_address": 931872
     },
     "dump_tools_info": {
       "number_of_clusters": 1,

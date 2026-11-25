@@ -48,6 +48,12 @@ int is_four_byte_address_needed(mflash* mfl, MfError* status)
 {
     *status = MFE_OK;
 
+    // Every device with a 6th or 7th generation flash uses 4-byte addresses.
+    if (get_flash_gen(mfl) != LEGACY_FLASH)
+    {
+        return 1;
+    }
+
     switch (mfl->dm_dev_id)
     {
         case DeviceSpectrum:
@@ -58,25 +64,11 @@ int is_four_byte_address_needed(mflash* mfl, MfError* status)
         case DeviceSecureHost:
             return 0;
         case DeviceConnectX6:
-        case DeviceConnectX7:
-        case DeviceConnectX8:
-        case DeviceConnectX9:
-        case DeviceConnectX8_Pure_PCIe_Switch:
-        case DeviceConnectX9_Pure_PCIe_Switch:
         case DeviceConnectX6DX:
         case DeviceConnectX6LX:
+        case DeviceBlueField2:
         case DeviceSpectrum2:
         case DeviceSpectrum3:
-        case DeviceQuantum2:
-        case DeviceQuantum3:
-        case DeviceNVLink6_Switch:
-        case DeviceArcusE:
-        case DeviceSpectrum4:
-        case DeviceSpectrum5:
-        case DeviceSpectrum6:
-        case DeviceBlueField2:
-        case DeviceBlueField3:
-        case DeviceBlueField4:
             return 1;
         default:
             *status = MFE_UNSUPPORTED_DEVICE;
@@ -108,6 +100,12 @@ int is_icmdif_supported(mflash* mfl, MfError* status)
 {
     *status = MFE_OK;
 
+    // Every device with a 6th or 7th generation flash supports ICMD.
+    if (get_flash_gen(mfl) != LEGACY_FLASH)
+    {
+        return 1;
+    }
+
     switch (mfl->dm_dev_id)
     {
         case DeviceSecureHost:
@@ -123,19 +121,6 @@ int is_icmdif_supported(mflash* mfl, MfError* status)
         case DeviceConnectX6:
         case DeviceConnectX6DX:
         case DeviceConnectX6LX:
-            return 1;
-        case DeviceQuantum2:
-        case DeviceQuantum3:
-        case DeviceNVLink6_Switch:
-        case DeviceArcusE:
-        case DeviceSpectrum4:
-        case DeviceSpectrum5:
-        case DeviceSpectrum6:
-        case DeviceConnectX7:
-        case DeviceConnectX8:
-        case DeviceConnectX9:
-        case DeviceBlueField3:
-        case DeviceBlueField4:
             return 1;
         default:
             *status = MFE_UNSUPPORTED_DEVICE;

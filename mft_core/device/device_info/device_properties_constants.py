@@ -53,6 +53,10 @@ PROP_MODULE_NUM = "module_num"
 PROP_GENERATION = "generation"
 PROP_PCI_DEVICE_ID_LIST = "pci_device_id_list"
 PROP_IMAGE_LAYOUT_FORMAT = "image_layout_format"
+PROP_SMGW_ADDRESS = "smgw_address"
+PROP_FREE_RUNNING_COUNTER_ADDRESS = "free_running_counter_address"
+PROP_FW_IMAGE_FORMAT = "fw_image_format"
+PROP_FW_IMAGE_SECTION_ADDR_MSB = "fw_image_section_addr_msb"
 PROP_FW_MAJOR = "fw_major"
 PROP_SUPPORTS_ETH = "supports_eth"
 PROP_SUPPORTS_IB = "supports_ib"
@@ -130,6 +134,7 @@ PROP_STATIC_CFG_NOT_DONE_OFFSET = "static_cfg_not_done_offset"
 PROP_VERSION_BIT_OFFSET = "version_bit_offset"
 PROP_VERSION_BITLEN = "version_bitlen"
 PROP_VERSION_ADDRESS = "version_address"
+PROP_LIVEFISH_INDICATION_ADDRESS = "livefish_indication_address"
 
 # Property value constants -- device_type field values
 DEVICE_TYPE_NIC = "NIC"
@@ -146,6 +151,13 @@ IMAGE_LAYOUT_FS3 = "fs3"
 IMAGE_LAYOUT_FS4 = "fs4"
 IMAGE_LAYOUT_FS5 = "fs5"
 IMAGE_LAYOUT_FS6 = "fs6"
+
+# Property value constants -- fw_image_format field values
+FW_IMAGE_FORMAT_CONNECTIB = "connectib"
+FW_IMAGE_FORMAT_FS4 = "fs4"
+FW_IMAGE_FORMAT_FS4_GPU = "fs4_gpu"
+FW_IMAGE_FORMAT_FS5 = "fs5"
+FW_IMAGE_FORMAT_FS6 = "fs6"
 
 # Property value constants -- vendor field values
 VENDOR_MELLANOX = "Mellanox"

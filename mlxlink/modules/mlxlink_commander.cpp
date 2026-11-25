@@ -939,7 +939,9 @@ void MlxlinkCommander::updateNvlinkModeBStatus()
 
 bool MlxlinkCommander::deviceSupportsBonusPort() const
 {
-    return _devID == DeviceSpectrum4 || _devID == DeviceSpectrum5 || _devID == DeviceSpectrum6;
+    // The bonus port follows the Ethernet switch family from Spectrum-4 on.
+    return dm_dev_is_eth_switch(_devID) && _devID != DeviceSpectrum && _devID != DeviceSpectrum2 &&
+           _devID != DeviceSpectrum3;
 }
 
 bool MlxlinkCommander::probeLocalPortForBonusPort(u_int32_t localPort, u_int32_t& labelPort)
@@ -5544,7 +5546,7 @@ void MlxlinkCommander::collectAMBER(AmberOutput output)
                     // Paths that don't record the selected port keep the port exactly as it was requested.
                     PortGroup pg{_localPort, _userInput._labelPort, 0,
                                  _userInput._splitProvided ? _userInput._splitPort : 0};
-                    if (_devID == DeviceQuantum2 || _devID == DeviceQuantum3 || _devID == DeviceNVLink6_Switch || dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
+                    if (dm_dev_is_ib_switch(_devID) || dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
                     {
                         pg.secondSplit = _userInput._secondSplitProvided ? _userInput._secondSplitPort : 0;
                     }

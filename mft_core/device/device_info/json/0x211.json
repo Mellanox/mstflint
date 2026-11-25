@@ -7,6 +7,7 @@
       "device_type": "NIC",
       "fw_major": 18,
       "image_layout_format": "fs4",
+      "fw_image_format": "fs4",
       "pci_device_id_list": [
         41680,
         41681,
@@ -19,7 +20,8 @@
       "supports_ib": true,
       "ports_num": 2,
       "series": "BlueField",
-      "series_index": 0
+      "series_index": 0,
+      "free_running_counter_address": 932384
     },
     "dump_tools_info": {
       "number_of_clusters": 1,
