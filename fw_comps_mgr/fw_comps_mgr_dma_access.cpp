@@ -197,6 +197,8 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle,
                                          ProgressCallBackAdvSt* progressFuncAdv)
 {
     _stoppedByCaller = false;
+    _lastFwError = FWCOMPS_SUCCESS;
+    _lastRegisterAccessStatus = ME_REG_ACCESS_OK;
 #ifndef UEFI_BUILD
     try
     {
@@ -386,6 +388,7 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle,
     catch (std::exception& e)
     {
         MLXFWOPS_LOG_ERROR("Exception occurred %s", e.what());
+        setLastError(FWCOMPS_GENERAL_ERR);
         return false;
     }
 #endif

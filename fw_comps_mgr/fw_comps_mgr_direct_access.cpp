@@ -63,6 +63,8 @@ bool DirectComponentAccess::accessComponent(u_int32_t updateHandle,
                                             ProgressCallBackAdvSt* progressFuncAdv)
 {
     _stoppedByCaller = false;
+    _lastFwError = FWCOMPS_SUCCESS;
+    _lastRegisterAccessStatus = ME_REG_ACCESS_OK;
     int leftSize = (int)size;
     u_int32_t i = 0;
     mcdaReg accessData;
