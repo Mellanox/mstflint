@@ -2332,6 +2332,8 @@ bool FwOperations::ReadBinFile(const char* fimage, u_int8_t*& file_data, int& fi
     if (fread(file_data, 1, read_file_size, fh) != (size_t)read_file_size)
     {
         delete[] file_data;
+        file_data = nullptr;
+        file_size = 0;
         fclose(fh);
         return errmsg("Failed to read from %s: %s\n", fimage, strerror(errno));
     }
