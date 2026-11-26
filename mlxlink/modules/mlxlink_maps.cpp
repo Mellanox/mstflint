@@ -622,9 +622,6 @@ void MlxlinkMaps::initPrbsMapping()
     _prbsLaneRateList[14] = "164G";
     _prbsLaneRateList[15] = "189G";
     _prbsLaneRateList[16] = "172.5G";
-    _prbsLaneRateList[17] = "187G";
-    _prbsLaneRateList[18] = "176G";
-    _prbsLaneRateList[19] = "169G";
 
     // 1G
     _prbsLaneRate["1G"] = {LANE_RATE_1G_CAP, PRBS_1G, 0, PRBS_MODULATION_NRZ};
@@ -695,14 +692,6 @@ void MlxlinkMaps::initPrbsMapping()
     _prbsLaneRate["345G_2X_MODE_B"] = {0, PRBS_345G_2X_MODE_B, LANE_RATE_345G_2X_MODE_B_CAP_EXT,
                                        PRBS_MODULATION_PAM4_PRECODING};
 
-    // NVL7
-    _prbsLaneRate["187G_1X_MODE_A"] = {0, PRBS_187G_1X_MODE_A, LANE_RATE_187G_1X_MODE_A_CAP_EXT,
-                                       PRBS_MODULATION_PAM4_ENCODING};
-    _prbsLaneRate["176G_1X_MODE_A"] = {0, PRBS_176G_1X_MODE_A, LANE_RATE_176G_1X_MODE_A_CAP_EXT,
-                                       PRBS_MODULATION_PAM4_ENCODING};
-    _prbsLaneRate["169G_1X_MODE_A"] = {0, PRBS_169G_1X_MODE_A, LANE_RATE_169G_1X_MODE_A_CAP_EXT,
-                                       PRBS_MODULATION_PAM4_ENCODING};
-
     _prbsRxTuningStatus[0] = "PRBS mode tuning was not performed.";
     _prbsRxTuningStatus[1] = "Performing PRBS mode tuning.";
     _prbsRxTuningStatus[2] = "PRBS mode tuning completed.";
@@ -728,10 +717,6 @@ void MlxlinkMaps::initPrbsMapping()
       _prbsLaneRateCap[LANE_RATE_378G_2X_MODE_B_CAP] = "NVL6/378G_2x_mode_b (94.5 Gbd/189 Gb/s)";
 
       _prbsLaneRateCapExt[LANE_RATE_345G_2X_MODE_B_CAP_EXT] = "NVL6/345G_2x_mode_b (86.25 Gbd/172.5 Gb/s)";
-      _prbsLaneRateCapExt[LANE_RATE_187G_1X_MODE_A_CAP_EXT] = "NVL7/187G_1x_mode_a (93.5 Gbd/187 Gb/s)";
-      _prbsLaneRateCapExt[LANE_RATE_176G_1X_MODE_A_CAP_EXT] = "NVL7/176G_1x_mode_a (88 Gbd/176 Gb/s)";
-      _prbsLaneRateCapExt[LANE_RATE_169G_1X_MODE_A_CAP_EXT] = "NVL7/169G_1x_mode_a (84.5 Gbd/169 Gb/s)";
-
     _prbsLockStatus[0] = "Not locked";
     _prbsLockStatus[1] = "Locked";
 

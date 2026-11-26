@@ -127,15 +127,11 @@ MLNX_DEVICES = [
     dict(name="ConnectX9-RMA", devid=0x225, status_config_not_done=(0xa0304, 31)),
     dict(name="ConnectX9-Pure-PCIe-Switch", devid=0x228, status_config_not_done=(0xa0304, 31)),
     dict(name="ConnectX9-Pure-PCIe-Switch-RMA", devid=0x229, status_config_not_done=(0xa0304, 31)),
-    dict(name="ConnectX10", devid=0x226, status_config_not_done=(0xb5f04, 31)),
-    dict(name="ConnectX10-RMA", devid=0x227, status_config_not_done=(0xb5f04, 31)),
     dict(name="Quantum-2", devid=0x257, status_config_not_done=(0x100010, 0)),
     dict(name="Quantum-3", devid=0x25b, status_config_not_done=(0x200010, 0)),
     dict(name="Quantum-3-RMA", devid=0x25c, status_config_not_done=(0x200010, 0)),
     dict(name="NVLink6_Switch", devid=0x278, status_config_not_done=(0x200010, 0)),
     dict(name="NVLink6_Switch-RMA", devid=0x279, status_config_not_done=(0x200010, 0)),
-    dict(name="NVLink7_Switch", devid=0x27c, status_config_not_done=(0x200010, 0)),
-    dict(name="NVLink8_Switch", devid=0x2a0, status_config_not_done=(0x200010, 0)),
     dict(name="Spectrum", devid=0x249, status_config_not_done=(0x80010, 0)),
     dict(name="Spectrum-2", devid=0x24E, status_config_not_done=(0x100010, 0)),
     dict(name="Spectrum-3", devid=0x250, status_config_not_done=(0x100010, 0)),
@@ -144,9 +140,6 @@ MLNX_DEVICES = [
     dict(name="Spectrum-5-RMA", devid=0x271, status_config_not_done=(0x100010, 0)),
     dict(name="Spectrum-6", devid=0x274, status_config_not_done=(0x110010, 0)),
     dict(name="Spectrum-6-RMA", devid=0x275, status_config_not_done=(0x110010, 0)),
-    dict(name="Spectrum-7", devid=0x2a2, status_config_not_done=(0x400010, 0)),
-    dict(name="Spectrum-7-RMA", devid=0x2a3, status_config_not_done=(0x400010, 0)),
-
 ]
 
 BLUEFIELD4_PCI_DEVICE_ID = [0xA2DF]
@@ -154,7 +147,7 @@ BLUEFIELD4_PCI_DEVICE_ID = [0xA2DF]
 # Supported devices.
 SUPP_DEVICES = ["ConnectX4", "ConnectX4LX", "ConnectX5", "BlueField",
                 "ConnectX6", "ConnectX6DX", "ConnectX6LX", "BlueField2", "ConnectX7", "BlueField3", "ConnectX8", "ConnectX8-RMA", "BlueField4",
-                "ConnectX9", "ConnectX9-RMA", "ConnectX10", "ConnectX10-RMA", "ConnectX8-Pure-PCIe-Switch", "ConnectX8-Pure-PCIe-Switch-RMA", "ConnectX9-Pure-PCIe-Switch", "ConnectX9-Pure-PCIe-Switch-RMA"]
+                "ConnectX9", "ConnectX9-RMA", "ConnectX8-Pure-PCIe-Switch", "ConnectX8-Pure-PCIe-Switch-RMA", "ConnectX9-Pure-PCIe-Switch", "ConnectX9-Pure-PCIe-Switch-RMA"]
 SUPP_SWITCH_DEVICES = ["Spectrum", "Spectrum-2", "Spectrum-3", "Quantum-2"]
 SUPP_OS = ["FreeBSD", "Linux", "Windows"]
 UNSUPPORTED_PSIDS_PER_DEV_ID = {
@@ -162,7 +155,7 @@ UNSUPPORTED_PSIDS_PER_DEV_ID = {
 }
 
 BLUEFIELD_DEVICES = ['BlueField2', 'BlueField3', 'BlueField4']
-PCIE_SWITCH_DEVICES_ALL = BLUEFIELD_DEVICES + ['ConnectX7', 'ConnectX8', 'ConnectX9', 'ConnectX10', 'ConnectX8-Pure-PCIe-Switch', 'ConnectX9-Pure-PCIe-Switch']
+PCIE_SWITCH_DEVICES_ALL = BLUEFIELD_DEVICES + ['ConnectX7', 'ConnectX8', 'ConnectX9', 'ConnectX8-Pure-PCIe-Switch', 'ConnectX9-Pure-PCIe-Switch']
 
 IS_MSTFLINT = os.path.basename(__file__) == "mstfwreset.py"
 # TODO later remove mcra to the new class
