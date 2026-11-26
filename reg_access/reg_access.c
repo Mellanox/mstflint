@@ -68,19 +68,12 @@
 #define REG_ID_MGNLE         0x9036
 #define REG_ID_MPQD          0x9700
 #define REG_ID_MLCOK         0x402D
-#define REG_ID_RITR          0x8002
-#define REG_ID_RICNT         0x800b
 #define REG_ID_PPCNT         0x5008
-#define REG_ID_SBPR          0xb001
-#define REG_ID_SBCM          0xb002
-#define REG_ID_SBPM          0xb003
-#define REG_ID_SBMM          0xb004
 
 #define REG_ID_MTRC_CAP  0x9040
 #define REG_ID_MTRC_CONF 0x9041
 #define REG_ID_MTRC_STDB 0x9042
 #define REG_ID_MTRC_CTRL 0x9043
-#define REG_ID_DEBUG_CAP 0x8400
 #define REG_ID_MCDD      0x905C
 #define REG_ID_MCQS      0x9060
 #define REG_ID_MCQI      0x9061
@@ -106,14 +99,11 @@
 #define REG_ID_MMTA  0x9113
 #define REG_ID_MTECR 0x9109
 #define REG_ID_MTSH  0x910a
-#define REG_ID_MDFCR 0x9101
-#define REG_ID_MDRCR 0x9102
 #define REG_ID_MDSR  0x9110
 #define REG_ID_MFSV  0x9115
 #define REG_ID_MTEIM 0x9118
 #define REG_ID_MTIE  0x911b
 #define REG_ID_MTIM  0x911c
-#define REG_ID_MTDC  0x911d
 #define REG_ID_PLIB  0x500a
 #define REG_ID_MRSR  0x9023
 #define REG_ID_DTOR  0xC00E
@@ -140,11 +130,7 @@
 #define REG_ID_MORD_V2  0x915b
 /*================================== */
 #define REG_ID_MPEGC                0x9056
-#define REG_ID_NIC_CAP_EXT          0xC011
 #define REG_ID_NIC_DPA_PERF         0xC013
-#define REG_ID_NIC_DPA_PERF_CTRL    0xC014
-#define REG_ID_NIC_DPA_EUG          0xC012
-#define REG_ID_NIC_DPA_EU_PARTITION 0xC015
 
 #define DWORD_SIZE 4
 /* For MLNXOS, MGIR still limited with 44 bytes */
@@ -197,25 +183,6 @@ reg_access_status_t reg_access_mtim(mfile* mf, reg_access_method_t method, struc
 {
     REG_ACCCESS(mf, method, REG_ID_MTIM, mtim, mtim_ext, reg_access_hca);
 }
-
-/************************************
-* Function: reg_access_mtdc
-************************************/
-reg_access_status_t reg_access_mtdc(mfile* mf, reg_access_method_t method, struct reg_access_hca_mtdc_ext* mtdc)
-{
-    REG_ACCCESS(mf, method, REG_ID_MTDC, mtdc, mtdc_ext, reg_access_hca);
-}
-
-/************************************
-* Function: reg_access_debug_cap
-************************************/
-reg_access_status_t reg_access_debug_cap(mfile                          * mf,
-                                         reg_access_method_t              method,
-                                         struct reg_access_hca_debug_cap* debug_cap)
-{
-    REG_ACCCESS(mf, method, REG_ID_DEBUG_CAP, debug_cap, debug_cap, reg_access_hca);
-}
-
 
 /************************************
 * Function: reg_access_pmaos
@@ -821,53 +788,12 @@ reg_access_status_t reg_access_mkdc(mfile* mf, reg_access_method_t method, struc
     REG_ACCCESS(mf, method, REG_ID_MKDC, mkdc, mkdc_reg_ext, reg_access_switch);
 }
 /************************************
-* Function: reg_access_nic_cap_ext
-************************************/
-reg_access_status_t reg_access_nic_cap_ext(mfile                                    * mf,
-                                           reg_access_method_t                        method,
-                                           struct reg_access_hca_nic_cap_ext_reg_ext* nic_cap_ext)
-{
-    REG_ACCCESS(mf, method, REG_ID_NIC_CAP_EXT, nic_cap_ext, nic_cap_ext_reg_ext, reg_access_hca);
-}
-
-/************************************
-* Function: reg_access_nic_dpa_eug
-************************************/
-reg_access_status_t reg_access_nic_dpa_eug(mfile                                    * mf,
-                                           reg_access_method_t                        method,
-                                           struct reg_access_hca_nic_dpa_eug_reg_ext* nic_dpa_eug)
-{
-    REG_ACCCESS(mf, method, REG_ID_NIC_DPA_EUG, nic_dpa_eug, nic_dpa_eug_reg_ext, reg_access_hca);
-}
-
-/************************************
-* Function: reg_access_nic_dpa_perf_ctrl
-************************************/
-reg_access_status_t reg_access_nic_dpa_perf_ctrl(mfile                                          * mf,
-                                                 reg_access_method_t                              method,
-                                                 struct reg_access_hca_nic_dpa_perf_ctrl_reg_ext* nic_dpa_perf_ctrl)
-{
-    REG_ACCCESS(mf, method, REG_ID_NIC_DPA_PERF_CTRL, nic_dpa_perf_ctrl, nic_dpa_perf_ctrl_reg_ext, reg_access_hca);
-}
-
-/************************************
 * Function: reg_access_mpegc
 ************************************/
 reg_access_status_t reg_access_mpegc(mfile* mf, reg_access_method_t method, struct reg_access_hca_mpegc_reg_ext* mpegc)
 {
     /*    reg_access_hca_mpegc_reg_dump(mpegc, stdout)s; */
     REG_ACCCESS(mf, method, REG_ID_MPEGC, mpegc, mpegc_reg_ext, reg_access_hca);
-}
-
-/************************************
-* Function: reg_access_nic_dpa_eu_partition
-************************************/
-reg_access_status_t reg_access_nic_dpa_eu_partition(mfile                                             * mf,
-                                                    reg_access_method_t                                 method,
-                                                    struct reg_access_hca_nic_dpa_eu_partition_reg_ext* nic_dpa_eu_partition)
-{
-    REG_ACCCESS(mf, method, REG_ID_NIC_DPA_EU_PARTITION, nic_dpa_eu_partition, nic_dpa_eu_partition_reg_ext,
-                reg_access_hca);
 }
 
 /************************************

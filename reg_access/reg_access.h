@@ -130,18 +130,6 @@ reg_access_status_t reg_access_mgnle(mfile                  * mf,
                                      reg_access_method_t      method,
                                      struct tools_open_mgnle* mngnle,
                                      int                    * status);
-struct switchen_ritr;
-reg_access_status_t reg_access_ritr(mfile* mf, reg_access_method_t method, struct switchen_ritr* ritr);
-struct switchen_ricnt;
-reg_access_status_t reg_access_ricnt(mfile* mf, reg_access_method_t method, struct switchen_ricnt* ricnt);
-struct switchen_sbpr;
-reg_access_status_t reg_access_sbpr(mfile* mf, reg_access_method_t method, struct switchen_sbpr* sbpr);
-struct switchen_sbmm;
-reg_access_status_t reg_access_sbmm(mfile* mf, reg_access_method_t method, struct switchen_sbmm* sbmm);
-struct switchen_sbcm;
-reg_access_status_t reg_access_sbcm(mfile* mf, reg_access_method_t method, struct switchen_sbcm* sbcm);
-struct switchen_sbpm;
-reg_access_status_t reg_access_sbpm(mfile* mf, reg_access_method_t method, struct switchen_sbpm* sbpm);
 struct reg_access_hca_resource_dump_ext;
 /***********************************************************/
 /*********************** ATTENTION *************************/
@@ -165,11 +153,6 @@ struct reg_access_hca_pcnr_reg_ext;
 reg_access_status_t reg_access_pcnr(mfile* mf, reg_access_method_t method, struct reg_access_hca_pcnr_reg_ext* pcnr);
 struct tools_mgpir;
 reg_access_status_t reg_access_mgpir(mfile* mf, reg_access_method_t method, struct tools_mgpir* mgpir);
-struct tools_mdfcr;
-reg_access_status_t reg_access_mdfcr(mfile* mf, reg_access_method_t method, struct tools_mdfcr* mdfcr);
-struct tools_mdrcr;
-reg_access_status_t reg_access_mdrcr(mfile* mf, reg_access_method_t method, struct tools_mdrcr* mdrcr);
-
 struct reg_access_switch_icam_reg_ext;
 reg_access_status_t reg_access_icam(mfile* mf, reg_access_method_t method,
                                     struct reg_access_switch_icam_reg_ext* icam);
@@ -257,14 +240,6 @@ struct reg_access_hca_mtie_ext;
 reg_access_status_t reg_access_mtie(mfile* mf, reg_access_method_t method, struct reg_access_hca_mtie_ext* mtie);
 struct reg_access_hca_mtim_ext;
 reg_access_status_t reg_access_mtim(mfile* mf, reg_access_method_t method, struct reg_access_hca_mtim_ext* mtim);
-struct reg_access_hca_mtdc_ext;
-reg_access_status_t reg_access_mtdc(mfile* mf, reg_access_method_t method, struct reg_access_hca_mtdc_ext* mtdc);
-
-struct reg_access_hca_debug_cap;
-reg_access_status_t reg_access_debug_cap(mfile                          * mf,
-                                         reg_access_method_t              method,
-                                         struct reg_access_hca_debug_cap* debug_cap);
-
 struct reg_access_switch_mkdc_reg_ext;
 reg_access_status_t reg_access_mkdc(mfile* mf, reg_access_method_t method,
                                     struct reg_access_switch_mkdc_reg_ext* mkdc);
@@ -274,20 +249,12 @@ reg_access_status_t reg_access_mtcq(mfile* mf, reg_access_method_t method,
 struct reg_access_switch_mdsr_reg_ext;
 reg_access_status_t reg_access_mdsr(mfile* mf, reg_access_method_t method,
                                     struct reg_access_switch_mdsr_reg_ext* mtcq);
-struct reg_access_hca_nic_cap_ext_reg_ext;
-reg_access_status_t reg_access_nic_cap_ext(mfile                                    * mf,
-                                           reg_access_method_t                        method,
-                                           struct reg_access_hca_nic_cap_ext_reg_ext* nic_cap_ext);
 struct reg_access_switch_mrsr_ext;
 reg_access_status_t reg_access_mrsr(mfile* mf, reg_access_method_t method, struct reg_access_switch_mrsr_ext* mrsr);
 
 struct reg_access_hca_dtor_reg_ext;
 reg_access_status_t reg_access_dtor(mfile* mf, reg_access_method_t method, struct reg_access_hca_dtor_reg_ext* dtor);
 
-struct reg_access_hca_nic_dpa_eug_reg_ext;
-reg_access_status_t reg_access_nic_dpa_eug(mfile                                    * mf,
-                                           reg_access_method_t                        method,
-                                           struct reg_access_hca_nic_dpa_eug_reg_ext* nic_dpa_eug);
 struct reg_access_hca_mpegc_reg_ext;
 reg_access_status_t reg_access_mpegc(mfile* mf, reg_access_method_t method,
                                      struct reg_access_hca_mpegc_reg_ext* mpegc);
@@ -296,14 +263,6 @@ struct reg_access_hca_nic_dpa_perf_reg_ext;
 reg_access_status_t reg_access_nic_dpa_perf(mfile                                     * mf,
                                             reg_access_method_t                         method,
                                             struct reg_access_hca_nic_dpa_perf_reg_ext* nic_dpa_perf);
-struct reg_access_hca_nic_dpa_perf_ctrl_reg_ext;
-reg_access_status_t reg_access_nic_dpa_perf_ctrl(mfile                                          * mf,
-                                                 reg_access_method_t                              method,
-                                                 struct reg_access_hca_nic_dpa_perf_ctrl_reg_ext* nic_dpa_perf_ctrl);
-struct reg_access_hca_nic_dpa_eu_partition_reg_ext;
-reg_access_status_t reg_access_nic_dpa_eu_partition(mfile                                             * mf,
-                                                    reg_access_method_t                                 method,
-                                                    struct reg_access_hca_nic_dpa_eu_partition_reg_ext* nic_dpa_eu_partition);
 struct reg_access_hca_pguid_reg_ext;
 reg_access_status_t reg_access_pguid(mfile* mf, reg_access_method_t method,
                                      struct reg_access_hca_pguid_reg_ext* pguid);
