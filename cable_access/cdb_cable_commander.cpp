@@ -61,8 +61,8 @@
  *
  ********************************************************************************************************************/
 
-FwManagementCdbCommander::FwManagementCdbCommander(string mstDevName, bool clearCompletionFlag) :
-    _modulePasswordSet(false), _fwMngCableAccess(mstDevName, clearCompletionFlag), _timeOutCounter(0)
+FwManagementCdbCommander::FwManagementCdbCommander(string mstDevName, bool clearCompletionFlag, bool vmdlUseEls) :
+    _modulePasswordSet(false), _fwMngCableAccess(mstDevName, clearCompletionFlag, vmdlUseEls), _timeOutCounter(0)
 {
 }
 
@@ -347,6 +347,13 @@ void FwManagementCdbCommander::RunImage(bool performInit)
     {
         // due to switching fw banks, the status isn't being updated and we get an error while waiting for it
     }
+    catch (const CmisCdbAccessException&)
+    {
+        if (!_fwMngCableAccess.IsVMDLUseELS())
+        {
+            throw;
+        }
+    }
     if (performInit)
     {
         cout << "Done." << endl;
@@ -372,9 +379,24 @@ void FwManagementCdbCommander::ActivateImage()
 
     RunImage(false);
 
+    bool hasSlept = false;
     if (_fwMngCableAccess.IsActivationWANeeded())
     {
         msleep(5000); // CDB 0h stuck in 0x82
+        hasSlept = true;
+    }
+    // Set the VMDL use-ELS bit (0x1A) again so FW routes CDB to the ELS through the VMDL.
+    // FW zeroes the bit after commit.
+    if (_fwMngCableAccess.IsVMDLUseELS())
+    {
+        if (!hasSlept)
+        {
+            msleep(5000);
+        }
+        if (!_fwMngCableAccess.SetVMDLUseELS(true))
+        {
+            throw CmisCdbAccessException("Failed to restore VMDL ELS routing after run_image.");
+        }
     }
     if (_modulePasswordSet)
     {
