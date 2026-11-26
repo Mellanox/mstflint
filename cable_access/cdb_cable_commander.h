@@ -58,7 +58,7 @@ struct FirmwareInfoReply
 class FwManagementCdbCommander
 {
 public:
-    explicit FwManagementCdbCommander(string mstDevName, bool clearCompletionFlag = false);
+    explicit FwManagementCdbCommander(string mstDevName, bool clearCompletionFlag = false, bool vmdlUseEls = false);
 
     string GetCmisFWIndicationStrings();
     void DownloadFWImage(const vector<u_int8_t>& image, const vector<u_int8_t>& vendorData, f_prog_func progressFunc);
@@ -68,6 +68,7 @@ public:
     void ActivateImage();
     void RunImage(bool performInit = true);
     void CommitImage();
+    bool IsVMDLUseELS() { return _fwMngCableAccess.IsVMDLUseELS(); }
 
 private:
     struct StartFWDownloadPayload

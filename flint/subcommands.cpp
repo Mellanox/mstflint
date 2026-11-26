@@ -3157,7 +3157,18 @@ FlintStatus BurnSubCommand::BurnCMISCable()
     CableBurnFlow burnFlow(CableBurnFlow::Burn3rdParty);
     std::vector<u_int8_t> fwImage;
     std::vector<u_int8_t> vendorData;
+    bool isVMDLSystem = false;
 
+    if (IsVMDLSystem(isVMDLSystem) != FLINT_SUCCESS)
+    {
+        return FLINT_FAILED;
+    }
+
+    if (_flintParams.linkx_els_control && !isVMDLSystem)
+    {
+        reportErr(true, "--linkx_els flag is not supported in this flow.\n");
+        return FLINT_FAILED;
+    }
 
     if (_flintParams.image.empty() && !_flintParams.activate && !_flintParams.commit_module_image &&
         !_flintParams.run_module_image)
@@ -3286,12 +3297,34 @@ FlintStatus BurnSubCommand::WaitForModuleInit(string device)
 #endif
 }
 
+FlintStatus BurnSubCommand::IsVMDLSystem(bool& isVMDLSystem)
+{
+#if defined(CABLES_SUPPORT) && !defined(MST_CPU_armv7l_umbriel)
+    cableAccess cable(_flintParams.device.c_str());
+    if (!cable.init())
+    {
+        reportErr(true, cable.getLastErrMsg().c_str());
+        return FLINT_FAILED;
+    }
+    if (!cable.isVirtualModuleDevice(isVMDLSystem))
+    {
+        reportErr(true, cable.getLastErrMsg().c_str());
+        return FLINT_FAILED;
+    }
+    return FLINT_SUCCESS;
+#else
+    (void)isVMDLSystem;
+    reportErr(true, "FW update on cables is not supported.\n");
+    return FLINT_FAILED;
+#endif
+}
+
 FlintStatus BurnSubCommand::PerformBurn(std::vector<u_int8_t>& fwImage, std::vector<u_int8_t>& vendorData)
 {
 #if defined(CABLES_SUPPORT) && !defined(MST_CPU_armv7l_umbriel)
     try
     {
-        FwManagementCdbCommander cableCommander(_flintParams.device,false);
+        FwManagementCdbCommander cableCommander(_flintParams.device, false, _flintParams.linkx_els_control);
 
         if (!_flintParams.modulePassword.empty())
         {
@@ -3313,7 +3346,8 @@ FlintStatus BurnSubCommand::PerformBurn(std::vector<u_int8_t>& fwImage, std::vec
         if (_flintParams.activate)
         {
             cableCommander.ActivateImage();
-            if (ResetModule(_flintParams.device))
+            // ELS CDB 0x0109 already reboots the module; PMAOS ResetModule is not used.
+            if (!cableCommander.IsVMDLUseELS() && ResetModule(_flintParams.device))
             {
                 return FLINT_FAILED;
             }
@@ -3410,7 +3444,8 @@ FlintStatus BurnSubCommand::PldmOpsToFwOps(const string& component_type, FsPldmO
 
 FlintStatus BurnSubCommand::executeCommand()
 {
-    if (_flintParams.linkx_control == true || _flintParams.linkx_els_control == true)
+    if (_flintParams.linkx_control == true ||
+        (_flintParams.linkx_els_control == true && _flintParams.device.find("_vmdl") == string::npos))
     {
         if (!verifyParams())
         {
@@ -3428,7 +3463,8 @@ FlintStatus BurnSubCommand::executeCommand()
                          fwComponent, _flintParams.no_stop_on_error);
     }
 
-    if (_flintParams.device.find("_cable") != string::npos && _flintParams.device.find("_rt") == string::npos)
+    if ((_flintParams.device.find("_cable") != string::npos && _flintParams.device.find("_rt") == string::npos) ||
+        _flintParams.device.find("_vmdl") != string::npos)
     {
         FlintStatus rc = FLINT_SUCCESS;
 #if defined(CABLES_SUPPORT) && !defined(MST_CPU_armv7l_umbriel)
@@ -5044,7 +5080,7 @@ FlintStatus QuerySubCommand::QueryCableAttributes()
 
     try
     {
-        FwManagementCdbCommander cableCommander(_flintParams.device.c_str());
+        FwManagementCdbCommander cableCommander(_flintParams.device.c_str(), false, _flintParams.linkx_els_control);
         cout << cableCommander.GetCmisFWIndicationStrings();
     }
     catch (const std::exception& e)
@@ -5062,7 +5098,7 @@ FlintStatus QuerySubCommand::executeCommand()
     MLXFWOPS_LOG_DEBUG("QuerySubCommand::executeCommand");
 
     if (_flintParams.linkx_control == true || _flintParams.vmod_control == true ||
-        _flintParams.linkx_els_control == true)
+        (_flintParams.linkx_els_control == true && _flintParams.device.find("_vmdl") == string::npos))
     {
         if (!verifyParams())
         {
@@ -5091,7 +5127,8 @@ FlintStatus QuerySubCommand::executeCommand()
         return QueryLinkX(_flintParams.device, _flintParams.output_file, _flintParams.downstream_device_ids,
                           fwComponent);
     }
-    if (_flintParams.device.find("_cable") != string::npos && _flintParams.device.find("_rt") == string::npos)
+    if ((_flintParams.device.find("_cable") != string::npos && _flintParams.device.find("_rt") == string::npos) ||
+        _flintParams.device.find("_vmdl") != string::npos)
     {
         FlintStatus rc = FLINT_SUCCESS;
 #if defined(CABLES_SUPPORT) && !defined(MST_CPU_armv7l_umbriel)
