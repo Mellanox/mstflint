@@ -104,13 +104,9 @@ if REG_ACCESS:
             self._reg_access_pcnr = REG_ACCESS.reg_access_pcnr
             self._reg_access_mpcir = REG_ACCESS.reg_access_mpcir
             self._reg_access_res_dump = REG_ACCESS.reg_access_res_dump
-            self._reg_access_debug_cap = REG_ACCESS.reg_access_debug_cap
             self._reg_access_mddq = REG_ACCESS.reg_access_mddq
             self._reg_access_mdsr = REG_ACCESS.reg_access_mdsr
             self._reg_access_mteim = REG_ACCESS.reg_access_mteim
-            self._reg_access_nic_dpa_eug = REG_ACCESS.reg_access_nic_dpa_eug
-            self._reg_access_nic_cap_ext = REG_ACCESS.reg_access_nic_cap_ext
-            self._reg_access_nic_dpa_perf_ctrl = REG_ACCESS.reg_access_nic_dpa_perf_ctrl
             self._reg_access_mrsr = REG_ACCESS.reg_access_mrsr
             self._reg_access_dtor = REG_ACCESS.reg_access_dtor
             self._reg_access_mrsi = REG_ACCESS.reg_access_mrsi
@@ -227,27 +223,6 @@ if REG_ACCESS:
                      "size": resDumpRegP.contents.size,
                      "address": resDumpRegP.contents.address,
                      "inline_data": resDumpRegP.contents.inline_data})
-
-        def sendDebugCap(self):
-            debugCapRegP = pointer(DEBUG_CAP())
-            debugCapRegP.contents.log_max_samples = c_uint8(0)
-            debugCapRegP.contents.resource_dump = c_uint8(0)
-            debugCapRegP.contents.log_cr_dump_to_mem_size = c_uint8(0)
-            debugCapRegP.contents.core_dump_qp = c_uint8(0)
-            debugCapRegP.contents.core_dump_general = c_uint8(0)
-            debugCapRegP.contents.log_min_sample_period = c_uint8(0)
-            debugCapRegP.contents.diag_counter_tracer_dump = c_uint8(0)
-            debugCapRegP.contents.health_mon_rx_activity = c_uint8(0)
-            debugCapRegP.contents.repetitive = c_uint8(0)
-            debugCapRegP.contents.single = c_uint8(0)
-            tmp = pointer(DIAGNOSTIC_CNTR_LAYOUT())
-            tmp.contents.counter_id = c_uint16(0)
-            tmp.contents.sync = c_uint8(0)
-            debugCapRegP.contents.diagnostic_counter = pointer(DIAGNOSTIC_CNTR_ST_ARR())
-            rc = self._reg_access_debug_cap(self._mstDev.mf, c_uint(REG_ACCESS_METHOD_GET), debugCapRegP)
-            if rc:
-                raise RegAccException("Failed to send Register DEBUG CAP with rc: %d" % rc)
-            return debugCapRegP.contents.resource_dump
 
         def sendPcnr(self, tuning_override, local_port):  # Requirments : new FW version + burn with allow_pcnr
 
