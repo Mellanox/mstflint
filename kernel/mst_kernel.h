@@ -109,6 +109,8 @@ struct dma_page
 {
     struct page** page_list;
     dma_addr_t dma_addr[PCICONF_MAX_PAGES_SIZE];
+    unsigned int pinned_count;
+    struct file* owner;
 };
 
 struct mst_dev_data
