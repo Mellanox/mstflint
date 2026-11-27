@@ -65,10 +65,13 @@ public:
     ParseStatus HandleOption(string name, string value);
     void run(int agc, char** argv);
 
-private:
+protected:
     void initCmdParser();
     void printHelp();
-    void paramValidate();
+    virtual void paramValidate();
+    // Print nothing here; a derived UI can add options and examples to the help, and lines after --show_reg's fields.
+    virtual void printHelpExtra(bool /* examples */) {}
+    virtual void printRegFieldsExtra(const AttrsMap& /* regAttrs */) {}
     bool askUser(const char* question);
 
     // Helper class template for ADB-dependent operations

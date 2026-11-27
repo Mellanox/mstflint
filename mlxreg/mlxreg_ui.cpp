@@ -171,12 +171,6 @@ static std::string fieldNameKeyForGrouping(const std::string& name)
 #define IGNORE_REG_CHECK_FLAG_SHORT ' '
 #define FORCE_FLAG "yes"
 #define FORCE_FLAG_SHORT ' '
-#define IGNORE_RO "ignore_ro"
-#define IGNORE_RO_SHORT ' '
-#define FILE_TO_DUMP_BUFFER "output_file"
-#define FILE_TO_DUMP_BUFFER_SHORT ' '
-#define FILE_IO "file_io"
-#define FILE_IO_SHORT ' '
 #define OVERWRITE_FLAG "overwrite"
 #define OVERWRITE_FLAG_SHORT 'w'
 #define FULL_PATH_FLAG "full_path"
@@ -240,12 +234,7 @@ MlxRegUi::MlxRegUi() : CommandLineRequester("mlxreg OPTIONS"), _cmdParser("mlxre
     _full_desc = false;
     _field_name = "";
     _gen_cmd_buffer_device_type = "";
-
-#if defined(EXTERNAL) || defined(MST_UL)
     _isExternal = true;
-#else
-    _isExternal = false;
-#endif
 }
 
 /************************************
@@ -281,12 +270,6 @@ void MlxRegUi::initCmdParser()
     AddOptions(OP_SHOW_REGS_FLAG, OP_SHOW_REGS_FLAG_SHORT, "", "Print available registers names and exit");
     AddOptions(OP_SHOW_ALL_REGS_FLAG, OP_SHOW_ALL_REGS_FLAG_SHORT, "", "", true);
     AddOptions(FORCE_FLAG, FORCE_FLAG_SHORT, "", "");
-#if !defined(EXTERNAL) && !defined(MST_UL)
-    AddOptions(IGNORE_RO, IGNORE_RO_SHORT, "", "Ignore the access check in the SET operation");
-    AddOptions(FILE_TO_DUMP_BUFFER, FILE_TO_DUMP_BUFFER_SHORT, "OutputFile",
-               "Dump buffer to file instead of sending to device");
-    AddOptions(FILE_IO, FILE_IO_SHORT, "FilePath", "Work with file for IO instead of CLI flags");
-#endif
     AddOptions(OVERWRITE_FLAG, OVERWRITE_FLAG_SHORT, "",
                "Set only specified fields, set unspecified fields to zero (only valid for SET command)");
     AddOptions(FULL_PATH_FLAG, FULL_PATH_FLAG_SHORT, "", "Show field names with full hierarchical path");
@@ -301,7 +284,6 @@ void MlxRegUi::initCmdParser()
     AddOptions(
       GEN_CMD_BUFFER_FLAG, GEN_CMD_BUFFER_FLAG_SHORT, "DeviceType",
       "Generate register buffer without sending to device (offline operation, no device required, only valid for GET/SET with --reg_name). DeviceType: HCA|Switch|Retimer|GPU");
-    _cmdParser.AddRequester(this);
 }
 
 /************************************
@@ -350,6 +332,7 @@ void MlxRegUi::printHelp()
     printFlagLine(REG_ID_FLAG_SHORT, REG_ID_FLAG, "reg_ID", "Access register ID");
     printFlagLine(REG_LEN_FLAG_SHORT, REG_LEN_FLAG, "reg_length", "Access register layout length (bytes)");
     printFlagLine(IDXES_FLAG_SHORT, IDXES_FLAG, "idxs_vals", "Register indexes");
+    printHelpExtra(/* examples */ false);
     printFlagLine(OPS_FLAG_SHORT, OPS_FLAG, "ops_vals", "Register optional fields");
     printFlagLine(OP_GET_FLAG_SHORT, OP_GET_FLAG, "", "Register access GET");
     printFlagLine(OP_SET_FLAG_SHORT, OP_SET_FLAG, "reg_dataStr", "Register access SET");
@@ -382,6 +365,7 @@ void MlxRegUi::printHelp()
            MLXREG_EXEC " -d <device> --get --reg_name PAOS --indexes \"local_port=0x1,swid=0x5\"");
     printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "SET PAOS with indexes: local port 0x1 and swid 0x5, and data: e 0x0",
            MLXREG_EXEC " -d <device> --set \"e=0x0\" --reg_name PAOS --indexes \"local_port=0x1,swid=0x5\"");
+    printHelpExtra(/* examples */ true);
     printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Generate buffer without sending to device (offline)",
            MLXREG_EXEC " --get --reg_name PAOS --indexes \"local_port=0x1\" --gen_cmd_buffer gpu");
     printf("\n");
@@ -467,11 +451,7 @@ ParseStatus MlxRegUi::HandleOption(string name, string value)
     }
     else if (name == VERSION_FLAG)
     {
-#if defined(EXTERNAL) || defined(MST_UL)
         print_version_string(MLXREG_EXEC, NULL);
-#else
-        print_version_string("mlxreg (internal)", NULL);
-#endif
         return PARSE_OK_WITH_EXIT;
     }
     else if (name == DEVICE_FLAG)
@@ -558,23 +538,6 @@ ParseStatus MlxRegUi::HandleOption(string name, string value)
         _op = CMD_SHOW_ALL_REGS;
         return PARSE_OK;
     }
-#if !defined(EXTERNAL) && !defined(MST_UL)
-    else if (name == IGNORE_RO)
-    {
-        _ignore_ro = true;
-        return PARSE_OK;
-    }
-    else if (name == FILE_TO_DUMP_BUFFER)
-    {
-        _output_file = value;
-        return PARSE_OK;
-    }
-    else if (name == FILE_IO)
-    {
-        _file_io = value;
-        return PARSE_OK;
-    }
-#endif
     else if (name == OVERWRITE_FLAG)
     {
         _overwrite = true;
@@ -1168,6 +1131,7 @@ void MlxRegUi::MlxRegUiImpl<dynamic>::printRegFields(AdbInstance* node)
     {
         printQueryFieldsStandard(_query_fields);
     }
+    _ui->printRegFieldsExtra(node->nodeDesc->attrs);
 }
 
 // SentField::on_traverse implementation
@@ -1475,6 +1439,8 @@ void MlxRegUi::MlxRegUiImpl<dynamic>::run()
 
 void MlxRegUi::run(int argc, char** argv)
 {
+    // Registered here, not in initCmdParser(), so that a derived UI can add options in its constructor.
+    _cmdParser.AddRequester(this);
     ParseStatus rc = _cmdParser.ParseOptions(argc, argv);
 
     if (rc == PARSE_OK_WITH_EXIT)
