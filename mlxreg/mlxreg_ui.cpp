@@ -171,12 +171,6 @@ static std::string fieldNameKeyForGrouping(const std::string& name)
 #define IGNORE_REG_CHECK_FLAG_SHORT ' '
 #define FORCE_FLAG "yes"
 #define FORCE_FLAG_SHORT ' '
-#define IGNORE_RO "ignore_ro"
-#define IGNORE_RO_SHORT ' '
-#define FILE_TO_DUMP_BUFFER "output_file"
-#define FILE_TO_DUMP_BUFFER_SHORT ' '
-#define FILE_IO "file_io"
-#define FILE_IO_SHORT ' '
 #define OVERWRITE_FLAG "overwrite"
 #define OVERWRITE_FLAG_SHORT 'w'
 #define FULL_PATH_FLAG "full_path"
@@ -240,12 +234,7 @@ MlxRegUi::MlxRegUi() : CommandLineRequester("mlxreg OPTIONS"), _cmdParser("mlxre
     _full_desc = false;
     _field_name = "";
     _gen_cmd_buffer_device_type = "";
-
-#if defined(EXTERNAL) || defined(MST_UL)
     _isExternal = true;
-#else
-    _isExternal = false;
-#endif
 }
 
 /************************************
@@ -281,12 +270,6 @@ void MlxRegUi::initCmdParser()
     AddOptions(OP_SHOW_REGS_FLAG, OP_SHOW_REGS_FLAG_SHORT, "", "Print available registers names and exit");
     AddOptions(OP_SHOW_ALL_REGS_FLAG, OP_SHOW_ALL_REGS_FLAG_SHORT, "", "", true);
     AddOptions(FORCE_FLAG, FORCE_FLAG_SHORT, "", "");
-#if !defined(EXTERNAL) && !defined(MST_UL)
-    AddOptions(IGNORE_RO, IGNORE_RO_SHORT, "", "Ignore the access check in the SET operation");
-    AddOptions(FILE_TO_DUMP_BUFFER, FILE_TO_DUMP_BUFFER_SHORT, "OutputFile",
-               "Dump buffer to file instead of sending to device");
-    AddOptions(FILE_IO, FILE_IO_SHORT, "FilePath", "Work with file for IO instead of CLI flags");
-#endif
     AddOptions(OVERWRITE_FLAG, OVERWRITE_FLAG_SHORT, "",
                "Set only specified fields, set unspecified fields to zero (only valid for SET command)");
     AddOptions(FULL_PATH_FLAG, FULL_PATH_FLAG_SHORT, "", "Show field names with full hierarchical path");
@@ -468,11 +451,7 @@ ParseStatus MlxRegUi::HandleOption(string name, string value)
     }
     else if (name == VERSION_FLAG)
     {
-#if defined(EXTERNAL) || defined(MST_UL)
         print_version_string(MLXREG_EXEC, NULL);
-#else
-        print_version_string("mlxreg (internal)", NULL);
-#endif
         return PARSE_OK_WITH_EXIT;
     }
     else if (name == DEVICE_FLAG)
@@ -559,23 +538,6 @@ ParseStatus MlxRegUi::HandleOption(string name, string value)
         _op = CMD_SHOW_ALL_REGS;
         return PARSE_OK;
     }
-#if !defined(EXTERNAL) && !defined(MST_UL)
-    else if (name == IGNORE_RO)
-    {
-        _ignore_ro = true;
-        return PARSE_OK;
-    }
-    else if (name == FILE_TO_DUMP_BUFFER)
-    {
-        _output_file = value;
-        return PARSE_OK;
-    }
-    else if (name == FILE_IO)
-    {
-        _file_io = value;
-        return PARSE_OK;
-    }
-#endif
     else if (name == OVERWRITE_FLAG)
     {
         _overwrite = true;
